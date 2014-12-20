@@ -1,0 +1,102 @@
+\documentclass[apj]{emulateapj}
+
+\usepackage{amsmath}
+\usepackage{aas_macros}
+\usepackage{natbib}
+\usepackage{rotating}
+\usepackage{xspace}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{color}
+%% \usepackage[section]{placeins}
+%% \usepackage{caption}
+
+%%% Definitions added by Manodeep and Andreas
+\newcommand{\Msun}{M_{\odot}}
+\newcommand{\hMsun}{h^{-1}M_{\odot}}
+\newcommand{\Mvir}{M_\mathrm{vir}}
+\newcommand{\Rvir}{\ensuremath{R_\mathrm{vir}}}
+\newcommand{\Vvir}{V_\mathrm{vir}}
+\newcommand{\rhoc}{\rho_{\rm crit}}
+\newcommand{\dd}{{\rm {d}}}
+\newcommand{\Ob}{\Omega_{\rm b}}
+\newcommand{\Ol}{\Omega_\Lambda}
+\newcommand{\Odm}{\Omega_{\rm dm}}
+\newcommand{\Om}{\Omega_{\rm m}}
+\newcommand{\sig}{{\sigma_8}}
+\newcommand{\FOF}{{\small{FOF}}\xspace}
+\newcommand{\FOFS}{{\small{FOF}}s\xspace}
+\newcommand{\sdss}{{\small{SDSS}}\xspace}
+\newcommand{\hod}{{\small{HOD}}\xspace}
+\newcommand{\ngal}{\ensuremath{n_{gal}}\xspace}
+\newcommand{\wprp}{\ensuremath{w_p(r_p)}\xspace}
+\newcommand{\gmf}{\ensuremath{n(N)}\xspace}
+\newcommand{\nsatavg}{\ensuremath{\langle N_{sat} \rangle}}
+\newcommand{\Mmin}{\ensuremath{M_\mathrm{min}}}
+\newcommand{\erf}{{\ensuremath{\mathrm{erf}}\xspace}}
+\newcommand{\logMmin}{\ensuremath{\mathrm{\log M_{min}}}\xspace}
+\newcommand{\siglogM}{\ensuremath{\sigma_{\log \mathrm{M}}}\xspace}
+\newcommand{\siglogL}{\ensuremath{\sigma_{\log \mathrm{L}}}\xspace}
+\newcommand{\hMpc}{\ensuremath{{h^{-1}Mpc}\xspace}}
+\newcommand{\hkpc}{\ensuremath{{h^{-1}kpc}\xspace}}
+\newcommand*{\bigchi}{{\Large{\ensuremath{\chi}}}}
+\newcommand*{\sizeforstatplots}{0.48}
+\newcommand*{\sizeforhodparamplots}{0.49}
+\newcommand{\emcee}{\texttt emcee}
+\newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
+
+
+%%\setstretch{2.0}
+%% \usepackage{etoolbox}
+%% \makeatletter
+%% \patchcmd{\@makecaption}
+%%   {\scshape}
+%%   {}
+%%   {}
+%%   {}
+%% \makeatother
+
+\begin{document}
+
+\title{Cache is King: Writing a Blazing-fast Correlation Function Code}
+
+\author{Manodeep Sinha\altaffilmark{1}}
+\affiliation{Department of Physics and Astronomy, Vanderbilt University, Nashville, TN, 37235}
+\altaffiltext{1}{manodeep.sinha@vanderbilt.edu}
+
+\begin{abstract}
+We have entered the era of `Big Data' where we are gathering a tremendous amount of data that
+needs to be processed as well as modeled accurately. In particular, large galaxy surveys
+like the Sloan Digitial Sky Survey requires computing correlation functions. While measuring the
+correlation function is not a bottle-neck, modeling the observed galaxy distribution correctly
+{\em} requires a MCMC chain and repeated measurements of $\xi(r)$ and/or $\xi(r_p,\pi)$. 
+
+The accompanying codes are publicly available at \url{https://bitbucket.org/manodeep/Corrfunc}. 
+\end{abstract}
+
+\keywords{methods: numerical}
+
+\maketitle
+
+
+\section{INTRODUCTION}
+
+%% MS: I have not encountered this in the past -- but the footnotecounter needs to be reset. Otherwise, 
+%% the numbering starts at Nauthors+1. Presumably \altaffiltext uses \footnote internally and does not
+%% reset the counter like a responsible person!
+\setcounter{footnote}{0}
+
+\acknowledgments MS acknowledges the fantastic \texttt{largemem} nodes with 1 TB of RAM at Stampede (TACC) without which the project could not have been done. 
+This work has been supported by the NSF Career Award (AST-1151650).
+
+
+\bibliographystyle{apj}
+\bibliography{master}
+
+\begin{appendix}
+
+\end{document}
+
+
+
+
