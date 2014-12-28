@@ -24,5 +24,5 @@ celan:
 	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs.so 
 
 install:
-	cp -p $(target) ../bin
-	cp -p libcountpairs.so ../lib
+	cp -p $(target) ../bin/
+	cp -p libcountpairs.so ../lib/
