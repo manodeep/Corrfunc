@@ -2,3 +2,8 @@ syntax:glob
 *.o
 .*
 *~
+bin/*
+logbins
+DD
+libcountpairs.so
+DDrpppi
