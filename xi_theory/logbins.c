@@ -12,11 +12,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#define sqr(x) ((x)*(x))
-#define max(A,B) ((A) > (B) ? (A) : (B))
-#define min(A,B) ((A) < (B) ? (A) : (B))
-#define mabs(A) ((A) < 0.0 ? -(A) : (A))
-#define pi 3.1415926535898
+#include <assert.h>
 
 int main(int argc, char *argv[])
 {
@@ -33,6 +29,8 @@ int main(int argc, char *argv[])
     sscanf(argv[2],"%lf",&xmax) ;
     sscanf(argv[3],"%d",&nbin) ;
   }
+	assert(xmin > 0 && "rmin has to be non-zero, otherwise log is undefined");
+
   /*---Setup-Pairs-arrays-------------------------------*/
   logxmin = log10(xmin) ;
   logxmax = log10(xmax) ;
