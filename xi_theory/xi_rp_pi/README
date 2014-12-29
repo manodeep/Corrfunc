@@ -10,22 +10,22 @@
 
 Code to compute xi(rp, pi) on a rectangular parallelopiped.
 
-Inputs: rpmin   - float/double > 0. Min. projected distance to consider
-	rpmax   - float/double > 0 and > rpmin. Max. projected distance to consider
-	nrpbin  - integer > 0. Number of logarithmic bins to create betwen rpmin and rpmax
-	file1   - string. filename containing X Y Z (co-moving, including redshift distortions) positions in Mpc/h
-	format1 - char.   format for file1. 'a' denotes ascii, 'f' denotes fast-food (fortran binary) format.
-	file2   - string. filename containing X Y Z (co-moving, including redshift distortions) positions in Mpc/h
-	format2 - char.   format for file2. 'a' denotes ascii, 'f' denotes fast-food (fortran binary) format.
-	[pimax] - float/double. line of sight integration distance in co-moving Mpc/h. Default 40 Mpc/h.
-
+Inputs:
+	file1    - string. filename containing X Y Z (co-moving, including redshift distortions) positions in Mpc/h
+	format1  - char.   format for file1. 'a' denotes ascii, 'f' denotes fast-food (fortran binary) format.
+	file2    - string. filename containing X Y Z (co-moving, including redshift distortions) positions in Mpc/h
+	format2  - char.   format for file2. 'a' denotes ascii, 'f' denotes fast-food (fortran binary) format.
+  bins     - string.  filename containing the bins in the [rmin, rmax] format (units of Mpc/h). 
+	pimax    - float/double. line of sight integration distance in co-moving Mpc/h. Default 40 Mpc/h.
+	Nthreads - Number of OpenMP threads to use (if compiled with OpenMP support). Scaling is poor so anything more
+					 	 than 8 threads is pointless. 
 	
-Outputs: Pair counts in (rp,pi) bins. Printed to stdout. The columns are [Npairs rpavg log10(rpavg)  pibin] (written out by countpairs.c)
+Outputs: Pair counts in (rp,pi) bins. Printed to stdout. The columns are [Npairs rpavg log10(rpbin_outer_edge)  pibin] (written out by countpairs.c)
 
 Makefile option:  DOUBLE_PREC computes in double-precision. 
 Compile  options: Use -xhost and -opt-prefetch. 
 
-Notes:
+*Notes*
 
 1) The binning in the pi-direction is currently fixed to 1 Mpc/h bins. This can be changed by modifying the
 line in DDrppi.c that sets npibin = (int) pimax. 
@@ -37,10 +37,9 @@ fdat[0] contains the box-size. This header is followed by sizeof(double/float)*N
 Don't forget the padding bytes when reading in C (all of these are implemented in ftread.c). There is a
 version of ftwrite.c floating around on the web (comes with Rockstar if nothing else).
 
-Possible runtime optimizations:
+*Possible runtime optimizations*
 
-1) Change BLOCK_SIZE1 and/or BLOCK_SIZE2 in countpairs and profile.
-2) Change BIN_REFINE_FACTOR and/or ZBIN_REFINE_FACTOR in cellarray.h and profile.
+1) Change bin_refine_factor and/or zbin_refine_factor in countpairs_rp_pi.c and profile. 
 
 
 
