@@ -3,7 +3,7 @@ include ../common.mk
 target=DDrppi wprp
 all: $(target) 
 
-OBJS1= DDrppi.o countpairs.o ../utils/utils.o ../utils/gridlink.o ../io/io.o ../io/ftread.o 
+OBJS1= DDrppi.o countpairs_rp_pi.o ../utils/utils.o ../utils/gridlink.o ../io/io.o ../io/ftread.o 
 
 
 DDrppi: $(OBJS1) Makefile
@@ -13,7 +13,7 @@ OBJS2= wprp.o ../utils/utils.o
 wprp: $(OBJS2) Makefile 
 	$(CC) $(CFLAGS) -o $@ $(OBJS2) $(CLINK)
 
-OBJS3=countpairs.o ../utils/gridlink.o ../utils/utils.o 
+OBJS3=countpairs_rp_pi.o ../utils/gridlink.o ../utils/utils.o 
 lib:
 	 $(CC) $(CFLAGS) $(LDFLAGS) $(OBJS3) -shared -o libcountpairs_rp_pi.so 
 

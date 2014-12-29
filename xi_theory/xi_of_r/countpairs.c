@@ -59,11 +59,11 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
 		
-  cellarray *lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+  cellarray *lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
   cellarray *lattice2 = NULL;
   if(autocorr==0) {
 	int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-	lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
+	lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
 	assert(nmesh_x == ngrid2_x && "Both lattices have the same number of X bins");
 	assert(nmesh_y == ngrid2_y && "Both lattices have the same number of Y bins");
 	assert(nmesh_z == ngrid2_z && "Both lattices have the same number of Z bins");
@@ -77,11 +77,11 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 #endif	
 
 #ifndef USE_OMP
-	unsigned int npairs[nrpbin];	
+	uint64_t npairs[nrpbin];	
 	for(int i=0; i < nrpbin;i++) npairs[i] = 0;
 #else
 	omp_set_num_threads(numthreads);
-	unsigned int **all_npairs = (unsigned int **) matrix_calloc(sizeof(unsigned int), numthreads, nrpbin);
+	uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbin);
 #endif
 
   DOUBLE rupp_sqr[nrpbin];
@@ -123,8 +123,7 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 #pragma omp parallel 
   {
 		int tid = omp_get_thread_num();
-/* 		unsigned int *npairs = all_npairs[tid]; */
-		unsigned int npairs[nrpbin];
+		uint64_t npairs[nrpbin];
 		for(int i=0;i<nrpbin;i++) npairs[i] = 0;
 #ifdef OUTPUT_RPAVG		
 		DOUBLE rpavg[nrpbin];
@@ -384,7 +383,7 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
   
 
 #ifdef USE_OMP
-  unsigned int npairs[nrpbin];
+  uint64_t npairs[nrpbin];
   for(int i=0;i<nrpbin;i++) npairs[i] = 0;
 	
   for(int i=0;i<numthreads;i++) {
@@ -417,9 +416,9 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
   double rlow=rupp[0];
   for(int i=1;i<nrpbin;i++) {
 #ifdef OUTPUT_RPAVG	  
-    fprintf(stdout,"%10u %20.8lf %20.8lf %20.8lf \n",npairs[i],rpavg[i],rlow,rupp[i]);
+    fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",npairs[i],rpavg[i],rlow,rupp[i]);
 #else
-	fprintf(stdout,"%10u %20.8lf %20.8lf %20.8lf \n",npairs[i],0.0,    rlow,rupp[i]);
+	fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",npairs[i],0.0,    rlow,rupp[i]);
 #endif	
     rlow=rupp[i];
   }
