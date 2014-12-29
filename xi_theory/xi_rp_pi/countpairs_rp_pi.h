@@ -1,6 +1,7 @@
 #pragma once
 
 #include "function_precision.h" //for definition of DOUBLE
+#include <inttypes.h> //for uint64_t
 
 void countpairs_rp_pi(const int ND1,
 											const DOUBLE *x1, const DOUBLE *y1, const DOUBLE *z1,
