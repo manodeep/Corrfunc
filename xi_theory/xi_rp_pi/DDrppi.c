@@ -19,19 +19,26 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "../utils/utils.h"
-#include "../utils/io.h"
-#include "countpairs.h"
+#include "defs.h" //for ADD_DIFF_TIME
+#include "function_precision.h" //definition of DOUBLE
+#include "countpairs.h" //function proto-type for countpairs
+#include "io.h" //function proto-type for file input
+#include "utils.h" //general utilities
+
+
+void Printhelp(void);
 
 int main(int argc, char *argv[])
 {
 
   /*---Arguments-------------------------*/
   int nrpbin;
-  char *file1=NULL,*format1=NULL;
-  char *file2=NULL,*format2=NULL;
+	double rpmin,rpmax;
   DOUBLE pimax ;
-
+	
+	char *file1=NULL,*file2=NULL;
+	char *fileformat1=NULL,*fileformat2=NULL;
+	
   /*---Data-variables--------------------*/
   int ND1=0,ND2=0;
 
@@ -72,9 +79,9 @@ int main(int argc, char *argv[])
   }
   
   file1=argv[1];
-  format1=argv[2];
+  fileformat1=argv[2];
   file2=argv[3];
-  format2=argv[4];  
+  fileformat2=argv[4];  
 
   /***********************
    *initializing the  bins
@@ -193,8 +200,8 @@ int main(int argc, char *argv[])
 	free(rupp);
  
   gettimeofday(&t_end,NULL);
-  fprintf(stderr,"xi_rp_pi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds lattice-time = %6.2lf sec pair-counting time = %6.2lf sec\n",
-	  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,lattice_time,pair_time);
+  fprintf(stderr,"xi_rp_pi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds pair-counting time = %6.2lf sec\n",
+	  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);
   return EXIT_SUCCESS;
 }
 
