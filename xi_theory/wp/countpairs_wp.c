@@ -50,6 +50,11 @@ void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * res
 	if(numthreads == 1) {
 		bin_refine_factor=2;
 		zbin_refine_factor=1;
+	} else {
+		//seems redundant - but I can not discount the possibility that some
+		//combination of these refine factors will be faster on a different architecture.
+		bin_refine_factor=2;
+		zbin_refine_factor=1;
 	}
 #endif
 

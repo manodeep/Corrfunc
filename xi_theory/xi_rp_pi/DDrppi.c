@@ -222,7 +222,39 @@ void Printhelp(void)
 	fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif
   fprintf(stderr,"     > DDfile        = name of output file. Contains <npairs rpavg logrp pi>\n") ;
-  fprintf(stderr,"=========================================================================\n") ;
+
+	fprintf(stderr,"\n\tCompile options: \n");
+#ifdef PERIODIC
+	fprintf(stderr,"Periodic = True\n");
+#else
+	fprintf(stderr,"Periodic = False\n");
+#endif
+
+#ifdef OUTPUT_RPAVG
+	fprintf(stderr,"Output RPAVG = True\n");
+#else
+	fprintf(stderr,"Output RPAVG = False\n");
+#endif	
+
+#ifdef DOUBLE_PREC
+	fprintf(stderr,"Precision = double\n");
+#else
+	fprintf(stderr,"Precision = float\n");
+#endif
+	
+#ifdef USE_AVX
+	fprintf(stderr,"Use AVX = True\n");
+#else	
+	fprintf(stderr,"Use AVX = False\n");
+#endif
+
+#ifdef USE_OMP
+	fprintf(stderr,"Use OMP = True\n");
+#else	
+	fprintf(stderr,"Use OMP = False\n");
+#endif
+
+	fprintf(stderr,"=========================================================================\n") ;
 }
 
 
