@@ -5,13 +5,13 @@ OPT += -DPERIODIC
 #### Code specs
 #OPT += -DDOUBLE_PREC
 OPT += -DUSE_AVX
-OPT += -DUSE_OMP
+#OPT += -DUSE_OMP
 
 INCLUDE=-I ../io -I ../utils -I ../include 
 
 CC=gcc
 CLINK=
-CFLAGS=  $(OPT) $(INCLUDE) -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -Ofast -O3
+CFLAGS=  $(OPT) $(INCLUDE) -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))
