@@ -91,7 +91,7 @@ void countpairs_rp_pi(const int ND1,
 	const DOUBLE sqr_rpmin=rupp_sqr[0];
 	
 #ifndef USE_OMP
-	unsigned int npairs[totnbins];
+	uint64_t npairs[totnbins];
 #ifdef OUTPUT_RPAVG
 	DOUBLE rpavg[totnbins];
 #endif	
@@ -103,7 +103,7 @@ void countpairs_rp_pi(const int ND1,
 	}
 #else
 	omp_set_num_threads(numthreads);
-	unsigned int **all_npairs = (unsigned int **) matrix_calloc(sizeof(unsigned int), numthreads, totnbins);
+	uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, totnbins);
 #ifdef OUTPUT_RPAVG
 	DOUBLE **all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
 #endif	
@@ -125,7 +125,7 @@ void countpairs_rp_pi(const int ND1,
 	#pragma omp parallel
 	{
 		const int tid = omp_get_thread_num();
-		unsigned int npairs[totnbins];
+		uint64_t npairs[totnbins];
 		for(int i=0;i<totnbins;i++) npairs[i] = 0;
 #ifdef OUTPUT_RPAVG		
 		DOUBLE rpavg[totnbins];
@@ -383,7 +383,7 @@ void countpairs_rp_pi(const int ND1,
 #endif
 	
 #ifdef USE_OMP
-	unsigned int npairs[totnbins];
+	uint64_t npairs[totnbins];
 #ifdef OUTPUT_RPAVG	
 	DOUBLE rpavg[totnbins];
 #endif	
@@ -417,9 +417,9 @@ void countpairs_rp_pi(const int ND1,
     for(int j=0;j<npibin;j++) {
       int index = i*(npibin+1) + j;
 #ifdef OUTPUT_RPAVG			
-      fprintf(stdout,"%10u %20.8lf %20.8lf  %20.8lf \n",npairs[index],rpavg[index],logrp,(j+1)*dpi);
+      fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",npairs[index],rpavg[index],logrp,(j+1)*dpi);
 #else			
-			fprintf(stdout,"%10u %20.8lf %20.8lf  %20.8lf \n",npairs[index],0.0,logrp,(j+1)*dpi);
+			fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",npairs[index],0.0,logrp,(j+1)*dpi);
 #endif			
     }
   }
