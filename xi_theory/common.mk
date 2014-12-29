@@ -52,7 +52,7 @@ else
 #### common options for gcc and clang
 CFLAGS  +=  -mavx -march=native -O3 -mpopcnt 
 CFLAGS  +=  -Wformat=2  -std=c99  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual  -Wshadow
-CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -fno-strict-aliasing #-D_POSIX_C_SOURCE=2 -Wpadded -Wstrict-prototypes -Wconversion
+CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes -Wconversion #-D_POSIX_C_SOURCE=2 -Wpadded 
 CLINK += -lm
 endif
 
