@@ -13,11 +13,11 @@ Code to compute xi(r) on a rectangular parallelopiped.
 
 Inputs: 
 
-* file1         - string. filename containing X Y Z (co-moving, including redshift distortions) positions in Mpc/h
+* file1     - string. filename containing X Y Z (co-moving, including redshift distortions) positions in Mpc/h
 * format1   - char.   format for file1. 'a' denotes ascii, 'f' denotes fast-food (fortran binary) format.
-* file2        - string. filename containing X Y Z (co-moving, including redshift distortions) positions in Mpc/h
+* file2     - string. filename containing X Y Z (co-moving, including redshift distortions) positions in Mpc/h
 * format2   - char.   format for file2. 'a' denotes ascii, 'f' denotes fast-food (fortran binary) format.
-* bins         - string.  filename containing the bins in the [rmin, rmax] format (units of Mpc/h). 
+* bins      - string.  filename containing the bins in the [rmin, rmax] format (units of Mpc/h). 
 * nthreads  - integer. Only required if compiled with openmp support.
 
 Typical command-line would be:
@@ -34,10 +34,9 @@ Makefile option:
 2. PERIODIC 				enables periodic boundary conditions
 3. OUTPUT_RPAVG			computes ravg explicitly. Disabled by default (the ravg term in the output file is identically 0.0)
 4. USE_AVX  				enables the hand-vectorized AVX intrinsics - will only work if cpu >= Sandy Bridge
-5. USE_ISPC 				experimental (wrong as of Oct 2, 2014) -- uses the intel ispc compiler to generate vectorized code. 
-6. USE_OMP                              Compile with openmp support - requires an additional nthreads parameter on the command-line. The 
-                                                openmp scaling is pretty poor - so > 8 threads is pointless. Best results around for a compute-intense work (i.e., > 6-7s)
-                                                is with 4-5 threads. YMMV.
+5. USE_OMP          Compile with openmp support - requires an additional nthreads parameter on the command-line. The 
+                    openmp scaling is fantastic up to ~ 12 threads for a compute-intense work (i.e., > 6-7s, AVX, PERIODIC).
+										YMMV.
 
 
 Compile  options: Use -xhost and -opt-prefetch -ipo  (for icc)
