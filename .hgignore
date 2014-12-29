@@ -5,9 +5,10 @@ syntax:glob
 bin/*
 logbins
 DD
-*.so
 wprp
 DDrppi
+wp
+*.so
 a.out
 xx*
 yy*

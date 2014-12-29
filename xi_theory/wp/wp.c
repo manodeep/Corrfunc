@@ -21,10 +21,11 @@
 
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
-#include "countpairs_rp_pi.h" //function proto-type for countpairs
+#include "countpairs_wp.h" //function proto-type for countpairs
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
 
+#include "sglib.h"
 
 void Printhelp(void);
 
@@ -32,26 +33,23 @@ int main(int argc, char *argv[])
 {
 
   /*---Arguments-------------------------*/
-  int nrpbin;
 	double rpmin,rpmax;
   DOUBLE pimax ;
-	
-	char *file1=NULL,*file2=NULL;
-	char *fileformat1=NULL,*fileformat2=NULL;
+	char *file=NULL,*fileformat=NULL;
+	double boxsize;
 	
   /*---Data-variables--------------------*/
   int ND1=0,ND2=0;
 
   DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
-  DOUBLE *x2=NULL,*y2=NULL,*z2=NULL;//will point to x1/y1/z1 in case of auto-corr
 
 
   /*---Corrfunc-variables----------------*/
 #ifndef USE_OMP
-	const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax"};
+	const char argnames[][30]={"boxsize","file","format","binfile","pimax"};
 #else
 	int nthreads=2;
-	const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","Nthreads"};
+	const char argnames[][30]={"boxsize","file","format","binfile","pimax","Nthreads"};
 #endif
   int nargs=sizeof(argnames)/(sizeof(char)*30);
   
@@ -77,39 +75,32 @@ int main(int argc, char *argv[])
     }
     return EXIT_FAILURE;
   }
-  
-  file1=argv[1];
-  fileformat1=argv[2];
-  file2=argv[3];
-  fileformat2=argv[4];  
+	boxsize=atof(argv[1]);
+  file=argv[2];
+  fileformat=argv[3];
 
   /***********************
    *initializing the  bins
    ************************/
 	double *rupp;
-	setup_bins(argv[5],&rpmin,&rpmax,&nrpbin,&rupp);
+	int nbin;
+	setup_bins(argv[4],&rpmin,&rpmax,&nbin,&rupp);
 	assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
-	assert(nrpbin > 0 && "Number of rp bins is valid");
+	assert(nbin > 0 && "Number of rp bins is valid");
 	pimax=40.0;
 
 #ifdef DOUBLE_PREC
-	sscanf(argv[6],"%lf",&pimax) ;
+	sscanf(argv[5],"%lf",&pimax) ;
 #else    
-	sscanf(argv[6],"%f",&pimax) ;
+	sscanf(argv[5],"%f",&pimax) ;
 #endif    
 		
 		
 #ifdef USE_OMP
-	nthreads=atoi(argv[7]);
+	nthreads=atoi(argv[6]);
 	assert(nthreads >= 1 && "Number of threads must be at least 1");
 #endif
 	
-	
-  int autocorr=0;
-  if(strcmp(file1,file2)==0) {
-    autocorr=1;
-  }
-  
   fprintf(stderr,"Running `%s' with the parameters \n",argv[0]);
   fprintf(stderr,"\n\t\t -------------------------------------\n");
   for(int i=1;i<argc;i++) {
@@ -122,83 +113,89 @@ int main(int argc, char *argv[])
   fprintf(stderr,"\t\t -------------------------------------\n");
   
   
-  /*---Setup-npibins-------------------------------*/
-  const int npibin = (int)pimax ;
-
   gettimeofday(&t0,NULL);
   /*---Read-data1-file----------------------------------*/
-  ND1=read_positions(file1,fileformat1,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
+  ND1=read_positions(file,fileformat,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
   gettimeofday(&t1,NULL);
   read_time += ADD_DIFF_TIME(t0,t1);
 
-  DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
-  xmax=0.0;xmin=1e10;
-  ymax=0.0;ymin=1e10;
-  zmax=0.0;zmin=1e10;
+	//check that theee positions are within limits
   for(int i=0;i<ND1;i++) {
-    if(x1[i] < xmin) xmin=x1[i];
-    if(y1[i] < ymin) ymin=y1[i];
-    if(z1[i] < zmin) zmin=z1[i];
-
-
-    if(x1[i] > xmax) xmax=x1[i];
-    if(y1[i] > ymax) ymax=y1[i];
-    if(z1[i] > zmax) zmax=z1[i];
+    assert(x1[i] >= 0.0 && x1[i] <= boxsize && "xpos is within limits [0, boxsize]");
+		assert(y1[i] >= 0.0 && y1[i] <= boxsize && "ypos is within limits [0, boxsize]");
+		assert(z1[i] >= 0.0 && z1[i] <= boxsize && "zpos is within limits [0, boxsize]");
   }
-  
-  gettimeofday(&t0,NULL);  
-  if (autocorr==0) {
-    /*---Read-data2-file----------------------------------*/
-		ND2=read_positions(file2,fileformat2,(void **) &x2,(void **) &y2,(void **) &z2,sizeof(DOUBLE));
-    gettimeofday(&t1,NULL);
-    read_time += ADD_DIFF_TIME(t0,t1);
-    
-    for(int i=0;i<ND2;i++) {
-      if(x2[i] < xmin) xmin=x2[i];
-      if(y2[i] < ymin) ymin=y2[i];
-      if(z2[i] < zmin) zmin=z2[i];
-      
-      
-      if(x2[i] > xmax) xmax=x2[i];
-      if(y2[i] > ymax) ymax=y2[i];
-      if(z2[i] > zmax) zmax=z2[i];
-    }
-  } else {
-    //None of these are required. But I prefer to preserve the possibility
-    ND2 = ND1;
-    x2 = x1;
-    y2 = y1;
-    z2 = z1;
-  }
-    
-  fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
-  fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
-  fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
 
-  /*---Count-pairs--------------------------------------*/
-  gettimeofday(&t0,NULL);
-  countpairs_rp_pi(ND1,x1,y1,z1,
-									 ND2,x2,y2,z2,
-									 xmin,xmax,
-									 ymin,ymax,
-									 zmin,zmax,
-									 autocorr,
-									 rpmax,
-#ifdef USE_OMP
-									 nthreads,
-#endif
-									 nrpbin,rupp,
-									 pimax, npibin);
+	//Sort the arrays on z
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x1,i,j); \
+	SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y1,i,j); \
+	SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z1,i,j) }
+
+	SGLIB_ARRAY_QUICK_SORT(DOUBLE, z1, ND1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 	
-
+  /*---Count-pairs--------------------------------------*/
+	uint64_t *npairs = my_calloc(sizeof(*npairs),nbin);
+#ifdef OUTPUT_RPAVG
+	DOUBLE *rpavg = my_calloc(sizeof(*rpavg),nbin);
+#endif	
+	
+  gettimeofday(&t0,NULL);
+	countpairs_wp(ND1, x1, y1, z1,
+								boxsize, pimax,
+#ifdef USE_OMP
+								nthreads,
+#endif
+								npairs,
+#ifdef OUTPUT_RPAVG
+								rpavg,
+#endif
+								rupp, nbin);
+	
 	gettimeofday(&t1,NULL);
   double pair_time = ADD_DIFF_TIME(t0,t1);
-	free(x1);free(y1);free(z1);
-	if(autocorr == 0) {
-		free(x2);free(y2);free(z2);
+
+	//Output the results
+	const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
+  const DOUBLE density=0.5*avgweight2*ND1/(boxsize*boxsize*boxsize);//pairs are not double-counted
+
+	DOUBLE rlow=0.0 ;
+	DOUBLE prefac_density_DD=avgweight1*ND1*density;
+	DOUBLE twice_pimax = 2.0*pimax;
+	DOUBLE xi_full[nbin];
+	
+	for (int kbin=0;kbin<nbin;kbin++)  {      /* loop over radial bins */
+		const DOUBLE weight0 = (DOUBLE) npairs[kbin];
+
+		/* compute xi, dividing summed weight by that expected for a random set */
+		const DOUBLE vol=M_PI*(rupp[kbin]*rupp[kbin]-rlow*rlow)*twice_pimax;
+		const DOUBLE weightrandom = prefac_density_DD*vol;
+		xi_full[kbin] = (weight0/weightrandom-1)*twice_pimax;
+		rlow=rupp[kbin] ;
+	}                                     /* next radial bin */
+
+	/* Note: we discard the first bin, to mimic the fact that close pairs
+	 * are disregarded in SDSS data.
+	 */
+	rlow=rupp[0];
+	for(int i=1;i<nbin;++i) {
+#ifdef OUTPUT_RPAVG
+		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",xi_full[i],rpavg[i],rlow,rupp[i],npairs[i]);
+#else		
+		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",xi_full[i],0.0,rlow,rupp[i],npairs[i]);
+#endif		
+		rlow=rupp[i];
 	}
+	
+
+
+	free(x1);free(y1);free(z1);
 	free(rupp);
- 
+
+	free(npairs);
+#ifdef OUTPUT_RPAVG
+	free(rpavg);
+#endif	
+	
   gettimeofday(&t_end,NULL);
   fprintf(stderr,"xi_rp_pi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds pair-counting time = %6.2lf sec\n",
 	  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);
@@ -209,19 +206,23 @@ int main(int argc, char *argv[])
 void Printhelp(void)
 {
   fprintf(stderr,"=========================================================================\n") ;
-  fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 pimax [Nthreads] > DDfile\n") ;
-  fprintf(stderr,"   --- Measure the cross-correlation function xi(rp,pi) for two different\n") ;
+  fprintf(stderr,"   --- wp boxsize file format binfile pimax [Nthreads] > wpfile\n") ;
+  fprintf(stderr,"   --- Measure the projected auto-correlation function wp(rp) for a single periodic box\n") ;
   fprintf(stderr,"       data files (or autocorrelation if data1=data2).\n") ;
-  fprintf(stderr,"     * data1         = name of first data file\n") ;
-  fprintf(stderr,"     * format1       = format of first data file  (a=ascii, f=fast-food)\n") ;
-  fprintf(stderr,"     * data2         = name of second data file\n") ;
-  fprintf(stderr,"     * format2       = format of second data file (a=ascii, f=fast-food)\n") ;
+	fprintf(stderr,"     * boxsize      = BoxSize (in same units as X/Y/Z of the data)\n") ;
+  fprintf(stderr,"     * file         = name of first data file\n") ;
+  fprintf(stderr,"     * format       = format of first data file  (a=ascii, f=fast-food)\n") ;
   fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
   fprintf(stderr,"     * pimax         = maximum line-of-sight-separation\n") ;
 #ifdef USE_OMP
 	fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif
-  fprintf(stderr,"     > DDfile        = name of output file. Contains <npairs rpavg logrp pi>\n") ;
+
+#ifdef OUTPUT_RPAVG	
+  fprintf(stderr,"     > wpfile        = name of output file. Contains <wp  rpavg  rmin rmax npairs>\n") ;
+#else
+	fprintf(stderr,"     > wpfile        = name of output file. Contains <wp [rpavg=0.0] rmin rmax npairs>\n") ;
+#endif	
   fprintf(stderr,"=========================================================================\n") ;
 }
 
