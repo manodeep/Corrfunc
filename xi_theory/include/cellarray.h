@@ -7,6 +7,9 @@
 
 #define NLATMAX   100      /* maximum grid dimension in X-Y plane */
 
+
+//pointer alignment is 8 bytes. So the 4 bytes will be padded and wasted anyway ->
+//changing nelements to a int64_t is fine 
 typedef struct{
   DOUBLE *x;
   DOUBLE *y;
