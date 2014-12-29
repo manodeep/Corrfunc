@@ -5,7 +5,7 @@ syntax:glob
 bin/*
 logbins
 DD
-libcountpairs.so
+*.so
 wprp
 DDrppi
 a.out

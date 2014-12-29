@@ -21,7 +21,7 @@
 
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
-#include "countpairs.h" //function proto-type for countpairs
+#include "countpairs_rp_pi.h" //function proto-type for countpairs
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
 
@@ -177,18 +177,18 @@ int main(int argc, char *argv[])
 
   /*---Count-pairs--------------------------------------*/
   gettimeofday(&t0,NULL);
-  countpairs(ND1,x1,y1,z1,
-						 ND2,x2,y2,z2,
-						 xmin,xmax,
-						 ymin,ymax,
-						 zmin,zmax,
-						 autocorr,
-						 rpmax,
+  countpairs_rp_pi(ND1,x1,y1,z1,
+									 ND2,x2,y2,z2,
+									 xmin,xmax,
+									 ymin,ymax,
+									 zmin,zmax,
+									 autocorr,
+									 rpmax,
 #ifdef USE_OMP
-						 nthreads,
+									 nthreads,
 #endif
-						 nrpbin,rupp,
-						 pimax, npibin);
+									 nrpbin,rupp,
+									 pimax, npibin);
 	
 
 	gettimeofday(&t1,NULL);

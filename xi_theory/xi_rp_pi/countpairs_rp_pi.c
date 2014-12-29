@@ -2,8 +2,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "countpairs_rp_pi.h" //function proto-type
 #include "gridlink.h"//function proto-type for gridlink
-#include "countpairs.h" //function proto-type
 #include "cellarray.h" //definition of struct cellarray
 #include "utils.h" //all of the utilities
 
@@ -18,20 +18,20 @@
 
 
 
-void countpairs(const int ND1,
-								const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
-								const int ND2,
-								const DOUBLE *X2,  const DOUBLE *Y2, const DOUBLE *Z2,
-								const DOUBLE xmin, const DOUBLE xmax,
-								const DOUBLE ymin, const DOUBLE ymax,
-								const DOUBLE zmin, const DOUBLE zmax,
-								const int autocorr,
-								const double rpmax,
+void countpairs_rp_pi(const int ND1,
+											const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
+											const int ND2,
+											const DOUBLE *X2,  const DOUBLE *Y2, const DOUBLE *Z2,
+											const DOUBLE xmin, const DOUBLE xmax,
+											const DOUBLE ymin, const DOUBLE ymax,
+											const DOUBLE zmin, const DOUBLE zmax,
+											const int autocorr,
+											const double rpmax,
 #ifdef USE_OMP
-								const int numthreads,
+											const int numthreads,
 #endif
-								const int nrpbin,const double * restrict rupp,
-								const double pimax, const int npibin)
+											const int nrpbin,const double * restrict rupp,
+											const double pimax, const int npibin)
 {
 
   int bin_refine_factor=1;
@@ -46,8 +46,8 @@ void countpairs(const int ND1,
 #ifdef USE_OMP
 	if(numthreads > 1) {
 		if(autocorr==1) {
-			bin_refine_factor=1;
-			zbin_refine_factor=1;
+			bin_refine_factor=2;
+			zbin_refine_factor=2;
 		} else {
 			bin_refine_factor=1;
 			zbin_refine_factor=1;
@@ -59,11 +59,11 @@ void countpairs(const int ND1,
 	/*---Create 3-D lattice--------------------------------------*/
 	int nmesh_x=0,nmesh_y=0,nmesh_z=0;
 
-	cellarray *lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+	cellarray *lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
 	cellarray *lattice2 = NULL;
 	if(autocorr==0) {
 		int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-		lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
+		lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
 		assert(nmesh_x == ngrid2_x && "Both lattices have the same number of X bins");
 		assert(nmesh_y == ngrid2_y && "Both lattices have the same number of Y bins");
 		assert(nmesh_z == ngrid2_z && "Both lattices have the same number of Z bins");
@@ -92,15 +92,21 @@ void countpairs(const int ND1,
 	
 #ifndef USE_OMP
 	unsigned int npairs[totnbins];
+#ifdef OUTPUT_RPAVG
 	DOUBLE rpavg[totnbins];
+#endif	
 	for(int ibin=0;ibin<totnbins;ibin++) {
 		npairs[ibin]=0;
+#ifdef OUTPUT_RPAVG		
 		rpavg[ibin] = 0.0;
+#endif		
 	}
 #else
 	omp_set_num_threads(numthreads);
 	unsigned int **all_npairs = (unsigned int **) matrix_calloc(sizeof(unsigned int), numthreads, totnbins);
+#ifdef OUTPUT_RPAVG
 	DOUBLE **all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
+#endif	
 #endif
 
 	
@@ -120,11 +126,11 @@ void countpairs(const int ND1,
 	{
 		const int tid = omp_get_thread_num();
 		unsigned int npairs[totnbins];
+		for(int i=0;i<totnbins;i++) npairs[i] = 0;
+#ifdef OUTPUT_RPAVG		
 		DOUBLE rpavg[totnbins];
-		for(int i=0;i<totnbins;i++) {
-			npairs[i] = 0;
-			rpavg[i] = 0.0;
-		}
+		for(int i=0;i<totnbins;i++) rpavg[i] = 0.0;
+#endif			
 
 #pragma omp for  schedule(dynamic)
 #endif
@@ -219,15 +225,19 @@ void countpairs(const int ND1,
 								if(r2 >= sqr_rpmax || r2 < sqr_rpmin || dz >= pimax) {
 									continue;
 								}
-								
+
+#ifdef OUTPUT_RPAVG								
 								const DOUBLE r = SQRT(r2);
+#endif								
 								int pibin = (int) (dz*inv_dpi);
 								pibin = pibin > npibin ? npibin:pibin;
-								for(int kbin=nrpbin-1;kbin>=0;kbin--) {
-									if(r2 >= rupp_sqr[kbin]) {
+								for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+									if(r2 >= rupp_sqr[kbin-1]) {
 										const int ibin = kbin*(npibin+1) + pibin;
 										npairs[ibin]++;
+#ifdef OUTPUT_RPAVG										
 										rpavg[ibin]+=r;
+#endif										
 										break;
 									}
 								}
@@ -240,12 +250,14 @@ void countpairs(const int ND1,
 							};
 							union int8 union_rpbin;
 							union int8 union_pibin;
-							
+
+#ifdef OUTPUT_RPAVG							
 							union float8{
 								AVX_FLOATS m_Dperp;
 								DOUBLE Dperp[NVEC];
 							};
 							union float8 union_mDperp;
+#endif							
 							
 							const AVX_FLOATS m_x1pos = AVX_SET_FLOAT(x1pos);
 							const AVX_FLOATS m_y1pos = AVX_SET_FLOAT(y1pos);
@@ -289,18 +301,20 @@ void countpairs(const int ND1,
 									
 									//So there's at least one point that is in range - let's find the bin
 									m_zdiff = AVX_BLEND_FLOATS_WITH_MASK(m_pimax, m_zdiff, m_mask);
+#ifdef OUTPUT_RPAVG
 									union_mDperp.m_Dperp = AVX_SQRT_FLOAT(m_dist);
+#endif									
 									union_pibin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(AVX_MULTIPLY_FLOATS(m_zdiff,m_inv_dpi));
 								}
 								
 								{
 									AVX_FLOATS m_rpbin     = AVX_SET_FLOAT((DOUBLE) nrpbin);
 									AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
-									for(int kbin=nrpbin-1;kbin>=0;kbin--) {
-										AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin],_CMP_GE_OS);
+									for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+										AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
 										AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
 										m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
-										//m_mask_left = AVX_COMPARE_FLOATS(m_dist, m_rupp_sqr[kbin],_CMP_LT_OS);
+										//m_mask_left = AVX_COMPARE_FLOATS(m_dist, m_rupp_sqr[kbin-1],_CMP_LT_OS);
 										m_mask_left = AVX_XOR_FLOATS(m_mask_low, m_all_ones);//XOR with 0xFFFF... gives the bins that are smaller than m_rupp_sqr[kbin] (and is faster than cmp_p(s/d) in theory)
 										int test = AVX_TEST_COMPARISON(m_mask_left);
 										if(test==0)
@@ -318,7 +332,9 @@ void countpairs(const int ND1,
 									int pibin = union_pibin.ibin[jj];
 									int ibin = rpbin*(npibin+1) + pibin;
 									npairs[ibin]++;
+#ifdef OUTPUT_RPAVG
 									rpavg [ibin] += union_mDperp.Dperp[jj];
+#endif									
 								}
 							}
 
@@ -332,15 +348,18 @@ void countpairs(const int ND1,
 								if(r2 >= sqr_rpmax || r2 < sqr_rpmin || dz >= pimax) {
 									continue;
 								}
-								
+#ifdef OUTPUT_RPAVG								
 								const DOUBLE r = SQRT(r2);
+#endif								
 								int pibin = (int) (dz*inv_dpi);
 								pibin = pibin > npibin ? npibin:pibin;
-								for(int kbin=nrpbin-1;kbin>=0;kbin--) {
-									if(r2 >= rupp_sqr[kbin]) {
+								for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+									if(r2 >= rupp_sqr[kbin-1]) {
 										int ibin = kbin*(npibin+1) + pibin;
 										npairs[ibin]++;
+#ifdef OUTPUT_RPAVG
 										rpavg [ibin] += r;
+#endif										
 										break;
 									}
 								}
@@ -356,43 +375,52 @@ void countpairs(const int ND1,
 #ifdef USE_OMP
 		for(int i=0;i<totnbins;i++) {
 			all_npairs[tid][i] = npairs[i];
+#ifdef OUTPUT_RPAVG			
 			all_rpavg[tid][i] = rpavg[i];
+#endif
 		}
 	}//close the omp parallel region
 #endif
 	
 #ifdef USE_OMP
 	unsigned int npairs[totnbins];
+#ifdef OUTPUT_RPAVG	
 	DOUBLE rpavg[totnbins];
+#endif	
 	for(int i=0;i<totnbins;i++) {
 		npairs[i] = 0;
+#ifdef OUTPUT_RPAVG		
 		rpavg[i] = 0.0;
+#endif		
 	}
 
 	for(int i=0;i<numthreads;i++) {
 		for(int j=0;j<totnbins;j++) {
 			npairs[j] += all_npairs[i][j];
+#ifdef OUTPUT_RPAVG
 			rpavg[j] += all_rpavg[i][j];
+#endif			
 		}
 	}
 #endif
-	
+
+#ifdef OUTPUT_RPAVG	
 	for(int i=0;i<totnbins;i++){
 		if(npairs[i] > 0) {
 			rpavg[i] /= ((DOUBLE) npairs[i] );
 		}
 	}
-
-	const double rpmin    = SQRT(sqr_rpmin);
-	const double logrpmin = LOG10(rpmin) ;
-	const double logrpmax = LOG10(rpmax) ;
-	const double dlogrp = (logrpmax-logrpmin)/(DOUBLE)nrpbin ;
+#endif
 	
-  for(int i=0;i<nrpbin;i++) {
-		const double logrp = logrpmin + (DOUBLE)(i+1)*dlogrp;
+  for(int i=1;i<nrpbin;i++) {
+		const double logrp = LOG10(rupp[i]);
     for(int j=0;j<npibin;j++) {
       int index = i*(npibin+1) + j;
+#ifdef OUTPUT_RPAVG			
       fprintf(stdout,"%10u %20.8lf %20.8lf  %20.8lf \n",npairs[index],rpavg[index],logrp,(j+1)*dpi);
+#else			
+			fprintf(stdout,"%10u %20.8lf %20.8lf  %20.8lf \n",npairs[index],0.0,logrp,(j+1)*dpi);
+#endif			
     }
   }
 
@@ -413,7 +441,9 @@ void countpairs(const int ND1,
 	}
 #ifdef USE_OMP
 	matrix_free((void **) all_npairs, numthreads);
+#ifdef OUTPUT_RPAVG	
 	matrix_free((void **) all_rpavg, numthreads);
+#endif	
 #endif
 	
 
