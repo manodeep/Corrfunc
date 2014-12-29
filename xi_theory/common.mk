@@ -5,7 +5,7 @@ OPT += -DPERIODIC
 #### Code specs
 #OPT += -DDOUBLE_PREC
 OPT += -DUSE_AVX
-#OPT += -DUSE_OMP
+OPT += -DUSE_OMP
 
 INCLUDE=-I ../io -I ../utils -I ../include 
 
