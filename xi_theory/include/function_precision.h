@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef M_PI
+#define M_PI           3.14159265358979323846  /* pi */
+#endif
+
 #define PI_OVER_180       0.01745329251
 #define INV_PI_OVER_180   57.2957795131
 
