@@ -1,7 +1,7 @@
 include common.mk
 
-target=logbins DD DDrppi 
-all: $(target) 
+target=logbins
+all: $(target)  DD DDrppi  
 
 OBJS1= logbins.o utils/utils.o 
 
@@ -9,7 +9,7 @@ logbins: $(OBJS1) Makefile
 	$(CC) $(CFLAGS) -o $@ $(OBJS1)  $(CLINK)
 
 
-.PHONY: clean clena celan DD DDrppi
+.PHONY: clean clena celan DD DDrppi lib install
 
 DD:
 	$(MAKE) -C xi_of_r
@@ -40,4 +40,4 @@ install:
 
 lib:
 	$(MAKE) -C xi_of_r lib
-	$(MAKE) -C xi_rp_pi install
+	$(MAKE) -C xi_rp_pi lib
