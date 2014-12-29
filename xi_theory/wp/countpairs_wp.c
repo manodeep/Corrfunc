@@ -94,14 +94,20 @@ void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * res
   uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nbin);
 #ifdef OUTPUT_RPAVG
 	DOUBLE **all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), numthreads, nbin);
-#endif
+#endif//OUTPUT_RPAVG
 
-#else
+#else//USE_OMP
   uint64_t local_npair[nbin];
   for(int i=0;i<nbin;i++) {
 		local_npair[i]=0;
   }
-#endif
+#ifdef OUTPUT_RPAVG
+	DOUBLE local_rpavg[nbin];
+  for(int i=0;i<nbin;i++) {
+		local_rpavg[i]=0;
+  }
+#endif//OUTPUT_RPAVG
+#endif// USE_OMP
 
   const DOUBLE side=boxsize;
 #ifdef USE_OMP
