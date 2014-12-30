@@ -194,16 +194,16 @@ void countpairs_rp_pi(const int ND1,
 #endif
 						
 						assert(iiix >= 0 && iiix < nmesh_x && iiiy >= 0 && iiiy < nmesh_y && iiiz >= 0 && iiiz < nmesh_z && "Checking that the second pointer is in range");
-						int64_t index2 = iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
-						cellarray *second = &(lattice2[index2]);
+						const int64_t index2 = iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
+						const cellarray *second = &(lattice2[index2]);
 						
-						DOUBLE *x1 = first->x;
-						DOUBLE *y1 = first->y;
-						DOUBLE *z1 = first->z;
+						const DOUBLE *x1 = first->x;
+						const DOUBLE *y1 = first->y;
+						const DOUBLE *z1 = first->z;
 						
-						DOUBLE *x2 = second->x;
-						DOUBLE *y2 = second->y;
-						DOUBLE *z2 = second->z;
+						const DOUBLE *x2 = second->x;
+						const DOUBLE *y2 = second->y;
+						const DOUBLE *z2 = second->z;
 						
 						for(int i=0;i<first->nelements;i++){
 							DOUBLE x1pos = x1[i];
@@ -265,17 +265,17 @@ void countpairs_rp_pi(const int ND1,
 
 							int j;
 							for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
-								AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
-								AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
-								AVX_FLOATS z2pos = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
-								AVX_FLOATS m_sqr_rpmax = AVX_SET_FLOAT(sqr_rpmax);
-								AVX_FLOATS m_sqr_rpmin = AVX_SET_FLOAT(sqr_rpmin);
-								AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
-								AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
-								AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
+								const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
+								const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
+								const AVX_FLOATS z2pos = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
+								const AVX_FLOATS m_sqr_rpmax = AVX_SET_FLOAT(sqr_rpmax);
+								const AVX_FLOATS m_sqr_rpmin = AVX_SET_FLOAT(sqr_rpmin);
+								const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
+								const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
+								const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
 								
-								AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1pos,x2pos);
-								AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1pos,y2pos);
+								const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1pos,x2pos);
+								const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1pos,y2pos);
 								AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1pos,z2pos);
 								m_zdiff = AVX_MAX_FLOATS(m_zdiff,AVX_SUBTRACT_FLOATS(m_zero,m_zdiff));//dz = fabs(dz) => dz = max(dz, -dz);
 								
@@ -284,16 +284,16 @@ void countpairs_rp_pi(const int ND1,
 								
 								//Do all the distance cuts using masks here in new scope
 								{
-									AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
-									int test = AVX_TEST_COMPARISON(m_mask_pimax);
+									const AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
+									const int test = AVX_TEST_COMPARISON(m_mask_pimax);
 									if(test == 0) {
 										continue;
 									}
-									AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_sqr_rpmin,_CMP_GE_OS);
+									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_sqr_rpmin,_CMP_GE_OS);
 									m_dist = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax,m_dist,m_mask_pimax);
 									
 									m_mask_left = AVX_COMPARE_FLOATS(m_dist,m_sqr_rpmax,_CMP_LT_OS);//will get utilized in the next section
-									AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
+									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
 									int test1 = AVX_TEST_COMPARISON(m_mask);
 									if(test1 == 0) {
 										continue;
@@ -311,12 +311,12 @@ void countpairs_rp_pi(const int ND1,
 									AVX_FLOATS m_rpbin     = AVX_SET_FLOAT((DOUBLE) nrpbin);
 									AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
 									for(int kbin=nrpbin-1;kbin>=1;kbin--) {
-										AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-										AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
+										const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+										const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
 										m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
 										//m_mask_left = AVX_COMPARE_FLOATS(m_dist, m_rupp_sqr[kbin-1],_CMP_LT_OS);
 										m_mask_left = AVX_XOR_FLOATS(m_mask_low, m_all_ones);//XOR with 0xFFFF... gives the bins that are smaller than m_rupp_sqr[kbin] (and is faster than cmp_p(s/d) in theory)
-										int test = AVX_TEST_COMPARISON(m_mask_left);
+										const int test = AVX_TEST_COMPARISON(m_mask_left);
 										if(test==0)
 											break;
 									}

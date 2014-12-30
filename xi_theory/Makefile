@@ -9,7 +9,7 @@ logbins: $(OBJS1) Makefile
 	$(CC) $(CFLAGS) -o $@ $(OBJS1)  $(CLINK)
 
 
-.PHONY: clean clena celan DD DDrppi lib install wp
+.PHONY: clean clena celan DD DDrppi lib install wp tests realclean
 
 DD:
 	$(MAKE) -C xi_of_r
@@ -19,6 +19,11 @@ DDrppi:
 
 wp:
 	$(MAKE) -C wp
+
+realclean:
+	$(MAKE) clean
+	rm -f bin/*
+	rm -f lib/*
 
 clean:
 	rm -f $(target) $(OBJS1) 
@@ -48,3 +53,8 @@ lib:
 	$(MAKE) -C xi_of_r lib
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
+
+tests:
+	$(MAKE) -C xi_of_r tests
+	# $(MAKE) -C xi_rp_pi tests
+	# $(MAKE) -C wp tests
