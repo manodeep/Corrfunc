@@ -27,7 +27,7 @@ lib: $(OBJS3)
 	$(CC) $(LDFLAGS) $(OBJS3) -shared -Wl,-soname,libcountpairs_rp_pi.so.$(MAJOR) -o libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) 
 	ldconfig -n ./ 
 	ln -s libcountpairs_rp_pi.so.$(MAJOR) libcountpairs_rp_pi.so
-	mv libcountpairs_rp_pi* ../lib
+	cp -p libcountpairs_rp_pi* ../lib
 	cp -p countpairs_rp_pi.h ../include 
 
 .PHONY: clean clena celan 
