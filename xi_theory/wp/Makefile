@@ -16,7 +16,8 @@ $(target): $(OBJS1) $(INCL) ../common.mk Makefile
 	$(CC) $(CFLAGS) $(OPT) $(INCLUDE) -c $< -o $@
 
 OBJS2=countpairs_wp.o ../utils/gridlink.o ../utils/utils.o 
-lib: $(OBJS2) 
+lib: $(OBJS2)
+	mkdir -p ../lib
 	$(CC) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs_wp.so.$(MAJOR) -o libcountpairs_wp.so.$(MAJOR).0.$(MINOR) 
 	ldconfig -n ./ 
 	ln -s libcountpairs_wp.so.$(MAJOR) libcountpairs_wp.so
@@ -34,6 +35,7 @@ celan:
 	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.so
 
 install:
+	mkdir -p ../bin
 	cp -p $(target) ../bin/
 
 
