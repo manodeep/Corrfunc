@@ -1,20 +1,28 @@
 include ../common.mk
 
 target=wp
-all: $(target) 
+SRC1= wp.c countpairs_wp.c ../utils/utils.c ../utils/gridlink.c ../io/io.c ../io/ftread.c 
+OBJS1  = $(SRC1:.c=.o)
+INCL   = countpairs_wp.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gridlink.h \
+					../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
+					../include/defs.h ../include/sglib.h 
 
-OBJS1= wp.o countpairs_wp.o ../utils/utils.o ../utils/gridlink.o ../io/io.o ../io/ftread.o 
+all: $(target) $(SRC1) $(INCL)
 
-wp: $(OBJS1) Makefile
-	$(CC) $(CFLAGS) -o $@ $(OBJS1) $(CLINK)
+$(target): $(OBJS1) $(INCL) ../common.mk Makefile 
+	$(CC) $(CFLAGS) $(OPT) $(CLINK) $(OBJS1) -o $@
 
+.c.o: $(INCL) ../common.mk Makefile
+	$(CC) $(CFLAGS) $(OPT) $(INCLUDE) -c $< -o $@
 
 OBJS2=countpairs_wp.o ../utils/gridlink.o ../utils/utils.o 
-lib:
-	 $(CC) $(CFLAGS) $(LDFLAGS) $(OBJS2) -shared -o libcountpairs_wp.so 
+lib: $(OBJS2) 
+	$(CC) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs_wp.so.$(MAJOR) -o libcountpairs_wp.so.$(MAJOR).0.$(MINOR) 
+	ldconfig -n ./ 
+	ln -s libcountpairs_wp.so.$(MAJOR) libcountpairs_wp.so
+	mv libcountpairs_wp* ../lib
 
-
-.PHONY: clean clena celan
+.PHONY: clean clena celan install lib
 
 clean:
 	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.so 
@@ -27,5 +35,5 @@ celan:
 
 install:
 	cp -p $(target) ../bin/
-	cp -p libcountpairs_wp.so ../lib/
+
 

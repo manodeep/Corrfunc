@@ -192,8 +192,8 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 						}
 #endif	  
 						assert(iiix >= 0 && iiix < nmesh_x && iiiy >= 0 && iiiy < nmesh_y && iiiz >= 0 && iiiz < nmesh_z && "Checking that the second pointer is in range");
-						int64_t index2 = iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
-						cellarray * second = &(lattice2[index2]);
+						const int64_t index2 = iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
+						const cellarray * second = &(lattice2[index2]);
 						const DOUBLE *x1 = first->x;
 						const DOUBLE *y1 = first->y;
 						const DOUBLE *z1 = first->z;
@@ -218,15 +218,15 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 								if(block_size > BLOCK_SIZE) block_size=BLOCK_SIZE;
 						
 								for(int jj=0;jj<block_size;jj++) {
-									DOUBLE dx = x1pos - x2[j+jj];
-									DOUBLE dy = y1pos - y2[j+jj];
-									DOUBLE dz = z1pos - z2[j+jj];
-									DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
+									const DOUBLE dx = x1pos - x2[j+jj];
+									const DOUBLE dy = y1pos - y2[j+jj];
+									const DOUBLE dz = z1pos - z2[j+jj];
+									const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
 									if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
 										continue;
 									}
 #ifdef OUTPUT_RPAVG
-									DOUBLE r = SQRT(r2);
+									const DOUBLE r = SQRT(r2);
 #endif					
 									for(int kbin=nrpbin-1;kbin>=1;kbin--){
 										if(r2 >= rupp_sqr[kbin-1]) {
@@ -256,9 +256,9 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 							union float8 union_mDperp;
 #endif				
 					  
-							AVX_FLOATS m_x1pos = AVX_SET_FLOAT(x1pos);
-							AVX_FLOATS m_y1pos = AVX_SET_FLOAT(y1pos);
-							AVX_FLOATS m_z1pos = AVX_SET_FLOAT(z1pos);
+							const AVX_FLOATS m_x1pos = AVX_SET_FLOAT(x1pos);
+							const AVX_FLOATS m_y1pos = AVX_SET_FLOAT(y1pos);
+							const AVX_FLOATS m_z1pos = AVX_SET_FLOAT(z1pos);
 					  
 							int j;
 							for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
@@ -285,7 +285,7 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 										continue;
 									}
 						  
-									AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS));
+									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS));
 									if(AVX_TEST_COMPARISON(m_mask) == 0) {
 										continue;
 									}
@@ -302,16 +302,16 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 						  
 									/* AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));//-1 is 0xFFFF... and the cast just reinterprets (i.e., the cast is a no-op) */
 									for(int kbin=nrpbin-1;kbin>=1;kbin--) {
-										AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-										AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+										const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+										const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
 										m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
 										/* m_mask_left = AVX_XOR_FLOATS(m1, m_all_ones);//XOR with 0xFFFF... gives the bins that are smaller than m_rupp_sqr[kbin] (and is faster than cmp_p(s/d) in theory) */
-										int test2  = AVX_TEST_COMPARISON(m_bin_mask);
+										const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
 										npairs[kbin] += AVX_BIT_COUNT_INT(test2);
 #ifdef OUTPUT_RPAVG
 										m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
 #endif					  
-										int test3 = AVX_TEST_COMPARISON(m_mask_left);
+										const int test3 = AVX_TEST_COMPARISON(m_mask_left);
 										if(test3 == 0)
 											break;
 									}
@@ -329,8 +329,8 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 #pragma unroll(NVEC)
 #endif
 								for(int jj=0;jj<NVEC;jj++) {
-									int kbin = union_rpbin.ibin[jj];
-									DOUBLE r = union_mDperp.Dperp[jj];
+									const int kbin = union_rpbin.ibin[jj];
+									const DOUBLE r = union_mDperp.Dperp[jj];
 									rpavg[kbin] += r;
 								}
 #endif//OUTPUT_RPAVG				  
@@ -338,16 +338,16 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 		  
 							//Now take care of the remainder
 							for(;j<second->nelements;j++) {
-								DOUBLE dx = x1pos - x2[j];
-								DOUBLE dy = y1pos - y2[j];
-								DOUBLE dz = z1pos - z2[j];
+								const DOUBLE dx = x1pos - x2[j];
+								const DOUBLE dy = y1pos - y2[j];
+								const DOUBLE dz = z1pos - z2[j];
 						
-								DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
+								const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
 								if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
 									continue;
 								}
 #ifdef OUTPUT_RPAVG
-								DOUBLE r = SQRT(r2);
+								const DOUBLE r = SQRT(r2);
 #endif				  
 								for(int kbin=nrpbin-1;kbin>=1;kbin--){
 									if(r2 >= rupp_sqr[kbin-1]) {
