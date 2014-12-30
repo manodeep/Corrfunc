@@ -1,7 +1,7 @@
 include common.mk
 
 target=logbins
-all: $(target)  DD DDrppi wp 
+all: $(target)  DD DDrppi wp lib examples
 
 OBJS1= logbins.o utils/utils.o 
 
