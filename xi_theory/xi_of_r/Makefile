@@ -22,7 +22,7 @@ lib: $(OBJS2)
 	$(CC) $(CLINK) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs.so.$(MAJOR) -o libcountpairs.so.$(MAJOR).0.$(MINOR) 
 	ldconfig -n ./ 
 	ln -s libcountpairs.so.$(MAJOR) libcountpairs.so
-	mv libcountpairs* ../lib
+	cp -p libcountpairs* ../lib
 	cp -p countpairs.h ../include
 
 .PHONY: clean clena celan install lib tests 

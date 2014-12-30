@@ -21,7 +21,7 @@ lib: $(OBJS2)
 	$(CC) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs_wp.so.$(MAJOR) -o libcountpairs_wp.so.$(MAJOR).0.$(MINOR) 
 	ldconfig -n ./ 
 	ln -s libcountpairs_wp.so.$(MAJOR) libcountpairs_wp.so
-	mv libcountpairs_wp* ../lib
+	cp -p libcountpairs_wp* ../lib
 	cp -p countpairs_wp.h ../include 
 
 .PHONY: clean clena celan install lib
