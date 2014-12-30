@@ -6,7 +6,9 @@
 
 Steps:
 
-1. Edit the common.mk file in this directory to select the appropriate use-case.
+1. cd into xi_theory directory 
+
+2. Edit the common.mk file to select the appropriate use-case.
 
 Science options are:
 		a) PERIODIC -- disable to stop PERIODIC boundaries. Enabled by default, wp subdir will ignore this flag and *always* use PERIODIC boundary conditions.
@@ -18,13 +20,13 @@ Code options are:
 		 c) USE_OMP -- disable to use single threaded code rather than OpenMP parallel code. Runtime will (obviously) increase in single-thread mode.
 
 
-2. Set the compiler in common.mk -- icc/gcc/clang are supported in serial mode. Only gcc and icc are supported with OpenMP parallelization. 
+3. Set the compiler in common.mk -- icc/gcc/clang are supported in serial mode. Only gcc and icc are supported with OpenMP parallelization. 
 
-3. Type make to create all the executables
+4. Type make to create all the executables
 
-4. Type make install to copy the executables into the bin subdirectory
+5. Type make install to copy the executables into the bin subdirectory
 
-5. Type make lib to create libraries for each type of clustering measure. Right now, you will have manually recompile (i.e., make clean && make && make lib ) if you
+6. Type make lib to create libraries for each type of clustering measure. Right now, you will have manually recompile (i.e., make clean && make && make lib ) if you
 want a different setup for the correlation function measure. So, if you want to change PERIODIC boundary conditions, let's say, you will have to change the
 corresponding option in common.mk, make clean, make and finally make lib to access the libraries with the new functionality.
 
