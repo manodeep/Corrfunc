@@ -14,9 +14,6 @@ void Printhelp(void);
 int main(int argc, char *argv[])
 {
 
-  /*---Arguments-------------------------*/
-  int nrpbin ;
-  double rpmin,rpmax;
   /*---Data-variables--------------------*/
   int ND1,ND2 ;
 
@@ -25,6 +22,7 @@ int main(int argc, char *argv[])
 
   char *file1=NULL,*file2=NULL;
   char *fileformat1=NULL,*fileformat2=NULL;
+	char *binfile=NULL;
 
 
   /*---Corrfunc-variables----------------*/
@@ -69,15 +67,8 @@ int main(int argc, char *argv[])
   fileformat1=argv[2];
   file2=argv[3];
   fileformat2=argv[4];
-
-  /***********************
-   *initializing the  bins
-   ************************/
-  double *rupp;
-  setup_bins(argv[5],&rpmin,&rpmax,&nrpbin,&rupp);
-  assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
-  assert(nrpbin > 0 && "Number of rp bins is valid");
-  
+	binfile=argv[5];
+	
 #ifdef USE_OMP
   nthreads=atoi(argv[6]);
   assert(nthreads >= 1 && "Number of threads must be at least 1");
@@ -96,52 +87,24 @@ int main(int argc, char *argv[])
   fprintf(stderr,"\t\t -------------------------------------\n");
   
   
-  DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
-  gettimeofday(&t0,NULL);
 
   /*---Read-data1-file----------------------------------*/
+  gettimeofday(&t0,NULL);
   ND1=read_positions(file1,fileformat1,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
   gettimeofday(&t1,NULL);
   read_time += ADD_DIFF_TIME(t0,t1);
 
-  xmax=0.0;xmin=1e10;
-  ymax=0.0;ymin=1e10;
-  zmax=0.0;zmin=1e10;
-  for(int i=0;i<ND1;i++) {
-    if(x1[i] < xmin) xmin=x1[i];
-    if(y1[i] < ymin) ymin=y1[i];
-    if(z1[i] < zmin) zmin=z1[i];
-
-
-    if(x1[i] > xmax) xmax=x1[i];
-    if(y1[i] > ymax) ymax=y1[i];
-    if(z1[i] > zmax) zmax=z1[i];
-  }
-	fprintf(stderr,"ND1 = %8d [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
   int autocorr=0;
   if( strcmp(file1,file2)==0) {
     autocorr=1;
   }
   
   gettimeofday(&t0,NULL);  
-
   if (autocorr==0) {
     /*---Read-data2-file----------------------------------*/
 		ND2=read_positions(file2,fileformat2,(void **) &x2,(void **) &y2,(void **) &z2,sizeof(DOUBLE));
     gettimeofday(&t1,NULL);
     read_time += ADD_DIFF_TIME(t0,t1);
-
-    for(int i=0;i<ND2;i++) {
-      if(x2[i] < xmin) xmin=x2[i];
-      if(y2[i] < ymin) ymin=y2[i];
-      if(z2[i] < zmin) zmin=z2[i];
-      
-
-      if(x2[i] > xmax) xmax=x2[i];
-      if(y2[i] > ymax) ymax=y2[i];
-      if(z2[i] > zmax) zmax=z2[i];
-    }
-		fprintf(stderr,"ND2 = %8d [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);    
   } else {
     ND2 = ND1;
     x2 = x1;
@@ -149,32 +112,39 @@ int main(int argc, char *argv[])
     z2 = z1;
   }
   
-  fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
-  fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
-  fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
-    
-
   /*---Count-pairs--------------------------------------*/
   gettimeofday(&t0,NULL);
-  countpairs(ND1,x1,y1,z1,
-			 ND2,x2,y2,z2,
-			 xmin,xmax,
-			 ymin,ymax,
-			 zmin,zmax,
-			 autocorr,
-			 rpmax,
+  results_countpairs *results = countpairs(ND1,x1,y1,z1,
+																									ND2,x2,y2,z2,
 #ifdef USE_OMP
-			 nthreads,
+																									nthreads,
 #endif
-			 nrpbin,rupp); 
+																									autocorr,
+																									binfile);
+
   gettimeofday(&t1,NULL);
   double pair_time = ADD_DIFF_TIME(t0,t1);
   free(x1);free(y1);free(z1);
   if(autocorr == 0) {
 	  free(x2);free(y2);free(z2);
   }
-  free(rupp);
-  
+
+	double rlow=results->rupp[0];
+  for(int i=1;i<results->nbin;i++) {
+#ifdef OUTPUT_RPAVG	  
+    fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]);
+#else
+		fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],0.0,    rlow,results->rupp[i]);
+#endif	
+    rlow=results->rupp[i];
+  }
+
+	free(results->rupp);
+	free(results->npairs);
+#ifdef OUTPUT_RPAVG
+	free(results->rpavg);
+#endif
+	free(results);
   gettimeofday(&t_end,NULL);
   fprintf(stderr,"xi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds sec pair-counting time = %6.2lf sec\n",
 		  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);

@@ -32,12 +32,11 @@ int main(int argc, char *argv[])
 {
 
   /*---Arguments-------------------------*/
-  int nrpbin;
-	double rpmin,rpmax;
-  DOUBLE pimax ;
-	
 	char *file1=NULL,*file2=NULL;
 	char *fileformat1=NULL,*fileformat2=NULL;
+	char *binfile=NULL;
+  DOUBLE pimax ;
+	
 	
   /*---Data-variables--------------------*/
   int ND1=0,ND2=0;
@@ -82,16 +81,9 @@ int main(int argc, char *argv[])
   fileformat1=argv[2];
   file2=argv[3];
   fileformat2=argv[4];  
+	binfile=argv[5];
 
-  /***********************
-   *initializing the  bins
-   ************************/
-	double *rupp;
-	setup_bins(argv[5],&rpmin,&rpmax,&nrpbin,&rupp);
-	assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
-	assert(nrpbin > 0 && "Number of rp bins is valid");
 	pimax=40.0;
-
 #ifdef DOUBLE_PREC
 	sscanf(argv[6],"%lf",&pimax) ;
 #else    
@@ -130,39 +122,14 @@ int main(int argc, char *argv[])
   ND1=read_positions(file1,fileformat1,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
   gettimeofday(&t1,NULL);
   read_time += ADD_DIFF_TIME(t0,t1);
-
-  DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
-  xmax=0.0;xmin=1e10;
-  ymax=0.0;ymin=1e10;
-  zmax=0.0;zmin=1e10;
-  for(int i=0;i<ND1;i++) {
-    if(x1[i] < xmin) xmin=x1[i];
-    if(y1[i] < ymin) ymin=y1[i];
-    if(z1[i] < zmin) zmin=z1[i];
-
-
-    if(x1[i] > xmax) xmax=x1[i];
-    if(y1[i] > ymax) ymax=y1[i];
-    if(z1[i] > zmax) zmax=z1[i];
-  }
-  
   gettimeofday(&t0,NULL);  
+
   if (autocorr==0) {
     /*---Read-data2-file----------------------------------*/
 		ND2=read_positions(file2,fileformat2,(void **) &x2,(void **) &y2,(void **) &z2,sizeof(DOUBLE));
     gettimeofday(&t1,NULL);
     read_time += ADD_DIFF_TIME(t0,t1);
-    
-    for(int i=0;i<ND2;i++) {
-      if(x2[i] < xmin) xmin=x2[i];
-      if(y2[i] < ymin) ymin=y2[i];
-      if(z2[i] < zmin) zmin=z2[i];
-      
-      
-      if(x2[i] > xmax) xmax=x2[i];
-      if(y2[i] > ymax) ymax=y2[i];
-      if(z2[i] > zmax) zmax=z2[i];
-    }
+
   } else {
     //None of these are required. But I prefer to preserve the possibility
     ND2 = ND1;
@@ -171,25 +138,18 @@ int main(int argc, char *argv[])
     z2 = z1;
   }
     
-  fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
-  fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
-  fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
-
   /*---Count-pairs--------------------------------------*/
   gettimeofday(&t0,NULL);
-  countpairs_rp_pi(ND1,x1,y1,z1,
-									 ND2,x2,y2,z2,
-									 xmin,xmax,
-									 ymin,ymax,
-									 zmin,zmax,
-									 autocorr,
-									 rpmax,
+  results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,x1,y1,z1,
+																											 ND2,x2,y2,z2,
 #ifdef USE_OMP
-									 nthreads,
+																											 nthreads,
 #endif
-									 nrpbin,rupp,
-									 pimax, npibin);
-	
+																											 autocorr,
+																											 binfile,
+																											 pimax);
+
+
 
 	gettimeofday(&t1,NULL);
   double pair_time = ADD_DIFF_TIME(t0,t1);
@@ -197,8 +157,26 @@ int main(int argc, char *argv[])
 	if(autocorr == 0) {
 		free(x2);free(y2);free(z2);
 	}
-	free(rupp);
- 
+
+	const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
+	for(int i=1;i<results->nbin;i++) {
+		const double logrp = LOG10(results->rupp[i]);
+    for(int j=0;j<npibin;j++) {
+      int index = i*(npibin+1) + j;
+#ifdef OUTPUT_RPAVG			
+      fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+#else			
+			fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],0.0,logrp,(j+1)*dpi);
+#endif			
+    }
+  }
+	free(results->npairs);
+	free(results->rupp);
+#ifdef OUTPUT_RPAVG
+	free(results->rpavg);
+#endif
+	free(results);
+	
   gettimeofday(&t_end,NULL);
   fprintf(stderr,"xi_rp_pi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds pair-counting time = %6.2lf sec\n",
 	  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);

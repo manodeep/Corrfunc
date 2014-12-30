@@ -19,11 +19,11 @@ SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c
 OBJS2  = $(SRC2:.c=.o)
 lib: $(OBJS2) 
 	mkdir -p ../lib
-	$(CC) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs.so.$(MAJOR) -o libcountpairs.so.$(MAJOR).0.$(MINOR) 
+	$(CC) $(CLINK) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs.so.$(MAJOR) -o libcountpairs.so.$(MAJOR).0.$(MINOR) 
 	ldconfig -n ./ 
 	ln -s libcountpairs.so.$(MAJOR) libcountpairs.so
 	mv libcountpairs* ../lib
-
+	cp -p countpairs.h ../include
 
 .PHONY: clean clena celan install lib tests 
 

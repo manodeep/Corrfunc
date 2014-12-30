@@ -21,17 +21,13 @@
 #endif
 
 
-void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
-				const int ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
-				const DOUBLE xmin, const DOUBLE xmax,
-				const DOUBLE ymin, const DOUBLE ymax,
-				const DOUBLE zmin, const DOUBLE zmax,
-				const int autocorr,
-				const double rpmax,
+results_countpairs * countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
+																const int ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
 #ifdef USE_OMP
-				const int numthreads,
+																const int numthreads,
 #endif
-				const int nrpbin, const double * restrict rupp)
+																const int autocorr,
+																const char *binfile)
 {
 	
   int bin_refine_factor=1;
@@ -54,7 +50,33 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 		}
 	}
 #endif
+
+
+  /***********************
+   *initializing the  bins
+   ************************/
+  double *rupp;
+	int nrpbin ;
+  double rpmin,rpmax;
+  setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
+  assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
+  assert(nrpbin > 0 && "Number of rp bins is valid");
+  
+	//Find the min/max of the data
+	DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
+	xmin=1e10;ymin=1e10;zmin=1e10;
+	xmax=0.0;ymax=0.0;zmax=0.0;
+	get_max_min(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
 	
+	if(autocorr==0) {
+		fprintf(stderr,"ND1 = %8d [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
+		get_max_min(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
+		fprintf(stderr,"ND2 = %8d [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);    
+	}
+	fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
+  fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
+  fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
+    
 
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
@@ -62,11 +84,11 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
   cellarray *lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
   cellarray *lattice2 = NULL;
   if(autocorr==0) {
-	int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-	lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
-	assert(nmesh_x == ngrid2_x && "Both lattices have the same number of X bins");
-	assert(nmesh_y == ngrid2_y && "Both lattices have the same number of Y bins");
-	assert(nmesh_z == ngrid2_z && "Both lattices have the same number of Z bins");
+		int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
+		lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
+		assert(nmesh_x == ngrid2_x && "Both lattices have the same number of X bins");
+		assert(nmesh_y == ngrid2_y && "Both lattices have the same number of Y bins");
+		assert(nmesh_z == ngrid2_z && "Both lattices have the same number of Z bins");
   } else {
 	  lattice2 = lattice1;
   }
@@ -412,18 +434,23 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
     }
   }
 #endif
-  
-  double rlow=rupp[0];
-  for(int i=1;i<nrpbin;i++) {
-#ifdef OUTPUT_RPAVG	  
-    fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",npairs[i],rpavg[i],rlow,rupp[i]);
-#else
-	fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",npairs[i],0.0,    rlow,rupp[i]);
-#endif	
-    rlow=rupp[i];
-  }
 
+	//Pack in the results
+	results_countpairs *results = my_malloc(sizeof(*results), 1);
+	results->nbin = nrpbin;
+	results->npairs = my_malloc(sizeof(uint64_t), nrpbin);
+	results->rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
+#ifdef OUTPUT_RPAVG
+	results->rpavg  = my_malloc(sizeof(DOUBLE)  , nrpbin);
+#endif
 
+	for(int i=0;i<nrpbin;i++) {
+		results->npairs[i] = npairs[i];
+		results->rupp[i] = rupp[i];
+#ifdef OUTPUT_RPAVG
+		results->rpavg[i] = rpavg[i];
+#endif
+	}
 
   for(int64_t i=0;i<totncells;i++) {
 		free(lattice1[i].x);
@@ -438,9 +465,10 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
   
   free(lattice1);
   if(autocorr==0) {
-	free(lattice2);
+		free(lattice2);
   }
-
+	free(rupp);
+	
 #ifdef USE_OMP
   matrix_free((void **) all_npairs, numthreads);
 #ifdef OUTPUT_RPAVG
@@ -449,6 +477,6 @@ void countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1,
 	
 #endif
 
-
+	return results;
 
 }

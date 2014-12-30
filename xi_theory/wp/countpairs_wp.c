@@ -26,25 +26,18 @@
 #endif
 
 
-void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
-									 const double boxsize, const DOUBLE pimax, 
+results_countpairs_wp *countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+																		 const double boxsize, 
 #ifdef USE_OMP
-									 const int numthreads,
+																		 const int numthreads,
 #endif
-									 uint64_t * restrict npair,
-#ifdef OUTPUT_RPAVG
-									 DOUBLE *rpavg,
-#endif
-									 const double * restrict rupp,const int nbin)
+																		 const char *binfile,
+																		 const double pimax)
 {
-	const DOUBLE rmax=rupp[nbin-1];
+
 	int bin_refine_factor=2,zbin_refine_factor=1;
 	int nmesh_x, nmesh_y, nmesh_z;
 	
-  //gives better performance to bin more finely if 
-  if(rmax >= pimax) {
-    zbin_refine_factor=2;
-  }
 
 #ifdef USE_OMP
 	if(numthreads == 1) {
@@ -58,6 +51,29 @@ void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * res
 	}
 #endif
 
+  /***********************
+   *initializing the  bins
+   ************************/
+	double *rupp;
+	double rpmin,rpmax;
+	int nbin;
+	setup_bins(binfile,&rpmin,&rpmax,&nbin,&rupp);
+	assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
+	assert(nbin > 0 && "Number of rp bins is valid");
+  //gives better performance to bin more finely if 
+  if(rpmax >= pimax) {
+    zbin_refine_factor=2;
+  }
+
+	uint64_t npair[nbin];
+	for(int i=0;i<nbin;i++) npair[i] = 0;
+
+#ifdef OUTPUT_RPAVG
+	DOUBLE rpavg[nbin];
+	for(int i=0;i<nbin;i++) rpavg[i] = 0.0;
+#endif	
+	
+
 	const DOUBLE xmin = 0.0, xmax=boxsize;
 	const DOUBLE ymin = 0.0, ymax=boxsize;
 	const DOUBLE zmin = 0.0, zmax=boxsize;
@@ -66,7 +82,6 @@ void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * res
     rupp_sqr[i] = rupp[i]*rupp[i];
   }
 
-	const DOUBLE rpmax = rupp[nbin-1];
 	const DOUBLE sqr_rpmin = rupp_sqr[0];
 	const DOUBLE sqr_rpmax = rupp_sqr[nbin-1];
 	
@@ -267,7 +282,7 @@ void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * res
 								AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0.0);
 #endif
 								
-								//Loop backwards through nbins. m_mask_left contains all the points that are less than rmax
+								//Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
 								for(int kbin=nbin-1;kbin>=1;kbin--) {
 									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
 									const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
@@ -384,6 +399,26 @@ void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * res
 		free(lattice[i].z);
 	}
 	free(lattice);
+
+	//Pack in the results
+	results_countpairs_wp *results = my_malloc(sizeof(*results), 1);
+	results->nbin  = nbin;
+	results->pimax = pimax;
+	results->npairs = my_malloc(sizeof(uint64_t), results->nbin);
+	results->rupp   = my_malloc(sizeof(DOUBLE)  , results->nbin);
+#ifdef OUTPUT_RPAVG
+	results->rpavg  = my_malloc(sizeof(DOUBLE)  , results->nbin);
+#endif
+
+	for(int i=0;i<results->nbin;i++) {
+		results->npairs[i] = npair[i];
+		results->rupp[i] = rupp[i];
+#ifdef OUTPUT_RPAVG
+		results->rpavg[i] = rpavg[i];
+#endif
+	}
+	
+	return results;
 }
 
 
