@@ -1,0 +1,15 @@
+/* TODO:
+	 Author: Manodeep Sinha <manodeep@gmail.com>
+	 Contains: List of things I would like to implement roughly in descending order of priority	 
+*/
+
+1. Update libraries to contain all possible common.mk options (i.e., all options for PERIODIC, OUTPUT_RPAVG, DOUBLE_PREC, USE_AVX, USE_OMP).
+Should be possible with some pre-processor abuse. 
+
+2. Change the cellarray structure to be more cache-friendly -- instead of 3 different pointers to X/Y/Z, have a single pointer pos that contains X[CACHE_LINE_SIZE] Y[CACHE_LINE_SIZE] Z[CACHE_LINE_SIZE]. In
+the other xi_of_r repo, a similar change (with chunks of AVX_NVEC (4 double or 8 floats) gave perfect scaling.
+
+3. Use CBLAS libraries for non-periodic boundary conditions. Or YEPPP (http://yeppp.info/) 
+
+4. Add code for GPU's. 
+
