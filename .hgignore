@@ -8,7 +8,7 @@ DD
 wprp
 DDrppi
 wp
-*.so
+*.so*
 a.out
 xx*
 yy*
