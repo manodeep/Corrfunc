@@ -22,6 +22,7 @@ lib: $(OBJS2)
 	ldconfig -n ./ 
 	ln -s libcountpairs_wp.so.$(MAJOR) libcountpairs_wp.so
 	mv libcountpairs_wp* ../lib
+	cp -p countpairs_wp.h ../include 
 
 .PHONY: clean clena celan install lib
 

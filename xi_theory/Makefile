@@ -24,6 +24,7 @@ realclean:
 	$(MAKE) clean
 	rm -f bin/*
 	rm -f lib/*
+	rm -f include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h 
 
 clean:
 	rm -f $(target) $(OBJS1) 

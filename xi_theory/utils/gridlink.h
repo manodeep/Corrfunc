@@ -17,3 +17,6 @@ cellarray * gridlink(const int np,
 										 int *nlattice_x,
 										 int *nlattice_y,
 										 int *nlattice_z) __attribute__((warn_unused_result)); 
+
+void get_max_min(const int ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+								 DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z);

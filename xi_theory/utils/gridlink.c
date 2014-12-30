@@ -29,6 +29,27 @@ double get_binsize(const double xmin,const double xmax, const double rmax, const
   return xbinsize;
 }
 
+void get_max_min(const int ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+								 DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z)
+{
+	DOUBLE xmin = *min_x, ymin = *min_y, zmin=*min_z;
+	DOUBLE xmax = *max_x, ymax = *max_y, zmax=*max_z;
+	
+  for(int i=0;i<ND1;i++) {
+    if(X1[i] < xmin) xmin=X1[i];
+    if(Y1[i] < ymin) ymin=Y1[i];
+    if(Z1[i] < zmin) zmin=Z1[i];
+
+
+    if(X1[i] > xmax) xmax=X1[i];
+    if(Y1[i] > ymax) ymax=Y1[i];
+    if(Z1[i] > zmax) zmax=Z1[i];
+  }
+	*min_x=xmin;*min_y=ymin;*min_z=zmin;
+	*max_x=xmax;*max_y=ymax;*max_z=zmax;
+}
+
+
 cellarray * gridlink(const int np,
 										 const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
 										 const DOUBLE xmin, const DOUBLE xmax,
