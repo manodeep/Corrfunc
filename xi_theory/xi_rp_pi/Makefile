@@ -22,7 +22,8 @@ wprp: $(OBJS2) Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS2) $(CLINK)
 
 OBJS3=countpairs_rp_pi.o ../utils/gridlink.o ../utils/utils.o 
-lib: $(OBJS3) 
+lib: $(OBJS3)
+	mkdir -p ../lib
 	$(CC) $(LDFLAGS) $(OBJS3) -shared -Wl,-soname,libcountpairs_rp_pi.so.$(MAJOR) -o libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) 
 	ldconfig -n ./ 
 	ln -s libcountpairs_rp_pi.so.$(MAJOR) libcountpairs_rp_pi.so
@@ -40,6 +41,7 @@ celan:
 	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.so
 
 install:
+	mkdir -p ../bin
 	cp -p $(target) ../bin/
 
 

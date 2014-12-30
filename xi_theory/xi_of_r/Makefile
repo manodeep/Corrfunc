@@ -18,6 +18,7 @@ $(target): $(OBJS1) $(INCL) ../common.mk Makefile
 SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c
 OBJS2  = $(SRC2:.c=.o)
 lib: $(OBJS2) 
+	mkdir -p ../lib
 	$(CC) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs.so.$(MAJOR) -o libcountpairs.so.$(MAJOR).0.$(MINOR) 
 	ldconfig -n ./ 
 	ln -s libcountpairs.so.$(MAJOR) libcountpairs.so
@@ -36,6 +37,7 @@ celan:
 	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs.so 
 
 install:
+	mkdir -p ../bin
 	cp -p $(target) ../bin/
 
 

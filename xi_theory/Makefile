@@ -44,12 +44,14 @@ celan:
 	$(MAKE) -C wp clean
 
 install:
+	mkdir -p bin
 	cp -p $(target) bin/
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
 
 lib:
+	mkdir -p lib
 	$(MAKE) -C xi_of_r lib
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
