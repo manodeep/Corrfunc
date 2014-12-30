@@ -1,9 +1,9 @@
 #### Science use-cases
 OPT = -DPERIODIC
-OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
+#OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
 
 #### Code specs
-OPT += -DDOUBLE_PREC
+#OPT += -DDOUBLE_PREC
 OPT += -DUSE_AVX
 OPT += -DUSE_OMP
 
