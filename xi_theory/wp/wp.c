@@ -33,10 +33,10 @@ int main(int argc, char *argv[])
 {
 
   /*---Arguments-------------------------*/
-	double rpmin,rpmax;
-  DOUBLE pimax ;
-	char *file=NULL,*fileformat=NULL;
 	double boxsize;
+	char *file=NULL,*fileformat=NULL;
+	char *binfile=NULL;
+  DOUBLE pimax ;
 	
   /*---Data-variables--------------------*/
   int ND1=0,ND2=0;
@@ -78,15 +78,8 @@ int main(int argc, char *argv[])
 	boxsize=atof(argv[1]);
   file=argv[2];
   fileformat=argv[3];
-
-  /***********************
-   *initializing the  bins
-   ************************/
-	double *rupp;
-	int nbin;
-	setup_bins(argv[4],&rpmin,&rpmax,&nbin,&rupp);
-	assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
-	assert(nbin > 0 && "Number of rp bins is valid");
+	binfile=argv[4];
+	
 	pimax=40.0;
 
 #ifdef DOUBLE_PREC
@@ -134,26 +127,19 @@ int main(int argc, char *argv[])
 	SGLIB_ARRAY_QUICK_SORT(DOUBLE, z1, ND1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 	
   /*---Count-pairs--------------------------------------*/
-	uint64_t *npairs = my_calloc(sizeof(*npairs),nbin);
-#ifdef OUTPUT_RPAVG
-	DOUBLE *rpavg = my_calloc(sizeof(*rpavg),nbin);
-#endif	
-	
   gettimeofday(&t0,NULL);
-	countpairs_wp(ND1, x1, y1, z1,
-								boxsize, pimax,
+	results_countpairs_wp *results = countpairs_wp(ND1, x1, y1, z1,
+																								 boxsize, 
 #ifdef USE_OMP
-								nthreads,
+																								 nthreads,
 #endif
-								npairs,
-#ifdef OUTPUT_RPAVG
-								rpavg,
-#endif
-								rupp, nbin);
-	
+																								 binfile,
+																								 pimax);
+
 	gettimeofday(&t1,NULL);
   double pair_time = ADD_DIFF_TIME(t0,t1);
-
+	free(x1);free(y1);free(z1);
+	
 	//Output the results
 	const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
   const DOUBLE density=0.5*avgweight2*ND1/(boxsize*boxsize*boxsize);//pairs are not double-counted
@@ -161,41 +147,38 @@ int main(int argc, char *argv[])
 	DOUBLE rlow=0.0 ;
 	DOUBLE prefac_density_DD=avgweight1*ND1*density;
 	DOUBLE twice_pimax = 2.0*pimax;
-	DOUBLE xi_full[nbin];
+	DOUBLE xi_full[results->nbin];
 	
-	for (int kbin=0;kbin<nbin;kbin++)  {      /* loop over radial bins */
-		const DOUBLE weight0 = (DOUBLE) npairs[kbin];
+	for (int kbin=0;kbin<results->nbin;kbin++)  {      /* loop over radial bins */
+		const DOUBLE weight0 = (DOUBLE) results->npairs[kbin];
 
 		/* compute xi, dividing summed weight by that expected for a random set */
-		const DOUBLE vol=M_PI*(rupp[kbin]*rupp[kbin]-rlow*rlow)*twice_pimax;
+		const DOUBLE vol=M_PI*(results->rupp[kbin]*results->rupp[kbin]-rlow*rlow)*twice_pimax;
 		const DOUBLE weightrandom = prefac_density_DD*vol;
 		xi_full[kbin] = (weight0/weightrandom-1)*twice_pimax;
-		rlow=rupp[kbin] ;
+		rlow=results->rupp[kbin];
 	}                                     /* next radial bin */
 
 	/* Note: we discard the first bin, to mimic the fact that close pairs
 	 * are disregarded in SDSS data.
 	 */
-	rlow=rupp[0];
-	for(int i=1;i<nbin;++i) {
+	rlow=results->rupp[0];
+	for(int i=1;i<results->nbin;++i) {
 #ifdef OUTPUT_RPAVG
-		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",xi_full[i],rpavg[i],rlow,rupp[i],npairs[i]);
+		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",xi_full[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
 #else		
-		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",xi_full[i],0.0,rlow,rupp[i],npairs[i]);
+		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",xi_full[i],0.0,rlow,results->rupp[i],results->npairs[i]);
 #endif		
-		rlow=rupp[i];
+		rlow=results->rupp[i];
 	}
 	
-
-
-	free(x1);free(y1);free(z1);
-	free(rupp);
-
-	free(npairs);
+	free(results->rupp);
+	free(results->npairs);
 #ifdef OUTPUT_RPAVG
-	free(rpavg);
+	free(results->rpavg);
 #endif	
-	
+	free(results);
+
   gettimeofday(&t_end,NULL);
   fprintf(stderr,"xi_rp_pi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds pair-counting time = %6.2lf sec\n",
 	  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);
