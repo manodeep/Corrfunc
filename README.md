@@ -3,9 +3,7 @@
 	 LICENSE: MIT 
 */
 
-This repo contains a set of codes to measure the following
-three correlation measures in a cosmological box. Also,
-contains the associated paper to be published
+This repo contains a set of codes to measure the following three OpenMP parallelized correlation measures in a cosmological box. Also, contains the associated paper to be published
 in Astronomy & Computing Journal (hopefully). 
 
 1. Measures auto/cross-correlations between two boxes. 
@@ -53,5 +51,5 @@ methods, I have seen any values larger than 3 are always slower. But some differ
 combination of 1/2 for (z)bin_refine_factor might be faster on your platform. 
 
 2. If you have AVX2/AVX-512/KNC, you will need to rewrite the entire AVX section.
-And it is a lot of effort. Don't do it.
+
 
