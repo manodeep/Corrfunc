@@ -1,18 +1,30 @@
 include ../common.mk
 
 target=DD 
-all: $(target) 
+SRC1   = DD.c countpairs.c ../utils/gridlink.c ../utils/utils.c ../io/ftread.c ../io/io.c 
+OBJS1  = $(SRC1:.c=.o)
+INCL   = countpairs.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gridlink.h \
+					../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
+					../include/defs.h 
 
-OBJS1= DD.o countpairs.o ../utils/gridlink.o ../utils/utils.o ../io/ftread.o ../io/io.o 
+all: $(target) $(SRC1) $(INCL)
 
-DD: $(OBJS1) Makefile 
-	$(CC) $(CFLAGS) -o $@ $(OBJS1)  $(CLINK)
+$(target): $(OBJS1) $(INCL) ../common.mk Makefile 
+	$(CC) $(CFLAGS) $(OPT) $(CLINK) $(OBJS1) -o $@
 
-OBJS2=countpairs.o ../utils/gridlink.o ../utils/utils.o 
-lib:
-	 $(CC) $(CFLAGS) $(LDFLAGS) $(OBJS2) -shared -o libcountpairs.so 
+.c.o: $(INCL) ../common.mk Makefile
+	$(CC) $(CFLAGS) $(OPT) $(INCLUDE) -c $< -o $@
 
-.PHONY: clean clena celan
+SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c
+OBJS2  = $(SRC2:.c=.o)
+lib: $(OBJS2) 
+	$(CC) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs.so.$(MAJOR) -o libcountpairs.so.$(MAJOR).0.$(MINOR) 
+	ldconfig -n ./ 
+	ln -s libcountpairs.so.$(MAJOR) libcountpairs.so
+	mv libcountpairs* ../lib
+
+
+.PHONY: clean clena celan install lib tests 
 
 clean:
 	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs.so 
@@ -25,4 +37,38 @@ celan:
 
 install:
 	cp -p $(target) ../bin/
-	cp -p libcountpairs.so ../lib/
+
+
+tests: tests_periodic tests_nonperiodic tests_avx tests_omp
+	$(MAKE) clean
+	$(MAKE)
+
+tests_periodic: 
+	$(info $$OPT is [$(OPT)])
+	$(MAKE) clean
+	$(MAKE) 
+
+	./DD ../tests/data/gals_Mr19.ff f ../tests/data/gals_Mr19.ff f ../tests/bins 4 > new_DD
+	if cmp -s ../tests/Mr19_DD_correct new_DD  ; then
+		echo "Passed DD test"
+		rm -f "new_DD"
+	else
+		echo "Failed DD test"
+		exit
+	endif
+
+tests_nonperiodic:
+	$(info $$OPT is [$(OPT)])
+	$(MAKE) clean
+	$(MAKE) 
+
+tests_avx:
+	$(info $$OPT is [$(OPT)])
+	$(MAKE) clean
+	$(MAKE) 
+
+tests_omp:
+	$(info $$OPT is [$(OPT)])
+	$(MAKE) clean
+	$(MAKE) 
+

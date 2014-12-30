@@ -246,17 +246,17 @@ void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * res
 								//Do all the distance cuts using masks here in new scope
 								{
 									AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
-									int test = AVX_TEST_COMPARISON(m_mask_pimax);
+									const int test = AVX_TEST_COMPARISON(m_mask_pimax);
 									if(test == 0) {
 										i = second->nelements;
 										break;
 									}
 									m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax);
 									m_dist = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nbin-1],m_dist,m_mask_pimax);		  
-									AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[0],_CMP_GE_OS);
+									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[0],_CMP_GE_OS);
 									m_mask_left = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[nbin-1],_CMP_LT_OS);//will get utilized in the next section
-									AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
-									int test1 = AVX_TEST_COMPARISON(m_mask);
+									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
+									const int test1 = AVX_TEST_COMPARISON(m_mask);
 									if(test1 == 0) {
 										continue;
 									}
@@ -269,15 +269,15 @@ void countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * res
 								
 								//Loop backwards through nbins. m_mask_left contains all the points that are less than rmax
 								for(int kbin=nbin-1;kbin>=1;kbin--) {
-									AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-									AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
-									int test2  = AVX_TEST_COMPARISON(m_bin_mask);
+									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+									const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+									const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
 									local_npair[kbin] += AVX_BIT_COUNT_INT(test2);
 #ifdef OUTPUT_RPAVG
 									m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
 #endif
 									m_mask_left = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_LT_OS);
-									int test3 = AVX_TEST_COMPARISON(m_mask_left);
+									const int test3 = AVX_TEST_COMPARISON(m_mask_left);
 									if(test3 == 0)
 										break;
 								}
