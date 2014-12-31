@@ -8,6 +8,8 @@ DD
 wprp
 DDrppi
 wp
+run_correlations
+include/countpairs*.h
 *.so*
 a.out
 xx*

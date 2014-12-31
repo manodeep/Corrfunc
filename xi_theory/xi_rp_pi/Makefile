@@ -24,10 +24,16 @@ wprp: $(OBJS2) Makefile
 OBJS3=countpairs_rp_pi.o ../utils/gridlink.o ../utils/utils.o 
 lib: $(OBJS3)
 	mkdir -p ../lib
-	$(CC) $(LDFLAGS) $(OBJS3) -shared -Wl,-soname,libcountpairs_rp_pi.so.$(MAJOR) -o libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) 
-	ldconfig -n ./ 
-	ln -s libcountpairs_rp_pi.so.$(MAJOR) libcountpairs_rp_pi.so
-	cp -p libcountpairs_rp_pi* ../lib
+# 	$(CC) $(LDFLAGS) $(OBJS3) -shared -Wl,-soname,libcountpairs_rp_pi.so.$(MAJOR) -o libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) 
+# 	ldconfig -n ./ 
+# 	ln -s libcountpairs_rp_pi.so.$(MAJOR) libcountpairs_rp_pi.so
+# 	cp -p libcountpairs_rp_pi* ../lib
+# 	cp -p countpairs_rp_pi.h ../include 
+
+	$(CC) $(CFLAGS) $(CLINK) $(OPT) $(LDFLAGS) $(OBJS3) -shared -o libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) 
+	rm -f libcountpairs_rp_pi.so 
+	ln -s libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) libcountpairs_rp_pi.so
+	cp -p libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) libcountpairs_rp_pi.so ../lib
 	cp -p countpairs_rp_pi.h ../include 
 
 .PHONY: clean clena celan 
