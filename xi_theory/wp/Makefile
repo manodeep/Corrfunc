@@ -18,10 +18,16 @@ $(target): $(OBJS1) $(INCL) ../common.mk Makefile
 OBJS2=countpairs_wp.o ../utils/gridlink.o ../utils/utils.o 
 lib: $(OBJS2)
 	mkdir -p ../lib
-	$(CC) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs_wp.so.$(MAJOR) -o libcountpairs_wp.so.$(MAJOR).0.$(MINOR) 
-	ldconfig -n ./ 
-	ln -s libcountpairs_wp.so.$(MAJOR) libcountpairs_wp.so
-	cp -p libcountpairs_wp* ../lib
+# 	$(CC) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs_wp.so.$(MAJOR) -o libcountpairs_wp.so.$(MAJOR).0.$(MINOR) 
+# 	ldconfig -n ./ 
+# 	ln -s libcountpairs_wp.so.$(MAJOR) libcountpairs_wp.so
+# 	cp -p libcountpairs_wp* ../lib
+# 	cp -p countpairs_wp.h ../include 
+
+	$(CC) $(CFLAGS) $(OPT) $(LDFLAGS) $(OBJS2) -shared -o libcountpairs_wp.so.$(MAJOR).0.$(MINOR) 
+	rm -f libcountpairs_wp.so 
+	ln -s libcountpairs_wp.so.$(MAJOR).0.$(MINOR) libcountpairs_wp.so
+	cp -p libcountpairs_wp.so.$(MAJOR).0.$(MINOR) libcountpairs_wp.so ../lib
 	cp -p countpairs_wp.h ../include 
 
 .PHONY: clean clena celan install lib
