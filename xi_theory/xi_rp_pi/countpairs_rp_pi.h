@@ -23,3 +23,5 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int ND1, const DOUBLE *X1, con
 																						const int autocorr,
 																						const char *binfile,
 																						const double pimax)  __attribute__((warn_unused_result));
+
+void free_results_rp_pi(results_countpairs_rp_pi **results);

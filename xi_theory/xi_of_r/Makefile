@@ -26,9 +26,9 @@ lib: $(OBJS2)
 # 	cp -p countpairs.h ../include
 
 	$(CC) $(CFLAGS) $(OPT) $(CLINK) $(LDFLAGS) $(OBJS2) -shared -o libcountpairs.so.$(MAJOR).0.$(MINOR) 
-	rm -f libcountpairs.so 
-	ln -s libcountpairs.so.$(MAJOR).0.$(MINOR) libcountpairs.so
-	cp -p libcountpairs.so.$(MAJOR).0.$(MINOR) libcountpairs.so ../lib
+	cp -p libcountpairs.so.$(MAJOR).0.$(MINOR) ../lib
+	rm -f ../lib/libcountpairs.so 
+	ln -s ../lib/libcountpairs.so.$(MAJOR).0.$(MINOR) ../lib/libcountpairs.so
 	cp -p countpairs.h ../include
 
 
