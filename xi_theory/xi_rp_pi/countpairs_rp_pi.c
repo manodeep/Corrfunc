@@ -17,6 +17,25 @@
 #endif
 
 
+void free_results_rp_pi(results_countpairs_rp_pi **results)
+{
+	if(results==NULL)
+		return;
+
+	if(*results==NULL)
+		return;
+	
+	results_countpairs_rp_pi *tmp = *results;
+
+	free(tmp->npairs);
+	free(tmp->rupp);
+#ifdef OUTPUT_RPAVG
+	free(tmp->rpavg);
+#endif
+	free(tmp);
+	tmp = NULL;
+}
+
 
 results_countpairs_rp_pi * countpairs_rp_pi(const int ND1, const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
 																						const int ND2, const DOUBLE *X2, const DOUBLE *Y2, const DOUBLE *Z2,
