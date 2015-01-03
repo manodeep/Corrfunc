@@ -25,6 +25,24 @@
 #warning "wp is only valid for PERIODIC boundary conditions. Ignoring the Makefile (non)-definition of PERIODIC"
 #endif
 
+void free_results_wp(results_countpairs_wp **results)
+{
+	if(results == NULL)
+		return;
+
+	if(*results == NULL)
+		return;
+
+	results_countpairs_wp *tmp = *results;
+	free(tmp->rupp);
+	free(tmp->npairs);
+#ifdef OUTPUT_RPAVG
+	free(tmp->rpavg);
+#endif	
+	free(tmp);
+	tmp = NULL;
+}
+
 
 results_countpairs_wp *countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
 																		 const double boxsize, 

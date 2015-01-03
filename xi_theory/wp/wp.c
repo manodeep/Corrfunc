@@ -171,14 +171,10 @@ int main(int argc, char *argv[])
 #endif		
 		rlow=results->rupp[i];
 	}
-	
-	free(results->rupp);
-	free(results->npairs);
-#ifdef OUTPUT_RPAVG
-	free(results->rpavg);
-#endif	
-	free(results);
 
+	//free the memory in the results struct
+	free_results_wp(&results);
+	
   gettimeofday(&t_end,NULL);
   fprintf(stderr,"xi_rp_pi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds pair-counting time = %6.2lf sec\n",
 	  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);

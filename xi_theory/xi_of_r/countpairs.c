@@ -20,6 +20,23 @@
 #include <omp.h>
 #endif
 
+void free_results(results_countpairs **results)
+{
+	if(results == NULL)
+		return;
+	if(*results == NULL)
+		return;
+
+	results_countpairs *tmp = *results;
+
+	free(tmp->rupp);
+	free(tmp->npairs);
+#ifdef OUTPUT_RPAVG
+	free(tmp->rpavg);
+#endif
+	free(tmp);
+	tmp = NULL;
+}
 
 results_countpairs * countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
 																const int ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,

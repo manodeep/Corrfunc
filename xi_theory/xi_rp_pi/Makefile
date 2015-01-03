@@ -31,9 +31,9 @@ lib: $(OBJS3)
 # 	cp -p countpairs_rp_pi.h ../include 
 
 	$(CC) $(CFLAGS) $(CLINK) $(OPT) $(LDFLAGS) $(OBJS3) -shared -o libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) 
-	rm -f libcountpairs_rp_pi.so 
-	ln -s libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) libcountpairs_rp_pi.so
-	cp -p libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) libcountpairs_rp_pi.so ../lib
+	cp -p libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) ../lib
+	rm -f ../lib/libcountpairs_rp_pi.so 
+	ln -s ../lib/libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) ../lib/libcountpairs_rp_pi.so
 	cp -p countpairs_rp_pi.h ../include 
 
 .PHONY: clean clena celan 

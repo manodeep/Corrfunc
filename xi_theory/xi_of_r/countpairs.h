@@ -22,3 +22,5 @@ results_countpairs * countpairs(const int ND1, const DOUBLE * const X1, const DO
 																const int autocorr,
 																const char *binfile) __attribute__((warn_unused_result));
 
+
+void free_results(results_countpairs **results);

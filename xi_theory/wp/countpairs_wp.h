@@ -22,3 +22,5 @@ results_countpairs_wp *countpairs_wp(const int ND1, const DOUBLE * restrict X1, 
 																		 const char *binfile,
 																		 const double pimax) __attribute__((warn_unused_result));
 
+
+void free_results_wp(results_countpairs_wp **results);
