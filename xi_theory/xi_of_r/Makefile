@@ -10,10 +10,10 @@ INCL   = countpairs.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gridli
 all: $(target) $(SRC1) $(INCL)
 
 $(target): $(OBJS1) $(INCL) ../common.mk Makefile 
-	$(CC) $(CFLAGS) $(OPT) $(CLINK) $(OBJS1) -o $@
+	$(CC) $(OPT) $(CFLAGS) $(CLINK) $(OBJS1) -o $@
 
 .c.o: $(INCL) ../common.mk Makefile
-	$(CC) $(CFLAGS) $(OPT) $(INCLUDE) -c $< -o $@
+	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c
 OBJS2  = $(SRC2:.c=.o)
