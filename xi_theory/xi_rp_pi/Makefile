@@ -12,10 +12,10 @@ INCL   = countpairs_rp_pi.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/
 
 
 DDrppi: $(OBJS1) $(INCL) ../common.mk Makefile
-	$(CC) $(CFLAGS) $(OPT) $(CLINK) $(OBJS1) -o $@
+	$(CC) $(OPT) $(CFLAGS) $(CLINK) $(OBJS1) -o $@
 
 .c.o: $(INCL) ../common.mk Makefile
-	$(CC) $(CFLAGS) $(OPT) $(INCLUDE) -c $< -o $@
+	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 OBJS2= wprp.o ../utils/utils.o
 wprp: $(OBJS2) Makefile 
