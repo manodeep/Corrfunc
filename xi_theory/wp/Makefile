@@ -10,10 +10,10 @@ INCL   = countpairs_wp.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gri
 all: $(target) $(SRC1) $(INCL)
 
 $(target): $(OBJS1) $(INCL) ../common.mk Makefile 
-	$(CC) $(CFLAGS) $(OPT) $(CLINK) $(OBJS1) -o $@
+	$(CC) $(OPT) $(CFLAGS) $(CLINK) $(OBJS1) -o $@
 
 .c.o: $(INCL) ../common.mk Makefile
-	$(CC) $(CFLAGS) $(OPT) $(INCLUDE) -c $< -o $@
+	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 OBJS2=countpairs_wp.o ../utils/gridlink.o ../utils/utils.o 
 lib: $(OBJS2)

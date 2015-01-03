@@ -1,9 +1,9 @@
 #### Science use-cases
 OPT = -DPERIODIC
-OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
+#OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
 
 #### Code specs
-OPT += -DDOUBLE_PREC
+#OPT += -DDOUBLE_PREC
 OPT += -DUSE_AVX
 OPT += -DUSE_OMP
 
@@ -15,7 +15,7 @@ MINOR=0
 MAJOR=1
 CLINK=
 INCLUDE=-I../io -I../utils -I../include 
-CFLAGS= -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3
+CFLAGS= -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3 -Ofast
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))
