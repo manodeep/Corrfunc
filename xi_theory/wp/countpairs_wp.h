@@ -6,6 +6,7 @@
 //define the results structure
 typedef struct{
 	uint64_t *npairs;
+	DOUBLE *wp;
 	DOUBLE *rupp;
 #ifdef OUTPUT_RPAVG
 	DOUBLE *rpavg;
