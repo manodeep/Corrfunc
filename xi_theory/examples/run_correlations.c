@@ -120,11 +120,7 @@ int main(int argc, char **argv)
 		
 		
 		//free the result structure
-		free(results->npairs);free(results->rupp);
-#ifdef OUTPUT_RPAVG		
-		free(results->rpavg);
-#endif
-		free(results);
+		free_results(&results);
 	}
 	
 	//Do the DD(rp, pi) counts
@@ -146,11 +142,7 @@ int main(int argc, char **argv)
 		
 
 		//free the result structure
-		free(results->npairs);free(results->rupp);
-#ifdef OUTPUT_RPAVG
-		free(results->rpavg);
-#endif
-		free(results);
+		free_results_rp_pi(&results);
 	}
 
 
@@ -171,11 +163,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"Done wp. Ngalaxies = %d Time taken = %8.2lf seconds\n", ND1, pair_time);
 
 		//free the result structure
-		free(results->npairs);free(results->rupp);
-#ifdef OUTPUT_RPAVG
-		free(results->rpavg);
-#endif
-		free(results);
+		free_results_wp(&results);
 	}
 
 			

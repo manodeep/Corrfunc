@@ -1,7 +1,7 @@
 include common.mk
 
 target=logbins
-all: $(target)  DD DDrppi wp lib examples
+all: $(target)  DD DDrppi wp lib examples python_bindings 
 
 OBJS1= logbins.o utils/utils.o 
 
@@ -20,6 +20,8 @@ DDrppi:
 wp:
 	$(MAKE) -C wp
 
+python_bindings: lib
+	$(MAKE) -C python_bindings
 
 ### Must create the libraries first before making the examples.
 examples: lib
@@ -27,11 +29,13 @@ examples: lib
 
 realclean:
 	$(MAKE) clean
-	rm -f lib/libcountpairs.so bin/libcountpairs.so.$(MAJOR).0.$(MINOR)
-	rm -f lib/libcountpairs_rp_pi.so bin/libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR)
-	rm -f lib/libcountpairs_wp.so bin/libcountpairs_wp.so.$(MAJOR).0.$(MINOR)
+	rm -f lib/libcountpairs.so lib/libcountpairs.so.$(MAJOR).0.$(MINOR)
+	rm -f lib/libcountpairs_rp_pi.so lib/libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR)
+	rm -f lib/libcountpairs_wp.so lib/libcountpairs_wp.so.$(MAJOR).0.$(MINOR)
 	rm -f bin/DD bin/DDrppi bin/wprp bin/wp
 	rm -f include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h 
+	rm -f lib/_countpairs.so lib/_countpairs.so.$(MAJOR).0.$(MINOR)
+
 
 clean:
 	rm -f $(target) $(OBJS1) 
@@ -39,12 +43,15 @@ clean:
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean
 	$(MAKE) -C examples clean
+	$(MAKE) -C python_bindings clean
+
 clena:
 	rm -f $(target) $(OBJS1) 
 	$(MAKE) -C xi_of_r clean
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean
 	$(MAKE) -C examples clean
+	$(MAKE) -C python_bindings clean
 
 celan:
 	rm -f $(target) $(OBJS1)
@@ -52,6 +59,7 @@ celan:
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean
 	$(MAKE) -C examples clean
+	$(MAKE) -C python_bindings clean
 
 install:
 	mkdir -p bin
@@ -59,7 +67,7 @@ install:
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
-
+	$(MAKE) -C python_bindings install
 
 lib:
 	mkdir -p lib

@@ -141,33 +141,15 @@ int main(int argc, char *argv[])
 	free(x1);free(y1);free(z1);
 	
 	//Output the results
-	const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
-  const DOUBLE density=0.5*avgweight2*ND1/(boxsize*boxsize*boxsize);//pairs are not double-counted
-
-	DOUBLE rlow=0.0 ;
-	DOUBLE prefac_density_DD=avgweight1*ND1*density;
-	DOUBLE twice_pimax = 2.0*pimax;
-	DOUBLE xi_full[results->nbin];
-	
-	for (int kbin=0;kbin<results->nbin;kbin++)  {      /* loop over radial bins */
-		const DOUBLE weight0 = (DOUBLE) results->npairs[kbin];
-
-		/* compute xi, dividing summed weight by that expected for a random set */
-		const DOUBLE vol=M_PI*(results->rupp[kbin]*results->rupp[kbin]-rlow*rlow)*twice_pimax;
-		const DOUBLE weightrandom = prefac_density_DD*vol;
-		xi_full[kbin] = (weight0/weightrandom-1)*twice_pimax;
-		rlow=results->rupp[kbin];
-	}                                     /* next radial bin */
-
 	/* Note: we discard the first bin, to mimic the fact that close pairs
 	 * are disregarded in SDSS data.
 	 */
-	rlow=results->rupp[0];
+	DOUBLE rlow=results->rupp[0];
 	for(int i=1;i<results->nbin;++i) {
 #ifdef OUTPUT_RPAVG
-		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",xi_full[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
+		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
 #else		
-		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",xi_full[i],0.0,rlow,results->rupp[i],results->npairs[i]);
+		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],0.0,rlow,results->rupp[i],results->npairs[i]);
 #endif		
 		rlow=results->rupp[i];
 	}
@@ -176,7 +158,7 @@ int main(int argc, char *argv[])
 	free_results_wp(&results);
 	
   gettimeofday(&t_end,NULL);
-  fprintf(stderr,"xi_rp_pi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds pair-counting time = %6.2lf sec\n",
+  fprintf(stderr,"wp> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds pair-counting time = %6.2lf sec\n",
 	  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);
   return EXIT_SUCCESS;
 }
