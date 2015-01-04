@@ -17,20 +17,15 @@ $(target): $(OBJS1) $(INCL) ../common.mk Makefile
 
 SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c
 OBJS2  = $(SRC2:.c=.o)
-lib: $(OBJS2)
-	mkdir -p ../lib
-# 	$(CC) $(CLINK) $(LDFLAGS) $(OBJS2) -shared -Wl,-soname,libcountpairs.so.$(MAJOR) -o libcountpairs.so.$(MAJOR).0.$(MINOR) 
-# 	ldconfig -n ./ 
-# 	ln -s libcountpairs.so.$(MAJOR) libcountpairs.so
-# 	cp -p libcountpairs* ../lib
-# 	cp -p countpairs.h ../include
-
+lib: dir $(OBJS2)
 	$(CC) $(CFLAGS) $(OPT) $(CLINK) $(LDFLAGS) $(OBJS2) -shared -o libcountpairs.so.$(MAJOR).0.$(MINOR) 
 	cp -p libcountpairs.so.$(MAJOR).0.$(MINOR) ../lib
 	rm -f ../lib/libcountpairs.so 
 	ln -s ../lib/libcountpairs.so.$(MAJOR).0.$(MINOR) ../lib/libcountpairs.so
 	cp -p countpairs.h ../include
 
+dir:
+	mkdir -p ../lib
 
 .PHONY: clean clena celan install lib tests 
 
