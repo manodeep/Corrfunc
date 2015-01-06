@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
@@ -15,7 +16,7 @@ int main(int argc, char *argv[])
 {
 
   /*---Data-variables--------------------*/
-  int ND1,ND2 ;
+  int64_t ND1,ND2 ;
 
   DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
   DOUBLE *x2=NULL,*y2=NULL,*z2=NULL;
@@ -142,7 +143,7 @@ int main(int argc, char *argv[])
 	//free the memory in the results structx
 	free_results(&results);
   gettimeofday(&t_end,NULL);
-  fprintf(stderr,"xi> Done -  ND1=%d ND2=%d. Time taken = %6.2lf seconds. read-in time = %6.2lf seconds sec pair-counting time = %6.2lf sec\n",
+  fprintf(stderr,"xi> Done -  ND1=%"PRId64" ND2=%"PRId64". Time taken = %6.2lf seconds. read-in time = %6.2lf seconds sec pair-counting time = %6.2lf sec\n",
 		  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);
   return EXIT_SUCCESS;
 }
