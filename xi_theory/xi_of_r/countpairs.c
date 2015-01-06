@@ -38,13 +38,13 @@ void free_results(results_countpairs **results)
 	tmp = NULL;
 }
 
-results_countpairs * countpairs(const int ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
-																const int ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
+results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
+								const int64_t ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
 #ifdef USE_OMP
-																const int numthreads,
+								const int numthreads,
 #endif
-																const int autocorr,
-																const char *binfile)
+								const int autocorr,
+								const char *binfile)
 {
 	
   int bin_refine_factor=1;
@@ -86,9 +86,9 @@ results_countpairs * countpairs(const int ND1, const DOUBLE * const X1, const DO
 	get_max_min(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
 	
 	if(autocorr==0) {
-		fprintf(stderr,"ND1 = %8d [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
+		fprintf(stderr,"ND1 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
 		get_max_min(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
-		fprintf(stderr,"ND2 = %8d [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);    
+		fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);    
 	}
 	fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
   fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
@@ -241,7 +241,7 @@ results_countpairs * countpairs(const int ND1, const DOUBLE * const X1, const DO
 						const DOUBLE *y2 = second->y;
 						const DOUBLE *z2 = second->z;
 					
-						for(int i=0;i<first->nelements;i++) {
+						for(int64_t i=0;i<first->nelements;i++) {
 							DOUBLE x1pos=x1[i];
 							DOUBLE y1pos=y1[i];
 							DOUBLE z1pos=z1[i];
@@ -252,7 +252,7 @@ results_countpairs * countpairs(const int ND1, const DOUBLE * const X1, const DO
 #endif		
 					  
 #ifndef USE_AVX
-							for(int j=0;j<second->nelements;j+=BLOCK_SIZE) {
+							for(int64_t j=0;j<second->nelements;j+=BLOCK_SIZE) {
 								int block_size=second->nelements - j;
 								if(block_size > BLOCK_SIZE) block_size=BLOCK_SIZE;
 						
@@ -299,7 +299,7 @@ results_countpairs * countpairs(const int ND1, const DOUBLE * const X1, const DO
 							const AVX_FLOATS m_y1pos = AVX_SET_FLOAT(y1pos);
 							const AVX_FLOATS m_z1pos = AVX_SET_FLOAT(z1pos);
 					  
-							int j;
+							int64_t j;
 							for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
 								const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
 								const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);

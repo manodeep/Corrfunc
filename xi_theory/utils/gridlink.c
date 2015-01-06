@@ -29,13 +29,13 @@ double get_binsize(const double xmin,const double xmax, const double rmax, const
   return xbinsize;
 }
 
-void get_max_min(const int ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
-								 DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z)
+void get_max_min(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+				 DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z)
 {
-	DOUBLE xmin = *min_x, ymin = *min_y, zmin=*min_z;
-	DOUBLE xmax = *max_x, ymax = *max_y, zmax=*max_z;
+  DOUBLE xmin = *min_x, ymin = *min_y, zmin=*min_z;
+  DOUBLE xmax = *max_x, ymax = *max_y, zmax=*max_z;
 	
-  for(int i=0;i<ND1;i++) {
+  for(int64_t i=0;i<ND1;i++) {
     if(X1[i] < xmin) xmin=X1[i];
     if(Y1[i] < ymin) ymin=Y1[i];
     if(Z1[i] < zmin) zmin=Z1[i];
@@ -50,29 +50,29 @@ void get_max_min(const int ND1, const DOUBLE * restrict X1, const DOUBLE * restr
 }
 
 
-cellarray * gridlink(const int np,
-										 const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
-										 const DOUBLE xmin, const DOUBLE xmax,
-										 const DOUBLE ymin, const DOUBLE ymax,
-										 const DOUBLE zmin, const DOUBLE zmax,
-										 const DOUBLE max_x_size,
-										 const DOUBLE max_y_size,
-										 const DOUBLE max_z_size,
-										 const int xbin_refine_factor,
-										 const int ybin_refine_factor,
-										 const int zbin_refine_factor,
-										 int *nlattice_x,
-										 int *nlattice_y,
-										 int *nlattice_z)
+cellarray * gridlink(const int64_t np,
+					 const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
+					 const DOUBLE xmin, const DOUBLE xmax,
+					 const DOUBLE ymin, const DOUBLE ymax,
+					 const DOUBLE zmin, const DOUBLE zmax,
+					 const DOUBLE max_x_size,
+					 const DOUBLE max_y_size,
+					 const DOUBLE max_z_size,
+					 const int xbin_refine_factor,
+					 const int ybin_refine_factor,
+					 const int zbin_refine_factor,
+					 int *nlattice_x,
+					 int *nlattice_y,
+					 int *nlattice_z)
 {
   cellarray *lattice=NULL;
   int ix,iy,iz;
   int nmesh_x,nmesh_y,nmesh_z;
-  int *nallocated=NULL;
+  int64_t *nallocated=NULL;
   DOUBLE xdiff,ydiff,zdiff;
   DOUBLE cell_volume,box_volume;
   DOUBLE xbinsize,ybinsize,zbinsize;
-  int expected_n=0;
+  int64_t expected_n=0;
   int64_t totncells;
   struct timeval t0,t1;
   gettimeofday(&t0,NULL);
@@ -89,10 +89,10 @@ cellarray * gridlink(const int np,
   
   cell_volume=xbinsize*ybinsize*zbinsize;
   box_volume=xdiff*ydiff*zdiff;
-  expected_n=(int)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
+  expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
   fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
   lattice    = (cellarray *) my_malloc(sizeof(cellarray), totncells);
-  nallocated = (int *)       my_malloc(sizeof(int)      , totncells);
+  nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
 
   for (int i=0;i<nmesh_x;i++) {
     for (int j=0;j<nmesh_y;j++) {
@@ -111,7 +111,7 @@ cellarray * gridlink(const int np,
   DOUBLE yinv=1.0/ybinsize;
   DOUBLE zinv=1.0/zbinsize;
   
-  for (int i=0;i<np;i++)  {
+  for (int64_t i=0;i<np;i++)  {
     ix=(int)((x[i]-xmin)*xinv) ;
     iy=(int)((y[i]-ymin)*yinv) ;
     iz=(int)((z[i]-zmin)*zinv) ;
@@ -119,7 +119,7 @@ cellarray * gridlink(const int np,
     if (iy>nmesh_y-1)  iy--;
     if (iz>nmesh_z-1)  iz--;
 	if(! ( ix >= 0 && ix < nmesh_x && iy >=0 && iy < nmesh_y && iz >= 0 && iz < nmesh_z)) {
-	  fprintf(stderr,"Problem with i = %d x = %lf y = %lf z = %lf \n",i,x[i],y[i],z[i]);
+	  fprintf(stderr,"Problem with i = %"PRId64" x = %lf y = %lf z = %lf \n",i,x[i],y[i],z[i]);
 	  fprintf(stderr,"ix = %d iy = %d iz = %d\n",ix,iy,iz);
 	}
 	assert(x[i] >= xmin && x[i] <= xmax && "x-position is within limits");
@@ -148,7 +148,7 @@ cellarray * gridlink(const int np,
       nallocated[index] = expected_n;
     }
     assert(lattice[index].nelements < nallocated[index] && "Ensuring that number of particles in a cell doesn't corrupt memory");
-    int ipos=lattice[index].nelements;
+    int64_t ipos=lattice[index].nelements;
     lattice[index].x[ipos] = x[i];
     lattice[index].y[ipos] = y[i];
     lattice[index].z[ipos] = z[i];

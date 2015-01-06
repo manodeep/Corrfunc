@@ -25,22 +25,34 @@
 #define MAXLEN 500
 #endif
 
+//Just to output some colors
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+
+/* #define ANSI_COLOR_YELLOW  "\x1b[33m" */
+/* #define ANSI_COLOR_MAGENTA "\x1b[35m" */
+/* #define ANSI_COLOR_CYAN    "\x1b[36m" */
+
+
+
 void Printhelp(void);
 
 void Printhelp(void)
 {
-  fprintf(stderr,"=========================================================================\n") ;
-	fprintf(stderr,"   --- run_correlations file format binfile boxsize [Nthreads] \n") ;
-	fprintf(stderr,"   --- Measure the auto-correlation functions DD(r), DD(rp, pi) and wp(rp) for a single file\n");
-	fprintf(stderr,"       data files (or autocorrelation if data1=data2).\n") ;
-	fprintf(stderr,"     * fille        = name of data file\n") ;
-	fprintf(stderr,"     * format       = format of data file  (a=ascii, f=fast-food)\n") ;
-	fprintf(stderr,"     * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
-	fprintf(stderr,"     * boxsize      = BoxSize (in same units as X/Y/Z of the data)\n");
+  fprintf(stderr,ANSI_COLOR_RED "=========================================================================\n") ;
+  fprintf(stderr,"   --- run_correlations file format binfile boxsize [Nthreads] \n") ;
+  fprintf(stderr,"   --- Measure the auto-correlation functions DD(r), DD(rp, pi) and wp(rp) for a single file\n");
+  fprintf(stderr,"     * fille        = name of data file\n") ;
+  fprintf(stderr,"     * format       = format of data file  (a=ascii, f=fast-food)\n") ;
+  fprintf(stderr,"     * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
+  fprintf(stderr,"     * boxsize      = BoxSize (in same units as X/Y/Z of the data)\n");
 #ifdef USE_OMP
-		fprintf(stderr,"     * numthreads   = number of threads to use\n");
+  fprintf(stderr,"     * numthreads   = number of threads to use\n");
 #endif
-  fprintf(stderr,"=========================================================================\n") ;	
+  fprintf(stderr,"=========================================================================" ANSI_COLOR_RESET "\n") ;	
 }
 
 int main(int argc, char **argv)
@@ -83,7 +95,7 @@ int main(int argc, char **argv)
 		boxsize=420.0;
 	}
 
-	fprintf(stderr,"Running `%s' with the parameters \n",argv[0]);
+	fprintf(stderr,ANSI_COLOR_BLUE  "Running `%s' with the parameters \n",argv[0]);
 	fprintf(stderr,"\n\t\t -------------------------------------\n");
 	fprintf(stderr,"\t\t %-10s = %s \n",argnames[0],file);
 	fprintf(stderr,"\t\t %-10s = %s \n",argnames[1],fileformat);
@@ -92,16 +104,16 @@ int main(int argc, char **argv)
 #ifdef USE_OMP
 	fprintf(stderr,"\t\t %-10s = %d\n",argnames[4],nthreads);
 #endif	
-	fprintf(stderr,"\t\t -------------------------------------\n");
+	fprintf(stderr,"\t\t -------------------------------------" ANSI_COLOR_RESET "\n");
 
 	//Read-in the data
-	const int ND1 = read_positions(file,fileformat,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
+	const int64_t ND1 = read_positions(file,fileformat,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
 
 	int autocorr=1;
 	DOUBLE *x2 = x1;
 	DOUBLE *y2 = y1;
 	DOUBLE *z2 = z1;
-	int ND2 = ND1;
+	int64_t ND2 = ND1;
 	
 	//Do the straight-up DD counts
 	{
@@ -115,7 +127,7 @@ int main(int argc, char **argv)
 																						 binfile);
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-		fprintf(stderr,"Done 3-d auto-correlation. Ngalaxies = %d Time taken = %8.2lf seconds\n", ND1, pair_time);
+		fprintf(stderr,ANSI_COLOR_GREEN "Done 3-d auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);
 		//The results structure contains the pair-counts
 		
 		
@@ -138,7 +150,7 @@ int main(int argc, char **argv)
 		
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-		fprintf(stderr,"Done DD(rp,pi) auto-correlation. Ngalaxies = %d Time taken = %8.2lf seconds \n", ND1, pair_time);		
+		fprintf(stderr,ANSI_COLOR_GREEN "Done DD(rp,pi) auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);		
 		
 
 		//free the result structure
@@ -160,7 +172,7 @@ int main(int argc, char **argv)
 																									 pimax);
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-		fprintf(stderr,"Done wp. Ngalaxies = %d Time taken = %8.2lf seconds\n", ND1, pair_time);
+		fprintf(stderr,ANSI_COLOR_GREEN "Done wp. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, pair_time);
 
 		//free the result structure
 		free_results_wp(&results);

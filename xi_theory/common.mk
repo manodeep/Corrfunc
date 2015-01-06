@@ -15,7 +15,7 @@ MINOR=0
 MAJOR=1
 CLINK=
 INCLUDE=-I../io -I../utils -I../include 
-CFLAGS= -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3 -Ofast
+CFLAGS= -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3 
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))

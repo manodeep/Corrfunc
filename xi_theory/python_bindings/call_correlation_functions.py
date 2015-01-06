@@ -12,7 +12,6 @@ import numpy as np
 import _countpairs
 
 
-
 file="../tests/data/gals_Mr19.txt"
 binfile="../tests/bins"
 dtype='float' ### Make sure the precision agrees with the definition in ../common.mk
@@ -25,6 +24,7 @@ boxsize=np.max(array)
 nthreads=4
 pimax=40.0
 results = _countpairs.countpairs_wp(boxsize,pimax,nthreads,binfile,x,y,z)
+
 
 
 
