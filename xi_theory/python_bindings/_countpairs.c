@@ -46,8 +46,6 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 {
 	(void) self;//to suppress the unused variable warning. Terrible hack
 	PyObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
-	struct timeval t0,t1;
-	gettimeofday(&t0,NULL);
 	int autocorr=0;
 	int nthreads=4;
 	char binfile[MAXLEN];
@@ -119,10 +117,11 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
 	Py_DECREF(x2_array);Py_DECREF(y2_array);Py_DECREF(z2_array);
 
-	double value=0.0;
-	gettimeofday(&t1,NULL);
-  /* Build the output tuple */
-	PyObject *ret = Py_BuildValue("d", value);
+	/* Build the output list */
+	PyObject *ret = PyList_New(results->nbin);
+    for (int i = 0; i < results->nbin; ) {
+	  PyList_SET_ITEM(ret, i, PyLong_FromLong(results->npairs[i]));
+    }
 
 	free_results(&results);
 	return ret;
@@ -133,9 +132,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 {
 	(void) self;//to suppress the unused variable warning. Terrible hack
 	PyObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
-	struct timeval t0,t1;
 	char binfile[MAXLEN];
-	gettimeofday(&t0,NULL);
 	int autocorr=0;
 	int nthreads=4;
 	double pimax;
@@ -208,10 +205,11 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
 	Py_DECREF(x2_array);Py_DECREF(y2_array);Py_DECREF(z2_array);
 
-	double value=0.0;
-	gettimeofday(&t1,NULL);
-  /* Build the output tuple */
-	PyObject *ret = Py_BuildValue("d", value);
+	/* Build the output list */
+	PyObject *ret = PyList_New(results->nbin);
+    for (int i = 0; i < results->nbin; ) {
+	  PyList_SET_ITEM(ret, i, PyLong_FromLong(results->npairs[i]));
+    }
 
 	free_results_rp_pi(&results);
 	return ret;
@@ -223,8 +221,6 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 	PyObject *x1_obj, *y1_obj, *z1_obj;
 	double boxsize,pimax;
 	char binfile[MAXLEN];
-	struct timeval t0,t1;
-	gettimeofday(&t0,NULL);
 	int nthreads=4;
 	
 	if (!PyArg_ParseTuple(args, "ddisOOO",&boxsize,&pimax,&nthreads,&binfile,&x1_obj,&y1_obj,&z1_obj))
@@ -267,10 +263,11 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 	/* Clean up. */
 	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
 
-	double value=0.0;
-	gettimeofday(&t1,NULL);
-  /* Build the output tuple */
-	PyObject *ret = Py_BuildValue("d", value);
+	/* Build the output list */
+	PyObject *ret = PyList_New(results->nbin);
+    for (int i = 0; i < results->nbin; ) {
+	  PyList_SET_ITEM(ret, i, PyLong_FromLong(results->npairs[i]));
+    }
 
 	free_results_wp(&results);
 	return ret;

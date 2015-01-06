@@ -24,7 +24,7 @@ boxsize=np.max(array)
 nthreads=4
 pimax=40.0
 results = _countpairs.countpairs_wp(boxsize,pimax,nthreads,binfile,x,y,z)
-
+print("results = {}".format(results))
 
 
 
