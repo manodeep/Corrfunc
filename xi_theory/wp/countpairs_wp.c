@@ -45,7 +45,7 @@ void free_results_wp(results_countpairs_wp **results)
 }
 
 
-results_countpairs_wp *countpairs_wp(const int ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+results_countpairs_wp *countpairs_wp(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
 																		 const double boxsize, 
 #ifdef USE_OMP
 																		 const int numthreads,
@@ -207,16 +207,16 @@ results_countpairs_wp *countpairs_wp(const int ND1, const DOUBLE * restrict X1, 
 						const DOUBLE *y = first->y;
 						const DOUBLE *z = first->z;
 						
-						for(int k=0;k<first->nelements;k++) {
-							const DOUBLE x1pos = x[k] + off_xwrap;
-							const DOUBLE y1pos = y[k] + off_ywrap;
-							const DOUBLE z1pos = z[k] + off_zwrap;
+						for(int64_t i=0;i<first->nelements;i++) {
+							const DOUBLE x1pos = x[i] + off_xwrap;
+							const DOUBLE y1pos = y[i] + off_ywrap;
+							const DOUBLE z1pos = z[i] + off_zwrap;
 
 #ifndef USE_AVX							
-							for(int i=0;i<second->nelements;i++) {
-								const DOUBLE dx = x2[i]-x1pos;
-								const DOUBLE dy = y2[i]-y1pos;
-								const DOUBLE dz = z2[i]-z1pos;
+							for(int64_t j=0;j<second->nelements;j++) {
+								const DOUBLE dx = x2[j]-x1pos;
+								const DOUBLE dy = y2[j]-y1pos;
+								const DOUBLE dz = z2[j]-z1pos;
 								if(dz < 0 ) {
 									continue;
 								} else if(dz >= pimax) {
@@ -261,18 +261,18 @@ results_countpairs_wp *countpairs_wp(const int ND1, const DOUBLE * restrict X1, 
 							union float8 union_mDperp;
 #endif							
 							
-							int i;
-							for(i=0;i<= (second->nelements - NVEC);i+=NVEC) {
+							int64_t j;
+							for(j=0;j<= (second->nelements - NVEC);j+=NVEC) {
 								const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
 								const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
 					
-								const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[i]);
-								const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[i]);
-								const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[i]);
+								const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
+								const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
+								const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
 					
-								const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z[i] - z0
-								const AVX_FLOATS m_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[i])^2
-								const AVX_FLOATS m_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[i])^2
+								const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z[j] - z0
+								const AVX_FLOATS m_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[j])^2
+								const AVX_FLOATS m_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[j])^2
 								AVX_FLOATS m_dist  = AVX_ADD_FLOATS(m_xdiff,m_ydiff);
 					
 								AVX_FLOATS m_mask_left;
@@ -282,8 +282,8 @@ results_countpairs_wp *countpairs_wp(const int ND1, const DOUBLE * restrict X1, 
 									AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
 									const int test = AVX_TEST_COMPARISON(m_mask_pimax);
 									if(test == 0) {
-										i = second->nelements;
-										break;
+									  j = second->nelements;
+									  break;
 									}
 									m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax);
 									m_dist = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nbin-1],m_dist,m_mask_pimax);		  
@@ -332,10 +332,10 @@ results_countpairs_wp *countpairs_wp(const int ND1, const DOUBLE * restrict X1, 
 							}
 			  
 							//Now take care of the rest 
-							for(int ii=i;ii<second->nelements;ii++){
-								const DOUBLE dz = z2[ii] - z1pos;
-								const DOUBLE dx = x2[ii] - x1pos;
-								const DOUBLE dy = y2[ii] - y1pos;
+							for(;j<second->nelements;j++){
+								const DOUBLE dz = z2[j] - z1pos;
+								const DOUBLE dx = x2[j] - x1pos;
+								const DOUBLE dy = y2[j] - y1pos;
 								
 								if(dz < 0 ) {
 									continue;

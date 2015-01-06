@@ -94,8 +94,8 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 
 	
   /* How many data points are there? */
-	const int ND1 = (int)PyArray_DIM(x1_array, 0);
-	const int ND2 = (int)PyArray_DIM(x2_array, 0);
+	const int64_t ND1 = (int64_t)PyArray_DIM(x1_array, 0);
+	const int64_t ND2 = (int64_t)PyArray_DIM(x2_array, 0);
 
 	/* Get pointers to the data as C-types. */
 	DOUBLE *x1 = (DOUBLE *)PyArray_DATA(x1_array);
