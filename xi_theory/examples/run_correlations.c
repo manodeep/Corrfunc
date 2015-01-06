@@ -49,6 +49,7 @@ void Printhelp(void)
   fprintf(stderr,"     * format       = format of data file  (a=ascii, f=fast-food)\n") ;
   fprintf(stderr,"     * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
   fprintf(stderr,"     * boxsize      = BoxSize (in same units as X/Y/Z of the data)\n");
+  fprintf(stderr,"     * pimax        = pimax   (in same units as X/Y/Z of the data)\n");
 #ifdef USE_OMP
   fprintf(stderr,"     * numthreads   = number of threads to use\n");
 #endif
@@ -63,12 +64,13 @@ int main(int argc, char **argv)
 	DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
 	double boxsize;
 	struct timeval t0,t1;
+	DOUBLE pimax;
 		
 #ifndef USE_OMP
-	const char argnames[][30]={"file","format","binfile","boxsize"};
+	const char argnames[][30]={"file","format","binfile","boxsize","pimax"};
 #else
 	int nthreads=4;//default to 4 threads
-	const char argnames[][30]={"file","format","binfile","boxsize","Nthreads"};
+	const char argnames[][30]={"file","format","binfile","boxsize","pimax","Nthreads"};
 #endif
 	int nargs=sizeof(argnames)/(sizeof(char)*30);
 	
@@ -84,8 +86,9 @@ int main(int argc, char **argv)
 			my_snprintf(fileformat,MAXLEN, "%s",argv[2]);
 			my_snprintf(binfile,MAXLEN,"%s",argv[3]);
 			boxsize=atof(argv[4]);
+			pimax=atof(argv[5]);
 #ifdef USE_OMP
-			nthreads = atoi(argv[5]);
+			nthreads = atoi(argv[6]);
 #endif			
 		}
 	} else {
@@ -93,6 +96,7 @@ int main(int argc, char **argv)
 		my_snprintf(fileformat, MAXLEN, "%s","f");
 		my_snprintf(binfile, MAXLEN,"%s","../tests/bins");
 		boxsize=420.0;
+		pimax=40.0;
 	}
 
 	fprintf(stderr,ANSI_COLOR_BLUE  "Running `%s' with the parameters \n",argv[0]);
@@ -100,9 +104,10 @@ int main(int argc, char **argv)
 	fprintf(stderr,"\t\t %-10s = %s \n",argnames[0],file);
 	fprintf(stderr,"\t\t %-10s = %s \n",argnames[1],fileformat);
 	fprintf(stderr,"\t\t %-10s = %s \n",argnames[2],binfile);
-	fprintf(stderr,"\t\t %-10s = %lf\n",argnames[3],boxsize);
+	fprintf(stderr,"\t\t %-10s = %10.4lf\n",argnames[3],boxsize);
+	fprintf(stderr,"\t\t %-10s = %10.4lf\n",argnames[4],pimax);
 #ifdef USE_OMP
-	fprintf(stderr,"\t\t %-10s = %d\n",argnames[4],nthreads);
+	fprintf(stderr,"\t\t %-10s = %d\n",argnames[5],nthreads);
 #endif	
 	fprintf(stderr,"\t\t -------------------------------------" ANSI_COLOR_RESET "\n");
 
@@ -138,7 +143,6 @@ int main(int argc, char **argv)
 	//Do the DD(rp, pi) counts
 	{
 		gettimeofday(&t0,NULL);
-		DOUBLE pimax=40.0;
 		results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,x1,y1,z1,
 																												 ND2,x2,y2,z2,
 #ifdef USE_OMP
@@ -162,7 +166,6 @@ int main(int argc, char **argv)
 	//Do the wp counts
 	{
 		gettimeofday(&t0,NULL);
-		DOUBLE pimax=40.0;
 		results_countpairs_wp *results = countpairs_wp(ND1,x1,y1,z1,
 																									 boxsize,
 #ifdef USE_OMP
