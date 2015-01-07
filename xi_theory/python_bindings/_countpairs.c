@@ -264,11 +264,15 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
 
 	/* Build the output list */
-	PyObject *ret = PyList_New(results->nbin);
-    for (int i = 0; i < results->nbin; ) {
-	  PyList_SET_ITEM(ret, i, PyLong_FromLong(results->npairs[i]));
-    }
+/* 	PyObject *ret = PyList_New(results->nbin); */
+/*     for (int i = 0; i < results->nbin; i++) { */
+/* 	  PyList_SET_ITEM(ret, i, PyLong_FromLong(results->npairs[i])); */
+/*     } */
 
+	PyObject *ret = PyList_New(results->nbin);
+	for(int i=0;i<results->nbin;i++) {
+	  PyList_Append(ret, PyLong_FromLong(results->npairs[i]));
+	}
 	free_results_wp(&results);
 	return ret;
 }
