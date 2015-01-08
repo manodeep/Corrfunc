@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       else
 				fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
     }
-    if(i < nargs) {
+    if(i <= nargs) {
       fprintf(stderr,"\nMissing required parameters \n");
       for(i=argc;i<=nargs;i++)
 				fprintf(stderr,"\t\t %s = `?'\n",argnames[i-1]);

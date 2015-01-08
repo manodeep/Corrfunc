@@ -40,10 +40,10 @@ install: $(LIBRARY)
 	ln -s $(LIBRARY) ../lib/_countpairs.so
 
 clean:
-	rm -f $(LIBRARY) $(OBJECTS)
+	rm -f $(LIBRARY) $(OBJECTS) _countpairs.so 
 
 celan:
-	rm -f $(LIBRARY) $(OBJECTS)
+	rm -f $(LIBRARY) $(OBJECTS) _countpairs.so 
 
 clena:
-	rm -f $(LIBRARY) $(OBJECTS) 
+	rm -f $(LIBRARY) $(OBJECTS) _countpairs.so 
