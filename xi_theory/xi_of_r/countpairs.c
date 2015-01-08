@@ -9,8 +9,6 @@
 
 #ifdef USE_AVX
 #include "avx_calls.h"
-#else
-#define PREFETCH(mem)        asm ("prefetcht0 %0"::"m"(mem))
 #endif
 
 #define BLOCK_SIZE     16
@@ -20,7 +18,7 @@
 #include <omp.h>
 #endif
 
-void free_results(results_countpairs **results)
+void free_results(results_countpairs **results) 
 {
 	if(results == NULL)
 		return;

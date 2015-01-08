@@ -15,7 +15,7 @@ typedef struct{
 	int nbin;
 } results_countpairs_wp;
 
-results_countpairs_wp *countpairs_wp(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
 									 const double boxsize, 
 #ifdef USE_OMP
 									 const int numthreads,

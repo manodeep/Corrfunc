@@ -26,7 +26,7 @@
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
 
-#include "sglib.h"
+
 
 void Printhelp(void);
 
@@ -120,13 +120,6 @@ int main(int argc, char *argv[])
 		assert(z1[i] >= 0.0 && z1[i] <= boxsize && "zpos is within limits [0, boxsize]");
   }
 
-	//Sort the arrays on z
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x1,i,j); \
-	SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y1,i,j); \
-	SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z1,i,j) }
-
-	SGLIB_ARRAY_QUICK_SORT(DOUBLE, z1, ND1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
-	
   /*---Count-pairs--------------------------------------*/
   gettimeofday(&t0,NULL);
 	results_countpairs_wp *results = countpairs_wp(ND1, x1, y1, z1,

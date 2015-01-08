@@ -9,6 +9,7 @@ wprp
 DDrppi
 wp
 run_correlations
+libcount*.a
 include/countpairs*.h
 *.so*
 a.out
