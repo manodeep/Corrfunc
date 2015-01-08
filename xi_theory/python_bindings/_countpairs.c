@@ -5,11 +5,6 @@
 #include "countpairs_rp_pi.h"
 #include "countpairs_wp.h"
 
-#ifndef MAXLEN
-#define MAXLEN 1000
-#endif
-
-
 //Docstrings for the methods
 static char module_docstring[]             =	"This module provides an interface for calculating correlation functions using C.";
 static char countpairs_docstring[]         =	"Calculate the 3-D \\xi auto/cross-correlation function given two sets of X1/Y1/Z1 and X2/Y2/Z2 arrays.";
@@ -48,9 +43,111 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 	PyObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
 	int autocorr=0;
 	int nthreads=4;
-	char binfile[MAXLEN];
+	char *binfile;
 	
 	if (!PyArg_ParseTuple(args, "iisOOOOOO",&autocorr,&nthreads,&binfile,&x1_obj,&y1_obj,&z1_obj,&x2_obj,&y2_obj,&z2_obj))
+		return NULL;
+
+	/* Interpret the input objects as numpy arrays. */
+#ifdef DOUBLE_PREC	
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+#else
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
+#endif
+	
+	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
+		Py_XDECREF(x1_array);
+		Py_XDECREF(y1_array);
+		Py_XDECREF(z1_array);
+		Py_RETURN_NONE;
+	}
+
+
+	/* Interpret the input objects as numpy arrays. */
+#ifdef DOUBLE_PREC	
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+#else
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_FLOAT, NPY_IN_ARRAY);
+#endif
+	
+	if (x2_array == NULL || y2_array == NULL || z2_array == NULL) {
+		Py_XDECREF(x2_array);
+		Py_XDECREF(y2_array);
+		Py_XDECREF(z2_array);
+		Py_RETURN_NONE;
+	}
+
+	
+  /* How many data points are there? */
+	const int64_t ND1 = (int64_t)PyArray_DIM(x1_array, 0);
+	const int64_t ND2 = (int64_t)PyArray_DIM(x2_array, 0);
+
+	/* Get pointers to the data as C-types. */
+	DOUBLE *x1 = (DOUBLE *)PyArray_DATA(x1_array);
+	DOUBLE *y1 = (DOUBLE *)PyArray_DATA(y1_array);
+	DOUBLE *z1 = (DOUBLE *)PyArray_DATA(z1_array);
+
+	DOUBLE *x2 = (DOUBLE *)PyArray_DATA(x2_array);
+	DOUBLE *y2 = (DOUBLE *)PyArray_DATA(y2_array);
+	DOUBLE *z2 = (DOUBLE *)PyArray_DATA(z2_array);
+		
+
+	results_countpairs *results = countpairs(ND1,x1,y1,z1,
+																					 ND2,x2,y2,z2,
+#ifdef USE_OMP
+																					 nthreads,
+#endif
+																					 autocorr,
+																					 binfile);
+		
+	/* Clean up. */
+	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
+	Py_DECREF(x2_array);Py_DECREF(y2_array);Py_DECREF(z2_array);
+
+	/* Build the output list */
+	PyObject *ret = PyList_New(0);
+	DOUBLE rlow=results->rupp[0];
+	for(int i=1;i<results->nbin;i++) {
+		PyObject *item = NULL;
+#ifdef OUTPUT_RPAVG
+		const DOUBLE rpavg = results->rpavg[i];
+#else
+		const DOUBLE rpavg = 0.0;
+#endif
+		
+#ifdef DOUBLE_PREC
+	  item = Py_BuildValue("(dddk)", rlow,results->rupp[i],rpavg,results->npairs[i]);
+#else
+		item = Py_BuildValue("(fffk)", rlow,results->rupp[i],rpavg,results->npairs[i]);
+#endif
+		PyList_Append(ret, item);
+		Py_XDECREF(item);
+		rlow=results->rupp[i];
+	}
+
+	free_results(&results);
+	return ret;
+}
+
+
+static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
+{
+	(void) self;//to suppress the unused variable warning. Terrible hack
+	PyObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
+	int autocorr=0;
+	int nthreads=4;
+	double pimax;
+	char *binfile;
+	
+	if (!PyArg_ParseTuple(args, "iidsOOOOOO",&autocorr,&nthreads,&pimax,&binfile,&x1_obj,&y1_obj,&z1_obj,&x2_obj,&y2_obj,&z2_obj))
 		return NULL;
 
 	/* Interpret the input objects as numpy arrays. */
@@ -105,93 +202,6 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 	DOUBLE *z2 = (DOUBLE *)PyArray_DATA(z2_array);
 		
 
-	results_countpairs *results = countpairs(ND1,x1,y1,z1,
-																					 ND2,x2,y2,z2,
-#ifdef USE_OMP
-																					 nthreads,
-#endif
-																					 autocorr,
-																					 binfile);
-		
-	/* Clean up. */
-	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
-	Py_DECREF(x2_array);Py_DECREF(y2_array);Py_DECREF(z2_array);
-
-	/* Build the output list */
-	PyObject *ret = PyList_New(results->nbin);
-    for (int i = 0; i < results->nbin; ) {
-	  PyList_SET_ITEM(ret, i, PyLong_FromLong(results->npairs[i]));
-    }
-
-	free_results(&results);
-	return ret;
-}
-
-
-static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
-{
-	(void) self;//to suppress the unused variable warning. Terrible hack
-	PyObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
-	char binfile[MAXLEN];
-	int autocorr=0;
-	int nthreads=4;
-	double pimax;
-	
-	if (!PyArg_ParseTuple(args, "iidsOOOOOO",&autocorr,&nthreads,&pimax,&binfile,&x1_obj,&y1_obj,&z1_obj,&x2_obj,&y2_obj,&z2_obj))
-		return NULL;
-
-	/* Interpret the input objects as numpy arrays. */
-#ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
-#else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-#endif
-	
-	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
-		Py_XDECREF(x1_array);
-		Py_XDECREF(y1_array);
-		Py_XDECREF(z1_array);
-		return NULL;
-	}
-
-
-	/* Interpret the input objects as numpy arrays. */
-#ifdef DOUBLE_PREC	
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
-#else
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-#endif
-	
-	if (x2_array == NULL || y2_array == NULL || z2_array == NULL) {
-		Py_XDECREF(x2_array);
-		Py_XDECREF(y2_array);
-		Py_XDECREF(z2_array);
-		return NULL;
-	}
-
-	
-  /* How many data points are there? */
-	const int ND1 = (int)PyArray_DIM(x1_array, 0);
-	const int ND2 = (int)PyArray_DIM(x2_array, 0);
-
-	/* Get pointers to the data as C-types. */
-	DOUBLE *x1 = (DOUBLE *)PyArray_DATA(x1_array);
-	DOUBLE *y1 = (DOUBLE *)PyArray_DATA(y1_array);
-	DOUBLE *z1 = (DOUBLE *)PyArray_DATA(z1_array);
-
-	DOUBLE *x2 = (DOUBLE *)PyArray_DATA(x2_array);
-	DOUBLE *y2 = (DOUBLE *)PyArray_DATA(y2_array);
-	DOUBLE *z2 = (DOUBLE *)PyArray_DATA(z2_array);
-		
-
 	results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,x1,y1,z1,
 																											 ND2,x2,y2,z2,
 #ifdef USE_OMP
@@ -206,11 +216,24 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 	Py_DECREF(x2_array);Py_DECREF(y2_array);Py_DECREF(z2_array);
 
 	/* Build the output list */
-	PyObject *ret = PyList_New(results->nbin);
-    for (int i = 0; i < results->nbin; ) {
-	  PyList_SET_ITEM(ret, i, PyLong_FromLong(results->npairs[i]));
-    }
-
+	PyObject *ret = PyList_New(0);//create an empty list
+	DOUBLE rlow=results->rupp[0];
+	const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
+	
+	for(int i=1;i<results->nbin;i++) {
+		for(int j=0;j<results->npibin;j++) {
+			int index = i*(results->npibin + 1) + j;
+			PyObject *item = NULL;
+#ifdef OUTPUT_RPAVG		
+			item = Py_BuildValue("(ddddi)", rlow,results->rupp[i],results->rpavg[index],(j+1)*dpi,results->npairs[index]);
+#else
+			item = Py_BuildValue("(ddddi)", rlow,results->rupp[i],0.0,(j+1)*dpi,results->npairs[index]);
+#endif
+			PyList_Append(ret, item);
+			Py_XDECREF(item);
+		}
+		rlow=results->rupp[i];
+	}
 	free_results_rp_pi(&results);
 	return ret;
 }
@@ -220,8 +243,8 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 	(void) self;//to suppress the unused variable warning. Terrible hack
 	PyObject *x1_obj, *y1_obj, *z1_obj;
 	double boxsize,pimax;
-	char binfile[MAXLEN];
 	int nthreads=4;
+	char *binfile;
 	
 	if (!PyArg_ParseTuple(args, "ddisOOO",&boxsize,&pimax,&nthreads,&binfile,&x1_obj,&y1_obj,&z1_obj))
 		return NULL;
@@ -246,7 +269,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 
 
   /* How many data points are there? */
-	const int ND1 = (int)PyArray_DIM(x1_array, 0);
+	const int64_t ND1 = (int64_t)PyArray_DIM(x1_array, 0);
 
 	/* Get pointers to the data as C-types. */
 	DOUBLE *x1 = (DOUBLE *)PyArray_DATA(x1_array);
@@ -262,16 +285,36 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 	
 	/* Clean up. */
 	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
+/* 	for(int i=1;i<results->nbin;i++) { */
+/* #ifdef OUTPUT_RPAVG */
+/* 		const DOUBLE rpavg = results->rpavg[i]; */
+/* #else */
+/* 		const DOUBLE rpavg = 0.0; */
+/* #endif */
+/* 		fprintf(stderr,"%lf %lf %lf %lf %"PRIu64"\n",results->rupp[i-1],results->rupp[i],rpavg,results->wp[i],results->npairs[i]); */
+/* 	} */
 
+	
 	/* Build the output list */
-/* 	PyObject *ret = PyList_New(results->nbin); */
-/*     for (int i = 0; i < results->nbin; i++) { */
-/* 	  PyList_SET_ITEM(ret, i, PyLong_FromLong(results->npairs[i])); */
-/*     } */
+	PyObject *ret = PyList_New(0);
+	DOUBLE rlow=results->rupp[0];
+	for(int i=1;i<results->nbin;i++) {
+		PyObject *item = NULL;
+#ifdef OUTPUT_RPAVG 
+		const DOUBLE rpavg = results->rpavg[i];
+#else
+		const DOUBLE rpavg = 0.0;
+#endif
 
-	PyObject *ret = PyList_New(results->nbin);
-	for(int i=0;i<results->nbin;i++) {
-	  PyList_Append(ret, PyLong_FromLong(results->npairs[i]));
+#ifdef DOUBLE_PREC		
+	  item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,results->wp[i],results->npairs[i]);
+#else
+		item = Py_BuildValue("(ffffk)", rlow,results->rupp[i],rpavg,results->wp[i],results->npairs[i]);
+#endif//DOUBLE_PREC
+
+		PyList_Append(ret, item);
+		Py_XDECREF(item);
+		rlow=results->rupp[i];
 	}
 	free_results_wp(&results);
 	return ret;
