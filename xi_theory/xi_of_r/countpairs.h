@@ -23,4 +23,4 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 								const char *binfile) __attribute__((warn_unused_result));
 
 
-void free_results(results_countpairs **results);
+void free_results(results_countpairs **results)  __attribute__((noinline));

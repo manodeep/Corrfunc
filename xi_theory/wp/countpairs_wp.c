@@ -11,6 +11,7 @@
 #include "gridlink.h"//function proto-type for gridlink
 #include "countpairs_wp.h" //function proto-type
 
+#include "sglib.h"
 
 #ifdef USE_AVX
 #include "avx_calls.h"
@@ -45,7 +46,7 @@ void free_results_wp(results_countpairs_wp **results)
 }
 
 
-results_countpairs_wp *countpairs_wp(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
 																		 const double boxsize, 
 #ifdef USE_OMP
 																		 const int numthreads,
@@ -104,6 +105,13 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, const DOUBLE * restrict 
 	const DOUBLE sqr_rpmin = rupp_sqr[0];
 	const DOUBLE sqr_rpmax = rupp_sqr[nbin-1];
 	
+	//Sort the arrays on z
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,X1,i,j); \
+	SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Y1,i,j); \
+	SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Z1,i,j) }
+
+	SGLIB_ARRAY_QUICK_SORT(DOUBLE, Z1, ND1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+
   //set up the 3-d grid structure. Each element of the structure contains a
   //pointer to the cellarray structure that itself contains all the points
   cellarray *lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
@@ -450,7 +458,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, const DOUBLE * restrict 
 		results->wp[i] = (weight0/weightrandom-1)*twice_pimax;
 		rlow=results->rupp[i];
 	}
-
+	free(rupp);
 	return results;
 }
 

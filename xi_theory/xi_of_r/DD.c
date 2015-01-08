@@ -38,11 +38,6 @@ int main(int argc, char *argv[])
   struct timeval t_end,t_start,t0,t1;
   double read_time=0.0;
 
-#ifdef USE_ISPC
-#error "ISPC features has not been implemented correctly yet. Please disable this Makefile option"
-#endif
-
-
   gettimeofday(&t_start,NULL);
   
   /*---Read-arguments-----------------------------------*/
@@ -130,7 +125,7 @@ int main(int argc, char *argv[])
 	  free(x2);free(y2);free(z2);
   }
 
-	double rlow=results->rupp[0];
+	DOUBLE rlow=results->rupp[0];
   for(int i=1;i<results->nbin;i++) {
 #ifdef OUTPUT_RPAVG	  
     fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]);
@@ -143,7 +138,7 @@ int main(int argc, char *argv[])
 	//free the memory in the results structx
 	free_results(&results);
   gettimeofday(&t_end,NULL);
-  fprintf(stderr,"xi> Done -  ND1=%"PRId64" ND2=%"PRId64". Time taken = %6.2lf seconds. read-in time = %6.2lf seconds sec pair-counting time = %6.2lf sec\n",
+  fprintf(stderr,"xi_of_r> Done -  ND1=%"PRId64" ND2=%"PRId64". Time taken = %6.2lf seconds. read-in time = %6.2lf seconds sec pair-counting time = %6.2lf sec\n",
 		  ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);
   return EXIT_SUCCESS;
 }

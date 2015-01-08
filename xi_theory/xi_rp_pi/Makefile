@@ -22,30 +22,26 @@ wprp: $(OBJS2) Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS2) $(CLINK)
 
 OBJS3=countpairs_rp_pi.o ../utils/gridlink.o ../utils/utils.o 
-lib: $(OBJS3)
-	mkdir -p ../lib
-# 	$(CC) $(LDFLAGS) $(OBJS3) -shared -Wl,-soname,libcountpairs_rp_pi.so.$(MAJOR) -o libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) 
-# 	ldconfig -n ./ 
-# 	ln -s libcountpairs_rp_pi.so.$(MAJOR) libcountpairs_rp_pi.so
-# 	cp -p libcountpairs_rp_pi* ../lib
-# 	cp -p countpairs_rp_pi.h ../include 
+lib: libcountpairs_rp_pi.a
 
-	$(CC) $(CFLAGS) $(CLINK) $(OPT) $(LDFLAGS) $(OBJS3) -shared -o libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) 
-	cp -p libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) ../lib
-	rm -f ../lib/libcountpairs_rp_pi.so 
-	ln -s ../lib/libcountpairs_rp_pi.so.$(MAJOR).0.$(MINOR) ../lib/libcountpairs_rp_pi.so
+libcountpairs_rp_pi.a: ../lib $(OBJS3)
+	ar rcs $@ $(OBJS3)
+	cp -p $@ ../lib/
 	cp -p countpairs_rp_pi.h ../include 
+
+../lib:
+	mkdir -p ../lib
 
 .PHONY: clean clena celan 
 
 clean:
-	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.so 
+	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
 
 clena:
-	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.so 
+	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
 
 celan:
-	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.so
+	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
 
 install:
 	mkdir -p ../bin
