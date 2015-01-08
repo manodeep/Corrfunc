@@ -29,13 +29,13 @@ examples: lib
 
 realclean:
 	$(MAKE) clean
+	rm -f bin/$(target)
 	rm -f lib/libcountpairs.a 
 	rm -f lib/libcountpairs_rp_pi.a
 	rm -f lib/libcountpairs_wp.a 
 	rm -f bin/DD bin/DDrppi bin/wprp bin/wp
 	rm -f include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h 
-	rm -f lib/_countpairs.a
-
+	rm -f lib/_countpairs.so lib/_countpairs.so.$(MAJOR).0.$(MINOR)
 
 clean:
 	rm -f $(target) $(OBJS1) 
