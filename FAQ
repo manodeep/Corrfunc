@@ -1,0 +1,19 @@
+Problems with the python interface on MAC:
+
+1. You are getting the error message "Fatal Python error: PyThreadState_Get: no current thread"
+when you do "python call_correlation_functions.py"
+
+This is usually caused by a python library mis-match between linking time and run-time, i.e., 
+the python shared extension (_countpairs.so in the python_bindings/ subdir) was built with a
+python lib version that is not the first one in your search path. The way I resolved it on 
+my MAC was by adding the path: "python-config --prefix"/lib to the dynamic library 
+path environment variable. 
+
+In my case, I use the anaconda distribution for python at link-time but I pick 
+up the macports install at run-time. The exact command to fix the situation is:
+
+export DYLD_LIBRARY_PATH=/Users/manodeep/anaconda/lib:$DYLD_LIBRARY_PATH
+
+where, "/Users/manodeep/anaconda/" is the output of "python-config --prefix". 
+
+
