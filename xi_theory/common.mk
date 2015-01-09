@@ -34,6 +34,7 @@ ifeq (icc,$(findstring icc,$(CC)))
   CFLAGS += -xhost   #-vec-report6  
   ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 		CFLAGS += -openmp
+		CLINK  += -openmp
   endif
 else
 
@@ -42,6 +43,7 @@ else
 		CFLAGS += -funroll-loops -fprefetch-loop-arrays #-fprofile-use -fprofile-correction #-fprofile-generate
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 			CFLAGS += -fopenmp
+			CLINK  += -fopenmp
     endif
   endif
 
