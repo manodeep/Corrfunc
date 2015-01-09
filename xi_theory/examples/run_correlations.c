@@ -45,7 +45,7 @@ void Printhelp(void)
   fprintf(stderr,ANSI_COLOR_RED "=========================================================================\n") ;
   fprintf(stderr,"   --- run_correlations file format binfile boxsize [Nthreads] \n") ;
   fprintf(stderr,"   --- Measure the auto-correlation functions DD(r), DD(rp, pi) and wp(rp) for a single file\n");
-  fprintf(stderr,"     * fille        = name of data file\n") ;
+  fprintf(stderr,"     * file         = name of data file\n") ;
   fprintf(stderr,"     * format       = format of data file  (a=ascii, f=fast-food)\n") ;
   fprintf(stderr,"     * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
   fprintf(stderr,"     * boxsize      = BoxSize (in same units as X/Y/Z of the data)\n");
