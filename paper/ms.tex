@@ -8,6 +8,7 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{color}
+\usepackage{listings}
 
 %%% Definitions added by Manodeep 
 \newcommand{\Msun}{M_{\odot}}
@@ -28,6 +29,23 @@
 %%   {}
 %%   {}
 %% \makeatother
+
+
+\lstset{
+  language=C,                % choose the language of the code
+  numbers=left,                   % where to put the line-numbers
+  stepnumber=1,                   % the step between two line-numbers.
+  numbersep=5pt,                  % how far the line-numbers are from the code
+  backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  tabsize=2,                      % sets default tabsize to 2 spaces
+  captionpos=b,                   % sets the caption-position to bottom
+  breaklines=true,                % sets automatic line breaking
+  breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+  title=\lstname,                 % show the filename of files included with \lstinputlisting;
+}
 
 \begin{document}
 
@@ -94,15 +112,9 @@ usual linked-list is very cache-unfriendly. Each dereference requires a read fro
 For all pairs around a given target galaxy, we need to compute distances to all points within all neighbouring 3-d cells. 
 We ensure that the particle locations are contiguous by moving them into the following \texttt{C struct} in the order in which they arrive. 
 
-\begin{code}
-struct cell
-{
-  DOUBLE *x;
-  DOUBLE *y;
-  DOUBLE *z;
-  int64_t nelements;
-}
-\end{code}\footnote{Most of the code assumes that the number of galaxies is within INT_MAX $\sim$ 2.1 billion. So, it would appear 
+
+
+\footnote{Most of the code assumes that the number of galaxies is within INT_MAX $\sim$ 2.1 billion. So, it would appear 
 to make no sense that the field inside the struct cell has `nelements' of type int64_t. The reason I have 
 chosen to use int64_t is that under C alignment rules 4 bytes of padding would have appended anyway to the struct cell. So, I chose 
 to declare `nelements' as an int64_t and used those 4 bytes. Saves some future conversion/coding. }
