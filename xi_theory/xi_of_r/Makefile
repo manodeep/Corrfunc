@@ -32,16 +32,17 @@ libcountpairs.a: ../lib $(OBJS2)
 clean:
 	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs.a
 
-clena:
-	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs.a
+clena: clean
 
-celan:
-	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs.a
 
-install:
-	mkdir -p ../bin
+celan: clean
+
+install: ../bin
+
 	cp -p $(target) ../bin/
 
+../bin:
+	mkdir -p ../bin
 
 tests: tests_periodic tests_nonperiodic tests_avx tests_omp
 	$(MAKE) clean
