@@ -31,14 +31,13 @@ libcountpairs_wp.a: ../lib $(OBJS2)
 clean:
 	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
 
-clena:
-	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
+clena: clean
 
-celan:
-	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
+celan: celan
 
-install:
-	mkdir -p ../bin
+install: ../bin
 	cp -p $(target) ../bin/
 
+../bin:
+	mkdir -p ../bin
 

@@ -3,7 +3,6 @@ include ../common.mk
 PYTHON_CFLAGS = $(shell python-config --includes) $(shell python -c "import numpy; print '-I' + numpy.__path__[0] + '/core/include/numpy/'")
 PYTHON_LINK   = $(shell python-config --ldflags) 
 PYTHON_LIBDIR = $(shell python-config --prefix)/lib
-CFLAGS += $(PYTHON_CFLAGS)
 
 PROJECT = _countpairs
 LIBRARY = $(PROJECT).so.$(MAJOR).0.$(MINOR)
@@ -15,7 +14,8 @@ INCL   = ../include/defs.h ../include/countpairs.h ../include/countpairs_rp_pi.h
 all: $(LIBRARY)
 
 $(LIBRARY): ../lib $(OBJECTS) lib Makefile ../common.mk 
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Wl,-R$(PYTHON_LIBDIR) -shared -o $@
+#	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath $(PYTHON_LIBDIR) -shared -o $@
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK)  -Wl,-rpath,$(PYTHON_LIBDIR) -shared -o $@
 	rm -f _countpairs.so 
 	ln -s $(LIBRARY) _countpairs.so
 	cp -p $(LIBRARY) ../lib/
@@ -42,8 +42,7 @@ install: $(LIBRARY)
 clean:
 	rm -f $(LIBRARY) $(OBJECTS) _countpairs.so 
 
-celan:
-	rm -f $(LIBRARY) $(OBJECTS) _countpairs.so 
+celan: clean
 
-clena:
-	rm -f $(LIBRARY) $(OBJECTS) _countpairs.so 
+clena: clean
+
