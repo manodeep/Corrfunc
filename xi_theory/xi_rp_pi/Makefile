@@ -37,14 +37,12 @@ libcountpairs_rp_pi.a: ../lib $(OBJS3)
 clean:
 	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
 
-clena:
-	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
+clena: clean
 
-celan:
-	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
+celan: celan
 
-install:
-	mkdir -p ../bin
+install: ../bin
 	cp -p $(target) ../bin/
 
-
+../bin:
+	mkdir -p ../bin
