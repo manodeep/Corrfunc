@@ -1,14 +1,16 @@
-\documentclass[apj]{emulateapj}
+\documentclass[preprint,authoryear,12pt]{elsarticle}
 
 \usepackage{amsmath}
 \usepackage{aas_macros}
-\usepackage{natbib}
 \usepackage{rotating}
 \usepackage{xspace}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{color}
 \usepackage{listings}
+\usepackage{caption}
+\usepackage{url}
+\journal{Astronomy and Computing}
 
 %%% Definitions added by Manodeep 
 \newcommand{\Msun}{M_{\odot}}
@@ -16,19 +18,9 @@
 \newcommand{\sdss}{{\small{SDSS}}\xspace}
 \newcommand{\hMpc}{\ensuremath{{h^{-1}Mpc}\xspace}}
 \newcommand{\hkpc}{\ensuremath{{h^{-1}kpc}\xspace}}
-\newcommand{\emcee}{\texttt emcee}
+\newcommand{\rmax}{\ensuremath{{r_{max}}}\xspace}
 \newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
 
-
-%%\setstretch{2.0}
-%% \usepackage{etoolbox}
-%% \makeatletter
-%% \patchcmd{\@makecaption}
-%%   {\scshape}
-%%   {}
-%%   {}
-%%   {}
-%% \makeatother
 
 
 \lstset{
@@ -49,11 +41,13 @@
 
 \begin{document}
 
-\title{Cache is King: Presenting a Suite of Blazing-Fast, Correlation Function Code}
+\begin{frontmatter}
 
-\author{Manodeep Sinha\altaffilmark{1}}
-\affiliation{Department of Physics and Astronomy, Vanderbilt University, Nashville, TN, 37235}
-\altaffiltext{1}{manodeep.sinha@vanderbilt.edu}
+\title{Cache is King: Presenting a Suite of Fast, Correlation Function Codes}
+
+\author[ms]{Manodeep Sinha}
+\ead{manodeep.sinha@vanderbilt.edu}
+\address[ms]{6902 Stevenson Center, Department of Physics \& Astronomy, Vanderbilt University, Nashville, TN 37235}
 
 \begin{abstract}
 We have entered the era of `Big Data' where we are gathering a tremendous amount of data that
@@ -69,19 +63,20 @@ current CPU architecture and hand-written AVX
 The accompanying codes are publicly available at \url{https://bitbucket.org/manodeep/Corrfunc/}. 
 \end{abstract}
 
-\keywords{methods: numerical}
+\begin{keyword}
+methods: numerical \sep (cosmology:) large-scale structure of universe \sep
+\end{keyword}
 
-\maketitle
-
+\end{frontmatter}
 
 \section{INTRODUCTION}
-%% MS: I have not encountered this in the past -- but the footnotecounter needs to be reset. Otherwise, 
-%% the numbering starts at Nauthors+1. Presumably \altaffiltext uses \footnote internally and does not
-%% reset the counter like a responsible person!
-\setcounter{footnote}{0}
-The large-scale structure of the Universe can be now measured using $\mathcal{O}(million)$ galaxies 
+%% %% MS: I have not encountered this in the past -- but the footnotecounter needs to be reset. Otherwise, 
+%% %% the numbering starts at Nauthors+1. Presumably \altaffiltext uses \footnote internally and does not
+%% %% reset the counter like a responsible person!
+%% \setcounter{footnote}{0}
+The large-scale structure of the Universe can be now measured using $\mathcal{O}$(million) galaxies 
 using data from current surveys like SDSS/BOSS surveys. Upcoming surveys like LSST will probe even 
-deeper and wider and aim to target on $\mathcal{O}(10's of million)$ galaxies. With such a large galaxy data, 
+deeper and wider and aim to target on $\mathcal{O}$(10's of million) galaxies. With such a large galaxy data, 
 we can measure the galaxy density field fairly accurately in the data. While the number of galaxies observed 
 in these current and upcoming surveys is large, we have to compute the galaxy density fields {\em only once}. Thus, 
 even a slow, correlation function code will be fine when measuring the data correlation function. 
@@ -105,19 +100,36 @@ a certain \rmax, where \rmax is much smaller than the domain of the point distri
 {\em possibly} be within \rmax. If we impose a 3-d grid, with cell-size \rmax, then two points separated by more than one cell size (\rmax) in any one 
 dimension can not be within \rmax of each other. Thus, given one point which is the target galaxy and a grid with cell-size \rmax, 
 immediately allows us to prune {\em all} of the points that are not within 1 cell offset in each dimension. However, even with this pruning, the actual 
-implementation of the algorithm matters. For instance, a linked-list in each cell performs $\sim 60x$ worse than the algorithm described here.\footnote{The 
+implementation of the algorithm matters. For instance, a linked-list in each cell performs $\sim 60\times$ worse than the algorithm described here.\footnote{The 
 usual linked-list is very cache-unfriendly. Each dereference requires a read from a new region of memory and an almost guaranteed cache miss. } 
+
+\subsection{Partitioning the Particles based on \rmax}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[clip=true]{tikz_grid}
+\caption{A 2-D grid showing the bin-lattice partitioning scheme. The bigger square show the entire 
+domain, the red circles show a random distribution of 100 particles. Let's say we want to compute all pairs 
+for the target blue point, then we would only have to consider red points that are within one cell (the dark shaded region). 
+A circle with radius \rmax is also drawn to shown the actual pairs that will eventually count in the correlation function.} 
+\end{figure}
+
 
 \subsection{How to Maintain Cache Locality within the Grid}
 For all pairs around a given target galaxy, we need to compute distances to all points within all neighbouring 3-d cells. 
 We ensure that the particle locations are contiguous by moving them into the following \texttt{C struct} in the order in which they arrive. 
 
+%% \begin{lstlisting}
+%% \end{lstlisting}
 
 
-\footnote{Most of the code assumes that the number of galaxies is within INT_MAX $\sim$ 2.1 billion. So, it would appear 
-to make no sense that the field inside the struct cell has `nelements' of type int64_t. The reason I have 
-chosen to use int64_t is that under C alignment rules 4 bytes of padding would have appended anyway to the struct cell. So, I chose 
-to declare `nelements' as an int64_t and used those 4 bytes. Saves some future conversion/coding. }
+%% \lstinputlisting{cellarray.h}
+
+
+%% \footnote{Most of the code assumes that the number of galaxies is within INT_MAX $\sim$ 2.1 billion. So, it would appear 
+%% to make no sense that the field inside the struct cell has `nelements' of type \verbatim{int64_t}. The reason I have 
+%% chosen to use \verbatim{int64_t} is that under C alignment rules 4 bytes of padding would have appended anyway to the struct cell. So, I chose 
+%% to declare `nelements' as an \verbatim{int64_t} and used those 4 bytes. Saves some future conversion/coding. }
 
 
 
@@ -137,13 +149,11 @@ we can write AVX vector intrinsics to directly manipulate 8 floats/4 doubles.
 
 \section{Conclusions}
 
-\acknowledgements 
+\citet{foreman-mackey_etal_13}
 
+\section*{Acknowledgements}
 
-\section{}
-
-
-\bibliographystyle{apj}
+\bibliographystyle{elsarticle-harv}
 \bibliography{master}
 
 \end{document}

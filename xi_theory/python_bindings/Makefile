@@ -14,8 +14,8 @@ INCL   = ../include/defs.h ../include/countpairs.h ../include/countpairs_rp_pi.h
 all: $(LIBRARY)
 
 $(LIBRARY): ../lib $(OBJECTS) lib Makefile ../common.mk 
-#	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath $(PYTHON_LIBDIR) -shared -o $@
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK)  -Wl,-rpath,$(PYTHON_LIBDIR) -shared -o $@
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) -shared -o $@
+#	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK)  -Wl,-rpath,$(PYTHON_LIBDIR) -shared -o $@
 	rm -f _countpairs.so 
 	ln -s $(LIBRARY) _countpairs.so
 	cp -p $(LIBRARY) ../lib/
