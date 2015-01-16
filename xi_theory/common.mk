@@ -11,6 +11,7 @@ OPT += -DUSE_OMP
 CC=gcc
 
 ### You should NOT edit below this line
+DISTNAME=corrfunc
 MINOR=0
 MAJOR=1
 CLINK=
