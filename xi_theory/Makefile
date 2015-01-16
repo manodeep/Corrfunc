@@ -75,6 +75,9 @@ lib:
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
 
+dist:
+	hg archive $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz 
+
 tests:
 	$(MAKE) -C xi_of_r tests
 	# $(MAKE) -C xi_rp_pi tests
