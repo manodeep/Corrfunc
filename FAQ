@@ -12,8 +12,9 @@ path environment variable.
 In my case, I use the anaconda distribution for python at link-time but I pick 
 up the macports install at run-time. The exact command to fix the situation is:
 
-export DYLD_LIBRARY_PATH=/Users/manodeep/anaconda/lib:$DYLD_LIBRARY_PATH
+export DYLD_FALLBACK_LIBRARY_PATH=$HOME/anaconda/lib:$DYLD_FALLBACK_LIBRARY_PATH
 
-where, "/Users/manodeep/anaconda/" is the output of "python-config --prefix". 
+where, I have assumed that "$HOME/anaconda/" is the output of "python-config --prefix". 
+
 
 
