@@ -1,8 +1,10 @@
 syntax:glob
 *.o
 .*
+*.sh
 *~
 bin/*
+bins*
 logbins
 DD
 wprp
@@ -10,10 +12,11 @@ DDrppi
 wp
 run_correlations
 libcount*.a
+output*
 include/countpairs*.h
 *.so*
 a.out
 ms.*
 xx*
 yy*
-bins
+*.spl
