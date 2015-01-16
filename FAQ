@@ -9,31 +9,34 @@ python lib version that is not the first one in your search path. The way I reso
 my MAC was by adding the path: "python-config --prefix"/lib to the dynamic library 
 path environment variable. 
 
+Typically, this happens when the output of "otool -L _countpairs.so" does not show 
+a full path to libpythonX.X.dylib. 
+
 In my case, I use the anaconda distribution for python at link-time but I pick 
 up the macports install at run-time. The exact command to fix the situation is:
 
-Option 1. 
+Option 1.
 ----------
-"export DYLD_FALLBACK_LIBRARY_PATH=$HOME/anaconda/lib:$DYLD_FALLBACK_LIBRARY_PATH"
+Change the rpath in the shared C extension library: 
 
-where, I have assumed that "$HOME/anaconda/" is the output of "python-config --prefix". 
+"install_name_tool -change libpythonX.X.dylib `python-config --prefix`/lib/libpythonX.X.dylib _countpairs.so"
 
-Option 2.
+"otool -L _countpairs.so" should show the full path to the libpythonX.X.dylib file. 
+
+Option 2. 
 ----------
-Another option might be too change the rpath in the shared C extension library: 
-
-"install_name_tool -change libpythonX.X.dylib $HOME/anaconda/lib/libpythonX.X.dylib _countpairs.so"
-
-"otool -L _countpairs.so" should show the full path to the conda libpython library. 
+Add to the environment variable - but this is not fool-proof. 
+"export DYLD_FALLBACK_LIBRARY_PATH=`python-config --prefix`/lib:$DYLD_FALLBACK_LIBRARY_PATH"
 
 Option 3.
 ----------
 If that does not work, try creating a symbolic link in the python_bindings directory:
 
-"ln -s $HOME/anaconda/lib/libpythonX.X.dylib" 
+"ln -s `python-config --prefix`/lib/libpythonX.X.dylib" 
 
-(where I have omitted the sym-link name, defaults to the final filename.) 
+(where I have omitted the sym-link name, defaults to the actual filename.) 
 
 However, if you go this sym-link route, then the sym-link *has* to be in the directory
-where the python code is situated - I do not know of any work-arounds. 
+where the python code is situated - I do not know of any work-arounds (short of 
+creating the sym-link in a directory that's in the dynamic library path). 
 
