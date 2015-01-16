@@ -13,6 +13,7 @@ libcount*.a
 include/countpairs*.h
 *.so*
 a.out
+ms.*
 xx*
 yy*
 bins
