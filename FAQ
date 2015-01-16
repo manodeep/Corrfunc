@@ -12,9 +12,28 @@ path environment variable.
 In my case, I use the anaconda distribution for python at link-time but I pick 
 up the macports install at run-time. The exact command to fix the situation is:
 
-export DYLD_FALLBACK_LIBRARY_PATH=$HOME/anaconda/lib:$DYLD_FALLBACK_LIBRARY_PATH
+Option 1. 
+----------
+"export DYLD_FALLBACK_LIBRARY_PATH=$HOME/anaconda/lib:$DYLD_FALLBACK_LIBRARY_PATH"
 
 where, I have assumed that "$HOME/anaconda/" is the output of "python-config --prefix". 
 
+Option 2.
+----------
+Another option might be too change the rpath in the shared C extension library: 
 
+"install_name_tool -change libpythonX.X.dylib $HOME/anaconda/lib/libpythonX.X.dylib _countpairs.so"
+
+"otool -L _countpairs.so" should show the full path to the conda libpython library. 
+
+Option 3.
+----------
+If that does not work, try creating a symbolic link in the python_bindings directory:
+
+"ln -s $HOME/anaconda/lib/libpythonX.X.dylib" 
+
+(where I have omitted the sym-link name, defaults to the final filename.) 
+
+However, if you go this sym-link route, then the sym-link *has* to be in the directory
+where the python code is situated - I do not know of any work-arounds. 
 
