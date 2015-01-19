@@ -27,7 +27,7 @@ lib: libcountpairs_rp_pi.a | ../lib
 libcountpairs_rp_pi.a: $(OBJS3) | ../lib
 	ar rcs $@ $(OBJS3)
 	cp -p $@ ../lib/
-	cp -p countpairs_rp_pi.h ../include 
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_rp_pi.h > ../include/countpairs_rp_pi.h
 
 ../lib:
 	mkdir -p ../lib
