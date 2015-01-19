@@ -10,13 +10,16 @@ C_LIBRARIES = ../lib/libcountpairs.a ../lib/libcountpairs_rp_pi.a ../lib/libcoun
 
 all: $(target) $(SRC1) $(INCL)
 
-$(target): $(OBJS1) $(INCL) $(C_LIBRARIES) ../common.mk Makefile 
+$(target): $(OBJS1) $(INCL) $(C_LIBRARIES) libs ../common.mk Makefile 
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) -o $@
+
+libs:
+	$(MAKE) -C ../ libs
 
 %.o: %.c $(INCL) ../common.mk Makefile
 	$(CC) $(CFLAGS) $(OPT) $(INCLUDE) -c $< -o $@
 
-.PHONY: clean clena celan 
+.PHONY: clean clena celan libs 
 
 clean:
 	$(RM) $(target) $(OBJS1) 

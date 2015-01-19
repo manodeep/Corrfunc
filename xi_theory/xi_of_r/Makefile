@@ -20,10 +20,11 @@ OBJS2  = $(SRC2:.c=.o)
 
 lib:  libcountpairs.a | ../lib
 
+
 libcountpairs.a: $(OBJS2) | ../lib
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../lib/
-	cp -p countpairs.h ../include
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs.h > ../include/countpairs.h 
 
 .PHONY: clean clena celan install lib tests 
 

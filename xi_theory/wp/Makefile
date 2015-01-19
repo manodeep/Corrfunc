@@ -21,7 +21,7 @@ lib: libcountpairs_wp.a | ../lib
 libcountpairs_wp.a: $(OBJS2) | ../lib
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../lib/
-	cp -p countpairs_wp.h ../include 
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_wp.h > ../include/countpairs_wp.h
 
 ../lib:
 	mkdir -p ../lib
