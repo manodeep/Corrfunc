@@ -32,7 +32,7 @@ libcountpairs_rp_pi.a: $(OBJS3)
 .PHONY: clean clena celan 
 
 clean:
-	$(RM) -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
+	$(RM) $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
 
 clena: clean
 

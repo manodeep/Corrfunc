@@ -31,16 +31,16 @@ examples: libs
 
 realclean:
 	$(MAKE) clean
-	$(RM) -f bin/$(target)
-	$(RM) -f lib/libcountpairs.a 
-	$(RM) -f lib/libcountpairs_rp_pi.a
-	$(RM) -f lib/libcountpairs_wp.a 
-	$(RM) -f bin/DD bin/DDrppi bin/wprp bin/wp
-	$(RM) -f include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h 
-	$(RM) -f lib/_countpairs.so lib/_countpairs.so.$(MAJOR).0.$(MINOR)
+	$(RM) bin/$(target)
+	$(RM) lib/libcountpairs.a 
+	$(RM) lib/libcountpairs_rp_pi.a
+	$(RM) lib/libcountpairs_wp.a 
+	$(RM) bin/DD bin/DDrppi bin/wprp bin/wp
+	$(RM) include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h 
+	$(RM) lib/_countpairs.so lib/_countpairs.so.$(MAJOR).0.$(MINOR)
 
 clean:
-	$(RM) -f $(target) $(OBJS1) 
+	$(RM) $(target) $(OBJS1) 
 	$(MAKE) -C xi_of_r clean
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean

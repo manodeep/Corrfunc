@@ -28,7 +28,7 @@ libcountpairs.a: $(OBJS2)
 .PHONY: clean clena celan install lib tests 
 
 clean:
-	$(RM) -f $(target) $(OBJS1) $(OBJS2) libcountpairs.a
+	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs.a
 
 clena: clean
 
@@ -51,7 +51,7 @@ tests_periodic:
 	./DD ../tests/data/gals_Mr19.ff f ../tests/data/gals_Mr19.ff f ../tests/bins 4 > new_DD
 	if cmp -s ../tests/Mr19_DD_correct new_DD  ; then
 		echo "Passed DD test"
-		$(RM) -f "new_DD"
+		$(RM) "new_DD"
 	else
 		echo "Failed DD test"
 		exit

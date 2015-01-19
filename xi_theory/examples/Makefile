@@ -19,7 +19,7 @@ $(target): $(OBJS1) $(INCL) $(C_LIBRARIES) ../common.mk Makefile
 .PHONY: clean clena celan 
 
 clean:
-	$(RM) -f $(target) $(OBJS1) 
+	$(RM) $(target) $(OBJS1) 
 
 clena: clean
 
