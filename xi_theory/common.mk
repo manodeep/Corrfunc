@@ -34,6 +34,12 @@ ifeq (OUTPUT_RPAVG,$(findstring OUTPUT_RPAVG,$(OPT)))
   endif
 endif
 
+ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
+	VECTOR_TYPE:=float
+else
+	VECTOR_TYPE:=double
+endif
+
 
 ifeq (icc,$(findstring icc,$(CC)))
   CFLAGS += -xhost   #-vec-report6  
