@@ -14,7 +14,7 @@ INCL   = countpairs_rp_pi.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/
 DDrppi: $(OBJS1) $(INCL) ../common.mk Makefile
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
-.c.o: $(INCL) ../common.mk Makefile
+%.o: %.c $(INCL) ../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 OBJS2= wprp.o ../utils/utils.o
@@ -24,25 +24,20 @@ wprp: $(OBJS2) Makefile
 OBJS3=countpairs_rp_pi.o ../utils/gridlink.o ../utils/utils.o 
 lib: libcountpairs_rp_pi.a
 
-libcountpairs_rp_pi.a: ../lib $(OBJS3)
+libcountpairs_rp_pi.a: $(OBJS3)
 	ar rcs $@ $(OBJS3)
 	cp -p $@ ../lib/
 	cp -p countpairs_rp_pi.h ../include 
 
-../lib:
-	mkdir -p ../lib
-
 .PHONY: clean clena celan 
 
 clean:
-	rm -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
+	$(RM) -f $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
 
 clena: clean
 
 celan: celan
 
-install: ../bin
+install: 
 	cp -p $(target) ../bin/
 
-../bin:
-	mkdir -p ../bin
