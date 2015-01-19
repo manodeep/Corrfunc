@@ -27,7 +27,7 @@ libcountpairs_wp.a: $(OBJS2)
 .PHONY: clean clena celan install lib
 
 clean:
-	$(RM) -f $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
+	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
 
 clena: clean
 
