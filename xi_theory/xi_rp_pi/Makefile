@@ -22,14 +22,23 @@ wprp: $(OBJS2) Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS2) $(CLINK)
 
 OBJS3=countpairs_rp_pi.o ../utils/gridlink.o ../utils/utils.o 
-lib: libcountpairs_rp_pi.a
+lib: libcountpairs_rp_pi.a | ../lib
 
-libcountpairs_rp_pi.a: $(OBJS3)
+libcountpairs_rp_pi.a: $(OBJS3) | ../lib
 	ar rcs $@ $(OBJS3)
 	cp -p $@ ../lib/
 	cp -p countpairs_rp_pi.h ../include 
 
-.PHONY: clean clena celan 
+../lib:
+	mkdir -p ../lib
+
+../bin:
+	mkdir -p ../bin
+
+install: $(target) | ../bin 
+	cp -p $(target) ../bin/
+
+.PHONY: clean clena celan install lib 
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
@@ -38,6 +47,4 @@ clena: clean
 
 celan: celan
 
-install: 
-	cp -p $(target) ../bin/
 

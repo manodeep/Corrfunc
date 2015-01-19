@@ -17,15 +17,24 @@ $(target): $(OBJS1) $(INCL) ../common.mk Makefile
 
 SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c
 OBJS2  = $(SRC2:.c=.o)
-lib:  libcountpairs.a
 
-libcountpairs.a: $(OBJS2)
+lib:  libcountpairs.a | ../lib
+
+libcountpairs.a: $(OBJS2) | ../lib
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../lib/
 	cp -p countpairs.h ../include
 
-
 .PHONY: clean clena celan install lib tests 
+
+../lib:
+	mkdir -p ../lib
+
+../bin:
+	mkdir -p ../bin
+
+install: $(target) | ../bin
+	cp -p $(target) ../bin/
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs.a
@@ -34,9 +43,6 @@ clena: clean
 
 
 celan: clean
-
-install: 
-	cp -p $(target) ../bin/
 
 
 tests: tests_periodic tests_nonperiodic tests_avx tests_omp
@@ -50,10 +56,10 @@ tests_periodic:
 
 	./DD ../tests/data/gals_Mr19.ff f ../tests/data/gals_Mr19.ff f ../tests/bins 4 > new_DD
 	if cmp -s ../tests/Mr19_DD_correct new_DD  ; then
-		echo "Passed DD test"
+		@echo "Passed DD test"
 		$(RM) "new_DD"
 	else
-		echo "Failed DD test"
+		@echo "Failed DD test"
 		exit
 	endif
 
