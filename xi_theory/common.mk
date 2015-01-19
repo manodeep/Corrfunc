@@ -9,14 +9,18 @@ OPT += -DUSE_OMP
 
 ### Set the compiler -- options are icc/gcc/clang
 CC=gcc
+#### Add any compiler specific flags you want
+CFLAGS= -ftree-vectorize -ftree-vectorizer-verbose=6
+#### Add any compiler specific link flags you want
+CLINK=
 
 ### You should NOT edit below this line
 DISTNAME=corrfunc
 MINOR=0
 MAJOR=1
-CLINK=
+
 INCLUDE=-I../io -I../utils -I../include 
-CFLAGS= -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3 
+CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3 
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))
@@ -61,8 +65,7 @@ else
   endif
 
   #### common options for gcc and clang
-  CFLAGS  += -march=native -O3
-  CFLAGS  +=  -Wformat=2  -std=c99  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual  -Wshadow
+  CFLAGS  += -march=native -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual  
   CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
   CLINK += -lm
 endif

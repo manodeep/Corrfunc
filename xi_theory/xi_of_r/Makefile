@@ -12,37 +12,32 @@ all: $(target) $(SRC1) $(INCL)
 $(target): $(OBJS1) $(INCL) ../common.mk Makefile 
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
-.c.o: $(INCL) ../common.mk Makefile
+%.o: %.c $(INCL) ../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c
 OBJS2  = $(SRC2:.c=.o)
 lib:  libcountpairs.a
 
-libcountpairs.a: ../lib $(OBJS2)
+libcountpairs.a: $(OBJS2)
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../lib/
 	cp -p countpairs.h ../include
 
-../lib: 
-	mkdir -p ../lib
 
 .PHONY: clean clena celan install lib tests 
 
 clean:
-	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs.a
+	$(RM) -f $(target) $(OBJS1) $(OBJS2) libcountpairs.a
 
 clena: clean
 
 
 celan: clean
 
-install: ../bin
-
+install: 
 	cp -p $(target) ../bin/
 
-../bin:
-	mkdir -p ../bin
 
 tests: tests_periodic tests_nonperiodic tests_avx tests_omp
 	$(MAKE) clean
@@ -56,7 +51,7 @@ tests_periodic:
 	./DD ../tests/data/gals_Mr19.ff f ../tests/data/gals_Mr19.ff f ../tests/bins 4 > new_DD
 	if cmp -s ../tests/Mr19_DD_correct new_DD  ; then
 		echo "Passed DD test"
-		rm -f "new_DD"
+		$(RM) -f "new_DD"
 	else
 		echo "Failed DD test"
 		exit

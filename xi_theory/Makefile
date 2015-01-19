@@ -1,15 +1,17 @@
 include common.mk
 
-target=logbins
-all: $(target)  DD DDrppi wp lib examples python_bindings 
+target=logbins 
+all: $(target) dirs DD DDrppi wp libs examples python_bindings 
 
 OBJS1= logbins.o utils/utils.o 
 
 logbins: $(OBJS1) Makefile 
 	$(CC) $(CFLAGS) -o $@ $(OBJS1)  $(CLINK)
 
+dirs:
+	@mkdir -p lib bin
 
-.PHONY: clean clena celan DD DDrppi lib install wp tests realclean examples
+.PHONY: clean celna clena celan DD DDrppi libs install wp tests realclean examples dirs
 
 DD:
 	$(MAKE) -C xi_of_r
@@ -20,60 +22,49 @@ DDrppi:
 wp:
 	$(MAKE) -C wp
 
-python_bindings: lib
+python_bindings: libs
 	$(MAKE) -C python_bindings
 
 ### Must create the libraries first before making the examples.
-examples: lib
+examples: libs
 	$(MAKE) -C examples
 
 realclean:
 	$(MAKE) clean
-	rm -f bin/$(target)
-	rm -f lib/libcountpairs.a 
-	rm -f lib/libcountpairs_rp_pi.a
-	rm -f lib/libcountpairs_wp.a 
-	rm -f bin/DD bin/DDrppi bin/wprp bin/wp
-	rm -f include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h 
-	rm -f lib/_countpairs.so lib/_countpairs.so.$(MAJOR).0.$(MINOR)
+	$(RM) -f bin/$(target)
+	$(RM) -f lib/libcountpairs.a 
+	$(RM) -f lib/libcountpairs_rp_pi.a
+	$(RM) -f lib/libcountpairs_wp.a 
+	$(RM) -f bin/DD bin/DDrppi bin/wprp bin/wp
+	$(RM) -f include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h 
+	$(RM) -f lib/_countpairs.so lib/_countpairs.so.$(MAJOR).0.$(MINOR)
 
 clean:
-	rm -f $(target) $(OBJS1) 
+	$(RM) -f $(target) $(OBJS1) 
 	$(MAKE) -C xi_of_r clean
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean
 	$(MAKE) -C examples clean
 	$(MAKE) -C python_bindings clean
 
-clena:
-	rm -f $(target) $(OBJS1) 
-	$(MAKE) -C xi_of_r clean
-	$(MAKE) -C xi_rp_pi clean
-	$(MAKE) -C wp clean
-	$(MAKE) -C examples clean
-	$(MAKE) -C python_bindings clean
+clena: clean
 
-celan:
-	rm -f $(target) $(OBJS1)
-	$(MAKE) -C xi_of_r clean
-	$(MAKE) -C xi_rp_pi clean
-	$(MAKE) -C wp clean
-	$(MAKE) -C examples clean
-	$(MAKE) -C python_bindings clean
+celan: clean
+
+celna: clean
 
 install:
-	mkdir -p bin
 	cp -p $(target) bin/
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
 	$(MAKE) -C python_bindings install
 
-lib:
-	mkdir -p lib
+libs: 
 	$(MAKE) -C xi_of_r lib
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
+
 
 dist:
 	hg archive $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz 
