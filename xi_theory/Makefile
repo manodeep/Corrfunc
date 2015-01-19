@@ -9,7 +9,7 @@ logbins: $(OBJS1) Makefile
 	$(CC) $(CFLAGS) -o $@ $(OBJS1)  $(CLINK)
 
 dirs:
-	@mkdir -p lib bin
+	mkdir -p lib bin
 
 .PHONY: clean celna clena celan DD DDrppi libs install wp tests realclean examples dirs
 
@@ -53,7 +53,7 @@ celan: clean
 
 celna: clean
 
-install:
+install: 
 	cp -p $(target) bin/
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
