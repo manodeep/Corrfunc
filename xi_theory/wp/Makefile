@@ -12,32 +12,28 @@ all: $(target) $(SRC1) $(INCL)
 $(target): $(OBJS1) $(INCL) ../common.mk Makefile 
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
-.c.o: $(INCL) ../common.mk Makefile
+%.o: %.c $(INCL) ../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 OBJS2=countpairs_wp.o ../utils/gridlink.o ../utils/utils.o 
 lib: libcountpairs_wp.a
 
-libcountpairs_wp.a: ../lib $(OBJS2)
+libcountpairs_wp.a: $(OBJS2)
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../lib/
 	cp -p countpairs_wp.h ../include 
 
-../lib:
-	mkdir -p ../lib
 
 .PHONY: clean clena celan install lib
 
 clean:
-	rm -f $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
+	$(RM) -f $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
 
 clena: clean
 
 celan: celan
 
-install: ../bin
+install: 
 	cp -p $(target) ../bin/
 
-../bin:
-	mkdir -p ../bin
 
