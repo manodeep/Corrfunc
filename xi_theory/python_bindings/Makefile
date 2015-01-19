@@ -11,15 +11,18 @@ OBJECTS = $(SOURCES:.c=.o)
 C_LIBRARY := ../lib/libcountpairs.a ../lib/libcountpairs_rp_pi.a ../lib/libcountpairs_wp.a
 INCL := ../include/defs.h ../include/countpairs.h ../include/countpairs_rp_pi.h ../include/countpairs_wp.h
 
-all: $(LIBRARY)
+all: $(LIBRARY) | ../lib
 
-$(LIBRARY): libs Makefile ../common.mk $(C_LIBRARY) $(INCL) $(OBJECTS)
+$(LIBRARY): Makefile ../common.mk libs $(C_LIBRARY) $(INCL) $(OBJECTS) | ../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) -shared -o $@
-	@rm -f _countpairs.so 
-	@ln -s $(LIBRARY) _countpairs.so
-	@cp -p $(LIBRARY) ../lib/
-	@rm -f ../lib/_countpairs.so 
-	@ln -s $(LIBRARY) ../lib/_countpairs.so
+	rm -f _countpairs.so 
+	ln -s $(LIBRARY) _countpairs.so
+	cp -p $(LIBRARY) ../lib/
+	rm -f ../lib/_countpairs.so 
+	ln -s $(LIBRARY) ../lib/_countpairs.so
+
+../lib:
+	mkdir -p ../lib
 
 libs:
 	$(MAKE) -C ../ libs
@@ -29,7 +32,7 @@ libs:
 
 .PHONY: clean clena celan install libs 
 
-install: $(LIBRARY)
+install: $(LIBRARY) | ../lib
 	cp -p $(LIBRARY) ../lib/
 	$(RM) ../lib/_countpairs.so 
 	ln -s $(LIBRARY) ../lib/_countpairs.so
