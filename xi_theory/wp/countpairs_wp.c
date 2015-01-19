@@ -38,9 +38,7 @@ void free_results_wp(results_countpairs_wp **results)
 	free(tmp->npairs);
 	free(tmp->rupp);
 	free(tmp->wp);
-#ifdef OUTPUT_RPAVG
 	free(tmp->rpavg);
-#endif	
 	free(tmp);
 	tmp = NULL;
 }
@@ -434,13 +432,11 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 	results->npairs = my_malloc(sizeof(uint64_t), results->nbin);
 	results->wp = my_malloc(sizeof(DOUBLE), results->nbin);
 	results->rupp   = my_malloc(sizeof(DOUBLE)  , results->nbin);
-#ifdef OUTPUT_RPAVG
 	results->rpavg  = my_malloc(sizeof(DOUBLE)  , results->nbin);
-#endif
 
 
 	const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
-  const DOUBLE density=0.5*avgweight2*ND1/(boxsize*boxsize*boxsize);//pairs are not double-counted
+	const DOUBLE density=0.5*avgweight2*ND1/(boxsize*boxsize*boxsize);//pairs are not double-counted
 	DOUBLE rlow=0.0 ;
 	DOUBLE prefac_density_DD=avgweight1*ND1*density;
 	DOUBLE twice_pimax = 2.0*pimax;
@@ -450,6 +446,8 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 		results->rupp[i] = rupp[i];
 #ifdef OUTPUT_RPAVG
 		results->rpavg[i] = rpavg[i];
+#else
+		results->rpavg[i] = 0.0;
 #endif
 		const DOUBLE weight0 = (DOUBLE) results->npairs[i];
 		/* compute xi, dividing summed weight by that expected for a random set */

@@ -142,11 +142,7 @@ int main(int argc, char **argv)
 		double pair_time = ADD_DIFF_TIME(t0,t1);
 /* 		DOUBLE rlow=results->rupp[0]; */
 /* 		for(int i=1;i<results->nbin;i++) { */
-/* #ifdef OUTPUT_RPAVG	   */
 /* 			fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]); */
-/* #else */
-/* 			fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],0.0,    rlow,results->rupp[i]); */
-/* #endif	 */
 /* 			rlow=results->rupp[i]; */
 /* 		} */
 		
@@ -186,11 +182,7 @@ int main(int argc, char **argv)
 /* 			const double logrp = LOG10(results->rupp[i]); */
 /* 			for(int j=0;j<npibin;j++) { */
 /* 				int index = i*(npibin+1) + j; */
-/* #ifdef OUTPUT_RPAVG			 */
 /* 				fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi); */
-/* #else			 */
-/* 				fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],0.0,logrp,(j+1)*dpi); */
-/* #endif			 */
 /* 			} */
 /* 		} */
 		fprintf(stderr,ANSI_COLOR_GREEN "Done DD(rp,pi) auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);		
@@ -223,11 +215,7 @@ int main(int argc, char **argv)
 		double pair_time = ADD_DIFF_TIME(t0,t1);
 /* 		DOUBLE rlow=results->rupp[0]; */
 /* 		for(int i=1;i<results->nbin;++i) { */
-/* #ifdef OUTPUT_RPAVG */
 /* 			fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]); */
-/* #else */
-/* 			fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],0.0,rlow,results->rupp[i],results->npairs[i]); */
-/* #endif */
 /* 			rlow=results->rupp[i]; */
 /* 		} */
 		

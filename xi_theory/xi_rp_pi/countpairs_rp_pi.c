@@ -29,9 +29,7 @@ void free_results_rp_pi(results_countpairs_rp_pi **results)
 
 	free(tmp->npairs);
 	free(tmp->rupp);
-#ifdef OUTPUT_RPAVG
 	free(tmp->rpavg);
-#endif
 	free(tmp);
 	tmp = NULL;
 }
@@ -457,9 +455,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 	results->pimax  = pimax;
 	results->npairs = my_malloc(sizeof(uint64_t), totnbins);
 	results->rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
-#ifdef OUTPUT_RPAVG
 	results->rpavg  = my_malloc(sizeof(DOUBLE)  , totnbins);
-#endif
 
 	for(int i=0;i<nrpbin;i++) {
 		results->rupp[i] = rupp[i];
@@ -468,6 +464,8 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 			results->npairs[index] = npairs[index];
 #ifdef OUTPUT_RPAVG
 			results->rpavg[index] = rpavg[index];
+#else
+			results->rpavg[index] = 0.0;
 #endif
 		}
 	}

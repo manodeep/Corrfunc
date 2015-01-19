@@ -117,11 +117,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 	DOUBLE rlow=results->rupp[0];
 	for(int i=1;i<results->nbin;i++) {
 		PyObject *item = NULL;
-#ifdef OUTPUT_RPAVG
 		const DOUBLE rpavg = results->rpavg[i];
-#else
-		const DOUBLE rpavg = 0.0;
-#endif
 		
 #ifdef DOUBLE_PREC
 	  item = Py_BuildValue("(dddk)", rlow,results->rupp[i],rpavg,results->npairs[i]);
@@ -224,10 +220,11 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 		for(int j=0;j<results->npibin;j++) {
 			int index = i*(results->npibin + 1) + j;
 			PyObject *item = NULL;
-#ifdef OUTPUT_RPAVG		
-			item = Py_BuildValue("(ddddi)", rlow,results->rupp[i],results->rpavg[index],(j+1)*dpi,results->npairs[index]);
+			const DOUBLE rpavg = results->rpavg[index];
+#ifdef DOUBLE_PREC
+			item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[index]);
 #else
-			item = Py_BuildValue("(ddddi)", rlow,results->rupp[i],0.0,(j+1)*dpi,results->npairs[index]);
+			item = Py_BuildValue("(ffffk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[index]);
 #endif
 			PyList_Append(ret, item);
 			Py_XDECREF(item);
@@ -286,11 +283,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 	/* Clean up. */
 	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
 /* 	for(int i=1;i<results->nbin;i++) { */
-/* #ifdef OUTPUT_RPAVG */
 /* 		const DOUBLE rpavg = results->rpavg[i]; */
-/* #else */
-/* 		const DOUBLE rpavg = 0.0; */
-/* #endif */
 /* 		fprintf(stderr,"%lf %lf %lf %lf %"PRIu64"\n",results->rupp[i-1],results->rupp[i],rpavg,results->wp[i],results->npairs[i]); */
 /* 	} */
 
@@ -300,11 +293,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 	DOUBLE rlow=results->rupp[0];
 	for(int i=1;i<results->nbin;i++) {
 		PyObject *item = NULL;
-#ifdef OUTPUT_RPAVG 
 		const DOUBLE rpavg = results->rpavg[i];
-#else
-		const DOUBLE rpavg = 0.0;
-#endif
 
 #ifdef DOUBLE_PREC		
 	  item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,results->wp[i],results->npairs[i]);
