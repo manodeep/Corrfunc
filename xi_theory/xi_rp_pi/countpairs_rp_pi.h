@@ -7,9 +7,7 @@
 typedef struct{
 	uint64_t *npairs;
 	DOUBLE *rupp;
-#ifdef OUTPUT_RPAVG
 	DOUBLE *rpavg;
-#endif	
 	DOUBLE pimax;
 	int nbin;
 	int npibin;

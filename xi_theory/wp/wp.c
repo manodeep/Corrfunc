@@ -139,11 +139,7 @@ int main(int argc, char *argv[])
 	 */
 	DOUBLE rlow=results->rupp[0];
 	for(int i=1;i<results->nbin;++i) {
-#ifdef OUTPUT_RPAVG
 		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
-#else		
-		fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],0.0,rlow,results->rupp[i],results->npairs[i]);
-#endif		
 		rlow=results->rupp[i];
 	}
 

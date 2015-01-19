@@ -164,11 +164,7 @@ int main(int argc, char *argv[])
 	  const double logrp = LOG10(results->rupp[i]);
 	  for(int j=0;j<npibin;j++) {
       int index = i*(npibin+1) + j;
-#ifdef OUTPUT_RPAVG			
       fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
-#else			
-	  fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],0.0,logrp,(j+1)*dpi);
-#endif			
     }
   }
 
