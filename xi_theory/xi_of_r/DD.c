@@ -127,11 +127,7 @@ int main(int argc, char *argv[])
 
 	DOUBLE rlow=results->rupp[0];
   for(int i=1;i<results->nbin;i++) {
-#ifdef OUTPUT_RPAVG	  
     fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]);
-#else
-		fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],0.0,    rlow,results->rupp[i]);
-#endif	
     rlow=results->rupp[i];
   }
 

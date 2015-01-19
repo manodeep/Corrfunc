@@ -8,9 +8,7 @@ typedef struct{
 	uint64_t *npairs;
 	DOUBLE *wp;
 	DOUBLE *rupp;
-#ifdef OUTPUT_RPAVG
 	DOUBLE *rpavg;
-#endif	
 	DOUBLE pimax;
 	int nbin;
 } results_countpairs_wp;

@@ -29,9 +29,7 @@ void free_results(results_countpairs **results)
 
 	free(tmp->rupp);
 	free(tmp->npairs);
-#ifdef OUTPUT_RPAVG
 	free(tmp->rpavg);
-#endif
 	free(tmp);
 	tmp = NULL;
 }
@@ -455,15 +453,15 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 	results->nbin = nrpbin;
 	results->npairs = my_malloc(sizeof(uint64_t), nrpbin);
 	results->rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
-#ifdef OUTPUT_RPAVG
 	results->rpavg  = my_malloc(sizeof(DOUBLE)  , nrpbin);
-#endif
 
 	for(int i=0;i<nrpbin;i++) {
 		results->npairs[i] = npairs[i];
 		results->rupp[i] = rupp[i];
 #ifdef OUTPUT_RPAVG
 		results->rpavg[i] = rpavg[i];
+#else
+		results->rpavg[i] = 0.0;
 #endif
 	}
 
