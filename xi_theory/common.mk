@@ -10,7 +10,7 @@ OPT += -DUSE_OMP
 ### Set the compiler -- options are icc/gcc/clang
 CC=gcc
 #### Add any compiler specific flags you want
-CFLAGS= -ftree-vectorize -ftree-vectorizer-verbose=6
+CFLAGS= 
 #### Add any compiler specific link flags you want
 CLINK=
 
@@ -51,7 +51,7 @@ else
 
   ### compiler specific flags for gcc
   ifeq (gcc,$(findstring gcc,$(CC)))
-		CFLAGS += -funroll-loops -fprefetch-loop-arrays #-fprofile-use -fprofile-correction #-fprofile-generate
+		CFLAGS += -ftree-vectorize -funroll-loops -fprefetch-loop-arrays #-fprofile-use -fprofile-correction #-fprofile-generate
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 			CFLAGS += -fopenmp
 			CLINK  += -fopenmp
