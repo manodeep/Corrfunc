@@ -5,8 +5,11 @@ all: $(target) dirs DD DDrppi wp libs examples python_bindings
 
 OBJS1= logbins.o utils/utils.o 
 
-logbins: $(OBJS1) Makefile 
-	$(CC) $(CFLAGS) -o $@ $(OBJS1)  $(CLINK)
+logbins: $(OBJS1) 
+	$(CC) $(OBJS1)  -o $@
+
+%.o: %.c 
+	$(CC) $(CFLAGS) -c $< -o $@ 
 
 dirs:
 	mkdir -p lib bin

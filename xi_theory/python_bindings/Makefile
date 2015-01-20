@@ -7,13 +7,12 @@ PYTHON_LIBDIR := $(shell python-config --prefix)/lib
 PROJECT := _countpairs
 LIBRARY := $(PROJECT).so.$(MAJOR).0.$(MINOR)
 SOURCES := _countpairs.c 
-OBJECTS = $(SOURCES:.c=.o)
+OBJECTS := $(SOURCES:.c=.o)
 C_LIBRARY := ../lib/libcountpairs.a ../lib/libcountpairs_rp_pi.a ../lib/libcountpairs_wp.a
-INCL := ../include/defs.h ../include/countpairs.h ../include/countpairs_rp_pi.h ../include/countpairs_wp.h
 
 all: $(LIBRARY) | ../lib
 
-$(LIBRARY): Makefile ../common.mk libs $(C_LIBRARY) $(INCL) $(OBJECTS) | ../lib
+$(LIBRARY): Makefile ../common.mk $(C_LIBRARY) $(OBJECTS) | ../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) -shared -o $@
 	rm -f _countpairs.so 
 	ln -s $(LIBRARY) _countpairs.so
@@ -24,18 +23,24 @@ $(LIBRARY): Makefile ../common.mk libs $(C_LIBRARY) $(INCL) $(OBJECTS) | ../lib
 ../lib:
 	mkdir -p ../lib
 
-libs:
-	$(MAKE) -C ../ libs
-
-%.o: %.c Makefile ../common.mk $(INCL)
+%.o: %.c Makefile ../common.mk 
 	$(CC) $(OPT) $(CFLAGS) $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
-.PHONY: clean clena celan install libs 
+../lib/libcountpairs.a: 
+	$(MAKE) -C ../xi_of_r/ lib
+
+../lib/libcountpairs_rp_pi.a: 
+	$(MAKE) -C ../xi_rp_pi/ lib
+
+../lib/libcountpairs_wp.a: 
+	$(MAKE) -C ../wp/ lib
 
 install: $(LIBRARY) | ../lib
 	cp -p $(LIBRARY) ../lib/
 	$(RM) ../lib/_countpairs.so 
 	ln -s $(LIBRARY) ../lib/_countpairs.so
+
+.PHONY: clean clena celan install 
 
 clean:
 	$(RM) $(LIBRARY) $(OBJECTS) _countpairs.so 
