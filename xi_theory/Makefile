@@ -6,7 +6,7 @@ all: $(target) dirs DD DDrppi wp libs examples python_bindings
 OBJS1= logbins.o utils/utils.o 
 
 logbins: $(OBJS1) 
-	$(CC) $(OBJS1)  -o $@
+	$(CC) $(OBJS1)  $(CLINK) -o $@
 
 %.o: %.c 
 	$(CC) $(CFLAGS) -c $< -o $@ 
