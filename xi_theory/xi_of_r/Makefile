@@ -4,8 +4,8 @@ target=DD
 SRC1   = DD.c countpairs.c ../utils/gridlink.c ../utils/utils.c ../io/ftread.c ../io/io.c 
 OBJS1  = $(SRC1:.c=.o)
 INCL   = countpairs.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gridlink.h \
-					../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
-					../include/defs.h 
+		../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
+		../include/defs.h 
 
 all: $(target) $(SRC1) $(INCL)
 

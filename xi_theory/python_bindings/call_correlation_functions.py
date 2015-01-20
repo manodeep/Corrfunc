@@ -14,7 +14,8 @@ import _countpairs
 
 file="../tests/data/gals_Mr19.txt"
 ### Make sure the precision agrees with the definition in ../common.mk.
-### Otherwise, you will get TypeError TypeError: array cannot be safely cast to required type
+### Otherwise, you will get a runtime error -- 
+### TypeError TypeError: array cannot be safely cast to required type
 dtype='float32' 
 x,y,z = np.loadtxt(file,dtype=dtype,unpack=True)
 array = np.hstack((x,y,z))

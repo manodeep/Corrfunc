@@ -17,6 +17,7 @@
 #include "defs.h"
 #include "utils.h"
 
+/* Library proto-types + struct definitions in the ../include directory */
 #include "countpairs.h"
 #include "countpairs_rp_pi.h"
 #include "countpairs_wp.h"
