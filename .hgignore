@@ -18,6 +18,8 @@ include/countpairs*.h
 *.so*
 a.out
 ms.*
+*.bib
 xx*
 yy*
 *.spl
+*.tar.gz
