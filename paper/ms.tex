@@ -18,6 +18,7 @@
 \newcommand{\sdss}{{\small{SDSS}}\xspace}
 \newcommand{\hMpc}{\ensuremath{{h^{-1}Mpc}\xspace}}
 \newcommand{\hkpc}{\ensuremath{{h^{-1}kpc}\xspace}}
+\newcommand{\emcee}{\texttt emcee}
 \newcommand{\rmax}{\ensuremath{{r_{max}}}\xspace}
 \newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
 
@@ -123,6 +124,7 @@ We ensure that the particle locations are contiguous by moving them into the fol
 %% \end{lstlisting}
 
 
+
 %% \lstinputlisting{cellarray.h}
 
 
@@ -130,9 +132,6 @@ We ensure that the particle locations are contiguous by moving them into the fol
 %% to make no sense that the field inside the struct cell has `nelements' of type \verbatim{int64_t}. The reason I have 
 %% chosen to use \verbatim{int64_t} is that under C alignment rules 4 bytes of padding would have appended anyway to the struct cell. So, I chose 
 %% to declare `nelements' as an \verbatim{int64_t} and used those 4 bytes. Saves some future conversion/coding. }
-
-
-
 
 
 \subsection{Hand-written Vectorization Support}
