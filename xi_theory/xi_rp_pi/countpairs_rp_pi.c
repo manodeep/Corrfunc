@@ -109,23 +109,6 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 	}
 	const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
-#ifdef USE_OMP
-	omp_set_num_threads(numthreads);
-	#pragma omp parallel for
-#endif
-	for(int64_t icell=0;icell<totncells;icell++){
-	  const cellarray *second=&(lattice2[icell]);
-	  DOUBLE *x = second->x;
-	  DOUBLE *y = second->y;
-	  DOUBLE *z = second->z;
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
-		SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);					\
-		SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) }
-	  
-	  SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, second->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
-	}
-
-
 #ifdef PERIODIC
 	const DOUBLE xdiff = (xmax-xmin);
 	const DOUBLE ydiff = (ymax-ymin);
@@ -329,9 +312,10 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 								const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
 								const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
 								
-								const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1pos,x2pos);
-								const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1pos,y2pos);
-								AVX_FLOATS m_zdiff       = AVX_SUBTRACT_FLOATS(m_z1pos,z2pos);
+								AVX_FLOATS m_zdiff       = AVX_SUBTRACT_FLOATS(z2pos,m_z1pos);
+								const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(x2pos,m_x1pos);
+								const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(y2pos,m_y1pos);
+								
 								m_zdiff = AVX_MAX_FLOATS(m_zdiff,AVX_SUBTRACT_FLOATS(m_zero,m_zdiff));//dz = fabs(dz) => dz = max(dz, -dz);
 								
 								AVX_FLOATS m_dist  = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_xdiff),AVX_SQUARE_FLOAT(m_ydiff));
@@ -342,17 +326,8 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 									const AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
 									const int test = AVX_TEST_COMPARISON(m_mask_pimax);
 									if(test == 0) {
-									  if(iiz >= 0) {
-										j=second->nelements;
-										break;
-									  } else {
 										continue;
-									  }
 									}
-
-/* 									if(test == 0) { */
-/* 									  continue; */
-/* 									} */
 
 									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_sqr_rpmin,_CMP_GE_OS);
 									m_dist = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax,m_dist,m_mask_pimax);
@@ -382,8 +357,9 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 										//m_mask_left = AVX_COMPARE_FLOATS(m_dist, m_rupp_sqr[kbin-1],_CMP_LT_OS);
 										m_mask_left = AVX_XOR_FLOATS(m_mask_low, m_all_ones);//XOR with 0xFFFF... gives the bins that are smaller than m_rupp_sqr[kbin] (and is faster than cmp_p(s/d) in theory)
 										const int test = AVX_TEST_COMPARISON(m_mask_left);
-										if(test==0)
+										if(test==0) {
 											break;
+										}
 									}
 									union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
 								}
