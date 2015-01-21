@@ -103,18 +103,27 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 	const DOUBLE sqr_rpmin = rupp_sqr[0];
 	const DOUBLE sqr_rpmax = rupp_sqr[nbin-1];
 	
-	//Sort the arrays on z
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,X1,i,j); \
-	SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Y1,i,j); \
-	SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Z1,i,j) }
-
-	SGLIB_ARRAY_QUICK_SORT(DOUBLE, Z1, ND1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
-
   //set up the 3-d grid structure. Each element of the structure contains a
   //pointer to the cellarray structure that itself contains all the points
   cellarray *lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
   const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
+#ifdef USE_OMP
+  omp_set_num_threads(numthreads);
+#pragma omp parallel for schedule(dynamic)
+#endif
+	for(int64_t icell=0;icell<totncells;icell++) {
+		const cellarray *first=&(lattice[icell]);
+		DOUBLE *x = first->x;
+		DOUBLE *y = first->y;
+		DOUBLE *z = first->z;
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
+			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);										\
+			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) }
+		
+		SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+	}
 
+	
 #ifdef USE_AVX
   AVX_FLOATS m_rupp_sqr[nbin];
 	for(int i=0;i<nbin;i++) {
@@ -130,7 +139,6 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 	
 
 #ifdef USE_OMP
-  omp_set_num_threads(numthreads);
   uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nbin);
 #ifdef OUTPUT_RPAVG
 	DOUBLE **all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), numthreads, nbin);
