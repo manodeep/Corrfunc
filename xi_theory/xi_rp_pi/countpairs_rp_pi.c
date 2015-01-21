@@ -8,8 +8,6 @@
 #include "utils.h" //all of the utilities
 
 
-#include "sglib.h"
-
 #ifdef USE_AVX
 #include "avx_calls.h"
 #endif
