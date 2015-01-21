@@ -1,0 +1,86 @@
+A. Problems with the python interface on MAC:
+
+1. You are getting the error message "Fatal Python error: PyThreadState_Get: no current thread"
+when you do "python call_correlation_functions.py"
+
+This is usually caused by a python library mis-match between linking time and run-time, i.e., 
+the python shared extension (_countpairs.so in the python_bindings/ subdir) was built with a
+python lib version that is not the first one in your search path. The way I resolved it on 
+my MAC was by adding the path: "python-config --prefix"/lib to the dynamic library 
+path environment variable. 
+
+Typically, this happens when the output of "otool -L _countpairs.so" does not show 
+a full path to libpythonX.X.dylib. 
+
+In my case, I use the anaconda distribution for python at link-time but I pick 
+up the macports install at run-time. The exact command to fix the situation is:
+
+Option 1.
+----------
+Change the rpath in the shared C extension library: 
+
+"install_name_tool -change libpythonX.X.dylib `python-config --prefix`/lib/libpythonX.X.dylib _countpairs.so"
+
+"otool -L _countpairs.so" should show the full path to the libpythonX.X.dylib file. 
+
+Option 2. 
+----------
+Add to the environment variable - but this is not fool-proof. 
+"export DYLD_FALLBACK_LIBRARY_PATH=`python-config --prefix`/lib:$DYLD_FALLBACK_LIBRARY_PATH"
+
+Option 3.
+----------
+If that does not work, try creating a symbolic link in the python_bindings directory:
+
+"ln -s `python-config --prefix`/lib/libpythonX.X.dylib" 
+
+(where I have omitted the sym-link name, defaults to the actual filename.) 
+
+However, if you go this sym-link route, then the sym-link *has* to be in the directory
+where the python code is situated - I do not know of any work-arounds (short of 
+creating the sym-link in a directory that's in the dynamic library path). 
+
+
+B. Problems compiling with gcc on a MAC:
+
+If you see errors like : "no such instruction: `vmovsd 48(%rsp), %xmm0'"
+
+this is because the gcc assembler does not support AVX yet. clang does -- 
+one way of getting around this problem is to use the clang assembler 
+instead of the gcc assembler. 
+
+Make a backup of the gcc assembler (/opt/local/bin/as) and then create 
+a new file with this content (taken from here: (http://stackoverflow.com/questions/9840207/how-to-use-avx-pclmulqdq-on-mac-os-x-lion) 
+and here (https://gist.github.com/xianyi/2957847 as modified here: https://gist.github.com/ancapdev/8059572):
+
+----------------------
+#!/bin/sh 
+HAS_INPUT_FILE=0 
+ARGS=$@ 
+while [ $# -ne 0 ]; do 
+        ARG=$1 
+        # Skip options 
+        if [ $ARG == "-arch" ] || [ $ARG == "-o" ]; then 
+                # Skip next token 
+                shift 
+                shift 
+                continue 
+        fi 
+
+        if [ `echo $ARG | head -c1` == "-" ]; then 
+                shift 
+                continue 
+        fi 
+
+        HAS_INPUT_FILE=1 
+        break 
+done 
+
+if [ $HAS_INPUT_FILE -eq 1 ]; then 
+        clang -Qunused-arguments -c -x assembler $ARGS 
+else 
+        clang -Qunused-arguments -c -x assembler $ARGS - 
+fi 
+----------------------
+
+
