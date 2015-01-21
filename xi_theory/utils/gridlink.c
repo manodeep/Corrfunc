@@ -110,7 +110,8 @@ cellarray * gridlink(const int64_t np,
   DOUBLE xinv=1.0/xbinsize;
   DOUBLE yinv=1.0/ybinsize;
   DOUBLE zinv=1.0/zbinsize;
-  
+
+  int64_t index;
   for (int64_t i=0;i<np;i++)  {
     ix=(int)((x[i]-xmin)*xinv) ;
     iy=(int)((y[i]-ymin)*yinv) ;
@@ -130,7 +131,7 @@ cellarray * gridlink(const int64_t np,
     assert(iy >= 0 && iy < nmesh_y && "iy is in range");
     assert(iz >= 0 && iz < nmesh_z && "iz is in range");
 
-	int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
+	index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
 
     if(lattice[index].nelements == nallocated[index]) {
       expected_n = nallocated[index]*MEMORY_INCREASE_FAC;
