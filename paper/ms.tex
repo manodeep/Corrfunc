@@ -20,6 +20,9 @@
 \newcommand{\hkpc}{\ensuremath{{h^{-1}kpc}\xspace}}
 \newcommand{\emcee}{\texttt emcee}
 \newcommand{\rmax}{\ensuremath{{r_{max}}}\xspace}
+\newcommand{\xir}{\ensuremath{{\xi(r)}}\xspace}
+\newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
+\newcommand{\xirppi}{\ensuremath{{\xi(r_p,\pi)}}\xspace}
 \newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
 
 
@@ -28,7 +31,7 @@
   language=C,                % choose the language of the code
   numbers=left,                   % where to put the line-numbers
   stepnumber=1,                   % the step between two line-numbers.
-  numbersep=5pt,                  % how far the line-numbers are from the code
+  numbersep=10pt,                  % how far the line-numbers are from the code
   backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
   showspaces=false,               % show spaces adding particular underscores
   showstringspaces=false,         % underline spaces within strings
@@ -37,7 +40,6 @@
   captionpos=b,                   % sets the caption-position to bottom
   breaklines=true,                % sets automatic line breaking
   breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
-  title=\lstname,                 % show the filename of files included with \lstinputlisting;
 }
 
 \begin{document}
@@ -120,31 +122,31 @@ A circle with radius \rmax is also drawn to shown the actual pairs that will eve
 For all pairs around a given target galaxy, we need to compute distances to all points within all neighbouring 3-d cells. 
 We ensure that the particle locations are contiguous by moving them into the following \texttt{C struct} in the order in which they arrive. 
 
-%% \begin{lstlisting}
-%% \end{lstlisting}
+\lstinputlisting[firstline=11]{../xi_theory/include/cellarray.h}
 
+Since the typical particle data is small ($\sim$ 20-30 MB), duplicating the entire particle distribution does not impose a strong 
+constraint on the memory requirements. However, this duplication allows us to store the particles contiguously and produces fewer 
+cache misses while looping over particles in a cell. 
+The entire 3-D particle distribution is then deposited on the uniform grid. Now, for each particle we need to visit 27 total cells to 
+compute all possible pairs within \rmax. 
 
+\section{The pair-counting algorithm}
 
-%% \lstinputlisting{cellarray.h}
-
-
-%% \footnote{Most of the code assumes that the number of galaxies is within INT_MAX $\sim$ 2.1 billion. So, it would appear 
-%% to make no sense that the field inside the struct cell has `nelements' of type \verbatim{int64_t}. The reason I have 
-%% chosen to use \verbatim{int64_t} is that under C alignment rules 4 bytes of padding would have appended anyway to the struct cell. So, I chose 
-%% to declare `nelements' as an \verbatim{int64_t} and used those 4 bytes. Saves some future conversion/coding. }
-
+\subsection{\xir}
+\subsection{\xirppi}
+\subsection{\wprp}
 
 \subsection{Hand-written Vectorization Support}
 Advanced Vector Extensions (AVX) has been available in cpu's more recent than 2011. AVX allows the processing of 8 floats or 4 double simultaneously -- thus, 
 potentially increasing the throughput by a factor of 8x/4x. However, automatic vectorization is not always possible by the compiler and in those cases 
 we can write AVX vector intrinsics to directly manipulate 8 floats/4 doubles. 
 
-
-\subsection{Comparison to Tree Algorithms}
-
-\section{Results}
-
 \section{Benchmarks \& Scaling}
+In this section we present the runtimes and OpenMP scaling for the different codes. 
+
+\subsection{\xir}
+\subsection{\xirppi}
+\subsection{\wprp}
 
 \section{Conclusions}
 
