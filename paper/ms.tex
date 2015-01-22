@@ -142,25 +142,15 @@ potentially increasing the throughput by a factor of 8x/4x. However, automatic v
 we can write AVX vector intrinsics to directly manipulate 8 floats/4 doubles. 
 
 \section{Benchmarks \& Scaling}
-In this section we present the runtimes and OpenMP scaling for the different codes. 
-
-\subsection{\xir}
-\begin{figure}
-\includegraphics[clip=true,width=\linewidth]{xi_of_r_scaling_Mr19}
-\caption{OpenMP scaling for the \xir }
-\end{figure}
-
-\subsection{\xirppi}
-\begin{figure}
-\includegraphics[clip=true,width=\linewidth]{xi_rp_pi_scaling_Mr19}
-\caption{OpenMP scaling for the \xirppi }
-\end{figure}
+In this section we present the runtimes and OpenMP scaling for the three codes. 
 
 
-\subsection{\wprp}
-\begin{figure}
-\includegraphics[clip=true,width=\linewidth]{wp_scaling_Mr19}
-\caption{OpenMP scaling for the \wprp }
+\subsection{Scaling with OpenMP threads}
+\begin{figure}[htbp]
+\includegraphics[clip=true,width=0.5\linewidth]{xi_of_r_scaling_Mr19}%
+\includegraphics[clip=true,width=0.5\linewidth]{xi_rp_pi_scaling_Mr19}\\
+\includegraphics[clip=true,width=0.5\linewidth]{wp_scaling_Mr19}%
+\caption{OpenMP scaling for the \xir, \xirppi, \wprp }
 \end{figure}
 
 \section{Conclusions}
