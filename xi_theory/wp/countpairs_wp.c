@@ -78,10 +78,11 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 	setup_bins(binfile,&rpmin,&rpmax,&nbin,&rupp);
 	assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
 	assert(nbin > 0 && "Number of rp bins is valid");
+
   //gives better performance to bin more finely if 
-  if(rpmax >= pimax) {
-    zbin_refine_factor=2;
-  }
+  /* if(rpmax >= pimax) { */
+  /*   zbin_refine_factor=2; */
+  /* } */
 
 	uint64_t npair[nbin];
 	for(int i=0;i<nbin;i++) npair[i] = 0;
@@ -106,7 +107,21 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
   //set up the 3-d grid structure. Each element of the structure contains a
   //pointer to the cellarray structure that itself contains all the points
   cellarray *lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+	if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
+    fprintf(stderr,"countpairs_wp> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
+		bin_refine_factor *=2;
+		zbin_refine_factor *=2;
+		const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
+		for(int64_t i=0;i<totncells;i++) {
+			free(lattice[i].x);
+			free(lattice[i].y);
+			free(lattice[i].z);
+		}
+		free(lattice);
+		lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+	}
   const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
+
 #ifdef USE_OMP
   omp_set_num_threads(numthreads);
 #pragma omp parallel for schedule(dynamic)
