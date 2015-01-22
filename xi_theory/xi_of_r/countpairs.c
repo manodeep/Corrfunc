@@ -95,7 +95,21 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
 		
   cellarray *lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
-  cellarray *lattice2 = NULL;
+	if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
+		fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
+		bin_refine_factor *=2;
+		int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  		
+		for(int64_t i=0;i<totncells;i++) {
+			free(lattice1[i].x);
+			free(lattice1[i].y);
+			free(lattice1[i].z);
+		}
+		free(lattice1);
+		lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+	}
+
+
+	cellarray *lattice2 = NULL;
   if(autocorr==0) {
 		int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
 		lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
