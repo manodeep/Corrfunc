@@ -22,10 +22,9 @@ timings_file = 'timings_Mr19_rmax.txt'
 pimax = 40.0
 ntries = 5
 min_rmax = 5.0
-max_rmax = 50.0
-NumSteps = 10
-
-rbinsize = (max_rmax-min_rmax)/(NumSteps-1.0)
+max_rmax = 75.0
+rbinsize = 10.0
+NumSteps = long((max_rmax-min_rmax)/rbinsize + 1)
 target_rmax = dindgen(NumSteps)*rbinsize + min_rmax
 nrpbins = 14
 nthreads = 4
@@ -61,6 +60,8 @@ if (findfile(timings_file))[0] eq '' then begin
 endif
 
 readcol, timings_file, iteration, cpu_time, code_string, format = 'L,X,D,A', /silent
+if n_elements(iteration) ne ncodes*NumSteps*ntries then stop
+
 timings = dblarr(ncodes, NumSteps)
 scatter = dblarr(ncodes, NumSteps)
 
