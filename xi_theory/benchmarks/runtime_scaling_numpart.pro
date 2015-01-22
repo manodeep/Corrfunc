@@ -167,14 +167,14 @@ if generate_eps eq 0 then begin
    window,  0,  xsize =  size,  ysize =  size
 endif else begin
    set_plot,  'ps'
-   size =  8
+   size =  12
    thick =  6
    xthick =  6
    ythick =  6
    device,   decomposed =   1
    !p.font =   1
    psfname =  str_replace(timings_file,  '.txt',  '.eps')
-   device,   filename =   psfname,   /encap,   /color,   /cmyk,   bits_per_pixel =   8,   xsize =   size,   ysize =   size,   /in,   /helvetica,  /tt_font,   /bold,   $
+   device,   filename =   psfname,   /encap,   /color, /cmyk, bits_per_pixel =   8,   xsize =   size,   ysize =   size,   /in,   /helvetica,  /tt_font,   /bold,   $
              xoffset =   0,   yoffset =   0
    
 endelse
@@ -208,6 +208,9 @@ endfor
 al_legend, legendstring, psym = symbols, color = colors, /top, /left, symsize = symsize, $
            textcolor = colors
 
+plot,  [0],  xrange =  xrange,  yrange =  yrange,  /nodata,  $
+             xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
+             xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick,  /ylog, /xlog, /noerase
 
 if !d.name eq 'PS' then begin
    device,  /close
