@@ -19,6 +19,7 @@ include/countpairs*.h
 a.out
 ms.*
 *.bib
+users-guide.*
 xx*
 yy*
 *.spl
