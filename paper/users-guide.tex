@@ -1,0 +1,230 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{aas_macros}
+\usepackage{rotating}
+\usepackage{xspace}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{caption}
+%\usepackage{url}
+\usepackage{hyperref}
+\usepackage{dirtree}
+\usepackage{adjustbox}
+
+\let\stdsection\section
+\renewcommand\section{\newpage\stdsection}
+
+\newcommand{\rmax}{\ensuremath{{r_{max}}}\xspace}
+\newcommand{\xir}{\ensuremath{{\xi(r)}}\xspace}
+\newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
+\newcommand{\xirppi}{\ensuremath{{\xi(r_p,\pi)}}\xspace}
+\newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
+\newcommand{\clang}{{\texttt{clang}}\xspace}
+\newcommand{\icc}{{\texttt{icc}}\xspace}
+\newcommand{\gcc}{{\texttt{gcc}}\xspace}
+
+
+\newcommand\DotFill{\leavevmode\xleaders\hbox{.}\hfill\kern0pt}
+\newcolumntype{M}[1]{>{\raggedright\arraybackslash}m{#1}}
+
+
+\lstset{
+  language=C,                % choose the language of the code
+  basicstyle=\ttfamily,      % sets font
+  numbers=left,                   % where to put the line-numbers
+  numberstyle=\small, 
+  stepnumber=1,                   % the step between two line-numbers.
+  numbersep=10pt,                  % how far the line-numbers are from the code
+  backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  tabsize=2,                      % sets default tabsize to 2 spaces
+  captionpos=b,                   % sets the caption-position to bottom
+  breaklines=true,                % sets automatic line breaking
+  breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+}
+
+
+\begin{document}
+
+\title{User Guide for Corrfunc}
+\author{Manodeep Sinha}
+
+\maketitle 
+
+\pagenumbering{Roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+\section{Introduction}
+
+\section{Installation}
+The only requirements for the code to install is a valid C compiler, with OpenMP support. The AVX
+instruction set can only be used for CPU's later than 2011 (Intel Sandy Bridge/ AMD Bulldozer or later). 
+
+\subsection{Getting the Source}
+You can obtain the source in two ways: i) Clone the mercurial repo (\texttt{hg clone} \url{https://bitbucket.org/manodeep/corrfunc/}) 
+or ii) Download the tar archive (\href{https://bitbucket.org/manodeep/corrfunc/downloads/corrfunc.1.0.0.tar.gz}{corrfunc.\$MAJOR.0.\$MINOR.tar.gz}) and 
+unpack it in the directory where you wish to keep the files (\texttt{tar xvzf corrfunc.\$MAJOR.0.\$MINOR.tar.gz}). Here, \$MAJOR and \$MINOR
+refer to the major and minor release versions (current \$MAJOR=1, \$MINOR=0). I will only change the \$MAJOR version if the API breaks. 
+
+The directory structure for the code looks like this:
+\dirtree{%
+.1 corrfunc.
+.2 paper.
+.2 xi\_theory.
+.3 benchmarks\DotFill
+  \begin{minipage}[t]{8cm}
+    IDL scripts to run benchmarks{.} 
+  \end{minipage}.
+.3 bin\DotFill 
+  \begin{minipage}[t]{8cm}
+    Will be created to copy executable files when you run `make install'{.} 
+  \end{minipage}.
+.3 examples\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for example C bindings using the static libraries{.} 
+  \end{minipage}.
+.3 include\DotFill 
+  \begin{minipage}[t]{8cm}
+    Header files for static libraries{.} 
+  \end{minipage}.
+.3 io\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for reading in data{.} 
+  \end{minipage}.
+.3 lib\DotFill 
+  \begin{minipage}[t]{8cm}
+    Will be created to copy static libraries and python library after you run `make'{.} 
+  \end{minipage}.
+.3 python\_bindings\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files to generate python bindings{.} 
+  \end{minipage}.
+.3 tests\DotFill 
+  \begin{minipage}[t]{8cm}
+    Correct outputs for tests \textcolor{blue}{(work in progress)}{.} 
+  \end{minipage}.
+.4 data\DotFill 
+  \begin{minipage}[t]{8cm}
+    Mock galaxy catalogs for tests{.} 
+  \end{minipage}.
+.3 utils\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for creating 3-D grid and helper routines{.} 
+  \end{minipage}.
+.3 wp\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for $w_p(r_p)${.} 
+  \end{minipage}.
+.3 xi\_of\_r\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for $\xi(r)${.} 
+  \end{minipage}.
+.3 xi\_rp\_pi\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for $\xi(r_p,\pi)${.} 
+  \end{minipage}.
+}
+
+\subsection{Code Options}
+There are a few code options that control both the Science case and the code compilation. All of these 
+options are located in `common.mk' in the base directory (`corrfunc'). Edit the first few lines to set these 
+options:
+
+\begin{table}
+\begin{center}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{ccccM{4in}} 
+\toprule
+\multicolumn{1}{c}{\textbf{Option Type}}   &
+\multicolumn{1}{c}{\textbf{Option Name}}   &
+\multicolumn{1}{c}{\textbf{Default State}} &
+\multicolumn{1}{c}{\textbf{Requires}}      &
+\multicolumn{1}{c}{\textbf{Notes}}      \\
+\midrule
+                 & PERIODIC            & Enabled  & None            & Enables periodic boundary conditions. \\
+\textbf{Science} & OUTPUT\_RPAVG       & Disabled & DOUBLE\_PREC    & Outputs the average pair-separation in each bin. \xir and \wprp can be slower by more than $2\times$, \xirppi is less affected. \\
+\midrule
+                 & DOUBLE\_PREC        & Disabled & None                               & Computations are done using double precision. Slower and requires more RAM. \\
+\textbf{Code}    & USE\_AVX            & Enabled  & CPU and compiler with AVX support  & CPUs later than 2011 have AVX support. Code will run much faster with this option. \\
+                 & USE\_OMP            & Enabled  & OpenMP capable compiler            & Since \clang does not support OpenMP yet, \texttt{common.mk} will stop compilation with \clang when this flag is enabled. \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{center}
+\caption{\footnotesize }
+\label{table:sims}
+\end{table}
+Depending on your Science use-case and the cpu/compiler, you will want to set the different options. Once you set those options, you should set the 
+C compiler, CC (available options are \icc, \gcc, \clang). Once you have set the compiler, installing should be as simple as typing `make' and 
+`make install' in the \texttt{xi\_theory} directory. However, you may have to do more on Mac OSX - so I will outline some of the scenarios in 
+Section~\ref{section:mac}. 
+\subsection{Linux}
+If the installation went well, you should have an executable called \texttt{run\_correlations} in the \texttt{examples} directory. Type \texttt{./run\_correlations} 
+in the \texttt{examples} directory and you should see the code in action. The C source file \texttt{run\_correlations.c} also serves as an example to 
+use the \xir, \xirppi and \wprp libraries in C. 
+
+\subsection{Mac OSX}\label{section:mac}
+There can be two issues on MACs. One is that the default \gcc assembler supplied by \texttt{XCode} or \texttt{macports} is too old and does not support AVX instructions 
+even when the CPU does. One way to get around this is by using the \clang assembler even when compiling with \gcc. The easiest way to do it is by replacing the 
+default assembler with this following script (taken from \href{https://gist.github.com/ancapdev/8059572}{here}:
+
+\lstinputlisting[language=sh]{as}
+
+I have included the \texttt{as} script in the paper directory - copy it to the appropriate directory (\texttt{/opt/local/bin/} for me since I use \texttt{macports} \gcc 
+on my laptop).
+
+Another problem might come with running the python example codes in the \texttt{python\_bindings} directory. If you get an error message 
+\texttt{Fatal Python error: PyThreadState\_Get: no current thread} when you run \texttt{python call\_correlation\_functions.py}, then the following 
+steps might fix the problem (these are also noted in the FAQ). This error occurs when the python library used at compile time is not the same 
+as the runtime python library. In all cases that I have seen, this error occurs when using the \texttt{conda} package manager for python\footnote{This 
+behaviour is by design according to \texttt{conda}}. 
+\begin{itemize}
+
+\item Change the relative path for the shared python library \_countpairs.so. You can change the relative path by issuing the command: \\
+{\scriptsize\texttt{install\_name\_tool -change libpython2.7.dylib  \`{}python-config --prefix\`{}/lib/libpython2.7.dylib \_countpairs.so}}
+
+\item Add to the fallback library path environment variable. \\
+{\scriptsize\texttt{export DYLD\_FALLBACK\_LIBRARY\_PATH=\`{}python-config --prefix\`{}/lib:\$DYLD\_FALLBACK\_LIBRARY\_PATH}}
+
+\item If both of the above methods fail, then create a symbolic link \\
+{\scriptsize\texttt{ln -s \`{}python-config --prefix\`{}/lib/libpython2.7.dylib}}
+
+
+\end{itemize}
+
+\section{Code Design}
+\subsection{Input Files}
+\subsection{C bindings}
+The \texttt{examples} contains the files \texttt{run\_correlations.c} that shows how to use the three types of correlation function libraries from C. 
+\subsection{Python Bindings}
+The \texttt{python\_bindings} directory contains python bindings for python 2.x. Note that python3 is not supported out of the box\footnote{In the future, I might switch to 
+cython to cover both python2 and python3}. If all went well, then typing \texttt{python call\_correlation\_functions.py} should run the example python code. If you get 
+an error (and you are on a MAC), then refer to Section~\ref{section:mac} or the FAQ. 
+
+\section{Extending the Code}
+\subsection{Different Type of Input Data File}
+\subsection{Using SSE instead of AVX}
+\subsection{Correlation function with weights}
+The default mode of the correlation function calculations assume identical unit weights for all points. However, it is fairly 
+straightforward to extend the code to support weights for individual points. 
+
+
+
+\section*{Acknowledgements}
+
+%% \bibliographystyle{apj}
+%% \bibliography{master}
+
+\end{document}
+
+
+
+
