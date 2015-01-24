@@ -31,47 +31,45 @@
 #include "../io/ftread.c"
 #include "../xi_of_r/countpairs.c"
 #include "../xi_rp_pi/countpairs_rp_pi.c"
-#include "../wp/countpairs_wp.c"
+
 
 char tmpoutputfile[]="./tmp_output.txt";
 
-int test_nonperiodic_DD(void);
-int test_nonperiodic_DDrppi(void);
-
+int test_nonperiodic_DD(const char *correct_outputfile);
+int test_nonperiodic_DDrppi(const char *correct_outputfile);
+void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
 
 //Global variables
 int ND1;
-DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
+DOUBLE *X1=NULL,*Y1=NULL,*Z1=NULL;
 
 int ND2;
-DOUBLE *x2=NULL,*y2=NULL,*z2=NULL;
+DOUBLE *X2=NULL,*Y2=NULL,*Z2=NULL;
 
 char binfile[]="bins";
-const DOUBLE pimax=40.0;
+DOUBLE pimax=40.0;
 double boxsize=420.0;
-const int autocorr=1;
 #ifdef USE_OMP
 const int nthreads=4;
 #endif
+
+char current_file1[MAXLEN],current_file2[MAXLEN];
+
 //end of global variables
 
 
-int test_periodic_DD(void)
+int test_nonperiodic_DD(const char *correct_outputfile)
 {
-  struct timeval t0,t1; 
-  assert(ND1==ND2 && x1==x2 && y1==y2 && z1==z2 && "Running test_periodic_DD() - the pointers should be identical");
+  int autocorr = (X1==X2) ? 1:0;
 
   //Do the straight-up DD counts                                                                                                                                                                                                             
-  gettimeofday(&t0,NULL);
-  results_countpairs *results = countpairs(ND1,x1,y1,z1,
-										   ND2,x2,y2,z2,
+  results_countpairs *results = countpairs(ND1,X1,Y1,Z1,
+										   ND2,X2,Y2,Z2,
 #ifdef USE_OMP
 										   nthreads,
 #endif
 										   autocorr,
 										   binfile);
-  gettimeofday(&t1,NULL);
-  double pair_time = ADD_DIFF_TIME(t0,t1);
   DOUBLE rlow=results->rupp[0];
   FILE *fp=NULL;
   
@@ -83,26 +81,19 @@ int test_periodic_DD(void)
   fclose(fp);
 	
   char execstring[MAXLEN];
-  my_snprintf(execstring,MAXLEN,"diff -q Mr19_DD_periodic %s",tmpoutputfile);
+  my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
   int ret=system(execstring);
-  if(ret==EXIT_SUCCESS) {
-	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: 3-D periodic DD calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  } else {
-	fprintf(stderr,ANSI_COLOR_RED "FAILED: 3-D periodic DD calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  }
 
   free_results(&results);
   return ret;
 }
 
-int test_periodic_DDrppi(void)
+int test_nonperiodic_DDrppi(const char *correct_outputfile)
 {
-  struct timeval t0,t1; 
-  assert(ND1==ND2 && x1==x2 && y1==y2 && z1==z2 && "Running test_periodic_DD() - the pointers should be identical");
-  gettimeofday(&t0,NULL);
+  int autocorr = (X1==X2) ? 1:0;
   
-  results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,x1,y1,z1,
-													   ND2,x2,y2,z2,
+  results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,X1,Y1,Z1,
+													   ND2,X2,Y2,Z2,
 #ifdef USE_OMP
 													   nthreads,
 #endif
@@ -110,8 +101,6 @@ int test_periodic_DDrppi(void)
 													   binfile,
 													   pimax);
   
-  gettimeofday(&t1,NULL);
-  double pair_time = ADD_DIFF_TIME(t0,t1);
   const int npibin = results->npibin;
   const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
   FILE *fp=my_fopen(tmpoutputfile,"w");
@@ -124,91 +113,119 @@ int test_periodic_DDrppi(void)
   }
   fclose(fp);
   char execstring[MAXLEN];
-  my_snprintf(execstring,MAXLEN,"diff -q Mr19_DDrppi_periodic %s",tmpoutputfile);
+  my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
   int ret=system(execstring);
-  if(ret==EXIT_SUCCESS) {
-	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: periodic DDrppi calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  } else {
-	fprintf(stderr,ANSI_COLOR_RED "FAILED: periodic DDrppi calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  }
-	
 
   //free the result structure
   free_results_rp_pi(&results);
   return ret;
 }
 
-int test_wp(void)
+void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat)
 {
-  struct timeval t0,t1; 
-  assert(ND1==ND2 && x1==x2 && y1==y2 && z1==z2 && "Running test_periodic_DD() - the pointers should be identical");
-
-  gettimeofday(&t0,NULL);
-  results_countpairs_wp *results = countpairs_wp(ND1,x1,y1,z1,
-												 boxsize,
-#ifdef USE_OMP
-												 nthreads,
-#endif
-												 binfile,
-												 pimax);
-  gettimeofday(&t1,NULL);
-  double pair_time = ADD_DIFF_TIME(t0,t1);
-  DOUBLE rlow=results->rupp[0];
-  FILE *fp=my_fopen(tmpoutputfile,"w");
-  for(int i=1;i<results->nbin;++i) {
-	fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
-	rlow=results->rupp[i];
+  int free_X2=0;
+  if(X2 != NULL && X2 != X1) {
+	free_X2=1;
   }
-  fclose(fp);
-  char execstring[MAXLEN];
-  my_snprintf(execstring,MAXLEN,"diff -q Mr19_wp %s",tmpoutputfile);
-  int ret=system(execstring);
-  if(ret==EXIT_SUCCESS) {
-	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: periodic wp calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  } else {
-	fprintf(stderr,ANSI_COLOR_RED "FAILED: periodic wp calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
+
+
+  //Check to see if data has to be read for X1/Y1/Z1
+  if (strncmp(current_file1,firstfilename,strlen(current_file1)) != 0) {
+	//replace the data-set
+	if(X1 != NULL) {
+	  free(X1);free(Y1);free(Z1);
+	}
+	ND1 = read_positions(firstfilename,firstformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
+	strlcpy(current_file1,firstfilename,MAXLEN);
   }
   
-  //free the result structure
-  free_results_wp(&results);
-  return ret;
+  //first check if only one unique file is asked for
+  if(strncmp(firstfilename,secondfilename,strlen(firstfilename))==0) {
+	//But X2 might have read-in a different file->avoid a memory-leak
+	if(free_X2 == 1) {
+	  free(X2);free(Y2);free(Z2);
+	  free_X2 = 0;//not essential since the code returns after this section
+	}
+	X2=X1;
+	Y2=Y1;
+	Z2=Z1;
+	ND2=ND1;
+	strlcpy(current_file2,secondfilename,MAXLEN);
+	return;
+  }
+
+
+  //Check to see if data has to be read for X2/Y2/Z2
+  if (strncmp(current_file2,secondfilename,strlen(current_file2)) != 0) {
+	//replace the data-set
+	if(free_X2 == 1) {
+	  free(X2);free(Y2);free(Z2);
+	}
+	ND2 = read_positions(secondfilename,secondformat,(void **) &X2,(void **) &Y2,(void **) &Z2,sizeof(DOUBLE));
+	strlcpy(current_file2,secondfilename,MAXLEN);
+  }
 }
+
 
 int main(int argc, char **argv)
 {
-  struct timeval t0,t1;
+  struct timeval tstart,t0,t1;
   char file[]="data/gals_Mr19.ff";
   char fileformat[]="f";
-  char binfile[]="bins";
-  DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
-  struct timeval t0,t1; 
-#ifdef USE_OMP
-  const int nthreads=4;
-#endif
-  const int64_t ND1 = read_positions(file,fileformat,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
-  int autocorr=1;
-  DOUBLE *x2 = x1;
-  DOUBLE *y2 = y1;
-  DOUBLE *z2 = z1;
-  int64_t ND2 = ND1;
 
-  gettimeofday(&t0,NULL);
+#ifdef PERIODIC
+#error PERIODIC must not be defined for running non-periodic tests
+#endif
+
+  gettimeofday(&tstart,NULL);
+
+  //set the globals
+  ND1 = read_positions(file,fileformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
+  ND2 = ND1;
+  X2 = X1;
+  Y2 = Y1;
+  Z2 = Z1;
+
+  strlcpy(current_file1,file,MAXLEN);
+  strlcpy(current_file2,file,MAXLEN);
   
   int failed=0;
   int status;
   
-  const char allfunction_names[][MAXLEN] = {"tests_periodic_DD","tests_periodic_DDrppi","tests_wp"};
-  const int ntests = sizeof(allfunction_names)/(sizeof(char)*MAXLEN);
-  int (*allfunctions[]) (void) = {test_periodic_DD,test_periodic_DDrppi,test_wp};
+  const char alltests_names[][MAXLEN] = {"Mr19 DD (nonperiodic)","Mr19 DDrppi (nonperiodic)","CMASS DDrppi DR (nonperiodic)"};
+  const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
+  const int function_pointer_index[] = {0,1,1};//0->DD, 1->DDrppi
+
+  const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_nonperiodic","Mr19_DDrppi_nonperiodic","cmass_DR_nonperiodic"};
+  const char firstfilename[][MAXLEN] = {"data/gals_Mr19.ff","data/gals_Mr19.ff","data/cmassmock_Zspace.ff"};
+  const char firstfiletype[][MAXLEN] = {"f","f","f"};
+  const char secondfilename[][MAXLEN] = {"data/gals_Mr19.ff","data/gals_Mr19.ff","data/random_Zspace.ff"};
+  const char secondfiletype[][MAXLEN] = {"f","f","f"};
+  const DOUBLE allpimax[]             = {40.0,40.0,80.0};
+
+  int (*allfunctions[]) (const char *) = {test_nonperiodic_DD,test_nonperiodic_DDrppi};
+  const int numfunctions=2;//2 functions total
+
   int total_tests=0;
   
   if(argc==1) {
 	//nothing was passed at the command-line run all tests
 	for(int i=0;i<ntests;i++) {
-	  status = (*allfunctions[i])();
+	  read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
+	  pimax=allpimax[i];
+	  int function_index = function_pointer_index[i];
+	  assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+	  gettimeofday(&t0,NULL);
+	  status = (*allfunctions[function_index])(correct_outoutfiles[i]);
+	  gettimeofday(&t1,NULL);
+	  double pair_time=ADD_DIFF_TIME(t0,t1);
+	  const char *testname = alltests_names[i];
 	  total_tests++;
-	  if(status != EXIT_SUCCESS)  {
+	  if(status==EXIT_SUCCESS) {
+		fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+	  } else {
 		failed++;
+		fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 	  }
 	}
   } else {
@@ -217,9 +234,20 @@ int main(int argc, char **argv)
 	  int this_test_num = atoi(argv[i]);
 	  if(this_test_num >= 0 && this_test_num < ntests) {
 		total_tests++;
-		status = (*allfunctions[this_test_num])();
-		if(status != EXIT_SUCCESS)  {
+		read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
+		pimax=allpimax[this_test_num];
+		int function_index = function_pointer_index[this_test_num];
+		assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+		gettimeofday(&t0,NULL);
+		status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
+		gettimeofday(&t1,NULL);
+		double pair_time = ADD_DIFF_TIME(t0,t1);
+		const char *testname = alltests_names[this_test_num];
+		if(status==EXIT_SUCCESS) {
+		  fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+		} else {
 		  failed++;
+		  fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		}
 	  }
 	}
@@ -227,7 +255,7 @@ int main(int argc, char **argv)
 
   
   gettimeofday(&t1,NULL);
-  double total_time = ADD_DIFF_TIME(t0,t1);
+  double total_time = ADD_DIFF_TIME(tstart,t1);
   if(failed > 0) {
 	fprintf(stderr,ANSI_COLOR_RED "FAILED %d out of %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", failed, total_tests, total_time);
   } else {
@@ -236,6 +264,10 @@ int main(int argc, char **argv)
 	my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
 	system(execstring);
   }
-  free(x1);free(y1);free(z1);
+
+  if(X2 != X1) {
+	free(X2);free(Y2);free(Z2);
+  }
+  free(X1);free(Y1);free(Z1);
   return EXIT_SUCCESS;
 }

@@ -174,7 +174,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 #pragma omp for  schedule(dynamic)
 #endif
 		/*---Loop-over-lattice1--------------------*/
-		for(int icell=0;icell<totncells;icell++) {
+		for(int index1=0;index1<totncells;index1++) {
 		  
 #ifdef USE_OMP
 		  if (omp_get_thread_num() == 0)
@@ -187,10 +187,10 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 #endif
 		  numdone++;
 		  
-		  const int iz = icell % nmesh_z ;
-		  const int ix = icell / (nmesh_z * nmesh_y) ;
-		  const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
-		  assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == icell) && "Index reconstruction is wrong");
+		  const int iz = index1 % nmesh_z ;
+		  const int ix = index1 / (nmesh_z * nmesh_y) ;
+		  const int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
+		  assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == index1) && "Index reconstruction is wrong");
 			
 			for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++){
 				int iiix;
@@ -246,7 +246,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 						assert(iiix >= 0 && iiix < nmesh_x && iiiy >= 0 && iiiy < nmesh_y && iiiz >= 0 && iiiz < nmesh_z && "Checking that the second pointer is in range");
 						const int64_t index2 = iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
 						const cellarray *second = &(lattice2[index2]);
-						const cellarray *first = &(lattice1[icell]);
+						const cellarray *first  = &(lattice1[index1]);
 						
 						const DOUBLE *x1 = first->x;
 						const DOUBLE *y1 = first->y;
@@ -425,7 +425,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 					}//iiz loop over zbin_refine_factor
 				}//iiy loop over bin_refine_factor
 			}//iix loop over bin_refine_factor
-		}//icell loop over totncells
+		}//index1 loop over totncells
 #ifdef USE_OMP
 		for(int i=0;i<totnbins;i++) {
 			all_npairs[tid][i] = npairs[i];

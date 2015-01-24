@@ -61,23 +61,19 @@ char current_file1[MAXLEN],current_file2[MAXLEN];
 
 int test_periodic_DD(const char *correct_outputfile)
 {
-  struct timeval t0,t1; 
   int autocorr = (X1==X2) ? 1:0;
 
   //Do the straight-up DD counts                                                                                                                                                                                                             
-  gettimeofday(&t0,NULL);
-  results_countpairs *results = countpairs(ND1,X1,Y1,Z1,
+    results_countpairs *results = countpairs(ND1,X1,Y1,Z1,
 										   ND2,X2,Y2,Z2,
 #ifdef USE_OMP
 										   nthreads,
 #endif
 										   autocorr,
 										   binfile);
-  gettimeofday(&t1,NULL);
-  double pair_time = ADD_DIFF_TIME(t0,t1);
+
   DOUBLE rlow=results->rupp[0];
   FILE *fp=NULL;
-  
   fp=my_fopen(tmpoutputfile,"w");
   for(int i=1;i<results->nbin;i++) {
 	fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]);
@@ -88,11 +84,6 @@ int test_periodic_DD(const char *correct_outputfile)
   char execstring[MAXLEN];
   my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
   int ret=system(execstring);
-  if(ret==EXIT_SUCCESS) {
-	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: 3-D periodic DD calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  } else {
-	fprintf(stderr,ANSI_COLOR_RED "FAILED: 3-D periodic DD calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  }
 
   free_results(&results);
   return ret;
@@ -100,8 +91,6 @@ int test_periodic_DD(const char *correct_outputfile)
 
 int test_periodic_DDrppi(const char *correct_outputfile)
 {
-  struct timeval t0,t1; 
-  gettimeofday(&t0,NULL);
   int autocorr = (X1==X2) ? 1:0;
   
   results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,X1,Y1,Z1,
@@ -113,8 +102,6 @@ int test_periodic_DDrppi(const char *correct_outputfile)
 													   binfile,
 													   pimax);
   
-  gettimeofday(&t1,NULL);
-  double pair_time = ADD_DIFF_TIME(t0,t1);
   const int npibin = results->npibin;
   const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
   FILE *fp=my_fopen(tmpoutputfile,"w");
@@ -129,12 +116,6 @@ int test_periodic_DDrppi(const char *correct_outputfile)
   char execstring[MAXLEN];
   my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
   int ret=system(execstring);
-  if(ret==EXIT_SUCCESS) {
-	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: periodic DDrppi calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  } else {
-	fprintf(stderr,ANSI_COLOR_RED "FAILED: periodic DDrppi calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  }
-	
 
   //free the result structure
   free_results_rp_pi(&results);
@@ -143,9 +124,6 @@ int test_periodic_DDrppi(const char *correct_outputfile)
 
 int test_wp(const char *correct_outputfile)
 {
-  struct timeval t0,t1; 
-
-  gettimeofday(&t0,NULL);
   results_countpairs_wp *results = countpairs_wp(ND1,X1,Y1,Z1,
 												 boxsize,
 #ifdef USE_OMP
@@ -153,8 +131,6 @@ int test_wp(const char *correct_outputfile)
 #endif
 												 binfile,
 												 pimax);
-  gettimeofday(&t1,NULL);
-  double pair_time = ADD_DIFF_TIME(t0,t1);
   DOUBLE rlow=results->rupp[0];
   FILE *fp=my_fopen(tmpoutputfile,"w");
   for(int i=1;i<results->nbin;++i) {
@@ -165,12 +141,7 @@ int test_wp(const char *correct_outputfile)
   char execstring[MAXLEN];
   my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
   int ret=system(execstring);
-  if(ret==EXIT_SUCCESS) {
-	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: periodic wp calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  } else {
-	fprintf(stderr,ANSI_COLOR_RED "FAILED: periodic wp calculation. Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", pair_time);
-  }
-  
+
   //free the result structure
   free_results_wp(&results);
   return ret;
@@ -225,11 +196,11 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 int main(int argc, char **argv)
 {
-  struct timeval t0,t1;
+  struct timeval tstart,t0,t1;
   char file[]="data/gals_Mr19.ff";
   char fileformat[]="f";
 
-  gettimeofday(&t0,NULL);
+  gettimeofday(&tstart,NULL);
 
   //set the globals
   ND1 = read_positions(file,fileformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
@@ -244,15 +215,20 @@ int main(int argc, char **argv)
   int failed=0;
   int status;
   
-  const char alltests_names[][MAXLEN] = {"Mr19 DD","Mr19 DDrppi","Mr19 wp","CMASS DDrppi DD","CMASS DDrppi DR","CMASS DDrppi RR"};
+  const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)","Mr19 DDrppi (periodic)","Mr19 wp (periodic)","CMASS DDrppi DD (periodic)","CMASS DDrppi DR (periodic)","CMASS DDrppi RR (periodic)"};
   const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
+  const int function_pointer_index[] = {0,1,2,1,1,1};//0->DD, 1->DDrppi,2->wp
+
   const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
   const char firstfilename[][MAXLEN] = {"data/gals_Mr19.ff","data/gals_Mr19.ff","data/gals_Mr19.ff","data/cmassmock_Zspace.ff","data/cmassmock_Zspace.ff","data/random_Zspace.ff"};
   const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f"};
   const char secondfilename[][MAXLEN] = {"data/gals_Mr19.ff","data/gals_Mr19.ff","data/gals_Mr19.ff","data/cmassmock_Zspace.ff","data/random_Zspace.ff","data/random_Zspace.ff"};
   const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f"};
   const DOUBLE allpimax[]             = {40.0,40.0,40.0,80.0,80.0,80.0};
-  int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp,test_periodic_DDrppi,test_periodic_DDrppi,test_periodic_DDrppi};
+
+  int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp};
+  const int numfunctions=3;//3 functions total
+
   int total_tests=0;
   
   if(argc==1) {
@@ -260,9 +236,18 @@ int main(int argc, char **argv)
 	for(int i=0;i<ntests;i++) {
 	  read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
 	  pimax=allpimax[i];
-	  status = (*allfunctions[i])(correct_outoutfiles[i]);
+	  int function_index = function_pointer_index[i];
+	  assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+	  gettimeofday(&t0,NULL);
+	  status = (*allfunctions[function_index])(correct_outoutfiles[i]);
+	  gettimeofday(&t1,NULL);
+	  double pair_time = ADD_DIFF_TIME(t0,t1);
 	  total_tests++;
-	  if(status != EXIT_SUCCESS)  {
+	  const char *testname = alltests_names[i];
+	  if(status==EXIT_SUCCESS) {
+		fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+	  } else {
+		fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		failed++;
 	  }
 	}
@@ -274,9 +259,18 @@ int main(int argc, char **argv)
 		total_tests++;
 		read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
 		pimax=allpimax[this_test_num];
-		status = (*allfunctions[this_test_num])(correct_outoutfiles[this_test_num]);
-		if(status != EXIT_SUCCESS)  {
+		int function_index = function_pointer_index[this_test_num];
+		assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+		gettimeofday(&t0,NULL);
+		status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
+		gettimeofday(&t1,NULL);
+		double pair_time = ADD_DIFF_TIME(t0,t1);
+		const char *testname = alltests_names[this_test_num];
+		if(status==EXIT_SUCCESS) {
+		  fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+		} else {
 		  failed++;
+		  fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		}
 	  }
 	}
@@ -284,7 +278,7 @@ int main(int argc, char **argv)
 
   
   gettimeofday(&t1,NULL);
-  double total_time = ADD_DIFF_TIME(t0,t1);
+  double total_time = ADD_DIFF_TIME(tstart,t1);
   if(failed > 0) {
 	fprintf(stderr,ANSI_COLOR_RED "FAILED %d out of %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", failed, total_tests, total_time);
   } else {
