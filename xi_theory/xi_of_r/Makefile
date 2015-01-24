@@ -1,11 +1,11 @@
 include ../common.mk
 
 target=DD 
-SRC1   = DD.c countpairs.c ../utils/gridlink.c ../utils/utils.c ../io/ftread.c ../io/io.c 
+SRC1   = DD.c countpairs.c ../utils/gridlink.c ../utils/utils.c ../utils/progressbar.c ../io/ftread.c ../io/io.c 
 OBJS1  = $(SRC1:.c=.o)
 INCL   = countpairs.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gridlink.h \
 		../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
-		../include/defs.h 
+		../include/defs.h ../utils/progressbar.h 
 
 all: $(target) $(SRC1) $(INCL)
 
@@ -15,7 +15,7 @@ $(target): $(OBJS1) $(INCL) ../common.mk Makefile
 %.o: %.c $(INCL) ../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c
+SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c ../utils/progressbar.c 
 OBJS2  = $(SRC2:.c=.o)
 
 lib:  libcountpairs.a | ../lib
@@ -41,41 +41,20 @@ clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs.a
 
 clena: clean
-
-
 celan: clean
 
 
-tests: tests_periodic tests_nonperiodic tests_avx tests_omp
-	$(MAKE) clean
-	$(MAKE)
+tests: tests_periodic tests_nonperiodic 
 
-tests_periodic: 
-	$(info $$OPT is [$(OPT)])
-	$(MAKE) clean
-	$(MAKE) 
+tests_periodic: ../tests/tests_periodic
+	../tests/tests_periodic 0 
 
-	./DD ../tests/data/gals_Mr19.ff f ../tests/data/gals_Mr19.ff f ../tests/bins 4 > new_DD
-	if cmp -s ../tests/Mr19_DD_correct new_DD  ; then
-		@echo "Passed DD test"
-		$(RM) "new_DD"
-	else
-		@echo "Failed DD test"
-		exit
-	endif
+tests_nonperiodic: ../tests/tests_nonperiodic
+	../tests/tests_nonperiodic 0
 
-tests_nonperiodic:
-	$(info $$OPT is [$(OPT)])
-	$(MAKE) clean
-	$(MAKE) 
+../tests/tests_periodic:
+	$(MAKE) -C ../tests
 
-tests_avx:
-	$(info $$OPT is [$(OPT)])
-	$(MAKE) clean
-	$(MAKE) 
-
-tests_omp:
-	$(info $$OPT is [$(OPT)])
-	$(MAKE) clean
-	$(MAKE) 
+../tests/tests_nonperiodic:
+	$(MAKE) -C ../tests
 
