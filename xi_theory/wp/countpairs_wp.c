@@ -80,11 +80,6 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 	assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
 	assert(nbin > 0 && "Number of rp bins is valid");
 
-  //gives better performance to bin more finely if 
-  /* if(rpmax >= pimax) { */
-  /*   zbin_refine_factor=2; */
-  /* } */
-
 	uint64_t npair[nbin];
 	for(int i=0;i<nbin;i++) npair[i] = 0;
 

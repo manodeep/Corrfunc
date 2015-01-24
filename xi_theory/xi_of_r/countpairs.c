@@ -88,37 +88,37 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 		fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);    
 	}
 	fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
-  fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
-  fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
+	fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
+	fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
     
 
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
 		
   cellarray *lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
-	if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
-		fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
-		bin_refine_factor *=2;
-		int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  		
-		for(int64_t i=0;i<totncells;i++) {
-			free(lattice1[i].x);
-			free(lattice1[i].y);
-			free(lattice1[i].z);
-		}
-		free(lattice1);
-		lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+  if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
+	fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
+	bin_refine_factor *=2;
+	int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  		
+	for(int64_t i=0;i<totncells;i++) {
+	  free(lattice1[i].x);
+	  free(lattice1[i].y);
+	  free(lattice1[i].z);
 	}
+	free(lattice1);
+	lattice1 = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+  }
+  
 
-
-	cellarray *lattice2 = NULL;
+  cellarray *lattice2 = NULL;
   if(autocorr==0) {
-		int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-		lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
-		assert(nmesh_x == ngrid2_x && "Both lattices have the same number of X bins");
-		assert(nmesh_y == ngrid2_y && "Both lattices have the same number of Y bins");
-		assert(nmesh_z == ngrid2_z && "Both lattices have the same number of Z bins");
+	int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
+	lattice2 = gridlink(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
+	assert(nmesh_x == ngrid2_x && "Both lattices have the same number of X bins");
+	assert(nmesh_y == ngrid2_y && "Both lattices have the same number of Y bins");
+	assert(nmesh_z == ngrid2_z && "Both lattices have the same number of Z bins");
   } else {
-	  lattice2 = lattice1;
+	lattice2 = lattice1;
   }
 #ifdef PERIODIC
 	const DOUBLE xdiff = (xmax-xmin);
@@ -144,7 +144,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
   DOUBLE rpavg[nrpbin];
   for(int i=0; i < nrpbin;i++) {
     rpavg[i] = 0.0;
-	}
+  }
 #else	
 	DOUBLE **all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nrpbin);
 #endif//USE_OMP
@@ -162,7 +162,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
   AVX_FLOATS m_kbin[nrpbin];
   for(int i=0;i<nrpbin;i++) {
     m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
-	}
+  }
 #endif//RPAVG  
 #endif//AVX
 
@@ -189,7 +189,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 
 #pragma omp for  schedule(dynamic) 
 #endif
-		for(int icell=0;icell<totncells;icell++) {
+		for(int64_t index1=0;index1<totncells;index1++) {
 
 #ifdef USE_OMP
 		  if (omp_get_thread_num() == 0)
@@ -203,11 +203,11 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 		  numdone++;
 
 
-		  cellarray *first = &(lattice1[icell]);
-		  int iz = icell % nmesh_z ;
-		  int ix = icell / (nmesh_z * nmesh_y) ;
-		  int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
-		  assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == icell) && "Index reconstruction is wrong");
+		  cellarray *first = &(lattice1[index1]);
+		  int iz = index1 % nmesh_z ;
+		  int ix = index1 / (nmesh_z * nmesh_y) ;
+		  int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
+		  assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == index1) && "Index reconstruction is wrong");
 		  for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++){
 				int iiix;
 #ifdef PERIODIC
@@ -434,7 +434,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 				}//iiy loop over bin_refine_factor
 			}//iix loop over bin_refine_factor
 			  
-		}//icell loop over totncells
+		}//index1 loop over totncells
 #ifdef USE_OMP
 		for(int j=0;j<nrpbin;j++) {
 		  all_npairs[tid][j] = npairs[j];
