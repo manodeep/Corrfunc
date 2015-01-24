@@ -6,7 +6,7 @@
 #include "gridlink.h"//function proto-type for gridlink
 #include "cellarray.h" //definition of struct cellarray
 #include "utils.h" //all of the utilities
-
+#include "progressbar.h" //for the progressbar
 
 #ifdef USE_AVX
 #include "avx_calls.h"
@@ -155,10 +155,13 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
   }
 #endif
   
+  int interrupted=0;
+  int64_t numdone=0;
+  init_my_progressbar(totncells,&interrupted);
 
 	
 #ifdef USE_OMP
-	#pragma omp parallel
+#pragma omp parallel shared(numdone)
 	{
 		const int tid = omp_get_thread_num();
 		uint64_t npairs[totnbins];
@@ -172,11 +175,22 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 #endif
 		/*---Loop-over-lattice1--------------------*/
 		for(int icell=0;icell<totncells;icell++) {
-			const cellarray *first = &(lattice1[icell]);
-			const int iz = icell % nmesh_z ;
-			const int ix = icell / (nmesh_z * nmesh_y) ;
-			const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
-			assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == icell) && "Index reconstruction is wrong");
+		  
+#ifdef USE_OMP
+		  if (omp_get_thread_num() == 0)
+#endif
+			my_progressbar(numdone,&interrupted);
+		  
+		  
+#ifdef USE_OMP
+#pragma omp atomic
+#endif
+		  numdone++;
+		  
+		  const int iz = icell % nmesh_z ;
+		  const int ix = icell / (nmesh_z * nmesh_y) ;
+		  const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
+		  assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == icell) && "Index reconstruction is wrong");
 			
 			for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++){
 				int iiix;
@@ -232,6 +246,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 						assert(iiix >= 0 && iiix < nmesh_x && iiiy >= 0 && iiiy < nmesh_y && iiiz >= 0 && iiiz < nmesh_z && "Checking that the second pointer is in range");
 						const int64_t index2 = iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
 						const cellarray *second = &(lattice2[index2]);
+						const cellarray *first = &(lattice1[icell]);
 						
 						const DOUBLE *x1 = first->x;
 						const DOUBLE *y1 = first->y;
@@ -420,6 +435,9 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 		}
 	}//close the omp parallel region
 #endif
+	finish_myprogressbar(&interrupted);
+
+
 	
 #ifdef USE_OMP
 	uint64_t npairs[totnbins];

@@ -2,7 +2,7 @@ include ../common.mk
 
 target = run_correlations
 
-SRC1   := run_correlations.c ../io/ftread.c ../io/io.c  ../utils/utils.c
+SRC1   := run_correlations.c ../io/ftread.c ../io/io.c  ../utils/utils.c ../utils/progressbar.c 
 OBJS1  := $(SRC1:.c=.o)
 C_LIBRARIES = ../lib/libcountpairs.a ../lib/libcountpairs_rp_pi.a ../lib/libcountpairs_wp.a 
 
