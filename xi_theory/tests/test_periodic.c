@@ -179,16 +179,17 @@ int test_wp(const char *correct_outputfile)
 
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat)
 {
+  int free_X2=0;
+  if(X2 != NULL && X2 != X1) {
+	free_X2=1;
+  }
+
 
   //Check to see if data has to be read for X1/Y1/Z1
   if (strncmp(current_file1,firstfilename,strlen(current_file1)) != 0) {
 	//replace the data-set
 	if(X1 != NULL) {
 	  free(X1);free(Y1);free(Z1);
-	}
-	if(strncmp(current_file1,current_file2,strlen(current_file1)) == 0){
-	  //X2/Y2/Z2 were also pointing towards X1/Y1/Z1
-	  X2=NULL;Y2=NULL;Z2=NULL;
 	}
 	ND1 = read_positions(firstfilename,firstformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
 	strlcpy(current_file1,firstfilename,MAXLEN);
@@ -197,13 +198,15 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
   //first check if only one unique file is asked for
   if(strncmp(firstfilename,secondfilename,strlen(firstfilename))==0) {
 	//But X2 might have read-in a different file->avoid a memory-leak
-	if(X2 != NULL && X2 != X1) {
+	if(free_X2 == 1) {
 	  free(X2);free(Y2);free(Z2);
+	  free_X2 = 0;//not essential since the code returns after this section
 	}
 	X2=X1;
 	Y2=Y1;
 	Z2=Z1;
 	ND2=ND1;
+	strlcpy(current_file2,secondfilename,MAXLEN);
 	return;
   }
 
@@ -211,7 +214,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
   //Check to see if data has to be read for X2/Y2/Z2
   if (strncmp(current_file2,secondfilename,strlen(current_file2)) != 0) {
 	//replace the data-set
-	if(X2 != NULL && X2 != X1) {
+	if(free_X2 == 1) {
 	  free(X2);free(Y2);free(Z2);
 	}
 	ND2 = read_positions(secondfilename,secondformat,(void **) &X2,(void **) &Y2,(void **) &Z2,sizeof(DOUBLE));
@@ -289,6 +292,10 @@ int main(int argc, char **argv)
 	char execstring[MAXLEN];
 	my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
 	system(execstring);
+  }
+
+  if(X2 != X1) {
+	free(X2);free(Y2);free(Z2);
   }
   free(X1);free(Y1);free(Z1);
   return EXIT_SUCCESS;
