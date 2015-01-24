@@ -246,6 +246,9 @@ int main(int argc, char **argv)
 	  const char *testname = alltests_names[i];
 	  if(status==EXIT_SUCCESS) {
 		fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+		char execstring[MAXLEN];
+		my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
+		system(execstring);
 	  } else {
 		fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		failed++;
@@ -283,9 +286,6 @@ int main(int argc, char **argv)
 	fprintf(stderr,ANSI_COLOR_RED "FAILED %d out of %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", failed, total_tests, total_time);
   } else {
 	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: ALL %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", total_tests, total_time);
-	char execstring[MAXLEN];
-	my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-	system(execstring);
   }
 
   if(X2 != X1) {

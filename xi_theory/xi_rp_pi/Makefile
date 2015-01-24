@@ -38,7 +38,7 @@ libcountpairs_rp_pi.a: $(OBJS3) | ../lib
 install: $(target) | ../bin 
 	cp -p $(target) ../bin/
 
-.PHONY: clean clena celan install lib 
+.PHONY: clean clena celan install lib tests
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
@@ -46,5 +46,19 @@ clean:
 clena: clean
 
 celan: celan
+
+tests: tests_periodic tests_nonperiodic 
+
+tests_periodic: ../tests/tests_periodic
+	cd ../tests && ./test_periodic 1 3 4 5 
+
+tests_nonperiodic: ../tests/tests_nonperiodic
+	cd ../tests && ./test_nonperiodic 1 2
+
+../tests/tests_periodic:
+	$(MAKE) -C ../tests
+
+../tests/tests_nonperiodic:
+	$(MAKE) -C ../tests
 
 
