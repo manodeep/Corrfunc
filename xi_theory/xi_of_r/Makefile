@@ -47,10 +47,10 @@ celan: clean
 tests: tests_periodic tests_nonperiodic 
 
 tests_periodic: ../tests/tests_periodic
-	../tests/tests_periodic 0 
+	cd ../tests && ./test_periodic 0 
 
 tests_nonperiodic: ../tests/tests_nonperiodic
-	../tests/tests_nonperiodic 0
+	cd ../tests && ./test_nonperiodic 0
 
 ../tests/tests_periodic:
 	$(MAKE) -C ../tests

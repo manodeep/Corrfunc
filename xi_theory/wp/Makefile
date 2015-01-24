@@ -32,7 +32,7 @@ libcountpairs_wp.a: $(OBJS2) | ../lib
 install: $(target) | ../bin
 	cp -p $(target) ../bin/
 
-.PHONY: clean clena celan install lib
+.PHONY: clean clena celan install lib tests
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
@@ -41,5 +41,12 @@ clena: clean
 
 celan: celan
 
+tests: tests_periodic 
+
+tests_periodic: ../tests/tests_periodic
+	cd ../tests && ./test_periodic 2
+
+../tests/tests_periodic:
+	$(MAKE) -C ../tests
 
 
