@@ -73,6 +73,7 @@ dist:
 	hg archive $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz 
 
 tests:
-	$(MAKE) -C xi_of_r tests
-	# $(MAKE) -C xi_rp_pi tests
-	# $(MAKE) -C wp tests
+	$(MAKE) -C tests
+	cd tests && ./test_periodic
+	cd tests && ./test_nonperiodic
+
