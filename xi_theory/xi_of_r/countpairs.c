@@ -6,6 +6,7 @@
 #include "countpairs.h" //function proto-type
 #include "cellarray.h" //definition of struct cellarray
 #include "utils.h" //all of the utilities
+#include "progressbar.h" //for the progressbar
 
 #ifdef USE_AVX
 #include "avx_calls.h"
@@ -167,9 +168,13 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 
 
   int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  
+  int interrupted=0;
+  int64_t numdone=0;
+  init_my_progressbar(totncells,&interrupted);
+
   /*---Loop-over-Data1-particles--------------------*/
 #ifdef USE_OMP
-#pragma omp parallel 
+#pragma omp parallel shared(numdone)
   {
 		int tid = omp_get_thread_num();
 		uint64_t npairs[nrpbin];
@@ -185,6 +190,19 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 #pragma omp for  schedule(dynamic) 
 #endif
 		for(int icell=0;icell<totncells;icell++) {
+
+#ifdef USE_OMP
+		  if (omp_get_thread_num() == 0)
+#endif
+			my_progressbar(numdone,&interrupted);
+
+
+#ifdef USE_OMP
+		  #pragma omp atomic
+#endif
+		  numdone++;
+
+
 		  cellarray *first = &(lattice1[icell]);
 		  int iz = icell % nmesh_z ;
 		  int ix = icell / (nmesh_z * nmesh_y) ;
@@ -429,6 +447,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 
 	}//close the omp parallel region
 #endif
+  finish_myprogressbar(&interrupted);
   
 
 #ifdef USE_OMP

@@ -12,6 +12,15 @@
 #include<sys/time.h>
 #include<stdarg.h>
 
+//Just to output some colors
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+
+
 //routines for file i/o
 extern FILE * my_fopen(const char *fname,const char *mode);
 extern FILE * my_fopen_carefully(const char *fname,void (*header)(FILE *));

@@ -1,11 +1,11 @@
 include ../common.mk
 
 target=wp
-SRC1= wp.c countpairs_wp.c ../utils/utils.c ../utils/gridlink.c ../io/io.c ../io/ftread.c 
+SRC1= wp.c countpairs_wp.c ../utils/utils.c ../utils/gridlink.c ../utils/progressbar.c ../io/io.c ../io/ftread.c 
 OBJS1  = $(SRC1:.c=.o)
 INCL   = countpairs_wp.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gridlink.h \
 					../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
-					../include/defs.h ../include/sglib.h 
+					../include/defs.h ../include/sglib.h ../utils/progressbar.h 
 
 all: $(target) $(SRC1) $(INCL)
 
@@ -15,7 +15,7 @@ $(target): $(OBJS1) $(INCL) ../common.mk Makefile
 %.o: %.c $(INCL) ../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-OBJS2=countpairs_wp.o ../utils/gridlink.o ../utils/utils.o 
+OBJS2=countpairs_wp.o ../utils/gridlink.o ../utils/utils.o ../utils/progressbar.o 
 lib: libcountpairs_wp.a | ../lib
 
 libcountpairs_wp.a: $(OBJS2) | ../lib
