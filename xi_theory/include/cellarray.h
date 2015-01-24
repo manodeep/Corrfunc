@@ -6,7 +6,7 @@
 
 #include "function_precision.h" //definition of DOUBLE depending on Makefile flag -DOUBLE_PREC
 
-#define NLATMAX   50      /* maximum grid dimension in X-Y plane */
+#define NLATMAX   100      /* maximum grid dimension in X-Y plane */
 
 typedef struct{
   DOUBLE *x;

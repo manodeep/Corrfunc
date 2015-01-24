@@ -91,17 +91,17 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 	const int64_t ND2 = (int64_t)PyArray_DIM(x2_array, 0);
 
 	/* Get pointers to the data as C-types. */
-	DOUBLE *x1 = (DOUBLE *)PyArray_DATA(x1_array);
-	DOUBLE *y1 = (DOUBLE *)PyArray_DATA(y1_array);
-	DOUBLE *z1 = (DOUBLE *)PyArray_DATA(z1_array);
+	DOUBLE *X1 = (DOUBLE *)PyArray_DATA(x1_array);
+	DOUBLE *Y1 = (DOUBLE *)PyArray_DATA(y1_array);
+	DOUBLE *Z1 = (DOUBLE *)PyArray_DATA(z1_array);
 
-	DOUBLE *x2 = (DOUBLE *)PyArray_DATA(x2_array);
-	DOUBLE *y2 = (DOUBLE *)PyArray_DATA(y2_array);
-	DOUBLE *z2 = (DOUBLE *)PyArray_DATA(z2_array);
+	DOUBLE *X2 = (DOUBLE *)PyArray_DATA(x2_array);
+	DOUBLE *Y2 = (DOUBLE *)PyArray_DATA(y2_array);
+	DOUBLE *Z2 = (DOUBLE *)PyArray_DATA(z2_array);
 		
 
-	results_countpairs *results = countpairs(ND1,x1,y1,z1,
-																					 ND2,x2,y2,z2,
+	results_countpairs *results = countpairs(ND1,X1,Y1,Z1,
+																					 ND2,X2,Y2,Z2,
 #ifdef USE_OMP
 																					 nthreads,
 #endif
@@ -189,17 +189,17 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 	const int64_t ND2 = (int64_t)PyArray_DIM(x2_array, 0);
 
 	/* Get pointers to the data as C-types. */
-	DOUBLE *x1 = (DOUBLE *)PyArray_DATA(x1_array);
-	DOUBLE *y1 = (DOUBLE *)PyArray_DATA(y1_array);
-	DOUBLE *z1 = (DOUBLE *)PyArray_DATA(z1_array);
+	DOUBLE *X1 = (DOUBLE *)PyArray_DATA(x1_array);
+	DOUBLE *Y1 = (DOUBLE *)PyArray_DATA(y1_array);
+	DOUBLE *Z1 = (DOUBLE *)PyArray_DATA(z1_array);
 
-	DOUBLE *x2 = (DOUBLE *)PyArray_DATA(x2_array);
-	DOUBLE *y2 = (DOUBLE *)PyArray_DATA(y2_array);
-	DOUBLE *z2 = (DOUBLE *)PyArray_DATA(z2_array);
+	DOUBLE *X2 = (DOUBLE *)PyArray_DATA(x2_array);
+	DOUBLE *Y2 = (DOUBLE *)PyArray_DATA(y2_array);
+	DOUBLE *Z2 = (DOUBLE *)PyArray_DATA(z2_array);
 		
 
-	results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,x1,y1,z1,
-																											 ND2,x2,y2,z2,
+	results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,X1,Y1,Z1,
+																											 ND2,X2,Y2,Z2,
 #ifdef USE_OMP
 																											 nthreads,
 #endif
@@ -218,13 +218,13 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 	
 	for(int i=1;i<results->nbin;i++) {
 		for(int j=0;j<results->npibin;j++) {
-			int index = i*(results->npibin + 1) + j;
+			const int bin_index = i*(results->npibin + 1) + j;
 			PyObject *item = NULL;
-			const DOUBLE rpavg = results->rpavg[index];
+			const DOUBLE rpavg = results->rpavg[bin_index];
 #ifdef DOUBLE_PREC
-			item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[index]);
+			item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[bin_index]);
 #else
-			item = Py_BuildValue("(ffffk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[index]);
+			item = Py_BuildValue("(ffffk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[bin_index]);
 #endif
 			PyList_Append(ret, item);
 			Py_XDECREF(item);
@@ -269,10 +269,10 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 	const int64_t ND1 = (int64_t)PyArray_DIM(x1_array, 0);
 
 	/* Get pointers to the data as C-types. */
-	DOUBLE *x1 = (DOUBLE *)PyArray_DATA(x1_array);
-	DOUBLE *y1 = (DOUBLE *)PyArray_DATA(y1_array);
-	DOUBLE *z1 = (DOUBLE *)PyArray_DATA(z1_array);
-	results_countpairs_wp *results = countpairs_wp(ND1,x1,y1,z1,
+	DOUBLE *X1 = (DOUBLE *)PyArray_DATA(x1_array);
+	DOUBLE *Y1 = (DOUBLE *)PyArray_DATA(y1_array);
+	DOUBLE *Z1 = (DOUBLE *)PyArray_DATA(z1_array);
+	results_countpairs_wp *results = countpairs_wp(ND1,X1,Y1,Z1,
 																								 boxsize,
 #ifdef USE_OMP
 																								 nthreads,

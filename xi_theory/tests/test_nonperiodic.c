@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include <sys/time.h>
 
 #ifndef MAXLEN
@@ -17,6 +18,10 @@
 
 #ifndef OUTPUT_RPAVG
 #define OUTPUT_RPAVG
+#endif
+
+#ifndef SILENT
+#define SILENT
 #endif
 
 #include "function_precision.h"
@@ -136,7 +141,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 	  free(X1);free(Y1);free(Z1);
 	}
 	ND1 = read_positions(firstfilename,firstformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
-	strlcpy(current_file1,firstfilename,MAXLEN);
+	strncpy(current_file1,firstfilename,MAXLEN);
   }
   
   //first check if only one unique file is asked for
@@ -150,7 +155,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 	Y2=Y1;
 	Z2=Z1;
 	ND2=ND1;
-	strlcpy(current_file2,secondfilename,MAXLEN);
+	strncpy(current_file2,secondfilename,MAXLEN);
 	return;
   }
 
@@ -162,7 +167,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 	  free(X2);free(Y2);free(Z2);
 	}
 	ND2 = read_positions(secondfilename,secondformat,(void **) &X2,(void **) &Y2,(void **) &Z2,sizeof(DOUBLE));
-	strlcpy(current_file2,secondfilename,MAXLEN);
+	strncpy(current_file2,secondfilename,MAXLEN);
   }
 }
 
@@ -186,8 +191,8 @@ int main(int argc, char **argv)
   Y2 = Y1;
   Z2 = Z1;
 
-  strlcpy(current_file1,file,MAXLEN);
-  strlcpy(current_file2,file,MAXLEN);
+  strncpy(current_file1,file,MAXLEN);
+  strncpy(current_file2,file,MAXLEN);
   
   int failed=0;
   int status;
