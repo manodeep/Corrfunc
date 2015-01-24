@@ -1,6 +1,6 @@
 include ../common.mk
 
-target = test_periodic test_nonperiodic
+target = test_periodic #test_nonperiodic
 SRC1   = test_periodic.c ../utils/utils.c ../utils/progressbar.c 
 OBJS1  = $(SRC1:.c=.o)
 
