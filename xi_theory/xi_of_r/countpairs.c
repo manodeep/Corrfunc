@@ -83,14 +83,20 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 	get_max_min(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
 	
 	if(autocorr==0) {
+#ifndef SILENT				
 		fprintf(stderr,"ND1 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
+#endif		
 		get_max_min(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
-		fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);    
+#ifndef SILENT		
+		fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);
+#endif		
 	}
+
+#ifndef SILENT	
 	fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
 	fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
 	fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
-    
+#endif    
 
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;

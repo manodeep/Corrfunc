@@ -74,9 +74,12 @@ cellarray * gridlink(const int64_t np,
   DOUBLE xbinsize,ybinsize,zbinsize;
   int64_t expected_n=0;
   int64_t totncells;
+
+#ifndef SILENT	
   struct timeval t0,t1;
   gettimeofday(&t0,NULL);
-
+#endif
+	
   xbinsize = get_binsize(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &nmesh_x);
   ybinsize = get_binsize(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &nmesh_y);
   zbinsize = get_binsize(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &nmesh_z);
@@ -90,7 +93,9 @@ cellarray * gridlink(const int64_t np,
   cell_volume=xbinsize*ybinsize*zbinsize;
   box_volume=xdiff*ydiff*zdiff;
   expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
+#ifndef SILENT	
   fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
+#endif	
   lattice    = (cellarray *) my_malloc(sizeof(cellarray), totncells);
   nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
 
@@ -159,9 +164,10 @@ cellarray * gridlink(const int64_t np,
   *nlattice_x=nmesh_x;
   *nlattice_y=nmesh_y;
   *nlattice_z=nmesh_z;
+#ifndef SILENT	
   gettimeofday(&t1,NULL);
   fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
-  
+#endif  
   return lattice;
 }
 
