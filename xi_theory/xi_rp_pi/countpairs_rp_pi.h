@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "function_precision.h" //for definition of DOUBLE
 #include <inttypes.h> //for uint64_t
 
@@ -23,3 +27,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 											const double pimax)  __attribute__((warn_unused_result));
 
 void free_results_rp_pi(results_countpairs_rp_pi **results);
+
+#ifdef __cplusplus
+}
+#endif

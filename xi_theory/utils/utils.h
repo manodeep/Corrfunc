@@ -12,6 +12,11 @@
 #include<sys/time.h>
 #include<stdarg.h>
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //Just to output some colors
 
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -54,4 +59,8 @@ extern void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,do
 //end function declarations
 
 
+#ifdef __cplusplus
+}
+#endif
+	
 #endif
