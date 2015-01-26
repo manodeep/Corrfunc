@@ -68,6 +68,7 @@ libs:
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
 
+tar: dist
 
 dist:
 	hg archive $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz 
