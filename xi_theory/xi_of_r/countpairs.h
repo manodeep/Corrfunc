@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "function_precision.h" //for definition of DOUBLE
 #include <inttypes.h> //for uint64_t
 
@@ -22,3 +26,8 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 
 
 void free_results(results_countpairs **results)  __attribute__((noinline));
+
+#ifdef __cplusplus
+}
+#endif
+	

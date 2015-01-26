@@ -1,5 +1,10 @@
 #pragma once
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "function_precision.h"
 #include "cellarray.h"
 
@@ -20,3 +25,8 @@ cellarray * gridlink(const int64_t np,
 
 void get_max_min(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
 				 DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z);
+
+	
+#ifdef __cplusplus
+}
+#endif

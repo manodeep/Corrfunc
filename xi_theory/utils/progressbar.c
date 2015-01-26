@@ -1,6 +1,11 @@
 #include "progressbar.h"
 #include "utils.h"
 
+#ifndef MAXLEN
+#define MAXLEN 1000
+#endif
+
+
 static double SMALLPRINTSTEP;
 static char PROGRESSBARSTRING[MAXLEN];
 static int beg_of_string_index;

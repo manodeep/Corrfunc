@@ -1,5 +1,10 @@
 #pragma once
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "function_precision.h"
 #include <inttypes.h>
 
@@ -23,3 +28,8 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 
 
 void free_results_wp(results_countpairs_wp **results);
+
+#ifdef __cplusplus
+}
+#endif
+	
