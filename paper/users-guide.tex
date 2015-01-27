@@ -280,6 +280,8 @@ that are useful in the context of these codes we will skip over the contents of 
 \flushleft After this header, the actual \texttt{X/Y/Z} values are stored. The first 4 bytes after the header contains \texttt{N*4, for float precision} or \texttt{N*8, for 
 double precision} where \texttt{N=idat[1]}, is the number of particles in the file. After all the \texttt{X} values there will be another 4 bytes containing 
 \texttt{N*4} or \texttt{N*8}. {\em Note, that even when the \texttt{X/Y/Z} arrays are written out in double-precision, the padding is still 4 bytes.}
+
+\vspace{0.2in}
 \begin{minipage}[t]{\textwidth}
 \centerline{\underline{\bfseries Byte-structure of the X/Y/Z arrays in a fast-food file}}
 \vspace{0.2in}
