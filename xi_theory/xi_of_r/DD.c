@@ -147,9 +147,9 @@ void Printhelp(void)
   fprintf(stderr,"   --- Measure the cross-correlation function xi(rp,pi) for two different\n") ;
   fprintf(stderr,"       data files (or autocorrelation if data1=data2).\n") ;
   fprintf(stderr,"     * data1         = name of first data file\n") ;
-  fprintf(stderr,"     * format1       = format of first data file\n") ;
+  fprintf(stderr,"     * format1       = format of first data file  (a=ascii, c=csv, f=fast-food)\n") ;
   fprintf(stderr,"     * data2         = name of second data file\n") ;
-  fprintf(stderr,"     * format2       = format of second data file\n") ;
+  fprintf(stderr,"     * format2       = format of second data file (a=ascii, c=csv, f=fast-food)\n") ;
   fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
 #ifdef USE_OMP
   fprintf(stderr,"     * numthreads    = number of threads to use\n");
