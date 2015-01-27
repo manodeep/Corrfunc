@@ -4,6 +4,8 @@ routines from python. (The codes are written in C)
 
 Author: Manodeep Sinha <manodeep@gmail.com>
 
+Requires: numpy
+
 """
 from __future__ import print_function
 import os
@@ -11,14 +13,27 @@ import sys
 import numpy as np
 import _countpairs
 
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
+
 file="../tests/data/gals_Mr19.txt"
 ### Make sure the precision agrees with the definition in ../common.mk.
 ### Otherwise, you will get a runtime error -- 
 ### TypeError TypeError: array cannot be safely cast to required type
 dtype=np.float32
-x,y,z = np.genfromtxt(file,dtype=dtype,unpack=True)
-array = np.hstack((x,y,z))
-boxsize=np.max(array)
+
+### Check if pandas is available - much faster to read in the data through pandas
+if pd is not None:
+    df = pd.read_csv(file,header=None,engine="c",dtype={"x":dtype,"y":dtype,"z":dtype},delim_whitespace=True)
+    x = np.asarray(df[0],dtype=dtype)
+    y = np.asarray(df[1],dtype=dtype)
+    z = np.asarray(df[2],dtype=dtype)
+else:
+    x,y,z = np.genfromtxt(file,dtype=dtype,unpack=True)
+
+boxsize=420.0
 nthreads=4
 pimax=40.0
 binfile="../tests/bins"
