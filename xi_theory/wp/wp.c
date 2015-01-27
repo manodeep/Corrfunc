@@ -161,7 +161,7 @@ void Printhelp(void)
   fprintf(stderr,"       data files (or autocorrelation if data1=data2).\n") ;
 	fprintf(stderr,"     * boxsize      = BoxSize (in same units as X/Y/Z of the data)\n") ;
   fprintf(stderr,"     * file         = name of first data file\n") ;
-  fprintf(stderr,"     * format       = format of first data file  (a=ascii, f=fast-food)\n") ;
+  fprintf(stderr,"     * format       = format of first data file  (a=ascii, c=csv, f=fast-food)\n") ;
   fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
   fprintf(stderr,"     * pimax         = maximum line-of-sight-separation\n") ;
 #ifdef USE_OMP
