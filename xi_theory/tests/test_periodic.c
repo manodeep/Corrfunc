@@ -252,11 +252,12 @@ int main(int argc, char **argv)
 	  int function_index = function_pointer_index[i];
 	  assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
 	  gettimeofday(&t0,NULL);
+	  const char *testname = alltests_names[i];
+/* 	  fprintf(stderr,"Running test: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RESET "\n", testname); */
 	  status = (*allfunctions[function_index])(correct_outoutfiles[i]);
 	  gettimeofday(&t1,NULL);
 	  double pair_time = ADD_DIFF_TIME(t0,t1);
 	  total_tests++;
-	  const char *testname = alltests_names[i];
 	  if(status==EXIT_SUCCESS) {
 		fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		char execstring[MAXLEN];
@@ -280,11 +281,12 @@ int main(int argc, char **argv)
 		pimax=allpimax[this_test_num];
 		int function_index = function_pointer_index[this_test_num];
 		assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+		const char *testname = alltests_names[this_test_num];
 		gettimeofday(&t0,NULL);
+/* 		fprintf(stderr,"Running test: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RESET "\n", testname); */
 		status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-		const char *testname = alltests_names[this_test_num];
 		if(status==EXIT_SUCCESS) {
 		  fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		} else {
