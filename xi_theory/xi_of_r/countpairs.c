@@ -210,9 +210,9 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 
 
 		  cellarray *first = &(lattice1[index1]);
-		  int iz = index1 % nmesh_z ;
-		  int ix = index1 / (nmesh_z * nmesh_y) ;
-		  int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
+		  const int iz = index1 % nmesh_z ;
+		  const int ix = index1 / (nmesh_z * nmesh_y) ;
+		  const int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
 		  assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == index1) && "Index reconstruction is wrong");
 		  for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++){
 				int iiix;
@@ -335,59 +335,105 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 					  
 							int64_t j;
 							for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
+							  //Load the x/y/z arrays (NVEC at a time)
 								const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
 								const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
 								const AVX_FLOATS z2pos = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
 						
+								//x1-x2
 								const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1pos,x2pos);
+								//y1-y2
 								const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1pos,y2pos);
+								//z1-z2
 								const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1pos,z2pos);
+								
+								//set constant := sqr_rpmax
 								const AVX_FLOATS m_sqr_rpmax = AVX_SET_FLOAT(sqr_rpmax);
+								//set constant := sqr_rpmin
 								const AVX_FLOATS m_sqr_rpmin = AVX_SET_FLOAT(sqr_rpmin);
+								
+								//(x1-x2)^2
 								const AVX_FLOATS m_xdiff_sqr = AVX_SQUARE_FLOAT(m_xdiff);
+
+								//(y1-y2)^2
 								const AVX_FLOATS m_ydiff_sqr = AVX_SQUARE_FLOAT(m_ydiff);
+
+								//(z1-z2)^2
 								const AVX_FLOATS m_zdiff_sqr = AVX_SQUARE_FLOAT(m_zdiff);
+
+								//(x1-x2)^2 + (y1-y2)^2
 								const AVX_FLOATS m_xydiff_sqr_sum = AVX_ADD_FLOATS(m_xdiff_sqr,m_ydiff_sqr);
 						
+								//r2 now will contain (x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2 
 								AVX_FLOATS r2 = AVX_ADD_FLOATS(m_zdiff_sqr,m_xydiff_sqr_sum);
 								AVX_FLOATS m_mask_left;
 						
 								{
+								  //Check if any of the NVEC distances are less than sqr_rpmax
 									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
+									//If all points are >= sqr_rpmax, continue with the j-loop
 									if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
 										continue;
 									}
 						  
+									//Create a mask for the NVEC distances that fall within sqr_rpmin and sqr_rpmax (sqr_rpmin <= dist < sqr_rpmax)
 									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS));
 									if(AVX_TEST_COMPARISON(m_mask) == 0) {
 										continue;
 									}
+									
+									//Update r2 such that all distances that do not satisfy sqr_rpmin <= r2 < sqr_rpmax, get set to sqr_rpmax
 									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask);
+
+									//Update the mask that now only contains points that need to be added to the npairs histogram
 									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
 								}
 
 								{ 
 						  
 #ifdef OUTPUT_RPAVG					  
-									union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
-									AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0.0);
+								  //first do the sqrt since r2 contains squared distances
+								  union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
+								  AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0.0);
 #endif 					  
 						  
 									/* AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));//-1 is 0xFFFF... and the cast just reinterprets (i.e., the cast is a no-op) */
+
+								  //Loop over the histogram bins backwards. Most pairs will fall into the outer bins -> more efficient to loop backwards
+								  //Remember that rupp[kbin-1] contains upper limit of previous bin -> lower radial limit of kbin
 									for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+									  //Create a mask of pairwise separations that are greater than the lower radial limit of this bin (kbin)
 										const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+										//Do a bitwise AND to get the mask for separations that fall into this bin 
 										const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+										//Create the mask for the remainder. This comparison should be exclusive with the comparison used for the m1 variable.
 										m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
 										/* m_mask_left = AVX_XOR_FLOATS(m1, m_all_ones);//XOR with 0xFFFF... gives the bins that are smaller than m_rupp_sqr[kbin] (and is faster than cmp_p(s/d) in theory) */
+
+										//Check the mask 
 										const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
+										
+										//Do a pop-count to add the number of bits. This is somewhat wasteful, since 
+										//only 4 bits are set in DOUBLE_PREC mode (8 bits in regular float) but we 
+										//are adding up all 32 bits in the integer. However, in my massive amount of 
+										//testing with all sorts of faster implementations of popcount and table lookups,
+										//builtin hardware popcnt always outperformed everything else. Thanks to NSA
+										//for requiring a hardware popcnt I suppose. 
 										npairs[kbin] += AVX_BIT_COUNT_INT(test2);
+										
+										//Add the kbin variable (as float) into the m_rpbin variable. 
+										//This would be so much better implemented in AVX2 with support for integers
 #ifdef OUTPUT_RPAVG
 										m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
 #endif					  
+										//Check if there are any more valid points left. Break out of the kbin histogram loop if none are left
 										const int test3 = AVX_TEST_COMPARISON(m_mask_left);
 										if(test3 == 0)
 											break;
 									}
+
+									//Since the m_rpbin is an AVX float, I have to truncate to an int to get the bin numbers. 
+									//Only required when OUTPUT_RPAVG is enabled (i.e., the next jj-loop with the pragma unroll is in effect)
 #ifdef OUTPUT_RPAVG
 									union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
 #endif					
@@ -407,9 +453,9 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 									rpavg[kbin] += r;
 								}
 #endif//OUTPUT_RPAVG				  
-							}
+							}//end of j-loop with AVX intrinsics
 		  
-							//Now take care of the remainder
+							//Now take care of the remainder. 
 							for(;j<second->nelements;j++) {
 								const DOUBLE dx = x1pos - x2[j];
 								const DOUBLE dy = y1pos - y2[j];
