@@ -210,6 +210,8 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 			const int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
 			assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == index1) && "Index reconstruction is wrong");
 	  
+			//Loop in the neighbouring cells in X. 
+			//iiix accounts for periodic boundary conditions
 			for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++) {
 				const int iiix=(ix+iix+nmesh_x)%nmesh_x;
 				DOUBLE off_xwrap=0.0,off_ywrap=0.0,off_zwrap=0.0;
@@ -220,6 +222,8 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 					off_xwrap = -side;
 				}
 				
+				//Loop in the neighbouring cells in Y. 
+				//iiiy accounts for periodic boundary conditions
 				for(int iiy=-bin_refine_factor;iiy<=bin_refine_factor;iiy++) {
 					const int iiiy=(iy+iiy+nmesh_y)%nmesh_y;
 					off_ywrap=0.0;
@@ -229,6 +233,11 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 						off_ywrap = -side;
 					}
 
+					//Loop in the neighbouring cells in Z. 
+					//iiiz accounts for periodic boundary conditions
+					//However, since we are always doing an auto-correlation
+					//we can avoid double-counting by only looping forward
+					//in Z -> i.e., iiz loop starts from 0 rather than -zbin_refine_factor.
 					for(int iiz=0;iiz<=zbin_refine_factor;iiz++) {
 						const int iiiz=(iz+iiz+nmesh_z)%nmesh_z ;
 						off_zwrap = 0.0;
@@ -312,7 +321,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 								const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
 								const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
 					
-								const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z[j] - z0
+								const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z2[j:j+NVEC-1] - z1
 								const AVX_FLOATS m_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[j])^2
 								const AVX_FLOATS m_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[j])^2
 								AVX_FLOATS m_dist  = AVX_ADD_FLOATS(m_xdiff,m_ydiff);
@@ -321,18 +330,46 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 					
 								//Do all the distance cuts using masks here in new scope
 								{
-									AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
+								  //the z2 arrays are sorted in increasing order. which means 
+								  //the z2 value will increase in any future iteration of j. 
+								  //that implies the zdiff values are also monotonically increasing
+								  //Therefore, if none of the zdiff values are less than pimax, then 
+								  //no future iteration in j can produce a zdiff value less than pimax.
+								  //The code terminates the j-loop early in that case (and also sets 
+								  //j equal to second->nelements to ensure that the remainder loop
+								  //does not run either.
+								  AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
 									const int test = AVX_TEST_COMPARISON(m_mask_pimax);
 									if(test == 0) {
+									  //If the execution reaches here -> then none of the NVEC zdiff values 
+									  //are smaller than pimax. We can terminate the j-loop now. 
+
+									  //set j so that the remainder loop does not run
 									  j = second->nelements;
+									  //break out of the j-loop
 									  break;
 									}
+									
+									//Create a mask with true bits when  0 <= zdiff < pimax.
 									m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax);
+									
+									//Set m_dist with sqr_rpmax where the mask is false. 
 									m_dist = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nbin-1],m_dist,m_mask_pimax);		  
+
+									//Create a mask for m_dist >= sqr_rpmin
 									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[0],_CMP_GE_OS);
+
+									//Create a mask for m_dist < sqr_rpmax
 									m_mask_left = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[nbin-1],_CMP_LT_OS);//will get utilized in the next section
+
+									//Create a combined mask by bitwise and of m1 and m_mask_left. 
+									//This gives us the mask for all sqr_rpmin <= m_dist < sqr_rpmax
 									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
+									
+									//Now check if any pair separations are within range
 									const int test1 = AVX_TEST_COMPARISON(m_mask);
+									
+									//If not, continue with the next iteration of j-loop
 									if(test1 == 0) {
 										continue;
 									}
@@ -399,7 +436,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 										}
 									}
 								}
-							}//loop over cellstruct second
+							}//remainder loop over cellstruct second
 
 #endif//end of AVX section
 						}//loop over cellstruct first

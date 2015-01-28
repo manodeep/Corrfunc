@@ -1,4 +1,4 @@
-\documentclass[12pt,titlepage]{article}
+\documentclass[12pt,titlepage,justified]{article}
 
 \usepackage{amsmath}
 \usepackage{aas_macros}
@@ -15,17 +15,20 @@
 \usepackage{adjustbox}
 \usepackage{bytefield}
 \usepackage{chngcntr}
+\usepackage{alltt}
 
 %% stdsection is the old section -> no new page
 %% section produces a new page before a new section
 \let\stdsection\section
-\renewcommand\section{\newpage\stdsection}
+%% \renewcommand\section{\newpage\stdsection}
 
 %% Some of the short-cuts I use
 \newcommand{\rmax}{\ensuremath{{r_{max}}}\xspace}
 \newcommand{\xir}{\ensuremath{{\xi(r)}}\xspace}
 \newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
 \newcommand{\xirppi}{\ensuremath{{\xi(r_p,\pi)}}\xspace}
+\newcommand{\pimax}{\ensuremath{{\pi_{\rm max}}}\xspace}
+\newcommand{\hMpc}{\ensuremath{{h^{-1}Mpc}\xspace}}
 \newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
 \newcommand{\clang}{{\texttt{clang}}\xspace}
 \newcommand{\icc}{{\texttt{icc}}\xspace}
@@ -40,22 +43,38 @@
 %% Code paper - so there are lots of code listings
 \lstset{
   language=C,                % choose the language of the code
-  basicstyle=\ttfamily,      % sets font
+  basicstyle=\scriptsize\ttfamily,      % sets font
   numbers=none,                   % where to put the line-numbers
-  numberstyle=\small, 
-  stepnumber=1,                   % the step between two line-numbers.
-  numbersep=10pt,                  % how far the line-numbers are from the code
+%%   numberstyle=\small, 
+%%   stepnumber=1,                   % the step between two line-numbers.
+%%   numbersep=10pt,                  % how far the line-numbers are from the code
   backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
   showspaces=false,               % show spaces adding particular underscores
   showstringspaces=false,         % underline spaces within strings
   showtabs=false,                 % show tabs within strings adding particular underscores
   tabsize=2,                      % sets default tabsize to 2 spaces
-  captionpos=b,                   % sets the caption-position to bottom
   breaklines=true,                % sets automatic line breaking
   breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+  captionpos=t,  
+  xleftmargin=17pt,
+  framexleftmargin=17pt,
+  framexrightmargin=17pt,
+  framexbottommargin=5pt,
+  framextopmargin=5pt,
+  showstringspaces=false,
+  frame=top,frame=bottom,
+  escapeinside={(*@}{@*)},
 }
 %% Change the listings counter to show Section number + listings number (rather than just the listings number)
 \AtBeginDocument{\counterwithin{lstlisting}{section}}
+
+\DeclareCaptionFormat{listing}{\rule{\dimexpr\textwidth+17pt\relax}{0.4pt}\par\vskip1pt#1#2#3}
+\captionsetup[lstlisting]{format=listing,singlelinecheck=false, margin=0pt, font={sf},labelsep=space,labelfont=bf}
+
+%%
+\renewcommand{\thetable}{\Roman{table}}
+\captionsetup[table]{margin=0pt,labelsep=period,labelfont=bf,textfont={it}}
+\captionsetup[figure]{margin=0pt,labelsep=period,labelfont=bf,textfont={it}}
 
 %% I dislike paragraph indents
 \setlength{\parindent}{0pt}
@@ -83,10 +102,18 @@ the measurements are done {\em once}\footnote{which is why I have not bothered w
 functions on data} on survey data and compared with model predictions in a Monte-Carlo Markov Chain. As such, the 
 correlation functions have to be measured repeatedly during an MCMC. The codes presented here are meant to cover the typical scenarios 
 of measuring correlation functions in theory-land. The primary consideration in writing these codes is speed\footnotemark -- the codes 
-presented here should outperform any other CPU based correlation functions codes by a wide-margin. 
+presented here should outperform any other CPU based correlation functions codes by a wide margin. 
+
+Cache locality and hand-written AVX intrinsics are the reasons why the code is very fast. However, that also means that the code is 
+not very portable. I have tried my best to ensure that the codes work on Linux and MAC OSX. If it does not work for you, particularly 
+if you are on a reasonable Linux install, please \href{mailto:manodeep@gmail.com}{email me}. The API for the codes can be considered 
+frozen; I will not change the API without changing the MAJOR release version. 
+
+The paper associated with the codes is being (slowly) written by me. I hope to submit the paper to Astronomy \& Computing and release 
+the codes simultaneously. Once I submit the paper to arXiv, there will be an actual paper arXiv link \href{http://adsabs.harvard.edu/abs/2014arXiv1405.5832L}{here}.
 
 \footnotetext{The secondary consideration was maintainability and ease of use for others. I have versions of these codes that are 
-even faster but are potentially gibberish for anyone other than me!}
+even faster but are much harder to modify/maintain by any one other than me !}
 
 \section{Installation}
 The only requirements for the code to install is a valid C compiler, with OpenMP support. The AVX
@@ -143,10 +170,6 @@ The directory structure for the code looks like this:
   \begin{minipage}[t]{8cm}
     Source files for creating 3-D grid and helper routines{.} 
   \end{minipage}.
-.3 wp\DotFill 
-  \begin{minipage}[t]{8cm}
-    Source files for $w_p(r_p)${.} 
-  \end{minipage}.
 .3 xi\_of\_r\DotFill 
   \begin{minipage}[t]{8cm}
     Source files for $\xi(r)${.} 
@@ -154,6 +177,10 @@ The directory structure for the code looks like this:
 .3 xi\_rp\_pi\DotFill 
   \begin{minipage}[t]{8cm}
     Source files for $\xi(r_p,\pi)${.} 
+  \end{minipage}.
+.3 wp\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for $w_p(r_p)${.} 
   \end{minipage}.
 }
 
@@ -167,7 +194,8 @@ options (see Table.~\ref{table:options} for details) :
 \end{itemize}
 
 \begin{table}
-\begin{center}
+\centering
+\caption{\footnotesize List of compilations options, what the options mean and their dependencies for the codes. }
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{ccccM{4in}} 
 \toprule
@@ -186,8 +214,6 @@ options (see Table.~\ref{table:options} for details) :
 \bottomrule
 \end{tabular}
 \end{adjustbox}
-\end{center}
-\caption{\footnotesize List of compilations options, what the options mean and their dependencies for the codes. }
 \label{table:options}
 \end{table}
 Depending on your Science use-case and the cpu/compiler, you will want to set the different options. Once you set those options, you should set the 
@@ -229,7 +255,17 @@ If all went well, then you should be able to run the \texttt{run\_correlations} 
 in the \texttt{python\_bindings} directory. In all of the above examples, I have assumed that the relevant python library is \texttt{libpython2.7.dylib} (the default 
 under \texttt{conda}) -- you may have to replace it with your python library version.
 
-\section{Running the Codes}
+\subsection{Running the tests}
+If installation went fine, then run \texttt{make tests} to run a suite of tests. If any of the tests fail, then please \href{mailto:manodeep@gmail.com}{email me}. I have 
+never seen the tests fail unless I made some coding error while modifying the source. 
+Once the tests pass successfully, type \texttt{make install} to install the binaries into the \texttt{bin} directory. 
+
+\stdsection{Running the Codes}
+The codes should run straight out of the box. Note, the \xir and \xirppi can compute both auto and cross-correlations with and without PERIODIC boundary conditions whereas the \wprp code 
+only computes the auto-correlation with PERIODIC boundary conditions. Also, since both the \xir and \xirppi codes compute cross-correlations, pairs are {\em double-counted} in both 
+\xir and \xirppi codes. You could, in theory, make the auto-correlation bit faster by only computing unique pairs (as is done in \wprp, see Section~\ref{section:pair_counting_wp} 
+for details). However, since the total run-time will dominated by the cross-correlation (the number of randoms is typically an order of magnitude larger than the number 
+of data points), I have not implemented those optimizations for the auto-correlation calculations. 
 \subsection{Input Files}
 The codes currently can handle these types of input data files:
 \begin{itemize}
@@ -248,7 +284,7 @@ a fast-food file format would require a total of $4+20+4=28$ bytes. The first an
 showing that 20 bytes of real data are contained in between the two paddings. 
 
 \flushleft The \texttt{fast-food} file consists of a header:
-\begin{lstlisting}[language=C,numbers=none]
+\begin{lstlisting}[language=C,numbers=none,caption={The header format for \texttt{fast-food} files}]
 int idat[5];
 float fdat[9];
 float znow;
@@ -257,29 +293,17 @@ For the purposes of these correlation function codes, the only useful quantity i
 in the data file. 
 
 \vspace{0.2in}
-%% \begin{enumerate}
-%% \item
 \begin{bytefield}{28}
   \bitheader{0-27} \\
   \bitbox{4}{20} & \bitbox{4}{Int} & \bitbox{4}{\textcolor{red}{\texttt{N}}} \bitbox{12}{3 Integers}& \bitbox{4}{20}\\
 \end{bytefield}\\
-%% \item
-%% \begin{bytefield}{44}
-%%   \bitheader{0-43} \\
-%%  \bitbox{4}{36} & \bitbox{36}{9 Floats} & \bitbox{4}{36} \\
-%% \end{bytefield}
-%% %% \item
-%% \begin{bytefield}{12}
-%%   \bitheader{0-11} \\
-%%   \bitbox{4}{4} & \bitbox{4}{Float} & \bitbox{4}{4}\\
-%% \end{bytefield}
-%% \end{enumerate}
 The next 56 bytes contain two other fields (10 floats + 4 padding bytes of 4 bytes each) and their corresponding paddings. Since these bytes do not contain any data 
 that are useful in the context of these codes we will skip over the contents of these bytes. In \texttt{io.c}, I actually \texttt{fseek} over these bytes. 
 
-\flushleft After this header, the actual \texttt{X/Y/Z} values are stored. The first 4 bytes after the header contains \texttt{N*4, for float precision} or \texttt{N*8, for 
-double precision} where \texttt{N=idat[1]}, is the number of particles in the file. After all the \texttt{X} values there will be another 4 bytes containing 
-\texttt{N*4} or \texttt{N*8}. {\em Note, that even when the \texttt{X/Y/Z} arrays are written out in double-precision, the padding is still 4 bytes.}
+After this header, the actual \texttt{X/Y/Z} values are stored. The first 4 bytes after the header contains \texttt{N*4} for float precision or \texttt{N*8} for 
+double precision where \texttt{N=idat[1]}, is the number of particles in the file. After all the \texttt{X} values there will be another 4 bytes containing 
+\texttt{N*4} or \texttt{N*8}. {\em Note, that even when the \texttt{X/Y/Z} arrays are written out in double-precision, the padding is still 4 bytes.} The 
+blocks for \texttt{Y/Z} follow after the \texttt{X} block. 
 
 \vspace{0.2in}
 \begin{minipage}[t]{\textwidth}
@@ -315,26 +339,23 @@ double precision} where \texttt{N=idat[1]}, is the number of particles in the fi
 \subsection{Specifying the radial bins}\label{section:bins}
 The codes were intentionaly designed to read in a set of (somewhat) arbitrary\footnote{I assume bins are non-overlapping} set of bin specifications from a file. This way, you can specify disjoint bin-edges as well as 
 use $0.0$ as a bin edge (which would be impossible if $\log$ bins are assumed). The bins are to be specified in a (white-space separated) text file in this manner:
-\begin{verbatim}
-r_low[0]  r_high[0]
-r_low[1]  r_high[1]
-.
-.
-.
-r_low[nbins-1]  r_high[nbins-1]
-\end{verbatim}
+\begin{alltt}
+r\_low[0]  r\_high[0]
+r\_low[1]  r\_high[1]
+\vdots
+r\_low[nbins-1]  r\_high[nbins-1]
+\end{alltt}
 where, \texttt{r\_low[i]} and \texttt{r\_high[i]} are the left and right edges of the \texttt{i}'th bin respectively. The text files should contains as many lines as the number of 
-bins desired. The \texttt{logbins} executable can be used to create such a text file containing $\log$ bins. The syntax for running \texttt{logbins} is:
-\begin{lstlisting}[language=sh,numbers=none]
-./logbins <rmin> <rmax> <nbins>   > <text filename>
-\end{lstlisting}
-An example of such a file with radial bins is the file \texttt{bins} in the \texttt{tests} directory. 
-
+bins desired. The \texttt{logbins} executable can be used to create such a text file containing $\log$ bins. The syntax for running \texttt{logbins} is:\\
+\vspace{0.2in}
+\texttt{./logbins <rmin> <rmax> <nbins>   > <text filename>}
+\vspace{0.2in}
+\\An example of such a file with radial bins is the file \texttt{bins} in the \texttt{tests} directory. 
 {\em Note, all of the three codes print the correlation function to \texttt{stdout} -- so be sure to redirect \texttt{stdout} to an output file. }
 
 \subsection{Running \texorpdfstring{\xir}{xi(r)}}
-To run the correlation function in 3-D, you will need to run the executable \texttt{DD} from either the \texttt{bin} or \texttt{xi\_of\_r} directory. The inputs 
-to \texttt{DD} are:
+To run the correlation function in 3-D, you will need to run the executable \texttt{DD} from either the \texttt{bin} or \texttt{xi\_of\_r} directory. Note, that 
+\xir double-counts the pairs (as does \xirppi). The inputs to \texttt{DD} are:
 \begin{itemize}
 \item \texttt{file1}   -- the file name for the first file.
 \item \texttt{format1} -- the file format for the first file.
@@ -349,11 +370,12 @@ some sample \texttt{DD} call directory) can be:
 \item auto-correlation --  {\scriptsize \texttt{./DD  ../tests/data/gals\_Mr19.ff f ../tests/data/gals\_Mr19.ff f ../tests/bins 4 > Mr19\_output.DD}}
 \item cross-correlation -- {\scriptsize \texttt{./DD ../tests/data/cmassmock\_Zspace.ff f ../tests/data/random\_Zspace.ff f ../tests/bins 4 > cmass\_output.DR}}
 \end{itemize}
-The output (printed to stdout) has \texttt{nbins} columns \texttt{<Npairs> <rpavg> <rmin> <rmax>}, where the \texttt{<rpavg>} column contains \texttt{0.0} unless the 
+The output (printed to stdout) has \texttt{nbins} rows; each row contains the columns \texttt{<Npairs> <rpavg> <rmin> <rmax>}, where the \texttt{<rpavg>} column contains \texttt{0.0} unless the 
 Makefile option OUTPUT\_RPAVG has been enabled. Here, each line of the output represents the \texttt{i}'th radial bin. 
 
 \subsection{Running \texorpdfstring{\xirppi}{xi(rp,pi)}}
-To run the correlation function in 2-D for \xirppi, you will need to run the executable \texttt{DDrppi} from either the \texttt{bin} or \texttt{xi\_rp\_pi} directory. The inputs 
+To run the correlation function in 2-D for \xirppi, you will need to run the executable \texttt{DDrppi} from either the \texttt{bin} or \texttt{xi\_rp\_pi} directory. Note, that 
+\xirppi double-counts the pairs (as does \xir).The inputs 
 to \texttt{DDrppi} are:
 \begin{itemize}
 \item \texttt{file1}   -- the file name for the first file.
@@ -370,9 +392,9 @@ some sample \texttt{DDrppi} call directory) can be:
 \item auto-correlation --  {\scriptsize \texttt{./DDrppi  ../tests/data/gals\_Mr19.ff f ../tests/data/gals\_Mr19.ff f ../tests/bins 40.0 4 > Mr19\_output\_rppi.DD}}
 \item cross-correlation -- {\scriptsize \texttt{./DDrppi ../tests/data/cmassmock\_Zspace.ff f ../tests/data/random\_Zspace.ff f ../tests/bins 80.0 4 > cmass\_output\_rppi.DR}}
 \end{itemize}
-The output (printed to stdout) has \texttt{nbins} columns \texttt{<Npairs> <rpavg> <log(rmin)> <pi\_upper>}, where the \texttt{<rpavg>} column contains \texttt{0.0} unless the 
+The output (printed to stdout) has \texttt{nbins} rows; each row contains the columns \texttt{<Npairs> <rpavg> <log(rmin)> <pi\_upper>}, where the \texttt{<rpavg>} column contains \texttt{0.0} unless the 
 Makefile option OUTPUT\_RPAVG has been enabled. The code bins in 1 Mpc/h in the $\pi$ direction by default. Therefore, 
-the total number of bins in the output file will be $nbins \times \pi_{\rm max}$, where each radial bin is further broken into $\pi_{\rm max}$ bins along the 
+the total number of bins in the output file will be \texttt{nbins$\times$\pimax}, where each radial bin is further broken into \pimax bins along the 
 $\pi$ direction. 
 
 There is a code \texttt{wprp} in the \texttt{xi\_rp\_pi} directory that can combine the output of \texttt{DDrppi} for \texttt{DD}, \texttt{DR} and \texttt{RR} counts 
@@ -393,17 +415,17 @@ The \texttt{wp} code only computes an auto-correlation with PERIODIC boundary co
 \begin{itemize}
 \item {\scriptsize \texttt{./wp  420.0 ../tests/data/gals\_Mr19.ff f ../tests/bins 40.0 4 > Mr19\_output.wp}}
 \end{itemize}
-The output (printed to stdout) has \texttt{nbins} columns \texttt{<wp> <rpavg> <rmin> <rmax> <Npairs>}, where the \texttt{<rpavg>} column contains \texttt{0.0} unless the 
+The output (printed to stdout) has \texttt{nbins} rows; each row contains the columns \texttt{<wp> <rpavg> <rmin> <rmax> <Npairs>}, where the \texttt{<rpavg>} column contains \texttt{0.0} unless the 
 Makefile option OUTPUT\_RPAVG has been enabled. 
 
-\section{Code Design}
+\stdsection{Code Design}
 The following sections are taken directly from the associated \href{http://adsabs.harvard.edu/abs/2014arXiv1405.5832L}{paper}. The fundamental idea 
 behind the code can be broken down into the following steps:
 \begin{itemize}
 \item Given the max. separation, \rmax, for the correlation function, grid the entire the particle distribution with cell width \rmax. In case of 
-\xirppi and \wprp, the \texttt{X/Y} bins are \rmax while the \texttt{Z} bins is $\pi_{\rm max}$. 
-\item In each 3-D cell, store all the particles that are located in that cell in contiguous \texttt{X/Y/Z} arrays. This is contained in a structure 
-defined in \ref{code:celldefn}. 
+\xirppi and \wprp, the \texttt{X/Y} bins are \rmax while the \texttt{Z} bins is \pimax.
+\item In each 3-D cell, store all the particles that are located in that cell in contiguous \texttt{X/Y/Z} arrays (see Listing~\ref{code:assign_to_cellarray}). The particle data are contained in a structure 
+defined in Listing~\ref{code:celldefn}.
 \item Loop over all particles in every cell (this loop uses OpenMP parallelization if USE\_OMP is enabled). This is the \texttt{index1} loop in 
 \texttt{countpairs.c, countpairs\_rp\_pi.c and countpairs\_wp.c}. The loop variable for the loop over each particle is \texttt{i}.
 \item Now, for every particle in the input list, we only need to look at particles in the neighbouring cells (see Fig.~\ref{fig:grid}). 
@@ -412,14 +434,14 @@ loop variables \texttt{iix, iiy, iiz} to account for periodic boundary condition
 \item Once we have a triplet of \texttt{iiix, iiiy, iiiz}, we can construct the index for the neighbouring cell. Variable \texttt{index2} gives the index 
 for the neighbouring cell. 
 \item Compute the distances between target particle and some particle bunch (where a chunk is 4 double or 8 floats) using AVX intrinsics. The slower, non-AVX 
-version of the code computes the distances serially and does not take advantage of the CPU architecture. This is the loop with loop variable \texttt{j}
-in \texttt{countpairs.c, countpairs\_rp\_pi.c, countpairs\_wp.c}. 
+version of the code computes the distances serially and does not take advantage of the CPU architecture. This is the \texttt{j} loop in 
+\texttt{countpairs.c, countpairs\_rp\_pi.c, countpairs\_wp.c}. 
 \item Check if any of the distances are less than \rmax. If not, continue processing the data. If yes, then update the histograms using 
 AVX \texttt{bit-masks} and \texttt{popcount}. 
 \item Continue until all particles in neighbouring cell are done. 
 \end{itemize}
 
-
+\subsection{Partitioning the Particles based on \texorpdfstring{\rmax}{rmax}}
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth,clip=true]{tikz_grid}
@@ -434,7 +456,6 @@ A circle with radius \rmax is also drawn to shown the actual pairs that will eve
 \subsection{How to Maintain Cache Locality within the Grid}
 For all pairs around a given target galaxy, we need to compute distances to all points within all neighbouring 3-d cells.
 We ensure that the particle locations are contiguous by moving them into the following \texttt{C struct} in the order in which they arrive.
-
 \begin{lstlisting}[language=C,numbers=none,label={code:celldefn},caption={Definition of the cellarray structure. This 
 structure contains the \texttt{X/Y/Z} positions of all the particles that are in one 3-D cell. }]
 typedef struct{
@@ -444,23 +465,226 @@ typedef struct{
   int64_t nelements;
 } cellarray;
 \end{lstlisting}
+The code \texttt{gridlink.c} takes in an input list of 3 arrays \texttt{X/Y/Z} and grids them into a regular 3-D grid using the specified bins parameter
+\texttt{max\_x\_size} or \texttt{max\_y\_size} or \texttt{max\_z\_size} for the \texttt{X/Y/Z} axes respectively. \footnote{In practice, the bins may be further 
+subdivided using the corresponding bin refine factors. These bin refine factors seem to influence runtime the most, you should experiment with a few values of 
+\texttt{bin\_refine\_factor} and \texttt{zbin\_refine\_factor} to see what produces the best runtimes for your typical scenario.}
+Once the number of grid cells along each axes has been determined, we allocate memory for the \texttt{struct lattice}. This \texttt{struct lattice} is a 
+declared as an 1-D array; the conversion from the three indices in 3-D (\texttt{ix,iy,iz}) to a single index (\texttt{index}) happens through the last 
+line in Listing~\ref{code:onedim_index}. Such an 1-D array for \texttt{struct lattice} gives much better OpenMP scaling.   
+\begin{lstlisting}[language=C,numbers=none,label={code:onedim_index},caption={Accessing as \texttt{lattice[index]} rather than \texttt{lattice[ix][iy][iz]}.},basicstyle=\scriptsize]
+int64_t totncells  = nmesh_x * nmesh_y * nmesh_z;
+cellarray *lattice  = my_malloc(sizeof(cellarray), totncells);
+int64_t *nallocated = my_malloc(sizeof(*nallocated), totncells);
+int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
+\end{lstlisting}
+Now that we know the total number of cells in the entire domain, we need to allocated memory to store the particles in each cell. However, there is no way to 
+know the exact number of particles in each cell without processing the entire data-set; so, we pre-allocate with an estimate of the expected number of particles from the 
+volume of each 3-D cell (assuming a random distribution). Then, we can allocate memory for each of the \texttt{X/Y/Z} arrays inside each 3-D cell:
+\begin{lstlisting}[language=C,numbers=none,label={code:malloc_cellarray},caption={Pre-allocating memory for the \texttt{X/Y/Z} arrays in \texttt{struct cellarray}.},basicstyle=\scriptsize]
+for (int64_t index=0;index<totncells;index++) {
+  lattice[index].x = my_malloc(sizeof(DOUBLE),expected_n);
+  lattice[index].y = my_malloc(sizeof(DOUBLE),expected_n);
+  lattice[index].z = my_malloc(sizeof(DOUBLE),expected_n);
+  lattice[index].nelements=0;
+  nallocated[index] = expected_n;
+}
+\end{lstlisting}
+Here, \texttt{nallocated} is an array that keeps track of the amount of memory alread allocated for each cell. After this step, all cells have been allocated memory for \texttt{expected\_n} 
+particles. Now, we can begin to process the individual particles and assigning them to the 3-D cells (if enough memory has already been allocated to assign the new particle). 
+\begin{lstlisting}[language=C,numbers=none,label={code:assign_to_cellarray},caption={Assigning the particles to the \texttt{struct cellarray} in the cell.},basicstyle=\scriptsize]
+for (int64_t i=0;i<np;i++)  {
+  ix=(int)((x[i]-xmin)*xinv) ;
+  iy=(int)((y[i]-ymin)*yinv) ;
+  iz=(int)((z[i]-zmin)*zinv) ;
 
-\stdsection{Calling the C Libraries}
+  int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
+  
+  if(lattice[index].nelements == nallocated[index]) {
+    expected_n = nallocated[index]*MEMORY_INCREASE_FAC;
+    
+    lattice[index].x = my_realloc(lattice[index].x ,sizeof(DOUBLE),expected_n,''lattice.x'');
+    lattice[index].y = my_realloc(lattice[index].y ,sizeof(DOUBLE),expected_n,''lattice.y'');
+    lattice[index].z = my_realloc(lattice[index].z ,sizeof(DOUBLE),expected_n,''lattice.z'');
+    
+    nallocated[index] = expected_n;
+  }
+  int64_t ipos=lattice[index].nelements;
+  lattice[index].x[ipos] = x[i];
+  lattice[index].y[ipos] = y[i];
+  lattice[index].z[ipos] = z[i];
+  lattice[index].nelements++;
+}
+\end{lstlisting}
+The loop goes over all of the particles and calculates the corresponding 3-D cell indices --- \texttt{ix,iy,iz}. With these 3 variables, the corresponding 1-D index, \texttt{index}, can be 
+calculated. The next lines check (and reallocate memory, if necessary) to ensure that enough memory has been allocated to the \texttt{struct lattice[index]} to accommodate this new particle. 
+The last 5 lines are simply assigning the particle into the appropriate \texttt{struct lattice[index]}. Once all the particles have been assigned, the cells contain contiguous \texttt{X/Y/Z} 
+arrays describing the original particle distribution. 
+
+\subsection{The Pair-Counting Algorithms}
+After running through \texttt{gridlink}, the particle distribution is stored in contiguous \texttt{X/Y/Z} inside the 1-D array of \texttt{struct cellarray}. To find all 
+possible pairs, we first need to loop over all particles in the first data-set. 
+\begin{lstlisting}[language=C,numbers=none,label={code:loop_over_first_cells},caption={Looping over all cells in the first data-set.},basicstyle=\scriptsize]
+for (int64_t index1=0;index1<totncells;index1++) {
+  const cellarray *first = &lattice1[index1];
+  const DOUBLE *x1 = first->x;
+  const DOUBLE *y1 = first->y;
+  const DOUBLE *z1 = first->z;
+}
+\end{lstlisting}
+Now, we have the target cell pointer and the associated \texttt{x1/y1/z1} array pointers. Next, we need to get the indices for the neighbouring cells in 3-D. In order to do that, first 
+the 1-D index, \texttt{index1} needs to be converted into a set of three 3-D indices, \texttt{ix, iy, iz}. Listing~\ref{code:finding_3D_index_first} shows the conversion from 
+the 1-D index to the corresponding 3-D indices. 
+\begin{lstlisting}[language=C,numbers=none,label={code:finding_3D_index_first},caption={Reconstructing 3-D index for \texttt{first} cell in the first data-set.},basicstyle=\scriptsize]
+const int iz = index1 % nmesh_z ;
+const int ix = index1 / (nmesh_z * nmesh_y) ;
+const int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
+\end{lstlisting}
+After executing the code segment in Listing~\ref{code:finding_3D_index_first}, we have the full 3-D indices for the target cell. Now, we have to find all of the indices 
+for the neighbouring cells that can potentially satisfy the \rmax constraint. This requires considering all 3-D cells that are located within \texttt{bin\_refine\_factor} of 
+the target cell (for each dimension). Since the target cell, \texttt{first} has a 3-D X index of \texttt{ix}, this means all cells that have X indices in the range 
+\texttt{ix $\pm$ bin\_refine\_factor} can potentially have pairs that satisfy the \rmax constraint. However, in case of PERIODIC boundary conditions, we also have 
+to ensure that the indices (and the actual particle positions) wrap around on the other side of the cube. Listing~\ref{code:looping_over_neighbouring_cells} shows 
+how the looping over neighbouring cells is done for the X dimension. Similar segments follow in the actual code for the Y/Z dimensions. 
+\begin{lstlisting}[language=C,numbers=none,label={code:looping_over_neighbouring_cells},caption={Looping over all the neighbouring cells and taking care 
+of PERIODIC boundary conditions},basicstyle=\scriptsize]
+for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++){
+  int iiix;
+#ifdef PERIODIC
+  DOUBLE off_xwrap=0.0;
+  if(ix + iix >= nmesh_x) {
+    off_xwrap = -xdiff;
+  } else if (ix + iix < 0) {
+    off_xwrap = xdiff;
+  }
+  iiix=(ix+iix+nmesh_x)%nmesh_x;
+#else
+  iiix = iix+ix;
+  if(iiix < 0 || iiix >= nmesh_x) {
+    continue;
+  }
+#endif
+  (*@{\Large$\vdots$}@*)
+  (*@{\normalsize \texttt{Similar chunks of code for Y/Z.}}@*)
+  (*@{\Large$\vdots$}@*)
+  const int64_t index2 = iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
+\end{lstlisting}
+Once all of the three 3-D indices for the neighbouring cell has been determined, we can reconstruct the 1-D index, \texttt{index2} for that cell. With this 1-D index, we can 
+create a pointer, \texttt{second}, that contains the \texttt{cellarray pointer} to the neighbouring cell. In Listing~\ref{code:dereference_second_cell}, we show 
+how the neighbouring cell and the associated \texttt{x2/y2/z2} array pointers are defined. 
+\begin{lstlisting}[language=C,numbers=none,label={code:dereference_second_cell},caption={Dereferencing the pointers for the neighbouring (\texttt{second}) cell under consideration.},basicstyle=\scriptsize]
+const cellarray *second = &lattice2[index2];
+const DOUBLE *x2 = second->x;
+const DOUBLE *y2 = second->y;
+const DOUBLE *z2 = second->z;
+\end{lstlisting}
+At this point, we have a set of \texttt{x1/y/1/z1} arrays with \texttt{first->nelements} elements representing the first data-set. We also have another set of \texttt{x2/y2/z2} arrays with \texttt{second->nelements} 
+elements representing the second data-set. 
+
+\begin{lstlisting}[language=C,numbers=none,label={code:looping_over_first_particles},caption={Looping over all particles in the \texttt{first} cell and accounting for PERIODIC boundary conditions.},basicstyle=\scriptsize]
+for(int64_t i=0;i<first->nelements;i++) {
+  DOUBLE x1pos=x1[i];
+  DOUBLE y1pos=y1[i];
+  DOUBLE z1pos=z1[i];
+#ifdef PERIODIC
+  x1pos += off_xwrap;
+  y1pos += off_ywrap;
+  z1pos += off_zwrap;
+#endif
+\end{lstlisting}
+
+\begin{lstlisting}[language=C,numbers=none,label={code:looping_over_second_particles},caption={AVX intrinsics for looping over all particles in the \texttt{second} cell. PERIODIC boundary conditions have 
+already been accounted for in \texttt{x1pos,y1pos,z1pos} variables.},basicstyle=\scriptsize]
+const AVX_FLOATS m_x1pos = AVX_SET_FLOAT(x1pos);
+const AVX_FLOATS m_y1pos = AVX_SET_FLOAT(y1pos);
+const AVX_FLOATS m_z1pos = AVX_SET_FLOAT(z1pos);
+
+int64_t j;
+for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
+  const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
+  const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
+  const AVX_FLOATS z2pos = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
+\end{lstlisting}  
+The three codes \xir, \xirppi and \wprp diverge somewhat after this point. For \xir, we need to calculate the full 3-D separation, whereas for \xirppi and \wprp 
+the separation is the projected distance. I will discuss further implementations in the following sub-sections dedicated to each code. 
+\subsubsection{Pair-counting for \texorpdfstring{\xir}{xi(r)}}\label{section:pair_counting_r}
+\subsubsection{Pair-counting for \texorpdfstring{\xirppi}{xi(rp,pi)}}\label{section:pair_counting_rp_pi}
+\subsubsection{Pair-counting for \texorpdfstring{\wprp}{wp(rp)}}\label{section:pair_counting_wp}
+Since the pair-counting in \wprp always assumes PERIODIC boundary conditions {\em and} only computes an auto-correlation, some more optimizations are possible in the
+\wprp calculation. First, each individual cell in the \texttt{struct lattice} elements are sorted based on their \texttt{Z} arrays. The \texttt{X/Y} arrays are 
+also re-ordered simultaneously. Once all the \texttt{Z} values inside a cell have been sorted, we can avoid double-counting the pairs by changing the \texttt{iiz loop}
+to be:\\
+\vspace{0.2in}
+\texttt{for(int iiz={\bf 0};iiz<=zbin\_refine\_factor;iiz++)} 
+\vspace{0.2in}
+\\instead of\\
+\vspace{0.2in}
+\texttt{for(int iiz={\bf -zbin\_refine\_factor};iiz<=zbin\_refine\_factor;iiz++)} 
+\vspace{0.2in}
+
+Another advantage of sorting the \texttt{Z} values is earlier termination inside the actual calculation. The Listing~\ref{code:calculating_separations_wp} shows 
+how to break early from the \texttt{j-loop}. Since the \texttt{z2} values are always stored in increasing order, if {\em all} values of \texttt{zdiff:=z2[j:j+NVEC-1]-z1}
+are greater than \pimax, then none of the \texttt{zdiff} values in future iterations of the \texttt{j-loop} can be smaller than \pimax. When the code encounters 
+such a scenario, it updates the \texttt{j} variable to \texttt{second->nelements} to ensure that the serial section of the code is not executed and breaks out the 
+AVX \texttt{j-loop}. 
+\begin{lstlisting}[label={code:calculating_separations_wp},caption={AVX intrinsics for calculating separations in \wprp and checking for early termination.}]
+const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z2[j:j+NVEC-1] - z1                                                                                                                                        
+AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
+const int test = AVX_TEST_COMPARISON(m_mask_pimax);
+if(test == 0) {
+  j = second->nelements;
+  break;
+}
+\end{lstlisting}
+
+\subsection{AVX intrinsics to update the \texttt{npairs} histogram}
+This section explains the AVX intrinsics used to update the pair-counts histogram, \texttt{npairs}.\footnote{The thread-local version in \wprp is called \texttt{local\_npair}.}
+If the code execution reaches this loop, at least one (squared) pair separation falls within the range \texttt{sqr\_rpmin} and \texttt{sqr\_rpmax}, where \texttt{sqr\_rpmin} 
+is the squared lower radial limit of the first bin and \texttt{sqr\_rpmax} is the squared upper limit of the last bin (equivalent to \rmax$^2$ in this user-guide). 
+Since the pairs are more likely to occur in the largest separation bins, the loop goes backwards from the last bin to the first and uses early loop-termination in case
+all possible pairs have already been accounted for. 
+\begin{lstlisting}[label={code:updating_histogram},caption={AVX intrinsics for updating the \texttt{npairs} histgram for \xir and \wprp.},basicstyle=\scriptsize]
+for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+  const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+  const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+  m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
+  const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
+  npairs[kbin] += AVX_BIT_COUNT_INT(test2);
+#ifdef OUTPUT_RPAVG
+  m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+#endif
+  const int test3 = AVX_TEST_COMPARISON(m_mask_left);
+  if(test3 == 0) break;
+}
+\end{lstlisting}
+Note that \texttt{rupp\_sqr} (and its AVX equivalent, \texttt{m\_rupp\_sqr}) contains the squared upper limits for the bins. Thus, when considering bin \texttt{kbin}, 
+\texttt{m\_rupp\_sqr[kbin-1]} gives the squared lower radial limit for the bin while \texttt{m\_rupp\_sqr[kbin]} gives the squared upper limit for bin \texttt{kbin}. 
+Here, \texttt{m1} is the mask that contains all separations that satisfy \texttt{r2 $\geq$ rupp\_sqr[kbin-1]}, while the mask \texttt{m\_mask\_left} contains 
+those squared separations that satisfy \texttt{r2 < rupp\_sqr[kbin]}. Note, that \texttt{m\_mask\_left} is either computed before entering the \texttt{kbin} 
+loop or during a previous iteration of the same \texttt{kbin} loop. The AVX variable \texttt{m\_bin\_mask} then contains the bitwise and of \texttt{m1} and 
+\texttt{m\_mask\_left} -- the mask for the squared separations that fall into \texttt{kbin}. The variable \texttt{test2} contains an integer composed of 
+the upper set-bits of the mask \texttt{m\_bin\_mask} -- thus, contains only 4/8 useful bits for \texttt{float/double} precision calculations respectively. The 
+\texttt{npairs} pair-counts is then updated using a hardware \texttt{popcnt} instruction. The last two lines check if there are any more pairs left that satisfy 
+the lower bin-ranges; if not, the loop is terminated with a \texttt{break} statement. 
+
+
+\section{Calling the C Libraries}
 All of the correlation function codes create a corresponding \texttt{static} library rather than a \texttt{dynamic/shared} library. This was a design decision intended 
-to minimize path-issues for the end-user. After the libraries have been created, it is fairly straightforward to use them in an external \texttt{C/python} code. 
+to minimize path-issues for the end-user. After the libraries have been created, it is fairly straightforward to use them in an external \texttt{C/python} code.  
+Be absolutely sure to pass arrays for the correct type -- float arrays if you did not use DOUBLE\_PREC (default) or double arrays if you did use DOUBLE\_PREC. 
+Also, only include headers from the \texttt{xi\_theory/include} directory -- those headers correspond to the actual static library. {\em DO NOT include} 
+the header files from the \texttt{xi\_of\_r}/\texttt{xi\_rp\_pi}/\texttt{wp} directories -- these headers do not contain the correct function signature for 
+the compilation flags used to generate the static libraries. 
+
 \subsection{C bindings}
 The \texttt{examples} contains the files \texttt{run\_correlations.c} that shows how to use the three types of correlation function libraries from C. Essentially, the process 
-consists of including the appropriate header file and passing the appropriate arrays in the functions. 
+consists of including the appropriate header file and passing the arrays ({\em of the correct \texttt{float/double} type}) into the functions. Make sure to include the static 
+library in the linking step to create a stand-alone executable (see the \texttt{Makefile} in the \texttt{examples} directory). 
 
 \subsubsection{API for \texorpdfstring{\xir}{xi(r)}}
-\begin{lstlisting}[language=C,numbers=none,label={code:API_DD},basicstyle=\scriptsize]
-typedef struct{
-  uint64_t *npairs;
-  DOUBLE *rupp;
-  DOUBLE *rpavg;
-  int nbin;
-} results_countpairs;
-
+The interface for the 3-D correlation function, \xir, is through the \texttt{countpairs} function. Here is 
+the corresponding function signature:
+\begin{lstlisting}[language=C,numbers=none,label={code:API_DD},basicstyle=\scriptsize,caption={API for the 3-D \xir}]
 results_countpairs * countpairs(
 const int64_t ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
 const int64_t ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
@@ -468,13 +692,82 @@ const int64_t ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBL
 const int numthreads,
 #endif
 const int autocorr,
-const char *binfile) __attribute__((warn_unused_result));
+const char *binfile);
+\end{lstlisting}
+
+The parameters to the function are:
+\begin{itemize}
+\item \texttt{ND1} -- number of elements in the first data-set.
+\item \texttt{X1}  -- the array of X-values in the first data-set.
+\item \texttt{Y1}  -- the array of Y-values in the first data-set.
+\item \texttt{Z1}  -- the array of Z-values in the first data-set.
+\item \texttt{ND2} -- number of elements in the second data-set.
+\item \texttt{X2}  -- the array of X-values in the second data set.
+\item \texttt{Y2}  -- the array of Y-values in the second data set.
+\item \texttt{Z2}  -- the array of Z-values in the second data set.
+\item \texttt{numthreads} -- the number of threads to use (if USE\_OMP is enabled in \texttt{common.mk}).
+\item \texttt{autocorr} -- if an auto-correlation is being calculated (1 implies auto-correlation, flag is used for some runtime optimizations).
+\item \texttt{binfile} -- file name that contains the radial bins. See Section~\ref{section:bins} for details on how to create this file.
+\end{itemize}
+
+The output from \texttt{countpairs} is contained in \texttt{struct results\_countpairs}. The structure
+definition is:
+\begin{lstlisting}[language=C,numbers=none,label={code:API_DD_struct},basicstyle=\scriptsize,caption={Structure definition for the output of \xir}]
+typedef struct{
+  uint64_t *npairs;
+  DOUBLE *rupp;
+  DOUBLE *rpavg;
+  int nbin;
+} results_countpairs;
 
 void free_results(results_countpairs **results);
 \end{lstlisting}
 
+The fields in the structure correspond to:
+\begin{itemize}
+\item \texttt{npairs} -- array containing the pair-counts. 
+\item \texttt{rupp}   -- array containing the upper limits of the bins. \texttt{rupp[0]} gives the lower-limit of the first radial bin. 
+\item \texttt{rpavg}  -- array containing the average value of the separations for all the pairs that fell into the bin. Will contain 
+meaningful values if OUTPUT\_RPAVG is defined in \texttt{common.mk}; identically \texttt{0.0} otherwise. 
+\item \texttt{nbin}   -- the number of radial bins used. Note that the actual pair-counts are stored in the index range \texttt{[1,nbin-1]}. The
+zero'th bin contains garbage for all of the arrays in this \texttt{struct results\_countpairs}.
+\end{itemize}
+After the results structure has been used, use \texttt{free\_results(\&results\_countpairs)} to free allocated memory. 
+
 \subsubsection{API for \texorpdfstring{\xirppi}{xi(rp,pi)}}
-\begin{lstlisting}[language=C,numbers=none,label={code:API_DDrppi},basicstyle=\scriptsize]
+The interface for the 2-D correlation function, \xirppi, is through the \texttt{countpairs\_rp\_pi} function. Here is 
+the corresponding function signature:
+\begin{lstlisting}[language=C,numbers=none,label={code:API_DDrppi},basicstyle=\scriptsize,caption={API for the 2-D \xirppi}]
+results_countpairs_rp_pi * countpairs_rp_pi(
+const int64_t ND1, const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
+const int64_t ND2, const DOUBLE *X2, const DOUBLE *Y2, const DOUBLE *Z2,
+#ifdef USE_OMP
+const int numthreads,
+#endif
+const int autocorr,
+const char *binfile,
+const double pimax);
+\end{lstlisting}
+
+The parameters to the function are:
+\begin{itemize}
+\item \texttt{ND1} -- number of elements in the first data-set.
+\item \texttt{X1}  -- the array of X-values in the first data-set.
+\item \texttt{Y1}  -- the array of Y-values in the first data-set.
+\item \texttt{Z1}  -- the array of Z-values in the first data-set.
+\item \texttt{ND2} -- number of elements in the second data-set.
+\item \texttt{X2}  -- the array of X-values in the second data set.
+\item \texttt{Y2}  -- the array of Y-values in the second data set.
+\item \texttt{Z2}  -- the array of Z-values in the second data set.
+\item \texttt{numthreads} -- the number of threads to use (if USE\_OMP is enabled in \texttt{common.mk}).
+\item \texttt{autocorr} -- if an auto-correlation is being calculated (1 implies auto-correlation, flag is used for some runtime optimizations).
+\item \texttt{binfile} -- file name that contains the radial bins. See Section~\ref{section:bins} for details on how to create this file.
+\item \texttt{pimax} -- the maximum line-of-sight distance (assumed to be the \texttt{Z} axis) to use. 
+\end{itemize}
+
+The output from \texttt{countpairs\_rp\_pi} is contained in \texttt{struct results\_countpairs\_rp\_pi}. The structure
+definition is:
+\begin{lstlisting}[language=C,numbers=none,label={code:API_DDrppi_struct},basicstyle=\scriptsize,,caption={Structure definition for the output of \xirppi}]
 typedef struct{
   uint64_t *npairs;
   DOUBLE *rupp;
@@ -484,21 +777,55 @@ typedef struct{
   int npibin;
 } results_countpairs_rp_pi;
 
-results_countpairs_rp_pi * countpairs_rp_pi(
-const int64_t ND1, const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
-const int64_t ND2, const DOUBLE *X2, const DOUBLE *Y2, const DOUBLE *Z2,
-#ifdef USE_OMP
-const int numthreads,
-#endif
-const int autocorr,
-const char *binfile,
-const double pimax)  __attribute__((warn_unused_result));
-
 void free_results_rp_pi(results_countpairs_rp_pi **results);
 \end{lstlisting}
 
+The fields in the structure correspond to:
+\begin{itemize}
+\item \texttt{npairs} -- array containing the pair-counts.  Number of elements in the array is \texttt{(npibin+1)$\times$(nbin+1)}.
+\item \texttt{rupp}   -- array containing the upper limits of the bins. \texttt{rupp[0]} gives the lower-limit of the first radial bin. Number of elements 
+in the array is \texttt{nbin}. 
+\item \texttt{rpavg}  -- array containing the average value of the separations for all the pairs that fell into the bin. Will contain 
+meaningful values if OUTPUT\_RPAVG is defined in \texttt{common.mk}; identically \texttt{0.0} otherwise. Number of elements in the array is \texttt{(npibin+1)$\times$(nbin+1)}.
+\item \texttt{pimax}  -- the maximum line-of-sight distance used in the bins. 
+\item \texttt{nbin}   -- the number of radial bins used. Note that the actual pair-counts are stored in the index range \texttt{[1,nbin-1]}. The
+zero'th bin contains garbage for all of the arrays in this \texttt{struct results\_countpairs\_rp\_pi}.
+\item \texttt{npibin} -- the number of $\pi$ bins used. The total number of elements in the arrays in the \texttt{struct countpair\_rp\_pi} is 
+\texttt{(npibin+1)$\times$(nbin+1)}. As usual, meaningful data is only contained in the radial bin range \texttt{[1,nbin-1]}. 
+\end{itemize}
+After the results structure has been used, use \texttt{free\_results\_rp\_pi(\&results\_countpairs\_rp\_pi)} to free allocated memory. 
+
 \subsubsection{API for \texorpdfstring{\wprp}{wp(rp)}}
-\begin{lstlisting}[language=C,numbers=none,label={code:API_wp},basicstyle=\scriptsize]
+The interface for the projected correlation function, \wprp, is through the \texttt{countpairs\_wp} function. The code 
+{\em always} uses PERIODIC boundary conditions, irrespective of the settings in \texttt{common.mk}. Here is 
+the corresponding function signature\footnote{The \texttt{X1/Y1/Z1} arrays are not 
+declared with \texttt{const} qualifiers because I sort those arrays on \texttt{Z} in the 
+\texttt{countpairs\_wp} function.}:
+\begin{lstlisting}[language=C,numbers=none,label={code:API_wp},basicstyle=\scriptsize,caption={API for the \wprp}]
+results_countpairs_wp *countpairs_wp(
+const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
+const double boxsize, 
+#ifdef USE_OMP
+const int numthreads,
+#endif
+const char *binfile,
+const double pimax);
+\end{lstlisting}
+
+The parameters to the function are:
+\begin{itemize}
+\item \texttt{ND1} -- number of elements in the data-set.
+\item \texttt{X1}  -- the array of X-values in the data-set.
+\item \texttt{Y1}  -- the array of Y-values in the data-set.
+\item \texttt{Z1}  -- the array of Z-values in the data-set.
+\item \texttt{boxsize}  -- the boxsize that fully contains the \texttt{X/Y/Z} values. 
+\item \texttt{numthreads} -- the number of threads to use (if USE\_OMP is enabled in \texttt{common.mk}).
+\item \texttt{binfile} -- file name that contains the radial bins. See Section~\ref{section:bins} for details on how to create this file.
+\item \texttt{pimax} -- the maximum line-of-sight distance (assumed to be the \texttt{Z} axis) to use. 
+\end{itemize}
+
+The output from \texttt{countpairs\_wp} is contained in \texttt{struct results\_countpairs\_wp}. The structure definition is:
+\begin{lstlisting}[language=C,numbers=none,label={code:API_wp_struct},basicstyle=\scriptsize,caption={Structure definition for the output of \wprp}]
 typedef struct{
   uint64_t *npairs;
   DOUBLE *wp;
@@ -508,36 +835,61 @@ typedef struct{
   int nbin;
 } results_countpairs_wp;
 
-results_countpairs_wp *countpairs_wp(
-const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
-const double boxsize, 
-#ifdef USE_OMP
-const int numthreads,
-#endif
-const char *binfile,
-const double pimax) __attribute__((warn_unused_result));
-
-
 void free_results_wp(results_countpairs_wp **results);
 \end{lstlisting}
 
+The fields in the structure correspond to:
+\begin{itemize}
+\item \texttt{npairs} -- array containing the pair-counts.  Number of elements in the array is \texttt{nbin}.
+\item \texttt{wp}     -- array containing the actual \texttt{wp} values. 
+\item \texttt{rupp}   -- array containing the upper limits of the bins. \texttt{rupp[0]} gives the lower-limit of the first radial bin. Number of elements 
+in the array is \texttt{nbin}. 
+\item \texttt{rpavg}  -- array containing the average value of the separations for all the pairs that fell into the bin. Will contain 
+meaningful values if OUTPUT\_RPAVG is defined in \texttt{common.mk}; identically \texttt{0.0} otherwise. Number of elements in the array is \texttt{nbin}.
+\item \texttt{pimax}  -- the maximum line-of-sight distance used in the bins. 
+\item \texttt{nbin}   -- the number of radial bins used. Note that the actual pair-counts are stored in the index range \texttt{[1,nbin-1]}. The
+zero'th bin contains garbage for all of the arrays in this \texttt{struct results\_countpairs\_wp}.
+\end{itemize}
+After the results structure has been used, use \texttt{free\_results\_wp(\&results\_countpairs\_wp)} to free allocated memory. 
 
 \subsection{Python Bindings}
 The \texttt{python\_bindings} directory contains python bindings for python 2.x. Note that python3 is not supported out of the box\footnote{In the future, I might switch to 
 cython to cover both python2 and python3}. If all went well, then typing \texttt{python call\_correlation\_functions.py} should run the example python code. If you get 
 an error (and you are on a MAC), then refer to Section~\ref{section:mac} or the FAQ. 
+If you edit the \texttt{common.mk} file and compile for \texttt{double precision} arithmetic, then be sure to change the line \texttt{dtype=np.float32} to 
+\texttt{dtype=np.float64}. Otherwise, you will get a \texttt{TypeError} at runtime. 
 
-If you edit the \texttt{common.mk} file and compile for \texttt{double precision} arithmetic, then be sure to change the line:
-\begin{lstlisting}[language=python,numbers=none]
-dtype=np.float32
-\end{lstlisting}
-to 
-\begin{lstlisting}[language=python,numbers=none]
-dtype=np.float64.
-\end{lstlisting}
-Otherwise, you will get a \texttt{TypeError} at runtime. 
+\stdsection{Benchmarks \& Scaling}
+In this section we present the runtimes and scalings for different number of particles, \rmax and OpenMP threads for the codes. 
+For all of the scaling tests, only an auto-correlation calculation was used and the fiducial catalog contains $\sim 1.2$ million 
+galaxies on a periodic cube of side 420 \hMpc. 
+
+\subsection{Scaling with Number of Particles}
+In Fig.~\ref{fig:scaling_numpart}, we show the scaling for the three codes with the number of particles. For this scaling, we subsampled 
+the fiducial mock to attain 10 logarithmic steps in particle number ranging from $1.2\times10^4$ to $1.2\times10^6$. 
+
+\begin{figure}[htbp]
+\includegraphics[clip=true,width=\linewidth]{timings_Mr19_numpart}%
+\caption{Scaling with particle number for \xir, \xirppi, \wprp }
+\label{fig:scaling_numpart}
+\end{figure}
+
+\subsection{Scaling with \texorpdfstring{\rmax}{rmax}}
+\begin{figure}[htbp]
+\includegraphics[clip=true,width=\linewidth]{timings_Mr19_rmax}%
+\caption{Scaling with \rmax for \xir, \xirppi, \wprp }
+\label{fig:scaling_rmax}
+\end{figure}
 
 
+\subsection{Scaling with OpenMP threads}
+\begin{figure}[htbp]
+\includegraphics[clip=true,width=\linewidth]{timings_Mr19_openmp}%
+\caption{OpenMP scaling for \xir, \xirppi, \wprp }
+\label{fig:scaling_openmp}
+\end{figure}
+
+\clearpage
 \stdsection{Extending the Code}
 \subsection{Different Type of Input Data File}
 All of the codes use \texttt{io.c} in the \texttt{io} sub-directory to read-in the data. If you want to specify a different file format, the easiest way would be to edit 
@@ -546,8 +898,19 @@ so you can not directly reference the \texttt{x/y/z} pointers. If you do add sup
 code-base. 
 
 \subsection{Computing a different type of correlation function}
-Let's say, you want to compute a marked correlation function. Now, you will need to read-in/create the marks for each individual point. And then you will have to add an 
-appropriate field to the \texttt{cellarray} structure (see \ref{code:celldefn}). 
+Let's say, you want to compute a marked correlation function. Now, you will need to read-in/create the marks for each individual point. Here are the steps 
+you will need to create your custom correlation function code:
+\begin{enumerate}
+\item Add the data fields into the cellarray structure definition (see Listing~\ref{code:celldefn}.
+\item Add in the memory allocation for the fields in \texttt{gridlink.c} after the \texttt{malloc} for \texttt{X/Y/Z} pointers (see Listing~\ref{code:malloc_cellarray}).
+\item Extend \texttt{gridlink.c} to accept additional arrays and assign those arrays into \texttt{struct lattice} (see Listing~\ref{code:assign_to_cellarray}).
+\item Enable OUTPUT\_RPAVG and DOUBLE\_PREC (this is not required, but probably the easiest way to create a custom correlation function calculation).
+\item Declare and zero-initialize a \texttt{results} array that will contain your custom correlation function. Follow the implementation in the code for calculating \texttt{rpavg}.
+\item Add in the AVX arrays that load your custom data fields in the \texttt{j loop} in the \texttt{countpairs*} functions.
+\item Add your custom correlation function weight into the \texttt{results} array. Combine thread-local arrays into a global one in case USE\_OMP is selected. 
+\item Add the custom correlation function field to the corresponding \texttt{struct results\_countpairs*}. Assign the \texttt{results} array into the \texttt{struct results\_countpairs*}.
+\item Add a call to \texttt{free(your field)} in the corresponding function \texttt{free\_results\_countpairs*}.
+\end{enumerate}
 
 \subsection{Using SSE instead of AVX}
 If your CPU is too old and does not support AVX, then you can still use SSE instrinsics to compute the correlation functions. However, this will require replacing all of the 
@@ -555,6 +918,33 @@ AVX sections with corresponding SSE intrinsics. \href{mailto:manodeep@gmail.com}
 
 %% \bibliographystyle{apj}
 %% \bibliography{master}
+
+\section{License}
+The code has been released under the MIT License. 
+\begin{verbatim}
+Permission is hereby granted, free of charge, to any person 
+obtaining a copy of this software and associated documentation 
+files (the ``Software''), to deal in the Software without 
+restriction, including without limitation the rights to use, 
+copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom 
+the Software is furnished to do so, subject to the following 
+conditions:
+
+The above copyright notice and this permission notice shall 
+be included in all copies or substantial portions of the 
+Software.
+
+THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY 
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE 
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS 
+OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR 
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT 
+OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
+THE SOFTWARE.
+\end{verbatim}
 
 \end{document}
 

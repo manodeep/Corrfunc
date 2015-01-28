@@ -99,17 +99,17 @@ cellarray * gridlink(const int64_t np,
   lattice    = (cellarray *) my_malloc(sizeof(cellarray), totncells);
   nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
 
-  for (int i=0;i<nmesh_x;i++) {
-    for (int j=0;j<nmesh_y;j++) {
-      for (int k=0;k<nmesh_z;k++) {
-		int64_t index = i*nmesh_y*nmesh_z + j*nmesh_z + k;
-		lattice[index].x = my_malloc(sizeof(DOUBLE),expected_n);//This allocates extra and is wasteful
-		lattice[index].y = my_malloc(sizeof(DOUBLE),expected_n);
-		lattice[index].z = my_malloc(sizeof(DOUBLE),expected_n);
-		lattice[index].nelements=0;
-		nallocated[index] = expected_n;
-      }
-    }
+  /*
+	Allocate memory for each of the fields in cellarray. Since we haven't processed the data yet, 
+	expected_n is a reasonable guess as to the number of points in the cell. 
+   */
+  for (int64_t index=0;index<totncells;index++) {
+	lattice[index].x = my_malloc(sizeof(DOUBLE),expected_n);//This allocates extra and is wasteful
+	lattice[index].y = my_malloc(sizeof(DOUBLE),expected_n);
+	lattice[index].z = my_malloc(sizeof(DOUBLE),expected_n);
+	//allocate new fields in cellarray here (if you are creating a custom correlation function)
+	lattice[index].nelements=0;
+	nallocated[index] = expected_n;
   }
 
   DOUBLE xinv=1.0/xbinsize;
@@ -153,6 +153,8 @@ cellarray * gridlink(const int64_t np,
       nallocated[index] = expected_n;
     }
     assert(lattice[index].nelements < nallocated[index] && "Ensuring that number of particles in a cell doesn't corrupt memory");
+	//Index is the 1-D index for the 3-D cell. 
+	//ipos is the ipos'th particle in that 3-D cell.
     int64_t ipos=lattice[index].nelements;
     lattice[index].x[ipos] = x[i];
     lattice[index].y[ipos] = y[i];
@@ -160,6 +162,8 @@ cellarray * gridlink(const int64_t np,
     lattice[index].nelements++;
   }
   free(nallocated);
+
+  //You can free the extra memory reserved by the mallocs by looping over totncells and doing a realloc(lattice[index].x,sizeof(DOUBLE),lattice[index].nelements,"lattice.x")
   
   *nlattice_x=nmesh_x;
   *nlattice_y=nmesh_y;
