@@ -2,6 +2,7 @@
 
 \usepackage{geometry}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{aas_macros}
 \usepackage{rotating}
 \usepackage{xspace}
@@ -39,7 +40,7 @@
 \newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
 \newcommand{\xirppi}{\ensuremath{{\xi(r_p,\pi)}}\xspace}
 \newcommand{\pimax}{\ensuremath{{\pi_{\rm max}}}\xspace}
-\newcommand{\hMpc}{\ensuremath{{h^{-1}Mpc}\xspace}}
+\newcommand{\hMpc}{\ensuremath{{h^{-1}Mpc}}\xspace}
 \newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
 \newcommand{\clang}{{\texttt{clang}}\xspace}
 \newcommand{\icc}{{\texttt{icc}}\xspace}
@@ -92,7 +93,7 @@
 
 \begin{document}
 
-\title{User Guide for Corrfunc}
+\title{Users Guide for Corrfunc}
 %% Abuse the author macro to show all the info I want.
 \author{Manodeep Sinha, \\
   Department of Physics \& Astronomy,\\
@@ -279,7 +280,7 @@ only computes the auto-correlation with PERIODIC boundary conditions. Also, sinc
 \xir and \xirppi codes. You could, in theory, make the auto-correlation bit faster by only computing unique pairs (as is done in \wprp, see Section~\ref{section:pair_counting_wp} 
 for details). However, since the total run-time will dominated by the cross-correlation (the number of randoms is typically an order of magnitude larger than the number 
 of data points), I have not implemented those optimizations for the auto-correlation calculations. 
-\subsection{Input Files}
+\subsection{Input File Formats}\label{section:formats}
 The codes currently can handle these types of input data files:
 \begin{itemize}
 \item \texttt{ascii} -- White-space separated columns, format code is `a'.
@@ -296,7 +297,7 @@ is the number of bytes of data contained in between the padding bytes. For examp
 a fast-food file format would require a total of $4+20+4=28$ bytes. The first and last 4 bytes of the file will contain the value $20$ -- 
 showing that 20 bytes of real data are contained in between the two paddings. 
 
-\flushleft The \texttt{fast-food} file consists of a header:
+The \texttt{fast-food} file consists of a header:
 \begin{lstlisting}[caption={The header format for \texttt{fast-food} files}]
 int idat[5];
 float fdat[9];
@@ -361,7 +362,7 @@ r\_low[nbins-1]  r\_high[nbins-1]
 where, \texttt{r\_low[i]} and \texttt{r\_high[i]} are the left and right edges of the \texttt{i}'th bin respectively. The text files should contains as many lines as the number of 
 bins desired. The \texttt{logbins} executable can be used to create such a text file containing $\log$ bins. The syntax for running \texttt{logbins} is:\\
 \vspace{0.2in}
-\texttt{./logbins <rmin> <rmax> <nbins>   > <text filename>}
+\texttt{./logbins rmin rmax nbins   > filename}
 \vspace{0.2in}
 \\An example of such a file with radial bins is the file \texttt{bins} in the \texttt{tests} directory. 
 {\em Note, all of the three codes print the correlation function to \texttt{stdout} -- so be sure to redirect \texttt{stdout} to an output file. }
@@ -371,9 +372,9 @@ To run the correlation function in 3-D, you will need to run the executable \tex
 \xir double-counts the pairs (as does \xirppi). The inputs to \texttt{DD} are:
 \begin{itemize}
 \item \texttt{file1}   -- the file name for the first file.
-\item \texttt{format1} -- the file format for the first file.
+\item \texttt{format1} -- the file format for the first file. Options are \texttt{a,c,f} -- see Section~\ref{section:formats}.
 \item \texttt{file2}   -- the file name for the second file.
-\item \texttt{format2} -- the file format for the second file.
+\item \texttt{format2} -- the file format for the second file. Options are \texttt{a,c,f} -- see Section~\ref{section:formats}.
 \item \texttt{binfile} -- the file name for the file containing the bins (see Section~\ref{section:bins})
 \item \texttt{nthreads} -- the number of OpenMP threads to use (only required when the Makefile option USE\_OMP is enabled)
 \end{itemize}
@@ -392,9 +393,9 @@ To run the correlation function in 2-D for \xirppi, you will need to run the exe
 to \texttt{DDrppi} are:
 \begin{itemize}
 \item \texttt{file1}   -- the file name for the first file.
-\item \texttt{format1} -- the file format for the first file.
+\item \texttt{format1} -- the file format for the first file. Options are \texttt{a,c,f} -- see Section~\ref{section:formats}.
 \item \texttt{file2}   -- the file name for the second file.
-\item \texttt{format2} -- the file format for the second file.
+\item \texttt{format2} -- the file format for the second file. Options are \texttt{a,c,f} -- see Section~\ref{section:formats}.
 \item \texttt{binfile} -- the file name for the file containing the bins (see Section~\ref{section:bins})
 \item \texttt{pimax}   -- the maximum distance to consider in the $\pi$ direction. The code uses \texttt{Z} axis as the $\pi$ (line-of-sight) direction. 
 \item \texttt{nthreads} -- the number of OpenMP threads to use (only required when the Makefile option USE\_OMP is enabled)
@@ -419,7 +420,7 @@ to \texttt{wp} are:
 \begin{itemize}
 \item \texttt{boxsize} -- the boxsize for the periodic box. 
 \item \texttt{file}    -- file name.
-\item \texttt{format}  -- file format.
+\item \texttt{format}  -- file format. Options are \texttt{a,c,f} -- see Section~\ref{section:formats}.
 \item \texttt{binfile} -- the file name for the file containing the bins (see Section~\ref{section:bins})
 \item \texttt{pimax}   -- the maximum distance to consider in the $\pi$ direction. The code uses \texttt{Z} axis as the $\pi$ (line-of-sight) direction. 
 \item \texttt{nthreads} -- the number of OpenMP threads to use (only required when the Makefile option USE\_OMP is enabled)
@@ -455,6 +456,13 @@ AVX \texttt{bit-masks} and \texttt{popcount}.
 \end{itemize}
 
 \subsection{Partitioning the Particles based on \texorpdfstring{\rmax}{rmax}}
+We need to compute pairwise distances to get the correlation function. A naive implementation of a correlation function would compute {\em all possible} 
+pairwise separations with a complexity $\mathcal{O}(N^2)$. However, for almost all correlation functions, we are only interested in separations less than 
+a certain \rmax, where \rmax is much smaller than the domain of the point distribution itself. We can then immediately see a way to prune pairs that can not
+{\em possibly} be within \rmax. If we impose a 3-d grid, with cell-size \rmax, then two points separated by more than one cell size (\rmax) in any one 
+dimension can not be within \rmax of each other (see Fig.~\ref{fig:grid} for a 2-D representation). Thus, given one point which is the target galaxy and a grid with cell-size \rmax, 
+immediately allows us to prune {\em all} of the points that are not within 1 cell offset in each dimension. However, even with this pruning, the actual 
+implementation of the algorithm matters. For instance, the non-AVX version of the codes tend to run $2-3\times$ slower than the AVX version. 
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth,clip=true]{tikz_grid}
@@ -605,8 +613,7 @@ for(int64_t i=0;i<first->nelements;i++) {
 #endif
 \end{lstlisting}
 If PERIODIC boundary conditions are enabled, then \texttt{off\_xwrap}, \texttt{off\_ywrap} and \texttt{off\_zwrap} have been declared and initialized in Listing~\ref{code:looping_over_neighbouring_cells}.
-By wrapping the elements if the first data-set, we can avoid these operations in the following \texttt{j-loop} over all particles in \texttt{second}. 
-
+By wrapping the elements if the first data-set, we can avoid the wrapping operations in the \texttt{j-loop} over all particles in \texttt{second}. 
 \begin{lstlisting}[label={code:looping_over_second_particles},caption={AVX intrinsics for looping over all particles in the \texttt{second} cell. PERIODIC boundary conditions have 
 already been accounted for in \texttt{x1pos,y1pos,z1pos} variables.}]
 const AVX_FLOATS m_x1pos = AVX_SET_FLOAT(x1pos);
@@ -624,11 +631,19 @@ for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
   const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1pos,z2pos);
 \end{lstlisting}  
 
-
 The three codes \xir, \xirppi and \wprp diverge somewhat after this point. For \xir, we need to calculate the full 3-D separation, whereas for \xirppi and \wprp 
 the separation is the projected distance. I will discuss further implementations in the following sub-sections dedicated to each code. 
 \subsubsection{Pair-counting for \texorpdfstring{\xir}{xi(r)}}\label{section:pair_counting_r}
-Pair-counting for \xir is the most straight-forward. Once all the \texttt{NVEC} separations have been computed, we use bit-masks to check if any separations fall 
+Pair-counting for \xir is the most straight-forward. The squared 3-D separation, \texttt{r2}, is simply the sum of the squared differences in 
+each \texttt{X/Y/Z} dimensions. 
+\begin{lstlisting}[label={code:r2_xi},caption={Calculating squared separations in \xir.}]
+const AVX_FLOATS m_xdiff_sqr = AVX_SQUARE_FLOAT(m_xdiff);
+const AVX_FLOATS m_ydiff_sqr = AVX_SQUARE_FLOAT(m_ydiff);
+const AVX_FLOATS m_zdiff_sqr = AVX_SQUARE_FLOAT(m_zdiff);
+const AVX_FLOATS m_xydiff_sqr_sum = AVX_ADD_FLOATS(m_xdiff_sqr,m_ydiff_sqr);
+AVX_FLOATS r2 = AVX_ADD_FLOATS(m_zdiff_sqr,m_xydiff_sqr_sum);
+\end{lstlisting}
+Once all the \texttt{NVEC} separations have been computed, we use bit-masks to check if any separations fall 
 within the range \texttt{sqr\_rpmin} and \texttt{sqr\_rpmax}. If not, we \texttt{continue} with the \texttt{j-loop}. 
 \begin{lstlisting}[label={code:masks_xi},caption={Bit-masks in \xir.}]
 m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
@@ -643,22 +658,70 @@ if(AVX_TEST_COMPARISON(m_mask) == 0) {
 r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask);
 m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
 \end{lstlisting}
+If the code reaches past this bit-mask section, then at least one separation is within range. In that case, we use the 
+code in Listing~\ref{code:updating_histogram} to update the \texttt{npairs} array (and the \texttt{rpavg} array if 
+OUTPUT\_RPAVG is enabled). 
+
+\subsubsection{Pair-separations for the projected correlation functions \texorpdfstring{\xirppi,\wprp}{xi(rp,pi), wp(rp)}}
+Listing~\ref{code:r2_projected} shows the squared distance calculation for \xirppi and \wprp. \texttt{r2} is simply 
+the projected separation in the \texttt{X-Y} plane.
+\begin{lstlisting}[label={code:r2_projected},caption={Calculating squared separations in \xirppi and \wprp.}]
+const AVX_FLOATS m_xdiff_sqr = AVX_SQUARE_FLOAT(m_xdiff);
+const AVX_FLOATS m_ydiff_sqr = AVX_SQUARE_FLOAT(m_ydiff);
+AVX_FLOATS r2 = AVX_ADD_FLOATS(m_xdiff_sqr,m_ydiff_sqr);
+\end{lstlisting}
 
 \subsubsection{Pair-counting for \texorpdfstring{\xirppi}{xi(rp,pi)}}\label{section:pair_counting_rp_pi}
+\begin{lstlisting}[label={code:masks_xirppi},caption={Bit-masks in \xirppi.}]
+const AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
+const int test = AVX_TEST_COMPARISON(m_mask_pimax);
+if(test == 0) {
+  continue;
+}
+
+const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_sqr_rpmin,_CMP_GE_OS);
+r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax,r2,m_mask_pimax);
+
+m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
+const AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
+int test1 = AVX_TEST_COMPARISON(m_mask);
+if(test1 == 0) {
+  continue;
+}
+m_zdiff = AVX_BLEND_FLOATS_WITH_MASK(m_pimax, m_zdiff, m_mask);
+#ifdef OUTPUT_RPAVG
+union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
+#endif
+union_pibin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(AVX_MULTIPLY_FLOATS(m_zdiff,m_inv_dpi));
+\end{lstlisting}
+In the \xirppi code, we have to update a two dimensional \texttt{npairs($r_p$,$\pi$)} array. This means we can not directly update 
+the \texttt{npairs} matrix and instead have to use a separate loop (this loop is typically only invoked for \xir and \wprp 
+when OUTPUT\_RPAVG is enabled). As a result of this extra loop, \xirppi is $2-3\times$ slower than \xir and \wprp. 
+
+\begin{lstlisting}[label={code:updating_histogram_xirppi},caption={Updating the \texttt{npairs} matrix in \xirppi.}]
+for(int jj=0;jj<NVEC;jj++) {
+  int rpbin = union_rpbin.ibin[jj];
+  int pibin = union_pibin.ibin[jj];
+  int ibin = rpbin*(npibin+1) + pibin;
+  npairs[ibin]++;
+#ifdef OUTPUT_RPAVG
+  rpavg [ibin] += union_mDperp.Dperp[jj];
+#endif
+}
+\end{lstlisting}
 
 \subsubsection{Pair-counting for \texorpdfstring{\wprp}{wp(rp)}}\label{section:pair_counting_wp}
-Since the pair-counting in \wprp always assumes PERIODIC boundary conditions {\em and} only computes an auto-correlation, some more optimizations are possible in the
+Since the pair-counting in \wprp always assumes PERIODIC boundary conditions {\em and} only computes an auto-correlation, extra optimizations are possible in the
 \wprp calculation. First, each individual cell in the \texttt{struct lattice} elements are sorted based on their \texttt{Z} arrays. The \texttt{X/Y} arrays are 
 also re-ordered simultaneously. Once all the \texttt{Z} values inside a cell have been sorted, we can avoid double-counting the pairs by changing the \texttt{iiz loop}
-to be:\\
-\vspace{0.2in}
-\texttt{for(int iiz={\bf 0};iiz<=zbin\_refine\_factor;iiz++)} 
-\vspace{0.2in}
-\\instead of\\
-\vspace{0.2in}
-\texttt{for(int iiz={\bf -zbin\_refine\_factor};iiz<=zbin\_refine\_factor;iiz++)} 
-\vspace{0.2in}
+to be:
+\begin{lstlisting}[label={code:loop_optimization_wp},caption={Optimizing the loop over neighbouring cells \texttt{z} in \wprp.}]
+for(int iiz=0;iiz<=zbin_refine_factor;iiz++)
 
+(*@{\Large instead of }@*)
+
+for(int iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++)
+\end{lstlisting}
 Another advantage of sorting the \texttt{Z} values is earlier termination inside the actual calculation. The Listing~\ref{code:calculating_separations_wp} shows 
 how to break early from the \texttt{j-loop}. Since the \texttt{z2} values are always stored in increasing order, if {\em all} values of \texttt{zdiff:=z2[j:j+NVEC-1]-z1}
 are greater than \pimax, then none of the \texttt{zdiff} values in future iterations of the \texttt{j-loop} can be smaller than \pimax. When the code encounters 
@@ -903,28 +966,61 @@ galaxies on a periodic cube of side 420 \hMpc.
 
 \subsection{Scaling with Number of Particles}
 In Fig.~\ref{fig:scaling_numpart}, we show the scaling for the three codes with the number of particles. For this scaling, we subsampled 
-the fiducial mock to attain 10 logarithmic steps in particle number ranging from $1.2\times10^4$ to $1.2\times10^6$. 
-
+the fiducial mock to attain 10 logarithmic steps in particle number ranging from $1.2\times10^4$ to $1.2\times10^6$. All the timings are 
+generateed using 1 thread. 
 \begin{figure}[htbp]
 \includegraphics[clip=true,width=\linewidth]{timings_Mr19_numpart}%
-\caption{Scaling with particle number for \xir, \xirppi, \wprp }
+\caption{Scaling with particle number for \xir, \xirppi, \wprp. The timings are obtained 
+using 1 OpenMP thread. }
 \label{fig:scaling_numpart}
 \end{figure}
 
 \subsection{Scaling with \texorpdfstring{\rmax}{rmax}}
+The code runtime increases drastically as the largest requested separation, \rmax increases. Roughly speaking, the runtimes scale 
+as $\mathcal{O}(r_{max}^2)$ with \xir showing the strongest dependence on \rmax. This is from the \pimax dependence of \xirppi and 
+\wprp. Even when \rmax is large, the effective number of particles per cell only grows as $r_{max}^2$ and not $r_{max}^3$ (as it does 
+for \xir). If we extend the benchmarks to larger \rmax, we will see a $\mathcal{O}(r_{max}^3)$ dependence for 
 \begin{figure}[htbp]
 \includegraphics[clip=true,width=\linewidth]{timings_Mr19_rmax}%
-\caption{Scaling with \rmax for \xir, \xirppi, \wprp }
+\caption{Scaling with \rmax for \xir, \xirppi, \wprp. The timings are obtained 
+with 4 OpenMP threads. }
 \label{fig:scaling_rmax}
 \end{figure}
 
 
 \subsection{Scaling with OpenMP threads}
+All of the codes presented here scale reasonably well (efficiency $\gtrsim$ 80\%) up to 10 OpenMP threads. Beyond that, the work-load is 
+scaling efficiency starts dropping off and plateaus for \texttt{nthreads} $\gtrsim 20$. 
 \begin{figure}[htbp]
 \includegraphics[clip=true,width=\linewidth]{timings_Mr19_openmp}%
-\caption{OpenMP scaling for \xir, \xirppi, \wprp }
+\caption{OpenMP scaling for \xir, \xirppi, \wprp. The fiducial mock used here contains $\sim 10^6$ particles 
+in a $420.0$ \hMpc cube. }
 \label{fig:scaling_openmp}
 \end{figure}
+
+\begin{table}
+\centering
+\caption{\footnotesize OpenMP scaling for the three codes. Efficiencies are defined 
+as \texttt{Speedup/Nthreads}. Note, that \xir has super-linear scaling with \texttt{nthreads}.}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{cccc} 
+\toprule
+\multirow{2}{*}{\textbf{Nthreads}}   &
+\multicolumn{3}{c}{\textbf{Efficiency[\%]}} \\
+\cmidrule(l{1.0em}r{1.0em}){2-4}
+&
+\multicolumn{1}{c}{$\boldsymbol{\xir}$}   &
+\multicolumn{1}{c}{$\boldsymbol{\xirppi}$} &
+\multicolumn{1}{c}{$\boldsymbol{\wprp}$}     \\
+\midrule
+\input{timings_Mr19_openmp} 
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\label{table:openmp}
+\end{table}
+
+
 
 \clearpage
 \stdsection{Extending the Code}

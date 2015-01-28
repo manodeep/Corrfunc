@@ -332,7 +332,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 								const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z2[j:j+NVEC-1] - z1
 								const AVX_FLOATS m_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[j])^2
 								const AVX_FLOATS m_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[j])^2
-								AVX_FLOATS m_dist  = AVX_ADD_FLOATS(m_xdiff,m_ydiff);
+								AVX_FLOATS r2  = AVX_ADD_FLOATS(m_xdiff,m_ydiff);
 					
 								AVX_FLOATS m_mask_left;
 					
@@ -361,17 +361,17 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 									//Create a mask with true bits when  0 <= zdiff < pimax.
 									m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax);
 									
-									//Set m_dist with sqr_rpmax where the mask is false. 
-									m_dist = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nbin-1],m_dist,m_mask_pimax);		  
+									//Set r2 with sqr_rpmax where the mask is false. 
+									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nbin-1],r2,m_mask_pimax);		  
 
-									//Create a mask for m_dist >= sqr_rpmin
-									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[0],_CMP_GE_OS);
+									//Create a mask for r2 >= sqr_rpmin
+									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[0],_CMP_GE_OS);
 
-									//Create a mask for m_dist < sqr_rpmax
-									m_mask_left = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[nbin-1],_CMP_LT_OS);//will get utilized in the next section
+									//Create a mask for r2 < sqr_rpmax
+									m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[nbin-1],_CMP_LT_OS);//will get utilized in the next section
 
 									//Create a combined mask by bitwise and of m1 and m_mask_left. 
-									//This gives us the mask for all sqr_rpmin <= m_dist < sqr_rpmax
+									//This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
 									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
 									
 									//Now check if any pair separations are within range
@@ -384,20 +384,20 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 								}
 					
 #ifdef OUTPUT_RPAVG
-								union_mDperp.m_Dperp = AVX_SQRT_FLOAT(m_dist);
+								union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
 								AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0.0);
 #endif
 								
 								//Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
 								for(int kbin=nbin-1;kbin>=1;kbin--) {
-									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
 									const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
 									const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
 									local_npair[kbin] += AVX_BIT_COUNT_INT(test2);
 #ifdef OUTPUT_RPAVG
 									m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
 #endif
-									m_mask_left = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_LT_OS);
+									m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
 									const int test3 = AVX_TEST_COMPARISON(m_mask_left);
 									if(test3 == 0)
 										break;

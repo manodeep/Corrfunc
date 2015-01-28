@@ -109,7 +109,7 @@ implementation of the algorithm matters. For instance, a linked-list in each cel
 usual linked-list is very cache-unfriendly. Each dereference requires a read from a new region of memory and an almost guaranteed cache miss. } 
 
 \subsection{Partitioning the Particles based on \rmax}
-
+Fig.~\ref{fig:grid} shows a schematic 2-D grid that corresponds to our partitioning scheme.
 \begin{figure}[htbp]
 \centering
 \includegraphics[clip=true]{tikz_grid}
@@ -117,6 +117,7 @@ usual linked-list is very cache-unfriendly. Each dereference requires a read fro
 domain, the red circles show a random distribution of 100 particles. Let's say we want to compute all pairs 
 for the target blue point, then we would only have to consider red points that are within one cell (the dark shaded region). 
 A circle with radius \rmax is also drawn to shown the actual pairs that will eventually count in the correlation function.} 
+\label{fig:grid}
 \end{figure}
 
 

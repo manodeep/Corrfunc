@@ -47,7 +47,9 @@ int64_t read_positions(const char *filename, const char *format, void **xpos, vo
 	  my_ftread(y,size, np, fp);
 	  my_ftread(z,size, np, fp);
 	} else {
+#ifndef SILENT
 	  fprintf(stderr,"WARNING: File was written in a different precision than requested (file precision = %u requested precision = %zu)\n",dummy,size);
+#endif
 	  //Okay so the file was written in a different precision.
 	  //First, print a warning message and then read-in correctly with the
 	  //requested precision
