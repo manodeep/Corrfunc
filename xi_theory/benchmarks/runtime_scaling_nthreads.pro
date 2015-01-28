@@ -139,7 +139,7 @@ openw, lun, texfname, /get_lun
 for i = NumSteps-1, 0, -1 do begin
    printf, lun, xdata[i], format = '(I10," ",$)'
    for icode = 0, ncodes-1 do begin
-      printf, lun, 100.0*(speedup[icode, i]/xdata[i]), format = '(" & ",F12.2," ",$)'
+      printf, lun, 100.0*(speedup[icode, i]/xdata[i]), format = '(" & ",I12," ",$)'
    endfor
    printf, lun, '\\'
 endfor
