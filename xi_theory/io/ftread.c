@@ -1,3 +1,11 @@
+/* File: ftread.c */
+/*
+		This file is a part of the Corrfunc package
+		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+		License: MIT LICENSE. See LICENSE file under the top-level
+		directory at https://bitbucket.org/manodeep/corrfunc/
+*/
+
 /*	ftread reads unformatted data that has been written by fortran
 	or in fortran convention -- i.e. an integer with the number of
 	bytes in the record, the record data, and another integer with
