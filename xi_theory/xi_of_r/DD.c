@@ -1,3 +1,11 @@
+/* File: DD.c */
+/*
+		This file is a part of the Corrfunc package
+		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+		License: MIT LICENSE. See LICENSE file under the top-level
+		directory at https://bitbucket.org/manodeep/corrfunc/
+*/
+
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
