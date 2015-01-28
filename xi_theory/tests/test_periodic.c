@@ -202,7 +202,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 int main(int argc, char **argv)
 {
   struct timeval tstart,t0,t1;
-  char file[]="data/gals_Mr19.ff";
+  char file[]="../tests/data/gals_Mr19.ff";
   char fileformat[]="f";
 
   gettimeofday(&tstart,NULL);
@@ -225,9 +225,9 @@ int main(int argc, char **argv)
   const int function_pointer_index[] = {0,1,2,1,1,1};//0->DD, 1->DDrppi,2->wp
 
   const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
-  const char firstfilename[][MAXLEN] = {"data/gals_Mr19.ff","data/gals_Mr19.ff","data/gals_Mr19.ff","data/cmassmock_Zspace.ff","data/cmassmock_Zspace.ff","data/random_Zspace.ff"};
+  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
   const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f"};
-  const char secondfilename[][MAXLEN] = {"data/gals_Mr19.ff","data/gals_Mr19.ff","data/gals_Mr19.ff","data/cmassmock_Zspace.ff","data/random_Zspace.ff","data/random_Zspace.ff"};
+  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
   const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f"};
   const DOUBLE allpimax[]             = {40.0,40.0,40.0,80.0,80.0,80.0};
 
