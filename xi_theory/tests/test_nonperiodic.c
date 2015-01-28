@@ -38,7 +38,7 @@
 #include "../xi_rp_pi/countpairs_rp_pi.c"
 
 
-char tmpoutputfile[]="./tmp_output.txt";
+char tmpoutputfile[]="./test_nonperiodic_output.txt";
 
 int test_nonperiodic_DD(const char *correct_outputfile);
 int test_nonperiodic_DDrppi(const char *correct_outputfile);
@@ -232,8 +232,11 @@ int main(int argc, char **argv)
 		my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
 		system(execstring);
 	  } else {
-		failed++;
 		fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+		char execstring[MAXLEN];
+		my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
+		system(execstring);
+		failed++;
 	  }
 	}
   } else {
@@ -254,8 +257,11 @@ int main(int argc, char **argv)
 		if(status==EXIT_SUCCESS) {
 		  fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		} else {
-		  failed++;
 		  fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+		  char execstring[MAXLEN];
+		  my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
+		  system(execstring);
+		  failed++;
 		}
 	  }
 	}
