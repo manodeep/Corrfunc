@@ -78,7 +78,7 @@ logbinsize = (alog10(Ngal)-alog10(Ngal*MinNumPartFactor))/(NumPartSteps-1)
 logTargetNumParts = dindgen(NumPartSteps)*logbinsize + alog10(Ngal*MinNumPartFactor)
 TargetNumParts =  long(10.0d^logTargetNumParts) < Ngal
 
-readcol, binfile, rmin, rmax, format = 'D,D', /silent
+readcol, binfile, rmin, rmax, format = 'D,D', /silent, comment = '#'
 if (findfile(timings_file))[0] eq '' then begin
    openw, lun, timings_file, /get_lun
    printf, lun, "# rmax = ", max(rmax), " pimax = ", pimax, " nthreads = ", nthreads
@@ -131,7 +131,7 @@ if (findfile(timings_file))[0] eq '' then begin
 endif
 free_lun, partlun
 
-readcol, timings_file, iteration, numpart, cpu_time, codestring, format = 'L,L,D,A'
+readcol, timings_file, iteration, numpart, cpu_time, codestring, format = 'L,L,D,A', comment = '#'
 timings = dblarr(ncodes, NumPartSteps)
 scatter = dblarr(ncodes, NumPartSteps)
 xdata = TargetNumParts
@@ -181,7 +181,7 @@ endelse
 
 parinfo =   replicate({value:0.D,   fixed:0,   limited:[0,  0],   $
                        limits:[0.D,  0]},  3)
-parinfo[*].limited[*] =  1
+parinfo[*].limited[*] =  0
 parinfo[0].limits =  [0.0001,  1.0]
 parinfo[1].limits =  [1d-10,  100.0]
 parinfo[2].limits =  [0.0001,  4.0]
