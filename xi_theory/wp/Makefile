@@ -1,9 +1,9 @@
 include ../common.mk
 
 target=wp
-SRC1= wp.c countpairs_wp.c ../utils/utils.c ../utils/gridlink.c ../utils/progressbar.c ../io/io.c ../io/ftread.c 
+SRC1= wp.c countpairs_wp.c ../utils/utils.c ../utils/gridlink.c ../utils/progressbar.c ../../io/io.c ../../io/ftread.c 
 OBJS1  = $(SRC1:.c=.o)
-INCL   = countpairs_wp.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gridlink.h \
+INCL   = countpairs_wp.h ../../io/ftread.h ../../io/io.h ../utils/utils.h ../utils/gridlink.h \
 					../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
 					../include/defs.h ../include/sglib.h ../utils/progressbar.h 
 

@@ -4,9 +4,9 @@ target=DDrppi wprp
 all: $(target) 
 
 
-SRC1= DDrppi.c countpairs_rp_pi.c ../utils/utils.c ../utils/gridlink.c ../utils/progressbar.c ../io/io.c ../io/ftread.c 
+SRC1= DDrppi.c countpairs_rp_pi.c ../utils/utils.c ../utils/gridlink.c ../utils/progressbar.c ../../io/io.c ../../io/ftread.c 
 OBJS1  = $(SRC1:.c=.o)
-INCL   = countpairs_rp_pi.h ../io/ftread.h ../io/io.h ../utils/utils.h ../utils/gridlink.h \
+INCL   = countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../utils/utils.h ../utils/gridlink.h \
 					../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
 					../include/defs.h ../utils/progressbar.h 
 
