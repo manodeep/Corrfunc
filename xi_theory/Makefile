@@ -49,6 +49,7 @@ clean:
 	$(MAKE) -C wp clean
 	$(MAKE) -C examples clean
 	$(MAKE) -C python_bindings clean
+	$(MAKE) -C tests clean
 
 clena: clean
 

@@ -1,5 +1,6 @@
-\documentclass[12pt,titlepage,justified]{article}
+\documentclass[12pt,titlepage]{article}
 
+\usepackage{geometry}
 \usepackage{amsmath}
 \usepackage{aas_macros}
 \usepackage{rotating}
@@ -10,12 +11,22 @@
 \usepackage{color}
 \usepackage{listings}
 \usepackage{caption}
-\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,breaklinks=true]{hyperref}
 \usepackage{dirtree}
 \usepackage{adjustbox}
 \usepackage{bytefield}
 \usepackage{chngcntr}
 \usepackage{alltt}
+
+\setlength{\textwidth}{6.5in}     %%                                   %%
+\setlength{\oddsidemargin}{0in}   %% (It is recommended that you       %%
+\setlength{\evensidemargin}{0in}  %%  not change these parameters,     %%
+\setlength{\textheight}{8.5in}    %%  at the risk of having your       %%
+\setlength{\topmargin}{0in}       %%  proposal dismissed on the basis  %%
+\setlength{\headheight}{0in}      %%  of incorrect formatting!!!)      %%
+\setlength{\headsep}{0in}         %%                                   %%
+\setlength{\footskip}{.5in}       %%                                   %%
+
 
 %% stdsection is the old section -> no new page
 %% section produces a new page before a new section
@@ -43,7 +54,7 @@
 %% Code paper - so there are lots of code listings
 \lstset{
   language=C,                % choose the language of the code
-  basicstyle=\scriptsize\ttfamily,      % sets font
+  basicstyle=\small\ttfamily,      % sets font
   numbers=none,                   % where to put the line-numbers
 %%   numberstyle=\small, 
 %%   stepnumber=1,                   % the step between two line-numbers.
@@ -104,13 +115,13 @@ correlation functions have to be measured repeatedly during an MCMC. The codes p
 of measuring correlation functions in theory-land. The primary consideration in writing these codes is speed\footnotemark -- the codes 
 presented here should outperform any other CPU based correlation functions codes by a wide margin. 
 
-Cache locality and hand-written AVX intrinsics are the reasons why the code is very fast. However, that also means that the code is 
+Cache locality and hand-written \href{http://en.wikipedia.org/wiki/Advanced_Vector_Extensions}{AVX} intrinsics are the reasons why the code is very fast. However, that also means that the code is 
 not very portable. I have tried my best to ensure that the codes work on Linux and MAC OSX. If it does not work for you, particularly 
 if you are on a reasonable Linux install, please \href{mailto:manodeep@gmail.com}{email me}. The API for the codes can be considered 
 frozen; I will not change the API without changing the MAJOR release version. 
 
 The paper associated with the codes is being (slowly) written by me. I hope to submit the paper to Astronomy \& Computing and release 
-the codes simultaneously. Once I submit the paper to arXiv, there will be an actual paper arXiv link \href{http://adsabs.harvard.edu/abs/2014arXiv1405.5832L}{here}.
+the codes simultaneously. Once I submit the paper to arXiv, there will be an actual paper arXiv link \href{valid arXiv link}{here}.
 
 \footnotetext{The secondary consideration was maintainability and ease of use for others. I have versions of these codes that are 
 even faster but are much harder to modify/maintain by any one other than me !}
@@ -122,9 +133,11 @@ instruction set can only be used for CPU's later than 2011 (Intel Sandy Bridge/ 
 \subsection{Getting the Source}
 You can obtain the source in two ways: i) Clone the mercurial repo (\texttt{hg clone} \url{https://bitbucket.org/manodeep/corrfunc/}) 
 or ii) Download the tar archive (\href{https://bitbucket.org/manodeep/corrfunc/downloads/corrfunc.1.0.0.tar.gz}{corrfunc.\$MAJOR.0.\$MINOR.tar.gz}) and 
-unpack it in the directory where you wish to keep the files (\texttt{tar xvzf corrfunc.\$MAJOR.0.\$MINOR.tar.gz}). Here, \$MAJOR and \$MINOR
-refer to the major and minor release versions (current \$MAJOR=1, \$MINOR=0). I will only change the \$MAJOR version if the API breaks. 
+unpack it in the directory where you wish to keep the files (\texttt{tar xvzf}\\ \texttt{corrfunc.\$MAJOR.0.\$MINOR.tar.gz}). Here, \texttt{\$MAJOR}
+and \texttt{\$MINOR} refer to the major and minor release versions (current \texttt{\$MAJOR=1}, \texttt{\$MINOR=0}). I will only change 
+the \texttt{\$MAJOR} version in the highly unlikely event that the API changes. 
 
+\subsection{Directory Structure}
 The directory structure for the code looks like this:
 \dirtree{%
 .1 corrfunc.
@@ -184,7 +197,7 @@ The directory structure for the code looks like this:
   \end{minipage}.
 }
 
-\subsection{Code Options}
+\subsection{Compilation Options}
 There are a few code options that control both the Science case and the code compilation. All of these 
 options are located in `common.mk' in the base directory (`corrfunc'). Edit the first few lines to set these 
 options (see Table.~\ref{table:options} for details) :
@@ -284,7 +297,7 @@ a fast-food file format would require a total of $4+20+4=28$ bytes. The first an
 showing that 20 bytes of real data are contained in between the two paddings. 
 
 \flushleft The \texttt{fast-food} file consists of a header:
-\begin{lstlisting}[language=C,numbers=none,caption={The header format for \texttt{fast-food} files}]
+\begin{lstlisting}[caption={The header format for \texttt{fast-food} files}]
 int idat[5];
 float fdat[9];
 float znow;
@@ -419,7 +432,7 @@ The output (printed to stdout) has \texttt{nbins} rows; each row contains the co
 Makefile option OUTPUT\_RPAVG has been enabled. 
 
 \stdsection{Code Design}
-The following sections are taken directly from the associated \href{http://adsabs.harvard.edu/abs/2014arXiv1405.5832L}{paper}. The fundamental idea 
+The following sections are taken directly from the associated \href{valid arXiv link}{paper}. The fundamental idea 
 behind the code can be broken down into the following steps:
 \begin{itemize}
 \item Given the max. separation, \rmax, for the correlation function, grid the entire the particle distribution with cell width \rmax. In case of 
@@ -456,7 +469,7 @@ A circle with radius \rmax is also drawn to shown the actual pairs that will eve
 \subsection{How to Maintain Cache Locality within the Grid}
 For all pairs around a given target galaxy, we need to compute distances to all points within all neighbouring 3-d cells.
 We ensure that the particle locations are contiguous by moving them into the following \texttt{C struct} in the order in which they arrive.
-\begin{lstlisting}[language=C,numbers=none,label={code:celldefn},caption={Definition of the cellarray structure. This 
+\begin{lstlisting}[label={code:celldefn},caption={Definition of the cellarray structure. This 
 structure contains the \texttt{X/Y/Z} positions of all the particles that are in one 3-D cell. }]
 typedef struct{
   DOUBLE *x;
@@ -472,7 +485,7 @@ subdivided using the corresponding bin refine factors. These bin refine factors 
 Once the number of grid cells along each axes has been determined, we allocate memory for the \texttt{struct lattice}. This \texttt{struct lattice} is a 
 declared as an 1-D array; the conversion from the three indices in 3-D (\texttt{ix,iy,iz}) to a single index (\texttt{index}) happens through the last 
 line in Listing~\ref{code:onedim_index}. Such an 1-D array for \texttt{struct lattice} gives much better OpenMP scaling.   
-\begin{lstlisting}[language=C,numbers=none,label={code:onedim_index},caption={Accessing as \texttt{lattice[index]} rather than \texttt{lattice[ix][iy][iz]}.},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:onedim_index},caption={Accessing as \texttt{lattice[index]} rather than \texttt{lattice[ix][iy][iz]}.}]
 int64_t totncells  = nmesh_x * nmesh_y * nmesh_z;
 cellarray *lattice  = my_malloc(sizeof(cellarray), totncells);
 int64_t *nallocated = my_malloc(sizeof(*nallocated), totncells);
@@ -481,7 +494,7 @@ int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
 Now that we know the total number of cells in the entire domain, we need to allocated memory to store the particles in each cell. However, there is no way to 
 know the exact number of particles in each cell without processing the entire data-set; so, we pre-allocate with an estimate of the expected number of particles from the 
 volume of each 3-D cell (assuming a random distribution). Then, we can allocate memory for each of the \texttt{X/Y/Z} arrays inside each 3-D cell:
-\begin{lstlisting}[language=C,numbers=none,label={code:malloc_cellarray},caption={Pre-allocating memory for the \texttt{X/Y/Z} arrays in \texttt{struct cellarray}.},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:malloc_cellarray},caption={Pre-allocating memory for the \texttt{X/Y/Z} arrays in \texttt{struct cellarray}.}]
 for (int64_t index=0;index<totncells;index++) {
   lattice[index].x = my_malloc(sizeof(DOUBLE),expected_n);
   lattice[index].y = my_malloc(sizeof(DOUBLE),expected_n);
@@ -492,7 +505,7 @@ for (int64_t index=0;index<totncells;index++) {
 \end{lstlisting}
 Here, \texttt{nallocated} is an array that keeps track of the amount of memory alread allocated for each cell. After this step, all cells have been allocated memory for \texttt{expected\_n} 
 particles. Now, we can begin to process the individual particles and assigning them to the 3-D cells (if enough memory has already been allocated to assign the new particle). 
-\begin{lstlisting}[language=C,numbers=none,label={code:assign_to_cellarray},caption={Assigning the particles to the \texttt{struct cellarray} in the cell.},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:assign_to_cellarray},caption={Assigning the particles to the \texttt{struct cellarray} in the cell.}]
 for (int64_t i=0;i<np;i++)  {
   ix=(int)((x[i]-xmin)*xinv) ;
   iy=(int)((y[i]-ymin)*yinv) ;
@@ -524,7 +537,7 @@ arrays describing the original particle distribution.
 \subsection{The Pair-Counting Algorithms}
 After running through \texttt{gridlink}, the particle distribution is stored in contiguous \texttt{X/Y/Z} inside the 1-D array of \texttt{struct cellarray}. To find all 
 possible pairs, we first need to loop over all particles in the first data-set. 
-\begin{lstlisting}[language=C,numbers=none,label={code:loop_over_first_cells},caption={Looping over all cells in the first data-set.},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:loop_over_first_cells},caption={Looping over all cells in the first data-set.}]
 for (int64_t index1=0;index1<totncells;index1++) {
   const cellarray *first = &lattice1[index1];
   const DOUBLE *x1 = first->x;
@@ -535,7 +548,7 @@ for (int64_t index1=0;index1<totncells;index1++) {
 Now, we have the target cell pointer and the associated \texttt{x1/y1/z1} array pointers. Next, we need to get the indices for the neighbouring cells in 3-D. In order to do that, first 
 the 1-D index, \texttt{index1} needs to be converted into a set of three 3-D indices, \texttt{ix, iy, iz}. Listing~\ref{code:finding_3D_index_first} shows the conversion from 
 the 1-D index to the corresponding 3-D indices. 
-\begin{lstlisting}[language=C,numbers=none,label={code:finding_3D_index_first},caption={Reconstructing 3-D index for \texttt{first} cell in the first data-set.},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:finding_3D_index_first},caption={Reconstructing 3-D index for \texttt{first} cell in the first data-set.}]
 const int iz = index1 % nmesh_z ;
 const int ix = index1 / (nmesh_z * nmesh_y) ;
 const int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
@@ -546,8 +559,7 @@ the target cell (for each dimension). Since the target cell, \texttt{first} has 
 \texttt{ix $\pm$ bin\_refine\_factor} can potentially have pairs that satisfy the \rmax constraint. However, in case of PERIODIC boundary conditions, we also have 
 to ensure that the indices (and the actual particle positions) wrap around on the other side of the cube. Listing~\ref{code:looping_over_neighbouring_cells} shows 
 how the looping over neighbouring cells is done for the X dimension. Similar segments follow in the actual code for the Y/Z dimensions. 
-\begin{lstlisting}[language=C,numbers=none,label={code:looping_over_neighbouring_cells},caption={Looping over all the neighbouring cells and taking care 
-of PERIODIC boundary conditions},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:looping_over_neighbouring_cells},caption={Looping over all the neighbouring cells and taking care of PERIODIC boundary conditions.}]
 for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++){
   int iiix;
 #ifdef PERIODIC
@@ -572,16 +584,16 @@ for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++){
 Once all of the three 3-D indices for the neighbouring cell has been determined, we can reconstruct the 1-D index, \texttt{index2} for that cell. With this 1-D index, we can 
 create a pointer, \texttt{second}, that contains the \texttt{cellarray pointer} to the neighbouring cell. In Listing~\ref{code:dereference_second_cell}, we show 
 how the neighbouring cell and the associated \texttt{x2/y2/z2} array pointers are defined. 
-\begin{lstlisting}[language=C,numbers=none,label={code:dereference_second_cell},caption={Dereferencing the pointers for the neighbouring (\texttt{second}) cell under consideration.},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:dereference_second_cell},caption={Dereferencing the pointers for the neighbouring (\texttt{second}) cell under consideration.}]
 const cellarray *second = &lattice2[index2];
 const DOUBLE *x2 = second->x;
 const DOUBLE *y2 = second->y;
 const DOUBLE *z2 = second->z;
 \end{lstlisting}
 At this point, we have a set of \texttt{x1/y/1/z1} arrays with \texttt{first->nelements} elements representing the first data-set. We also have another set of \texttt{x2/y2/z2} arrays with \texttt{second->nelements} 
-elements representing the second data-set. 
-
-\begin{lstlisting}[language=C,numbers=none,label={code:looping_over_first_particles},caption={Looping over all particles in the \texttt{first} cell and accounting for PERIODIC boundary conditions.},basicstyle=\scriptsize]
+elements representing the second data-set. Now, we have to compute all possible pair-wise separations between these two data-sets. We begin with a loop over the elements in 
+\texttt{first}:
+\begin{lstlisting}[label={code:looping_over_first_particles},caption={Looping over all particles in the \texttt{first} cell and accounting for PERIODIC boundary conditions.}]
 for(int64_t i=0;i<first->nelements;i++) {
   DOUBLE x1pos=x1[i];
   DOUBLE y1pos=y1[i];
@@ -592,9 +604,11 @@ for(int64_t i=0;i<first->nelements;i++) {
   z1pos += off_zwrap;
 #endif
 \end{lstlisting}
+If PERIODIC boundary conditions are enabled, then \texttt{off\_xwrap}, \texttt{off\_ywrap} and \texttt{off\_zwrap} have been declared and initialized in Listing~\ref{code:looping_over_neighbouring_cells}.
+By wrapping the elements if the first data-set, we can avoid these operations in the following \texttt{j-loop} over all particles in \texttt{second}. 
 
-\begin{lstlisting}[language=C,numbers=none,label={code:looping_over_second_particles},caption={AVX intrinsics for looping over all particles in the \texttt{second} cell. PERIODIC boundary conditions have 
-already been accounted for in \texttt{x1pos,y1pos,z1pos} variables.},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:looping_over_second_particles},caption={AVX intrinsics for looping over all particles in the \texttt{second} cell. PERIODIC boundary conditions have 
+already been accounted for in \texttt{x1pos,y1pos,z1pos} variables.}]
 const AVX_FLOATS m_x1pos = AVX_SET_FLOAT(x1pos);
 const AVX_FLOATS m_y1pos = AVX_SET_FLOAT(y1pos);
 const AVX_FLOATS m_z1pos = AVX_SET_FLOAT(z1pos);
@@ -604,11 +618,34 @@ for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
   const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
   const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
   const AVX_FLOATS z2pos = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
+  
+  const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1pos,x2pos);
+  const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1pos,y2pos);
+  const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1pos,z2pos);
 \end{lstlisting}  
+
+
 The three codes \xir, \xirppi and \wprp diverge somewhat after this point. For \xir, we need to calculate the full 3-D separation, whereas for \xirppi and \wprp 
 the separation is the projected distance. I will discuss further implementations in the following sub-sections dedicated to each code. 
 \subsubsection{Pair-counting for \texorpdfstring{\xir}{xi(r)}}\label{section:pair_counting_r}
+Pair-counting for \xir is the most straight-forward. Once all the \texttt{NVEC} separations have been computed, we use bit-masks to check if any separations fall 
+within the range \texttt{sqr\_rpmin} and \texttt{sqr\_rpmax}. If not, we \texttt{continue} with the \texttt{j-loop}. 
+\begin{lstlisting}[label={code:masks_xi},caption={Bit-masks in \xir.}]
+m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
+if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+  continue;
+}
+
+const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS));
+if(AVX_TEST_COMPARISON(m_mask) == 0) {
+  continue;
+}
+r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask);
+m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
+\end{lstlisting}
+
 \subsubsection{Pair-counting for \texorpdfstring{\xirppi}{xi(rp,pi)}}\label{section:pair_counting_rp_pi}
+
 \subsubsection{Pair-counting for \texorpdfstring{\wprp}{wp(rp)}}\label{section:pair_counting_wp}
 Since the pair-counting in \wprp always assumes PERIODIC boundary conditions {\em and} only computes an auto-correlation, some more optimizations are possible in the
 \wprp calculation. First, each individual cell in the \texttt{struct lattice} elements are sorted based on their \texttt{Z} arrays. The \texttt{X/Y} arrays are 
@@ -643,7 +680,7 @@ If the code execution reaches this loop, at least one (squared) pair separation 
 is the squared lower radial limit of the first bin and \texttt{sqr\_rpmax} is the squared upper limit of the last bin (equivalent to \rmax$^2$ in this user-guide). 
 Since the pairs are more likely to occur in the largest separation bins, the loop goes backwards from the last bin to the first and uses early loop-termination in case
 all possible pairs have already been accounted for. 
-\begin{lstlisting}[label={code:updating_histogram},caption={AVX intrinsics for updating the \texttt{npairs} histgram for \xir and \wprp.},basicstyle=\scriptsize]
+\begin{lstlisting}[label={code:updating_histogram},caption={AVX intrinsics for updating the \texttt{npairs} histgram for \xir and \wprp.}]
 for(int kbin=nrpbin-1;kbin>=1;kbin--) {
   const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
   const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
@@ -684,7 +721,7 @@ library in the linking step to create a stand-alone executable (see the \texttt{
 \subsubsection{API for \texorpdfstring{\xir}{xi(r)}}
 The interface for the 3-D correlation function, \xir, is through the \texttt{countpairs} function. Here is 
 the corresponding function signature:
-\begin{lstlisting}[language=C,numbers=none,label={code:API_DD},basicstyle=\scriptsize,caption={API for the 3-D \xir}]
+\begin{lstlisting}[label={code:API_DD},caption={API for the 3-D \xir.}]
 results_countpairs * countpairs(
 const int64_t ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
 const int64_t ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
@@ -712,7 +749,7 @@ The parameters to the function are:
 
 The output from \texttt{countpairs} is contained in \texttt{struct results\_countpairs}. The structure
 definition is:
-\begin{lstlisting}[language=C,numbers=none,label={code:API_DD_struct},basicstyle=\scriptsize,caption={Structure definition for the output of \xir}]
+\begin{lstlisting}[label={code:API_DD_struct},caption={Structure definition for the output of \xir.}]
 typedef struct{
   uint64_t *npairs;
   DOUBLE *rupp;
@@ -737,7 +774,7 @@ After the results structure has been used, use \texttt{free\_results(\&results\_
 \subsubsection{API for \texorpdfstring{\xirppi}{xi(rp,pi)}}
 The interface for the 2-D correlation function, \xirppi, is through the \texttt{countpairs\_rp\_pi} function. Here is 
 the corresponding function signature:
-\begin{lstlisting}[language=C,numbers=none,label={code:API_DDrppi},basicstyle=\scriptsize,caption={API for the 2-D \xirppi}]
+\begin{lstlisting}[label={code:API_DDrppi},caption={API for the 2-D \xirppi}]
 results_countpairs_rp_pi * countpairs_rp_pi(
 const int64_t ND1, const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
 const int64_t ND2, const DOUBLE *X2, const DOUBLE *Y2, const DOUBLE *Z2,
@@ -767,7 +804,7 @@ The parameters to the function are:
 
 The output from \texttt{countpairs\_rp\_pi} is contained in \texttt{struct results\_countpairs\_rp\_pi}. The structure
 definition is:
-\begin{lstlisting}[language=C,numbers=none,label={code:API_DDrppi_struct},basicstyle=\scriptsize,,caption={Structure definition for the output of \xirppi}]
+\begin{lstlisting}[label={code:API_DDrppi_struct},caption={Structure definition for the output of \xirppi}]
 typedef struct{
   uint64_t *npairs;
   DOUBLE *rupp;
@@ -801,7 +838,7 @@ The interface for the projected correlation function, \wprp, is through the \tex
 the corresponding function signature\footnote{The \texttt{X1/Y1/Z1} arrays are not 
 declared with \texttt{const} qualifiers because I sort those arrays on \texttt{Z} in the 
 \texttt{countpairs\_wp} function.}:
-\begin{lstlisting}[language=C,numbers=none,label={code:API_wp},basicstyle=\scriptsize,caption={API for the \wprp}]
+\begin{lstlisting}[label={code:API_wp},caption={API for the \wprp.}]
 results_countpairs_wp *countpairs_wp(
 const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
 const double boxsize, 
@@ -825,7 +862,7 @@ The parameters to the function are:
 \end{itemize}
 
 The output from \texttt{countpairs\_wp} is contained in \texttt{struct results\_countpairs\_wp}. The structure definition is:
-\begin{lstlisting}[language=C,numbers=none,label={code:API_wp_struct},basicstyle=\scriptsize,caption={Structure definition for the output of \wprp}]
+\begin{lstlisting}[label={code:API_wp_struct},caption={Structure definition for the output of \wprp}]
 typedef struct{
   uint64_t *npairs;
   DOUBLE *wp;
