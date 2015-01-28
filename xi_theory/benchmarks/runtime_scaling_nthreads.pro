@@ -6,7 +6,7 @@ linestyle = [0, 0, 0]
 symbols = [1, 2, 4]
 colors = ['red', 'dodgerblue', 'green']
 legendstring = [tex2idl("$\xi(r)$    "), tex2idl("$\xi(r_p,\pi)$"), tex2idl("$w_p(r_p)$ ")]
-generate_eps = 1
+generate_eps = 0
 
 partfile = '../tests/data/gals_Mr19.ff'
 base_execstrings = ['PARTFILE f  PARTFILE f BINFILE NTHREADS  > xx', $
@@ -133,5 +133,16 @@ if !d.name eq 'PS' then begin
    @idl_reset_graphics
 endif
 
+;;; print a latex table style data
+texfname =  str_replace(timings_file,  '.txt',  '.tex')
+openw, lun, texfname, /get_lun
+for i = NumSteps-1, 0, -1 do begin
+   printf, lun, xdata[i], format = '(I10," ",$)'
+   for icode = 0, ncodes-1 do begin
+      printf, lun, 100.0*(speedup[icode, i]/xdata[i]), format = '(" & ",F12.2," ",$)'
+   endfor
+   printf, lun, '\\'
+endfor
+free_lun, lun
 
 end
