@@ -1,17 +1,18 @@
 compile_opt idl2, strictarrsubs
 
-codes = ['../bin/DD', '../bin/DDrppi', '../bin/wp']
-codestring = ['DD', 'DDrppi', 'wp']
-linestyle = [0, 0, 0]
-symbols = [1, 2, 4]
-colors = ['red', 'dodgerblue', 'green']
-legendstring = [tex2idl("$\xi(r)$    "), tex2idl("$\xi(r_p,\pi)$"), tex2idl("$w_p(r_p)$ ")]
-generate_eps = 0
+codes = ['../bin/DD', '../bin/DDrppi', '../bin/wp', '../bin/xi']
+codestring = ['DD', 'DDrppi', 'wp', 'xi']
+linestyle = [0, 0, 0, 0]
+symbols = [1, 2, 4, 6]
+colors = ['red', 'dodgerblue', 'green', 'cyan']
+legendstring = [tex2idl("$DD(r)    $"), tex2idl("$DD(r_p,\pi)$"), tex2idl("$w_p(r_p)$ "), tex2idl("$\xi(r)   $")]
+generate_eps = 1
 
 partfile = '../tests/data/gals_Mr19.ff'
 base_execstrings = ['PARTFILE f  PARTFILE f BINFILE NTHREADS  > xx', $
                     'PARTFILE f  PARTFILE f BINFILE PIMAX NTHREADS > xx', $
-                    '420.0 PARTFILE f BINFILE PIMAX NTHREADS > xx']
+                    '420.0 PARTFILE f BINFILE PIMAX NTHREADS > xx', $
+                    '420.0 PARTFILE f BINFILE NTHREADS > xx']
 binfile = '../tests/bins'
 timings_file = 'timings_Mr19_openmp.txt'
 pimax = 40.0
@@ -139,7 +140,7 @@ openw, lun, texfname, /get_lun
 for i = NumSteps-1, 0, -1 do begin
    printf, lun, xdata[i], format = '(I10," ",$)'
    for icode = 0, ncodes-1 do begin
-      printf, lun, 100.0*(speedup[icode, i]/xdata[i]), format = '(" & ",I12," ",$)'
+      printf, lun, long(100.0*(speedup[icode, i]/xdata[i])), format = '(" & ",I12," ",$)'
    endfor
    printf, lun, '\\'
 endfor
