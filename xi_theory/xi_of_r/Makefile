@@ -44,13 +44,8 @@ clena: clean
 celan: clean
 
 
-tests: tests_periodic tests_nonperiodic 
-
-tests_periodic: ../tests/tests_periodic
-	cd ../tests && ./test_periodic 0 
-
-tests_nonperiodic: ../tests/tests_nonperiodic
-	cd ../tests && ./test_nonperiodic 0
+tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
+	$(MAKE) -C ../tests	xi_of_r
 
 ../tests/tests_periodic:
 	$(MAKE) -C ../tests

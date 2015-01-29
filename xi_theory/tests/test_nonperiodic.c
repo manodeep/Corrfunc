@@ -39,9 +39,9 @@
 
 
 //Including the C files directly
-#include "../utils/gridlink.c"
-#include "../io/io.c"
-#include "../io/ftread.c"
+#include "gridlink.c"
+#include "io.c"
+#include "ftread.c"
 #include "../xi_of_r/countpairs.c"
 #include "../xi_rp_pi/countpairs_rp_pi.c"
 
