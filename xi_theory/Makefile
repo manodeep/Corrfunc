@@ -14,7 +14,7 @@ logbins: $(OBJS1)
 dirs:
 	mkdir -p lib bin
 
-.PHONY: clean celna clena celan DD DDrppi libs install wp tests realclean realclena examples dirs
+.PHONY: clean celna clena celan DD DDrppi libs install wp tests realclean realclena examples dirs xi
 
 DD:
 	$(MAKE) -C xi_of_r
@@ -67,6 +67,7 @@ install:
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
+	$(MAKE) -C xi install
 	$(MAKE) -C python_bindings install
 
 libs: 
