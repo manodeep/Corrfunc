@@ -24,7 +24,7 @@ $(LIBRARY): Makefile ../common.mk $(C_LIBRARY) $(OBJECTS) | ../lib
 	mkdir -p ../lib
 
 %.o: %.c Makefile ../common.mk 
-	$(CC) $(OPT) $(CFLAGS) $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
+	$(CC) $(OPT) $(CFLAGS) -I../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
 ../lib/libcountpairs.a: 
 	$(MAKE) -C ../xi_of_r/ lib

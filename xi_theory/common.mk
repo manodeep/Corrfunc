@@ -19,7 +19,7 @@ DISTNAME=corrfunc
 MINOR=0
 MAJOR=1
 
-INCLUDE=-I../../io -I../utils -I../include 
+INCLUDE=-I../../io -I../../utils 
 CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3  #-Werror
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
