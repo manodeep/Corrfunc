@@ -44,7 +44,7 @@ celan: celan
 tests: tests_periodic 
 
 tests_periodic: ../tests/tests_periodic
-	cd ../tests && ./test_periodic 2
+	$(MAKE) -C ../tests wp
 
 ../tests/tests_periodic:
 	$(MAKE) -C ../tests

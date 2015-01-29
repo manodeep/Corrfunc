@@ -42,10 +42,10 @@ endif
 
 
 ifeq (icc,$(findstring icc,$(CC)))
-  CFLAGS += -xhost   #-vec-report6  
+  CFLAGS += -xhost -opt-prefetch -ipo  #-vec-report6  
   ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 		CFLAGS += -openmp
-		CLINK  += -openmp
+		CLINK  += -openmp 
   endif
 else
 
