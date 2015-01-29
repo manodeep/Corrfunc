@@ -1,9 +1,9 @@
 include common.mk
 
 target=logbins 
-all: $(target) dirs DD DDrppi wp libs examples python_bindings 
+all: $(target) dirs DD DDrppi wp xi libs examples python_bindings 
 
-OBJS1= logbins.o utils/utils.o 
+OBJS1= logbins.o ../utils/utils.o 
 
 logbins: $(OBJS1) 
 	$(CC) $(OBJS1)  $(CLINK) -o $@
@@ -14,7 +14,7 @@ logbins: $(OBJS1)
 dirs:
 	mkdir -p lib bin
 
-.PHONY: clean celna clena celan DD DDrppi libs install wp tests realclean examples dirs
+.PHONY: clean celna clena celan DD DDrppi libs install wp tests realclean realclena examples dirs
 
 DD:
 	$(MAKE) -C xi_of_r
@@ -24,6 +24,9 @@ DDrppi:
 
 wp:
 	$(MAKE) -C wp
+
+xi:
+	$(MAKE) -C xi
 
 python_bindings: libs
 	$(MAKE) -C python_bindings
@@ -38,8 +41,9 @@ realclean:
 	$(RM) lib/libcountpairs.a 
 	$(RM) lib/libcountpairs_rp_pi.a
 	$(RM) lib/libcountpairs_wp.a 
-	$(RM) bin/DD bin/DDrppi bin/wprp bin/wp
-	$(RM) include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h 
+	$(RM) lib/libcountpairs_xi.a 
+	$(RM) bin/DD bin/DDrppi bin/wprp bin/wp bin/xi
+	$(RM) include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h include/countpairs_xi.h 
 	$(RM) lib/_countpairs.so lib/_countpairs.so.$(MAJOR).0.$(MINOR)
 
 clean:
@@ -47,6 +51,7 @@ clean:
 	$(MAKE) -C xi_of_r clean
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean
+	$(MAKE) -C xi clean
 	$(MAKE) -C examples clean
 	$(MAKE) -C python_bindings clean
 	$(MAKE) -C tests clean
@@ -68,6 +73,7 @@ libs:
 	$(MAKE) -C xi_of_r lib
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
+	$(MAKE) -C xi lib	
 
 tar: dist
 
