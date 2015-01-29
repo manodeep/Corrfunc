@@ -29,7 +29,7 @@
 #endif
 
 #ifndef PERIODIC
-#warning "wp is only valid for PERIODIC boundary conditions. Ignoring the Makefile (non)-definition of PERIODIC"
+#warning "xi is only valid for PERIODIC boundary conditions. Ignoring the Makefile (non)-definition of PERIODIC"
 #endif
 
 
@@ -59,7 +59,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 {
 	
   int bin_refine_factor=2;
-
+	
   /***********************
    *initializing the  bins
    ************************/
