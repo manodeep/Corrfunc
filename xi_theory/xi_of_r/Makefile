@@ -1,11 +1,11 @@
 include ../common.mk
 
 target=DD 
-SRC1   = DD.c countpairs.c ../utils/gridlink.c ../utils/utils.c ../utils/progressbar.c ../../io/ftread.c ../../io/io.c 
+SRC1   = DD.c countpairs.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c ../../io/ftread.c ../../io/io.c 
 OBJS1  = $(SRC1:.c=.o)
-INCL   = countpairs.h ../../io/ftread.h ../../io/io.h ../utils/utils.h ../utils/gridlink.h \
-		../include/function_precision.h ../include/cellarray.h ../include/avx_calls.h \
-		../include/defs.h ../utils/progressbar.h 
+INCL   = countpairs.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
+		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
+		../../utils/defs.h ../../utils/progressbar.h 
 
 all: $(target) $(SRC1) $(INCL)
 
@@ -15,7 +15,7 @@ $(target): $(OBJS1) $(INCL) ../common.mk Makefile
 %.o: %.c $(INCL) ../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-SRC2   = countpairs.c ../utils/gridlink.c ../utils/utils.c ../utils/progressbar.c 
+SRC2   = countpairs.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  = $(SRC2:.c=.o)
 
 lib:  libcountpairs.a | ../lib
