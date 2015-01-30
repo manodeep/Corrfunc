@@ -1,4 +1,4 @@
-include ../common.mk
+include ../../common.mk
 
 target = run_correlations
 
@@ -14,7 +14,7 @@ INCL :=	../include/countpairs.h ../include/countpairs_rp_pi.h ../include/countpa
 
 all: $(target) 
 
-$(target): Makefile ../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
+$(target): Makefile ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) -o $@
 
 ../lib/libcountpairs.a: 
@@ -26,7 +26,7 @@ $(target): Makefile ../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1)
 ../lib/libcountpairs_wp.a: 
 	$(MAKE) -C ../wp/ lib
 
-%.o: %.c ../common.mk Makefile
+%.o: %.c ../../common.mk Makefile
 	$(CC) $(CFLAGS) -I../include $(OPT) $(INCLUDE) -c $< -o $@
 
 .PHONY: clean clena celan 

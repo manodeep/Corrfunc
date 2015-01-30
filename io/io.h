@@ -10,13 +10,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-
+#include <stdarg.h>
+#include <string.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int64_t read_positions(const char *filename, const char *format, void **xpos, void **ypos, void **zpos, const size_t size);
+int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...) __attribute__((warn_unused_result));
 
 #ifdef __cplusplus
 }

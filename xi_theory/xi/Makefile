@@ -1,4 +1,4 @@
-include ../common.mk
+include ../../common.mk
 
 target=xi 
 SRC1   = xi.c countpairs_xi.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c ../../io/ftread.c ../../io/io.c 
@@ -9,10 +9,10 @@ INCL   = countpairs_xi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../
 
 all: $(target) $(SRC1) $(INCL)
 
-$(target): $(OBJS1) $(INCL) ../common.mk Makefile 
+$(target): $(OBJS1) $(INCL) ../../common.mk Makefile 
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
-%.o: %.c $(INCL) ../common.mk Makefile
+%.o: %.c $(INCL) ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 SRC2   = countpairs_xi.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 

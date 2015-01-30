@@ -1,4 +1,4 @@
-include ../common.mk
+include ../../common.mk
 
 target=DDrppi wprp
 all: $(target) 
@@ -11,10 +11,10 @@ INCL   = countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h 
 		../../utils/defs.h ../../utils/progressbar.h 
 
 
-DDrppi: $(OBJS1) $(INCL) ../common.mk Makefile
+DDrppi: $(OBJS1) $(INCL) ../../common.mk Makefile
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
-%.o: %.c $(INCL) ../common.mk Makefile
+%.o: %.c $(INCL) ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 OBJS2= wprp.o ../../utils/utils.o

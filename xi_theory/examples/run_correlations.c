@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 	fprintf(stderr,"\t\t -------------------------------------" ANSI_COLOR_RESET "\n");
 
 	//Read-in the data
-	const int64_t ND1 = read_positions(file,fileformat,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
+	const int64_t ND1 = read_positions(file,fileformat,sizeof(DOUBLE),3, &x1, &y1, &z1);
 
 	int autocorr=1;
 	DOUBLE *x2 = x1;

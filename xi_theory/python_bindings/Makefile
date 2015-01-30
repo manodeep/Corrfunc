@@ -1,4 +1,4 @@
-include ../common.mk
+include ../../common.mk
 
 PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "import numpy; print '-I' + numpy.__path__[0] + '/core/include/numpy/'")
 PYTHON_LINK   := $(shell python-config --ldflags) 
@@ -12,7 +12,7 @@ C_LIBRARY := ../lib/libcountpairs.a ../lib/libcountpairs_rp_pi.a ../lib/libcount
 
 all: $(LIBRARY) | ../lib
 
-$(LIBRARY): Makefile ../common.mk $(C_LIBRARY) $(OBJECTS) | ../lib
+$(LIBRARY): Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) -shared -o $@
 	rm -f _countpairs.so 
 	ln -s $(LIBRARY) _countpairs.so
@@ -23,7 +23,7 @@ $(LIBRARY): Makefile ../common.mk $(C_LIBRARY) $(OBJECTS) | ../lib
 ../lib:
 	mkdir -p ../lib
 
-%.o: %.c Makefile ../common.mk 
+%.o: %.c Makefile ../../common.mk 
 	$(CC) $(OPT) $(CFLAGS) -I../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
 ../lib/libcountpairs.a: 

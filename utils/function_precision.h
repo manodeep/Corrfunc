@@ -21,6 +21,7 @@
 
 #ifdef DOUBLE_PREC
 #define DOUBLE double
+#define DOUBLE_FORMAT "lf"
 #define NVEC   NVECD
 #define SQRT   sqrt
 #define LOG    log
@@ -34,6 +35,7 @@
 #define POW    pow
 #else
 #define DOUBLE float
+#define DOUBLE_FORMAT "f"
 #define NVEC   NVECF
 #define SQRT   sqrtf
 #define LOG    logf

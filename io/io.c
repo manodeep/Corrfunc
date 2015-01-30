@@ -9,15 +9,19 @@
 #include "io.h"
 #include "ftread.h"
 #include "utils.h"
+#include "function_precision.h"
 
 #ifndef MEMORY_INCREASE_FAC
 #define MEMORY_INCREASE_FAC 1.1
 #endif
 
-int64_t read_positions(const char *filename, const char *format, void **xpos, void **ypos, void **zpos, const size_t size)
+int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...)
 {
   int64_t np;
-  void *x,*y,*z;
+  assert(num_fields >= 1 && "You have to request at least one field to read-in");
+  assert(size == sizeof(DOUBLE) && "Requested size of an item does not match sizeof(DOUBLE)");
+
+  DOUBLE *data[num_fields];
   if(strncmp(format,"f",1)==0) { /*Read-in fast-food file*/
 	//read fast-food file
 	size_t bytes=sizeof(int) + sizeof(float)*9 + sizeof(int);//skip fdat
@@ -25,13 +29,13 @@ int64_t read_positions(const char *filename, const char *format, void **xpos, vo
 	int idat[5];
 	FILE *fp = my_fopen(filename,"r");
 	my_ftread(idat,sizeof(int),5,fp);
-	np = (int64_t) idat[1]; //idat[1] is int
+	np = (int64_t) idat[1]; //idat[1] is int. 
 	
 	assert((size == 4 || size == 8) && "Size of each position element can be either 4 (float) or 8 (double)");
 	
-	x = my_malloc(size,np);
-	y = my_malloc(size,np);
-	z = my_malloc(size,np);
+	for(int i=0;i<num_fields;i++) {
+	  data[i] = my_malloc(size,np);
+	}
 	
 	my_fseek(fp,bytes,SEEK_CUR);
 	//Check that the file was written with the requested precision
@@ -43,9 +47,9 @@ int64_t read_positions(const char *filename, const char *format, void **xpos, vo
 	assert((dummy == 4 || dummy == 8) && "File must contain either 4 byte (float) or 8 byte(double) precision");
 	
 	if(dummy == size) {
-	  my_ftread(x,size, np, fp);
-	  my_ftread(y,size, np, fp);
-	  my_ftread(z,size, np, fp);
+	  for(int i=0;i<num_fields;i++) {
+		my_ftread(data[i],size, np, fp);
+	  }
 	} else {
 #ifndef SILENT
 	  fprintf(stderr,"WARNING: File was written in a different precision than requested (file precision = %u requested precision = %zu)\n",dummy,size);
@@ -56,171 +60,105 @@ int64_t read_positions(const char *filename, const char *format, void **xpos, vo
 	  if(dummy == 4) {
 		assert(size == 8 && "Expected to be storing to doubles");
 		float *tmp = my_malloc(dummy,np);
-		double *tmp_x = (double *) x;
-		double *tmp_y = (double *) y;
-		double *tmp_z = (double *) z;
-		//read-in x
-		my_ftread(tmp, dummy, np, fp);
-		for(int64_t i=0;i<np;i++) tmp_x[i] = tmp[i];
-			  
-		//read-in y
-		my_ftread(tmp, dummy, np, fp);
-		for(int64_t i=0;i<np;i++) tmp_y[i] = tmp[i];
-				
-		//read-in z
-		my_ftread(tmp, dummy, np, fp);
-		for(int64_t i=0;i<np;i++) tmp_z[i] = tmp[i];
+		//read-in the fields
+		for(int i=0;i<num_fields;i++) {
+		  my_ftread(tmp, dummy, np, fp);
+		  double *tmp_pos = (double *) data[i];
+		  for(int64_t j=0;j<np;j++) tmp_pos[j] = tmp[j];
+		}  
 				
 		//free memory
 		free(tmp);
 	  } else {
 		assert(size == 4 && "Expected to be storing to doubles");
 		double *tmp = my_malloc(dummy,np);
-		float *tmp_x = (float *) x;
-		float *tmp_y = (float *) y;
-		float *tmp_z = (float *) z;
 				
-				
-		//read-in x
-		my_ftread(tmp, dummy, np, fp);
-		for(int64_t i=0;i<np;i++) tmp_x[i] = tmp[i];
-
-		//read-in y
-		my_ftread(tmp, dummy, np, fp);
-		for(int64_t i=0;i<np;i++) tmp_y[i] = tmp[i];
-
-		//read-in z
-		my_ftread(tmp, dummy, np, fp);
-		for(int64_t i=0;i<np;i++) tmp_z[i] = tmp[i];
-				
+		//read-in the fields
+		for(int i=0;i<num_fields;i++) {
+		  my_ftread(tmp, dummy, np, fp);
+		  float *tmp_pos = (float *) data[i];
+		  for(int64_t j=0;j<np;j++) tmp_pos[j] = tmp[j];
+		}
 		//free memory
 		free(tmp);
 	  }
 	}
 
 	fclose(fp);
-  } else if(strncmp(format,"a",1)==0) { /* Read in ascii file*/
+  } else if(strncmp(format,"a",1)==0 || strncmp(format,"c",1)==0) { /* Read in ascii (white-space/comma) separated file*/
 	int64_t i;
 	int64_t nmax=300000;
-	const int nitems=3;
 	int nread;
 	const int MAXBUFSIZE=10000;
 	char buffer[MAXBUFSIZE];
-	x = my_malloc(size,nmax);
-	y = my_malloc(size,nmax);
-	z = my_malloc(size,nmax);
-	FILE *fp = my_fopen(filename,"r");
+	char delimiters[]=" ,\t";//delimiters are white-space, comma and tab
 
+	for(i=0;i<num_fields;i++) {
+	  data[i] = my_malloc(size,nmax);
+	}
+
+	FILE *fp = my_fopen(filename,"r");
 	i = 0 ;
 	while(fgets(buffer,MAXBUFSIZE,fp) != NULL) {
-	  if(size==8) {
-		double dbl_x,dbl_y,dbl_z;
-		nread = sscanf(buffer,"%lf %lf %lf",&dbl_x,&dbl_y,&dbl_z);
-		if(nread == nitems) {
-		  if(isfinite(dbl_x) && isfinite(dbl_y) && isfinite(dbl_z)){
-			((double *) x)[i] = dbl_x;
-			((double *) y)[i] = dbl_y;
-			((double *) z)[i] = dbl_z;
-			i++ ;
-		  } else {
-			fprintf(stderr,"WARNING: Nans found in data for i=%"PRId64" file = `%s'\n",i,filename);
-		  }
-		}
+	  DOUBLE tmp;
+	  char *token,*saveptr;
+	  int flag = 1;
+	  token = strtok_r(buffer,delimiters,&saveptr);
+	  nread = sscanf(token,"%"DOUBLE_FORMAT,&tmp);
+	  if(nread == 1) {
+		(data[0])[i] = tmp;
 	  } else {
-		float flt_x,flt_y,flt_z;
-		nread = sscanf(buffer,"%f %f %f"   ,&flt_x,&flt_y,&flt_z);
-		if(isfinite(flt_x) && isfinite(flt_y) && isfinite(flt_z)){
-		  ((float *) x)[i] = flt_x;
-		  ((float *) y)[i] = flt_y;
-		  ((float *) z)[i] = flt_z;
-		  i++ ;
+		flag = 0;
+	  }
+	  for(int j=1;j<num_fields;j++) {
+		token = strtok_r(NULL,delimiters,&saveptr);
+		nread = sscanf(token,"%"DOUBLE_FORMAT,&tmp);
+		if(nread == 1) {
+		  (data[j])[i] = tmp;
 		} else {
-		  fprintf(stderr,"WARNING: Nans found in data for i=%"PRId64" file = `%s'\n",i,filename);
+		  flag = 0;
 		}
 	  }
+	  if(flag == 1) {
+		i++;
+	  }
+
 	  if(i==nmax) {
 		nmax *= MEMORY_INCREASE_FAC;
 		while(nmax==i)
 		  nmax += 5;
-			
-		x = my_realloc(x,size,nmax,"x");
-		y = my_realloc(y,size,nmax,"y");
-		z = my_realloc(z,size,nmax,"z");
+		
+		for(int j=0;j<num_fields;j++) {
+		  char varname[20];
+		  snprintf(varname,20,"data[%d]",j);
+		  data[j] = my_realloc(data[j],size,nmax,varname);
+		}
 	  }
 	}
 	np=i ;
 	nmax=np;
-		
-	//release the extra memory
-	x = my_realloc(x,size,nmax,"x");
-	y = my_realloc(y,size,nmax,"y");
-	z = my_realloc(z,size,nmax,"z");
-	fclose(fp);
-  } else if(strncmp(format,"c",1)==0) { /* Read in ascii csv file*/
-	int64_t i;
-	int64_t nmax=300000;
-	const int nitems=3;
-	int nread;
-	const int MAXBUFSIZE=10000;
-	char buffer[MAXBUFSIZE];
-	x = my_malloc(size,nmax);
-	y = my_malloc(size,nmax);
-	z = my_malloc(size,nmax);
-	FILE *fp = my_fopen(filename,"r");
 
-	i = 0 ;
-	while(fgets(buffer,MAXBUFSIZE,fp) != NULL) {
-	  if(size==8) {
-		double dbl_x,dbl_y,dbl_z;
-		nread = sscanf(buffer,"%lf,%lf,%lf",&dbl_x,&dbl_y,&dbl_z);
-		if(nread == nitems) {
-		  if(isfinite(dbl_x) && isfinite(dbl_y) && isfinite(dbl_z)){
-			((double *) x)[i] = dbl_x;
-			((double *) y)[i] = dbl_y;
-			((double *) z)[i] = dbl_z;
-			i++ ;
-		  } else {
-			fprintf(stderr,"WARNING: Nans found in data for i=%"PRId64" file = `%s'\n",i,filename);
-		  }
-		}
-	  } else {
-		float flt_x,flt_y,flt_z;
-		nread = sscanf(buffer,"%f,%f,%f"   ,&flt_x,&flt_y,&flt_z);
-		if(isfinite(flt_x) && isfinite(flt_y) && isfinite(flt_z)){
-		  ((float *) x)[i] = flt_x;
-		  ((float *) y)[i] = flt_y;
-		  ((float *) z)[i] = flt_z;
-		  i++ ;
-		} else {
-		  fprintf(stderr,"WARNING: Nans found in data for i=%"PRId64" file = `%s'\n",i,filename);
-		}
-	  }
-	  if(i==nmax) {
-		nmax *= MEMORY_INCREASE_FAC;
-		while(nmax==i)
-		  nmax += 5;
-			
-		x = my_realloc(x,size,nmax,"x");
-		y = my_realloc(y,size,nmax,"y");
-		z = my_realloc(z,size,nmax,"z");
-	  }
+	//release the extra memory.
+	for(int j=0;j<num_fields;j++) {
+	  char varname[20];
+	  snprintf(varname,20,"data[%d]",j);
+	  data[j] = my_realloc(data[j],size,nmax,varname);
 	}
-	np=i ;
-	nmax=np;
-		
-	//release the extra memory
-	x = my_realloc(x,size,nmax,"x");
-	y = my_realloc(y,size,nmax,"y");
-	z = my_realloc(z,size,nmax,"z");
 	fclose(fp);
   } else {
 	fprintf(stderr,"ERROR: Unknown format `%s'\n",format);
 	exit(EXIT_FAILURE);
   }
 
-  *xpos = x;
-  *ypos = y;
-  *zpos = z;
+  va_list ap;
+  va_start(ap,num_fields);
+
+  for(int i=0;i<num_fields;i++) {
+	DOUBLE **source = va_arg(ap, DOUBLE **);
+	*source = data[i];
+  }
+  va_end(ap);
+
   return np;
 }
 

@@ -175,7 +175,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 	if(X1 != NULL) {
 	  free(X1);free(Y1);free(Z1);
 	}
-	ND1 = read_positions(firstfilename,firstformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
+	ND1 = read_positions(firstfilename,firstformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
 	strncpy(current_file1,firstfilename,MAXLEN);
   }
   
@@ -201,7 +201,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 	if(free_X2 == 1) {
 	  free(X2);free(Y2);free(Z2);
 	}
-	ND2 = read_positions(secondfilename,secondformat,(void **) &X2,(void **) &Y2,(void **) &Z2,sizeof(DOUBLE));
+	ND2 = read_positions(secondfilename,secondformat, sizeof(DOUBLE), 3, &X2, &Y2, &Z2);
 	strncpy(current_file2,secondfilename,MAXLEN);
   }
 }
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
   gettimeofday(&tstart,NULL);
 
   //set the globals
-  ND1 = read_positions(file,fileformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
+  ND1 = read_positions(file,fileformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
   ND2 = ND1;
   X2 = X1;
   Y2 = Y1;
@@ -233,10 +233,10 @@ int main(int argc, char **argv)
   const int function_pointer_index[] = {0,1,2,1,1,1};//0->DD, 1->DDrppi,2->wp
 
   const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
-  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
-  const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f"};
-  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
-  const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f"};
+  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
+  const char firstfiletype[][MAXLEN] = {"a","f","f","f","f","f"};
+  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
+  const char secondfiletype[][MAXLEN] = {"a","f","f","f","f","f"};
   const DOUBLE allpimax[]             = {40.0,40.0,40.0,80.0,80.0,80.0};
 
   int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp};

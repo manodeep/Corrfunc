@@ -128,14 +128,14 @@ int main(int argc, char *argv[])
 
   gettimeofday(&t0,NULL);
   /*---Read-data1-file----------------------------------*/
-  ND1=read_positions(file1,fileformat1,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
+  ND1=read_positions(file1,fileformat1,sizeof(DOUBLE), 3, &x1, &y1, &z1);
   gettimeofday(&t1,NULL);
   read_time += ADD_DIFF_TIME(t0,t1);
   gettimeofday(&t0,NULL);  
 
   if (autocorr==0) {
     /*---Read-data2-file----------------------------------*/
-		ND2=read_positions(file2,fileformat2,(void **) &x2,(void **) &y2,(void **) &z2,sizeof(DOUBLE));
+	ND2=read_positions(file2,fileformat2,sizeof(DOUBLE), 3, &x2, &y2, &z2);
     gettimeofday(&t1,NULL);
     read_time += ADD_DIFF_TIME(t0,t1);
 

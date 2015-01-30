@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
   
   gettimeofday(&t0,NULL);
   /*---Read-data1-file----------------------------------*/
-  ND1=read_positions(file,fileformat,(void **) &x1,(void **) &y1,(void **) &z1,sizeof(DOUBLE));
+  ND1=read_positions(file,fileformat, sizeof(DOUBLE), 3, &x1, &y1, &z1);
   gettimeofday(&t1,NULL);
   read_time += ADD_DIFF_TIME(t0,t1);
 

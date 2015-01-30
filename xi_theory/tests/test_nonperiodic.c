@@ -148,7 +148,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 	if(X1 != NULL) {
 	  free(X1);free(Y1);free(Z1);
 	}
-	ND1 = read_positions(firstfilename,firstformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
+	ND1 = read_positions(firstfilename,firstformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
 	strncpy(current_file1,firstfilename,MAXLEN);
   }
   
@@ -174,7 +174,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 	if(free_X2 == 1) {
 	  free(X2);free(Y2);free(Z2);
 	}
-	ND2 = read_positions(secondfilename,secondformat,(void **) &X2,(void **) &Y2,(void **) &Z2,sizeof(DOUBLE));
+	ND2 = read_positions(secondfilename,secondformat, sizeof(DOUBLE), 3, &X2, &Y2, &Z2);
 	strncpy(current_file2,secondfilename,MAXLEN);
   }
 }
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
   gettimeofday(&tstart,NULL);
 
   //set the globals
-  ND1 = read_positions(file,fileformat,(void **) &X1,(void **) &Y1,(void **) &Z1,sizeof(DOUBLE));
+  ND1 = read_positions(file,fileformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
   ND2 = ND1;
   X2 = X1;
   Y2 = Y1;

@@ -1,11 +1,21 @@
-#### Science use-cases
+#### Science use-cases for Theory Correlation Functions
 OPT = -DPERIODIC
 #OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
 
-#### Code specs
+
+#### Extra options for Data Correlation Functions
+DATA_OPT += -DLINK_IN_DEC
+DATA_OPT += -DLINK_IN_RA
+
+#### Code specs for both theory and data Correlation Functions
 #OPT += -DDOUBLE_PREC
 OPT += -DUSE_AVX
 OPT += -DUSE_OMP
+
+GSL_CFLAGS := $(shell gsl-config --cflags) 
+GSL_LINK   := $(shell gsl-config --ldflags)
+GSL_LIBDIR := $(shell gsl-config --prefix)/lib
+
 
 ### Set the compiler -- options are icc/gcc/clang
 CC=gcc
@@ -14,6 +24,10 @@ CFLAGS=
 #### Add any compiler specific link flags you want
 CLINK=
 
+#### Add any compiler specific flags you want
+DATA_CFLAGS=
+DATA_CLINK=
+
 ### You should NOT edit below this line
 DISTNAME=corrfunc
 MINOR=0
@@ -21,6 +35,7 @@ MAJOR=1
 
 INCLUDE=-I../../io -I../../utils 
 CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3  #-Werror
+
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))

@@ -1,4 +1,4 @@
-include common.mk
+include ../common.mk
 
 target=logbins 
 all: $(target) dirs DD DDrppi wp xi libs examples python_bindings 
@@ -14,7 +14,7 @@ logbins: $(OBJS1)
 dirs:
 	mkdir -p lib bin
 
-.PHONY: clean celna clena celan DD DDrppi libs install wp tests realclean realclena examples dirs xi
+.PHONY: clean celna clena celan DD DDrppi libs install wp tests distclean realclean distclena realclena examples dirs xi
 
 DD:
 	$(MAKE) -C xi_of_r
@@ -34,6 +34,12 @@ python_bindings: libs
 ### Must create the libraries first before making the examples.
 examples: libs
 	$(MAKE) -C examples
+
+distclean:realclean
+
+distclena:realclean
+
+realclena:realclean
 
 realclean:
 	$(MAKE) clean
