@@ -1,0 +1,32 @@
+/* Install instructions for all codes under xi_theory 
+	 Author: Manodeep Sinha <manodeep@gmail.com>
+	 Bugs: Please email me
+	 Date: At some point in early 2015
+*/
+
+Steps:
+
+1. cd into xi_theory directory 
+
+2. Edit the common.mk file to select the appropriate use-case.
+
+Science options are:
+		a) PERIODIC -- disable to stop PERIODIC boundaries. Enabled by default, wp subdir will ignore this flag and *always* use PERIODIC boundary conditions.
+		b) OUTPUT_RPAVG -- enable to output the average rp in each bin. Disabled by default, runtime will increase significantly if you enable this option (DOUBLE_PREC has to enabled as well for OUTPUT_RPAVG to work)
+
+Code options are:
+		 a) DOUBLE_PREC -- enable to calculate in double precision. Disabled by default - runtime will increase at most 2x
+		 b) USE_AVX -- disable to fall-back to slow code supported on the current platform. Runtime can increase by an order of magnitude if you disable this option
+		 c) USE_OMP -- disable to use single threaded code rather than OpenMP parallel code. Runtime will (obviously) increase in single-thread mode.
+
+
+3. Set the compiler in common.mk -- icc/gcc/clang are supported in serial mode. Only gcc and icc are supported with OpenMP parallelization. 
+
+4. Type make to create all the executables
+
+5. Type make install to copy the executables into the bin subdirectory
+
+6. Type make lib to create libraries for each type of clustering measure. Right now, you will have manually recompile (i.e., make clean && make && make lib ) if you
+want a different setup for the correlation function measure. So, if you want to change PERIODIC boundary conditions, let's say, you will have to change the
+corresponding option in common.mk, make clean, make and finally make lib to access the libraries with the new functionality.
+
