@@ -21,8 +21,7 @@
 #include "avx_calls.h"
 #endif
 
-#define BLOCK_SIZE     16
-
+#define BLOCK_SIZE     NVEC
 
 #ifdef USE_OMP
 #include <omp.h>
@@ -67,8 +66,8 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
   int nrpbin ;
   double rpmin,rpmax;
   setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
-  assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
-  assert(nrpbin > 0 && "Number of rp bins is valid");
+  assert(rpmin >= 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
+  assert(nrpbin > 0 && "Number of rp bins must be > 0");
   
 
   /*---Create 3-D lattice--------------------------------------*/
@@ -190,34 +189,33 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 		  const int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
 		  assert( ((iz + nmesh_z*iy + nmesh_z*nmesh_y*ix) == index1) && "Index reconstruction is wrong");
 		  for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++){
-				int iiix;
+				const int iiix=(ix+iix+nmesh_x)%nmesh_x;
 				DOUBLE off_xwrap=0.0;
 				if(ix + iix >= nmesh_x) {
 				  off_xwrap = -side;
 				} else if (ix + iix < 0) {
 				  off_xwrap = side;
 				}
-				iiix=(ix+iix+nmesh_x)%nmesh_x;
+
 				
 				for(int iiy=-bin_refine_factor;iiy<=bin_refine_factor;iiy++){
-				  int iiiy;
+				  const int iiiy=(iy+iiy+nmesh_y)%nmesh_y;
 				  DOUBLE off_ywrap = 0.0;
 				  if(iy + iiy >= nmesh_y) {
 						off_ywrap = -side;
 				  } else if (iy + iiy < 0) {
 						off_ywrap = side;
 				  }
-				  iiiy=(iy+iiy+nmesh_y)%nmesh_y;
 				  
 				  for(int iiz=0;iiz<=bin_refine_factor;iiz++){
-						int iiiz;
+						const int iiiz=(iz+iiz+nmesh_z)%nmesh_z;
 						DOUBLE off_zwrap = 0.0;
 						if(iz + iiz >= nmesh_z) {
 							off_zwrap = -side;
 						} else if (iz + iiz < 0) {
 							off_zwrap = side;
 						}
-						iiiz=(iz+iiz+nmesh_z)%nmesh_z;
+
 						assert(iiix >= 0 && iiix < nmesh_x && iiiy >= 0 && iiiy < nmesh_y && iiiz >= 0 && iiiz < nmesh_z && "Checking that the second pointer is in range");
 						const int64_t index2 = iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
 						const cellarray * second = &(lattice[index2]);
@@ -231,14 +229,9 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 
 						for(int64_t i=0;i<first->nelements;i++) {
 						  const int64_t start = (index1==index2) ? (i+1):0;					
-							DOUBLE x1pos=x1[i];
-							DOUBLE y1pos=y1[i];
-							DOUBLE z1pos=z1[i];
-#ifdef PERIODIC
-							x1pos += off_xwrap;
-							y1pos += off_ywrap;
-							z1pos += off_zwrap;
-#endif		
+							DOUBLE x1pos=x1[i] + off_xwrap;
+							DOUBLE y1pos=y1[i] + off_ywrap;;
+							DOUBLE z1pos=z1[i] + off_zwrap;
 					  
 #ifndef USE_AVX
 							for(int64_t j=start;j<second->nelements;j+=BLOCK_SIZE) {
@@ -251,7 +244,10 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 									const DOUBLE dz = z1pos - z2[j+jj];
 									const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
 									const DOUBLE sqr_dz = dz*dz;
-									if(sqr_dz >= sqr_rpmax) {
+									if(dz < 0) {
+										continue;
+									}	else if(sqr_dz >= sqr_rpmax) {
+										j = second->nelements;
 									  break;
 									}
 									if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
@@ -310,7 +306,10 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 								const AVX_FLOATS m_sqr_rpmax = AVX_SET_FLOAT(sqr_rpmax);
 								//set constant := sqr_rpmin
 								const AVX_FLOATS m_sqr_rpmin = AVX_SET_FLOAT(sqr_rpmin);
-								
+
+								//set constant m_zero to 0.0
+								const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
+
 								//(x1-x2)^2
 								const AVX_FLOATS m_xdiff_sqr = AVX_SQUARE_FLOAT(m_xdiff);
 
@@ -330,26 +329,29 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 								{
 
 								  //Check if dz^2 >= sqr_rpmax. If so, break. 
-								  m_mask_left = AVX_COMPARE_FLOATS(m_zdiff_sqr, m_sqr_rpmax,_CMP_LT_OS);
-								  const int test = AVX_TEST_COMPARISON(m_mask_left);
+								  AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff_sqr, m_sqr_rpmax,_CMP_LT_OS);
+								  const int test = AVX_TEST_COMPARISON(m_mask_pimax);
 								  if(test == 0) {
-									//If the execution reaches here -> then none of the NVEC zdiff values
-									//are smaller than sqr_rpmax. We can terminate the j-loop now.
-
-									//set j so that the remainder loop does not run
-									j = second->nelements;
-									//break out of the j-loop
-									break;
+										//If the execution reaches here -> then none of the NVEC zdiff values
+										//are smaller than sqr_rpmax. We can terminate the j-loop now.
+										
+										//set j so that the remainder loop does not run
+										j = second->nelements;
+										//break out of the j-loop
+										break;
 								  }
 
-
+									m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax);
+									
+									//Set r2 with sqr_rpmax where the mask is false.
+									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nrpbin-1],r2,m_mask_pimax);
+									
 								  //Check if any of the NVEC distances are less than sqr_rpmax
 									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
 									//If all points are >= sqr_rpmax, continue with the j-loop
 									if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
 										continue;
 									}
-
 
 						  
 									//Create a mask for the NVEC distances that fall within sqr_rpmin and sqr_rpmax (sqr_rpmin <= dist < sqr_rpmax)
