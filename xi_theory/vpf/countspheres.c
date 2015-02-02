@@ -14,10 +14,8 @@
 #include "avx_calls.h"
 #endif
 
-#define BLOCK_SIZE     NVEC
 
-
-void free_results(results_countspheres **results)
+void free_results_countspheres(results_countspheres **results)
 {
 	if(results == NULL)
 		return;
@@ -189,9 +187,9 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 					const DOUBLE *y2 = first->y;
 					const DOUBLE *z2 = first->z;
 #ifndef USE_AVX
-					for(int64_t j=0;j<first->nelements;j+=BLOCK_SIZE) {
+					for(int64_t j=0;j<first->nelements;j+=NVEC) {
 						int block_size=first->nelements - j;
-						if(block_size > BLOCK_SIZE) block_size=BLOCK_SIZE;
+						if(block_size > NVEC) block_size=NVEC;
 						for(int jj=0;jj<block_size;jj++) {
 							int ibin;
 							DOUBLE dx=x2[j+jj]-newxpos;

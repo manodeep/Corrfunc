@@ -44,12 +44,14 @@
 #include "../xi_of_r/countpairs.c"
 #include "../xi_rp_pi/countpairs_rp_pi.c"
 #include "../wp/countpairs_wp.c"
+#include "../vpf/countspheres.c"
 
 char tmpoutputfile[]="./test_periodic_output.txt";
 
 int test_periodic_DD(const char *correct_outputfile);
 int test_periodic_DDrppi(const char *correct_outputfile);
 int test_wp(const char *correct_outputfile);
+int test_vpf(const char *correct_outputfile);
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
 
 //Global variables
@@ -146,8 +148,8 @@ int test_wp(const char *correct_outputfile)
   DOUBLE rlow=results->rupp[0];
   FILE *fp=my_fopen(tmpoutputfile,"w");
   for(int i=1;i<results->nbin;++i) {
-	fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
-	rlow=results->rupp[i];
+		fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
+		rlow=results->rupp[i];
   }
   fclose(fp);
   char execstring[MAXLEN];
@@ -158,6 +160,39 @@ int test_wp(const char *correct_outputfile)
   free_results_wp(&results);
   return ret;
 }
+
+int test_vpf(const char *correct_outputfile)
+{
+	const double rmax = 10.0;
+	const unsigned int nbin = 10;
+	const unsigned int nc = 10000;
+	const unsigned int num_pN=6;
+	const unsigned long seed=-1234;
+	results_countspheres *results = countspheres(ND1, X1, Y1, Z1,
+																							 rmax, nbin, nc,
+																							 num_pN,
+																							 seed);
+	
+  FILE *fp=my_fopen(tmpoutputfile,"w");
+  const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+	for(unsigned int ibin=0;ibin<results->nbin;ibin++) {
+		const double r=(ibin+1)*rstep;
+		fprintf(fp,"%"DOUBLE_FORMAT" ", r);
+		for(unsigned int i=0;i<num_pN;i++) {
+			fprintf(fp," %10.4e", (results->pN)[ibin][i]);
+		}
+		fprintf(fp,"\n");
+	}
+	fclose(fp);
+  char execstring[MAXLEN];
+  my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+  int ret=system(execstring);
+
+  //free the result structure
+  free_results_countspheres(&results);
+  return ret;
+}
+
 
 
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat)
@@ -227,19 +262,22 @@ int main(int argc, char **argv)
   int failed=0;
   int status;
   
-  const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)","Mr19 DDrppi (periodic)","Mr19 wp (periodic)","CMASS DDrppi DD (periodic)","CMASS DDrppi DR (periodic)","CMASS DDrppi RR (periodic)"};
+  const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)","Mr19 DDrppi (periodic)","Mr19 wp (periodic)","Mr19 vpf [periodic]",
+																				 "CMASS DDrppi DD (periodic)","CMASS DDrppi DR (periodic)","CMASS DDrppi RR (periodic)"};
   const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
-  const int function_pointer_index[] = {0,1,2,1,1,1};//0->DD, 1->DDrppi,2->wp
+  const int function_pointer_index[] = {0,1,2,3,1,1,1};//0->DD, 1->DDrppi,2->wp
 
-  const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
-  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
-  const char firstfiletype[][MAXLEN] = {"a","f","f","f","f","f"};
-  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
-  const char secondfiletype[][MAXLEN] = {"a","f","f","f","f","f"};
-  const DOUBLE allpimax[]             = {40.0,40.0,40.0,80.0,80.0,80.0};
+  const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","Mr19_vpf_periodic","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
+  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
+																				"../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
+  const char firstfiletype[][MAXLEN] = {"a","f","f","f","f","f","f"};
+  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
+																				 "../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
+  const char secondfiletype[][MAXLEN] = {"a","f","f","f","f","f","f"};
+  const DOUBLE allpimax[]             = {40.0,40.0,40.0,40.0,80.0,80.0,80.0};
 
-  int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp};
-  const int numfunctions=3;//3 functions total
+  int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp,test_vpf};
+  const int numfunctions=4;//4 functions total
 
   int total_tests=0;
   
