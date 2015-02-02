@@ -66,7 +66,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
   int nrpbin ;
   double rpmin,rpmax;
   setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
-  assert(rpmin >= 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
+  assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
   assert(nrpbin > 0 && "Number of rp bins must be > 0");
   
 
@@ -90,21 +90,21 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 	lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
   }
   const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  		
-#ifdef USE_OMP
-  omp_set_num_threads(numthreads);
-#pragma omp parallel for schedule(dynamic) 
-#endif
-	for(int64_t icell=0;icell<totncells;icell++) {
-		const cellarray *first=&(lattice[icell]);
-		DOUBLE *x = first->x;
-		DOUBLE *y = first->y;
-		DOUBLE *z = first->z;
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
-			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);										\
-			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) }
+/* #ifdef USE_OMP */
+/*   omp_set_num_threads(numthreads); */
+/* #pragma omp parallel for schedule(dynamic)  */
+/* #endif */
+/* 	for(int64_t icell=0;icell<totncells;icell++) { */
+/* 		const cellarray *first=&(lattice[icell]); */
+/* 		DOUBLE *x = first->x; */
+/* 		DOUBLE *y = first->y; */
+/* 		DOUBLE *z = first->z; */
+/* #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \ */
+/* 			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);										\ */
+/* 			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) } */
 		
-		SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
-	}
+/* 		SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER); */
+/* 	} */
 
 	const DOUBLE side=boxsize;
   
@@ -228,13 +228,12 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 						const DOUBLE *z2 = second->z;
 
 						for(int64_t i=0;i<first->nelements;i++) {
-						  const int64_t start = (index1==index2) ? (i+1):0;					
 							DOUBLE x1pos=x1[i] + off_xwrap;
 							DOUBLE y1pos=y1[i] + off_ywrap;;
 							DOUBLE z1pos=z1[i] + off_zwrap;
 					  
 #ifndef USE_AVX
-							for(int64_t j=start;j<second->nelements;j+=BLOCK_SIZE) {
+							for(int64_t j=0;j<second->nelements;j+=BLOCK_SIZE) {
 								int block_size=second->nelements - j;
 								if(block_size > BLOCK_SIZE) block_size=BLOCK_SIZE;
 						
@@ -243,13 +242,13 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 									const DOUBLE dy = y1pos - y2[j+jj];
 									const DOUBLE dz = z1pos - z2[j+jj];
 									const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
-									const DOUBLE sqr_dz = dz*dz;
-									if(dz < 0) {
-										continue;
-									}	else if(sqr_dz >= sqr_rpmax) {
-										j = second->nelements;
-									  break;
-									}
+									/* const DOUBLE sqr_dz = dz*dz; */
+									/* if(dz < 0) { */
+									/* 	continue; */
+									/* }	else if(sqr_dz >= sqr_rpmax) { */
+									/* 	j = second->nelements; */
+									/*   break; */
+									/* } */
 									if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
 										continue;
 									}
@@ -289,7 +288,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 							const AVX_FLOATS m_z1pos = AVX_SET_FLOAT(z1pos);
 					  
 							int64_t j;
-							for(j=start;j<=(second->nelements-NVEC);j+=NVEC) {
+							for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
 							  //Load the x/y/z arrays (NVEC at a time)
 								const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
 								const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
@@ -307,8 +306,8 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 								//set constant := sqr_rpmin
 								const AVX_FLOATS m_sqr_rpmin = AVX_SET_FLOAT(sqr_rpmin);
 
-								//set constant m_zero to 0.0
-								const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
+								/* //set constant m_zero to 0.0 */
+								/* const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0); */
 
 								//(x1-x2)^2
 								const AVX_FLOATS m_xdiff_sqr = AVX_SQUARE_FLOAT(m_xdiff);
@@ -329,22 +328,22 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 								{
 
 								  //Check if dz^2 >= sqr_rpmax. If so, break. 
-								  AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff_sqr, m_sqr_rpmax,_CMP_LT_OS);
-								  const int test = AVX_TEST_COMPARISON(m_mask_pimax);
-								  if(test == 0) {
-										//If the execution reaches here -> then none of the NVEC zdiff values
-										//are smaller than sqr_rpmax. We can terminate the j-loop now.
+								  /* AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff_sqr, m_sqr_rpmax,_CMP_LT_OS); */
+								  /* const int test = AVX_TEST_COMPARISON(m_mask_pimax); */
+								  /* if(test == 0) { */
+									/* 	//If the execution reaches here -> then none of the NVEC zdiff values */
+									/* 	//are smaller than sqr_rpmax. We can terminate the j-loop now. */
 										
-										//set j so that the remainder loop does not run
-										j = second->nelements;
-										//break out of the j-loop
-										break;
-								  }
+									/* 	//set j so that the remainder loop does not run */
+									/* 	j = second->nelements; */
+									/* 	//break out of the j-loop */
+									/* 	break; */
+								  /* } */
 
-									m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax);
+									/* m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax); */
 									
-									//Set r2 with sqr_rpmax where the mask is false.
-									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nrpbin-1],r2,m_mask_pimax);
+									/* //Set r2 with sqr_rpmax where the mask is false. */
+									/* r2 = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nrpbin-1],r2,m_mask_pimax); */
 									
 								  //Check if any of the NVEC distances are less than sqr_rpmax
 									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
@@ -438,11 +437,15 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 							for(;j<second->nelements;j++) {
 								const DOUBLE dz = z1pos - z2[j];
 								const DOUBLE sqr_dz = dz*dz;
-								if(sqr_dz >= sqr_rpmax ) break;
+								/* if(dz < 0) { */
+								/* 	continue; */
+								/* } else if(sqr_dz >= sqr_rpmax ) { */
+								/* 	break; */
+								/* } */
 								const DOUBLE dx = x1pos - x2[j];
 								const DOUBLE dy = y1pos - y2[j];
 						
-								const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
+								const DOUBLE r2 = (dx*dx + dy*dy + sqr_dz);
 								if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
 									continue;
 								}
@@ -540,7 +543,8 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
         /* compute xi, dividing summed weight by that expected for a random set */
         const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]*results->rupp[i]-rlow*rlow*rlow);
         const DOUBLE weightrandom = prefac_density_DD*vol;
-        results->xi[i] = (weight0/weightrandom-1);
+				assert(weightrandom > 0 && "Random weight is 0.0 - this is impossible");
+				results->xi[i] = (weight0/weightrandom-1);
 	}
 
   for(int64_t i=0;i<totncells;i++) {

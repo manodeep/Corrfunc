@@ -12,13 +12,14 @@ wprp
 DDrppi
 wp
 xi
+vpf
 run_correlations
 test_periodic
 test_nonperiodic
 libcount*.a
 tmp_output.txt
 output*
-include/countpairs*.h
+include/*.h
 *.so*
 a.out
 ms.*
