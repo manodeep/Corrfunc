@@ -31,7 +31,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 																		const unsigned int num_pN,
 																		unsigned long seed) __attribute__((warn_unused_result));
 
-void free_results(results_countspheres **results);
+void free_results_countspheres(results_countspheres **results);	
 
 #ifdef __cplusplus
 }

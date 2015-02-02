@@ -47,12 +47,12 @@ clena: clean
 celan: clean
 
 
-# tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
-# 	$(MAKE) -C ../tests	xi_of_r
+tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
+	$(MAKE) -C ../tests	vpf
 
-# ../tests/tests_periodic:
-# 	$(MAKE) -C ../tests
+../tests/tests_periodic:
+	$(MAKE) -C ../tests
 
-# ../tests/tests_nonperiodic:
-# 	$(MAKE) -C ../tests
+../tests/tests_nonperiodic:
+	$(MAKE) -C ../tests
 
