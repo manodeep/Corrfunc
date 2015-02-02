@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
   }
 	
   free(x);free(y);free(z);
-	free_results(&results);
+	free_results_countspheres(&results);
   gettimeofday(&t1,NULL);
   fprintf(stderr,"vpf> Done. Ngal = %"PRId64". Time taken = %0.2lf seconds \n",np,ADD_DIFF_TIME(tstart,t1));
   

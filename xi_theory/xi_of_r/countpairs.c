@@ -20,8 +20,6 @@
 #include "avx_calls.h"
 #endif
 
-#define BLOCK_SIZE     16
-
 
 #ifdef USE_OMP
 #include <omp.h>
@@ -294,9 +292,9 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 #endif		
 					  
 #ifndef USE_AVX
-							for(int64_t j=0;j<second->nelements;j+=BLOCK_SIZE) {
+							for(int64_t j=0;j<second->nelements;j+=NVEC) {
 								int block_size=second->nelements - j;
-								if(block_size > BLOCK_SIZE) block_size=BLOCK_SIZE;
+								if(block_size > NVEC) block_size=NVEC;
 						
 								for(int jj=0;jj<block_size;jj++) {
 									const DOUBLE dx = x1pos - x2[j+jj];
