@@ -13,7 +13,7 @@ OPT += -DUSE_AVX
 OPT += -DUSE_OMP
 
 GSL_CFLAGS := $(shell gsl-config --cflags) 
-GSL_LINK   := $(shell gsl-config --ldflags)
+GSL_LINK   := $(shell gsl-config --libs)
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 
 
@@ -34,7 +34,9 @@ MINOR=0
 MAJOR=1
 
 INCLUDE=-I../../io -I../../utils 
-CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3  #-Werror
+
+### The POSIX_SOURCE flag is required to get the definition of strtok_r
+CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3  -D_POSIX_SOURCE 
 
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))

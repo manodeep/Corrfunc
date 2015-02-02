@@ -103,15 +103,9 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 	  DOUBLE tmp;
 	  char *token,*saveptr;
 	  int flag = 1;
-	  token = strtok_r(buffer,delimiters,&saveptr);
-	  nread = sscanf(token,"%"DOUBLE_FORMAT,&tmp);
-	  if(nread == 1) {
-		(data[0])[i] = tmp;
-	  } else {
-		flag = 0;
-	  }
-	  for(int j=1;j<num_fields;j++) {
-		token = strtok_r(NULL,delimiters,&saveptr);
+		char *copy=buffer;
+	  for(int j=0;j<num_fields;j++,copy=NULL) {
+		token = strtok_r(copy,delimiters,&saveptr);
 		nread = sscanf(token,"%"DOUBLE_FORMAT,&tmp);
 		if(nread == 1) {
 		  (data[j])[i] = tmp;

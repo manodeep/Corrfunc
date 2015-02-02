@@ -49,13 +49,13 @@ void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **
       nread=sscanf(buf,"%lf %lf",&low,&hi);
       if(nread==nitems) {
 
-	if(index==1) {
-	  *rmin=low;
-	  (*rupp)[0]=low;
-	} 
-
-	(*rupp)[index] = hi;
-	index++;
+				if(index==1) {
+					*rmin=low;
+					(*rupp)[0]=low;
+				} 
+				
+				(*rupp)[index] = hi;
+				index++;
       }
     } else {
       break;
