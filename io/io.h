@@ -18,6 +18,7 @@
 extern "C" {
 #endif
 
+
 int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...) __attribute__((warn_unused_result));
 
 #ifdef __cplusplus
