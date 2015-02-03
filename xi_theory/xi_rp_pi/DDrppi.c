@@ -123,9 +123,6 @@ int main(int argc, char *argv[])
   fprintf(stderr,"\t\t -------------------------------------\n");
   
   
-  /*---Setup-npibins-------------------------------*/
-  const int npibin = (int)pimax ;
-
   gettimeofday(&t0,NULL);
   /*---Read-data1-file----------------------------------*/
   ND1=read_positions(file1,fileformat1,sizeof(DOUBLE), 3, &x1, &y1, &z1);
@@ -168,6 +165,7 @@ int main(int argc, char *argv[])
 	}
 
 	const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
+	const int npibin = results->npibin;
 	for(int i=1;i<results->nbin;i++) {
 	  const double logrp = LOG10(results->rupp[i]);
 	  for(int j=0;j<npibin;j++) {

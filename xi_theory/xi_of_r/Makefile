@@ -18,24 +18,31 @@ $(target): $(OBJS1) $(INCL) ../../common.mk Makefile
 SRC2   = countpairs.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  = $(SRC2:.c=.o)
 
-lib:  libcountpairs.a | ../lib
+lib:  libcountpairs.a | ../../lib
 
 
-libcountpairs.a: $(OBJS2) | ../lib
+libcountpairs.a: $(OBJS2) | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
-	cp -p $@ ../lib/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs.h > ../include/countpairs.h 
+	cp -p $@ ../../lib/
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs.h > ../../include/countpairs.h 
 
-.PHONY: clean clena celan install lib tests 
+.PHONY: clean clena celan install lib tests distclean
 
-../lib:
-	mkdir -p ../lib
+../../lib:
+	mkdir -p ../../lib
 
-../bin:
-	mkdir -p ../bin
+../../bin:
+	mkdir -p ../../bin
 
-install: $(target) | ../bin
-	cp -p $(target) ../bin/
+../../include:
+	mkdir -p ../../include
+
+install: $(target) | ../../bin
+	cp -p $(target) ../../bin/
+
+distclean: clean | ../../lib ../../include ../../bin
+	$(RM) ../../lib/libcountpairs.a ../../include/countpairs.h
+	cd ../../bin && $(RM) $(target)
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs.a

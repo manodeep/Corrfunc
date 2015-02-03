@@ -151,18 +151,23 @@ int main(int argc, char *argv[])
 void Printhelp(void)
 {
   fprintf(stderr,"=========================================================================\n") ;
-  fprintf(stderr,"   --- DDrppi data1 format1 data2 format2 binfile > DDfile\n") ;
-  fprintf(stderr,"   --- Measure the cross-correlation function xi(rp,pi) for two different\n") ;
-  fprintf(stderr,"       data files (or autocorrelation if data1=data2).\n") ;
-  fprintf(stderr,"     * data1         = name of first data file\n") ;
+  fprintf(stderr,"   --- DD file1 format1 file2 format2 binfile > DDfile\n") ;
+  fprintf(stderr,"   --- Measure the cross-correlation function DD(r) for two different\n") ;
+  fprintf(stderr,"       data files (or autocorrelation if file1=file2).\n") ;
+  fprintf(stderr,"     * file1         = name of first data file\n") ;
   fprintf(stderr,"     * format1       = format of first data file  (a=ascii, c=csv, f=fast-food)\n") ;
-  fprintf(stderr,"     * data2         = name of second data file\n") ;
+  fprintf(stderr,"     * file2         = name of second data file\n") ;
   fprintf(stderr,"     * format2       = format of second data file (a=ascii, c=csv, f=fast-food)\n") ;
   fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
 #ifdef USE_OMP
   fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif
-  fprintf(stderr,"     > DDfile        = name of output file <npairs logrp pi pairs>\n") ;
+
+#ifdef OUTPUT_RPAVG
+  fprintf(stderr,"     > DDfile        = name of output file <npairs rpavg rmin rmax>\n") ;
+#else
+  fprintf(stderr,"     > DDfile        = name of output file <npairs  0.0  rmin rmax>\n") ;
+#endif
 	fprintf(stderr,"\n\tCompile options: \n");
 #ifdef PERIODIC
 	fprintf(stderr,"Periodic = True\n");

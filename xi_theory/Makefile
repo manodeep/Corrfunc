@@ -5,14 +5,14 @@ all: $(target) dirs DD DDrppi wp xi libs examples python_bindings
 
 OBJS1= logbins.o ../utils/utils.o 
 
-logbins: $(OBJS1) 
+logbins: $(OBJS1)  | dirs 
 	$(CC) $(OBJS1)  $(CLINK) -o $@
 
 %.o: %.c 
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
 dirs:
-	mkdir -p lib bin
+	mkdir -p ../lib .,/bin ../include 
 
 .PHONY: clean celna clena celan DD DDrppi libs install wp tests distclean realclean distclena realclena examples dirs xi
 
@@ -43,14 +43,12 @@ realclena:realclean
 
 realclean:
 	$(MAKE) clean
-	$(RM) bin/$(target)
-	$(RM) lib/libcountpairs.a 
-	$(RM) lib/libcountpairs_rp_pi.a
-	$(RM) lib/libcountpairs_wp.a 
-	$(RM) lib/libcountpairs_xi.a 
-	$(RM) bin/DD bin/DDrppi bin/wprp bin/wp bin/xi
-	$(RM) include/countpairs.h include/countpairs_rp_pi.h include/countpairs_wp.h include/countpairs_xi.h 
-	$(RM) lib/_countpairs.so lib/_countpairs.so.$(MAJOR).0.$(MINOR)
+	$(MAKE) -C xi_of_r distclean
+	$(MAKE) -C xi_rp_pi distclean
+	$(MAKE) -C wp distclean
+	$(MAKE) -C xi distclean
+	$(RM) ../bin/$(target)
+	$(RM) ../lib/_countpairs.so ../lib/_countpairs.so.$(MAJOR).0.$(MINOR)
 
 clean:
 	$(RM) $(target) $(OBJS1) 
@@ -68,15 +66,15 @@ celan: clean
 
 celna: clean
 
-install: 
-	cp -p $(target) bin/
+install: dirs
+	cp -p $(target) ../bin
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
 	$(MAKE) -C xi install
 	$(MAKE) -C python_bindings install
 
-libs: 
+libs: | dirs
 	$(MAKE) -C xi_of_r lib
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
