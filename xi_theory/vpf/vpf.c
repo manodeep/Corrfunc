@@ -68,6 +68,10 @@ int main(int argc, char *argv[])
 	fileformat = argv[6];
 	seed = atol(argv[7]);
 
+	assert(nbin >=1 && "Number of bins has to be at least 1");
+	assert(nc >=1   && "Number of spheres has to be at least 1");
+	assert(num_pN >= 1 && "Number of pN's requested must be at least 1");
+
   fprintf(stderr,"Running `%s' with the parameters \n",argv[0]);
 	fprintf(stderr,"\n\t\t -------------------------------------\n");
 	for(int i=1;i<argc;i++) {
@@ -120,7 +124,7 @@ void Printhelp(void)
 	fprintf(stderr,"     * rmax         = size of the biggest sphere\n");
 	fprintf(stderr,"     * nbins        = number of bins to use for the counts-in-spheres\n");
 	fprintf(stderr,"     * nspheres     = number of random spheres to place on the cube\n");
-	fprintf(stderr,"     * numpN        = number of counts-in-spheres to output. [numpN=0-> P0, numpN=1->P0,P1, numpN=2->P0,P1,P2...\n");
+	fprintf(stderr,"     * numpN        = number of counts-in-spheres to output. [numpN=1-> P0, numpN=2->P0,P1, numpN=3->P0,P1,P2...\n");
 	fprintf(stderr,"     * file         = name of data file\n") ;
 	fprintf(stderr,"     * format       = format of data file  (a=ascii, c=csv, f=fast-food)\n") ;
 	fprintf(stderr,"     * seed         = seed for random number generator\n");

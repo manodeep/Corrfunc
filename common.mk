@@ -5,12 +5,14 @@ OPT = -DPERIODIC
 
 #### Extra options for Data Correlation Functions
 DATA_OPT += -DLINK_IN_DEC
-DATA_OPT += -DLINK_IN_RA
+#DATA_OPT += -DLINK_IN_RA
+#DATA_OPT += -DOUTPUT_THETAAVG
+
 
 #### Code specs for both theory and data Correlation Functions
-#OPT += -DDOUBLE_PREC
+OPT += -DDOUBLE_PREC
 OPT += -DUSE_AVX
-OPT += -DUSE_OMP
+#OPT += -DUSE_OMP
 
 GSL_CFLAGS := $(shell gsl-config --cflags) 
 GSL_LINK   := $(shell gsl-config --libs)
@@ -18,7 +20,7 @@ GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 
 
 ### Set the compiler -- options are icc/gcc/clang
-CC=gcc
+CC=clang
 #### Add any compiler specific flags you want
 CFLAGS= 
 #### Add any compiler specific link flags you want
@@ -36,7 +38,7 @@ MAJOR=1
 INCLUDE=-I../../io -I../../utils 
 
 ### The POSIX_SOURCE flag is required to get the definition of strtok_r
-CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3  -D_POSIX_SOURCE 
+CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3  -D_POSIX_SOURCE -D_DARWIN_C_SOURCE
 
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
@@ -68,7 +70,7 @@ else
 
   ### compiler specific flags for gcc
   ifeq (gcc,$(findstring gcc,$(CC)))
-		CFLAGS += -ftree-vectorize -funroll-loops -fprefetch-loop-arrays #-fprofile-use -fprofile-correction #-fprofile-generate
+		CFLAGS += -ftree-vectorize -funroll-loops -fprefetch-loop-arrays #-ftree-vectorizer-verbose=6 -fopt-info-vec-missed #-fprofile-use -fprofile-correction #-fprofile-generate
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 			CFLAGS += -fopenmp
 			CLINK  += -fopenmp
@@ -92,5 +94,4 @@ else
   CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
   CLINK += -lm
 endif
-
 

@@ -9,11 +9,26 @@
 #pragma once
 
 #ifndef M_PI
-#define M_PI           3.14159265358979323846  /* pi */
+#define M_PI            3.14159265358979323846264338327950288 
 #endif
 
-#define PI_OVER_180       0.01745329251
-#define INV_PI_OVER_180   57.2957795131
+#define PI_OVER_180       0.017453292519943295769236907684886127134428718885417254560971
+#define INV_PI_OVER_180   57.29577951308232087679815481410517033240547246656432154916024
+
+#if !(defined(__ICC__) || defined(__INTEL__))
+#define COSD(X)            COS(X*PI_OVER_180)
+#define SIND(X)            SIN(X*PI_OVER_180)
+#else
+//Intel compiler has the cosd/sind functions inbuilt
+#ifdef DOUBLE_PREC
+#define COSD(X)            cosd(X)
+#define SIND(X)            sind(X)
+#else
+#define COSD(X)            cosdf(X)
+#define SIND(X)            sindf(X)
+#endif
+//end of Intel
+#endif
 
 #define REGISTER_WIDTH 256  //cpu supports avx instructions
 #define NVECF  8  //8 floats per ymm register

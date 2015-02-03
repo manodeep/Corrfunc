@@ -188,7 +188,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 #pragma omp for  schedule(dynamic)
 #endif
 		/*---Loop-over-lattice1--------------------*/
-		for(int index1=0;index1<totncells;index1++) {
+		for(int64_t index1=0;index1<totncells;index1++) {
 		  
 #ifdef USE_OMP
 		  if (omp_get_thread_num() == 0)

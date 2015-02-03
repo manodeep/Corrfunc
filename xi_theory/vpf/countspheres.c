@@ -36,16 +36,22 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 																		unsigned long seed)
 
 {
-	struct timeval t0,t1;
+  //Input validation
+  assert(rmax > 0.0 && "rmax has to be positive");
+  assert(nbin >=1 && "Number of bins has to be at least 1");
+  assert(nc >=1   && "Number of spheres has to be at least 1");
+  assert(num_pN >= 1 && "Number of pN's requested must be at least 1");
+  
+  struct timeval t0,t1;
   const gsl_rng_type * T = gsl_rng_mt19937;
   gsl_rng * rng;
-	int bin_refine_factor=1;
+  int bin_refine_factor=1;
 	
-	rng = gsl_rng_alloc (T);
+  rng = gsl_rng_alloc (T);
   gsl_rng_set(rng, seed);
-
-	uint64_t *counts = my_calloc(sizeof(*counts),nbin);
-	DOUBLE **pN = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), nbin, num_pN);
+  
+  uint64_t *counts = my_calloc(sizeof(*counts),nbin);
+  DOUBLE **pN = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), nbin, num_pN);
 	
   const DOUBLE rstep = rmax/(DOUBLE)nbin ;
   const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep;
