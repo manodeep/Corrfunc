@@ -22,21 +22,24 @@ wprp: $(OBJS2) Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS2) $(CLINK)
 
 OBJS3=countpairs_rp_pi.o ../../utils/gridlink.o ../../utils/utils.o ../../utils/progressbar.o 
-lib: libcountpairs_rp_pi.a | ../lib
+lib: libcountpairs_rp_pi.a | ../../lib
 
-libcountpairs_rp_pi.a: $(OBJS3) | ../lib
+libcountpairs_rp_pi.a: $(OBJS3) | ../../lib ../../include
 	ar rcs $@ $(OBJS3)
-	cp -p $@ ../lib/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_rp_pi.h > ../include/countpairs_rp_pi.h
+	cp -p $@ ../../lib/
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_rp_pi.h > ../../include/countpairs_rp_pi.h
 
-../lib:
-	mkdir -p ../lib
+../../lib:
+	mkdir -p ../../lib
 
-../bin:
-	mkdir -p ../bin
+../../bin:
+	mkdir -p ../../bin
 
-install: $(target) | ../bin 
-	cp -p $(target) ../bin/
+../../include:
+	mkdir -p ../../include
+
+install: $(target) | ../../bin 
+	cp -p $(target) ../../bin/
 
 .PHONY: clean clena celan install lib tests
 
@@ -46,6 +49,10 @@ clean:
 clena: clean
 
 celan: celan
+
+distclean:clean | ../../lib ../../include ../../bin
+	$(RM) ../../lib/libcountpairs_rp_pi.a ../../include/countpairs_rp_pi.h
+	cd ../../bin && $(RM) $(target)
 
 tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
 	$(MAKE) -C ../tests xi_rp_pi

@@ -27,6 +27,16 @@ typedef struct{
   int64_t nelements;
 } cellarray;
 
+typedef struct{
+  DOUBLE *x;
+  DOUBLE *y;
+  DOUBLE *z;
+  DOUBLE *cz;
+  int nelements;
+  int nallocated;
+} cellarray_mocks;
+
+
 #ifdef __cplusplus
 }
 #endif

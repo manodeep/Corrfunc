@@ -101,6 +101,7 @@ cellarray * gridlink(const int64_t np,
   cell_volume=xbinsize*ybinsize*zbinsize;
   box_volume=xdiff*ydiff*zdiff;
   expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
+  expected_n=expected_n <= 1 ? 2:expected_n;
 #ifndef SILENT	
   fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
 #endif	

@@ -16,23 +16,30 @@ $(target): $(OBJS1) $(INCL) ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 OBJS2=countpairs_wp.o ../../utils/gridlink.o ../../utils/utils.o ../../utils/progressbar.o 
-lib: libcountpairs_wp.a | ../lib
+lib: libcountpairs_wp.a | ../../lib ../../include
 
-libcountpairs_wp.a: $(OBJS2) | ../lib
+libcountpairs_wp.a: $(OBJS2) | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
-	cp -p $@ ../lib/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_wp.h > ../include/countpairs_wp.h
+	cp -p $@ ../../lib/
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_wp.h > ../../include/countpairs_wp.h
 
-../lib:
-	mkdir -p ../lib
+.PHONY: clean clena celan install lib tests distclean
 
-../bin:
-	mkdir -p ../bin
+../../lib:
+	mkdir -p ../../lib
 
-install: $(target) | ../bin
-	cp -p $(target) ../bin/
+../../bin:
+	mkdir -p ../../bin
 
-.PHONY: clean clena celan install lib tests
+../../include:
+	mkdir -p ../../include
+
+install: $(target) | ../../bin
+	cp -p $(target) ../../bin/
+
+distclean: clean | ../../lib ../../include ../../bin
+	$(RM) ../../lib/libcountpairs_wp.a ../../include/countpairs_wp.h
+	cd ../../bin && $(RM) $(target)
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
