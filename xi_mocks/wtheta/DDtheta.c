@@ -53,12 +53,12 @@ int main(int argc, char **argv)
   if(argc< (nargs+1)) {
     Printhelp() ;
     fprintf(stderr,"\nFound: %d parameters\n ",argc-1);
-	int i;
+		int i;
     for(i=1;i<argc;i++) {
-      if(i <= nargs)
-		fprintf(stderr,"\t\t %s = `%s' \n",argnames[i-1],argv[i]);
+      if(i <= nargs) 
+				fprintf(stderr,"\t\t %s = `%s' \n",argnames[i-1],argv[i]);
       else
-		fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
+				fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
     }
     if(i <= nargs) {
       fprintf(stderr,"\nMissing required parameters \n");
@@ -103,11 +103,11 @@ int main(int argc, char **argv)
   /*---Read-data2-file----------------------------------*/
   gettimeofday(&t0,NULL);
   if(autocorr==0) {
-	ND2=read_positions(file2,fileformat2, sizeof(DOUBLE), 2, &phiD2, &thetaD2);
+		ND2=read_positions(file2,fileformat2, sizeof(DOUBLE), 2, &phiD2, &thetaD2);
   } else {
-	ND2=ND1;
-	thetaD2 = thetaD1;
-	phiD2 = phiD1;
+		ND2=ND1;
+		thetaD2 = thetaD1;
+		phiD2 = phiD1;
   }
   gettimeofday(&t1,NULL);
 
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
   pair_time = ADD_DIFF_TIME(t0,t1);
   free(thetaD1);free(phiD1);
   if(autocorr==0) {
-	free(thetaD2);free(phiD2);
+		free(thetaD2);free(phiD2);
   }
 
   /*---Output-Pairs-------------------------------------*/

@@ -117,14 +117,6 @@ results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOU
 
 
 	
-#ifdef LINK_IN_DEC
-  int rbin_refine_factor=2;
-#ifdef LINK_IN_RA
-  int phi_bin_refine_factor=2;
-#endif
-#endif
-
-
   double *theta_upp;
   int nthetabin;
   double thetamin,thetamax;
@@ -132,6 +124,22 @@ results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOU
   assert(thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax < 180.0 &&  "[thetamin, thetamax] are valid inputs");
   assert(nthetabin > 0 && "Number of theta bins is valid");
 
+#ifdef LINK_IN_DEC
+  int rbin_refine_factor=2;
+#ifdef LINK_IN_RA
+	//roughly occurs around
+	int phi_bin_refine_factor=2;
+	if(thetamax >= 25) {
+		fprintf(stderr,ANSI_COLOR_YELLOW "LINK_IN_RA can produce incorrect answers if the angular limits are large. Please cross-check with the output where LINK_IN_RA is not defined.\n");	
+		fprintf(stderr,"If increasing phi_bin_refine_factor changes the answer -- that is a good indication that the calculation is incorrect" ANSI_COLOR_RESET "\n");
+		phi_bin_refine_factor=1;//do not change this line. Increases the chance of incorrect answers.
+	}
+  
+#endif
+#endif
+
+
+	
 
 #ifndef USE_OMP	
   uint64_t npairs[nthetabin];
@@ -178,10 +186,6 @@ results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOU
   double dec_min=90.0,dec_max=-90.0;
 #endif
   
-#ifdef LINK_IN_RA
-  double ra_min=360.0,ra_max=0.0;
-#endif  
-
   DOUBLE *x2,*y2,*z2 ;
   x2=my_malloc(sizeof(*x2),ND2);
   y2=my_malloc(sizeof(*y2),ND2);
@@ -199,22 +203,13 @@ results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOU
       dec_max = theta2[i];
 #endif
 
-#ifdef LINK_IN_RA
-    if(phi2[i] < ra_min)
-      ra_min = phi2[i];
-    if(phi2[i] > ra_max)
-      ra_max = phi2[i];
-#endif    
-    
   }
 
 
 #ifdef LINK_IN_DEC
-	dec_max=90.0;dec_min=-90.0;
   double dec_diff = dec_max-dec_min;
   double inv_dec_diff=1.0/dec_diff;
   int ngrid_dec=0,max_n=0;
-	fprintf(stderr,"dec_max = %lf dec_min = %lf\n",dec_max,dec_min);
 #ifndef LINK_IN_RA
 
   cellarray *lattice2 = gridlink1D_theta(ND2, 
@@ -225,9 +220,8 @@ results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOU
 																							 rbin_refine_factor);
 #else
   int *ngrid_ra=NULL;
-	ra_min=0.0;ra_max=360.0;
+	const DOUBLE ra_min=0.0,ra_max=360.0;
   double inv_ra_diff=1.0/(ra_max-ra_min);
-  fprintf(stderr,"ra_max = %lf ra_min = %lf\n",ra_max,ra_min);
  cellarray **lattice2 = gridlink2D_theta(ND2, dec_min, dec_max, thetamax,
 																							 x2, y2, z2,
 																							 theta2,

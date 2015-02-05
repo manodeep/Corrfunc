@@ -8,7 +8,7 @@ MKL_CHECK=mkl
 endif
 
 INCL   = countpairs_theta.h ../../io/io.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
-        ../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
+        ../../utils/function_precision.h ../../utils/cellarray_mocks.h ../../utils/avx_calls.h \
         ../../utils/defs.h ../../utils/progressbar.h
 
 ##countpairs_theta_brute_force.c 
@@ -17,7 +17,7 @@ SRC1= DDtheta.c  countpairs_theta.c ../../utils/gridlink_mocks.c \
 
 OBJS1=$(SRC1:.c=.o) 
 DDtheta: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OBJS1) $(CLINK) $(BLAS_LINK) -o $@ 
+	$(CC) $(OBJS1) $(CLINK) -o $@ 
 
 SRC2=wtheta.c ../../utils/utils.c
 OBJS2=$(SRC2:.c=.o)
@@ -27,8 +27,8 @@ wtheta: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 %.o: %.c $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-countpairs_theta_brute_force.o: countpairs_theta_brute_force.c $(INCL) ../../mocks.options ../../common.mk Makefile $(MKL_CHECK)
-	$(CC) $(OPT) $(CFLAGS) $(BLAS_INCLUDE) $(INCLUDE) -c $< -o $@
+# countpairs_theta_brute_force.o: countpairs_theta_brute_force.c $(INCL) ../../mocks.options ../../common.mk Makefile $(MKL_CHECK)
+# 	$(CC) $(OPT) $(CFLAGS) $(BLAS_INCLUDE) $(INCLUDE) -c $< -o $@
 
 mkl:
 ifndef MKLROOT
