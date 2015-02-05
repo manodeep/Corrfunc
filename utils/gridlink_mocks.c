@@ -138,8 +138,9 @@ cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czm
 	  //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1. 
 	  //This way, we only increase by a very few particles 
 	  // at a time. Smaller memory footprint
-      if(expected_n == lattice[index].nallocated)
-		expected_n += 3;
+      if(expected_n <= lattice[index].nelements) {
+				expected_n += 5;
+			}
 
       lattice[index].x  = my_realloc(lattice[index].x ,sizeof(DOUBLE),expected_n,"lattice.x");
       lattice[index].y  = my_realloc(lattice[index].y ,sizeof(DOUBLE),expected_n,"lattice.y");
@@ -207,7 +208,7 @@ cellarray_mocks **gridlink2D(const int64_t np,
   *ngrid_cz=nmesh_cz ;
   cz_binsize = dcz/nmesh_cz;
   inv_cz_binsize = 1.0/cz_binsize;
-  fprintf(stderr,"nmesh_cz = %d\n",nmesh_cz);
+  /* fprintf(stderr,"nmesh_cz = %d\n",nmesh_cz); */
 
 
   *ngrid_declination = my_malloc(sizeof(*ngrid_dec),nmesh_cz);
@@ -265,6 +266,9 @@ cellarray_mocks **gridlink2D(const int64_t np,
     tmp = &(lattice[iz][idec]);
     if(tmp->nelements == tmp->nallocated) {
       expected_n = tmp->nallocated*MEMORY_INCREASE_FAC;
+			if(expected_n <= tmp->nelements) {
+				expected_n += 5;
+			}
       tmp->x  = my_realloc(tmp->x ,sizeof(*(tmp->x)),expected_n,"lattice.x");
       tmp->y  = my_realloc(tmp->y ,sizeof(*(tmp->y)),expected_n,"lattice.y");
       tmp->z  = my_realloc(tmp->z ,sizeof(*(tmp->z)),expected_n,"lattice.z");
@@ -352,8 +356,9 @@ cellarray * gridlink1D_theta(const int64_t np,
     assert(idec >=0 && idec < ngrid_dec && "Declination is within bounds");
     if(lattice[idec].nelements == lattice[idec].nallocated) {
       expected_n = lattice[idec].nallocated*MEMORY_INCREASE_FAC;
-			while(expected_n <= lattice[idec].nelements)
+			if(expected_n <= lattice[idec].nelements){
 				expected_n +=5;
+			}
 			
       lattice[idec].x  = my_realloc(lattice[idec].x ,sizeof(DOUBLE),expected_n,"lattice.x");
       lattice[idec].y  = my_realloc(lattice[idec].y ,sizeof(DOUBLE),expected_n,"lattice.y");
@@ -452,7 +457,7 @@ cellarray_mocks *** gridlink3D(const int64_t np,
   if(max_nmesh_phi > NLATMAX) max_nmesh_phi = NLATMAX;
   
   expected_n=(int)( (np/(DOUBLE) (nmesh_cz*max_nmesh_dec*max_nmesh_phi)) *MEMORY_INCREASE_FAC);
-  expected_n = expected_n <=10 ? 10:expected_n;
+  expected_n = expected_n < 2 ? 2:expected_n;
   totnbytes += nmesh_cz*max_nmesh_dec*max_nmesh_phi*sizeof(cellarray_mocks);
 
   /*---Allocate-and-initialize-grid-arrays----------*/
@@ -552,13 +557,17 @@ cellarray_mocks *** gridlink3D(const int64_t np,
       assert(ira >=0 && ira < ngrid_ra[iz][idec] && "RA (particle) position within bounds");
       tmp = &(lattice[iz][idec][ira]);
       if(tmp->nelements == tmp->nallocated) {
-	expected_n = tmp->nallocated*MEMORY_INCREASE_FAC;
-	tmp->x  = my_realloc(tmp->x ,sizeof(*(tmp->x)),expected_n,"lattice.x");
-	tmp->y  = my_realloc(tmp->y ,sizeof(*(tmp->y)),expected_n,"lattice.y");
-	tmp->z  = my_realloc(tmp->z ,sizeof(*(tmp->z)),expected_n,"lattice.z");
-	tmp->cz = my_realloc(tmp->cz ,sizeof(*(tmp->cz)),expected_n,"lattice.cz");
-	tmp->nallocated = expected_n;
+				expected_n = tmp->nallocated*MEMORY_INCREASE_FAC;
+				if(expected_n <= tmp->nelements) {
+					expected_n += 5;
+				}
+				tmp->x  = my_realloc(tmp->x ,sizeof(*(tmp->x)),expected_n,"lattice.x");
+				tmp->y  = my_realloc(tmp->y ,sizeof(*(tmp->y)),expected_n,"lattice.y");
+				tmp->z  = my_realloc(tmp->z ,sizeof(*(tmp->z)),expected_n,"lattice.z");
+				tmp->cz = my_realloc(tmp->cz ,sizeof(*(tmp->cz)),expected_n,"lattice.cz");
+				tmp->nallocated = expected_n;
       }
+			assert(tmp->nallocated > tmp->nelements && "Making sure memory access if fine");
       index=tmp->nelements;
       tmp->x[index]  = x1[i];
       tmp->y[index]  = y1[i];
@@ -636,13 +645,13 @@ cellarray ** gridlink2D_theta(const int64_t np,
   int max_nmesh_phi = (int) (phi_diff*phibin_refine_factor/min_phi_cell) ;
   if(max_nmesh_phi > NLATMAX) max_nmesh_phi = NLATMAX;
   max_nmesh_phi = max_nmesh_phi < (2*phibin_refine_factor + 1) ? (2*phibin_refine_factor+1):max_nmesh_phi;
-  /* fprintf(stderr,"phi_diff = %lf thetamax = %lf min_phi_cell = %lf max_nmesh_phi = %d \n",phi_diff,thetamax,min_phi_cell,max_nmesh_phi); */
+  /* fprintf(stderr,"phi_diff = %lf thetamax = %lf min_phi_cell = %lf max_nmesh_phi = %d 2*phi_bin_refine_factor +1 = %d\n",phi_diff,thetamax,min_phi_cell,max_nmesh_phi,(2*phibin_refine_factor+1)); */
   
   *ngrid_phi = my_malloc(sizeof(*ngrid_ra),ngrid_dec);
   ngrid_ra = *ngrid_phi;
 
   expected_n=(int)( (np/(DOUBLE) (ngrid_dec*max_nmesh_phi)) *MEMORY_INCREASE_FAC);
-  expected_n = expected_n <=10 ? 10:expected_n;
+  expected_n = expected_n < 2 ? 2:expected_n;
   totnbytes += ngrid_dec*max_nmesh_phi*sizeof(cellarray);
   
   
@@ -663,24 +672,27 @@ cellarray ** gridlink2D_theta(const int64_t np,
 
     phi_cell = max_phi_cell;
     /* if(!(i==0 || i == 1 || i == ngrid_dec-2 || i == ngrid_dec-1)) { */
-    if( (90.0 - fabs(this_min_dec) ) > 1.0) { //make sure min_dec is not close to the pole (within 1 degree)      
+    if( (90.0 - ABS(this_min_dec) ) > 1.0) { //make sure min_dec is not close to the pole (within 1 degree)-> divide by zero happens the cosine term
       DOUBLE tmp1 = SIND(this_min_dec),tmp2=COSD(this_min_dec);
-      phi_cell = acos((costhetamax - tmp1*tmp1)/(tmp2*tmp2))*INV_PI_OVER_180;
+      phi_cell = ACOS((costhetamax - tmp1*tmp1)/(tmp2*tmp2))*INV_PI_OVER_180;
       /* phi_cell *= rbin_refine_factor;//My logic does not work - but multiplying with rbin_refine_factor sorts out the problem */
       if(!(phi_cell > 0.0)) {
-		/* DOUBLE tmp3 = (costhetamax - tmp1*tmp1)/(tmp2*tmp2); */
-		/* fprintf(stderr,"ERROR: this_min_dec = %20.16lf phi_cell = %lf is negative. thetamax = %lf tmp1 = %lf tmp2 = %lf tmp3 = %lf \n",this_min_dec,phi_cell,thetamax,tmp1,tmp2,tmp3); */
+				/* DOUBLE tmp3 = (costhetamax - tmp1*tmp1)/(tmp2*tmp2); */
+				/* fprintf(stderr,"ERROR: this_min_dec = %20.16lf phi_cell = %lf is negative. thetamax = %lf tmp1 = %lf tmp2 = %lf tmp3 = %lf \n",this_min_dec,phi_cell,thetamax,tmp1,tmp2,tmp3); */
 				phi_cell = max_phi_cell;
       }
     }
-    assert(phi_cell > 0.0);
+    assert(phi_cell > 0.0 && "Making sure that RA bin-width is non-zero");
     phi_cell = phi_cell > max_phi_cell ? max_phi_cell:phi_cell;
 		
     int nmesh_ra = (int) (phi_diff*phibin_refine_factor/phi_cell);
     if(nmesh_ra > NLATMAX)
       nmesh_ra = NLATMAX;
 
-    nmesh_ra = nmesh_ra < (2*phibin_refine_factor + 1) ? (2*phibin_refine_factor+1):nmesh_ra;
+		if(nmesh_ra < (2*phibin_refine_factor + 1)) {
+			nmesh_ra = 2*phibin_refine_factor + 1;
+			fprintf(stderr,"%s> Using sub-optimal RA binning to ensure correct functioning of the code\n",__FUNCTION__);
+		}
     /* fprintf(stderr,"idec = %d nmesh_ra = %d max_nmesh_phi = %d thetamax = %lf phi_diff = %lf phi_cell = %lf phi_cell/thetamax=%lf\n",idec,nmesh_ra,max_nmesh_phi,thetamax,phi_diff,phi_cell,phi_cell/thetamax); */
     assert(nmesh_ra <= max_nmesh_phi);
 
@@ -708,12 +720,17 @@ cellarray ** gridlink2D_theta(const int64_t np,
     assert(ira >=0 && ira < ngrid_ra[idec]);
     if(lattice[idec][ira].nelements == lattice[idec][ira].nallocated) {
       expected_n = lattice[idec][ira].nallocated*MEMORY_INCREASE_FAC;
+			if(expected_n <= lattice[idec][ira].nelements) {
+				expected_n += 5;
+			}
+
       lattice[idec][ira].x  = my_realloc(lattice[idec][ira].x ,sizeof(DOUBLE),expected_n,"lattice.x");
       lattice[idec][ira].y  = my_realloc(lattice[idec][ira].y ,sizeof(DOUBLE),expected_n,"lattice.y");
       lattice[idec][ira].z  = my_realloc(lattice[idec][ira].z ,sizeof(DOUBLE),expected_n,"lattice.z");
       /* lattice[idec][ira].cz = my_realloc(lattice[idec][ira].cz ,sizeof(*(lattice[idec][ira].cz)),expected_n,"lattice.cz"); */
       lattice[idec][ira].nallocated = expected_n;
     }
+		assert(lattice[idec][ira].nallocated > lattice[idec][ira].nelements && "Making sure memory access if fine");
     index=lattice[idec][ira].nelements;
     lattice[idec][ira].x[index]  = x1[i];
     lattice[idec][ira].y[index]  = y1[i];

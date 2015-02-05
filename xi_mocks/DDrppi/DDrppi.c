@@ -23,7 +23,7 @@
 
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
-#include "countpairs_data.h" //function proto-type for countpairs
+#include "countpairs_mocks.h" //function proto-type for countpairs
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
 #include "cosmology_params.h"
@@ -84,11 +84,7 @@ int main(int argc, char *argv[])
   binfile=argv[5];
 
   pimax=40.0;
-#ifdef DOUBLE_PREC
-  sscanf(argv[6],"%lf",&pimax) ;
-#else    
-  sscanf(argv[6],"%f",&pimax) ;
-#endif    
+  sscanf(argv[6],"%"DOUBLE_FORMAT,&pimax) ;
 
   cosmology = atoi(argv[7]);
   init_cosmology(cosmology);
