@@ -1,10 +1,10 @@
 #### Science use-cases for Correlation Functions on mocks
 #OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
-OPT += -DOUTPUT_THETAAVG
+#OPT += -DOUTPUT_THETAAVG
 
 #### Extra options for Correlation Functions on mocks
-# OPT += -DLINK_IN_DEC
-# OPT += -DLINK_IN_RA
+OPT += -DLINK_IN_DEC
+OPT += -DLINK_IN_RA
 
 #### Code specs for both data Correlation Functions
 OPT += -DDOUBLE_PREC
@@ -17,7 +17,7 @@ GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) -lgsl -lgslcblas
 
 ### Set the compiler -- options are icc/gcc/clang. icc is *STRONGLY* recommended for OpenMP builds. There is potentially a bug in libgomp
-CC=icc
+CC=gcc
 #### Add any compiler specific flags you want
 CFLAGS= 
 #### Add any compiler specific link flags you want

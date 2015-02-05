@@ -56,6 +56,7 @@
 #define ACOS   acos
 #define ASIN   asin
 #define POW    pow
+#define ABS    fabs
 #else
 #define DOUBLE float
 #define DOUBLE_FORMAT "f"
@@ -70,4 +71,5 @@
 #define ACOS   acosf
 #define ASIN   asinf
 #define POW    powf
+#define ABS    fabsf
 #endif
