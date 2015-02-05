@@ -33,6 +33,15 @@ results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOU
 											const int autocorr,
 											const char *binfile) __attribute__((warn_unused_result));
 
+results_countpairs_theta * countpairs_theta_brute_force(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
+																												const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
+#ifdef USE_OMP
+																												const int numthreads,
+#endif
+																												const int autocorr,
+																												const char *binfile) __attribute__((warn_unused_result));
+
+	
 void free_results_countpairs_theta(results_countpairs_theta **results);
 void check_ra_dec(const int64_t N, DOUBLE *phi, DOUBLE *theta);
 
