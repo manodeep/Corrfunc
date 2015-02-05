@@ -1,0 +1,17 @@
+#### Science use-cases for Theory Correlation Functions
+OPT = -DPERIODIC
+#OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
+
+#### Code specs for both theory and data Correlation Functions
+#OPT += -DDOUBLE_PREC
+OPT += -DUSE_AVX
+OPT += -DUSE_OMP
+
+### Set the compiler -- options are icc/gcc/clang
+CC=gcc
+#### Add any compiler specific flags you want
+CFLAGS= 
+#### Add any compiler specific link flags you want
+CLINK=
+
+

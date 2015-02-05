@@ -395,7 +395,6 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
 								}
 
-								{ 
 						  
 #ifdef OUTPUT_RPAVG					  
 								  //first do the sqrt since r2 contains squared distances
@@ -442,12 +441,9 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 									//Only required when OUTPUT_RPAVG is enabled (i.e., the next jj-loop with the pragma unroll is in effect)
 #ifdef OUTPUT_RPAVG
 									union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
-#endif					
-								}
 						
-								//All these ops can be avoided (and anything leading to these) if the CPU
-								//supports AVX 512 mask_add operation
-#ifdef OUTPUT_RPAVG
+/* 								//All these ops can be avoided (and anything leading to these) if the CPU */
+/* 								//supports AVX 512 mask_add operation */
 
 //protect the unroll pragma in case compiler is not icc.								
 #if  __INTEL_COMPILER

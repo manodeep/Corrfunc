@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#include "cellarray.h"
+#include "cellarray_mocks.h"
 
 
 void get_max_min_data(const int64_t ND1, const DOUBLE * restrict cz, 
@@ -71,25 +71,25 @@ cellarray_mocks *** gridlink3D(const int64_t np,
 
 
 //For DDtheta, when linking in dec
-  cellarray_mocks * gridlink1D_theta(const int64_t np,
-							   const DOUBLE dec_min,const DOUBLE dec_max,const DOUBLE thetamax,
-							   const DOUBLE * restrict x1,const DOUBLE * restrict y1,const DOUBLE * restrict z1, const DOUBLE  * restrict dec,
-							   int *ngrid_declination,
-							   int *max_in_cell,
-							   const int rbin_refine_factor) __attribute__((warn_unused_result));
+cellarray * gridlink1D_theta(const int64_t np,
+														const DOUBLE dec_min,const DOUBLE dec_max,const DOUBLE thetamax,
+														const DOUBLE * restrict x1,const DOUBLE * restrict y1,const DOUBLE * restrict z1, const DOUBLE  * restrict dec,
+														int *ngrid_declination,
+														int *max_in_cell,
+														const int rbin_refine_factor) __attribute__((warn_unused_result));
 
   
 //For DDtheta, when linking in dec + ra
-cellarray_mocks **gridlink2D_theta(const int64_t np,
-							 const DOUBLE dec_min, const DOUBLE dec_max,const DOUBLE thetamax,
-							 const DOUBLE * restrict x1,const DOUBLE * restrict y1,const DOUBLE * restrict z1,
-							 const DOUBLE * restrict dec,
-							 int *ngrid_declination,
-							 const DOUBLE * restrict phi, const DOUBLE phi_min,const DOUBLE phi_max,
-							 int **ngrid_phi,
-							 int *max_in_cell,
-							 const int rbin_refine_factor,
-							 const int phibin_refine_factor) __attribute__((warn_unused_result));
+cellarray **gridlink2D_theta(const int64_t np,
+														 const DOUBLE dec_min, const DOUBLE dec_max,const DOUBLE thetamax,
+														 const DOUBLE * restrict x1,const DOUBLE * restrict y1,const DOUBLE * restrict z1,
+														 const DOUBLE * restrict dec,
+														 int *ngrid_declination,
+														 const DOUBLE * restrict phi, const DOUBLE phi_min,const DOUBLE phi_max,
+														 int **ngrid_phi,
+														 int *max_in_cell,
+														 const int rbin_refine_factor,
+														 const int phibin_refine_factor) __attribute__((warn_unused_result));
   
 
 	
