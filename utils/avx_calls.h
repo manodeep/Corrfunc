@@ -66,6 +66,7 @@
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_ps(FALSEVALUE,TRUEVALUE,MASK)
 
 //Trig
+
 #define AVX_ARC_COSINE(X)                 _mm256_acos_ps(X)
 
 //Max

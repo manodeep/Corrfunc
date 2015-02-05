@@ -1,36 +1,4 @@
-#### Science use-cases for Theory Correlation Functions
-OPT = -DPERIODIC
-#OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
-
-
-#### Extra options for Data Correlation Functions
-DATA_OPT += -DLINK_IN_DEC
-#DATA_OPT += -DLINK_IN_RA
-#DATA_OPT += -DOUTPUT_THETAAVG
-
-
-#### Code specs for both theory and data Correlation Functions
-OPT += -DDOUBLE_PREC
-OPT += -DUSE_AVX
-#OPT += -DUSE_OMP
-
-GSL_CFLAGS := $(shell gsl-config --cflags) 
-GSL_LINK   := $(shell gsl-config --libs)
-GSL_LIBDIR := $(shell gsl-config --prefix)/lib
-
-
-### Set the compiler -- options are icc/gcc/clang
-CC=clang
-#### Add any compiler specific flags you want
-CFLAGS= 
-#### Add any compiler specific link flags you want
-CLINK=
-
-#### Add any compiler specific flags you want
-DATA_CFLAGS=
-DATA_CLINK=
-
-### You should NOT edit below this line
+### You should NOT edit this file
 DISTNAME=corrfunc
 MINOR=0
 MAJOR=1
@@ -38,8 +6,7 @@ MAJOR=1
 INCLUDE=-I../../io -I../../utils 
 
 ### The POSIX_SOURCE flag is required to get the definition of strtok_r
-CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -O3  -D_POSIX_SOURCE -D_DARWIN_C_SOURCE
-
+CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))
@@ -90,8 +57,48 @@ else
   endif
 
   #### common options for gcc and clang
-  CFLAGS  += -march=native -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual  
+  # CFLAGS  += -march=native
+	CFLAGS  += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual  
   CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
   CLINK += -lm
+endif
+
+
+ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
+	BLAS_INCLUDE:=-DMKL_ILP64 -m64 -I$(MKLROOT)/include 
+  ##Use the Intel MKL library. Check the compiler + openmp
+	ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
+    ##Link+include sequential libraries
+		ifeq (icc,$(findstring icc,$(CC)))
+      ##icc with Intel MKL
+			BLAS_LINK:= -L$(MKLROOT)/lib/intel64 -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential -lpthread -lm
+		else
+	    ##gcc with Intel MKL
+			BLAS_LINK:= -Wl,--no-as-needed -L$(MKLROOT)/lib -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential -lpthread -lm
+		endif
+	else
+		ifeq (icc,$(findstring icc,$(CC)))
+      ##icc with Intel MKL+OpenMP
+			BLAS_LINK:= -L$(MKLROOT)/lib -lmkl_intel_ilp64 -lmkl_core -lmkl_intel_thread -lpthread -lm
+		else
+	    ##gcc with Intel MKL
+			BLAS_LINK:= -Wl,--no-as-needed -L$(MKLROOT)/lib -lmkl_intel_ilp64 -lmkl_core -lmkl_gnu_thread -ldl -lpthread -lm
+		endif
+	endif
+else
+##Use some OpenMP parallel BLAS library (OpenBlas/ATLAS, for instance)
+BLAS_INCLUDE:=
+BLAS_LINK:=
+endif
+
+ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
+  ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
+    $(error DOUBLE_PREC must be enabled with OUTPUT_THETAAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs))
+  endif
+  ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+     ifneq (icc,$(findstring icc,$(CC)))
+        $(error OUTPUT_THETAAVG with AVX capabilties will only work with icc)
+     endif
+  endif
 endif
 

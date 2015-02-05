@@ -58,19 +58,19 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 	  //First, print a warning message and then read-in correctly with the
 	  //requested precision
 	  if(dummy == 4) {
-		assert(size == 8 && "Expected to be storing to doubles");
-		float *tmp = my_malloc(dummy,np);
-		//read-in the fields
-		for(int i=0;i<num_fields;i++) {
-		  my_ftread(tmp, dummy, np, fp);
-		  double *tmp_pos = (double *) data[i];
-		  for(int64_t j=0;j<np;j++) tmp_pos[j] = tmp[j];
-		}  
+			assert(size == 8 && "Expected to be storing to doubles");
+			float *tmp = my_malloc(dummy,np);
+			//read-in the fields
+			for(int i=0;i<num_fields;i++) {
+				my_ftread(tmp, dummy, np, fp);
+				double *tmp_pos = (double *) data[i];
+				for(int64_t j=0;j<np;j++) tmp_pos[j] = tmp[j];
+			}  
 				
-		//free memory
-		free(tmp);
+			//free memory
+			free(tmp);
 	  } else {
-		assert(size == 4 && "Expected to be storing to doubles");
+			assert(size == 4 && "Expected to be storing to doubles");
 		double *tmp = my_malloc(dummy,np);
 				
 		//read-in the fields
