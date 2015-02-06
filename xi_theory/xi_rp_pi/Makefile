@@ -1,4 +1,4 @@
-include ../../common.mk
+include ../../theory.options ../../common.mk
 
 target=DDrppi wprp
 all: $(target) 

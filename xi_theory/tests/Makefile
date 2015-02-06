@@ -1,4 +1,4 @@
-include ../../common.mk
+include ../../theory.options ../../common.mk
 
 target = test_periodic test_nonperiodic
 SRC1   = test_periodic.c ../../utils/utils.c ../../utils/progressbar.c 
@@ -11,15 +11,11 @@ INCL  = ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c \
 SRC2   = test_nonperiodic.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  = $(SRC2:.c=.o)
 
-# $(info $$INCLUDE is [${INCLUDE}])
-# $(info $$INCL is [${INCL}])
-
-
 all: $(target) $(INCL)
 
 test_periodic: $(OBJS1) ../../common.mk Makefile \
 	../xi_of_r/countpairs.c ../xi_rp_pi/countpairs_rp_pi.c ../wp/countpairs_wp.c
-	$(CC) $(CLINK) $(GSL_LINK) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) $(OBJS1) -o $@
+	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -lgsl -lgslcblas -o $@
 
 test_nonperiodic: $(OBJS2) ../../common.mk Makefile \
 	../xi_of_r/countpairs.c ../xi_rp_pi/countpairs_rp_pi.c 
