@@ -177,7 +177,7 @@ void Printhelp(void)
 #ifdef USE_OMP
   fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif
-  fprintf(stderr,"     > DDrppifile        = name of output file. Contains <npairs rpavg logrp pi>\n") ;
+  fprintf(stderr,"     > DDfile        = name of output file. Contains <npairs rpavg logrp pi>\n") ;
 
   fprintf(stderr,"\n\tCompile options: \n");
 

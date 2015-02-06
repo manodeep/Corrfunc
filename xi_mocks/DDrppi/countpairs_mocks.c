@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <gsl/gsl_interp.h>
 
-#include "sglib.h"
+/* #include "sglib.h" */
 #include "utils.h"
 #include "cellarray_mocks.h"
 #include "gridlink_mocks.h"
