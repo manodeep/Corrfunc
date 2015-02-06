@@ -1,5 +1,9 @@
 #ifndef __COSMOLOGY_PARAMS_H
 #define __COSMOLOGY_PARAMS_H
+
+#include <stdio.h>
+#include <stdlib.h>
+
 extern int cosmology_initialized;
 extern double OMEGA_M;
 extern double OMEGA_B;

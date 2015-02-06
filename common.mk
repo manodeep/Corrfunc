@@ -102,3 +102,8 @@ ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
   endif
 endif
 
+ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
+  ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+    $(warning Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set)
+  endif
+endif

@@ -24,19 +24,21 @@ typedef struct{
   DOUBLE pimax;
   int nbin;
   int npibin;
-} results_countpairs_data;
+} results_countpairs_mocks;
 
-results_countpairs_data * countpairs_data(const int64_t N1, const DOUBLE *theta1, const DOUBLE *phi1, const DOUBLE *d1,
-										  const int64_t N2, const DOUBLE *theta2, const DOUBLE *phi2, const DOUBLE *d2,
+results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *theta1, DOUBLE *phi1, DOUBLE *czD1,
+																						const int64_t ND2, DOUBLE *theta2, DOUBLE *phi2, DOUBLE *czD2,
 #ifdef USE_OMP  
-										  const int numthreads,
+																						const int numthreads,
 #endif
-										  const int autocorr,
-										  const char *binfile,
-										  const DOUBLE pimax) __attribute__((warn_unused_result));
+																						const int autocorr,
+																						const char *binfile,
+																						const DOUBLE pimax,
+																						const int cosmology) __attribute__((warn_unused_result));
 
+void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz);	
 
-void free_results_data(results_countpairs_data **results);
+void free_results_mocks(results_countpairs_mocks **results);
 
 #ifdef __cplusplus
 }

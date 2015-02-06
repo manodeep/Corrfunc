@@ -9,29 +9,35 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <gsl/gsl_interp.h>
 
+#include "sglib.h"
 #include "utils.h"
-#include "cellarray.h"
-#include "gridlink_data.h"
+#include "cellarray_mocks.h"
+#include "gridlink_mocks.h"
 #include "progressbar.h"
-#include "countpairs_data.h"
+#include "countpairs_mocks.h"
+#include "cosmology_params.h"
+#include "set_cosmo_dist.h"
 
 #ifdef USE_AVX
 #include "avx_calls.h"
 #endif
 
-#define SQR(X)         ((X) * (X))
+#ifdef USE_OMP
+#include <omp.h>
+#endif
 
 
-void free_results_data(results_countpairs_data **results)
+void free_results_mocks(results_countpairs_mocks **results)
 {
   if(results==NULL)
-	return;
+		return;
 
   if(*results==NULL)
-	return;
+		return;
 
-  results_countpairs_data *tmp = *results;
+  results_countpairs_mocks *tmp = *results;
 
   free(tmp->npairs);
   free(tmp->rupp);
@@ -42,16 +48,65 @@ void free_results_data(results_countpairs_data **results)
 
 
 
-results_countpairs_data * countpairs_data(const int64_t N1, const DOUBLE *theta1, const DOUBLE *phi1, const DOUBLE *d1,
-										  const int64_t N2, const DOUBLE *theta2, const DOUBLE *phi2, const DOUBLE *d2,
-#ifdef USE_OMP  
-										  const int numthreads,
-#endif
-										  const int autocorr,
-										  const char *binfile,
-										  const DOUBLE pimax)
+void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz)
 {
-  DOUBLE logrpmax,logrpmin,dlogrp,inv_dlogrp;
+	int fix_cz  = 0;
+	int fix_ra  = 0;
+	int fix_dec = 0;
+
+	const DOUBLE max_cz_threshold = 10.0;//if I find that max cz is smaller than this threshold, then I will assume z has been supplied rather than cz
+	DOUBLE max_cz = 0.0;
+	//Check input cz -> ensure that cz contains cz and not z
+	for(int64_t i=0;i<N;i++) {
+		if(cz[i] > max_cz) max_cz = cz[i];
+		if(phi[i] < 0.0) {
+			fix_ra = 1;
+		}
+		if(theta[i] > 90.0) {
+			fix_dec = 1;
+		}
+		assert(theta[i] <= 180 && "Declination can not be more than 180 deg. Did you switch the ra/dec variables?");
+	}
+	if(max_cz < max_cz_threshold) fix_cz = 1;
+
+	//Only run the loop if something needs to be fixed
+	if(fix_cz==1 || fix_ra == 1 || fix_dec == 1) {
+		if(fix_ra == 1) {
+			fprintf(stderr,"countpairs_mocks> Out of range values found for ra. Expected ra to be in the range [0.0,360.0]. Found ra values in [-180,180] -- fixing that\n");
+		}
+		if(fix_dec == 1) {
+			fprintf(stderr,"countpairs_mocks> Out of range values found for dec. Expected dec to be in the range [-90.0,90.0]. Found dec values in [0,180] -- fixing that\n");
+		}
+		if(fix_cz == 1)  {
+			fprintf(stderr,"countpairs_mocks> Out of range values found for cz. Expected input to be `cz' but found `z' instead. max_cz (found in input) = %"DOUBLE_FORMAT" threshold = %"DOUBLE_FORMAT"\n",max_cz,max_cz_threshold);
+		}
+
+		for(int64_t i=0;i<N;i++) {
+			if(fix_ra==1) {
+				phi[i] += 180.0;			
+			}
+			if(fix_dec==1) {
+				theta[i] -= 90.0;
+			}
+			if(fix_cz == 1) {
+				cz[i] *= SPEED_OF_LIGHT;//input was z -> convert to cz
+			}
+		}
+	}
+}
+
+
+results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1, DOUBLE *czD1,
+																						const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2, DOUBLE *czD2,
+#ifdef USE_OMP  
+																						const int numthreads,
+#endif
+																						const int autocorr,
+																						const char *binfile,
+																						const DOUBLE pimax,
+																						const int cosmology)
+{
+  /* DOUBLE logrpmax,logrpmin,dlogrp,inv_dlogrp; */
   DOUBLE dpi,inv_dpi;
 
   int zbin_refine_factor=2;
@@ -64,10 +119,21 @@ results_countpairs_data * countpairs_data(const int64_t N1, const DOUBLE *theta1
 #endif
 
 #if defined(LINK_IN_RA) && !defined(LINK_IN_DEC)
-  #error LINK_IN_DEC Makefile option must be enabled before LINK_IN_RA is selected
+#error LINK_IN_DEC Makefile option must be enabled before LINK_IN_RA is selected
 #endif
   const int npibin = (int) pimax;
-  /***********************
+
+	//Try to initialize cosmology - code will exit if comoslogy is not implemented. 
+  init_cosmology(cosmology);
+
+	//Check inputs
+	check_ra_dec_cz(ND1, phi1, theta1, czD1);
+	if(autocorr==0) {
+		check_ra_dec_cz(ND2, phi2, theta2, czD2);
+	}
+	
+	
+	/***********************
    *initializing the  bins
    ************************/
   double *rupp;
@@ -77,171 +143,221 @@ results_countpairs_data * countpairs_data(const int64_t N1, const DOUBLE *theta1
   assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
   assert(nrpbin > 0 && "Number of rp bins is valid");
 
+      
+  //Change cz into co-moving distance
+  DOUBLE *d1     = my_malloc(sizeof(*d1),ND1);
+	DOUBLE *d2 = NULL;
+	if(autocorr==0) {
+		d2     = my_malloc(sizeof(*d2),ND2);
+	} else {
+		d2 = d1;
+	}
+	
+  {
+    //Setup variables to do the cz->comoving distance
+    int Nzdc;
+    double *zz,*ddc;
+    zz=my_calloc(sizeof(*zz),COSMO_DIST_SIZE);
+    ddc=my_calloc(sizeof(*ddc),COSMO_DIST_SIZE);
+    Nzdc = set_cosmo_dist(MAX_REDSHIFT_FOR_COSMO_DIST, COSMO_DIST_SIZE, zz, ddc, cosmology);
 
+    gsl_interp *interpolation;
+    gsl_interp_accel *accelerator;
+		const DOUBLE inv_speed_of_light = 1.0/SPEED_OF_LIGHT;
+    accelerator =  gsl_interp_accel_alloc();
+    interpolation = gsl_interp_alloc (gsl_interp_linear,Nzdc);
+    gsl_interp_init(interpolation, zz, ddc, Nzdc);
+    for(int64_t i=0;i<ND1;i++) {
+      d1[i] = gsl_interp_eval(interpolation, zz, ddc, czD1[i]*inv_speed_of_light, accelerator);
+    }
+
+		if(autocorr==0) {
+			for(int64_t i=0;i<ND2;i++) {
+				d2[i] = gsl_interp_eval(interpolation, zz, ddc, czD2[i]*inv_speed_of_light, accelerator);
+			}
+		}
+    free(zz);free(ddc);
+    gsl_interp_free(interpolation);
+    gsl_interp_accel_free(accelerator);
+  }
+
+	//Now I am going to sort the d1 array into increasing order. 
+/* #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,theta1,i,j); \ */
+/* 		SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,d1,i,j);											\ */
+/* 		SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,phi1,i,j) } */
+	
+/* 	SGLIB_ARRAY_HEAP_SORT(DOUBLE, d1, ND1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER); */
+
+	
   /*---Gridlink-variables----------------*/
   int ngrid;
-  cellarray_data * restrict cellstruct;
-
-  uint64_t npairs[(nrpbin+1)*(npibin+1)];
-  DOUBLE rpavg[(nrpbin+1)*(npibin+1)];
-  int index=0;
-  for(int i=0; i <= nrpbin;i++) {
-    for(int j=0;j <= npibin;j++) {
-      /* fprintf(stderr,"rpbin = %d pibin = %d index = %d\n",i,j,index); */
-      npairs[index] = 0;
-      rpavg[index] = 0.0;
-      index++;
-    }
+	const int totnbins = (nrpbin+1)*(npibin+1);
+#ifndef USE_OMP	
+  uint64_t npairs[totnbins];
+#ifdef OUTPUT_RPAVG	
+  DOUBLE rpavg[totnbins];
+#endif	
+  for(int i=0; i <totnbins;i++) {
+		npairs[i] = 0;
+#ifdef OUTPUT_RPAVG		
+		rpavg[i] = 0.0;
+#endif		
   }
-  
+#else //USE_OMP
+	omp_set_num_threads(numthreads);
+	uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, totnbins);
+#ifdef OUTPUT_RPAVG
+	DOUBLE **all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
+#endif
+#endif //USE_OMP
+	
   DOUBLE sqr_rpmin = rpmin*rpmin;
   DOUBLE sqr_rpmax = rpmax*rpmax;
   DOUBLE sqr_pimax = pimax*pimax;
   
-  logrpmin = LOG2(rpmin) ;
-  logrpmax = LOG2(rpmax) ;
-  dlogrp = (logrpmax-logrpmin)/(DOUBLE)nrpbin ;
-  inv_dlogrp = 1.0/dlogrp;
-
   dpi = pimax/(DOUBLE)npibin ;
   inv_dpi = 1.0/dpi;
-  
-#ifdef USE_AVX
-  DOUBLE rupp_sqr[nrpbin+1];
-  AVX_FLOATS m_rupp_sqr[nrpbin+1];
+	DOUBLE rupp_sqr[nrpbin];
   rupp_sqr[0] = sqr_rpmin;
-  for(int i=0;i<=nrpbin;i++) {
+  for(int i=0;i<nrpbin;i++) {
     rupp_sqr[i] = rupp[i]*rupp[i];
+	}	
+
+#ifdef USE_AVX
+  AVX_FLOATS m_rupp_sqr[nrpbin];
+	AVX_FLOATS m_kbin[nrpbin];
+  for(int i=0;i<nrpbin;i++) {
     m_rupp_sqr[i] = AVX_SET_FLOAT(rupp_sqr[i]);
+		m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
   }
-  /* AVX_FLOATS m_piupp_sqr[npibin+1]; */
-  /* m_piupp_sqr[0] = AVX_SET_FLOAT((DOUBLE) 0.0); */
-  /* for(int i=1;i<=npibin;i++) { */
-  /*   DOUBLE this_pi = i*dpi; */
-  /*   m_piupp_sqr[i] = AVX_SET_FLOAT(this_pi*this_pi); */
-  /* } */
 #endif
     
   
-  
   /*---Prepare-Data2--------------------------------*/
-
 #ifdef LINK_IN_DEC
   DOUBLE dec_min=90.0,dec_max=-90.0;
 #endif
 
-#ifdef LINK_IN_RA
-  DOUBLE ra_min=360.0,ra_max=0.0;
-#endif
-  
 
   DOUBLE d2min=1000. ;
   DOUBLE d2max=0. ;
 
-  get_max_min_data(N1, d1, &d2min, &d2max,
+  get_max_min_data(ND1, d1, &d2min, &d2max
 #ifdef LINK_IN_DEC
-				   theta1,
-				   &dec_min,&dec_max,
+									 ,theta1,&dec_min,&dec_max
 #endif
-
-#ifdef LINK_IN_RA
-				   phi1,
-				   &ra_min,&ra_max
-#endif
-				   );
+		);
   
   if(autocorr==0) {
-	get_max_min_data(N2, d2, &d2min, &d2max,
+		get_max_min_data(ND2, d2, &d2min, &d2max
 #ifdef LINK_IN_DEC
-					 theta2,
-					 &dec_min,&dec_max,
+										 ,theta2,&dec_min,&dec_max
 #endif
-					 
-#ifdef LINK_IN_RA
-					 phi2,
-					 &ra_min,&ra_max
-#endif
-					 );
+			);
   }
-
 
   ngrid=0;
   int max_n;
-  cellarray_data *lattice1=NULL,*lattice2=NULL;
-  int64_t totncells;
 
 #ifdef LINK_IN_DEC
   int *ngrid_dec;
   const DOUBLE dec_diff = dec_max - dec_min;
   const DOUBLE inv_dec_diff=1.0/dec_diff;
   /* fprintf(stderr,"dec_min = %lf dec_max = %lf\n",dec_min,dec_max); */
-#ifndef LINK_IN_RA  
-  lattice2 = gridlink2D(N2,d2min,d2max,pimax,
-						dec_min,dec_max,rpmax,
-						theta2,phi2,
-						d2, theta2,
-						&ngrid, &ngrid_dec, &max_n);
+#ifndef LINK_IN_RA
+
+	cellarray_mocks **lattice2 = gridlink2D(ND2,d2min,d2max,pimax,
+																					dec_min,dec_max,rpmax,
+																					d2,	theta2, phi2, 
+																					&ngrid, &ngrid_dec, &max_n,
+																					rbin_refine_factor,
+																					zbin_refine_factor);
+
 #else
   //Linking in cz, Dec, RA
-  DOUBLE inv_ra_diff=1.0/(ra_max-ra_min);
+	const DOUBLE ra_max=360.0,ra_min=0.0;
+  const DOUBLE inv_ra_diff=1.0/(ra_max-ra_min);
   int **ngrid_ra=NULL;
   /* fprintf(stderr,"ra_min = %lf ra_max = %lf\n",ra_min,ra_max); */
-  lattice2 = gridlink3D(N2,d2min,d2max,pimax,
-					   dec_min,dec_max,rpmax,
-					   theta2,phi2,
-					   d2,
-					   theta2,
-					   &ngrid,
-					   &ngrid_dec,
-					   phi2, ra_min,ra_max,
-					   &ngrid_ra,
-					   &max_n);
+  cellarray_mocks ***lattice2 = gridlink3D(ND2,d2min,d2max,pimax,
+																					 dec_min,dec_max,rpmax,
+																					 d2, theta2, phi2,
+																					 &ngrid,
+																					 &ngrid_dec,
+																					 ra_min,ra_max,
+																					 &ngrid_ra,
+																					 &max_n,
+																					 phibin_refine_factor,
+																					 rbin_refine_factor,
+																					 zbin_refine_factor);
 
 #endif
   //Need cz_binsize for LINK_IN_DEC option
-  const DOUBLE cz_binsize=(d2max-d2min)/ngrid;
+  /* const DOUBLE cz_binsize=(d2max-d2min)/ngrid; */
 #else
   //Only linking in cz
-  lattice2 = gridlink1D(N2, d2min, d2max, pimax, theta2, phi2, d2, &ngrid, &max_n);
-  fprintf(stderr,"countpairs> gridlink1D done. ngrid= %d max_n = %d\n",ngrid,max_n);
+  cellarray_mocks *lattice2 = gridlink1D(ND2, d2min, d2max, pimax, theta2, phi2, d2, &ngrid, &max_n,zbin_refine_factor);
 #endif
 
+	/* const DOUBLE cz_binsize=(d2max-d2min)/ngrid; */
+	const DOUBLE inv_cz_binsize=ngrid/(d2max-d2min);
 
-  int interrupted=0;
-  init_my_progressbar(N1,&interrupted);
+  int interrupted=0,numdone=0;
+  init_my_progressbar(ND1,&interrupted);
   
+#ifdef USE_OMP
+#pragma omp parallel shared(numdone)
+	{
+		const int tid = omp_get_thread_num();
+		uint64_t npairs[totnbins];
+		for(int i=0;i<totnbins;i++) npairs[i] = 0;
+#ifdef OUTPUT_RPAVG
+		DOUBLE rpavg[totnbins];
+		for(int i=0;i<totnbins;i++) rpavg[i] = 0.0;
+#endif
+
+#pragma omp for  schedule(dynamic)
+#endif
   /*---Loop-over-Data1-particles--------------------*/
-  for(int i=0;i<N1;i++) {
-    my_progressbar(i,&interrupted);
-	
-    const DOUBLE x1 = d1[i]*COS(theta1[i]*PI_OVER_180)*COS(phi1[i]*PI_OVER_180) ;
-	const DOUBLE y1 = d1[i]*COS(theta1[i]*PI_OVER_180)*SIN(phi1[i]*PI_OVER_180) ;
-    const DOUBLE z1 = d1[i]*SIN(theta1[i]*PI_OVER_180) ;
+  for(int i=0;i<ND1;i++) {
+#ifdef USE_OMP
+		if (omp_get_thread_num() == 0)
+#endif
+			my_progressbar(numdone,&interrupted);
+		
+		
+#ifdef USE_OMP
+#pragma omp atomic
+#endif
+		numdone++;
+		
+    const DOUBLE x1 = d1[i]*COSD(theta1[i])*COSD(phi1[i]) ;
+		const DOUBLE y1 = d1[i]*COSD(theta1[i])*SIND(phi1[i]) ;
+    const DOUBLE z1 = d1[i]*SIND(theta1[i]) ;
 
     /*---Deterpmine-central-grid-cell-of-search--------*/
-    int icen = (int)(ngrid*(d1[i]-d2min)/(d2max-d2min)) ;
+    int icen = (int)((d1[i]-d2min)*inv_cz_binsize) ;
     if(icen<0) icen = 0 ;
     if(icen>=ngrid) icen = ngrid-1 ;
     
-    int min_iz,max_iz;
-    min_iz = (icen - zbin_refine_factor) <= 0 ? 0:icen - zbin_refine_factor;
-    max_iz = (icen + zbin_refine_factor) >= (ngrid-1) ? (ngrid-1):icen + zbin_refine_factor;
+    const int min_iz = (icen - zbin_refine_factor) <= 0 ? 0:icen - zbin_refine_factor;
+    const int max_iz = (icen + zbin_refine_factor) >= (ngrid-1) ? (ngrid-1):icen + zbin_refine_factor;
 
     /*---Loop-over-surrounding-cells----------------*/
     for(int icell=min_iz;icell<=max_iz;icell++) {
 #ifdef LINK_IN_DEC
 
       DOUBLE decpos = theta1[i];
-      /* double dmin_iz = (icell < icen) ? icell:icen; */
+      /* DOUBLE dmin_iz = (icell < icen) ? icell:icen; */
       /* dmin_iz *= (d2max-d2min)/ngrid; */
       /* dmin_iz += d2min; */
-      DOUBLE dmin_iz = d2min + ((icen + icell)*cz_binsize)*0.5;
+      /* DOUBLE dmin_iz = d2min + ((icen + icell)*cz_binsize)*0.5; */
       /* double theta = rpmax/(2.0*dmin_iz); */
-      DOUBLE max_dec_sep=asin(rpmax/(2*dmin_iz))*2.0*INV_PI_OVER_180;
-      int dec_limits = (int) (ceil(max_dec_sep*inv_dec_diff*ngrid_dec[icell]));
+      /* DOUBLE max_dec_sep=ASIN(theta)*2.0*INV_PI_OVER_180; */
+      /* int dec_limits = (int) (ceil(max_dec_sep*inv_dec_diff*ngrid_dec[icell])); */
       /* fprintf(stderr,"icen = %d ngrid_dec[%d] = %d rbin_refine_factor=%d dec_limits=%d\n", */
       /* 	      icen,icell,ngrid_dec[icell],RBIN_REFINE_FACTOR,dec_limits); */
-      /* int dec_limits = RBIN_REFINE_FACTOR; */
+      int dec_limits = rbin_refine_factor;
       int dec_iz = (int)(ngrid_dec[icell]*(decpos-dec_min)*inv_dec_diff);
       if(dec_iz>=ngrid_dec[icell]) dec_iz-- ;
       if(!( dec_iz >=0 && dec_iz < ngrid_dec[icell])) {
@@ -250,248 +366,359 @@ results_countpairs_data * countpairs_data(const int64_t N1, const DOUBLE *theta1
       assert(dec_iz >=0 && dec_iz < ngrid_dec[icell] && "Declination inside bounds");
       const int min_dec = (dec_iz - dec_limits) <= 0 ? 0:dec_iz - dec_limits;
       const int max_dec = (dec_iz + dec_limits) >= (ngrid_dec[icell]-1) ? (ngrid_dec[icell]-1):dec_iz + dec_limits;
-
 	  
       for(int idec=min_dec;idec<=max_dec;idec++) {
 #ifdef LINK_IN_RA	
-		DOUBLE rapos = phi1[i];
-		int ra_iz = (int)(ngrid_ra[icell][idec]*(rapos-ra_min)*inv_ra_diff);
-		if (ra_iz >= ngrid_ra[icell][idec]) ra_iz--;
-		assert(ra_iz >= 0  && ra_iz < ngrid_ra[icell][idec] && "RA position within bounds");
-		int ra_limits = PHI_BIN_REFINE_FACTOR;
-		for(int ira_step=-ra_limits;ira_step<=ra_limits;ira_step++) {
-		  int ira = (ra_iz + ira_step + ngrid_ra[icell][idec]) % ngrid_ra[icell][idec];
-		  //Linked in CZ, DEC and RA
-		  cellstruct = &(lattice[icell][idec][ira]);
+				DOUBLE rapos = phi1[i];
+				int ra_iz = (int)(ngrid_ra[icell][idec]*(rapos-ra_min)*inv_ra_diff);
+				if (ra_iz >= ngrid_ra[icell][idec]) ra_iz--;
+				assert(ra_iz >= 0  && ra_iz < ngrid_ra[icell][idec] && "RA position within bounds");
+				int ra_limits = phibin_refine_factor;
+				for(int ira_step=-ra_limits;ira_step<=ra_limits;ira_step++) {
+					int ira = (ra_iz + ira_step + ngrid_ra[icell][idec]) % ngrid_ra[icell][idec];
+					//Linked in CZ, DEC and RA
+					const cellarray_mocks *cellstruct = &(lattice2[icell][idec][ira]);
 #else
-		  //Linked in CZ + DEC
-		  cellstruct = &(lattice[icell][idec]);
+					//Linked in CZ + DEC
+					const cellarray_mocks *cellstruct = &(lattice2[icell][idec]);
 #endif
 		  
 #else
-		  //LINKED only in CZ
-		  cellstruct = &(lattice[icell]);
+					//LINKED only in CZ
+					const cellarray_mocks *cellstruct = &(lattice2[icell]);
 #endif      
-		  const DOUBLE *x2  = cellstruct->x;
-		  const DOUBLE *y2  = cellstruct->y;
-		  const DOUBLE *z2  = cellstruct->z;
-		  const DOUBLE *cz2 = cellstruct->cz;
-		  /* gettimeofday(&t0,NULL); */
-		  
-		  /* DOUBLE Dpar,Dperp; */
-		  /* DOUBLE parx,pary,parz,perpx,perpy,perpz,tmp; */
-		  /* DOUBLE HALF=0.5; */
-		  DOUBLE TWO=2.0;
-		  /* int rpbin,pibin; */
-		  DOUBLE sqr_d1 = d1[i]*d1[i];
-		  /* int last_rpbin = (nrpbin-1)*(npibin+1); */
-		  
+					const DOUBLE *x2  = cellstruct->x;
+					const DOUBLE *y2  = cellstruct->y;
+					const DOUBLE *z2  = cellstruct->z;
+					const DOUBLE *cz2 = cellstruct->cz;
+					const DOUBLE TWO=2.0;
+					const DOUBLE sqr_d1 = d1[i]*d1[i];
 		  
 #ifndef USE_AVX
-		  int64_t j;
-		  for(j=0;j<=(cellstruct->nelements-NVEC);j+=NVEC) {
-			/* 					  int vec_rpbins[NVEC]; */
-			int vec_pibins[NVEC];
-			DOUBLE Dperp[NVEC];
-#pragma simd vectorlengthfor(DOUBLE)
-			for(int jj=0;jj<NVEC;jj++) {
-			  DOUBLE sqr_cz = cz2[j+jj]*cz2[j+jj];
-			  DOUBLE tmp = (sqr_d1 - sqr_cz);
-			  DOUBLE xy_costheta = x1*x2[j+jj] + y1*y2[j+jj] + z1*z2[j+jj];
-			  DOUBLE tmp1 = (sqr_d1 + sqr_cz + TWO*xy_costheta);
-			  DOUBLE Dpar = SQR(tmp)/tmp1;
-			  vec_pibins[jj] = (Dpar >= sqr_pimax) ? npibin:(int) (SQRT(Dpar)*inv_dpi);
-			  DOUBLE tmp2 = sqr_d1 + sqr_cz -TWO*xy_costheta - Dpar;
-			  Dperp[jj]  = (Dpar >= sqr_pimax || tmp2 >= sqr_rpmax || tmp2 < sqr_rpmin) ? 0.0: tmp2;
-			  /* 							vec_rpbins[jj] = (Dperp[jj] >= sqr_rpmax || Dperp[jj] < sqr_rpmin) ? nrpbin:(int)((LOG2(Dperp[jj])*0.5-logrpmin)*inv_dlogrp); */
-			}
-			
-#pragma unroll(NVEC)
-			for(int jj=0;jj<NVEC;jj++) {
-			  
-			  npairs[vec_rpbins[jj]*(npibin+1) + vec_pibins[jj]]++;
-			  rpavg[vec_rpbins[jj]*(npibin+1) + vec_pibins[jj]]+= SQRT(Dperp[jj]);
-			}
-		  }
+					for(int j=0;j<cellstruct->nelements;j++) {
+						const DOUBLE sqr_cz = cz2[j]*cz2[j];
+						const DOUBLE tmp = (sqr_d1 - sqr_cz);
+						const DOUBLE xy_costheta = x1*x2[j] + y1*y2[j] + z1*z2[j];
+						const DOUBLE tmp1 = (sqr_d1 + sqr_cz + TWO*xy_costheta);
+						const DOUBLE Dpar = (tmp*tmp)/tmp1;
+						if (Dpar >= sqr_pimax) continue;
+						
+						const int pibin = (int) (SQRT(Dpar)*inv_dpi);
+						const DOUBLE sqr_Dperp = sqr_d1 + sqr_cz -TWO*xy_costheta - Dpar;
+						if(sqr_Dperp >= sqr_rpmax || sqr_Dperp <= sqr_rpmin) continue;
+
+#ifdef OUTPUT_RPAVG
+						const DOUBLE rp = SQRT(sqr_Dperp);
+#endif
+						for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+							if(sqr_Dperp >= rupp_sqr[kbin-1]) {
+								const int ibin = kbin*(npibin+1) + pibin;
+								npairs[ibin]++;
+#ifdef OUTPUT_RPAVG
+								rpavg[ibin]+=rp;
+#endif
+								break;
+							}
+						}
+					}
+
 #else //Use AVX intrinsics
-		  AVX_FLOATS m_xpos    = AVX_BROADCAST_FLOAT(&x1);
-		  AVX_FLOATS m_ypos    = AVX_BROADCAST_FLOAT(&y1);
-		  AVX_FLOATS m_zpos    = AVX_BROADCAST_FLOAT(&z1);
-		  AVX_FLOATS m_sqr_d1  = AVX_BROADCAST_FLOAT(&sqr_d1);
-		  union int8 {
-			AVX_INTS m_ibin;
-			int ibin[NVEC];
-		  };
-		  union int8 union_rpbin;
-		  union int8 union_pibin;
-		  
-		  union float8{
-			AVX_FLOATS m_Dperp;
-			DOUBLE Dperp[NVEC];
-		  };
-		  union float8 union_mDperp;
-					
-		  /* AVX_FLOATS m_half = AVX_SET_FLOAT(HALF); */
-		  /* AVX_FLOATS m_quarter = AVX_SET_FLOAT((DOUBLE) 0.25); */
-		  AVX_FLOATS m_sqr_pimax  = AVX_SET_FLOAT(sqr_pimax);
-		  AVX_FLOATS m_sqr_rpmax  = AVX_SET_FLOAT(sqr_rpmax);
-		  AVX_FLOATS m_sqr_rpmin  = AVX_SET_FLOAT(sqr_rpmin);
-		  /* AVX_FLOATS m_logrpmin   = AVX_SET_FLOAT(logrpmin); */
-		  /* AVX_FLOATS m_inv_dlogrp = AVX_SET_FLOAT(inv_dlogrp); */
-		  AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
-		  /* AVX_FLOATS m_nrpbin     = AVX_SET_FLOAT((DOUBLE) nrpbin); */
-		  AVX_FLOATS m_zero       = AVX_SET_FLOAT((DOUBLE) 0.0);
-		  
-		  for(j=0;j<=(cellstruct->nelements-NVEC);j+=NVEC){
-			AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
-			AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
-			AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
-			AVX_FLOATS m_cz2 = AVX_LOAD_FLOATS_UNALIGNED(&cz2[j]);
-			AVX_FLOATS m_sqr_cz2 = AVX_SQUARE_FLOAT(m_cz2); 
-			AVX_FLOATS m_sum_of_norms = AVX_ADD_FLOATS(m_sqr_d1,m_sqr_cz2);
-			AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);	    
+					AVX_FLOATS m_xpos    = AVX_SET_FLOAT(x1);
+					AVX_FLOATS m_ypos    = AVX_SET_FLOAT(y1);
+					AVX_FLOATS m_zpos    = AVX_SET_FLOAT(z1);
+					AVX_FLOATS m_sqr_d1  = AVX_SET_FLOAT(sqr_d1);
+					union int8 {
+						AVX_INTS m_ibin;
+						int ibin[NVEC];
+					};
+					union int8 union_rpbin;
+					union int8 union_pibin;
+
+#ifdef OUTPUT_RPAVG					
+					union float8{
+						AVX_FLOATS m_Dperp;
+						DOUBLE Dperp[NVEC];
+					};
+					union float8 union_mDperp;
+#endif					
+					/* AVX_FLOATS m_half = AVX_SET_FLOAT(HALF); */
+					/* AVX_FLOATS m_quarter = AVX_SET_FLOAT((DOUBLE) 0.25); */
+					AVX_FLOATS m_sqr_pimax  = AVX_SET_FLOAT(sqr_pimax);
+					AVX_FLOATS m_sqr_rpmax  = AVX_SET_FLOAT(sqr_rpmax);
+					AVX_FLOATS m_sqr_rpmin  = AVX_SET_FLOAT(sqr_rpmin);
+					/* AVX_FLOATS m_logrpmin   = AVX_SET_FLOAT(logrpmin); */
+					/* AVX_FLOATS m_inv_dlogrp = AVX_SET_FLOAT(inv_dlogrp); */
+					AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
+					/* AVX_FLOATS m_nrpbin     = AVX_SET_FLOAT((DOUBLE) nrpbin); */
+					AVX_FLOATS m_zero       = AVX_SET_FLOAT((DOUBLE) 0.0);
+
+					int j;
+					for(j=0;j<=(cellstruct->nelements-NVEC);j+=NVEC){
+						AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
+						AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
+						AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
+						AVX_FLOATS m_cz2 = AVX_LOAD_FLOATS_UNALIGNED(&cz2[j]);
+						AVX_FLOATS m_sqr_cz2 = AVX_SQUARE_FLOAT(m_cz2); 
+						AVX_FLOATS m_sum_of_norms = AVX_ADD_FLOATS(m_sqr_d1,m_sqr_cz2);
+						AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);	    
+				
+						AVX_FLOATS m_twice_xy_costheta;
+						{
+							AVX_FLOATS m_tmp1 = AVX_MULTIPLY_FLOATS(m_xpos,m_x2);
+							AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_ypos,m_y2);
+							AVX_FLOATS m_tmp3 = AVX_ADD_FLOATS(m_tmp1,m_tmp2);
+							AVX_FLOATS m_tmp4 = AVX_MULTIPLY_FLOATS(m_zpos,m_z2);
+							m_twice_xy_costheta = AVX_ADD_FLOATS(m_tmp3,m_tmp4);
+							m_twice_xy_costheta = AVX_ADD_FLOATS(m_twice_xy_costheta,m_twice_xy_costheta);
+						}
 			
-			AVX_FLOATS m_twice_xy_costheta;
-			{
-			  AVX_FLOATS m_tmp1 = AVX_MULTIPLY_FLOATS(m_xpos,m_x2);
-			  AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_ypos,m_y2);
-			  AVX_FLOATS m_tmp3 = AVX_ADD_FLOATS(m_tmp1,m_tmp2);
-			  AVX_FLOATS m_tmp4 = AVX_MULTIPLY_FLOATS(m_zpos,m_z2);
-			  m_twice_xy_costheta = AVX_ADD_FLOATS(m_tmp3,m_tmp4);
-			  m_twice_xy_costheta = AVX_ADD_FLOATS(m_twice_xy_costheta,m_twice_xy_costheta);
-			}
+						AVX_FLOATS m_Dpar;
+						{
+							/* AVX_FLOATS m_tmp  = AVX_MULTIPLY_FLOATS(m_half,AVX_SUBTRACT_FLOATS(m_sqr_d1,m_sqr_cz2)); */
+							AVX_FLOATS m_tmp  = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_sqr_d1,m_sqr_cz2));
+							AVX_FLOATS m_tmp1 = AVX_ADD_FLOATS(m_sum_of_norms,m_twice_xy_costheta);
+#ifndef FAST_DIVIDE
+							m_Dpar = AVX_DIVIDE_FLOATS(m_tmp,m_tmp1);
+							//The divide is the actual operation we need
+							// but divides are about 10x slower than multiplies. So, I am replacing it
+							//with a approximate reciprocal in floating point
+							// + 2 iterations of newton-raphson in case of DOUBLE
+#else //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
+#ifndef DOUBLE_PREC
+							//Taken from Intel's site: https://software.intel.com/en-us/articles/wiener-filtering-using-intel-advanced-vector-extensions
+							// (which has bugs in it, just FYI). Plus, https://techblog.lankes.org/2014/06/16/avx-isnt-always-faster-then-see/
+							__m256 rc  = _mm256_rcp_ps(m_tmp1);
+							__m256 two = AVX_SET_FLOAT(2.0f);
+							__m256 rc1 = _mm256_mul_ps(rc,
+																				 _mm256_sub_ps(two,
+																											 _mm256_mul_ps(m_tmp1,rc)));
+							
+							__m256 rc2 = _mm256_mul_ps(rc1,
+																				 _mm256_sub_ps(two,
+																											 _mm256_mul_ps(m_tmp1,rc1)));
+							
+							m_Dpar = _mm256_mul_ps ( m_tmp , rc2 );
+							
+#else
+							//we have to do this for doubles now.
+							//if the vrcpps instruction is generated, there will
+							//be a ~70 cycle performance hit from switching between
+							//AVX and SSE modes.
+							__m128 float_tmp1 =  _mm256_cvtpd_ps(m_tmp1);
+							__m128 float_inv_tmp1 = _mm_rcp_ps(float_tmp1);
+							AVX_FLOATS rc = _mm256_cvtps_pd(float_inv_tmp1);
+
+							//We have the double->float->approx. reciprocal->double process done.
+							//Now improve the accuracy of the divide with newton-raphson.
+
+							//Ist iteration of NewtonRaphson
+							AVX_FLOATS two = AVX_SET_FLOAT(2.0);
+							AVX_FLOATS rc1 = _mm256_mul_pd(rc,
+																						 _mm256_sub_pd(two,
+																													 _mm256_mul_pd(m_tmp1,rc)));
+							//2nd iteration of NewtonRaphson
+							AVX_FLOATS rc2 = _mm256_mul_pd(rc1,
+																						 _mm256_sub_pd(two,
+																													 _mm256_mul_pd(m_tmp1,rc1)));
+							m_Dpar = AVX_MULTIPLY_FLOATS(m_tmp,rc2);
+#endif//DOUBLE_PREC
+							
+
+#endif//FAST_DIVIDE 
+						}
+							
+						AVX_FLOATS m_Dperp;
+						{
+							AVX_FLOATS m_tmp1 = AVX_SUBTRACT_FLOATS(m_sum_of_norms,m_twice_xy_costheta);
+							m_Dperp = AVX_SUBTRACT_FLOATS(m_tmp1,m_Dpar);
+						}
 			
-			AVX_FLOATS m_Dpar;
-			{
-			  /* AVX_FLOATS m_tmp  = AVX_MULTIPLY_FLOATS(m_half,AVX_SUBTRACT_FLOATS(m_sqr_d1,m_sqr_cz2)); */
-			  AVX_FLOATS m_tmp  = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_sqr_d1,m_sqr_cz2));
-			  AVX_FLOATS m_tmp1 = AVX_ADD_FLOATS(m_sum_of_norms,m_twice_xy_costheta);
-			  /* AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_quarter,m_tmp1); */
-			  m_Dpar = AVX_DIVIDE_FLOATS(m_tmp,m_tmp1);
-			}
-			
-			/* AVX_FLOATS m_Dpar  = AVX_MULTIPLY_FLOATS(m_tmp,AVX_RECIPROCAL_FLOATS(m_tmp1)); */
-			AVX_FLOATS m_Dperp;
-			{
-			  AVX_FLOATS m_tmp1 = AVX_SUBTRACT_FLOATS(m_sum_of_norms,m_twice_xy_costheta);
-			  m_Dperp = AVX_SUBTRACT_FLOATS(m_tmp1,m_Dpar);
-			}
-			
-			AVX_FLOATS m_mask;
-			{
-			  {
-				AVX_FLOATS m_tmp1 = AVX_COMPARE_FLOATS(m_Dpar,m_sqr_pimax,_CMP_LT_OS);
-				AVX_FLOATS m_tmp2 = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmax,_CMP_LT_OS);
-				AVX_FLOATS m_tmp3 = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmin,_CMP_GE_OS);
-				AVX_FLOATS m_tmp4 = AVX_BITWISE_AND(m_tmp1,m_tmp2);
-				m_mask = AVX_BITWISE_AND(m_tmp3,m_tmp4);
-				int test = AVX_TEST_COMPARISON(m_mask);
-				if(test==0)
-				  continue;
-			  }
-			  m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,m_Dperp,m_mask);
-			  m_Dpar  = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_pimax,m_Dpar,m_mask);
-			  union_mDperp.m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,AVX_SQRT_FLOAT(m_Dperp),m_mask);
+						AVX_FLOATS m_mask;
+						{
+							{
+								AVX_FLOATS m_tmp1 = AVX_COMPARE_FLOATS(m_Dpar,m_sqr_pimax,_CMP_LT_OS);
+								AVX_FLOATS m_tmp2 = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmax,_CMP_LT_OS);
+								AVX_FLOATS m_tmp3 = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmin,_CMP_GE_OS);
+								AVX_FLOATS m_tmp4 = AVX_BITWISE_AND(m_tmp1,m_tmp2);
+								m_mask = AVX_BITWISE_AND(m_tmp3,m_tmp4);
+								int test = AVX_TEST_COMPARISON(m_mask);
+								if(test==0)
+									continue;
+							}
+							m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,m_Dperp,m_mask);
+							m_Dpar  = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_pimax,m_Dpar,m_mask);
+#ifdef OUTPUT_RPAVG
+							union_mDperp.m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,AVX_SQRT_FLOAT(m_Dperp),m_mask);
+#endif							
 			  
-			  {
-				AVX_FLOATS m_mask_left = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmax,_CMP_LT_OS);
-				AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) nrpbin);
-				for(int kbin=nrpbin-1;kbin>=0;kbin--) {
-				  AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_Dperp,m_rupp_sqr[kbin],_CMP_GE_OS);
-				  AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
-				  AVX_FLOATS m_bin = AVX_SET_FLOAT((DOUBLE) kbin);
-				  m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_bin, m_bin_mask);
-				  m_mask_left = AVX_COMPARE_FLOATS(m_Dperp, m_rupp_sqr[kbin],_CMP_LT_OS);
-				  int test = AVX_TEST_COMPARISON(m_mask_left);
-				  if(test==0)
-					break;
-				}
-				union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
-			  }
+							{
+								AVX_FLOATS m_mask_left = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmax,_CMP_LT_OS);
+								AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) nrpbin);
+								for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+									const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_Dperp,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+									const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
+									m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+									m_mask_left = AVX_COMPARE_FLOATS(m_Dperp, m_rupp_sqr[kbin-1],_CMP_LT_OS);
+									int test = AVX_TEST_COMPARISON(m_mask_left);
+									if(test==0)	break;
+								}
+								union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
+							}
 			  
-			  {
-				AVX_FLOATS m_tmp1 = AVX_SQRT_FLOAT(m_Dpar);
-				AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_tmp1,m_inv_dpi);
-				AVX_FLOATS m_pibin = AVX_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
-				union_pibin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_pibin);
-			  }
-			}
-			
+							{
+								AVX_FLOATS m_tmp1 = AVX_SQRT_FLOAT(m_Dpar);
+								AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_tmp1,m_inv_dpi);
+								AVX_FLOATS m_pibin = AVX_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
+								union_pibin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_pibin);
+							}
+						}
+#if  __INTEL_COMPILER			
 #pragma unroll(NVEC)
-			for(int jj=0;jj<NVEC;jj++) {
-			  npairs[union_rpbin.ibin[jj]*(npibin+1) + union_pibin.ibin[jj]]++;
-			  rpavg [union_rpbin.ibin[jj]*(npibin+1) + union_pibin.ibin[jj]] += union_mDperp.Dperp[jj];
-			  /* fprintf(stderr,"i=%d j=%d union_rpbin.ibin[jj] = %d union_pibin.ibin[jj] = %d\n",i,j,union_rpbin.ibin[jj],union_pibin.ibin[jj]); */
-			}
-		  }
-#endif	//END of the AVX/NO-AVX section
+#endif			
+						for(int jj=0;jj<NVEC;jj++) {
+							const int ibin = union_rpbin.ibin[jj]*(npibin+1) + union_pibin.ibin[jj];
+							npairs[ibin]++;
+#ifdef OUTPUT_RPAVG							
+							rpavg [ibin] += union_mDperp.Dperp[jj];
+#endif							
+							/* fprintf(stderr,"i=%d j=%d union_rpbin.ibin[jj] = %d union_pibin.ibin[jj] = %d\n",i,j,union_rpbin.ibin[jj],union_pibin.ibin[jj]); */
+						}
+					}
 		  
-		  //Take care of the rest
-		  for(;j<cellstruct->nelements;j++) {
-			int rpbin,pibin;
-			DOUBLE sqr_cz = cz2[j]*cz2[j];
-			DOUBLE tmp = (sqr_d1 - sqr_cz);
-			DOUBLE xy_costheta = x1*x2[j] + y1*y2[j] + z1*z2[j];
-			DOUBLE tmp1 = (sqr_d1 + sqr_cz + TWO*xy_costheta);
-			DOUBLE Dpar = SQR(tmp)/tmp1;
-			pibin  = (Dpar >= sqr_pimax) ? npibin:(int) (SQRT(Dpar)*inv_dpi);
-			DOUBLE tmp2  = sqr_d1 + sqr_cz -TWO*xy_costheta - Dpar;
-			DOUBLE Dperp = (Dpar >= sqr_pimax || tmp2 >= sqr_rpmax || tmp2 < sqr_rpmin) ? 0.0:tmp2;
-			rpbin  = (Dperp == 0.0) ? nrpbin:(int)((LOG2(Dperp)*0.5-logrpmin)*inv_dlogrp);
-			npairs[rpbin*(npibin+1) + pibin]++;
-			rpavg [rpbin*(npibin+1) + pibin]+=SQRT(Dperp);
-		  }
-		}
+					//Take care of the remainder
+					for(;j<cellstruct->nelements;j++) {
+						const DOUBLE sqr_cz = cz2[j]*cz2[j];
+						const DOUBLE tmp = (sqr_d1 - sqr_cz);
+						const DOUBLE xy_costheta = x1*x2[j] + y1*y2[j] + z1*z2[j];
+						const DOUBLE tmp1 = (sqr_d1 + sqr_cz + TWO*xy_costheta);
+						const DOUBLE Dpar = (tmp*tmp)/tmp1;
+						if(Dpar >= sqr_pimax) continue;
+						const int pibin  = (Dpar >= sqr_pimax) ? npibin:(int) (SQRT(Dpar)*inv_dpi);
+						const DOUBLE sqr_Dperp  = sqr_d1 + sqr_cz -TWO*xy_costheta - Dpar;
+						if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
+#ifdef OUTPUT_RPAVG
+						const DOUBLE rp = SQRT(sqr_Dperp);
+#endif						
+						for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+							if(sqr_Dperp >= rupp_sqr[kbin-1]) {
+								const int ibin = kbin*(npibin+1) + pibin;
+								npairs[ibin]++;
+#ifdef OUTPUT_RPAVG
+								rpavg[ibin]+=rp;
+#endif
+								break;
+							}
+						}
+					}
+#endif	//END of the AVX/NO-AVX section
+
 #ifdef LINK_IN_DEC
 #ifdef LINK_IN_RA
-      }
+				}//loop over ra bins
 #endif 	
-    }
+			}//loop over dec bins
 #endif      
-  }
-  finish_myprogressbar(&interrupted);
-  /* fprintf(stderr,"simd_time = %6.2lf serial_time = %6.2lf sec\n",simd_time,serial_time); */
-  index=0;
-  for(int i=0;i<=nrpbin;i++) {
-    for(int j=0;j<=npibin;j++) {
-      if(npairs[index] > 0) {
-		rpavg[index] /= (DOUBLE) npairs[index] ;
-      }
-      index++;
-    }
-  }
-	
-  for(int64_t i=0;i < totncells;i++) {
-    free(lattice1[i].x);
-    free(lattice1[i].y);
-    free(lattice1[i].z);
-    free(lattice1[i].cz);
-	if(autocorr==0) {
-	  free(lattice2[i].x);
-	  free(lattice2[i].y);
-	  free(lattice2[i].z);
-	  free(lattice2[i].cz);
+		}//icell loop over cz cells
+	}//i loop over ND1 particles
+#ifdef USE_OMP
+		for(int i=0;i<totnbins;i++) {
+			all_npairs[tid][i] = npairs[i];
+#ifdef OUTPUT_RPAVG
+			all_rpavg[tid][i] = rpavg[i];
+#endif
+		}
+
+	}//close the omp parallel region
+#endif//USE_OMP
+
+	finish_myprogressbar(&interrupted);
+
+#ifdef USE_OMP
+	uint64_t npairs[totnbins];
+#ifdef OUTPUT_RPAVG
+	DOUBLE rpavg[totnbins];
+#endif
+	for(int i=0;i<totnbins;i++) {
+		npairs[i] = 0;
+#ifdef OUTPUT_RPAVG
+		rpavg[i] = 0.0;
+#endif
 	}
-  }
-  free(lattice1);
-  if(autocorr==0) {
+	
+	for(int i=0;i<numthreads;i++) {
+		for(int j=0;j<totnbins;j++) {
+			npairs[j] += all_npairs[i][j];
+#ifdef OUTPUT_RPAVG
+			rpavg[j] += all_rpavg[i][j];
+#endif
+		}
+	}
+	matrix_free((void **) all_npairs, numthreads);
+#ifdef OUTPUT_RPAVG
+	matrix_free((void **) all_rpavg, numthreads);
+#endif
+#endif //USE_OMP
+
+
+
+#ifdef OUTPUT_RPAVG
+	for(int i=0;i<totnbins;i++){
+		if(npairs[i] > 0) {
+			rpavg[i] /= ((DOUBLE) npairs[i] );
+		}
+	}
+#endif
+	
+
+#ifndef LINK_IN_DEC
+	for(int i=0;i < ngrid;i++) {
+		free(lattice2[i].x);
+		free(lattice2[i].y);
+		free(lattice2[i].z);
+		free(lattice2[i].cz);
+	}
 	free(lattice2);
-  }
+#else
+#ifndef LINK_IN_RA
+	for(int i=0; i < ngrid; i++) {
+		for(int j=0;j<ngrid_dec[i];j++) {
+			free(lattice2[i][j].x);
+			free(lattice2[i][j].y);
+			free(lattice2[i][j].z);
+			free(lattice2[i][j].cz);
+		}
+		free(lattice2[i]);
+	}
+	free(lattice2);
+#else
+	//LINK_IN_RA
+	for(int i=0; i < ngrid; i++) {
+		for(int j=0;j< ngrid_dec[i];j++) {
+			for(int k=0;k<ngrid_ra[i][j];k++){
+				free(lattice2[i][j][k].x);
+				free(lattice2[i][j][k].y);
+				free(lattice2[i][j][k].z);
+				free(lattice2[i][j][k].cz);
+			}
+		}
+	}
+	double dec_cell  = ASIN(rpmax/(2*d2max))*2.0*INV_PI_OVER_180;
+	int max_nmesh_dec = (int)(dec_diff*rbin_refine_factor/dec_cell) ;
+	if(max_nmesh_dec > NLATMAX)
+		max_nmesh_dec = NLATMAX;
 
+	volume_free((void ***) lattice2, ngrid, max_nmesh_dec);
+	matrix_free((void **) ngrid_ra, ngrid);
+	//LINK_IN_RA
+#endif
+	free(ngrid_dec);
+#endif
 
-  //rp's are all in log2 -> convert to log10
-/*   const double inv_log10=1.0/log2(10); */
-/*   for(int i=0;i<nrpbin;i++) { */
-/*     DOUBLE logrp = logrpmin + (DOUBLE)(i+1)*dlogrp; */
-/*     for(int j=0;j<npibin;j++) { */
-/*       index = i*(npibin+1) + j; */
-/*       fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",npairs[index],rpavg[index],logrp*inv_log10,(j+1)*dpi); */
-/*     } */
-/*   } */
-
+	free(d1);
+	if(autocorr==0) free(d2);
 
   //Pack in the results
-  results_countpairs_data *results = my_malloc(sizeof(*results), 1);
+  results_countpairs_mocks *results = my_malloc(sizeof(*results), 1);
   results->nbin   = nrpbin;
   results->npibin = npibin;
   results->pimax  = pimax;
@@ -500,19 +727,20 @@ results_countpairs_data * countpairs_data(const int64_t N1, const DOUBLE *theta1
   results->rpavg  = my_malloc(sizeof(DOUBLE)  , totnbins);
 
   for(int i=0;i<nrpbin;i++) {
-	results->rupp[i] = rupp[i];
-	for(int j=0;j<npibin;j++) {
-	  index = i*(npibin+1) + j;
-	  results->npairs[index] = npairs[index];
+		results->rupp[i] = rupp[i];
+		for(int j=0;j<npibin;j++) {
+			int index = i*(npibin+1) + j;
+			results->npairs[index] = npairs[index];
 #ifdef OUTPUT_RPAVG
-	  results->rpavg[index] = rpavg[index];
+			results->rpavg[index] = rpavg[index];
 #else
-	  results->rpavg[index] = 0.0;
+			results->rpavg[index] = 0.0;
 #endif
-	}
+		}
   }
-
   free(rupp);
+
+	return results;
 }
 
 
