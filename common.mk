@@ -1,4 +1,11 @@
-### You should NOT edit this file
+### Set the compiler -- options are icc/gcc/clang. 
+CC=icc
+#### Add any compiler specific flags you want
+CFLAGS=
+#### Add any compiler specific link flags you want
+CLINK=
+
+### You should NOT edit below this line
 DISTNAME=corrfunc
 MINOR=0
 MAJOR=1

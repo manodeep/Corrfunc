@@ -12,12 +12,3 @@ OPT += -DUSE_AVX
 OPT += -DUSE_OMP
 OPT += -DFAST_DIVIDE ##replaces divide in DDrppi with approximate divides. If you really must get that extra ~20% performance boost
 #OPT += -DUSE_MKL
-
-### Set the compiler -- options are icc/gcc/clang. 
-CC=icc
-#### Add any compiler specific flags you want
-CFLAGS=
-#### Add any compiler specific link flags you want
-CLINK=
-
-

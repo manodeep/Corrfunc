@@ -1,22 +1,21 @@
 include ../../mocks.options ../../common.mk
 
-target=DDtheta wtheta
+target=DDtheta_mocks wtheta
 all: $(target) 
 
-ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
-MKL_CHECK=mkl
-endif
+# ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
+# MKL_CHECK=mkl
+# endif
 
-INCL   = countpairs_theta.h ../../io/io.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
+INCL   = countpairs_theta_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
         ../../utils/function_precision.h ../../utils/cellarray_mocks.h ../../utils/avx_calls.h \
         ../../utils/defs.h ../../utils/progressbar.h
 
-##countpairs_theta_brute_force.c 
-SRC1= DDtheta.c  countpairs_theta.c ../../utils/gridlink_mocks.c \
+SRC1= DDtheta_mocks.c  countpairs_theta_mocks.c ../../utils/gridlink_mocks.c \
 			../../utils/utils.c ../../io/io.c ../../io/ftread.c ../../utils/progressbar.c
 
 OBJS1=$(SRC1:.c=.o) 
-DDtheta: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
+DDtheta_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) -o $@ 
 
 SRC2=wtheta.c ../../utils/utils.c
@@ -30,15 +29,46 @@ wtheta: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 # countpairs_theta_brute_force.o: countpairs_theta_brute_force.c $(INCL) ../../mocks.options ../../common.mk Makefile $(MKL_CHECK)
 # 	$(CC) $(OPT) $(CFLAGS) $(BLAS_INCLUDE) $(INCLUDE) -c $< -o $@
 
-mkl:
-ifndef MKLROOT
-	$(error You have requested MKL but MKLROOT environment variable is not defined)
-endif
+# mkl:
+# ifndef MKLROOT
+# 	$(error You have requested MKL but MKLROOT environment variable is not defined)
+# endif
 
-.PHONY: clean clena celan
+libs:lib
+
+lib: libcountpairs_theta_mocks.a | ../../lib
+
+OBJS3=countpairs_theta_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o
+libcountpairs_theta_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
+	ar rcs $@ $(OBJS3)
+	cp -p $@ ../../lib/
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_theta_mocks.h > ../../include/countpairs_theta_mocks.h
+
+../../lib:
+	mkdir -p ../../lib
+
+../../bin:
+	mkdir -p ../../bin
+
+../../include:
+	mkdir -p ../../include
+
+install: $(target) | ../../bin
+	cp -p $(target) ../../bin/
+
+.PHONY: clean clena celan distclean realclean install lib libs
 
 clean:
-	rm -f $(target) $(OBJS1) $(OBJS2) 
+	$(RM) $(target) $(OBJS1) $(OBJS2) 
 
 clena: clean
 celan: clean
+
+distclean:clean | ../../lib ../../include ../../bin
+	$(RM) ../../lib/libcountpairs_theta_mocks.a ../../include/countpairs_theta_mocks.h
+	cd ../../bin && $(RM) $(target)
+
+realclean: distclean
+distclena: distclean
+realclena: distclean
+

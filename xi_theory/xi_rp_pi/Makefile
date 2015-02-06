@@ -21,9 +21,9 @@ OBJS2= wprp.o ../../utils/utils.o
 wprp: $(OBJS2) Makefile 
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS2) $(CLINK)
 
-OBJS3=countpairs_rp_pi.o ../../utils/gridlink.o ../../utils/utils.o ../../utils/progressbar.o 
 lib: libcountpairs_rp_pi.a | ../../lib
 
+OBJS3=countpairs_rp_pi.o ../../utils/gridlink.o ../../utils/utils.o ../../utils/progressbar.o 
 libcountpairs_rp_pi.a: $(OBJS3) | ../../lib ../../include
 	ar rcs $@ $(OBJS3)
 	cp -p $@ ../../lib/

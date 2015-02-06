@@ -1,4 +1,4 @@
-include ../common.mk
+include ../theory.options ../common.mk
 
 target=logbins 
 all: $(target) dirs DD DDrppi wp xi libs examples python_bindings 
@@ -73,6 +73,8 @@ install: dirs
 	$(MAKE) -C wp install
 	$(MAKE) -C xi install
 	$(MAKE) -C python_bindings install
+
+lib: libs
 
 libs: | dirs
 	$(MAKE) -C xi_of_r lib

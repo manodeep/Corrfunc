@@ -1,6 +1,6 @@
-include ../common.mk
+include ../mocks.options ../common.mk
 
-all: dirs DDrppi wtheta
+all: dirs DDrppi wtheta libs
 
 dirs:
 	mkdir -p ../lib .,/bin ../include 
