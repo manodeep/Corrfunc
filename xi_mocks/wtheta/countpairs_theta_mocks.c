@@ -15,7 +15,7 @@
 #include <math.h>
 
 #include "gridlink_mocks.h"//function proto-type for gridlink
-#include "countpairs_theta.h" //function proto-type
+#include "countpairs_theta_mocks.h" //function proto-type
 #include "cellarray_mocks.h" //definition of struct cellarray_mocks
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
@@ -82,13 +82,13 @@ void check_ra_dec(const int64_t N, DOUBLE *phi, DOUBLE *theta)
 }
 
 
-results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
-																						const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
+results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
+																									const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
 #ifdef USE_OMP
-																						const int numthreads,
+																									const int numthreads,
 #endif
-																						const int autocorr,
-																						const char *binfile)
+																									const int autocorr,
+																									const char *binfile)
 {
 
   fprintf(stderr,"Running in `%s' mode \n", autocorr == 1 ? "auto-correlation":"cross-correlation");

@@ -7,11 +7,4 @@ OPT = -DPERIODIC
 OPT += -DUSE_AVX
 OPT += -DUSE_OMP
 
-### Set the compiler -- options are icc/gcc/clang
-CC=gcc
-#### Add any compiler specific flags you want
-CFLAGS= 
-#### Add any compiler specific link flags you want
-CLINK=
-
 

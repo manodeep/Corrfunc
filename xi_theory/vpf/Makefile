@@ -10,7 +10,7 @@ INCL   = countspheres.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../.
 all: $(target) $(SRC1) $(INCL)
 
 $(target): $(OBJS1) $(INCL) ../../common.mk Makefile 
-	$(CC) $(CLINK) $(GSL_LINK) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) $(OBJS1) -o $@
+	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@
 
 %.o: %.c $(INCL) ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
@@ -21,24 +21,28 @@ countspheres.o: countspheres.c $(INCL) ../../common.mk Makefile
 SRC2   = countspheres.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  = $(SRC2:.c=.o)
 
-lib:  libcountspheres.a | ../lib
+libs: lib
+lib:  libcountspheres.a | ../../lib
 
 
-libcountspheres.a: $(OBJS2) | ../lib
+libcountspheres.a: $(OBJS2) | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
-	cp -p $@ ../lib/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countspheres.h > ../include/countspheres.h 
+	cp -p $@ ../../lib/
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countspheres.h > ../../include/countspheres.h 
 
 .PHONY: clean clena celan install lib tests 
 
-../lib:
-	mkdir -p ../lib
+../../lib:
+	mkdir -p ../../lib
 
-../bin:
-	mkdir -p ../bin
+../../include:
+	mkdir -p ../../include
 
-install: $(target) | ../bin
-	cp -p $(target) ../bin/
+../../bin:
+	mkdir -p ../../bin
+
+install: $(target) | ../../bin
+	cp -p $(target) ../../bin/
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) libcountspheres.a
