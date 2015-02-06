@@ -8,11 +8,14 @@ double HUBBLE;
 double LITTLE_H;
 double SIGMA_8;
 double NS;
-int cosmology_initialized=0;
+int cosmology=-1;
 
-void init_cosmology(const int lasdamas_cosmology)
-{	
-	if (lasdamas_cosmology == 1) {
+void init_cosmology(const int which_cosmology)
+{
+
+	switch(which_cosmology)
+	{
+	case 1: 
 		//LasDamas Cosmology
 		OMEGA_M=0.25;
 		OMEGA_B=0.04;
@@ -20,7 +23,8 @@ void init_cosmology(const int lasdamas_cosmology)
 		LITTLE_H=0.7;
 		SIGMA_8=0.8;
 		NS=1.0;
-	}	else {
+		break;
+	case 2: 
     //Planck cosmology
 		OMEGA_M=0.302;
 		OMEGA_B=0.048;
@@ -28,8 +32,13 @@ void init_cosmology(const int lasdamas_cosmology)
 		LITTLE_H=0.681;
 		SIGMA_8=0.828;
 		NS=0.96;
+		break;
+
+	default:
+		fprintf(stderr,"ERROR: Cosmology=%d not implemented..exiting\n",which_cosmology);
+		exit(EXIT_FAILURE);
 	}
 	
 	HUBBLE=100.0*LITTLE_H;
-	cosmology_initialized=1;
+	cosmology=which_cosmology;
 }

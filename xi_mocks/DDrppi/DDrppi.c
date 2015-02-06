@@ -19,15 +19,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include <gsl/gsl_interp.h>
-
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
 #include "countpairs_mocks.h" //function proto-type for countpairs
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
-#include "cosmology_params.h"
-#include "set_cosmo_dist.h"
 
 void Printhelp(void);
 
@@ -42,8 +38,8 @@ int main(int argc, char *argv[])
   /*---Data-variables--------------------*/
   int64_t ND1,ND2 ;
 
-  DOUBLE *thetaD1,*phiD1,*dD1,*czD1;
-  DOUBLE *thetaD2,*phiD2,*dD2,*czD2 ;
+  DOUBLE *thetaD1,*phiD1,*czD1;
+  DOUBLE *thetaD2,*phiD2,*czD2;
 
   struct timeval t_end,t_start,t0,t1;
   double read_time=0.0;
@@ -85,10 +81,8 @@ int main(int argc, char *argv[])
 
   pimax=40.0;
   sscanf(argv[6],"%"DOUBLE_FORMAT,&pimax) ;
-
   cosmology = atoi(argv[7]);
-  init_cosmology(cosmology);
-
+	
 #ifdef USE_OMP
   nthreads=atoi(argv[8]);
   assert(nthreads >= 1 && "Number of threads must be at least 1");
@@ -109,18 +103,18 @@ int main(int argc, char *argv[])
     }
   }
   fprintf(stderr,"\t\t -------------------------------------\n");
-  
-  
+
+ 
   /*---Read-data1-file----------------------------------*/
   gettimeofday(&t0,NULL);
-  ND1=read_positions(file1,fileformat1,sizeof(DOUBLE), 3, &thetaD1, &phiD1, &czD1);
+  ND1=read_positions(file1,fileformat1,sizeof(DOUBLE), 3, &phiD1, &thetaD1, &czD1);
   gettimeofday(&t1,NULL);
   read_time += ADD_DIFF_TIME(t0,t1);
   gettimeofday(&t0,NULL);  
 
   if (autocorr==0) {
     /*---Read-data2-file----------------------------------*/
-	ND2=read_positions(file2,fileformat2,sizeof(DOUBLE), 3, &thetaD2, &phiD2, &czD2);
+	ND2=read_positions(file2,fileformat2,sizeof(DOUBLE), 3, &phiD2, &thetaD2, &czD2);
     gettimeofday(&t1,NULL);
     read_time += ADD_DIFF_TIME(t0,t1);
   } else {
@@ -132,63 +126,35 @@ int main(int argc, char *argv[])
   }
 
     
-      
-  //Change cz into co-moving distance
-  dD1     = my_malloc(sizeof(*dD1),ND1);
-  dD2     = my_malloc(sizeof(*dD2),ND2);
-  {
-    //Setup variables to do the cz->comoving distance
-    int Nzdc;
-    double *zz,*ddc;
-    zz=my_calloc(sizeof(*zz),COSMO_DIST_SIZE);
-    ddc=my_calloc(sizeof(*ddc),COSMO_DIST_SIZE);
-    Nzdc = set_cosmo_dist(MAX_REDSHIFT_FOR_COSMO_DIST, COSMO_DIST_SIZE, zz, ddc, cosmology);
 
-    gsl_interp *interpolation;
-    gsl_interp_accel *accelerator;
-    accelerator =  gsl_interp_accel_alloc();
-    interpolation = gsl_interp_alloc (gsl_interp_linear,Nzdc);
-    gsl_interp_init(interpolation, zz, ddc, Nzdc);
-    for(int64_t i=0;i<ND1;i++) {
-      dD1[i] = gsl_interp_eval(interpolation, zz, ddc, czD1[i]/SPEED_OF_LIGHT, accelerator);
-    }
-
-    for(int64_t i=0;i<ND2;i++) {
-      dD2[i] = gsl_interp_eval(interpolation, zz, ddc, czD2[i]/SPEED_OF_LIGHT, accelerator);
-    }
-    free(zz);free(ddc);
-    gsl_interp_free(interpolation);
-    gsl_interp_accel_free(accelerator);
-  }
-  free(czD1);free(czD2);
-  
   /*---Count-pairs--------------------------------------*/
-  results_countpairs_data *results  = countpairs_data(ND1,thetaD1,phiD1,dD1,
-													   ND2,thetaD2,phiD2,dD2,
+  results_countpairs_mocks *results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
+																												ND2,phiD2,thetaD2,czD2,
 #ifdef USE_OMP
-													   nthreads,
+																												nthreads,
 #endif
-													   autocorr,
-													   binfile,
-													   pimax);
+																												autocorr,
+																												binfile,
+																												pimax,
+																												cosmology);
   
-  free(phiD1);free(thetaD1);free(dD1);
+  free(phiD1);free(thetaD1);free(czD1);
   if(autocorr == 0) {
-	free(phiD2);free(thetaD2);free(dD2);
+		free(phiD2);free(thetaD2);free(czD2);
   }
   
   
   const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
   const int npibin = results->npibin;
   for(int i=1;i<results->nbin;i++) {
-	const double logrp = LOG10(results->rupp[i]);
-	for(int j=0;j<npibin;j++) {
+		const double logrp = LOG10(results->rupp[i]);
+		for(int j=0;j<npibin;j++) {
       int index = i*(npibin+1) + j;
       fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
     }
   }
 
-  free_results_data(&results);
+  free_results_mocks(&results);
   gettimeofday(&t_end,NULL);
   fprintf(stderr,"DDrppi> Done -  ND1=%"PRId64" ND2=%"PRId64". Time taken = %6.2lf seconds\n ",ND1,ND2,ADD_DIFF_TIME(t_start,t_end));
   return EXIT_SUCCESS;

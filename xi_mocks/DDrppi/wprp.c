@@ -25,6 +25,8 @@
 
 #include "utils.h"
 
+void Printhelp(void);
+
 int main(int argc, char *argv[])
 {
   int i,j;
@@ -40,10 +42,7 @@ int main(int argc, char *argv[])
   double dpi ;
   double fN1,fN2,*xirppi,*wp,*logrp,*rpavg,*DDtot ;
 
-  void Printhelp(void) ;
-
   /*---Read-arguments-----------------------------------*/
-  
   if(argc<10) {
     Printhelp() ;
     return(EXIT_FAILURE);
@@ -53,15 +52,14 @@ int main(int argc, char *argv[])
   sscanf(argv[3],"%d",&ND2) ;
   sscanf(argv[4],"%d",&NR1) ;
   sscanf(argv[5],"%d",&NR2) ;
-  fpD1D2=fopen(argv[6],"r") ;
-  fpD1R2=fopen(argv[7],"r") ;
-  fpD2R1=fopen(argv[8],"r") ;
-  fpR1R2=fopen(argv[9],"r") ;
+  fpD1D2=my_fopen(argv[6],"r") ;
+  fpD1R2=my_fopen(argv[7],"r") ;
+  fpD2R1=my_fopen(argv[8],"r") ;
+  fpR1R2=my_fopen(argv[9],"r") ;
   pimax=40. ;
   if(argc>10) sscanf(argv[10],"%lf",&pimax) ;
 
 /*----------------------------------------------------*/
-  
   npibin = 40 ;
   dpi = 1. ;
   npimax = (int)(pimax/dpi) ;
