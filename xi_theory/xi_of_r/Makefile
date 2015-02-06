@@ -18,8 +18,8 @@ $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 SRC2   = countpairs.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  = $(SRC2:.c=.o)
 
+libs: lib
 lib:  libcountpairs.a | ../../lib
-
 
 libcountpairs.a: $(OBJS2) ../../theory.options ../../common.mk | ../../lib ../../include
 	ar rcs $@ $(OBJS2)

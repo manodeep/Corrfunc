@@ -1,4 +1,4 @@
-/* File: countpairs_data.c */
+/* File: countpairs_rp_pi_mocks.c */
 /*
                 This file is a part of the Corrfunc package
                 Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
@@ -16,7 +16,7 @@
 #include "cellarray_mocks.h"
 #include "gridlink_mocks.h"
 #include "progressbar.h"
-#include "countpairs_mocks.h"
+#include "countpairs_rp_pi_mocks.h"
 #include "cosmology_params.h"
 #include "set_cosmo_dist.h"
 

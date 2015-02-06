@@ -1,4 +1,4 @@
-include ../../common.mk
+include ../../theory.options ../../common.mk
 
 PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "import numpy; print '-I' + numpy.__path__[0] + '/core/include/numpy/'")
 PYTHON_LINK   := $(shell python-config --ldflags) 

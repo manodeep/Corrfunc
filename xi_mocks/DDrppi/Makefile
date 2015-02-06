@@ -1,18 +1,18 @@
 include ../../mocks.options ../../common.mk
 
-target=DDrppi wprp
+target=DDrppi_mocks wprp
 all: $(target) 
 
-INCL   = countpairs_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h  ../../utils/gridlink_mocks.h ../../utils/cellarray_mocks.h \
+INCL   = countpairs_rp_pi_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h  ../../utils/gridlink_mocks.h ../../utils/cellarray_mocks.h \
 				../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h  \
 				../../utils/utils.h	../../utils/function_precision.h ../../utils/avx_calls.h ../../utils/defs.h ../../utils/progressbar.h 
 
-SRC1= DDrppi.c  countpairs_mocks.c ../../utils/gridlink_mocks.c \
+SRC1= DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
 			../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c \
 			../../utils/utils.c ../../io/io.c ../../io/ftread.c ../../utils/progressbar.c
 
 OBJS1=$(SRC1:.c=.o) 
-DDrppi: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
+DDrppi_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@ 
 
 SRC2=wprp.c ../../utils/utils.c
@@ -26,11 +26,40 @@ wprp: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 ../../utils/set_cosmo_dist.o:../../utils/set_cosmo_dist.c ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(GSL_INCLUDE) $(INCLUDE) -c $< -o $@
 
+libs: lib
+lib: libcountpairs_rp_pi_mocks.a | ../../lib
 
-.PHONY: clean clena celan
+OBJS3=countpairs_rp_pi_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o
+libcountpairs_rp_pi_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
+	ar rcs $@ $(OBJS3)
+	cp -p $@ ../../lib/
+	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_rp_pi_mocks.h > ../../include/countpairs_rp_pi_mocks.h
+
+../../lib:
+	mkdir -p ../../lib
+
+../../bin:
+	mkdir -p ../../bin
+
+../../include:
+	mkdir -p ../../include
+
+install: $(target) | ../../bin
+	cp -p $(target) ../../bin/
+
+.PHONY: clean clena celan distclean realclean install 
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) 
 
 clena: clean
 celan: clean
+
+distclean:clean | ../../lib ../../include ../../bin
+	$(RM) ../../lib/libcountpairs_rp_pi_mocks.a ../../include/countpairs_rp_pi_mocks.h
+	cd ../../bin && $(RM) $(target)
+
+realclean: distclean
+distclena: distclean
+realclena: distclean
+

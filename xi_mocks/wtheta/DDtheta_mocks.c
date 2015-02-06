@@ -19,7 +19,7 @@
 
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
-#include "countpairs_theta.h" //function proto-type for countpairs_theta
+#include "countpairs_theta_mocks.h" //function proto-type for countpairs_theta_mocks
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
 
@@ -113,13 +113,13 @@ int main(int argc, char **argv)
 
   /*---Count-pairs--------------------------------------*/
   gettimeofday(&t0,NULL);
-  results_countpairs_theta *results = countpairs_theta(ND1,phiD1,thetaD1,
-													   ND2,phiD2,thetaD2,
+  results_countpairs_theta *results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
+																														 ND2,phiD2,thetaD2,
 #ifdef USE_OMP
-													   nthreads,
+																														 nthreads,
 #endif
-													   autocorr,
-													   binfile) ;
+																														 autocorr,
+																														 binfile) ;
 
   gettimeofday(&t1,NULL);
   pair_time = ADD_DIFF_TIME(t0,t1);

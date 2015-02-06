@@ -1,4 +1,4 @@
-include ../../common.mk
+include ../../theory.options ../../common.mk
 
 target=xi 
 SRC1   = xi.c countpairs_xi.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c ../../io/ftread.c ../../io/io.c 
@@ -9,7 +9,7 @@ INCL   = countpairs_xi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../
 
 all: $(target) $(SRC1) $(INCL)
 
-$(target): $(OBJS1) $(INCL) ../../common.mk Makefile 
+$(target): $(OBJS1) $(INCL) ../../common.mk ../../theory.options Makefile 
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
 %.o: %.c $(INCL) ../../common.mk Makefile
@@ -20,7 +20,7 @@ OBJS2  = $(SRC2:.c=.o)
 
 lib:  libcountpairs_xi.a | ../../lib ../../include 
 
-libcountpairs_xi.a: $(OBJS2) | ../../lib ../../include
+libcountpairs_xi.a: $(OBJS2) ../../common.mk ../../theory.options Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_xi.h > ../../include/countpairs_xi.h 
