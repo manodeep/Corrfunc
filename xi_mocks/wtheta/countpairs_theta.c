@@ -55,29 +55,30 @@ void check_ra_dec(const int64_t N, DOUBLE *phi, DOUBLE *theta)
   for(int64_t i=0;i<N;i++) {
 		if(phi[i] < 0.0) {
 			fix_ra = 1;
-			break;
 		}
-  }
-
-  if(fix_ra == 1) {
-		fprintf(stderr,"DDtheta> Out of range values found for ra. Expected ra to be in the range [0.0,360.0]. Found ra values in [-180,180] -- fixing that\n");
-		for(int64_t i=0;i<N;i++) {
-			phi[i] += 180.0;
-		}
-  }
-
-  for(int64_t i=0;i<N;i++) {
+		assert(theta[i] <= 180.0 && "Declination should not be more than 180. Did you swap ra and dec?");
 		if(theta[i] > 90.0) {
 			fix_dec = 1;
 		}
   }
 
-  if(fix_dec == 1) {
-		fprintf(stderr,"DDtheta> Out of range values found for dec. Expected dec to be in the range [-90.0,90.0]. Found dec values in [0,180] -- fixing that\n");
-		for(int64_t i=0;i<N;i++) {
-			theta[i] -= 90.0;
+	if(fix_ra == 1 || fix_dec == 1) {
+		if(fix_ra == 1) {
+			fprintf(stderr,ANSI_COLOR_YELLOW "DDtheta> Out of range values found for ra. Expected ra to be in the range [0.0,360.0]. Found ra values in [-180,180] -- fixing that" ANSI_COLOR_RESET "\n");
 		}
-  }
+		if(fix_dec == 1) {
+			fprintf(stderr,ANSI_COLOR_YELLOW "DDtheta> Out of range values found for dec. Expected dec to be in the range [-90.0,90.0]. Found dec values in [0,180] -- fixing that" ANSI_COLOR_RESET "\n");
+		}
+
+		for(int64_t i=0;i<N;i++) {
+			if(fix_ra == 1) {
+				phi[i] += 180.0;
+			}
+			if(fix_dec == 1) {
+				theta[i] -= 90.0;
+			}
+		}
+	}
 }
 
 
