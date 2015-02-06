@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 
   free_results_mocks(&results);
   gettimeofday(&t_end,NULL);
-  fprintf(stderr,"DDrppi> Done -  ND1=%"PRId64" ND2=%"PRId64". Time taken = %6.2lf seconds\n ",ND1,ND2,ADD_DIFF_TIME(t_start,t_end));
+  fprintf(stderr,"DDrppi> Done -  ND1=%"PRId64" ND2=%"PRId64". Time taken = %6.2lf seconds\n",ND1,ND2,ADD_DIFF_TIME(t_start,t_end));
   return EXIT_SUCCESS;
 }
 

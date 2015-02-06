@@ -1,4 +1,4 @@
-include ../../common.mk
+include ../../theory.options ../../common.mk
 
 target=vpf 
 SRC1   = vpf.c countspheres.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c ../../io/ftread.c ../../io/io.c 

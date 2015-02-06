@@ -1,5 +1,5 @@
 #### Science use-cases for Correlation Functions on mocks
-OPT += -DOUTPUT_RPAVG  ### Enabling this DOES NOT cause too much of a runtime-hit for DDrppi (<= 10% performance hit)
+#OPT += -DOUTPUT_RPAVG  ### Enabling this DOES NOT cause too much of a runtime-hit for DDrppi (<= 10% performance hit)
 #OPT += -DOUTPUT_THETAAVG
 
 #### Extra options for Correlation Functions on mocks
@@ -13,14 +13,10 @@ OPT += -DUSE_OMP
 OPT += -DFAST_DIVIDE ##replaces divide in DDrppi with approximate divides. If you really must get that extra ~20% performance boost
 #OPT += -DUSE_MKL
 
-GSL_CFLAGS := $(shell gsl-config --cflags) 
-GSL_LIBDIR := $(shell gsl-config --prefix)/lib
-GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) -lgsl -lgslcblas
-
 ### Set the compiler -- options are icc/gcc/clang. 
 CC=icc
 #### Add any compiler specific flags you want
-CFLAGS= 
+CFLAGS=
 #### Add any compiler specific link flags you want
 CLINK=
 
