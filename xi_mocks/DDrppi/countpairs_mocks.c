@@ -309,7 +309,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 #pragma omp parallel shared(numdone)
 	{
 		const int tid = omp_get_thread_num();
-		uint64_t npairs[totnbins];
+		uint64_t npairs[totnbins] __attribute__ ((aligned(64)));
 		for(int i=0;i<totnbins;i++) npairs[i] = 0;
 #ifdef OUTPUT_RPAVG
 		DOUBLE rpavg[totnbins];
@@ -431,8 +431,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 						AVX_INTS m_ibin;
 						int ibin[NVEC];
 					};
-					union int8 union_rpbin;
-					union int8 union_pibin;
+					union int8 union_finalbin;
 
 #ifdef OUTPUT_RPAVG					
 					union float8{
@@ -441,26 +440,22 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 					};
 					union float8 union_mDperp;
 #endif					
-					/* AVX_FLOATS m_half = AVX_SET_FLOAT(HALF); */
-					/* AVX_FLOATS m_quarter = AVX_SET_FLOAT((DOUBLE) 0.25); */
-					AVX_FLOATS m_sqr_pimax  = AVX_SET_FLOAT(sqr_pimax);
-					AVX_FLOATS m_sqr_rpmax  = AVX_SET_FLOAT(sqr_rpmax);
-					AVX_FLOATS m_sqr_rpmin  = AVX_SET_FLOAT(sqr_rpmin);
-					/* AVX_FLOATS m_logrpmin   = AVX_SET_FLOAT(logrpmin); */
-					/* AVX_FLOATS m_inv_dlogrp = AVX_SET_FLOAT(inv_dlogrp); */
-					AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
-					/* AVX_FLOATS m_nrpbin     = AVX_SET_FLOAT((DOUBLE) nrpbin); */
-					AVX_FLOATS m_zero       = AVX_SET_FLOAT((DOUBLE) 0.0);
-
+					
 					int j;
 					for(j=0;j<=(cellstruct->nelements-NVEC);j+=NVEC){
-						AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
-						AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
-						AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
-						AVX_FLOATS m_cz2 = AVX_LOAD_FLOATS_UNALIGNED(&cz2[j]);
-						AVX_FLOATS m_sqr_cz2 = AVX_SQUARE_FLOAT(m_cz2); 
-						AVX_FLOATS m_sum_of_norms = AVX_ADD_FLOATS(m_sqr_d1,m_sqr_cz2);
-						AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);	    
+						const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
+						const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
+						const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
+						const AVX_FLOATS m_cz2 = AVX_LOAD_FLOATS_UNALIGNED(&cz2[j]);
+						const AVX_FLOATS m_sqr_cz2 = AVX_SQUARE_FLOAT(m_cz2); 
+						const AVX_FLOATS m_sum_of_norms = AVX_ADD_FLOATS(m_sqr_d1,m_sqr_cz2);
+						const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
+						const AVX_FLOATS m_sqr_pimax  = AVX_SET_FLOAT(sqr_pimax);
+						const AVX_FLOATS m_sqr_rpmax  = AVX_SET_FLOAT(sqr_rpmax);
+						const AVX_FLOATS m_sqr_rpmin  = AVX_SET_FLOAT(sqr_rpmin);
+						const AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
+						const AVX_FLOATS m_zero       = AVX_SET_FLOAT((DOUBLE) 0.0);
+						const AVX_FLOATS m_one    = AVX_SET_FLOAT((DOUBLE) 1);
 				
 						AVX_FLOATS m_twice_xy_costheta;
 						{
@@ -553,7 +548,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 			  
 							{
 								AVX_FLOATS m_mask_left = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmax,_CMP_LT_OS);
-								AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) nrpbin);
+								AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0);
 								for(int kbin=nrpbin-1;kbin>=1;kbin--) {
 									const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_Dperp,m_rupp_sqr[kbin-1],_CMP_GE_OS);
 									const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
@@ -562,21 +557,21 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 									int test = AVX_TEST_COMPARISON(m_mask_left);
 									if(test==0)	break;
 								}
-								union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
-							}
-			  
-							{
-								AVX_FLOATS m_tmp1 = AVX_SQRT_FLOAT(m_Dpar);
-								AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_tmp1,m_inv_dpi);
-								AVX_FLOATS m_pibin = AVX_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
-								union_pibin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_pibin);
+
+								const AVX_FLOATS m_tmp1 = AVX_SQRT_FLOAT(m_Dpar);
+								const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_tmp1,m_inv_dpi);
+								const AVX_FLOATS m_pibin = AVX_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
+								const AVX_FLOATS m_npibin_p1 = AVX_ADD_FLOATS(m_npibin,m_one);
+								const AVX_FLOATS m_binproduct = AVX_ADD_FLOATS(AVX_MULTIPLY_FLOATS(m_rpbin,m_npibin_p1),m_pibin);
+								union_finalbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_binproduct);
 							}
 						}
 #if  __INTEL_COMPILER			
 #pragma unroll(NVEC)
 #endif			
 						for(int jj=0;jj<NVEC;jj++) {
-							const int ibin = union_rpbin.ibin[jj]*(npibin+1) + union_pibin.ibin[jj];
+							const int ibin=union_finalbin.ibin[jj];
+								/* union_rpbin.ibin[jj]*(npibin+1) + union_pibin.ibin[jj]; */
 							npairs[ibin]++;
 #ifdef OUTPUT_RPAVG							
 							rpavg [ibin] += union_mDperp.Dperp[jj];

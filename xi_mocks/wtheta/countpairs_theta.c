@@ -157,6 +157,7 @@ results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOU
   }
   const DOUBLE costhetamin=costheta_upp[0];
   const DOUBLE costhetamax=costheta_upp[nthetabin-1];
+
 #ifdef OUTPUT_THETAAVG
 #ifndef USE_OMP	
   DOUBLE thetaavg[nthetabin];
@@ -537,7 +538,7 @@ results_countpairs_theta * countpairs_theta(const int64_t ND1, DOUBLE *phi1, DOU
 
 #ifdef USE_OMP
 	matrix_free((void **) all_npairs, numthreads);
-#ifdef OUTPUT_RPAVG
+#ifdef OUTPUT_THETAVG
 	matrix_free((void **) all_thetaavg, numthreads);
 #endif
 #endif
