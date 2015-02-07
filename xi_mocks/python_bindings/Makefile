@@ -1,23 +1,23 @@
-include ../../theory.options ../../common.mk
+include ../../mocks.options ../../common.mk
 
 PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "import numpy; print '-I' + numpy.__path__[0] + '/core/include/numpy/'")
 PYTHON_LINK   := $(shell python-config --ldflags) 
 PYTHON_LIBDIR := $(shell python-config --prefix)/lib
 
-PROJECT := _countpairs
+PROJECT := _countpairs_mocks
 LIBRARY := $(PROJECT).so.$(MAJOR).0.$(MINOR)
-SOURCES := _countpairs.c 
+SOURCES := _countpairs_mocks.c 
 OBJECTS := $(SOURCES:.c=.o)
-C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a
+C_LIBRARY := ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta_mocks.a
 
 all: $(LIBRARY) | ../../lib
 
 $(LIBRARY): Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) -shared -o $@
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) $(GSL_LINK) -shared -o $@
 	rm -f $(PROJECT).so 
 	ln -s $(LIBRARY) $(PROJECT).so
 	cp -p $(LIBRARY) ../../lib/
-	rm -f ../../lib/$(PROJECT).so 
+	rm -f ../../lib/$(PROJECT).so
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
 
 ../../lib:
@@ -26,30 +26,28 @@ $(LIBRARY): Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
 %.o: %.c Makefile ../../common.mk 
 	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
-../../lib/libcountpairs.a: 
-	$(MAKE) -C ../xi_of_r/ lib
+../../lib/libcountpairs_rp_pi_mocks.a: 
+	$(MAKE) -C ../DDrppi lib
 
-../../lib/libcountpairs_rp_pi.a: 
-	$(MAKE) -C ../xi_rp_pi/ lib
-
-../../lib/libcountpairs_wp.a: 
-	$(MAKE) -C ../wp/ lib
+../../lib/libcountpairs_theta_mocks.a: 
+	$(MAKE) -C ../wtheta lib
 
 install: $(LIBRARY) | ../../lib
 	cp -p $(LIBRARY) ../../lib/
-	$(RM) ../../lib/$(PROJECT).so 
+	$(RM) ../../lib/$(PROJECT).so
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
+
+.PHONY: clean clena celan install 
 
 distclean: clean | ../../lib
 	$(RM) ../../lib/$(LIBRARY)
 	$(RM) ../../lib/$(PROJECT).so
 
-.PHONY: clean clena celan install distclean
+realclean: distclean
 
 clean:
-	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so 
+	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so
 
 celan: clean
-
 clena: clean
 

@@ -114,8 +114,10 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 		}
 	  }
 	  if(flag == 1) {
-		i++;
-	  }
+			i++;
+	  } else {
+			fprintf(stderr,ANSI_COLOR_YELLOW "io> WARNING: Could not parse all requested %d fields in line %"PRId64". Skipping that line" ANSI_COLOR_RESET "\n",num_fields,i);
+		}
 
 	  if(i==nmax) {
 		nmax *= MEMORY_INCREASE_FAC;
