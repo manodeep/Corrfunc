@@ -29,7 +29,9 @@ wprp: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 libs: lib
 lib: libcountpairs_rp_pi_mocks.a | ../../lib
 
-OBJS3=countpairs_rp_pi_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o
+OBJS3=countpairs_rp_pi_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o \
+			../../utils/set_cosmo_dist.o ../../utils/cosmology_params.o 
+
 libcountpairs_rp_pi_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS3)
 	cp -p $@ ../../lib/

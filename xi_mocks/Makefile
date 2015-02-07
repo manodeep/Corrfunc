@@ -1,17 +1,20 @@
 include ../mocks.options ../common.mk
 
-all: dirs DDrppi wtheta libs
+all: dirs DDrppi wtheta libs python_bindings
 
 dirs:
 	mkdir -p ../lib .,/bin ../include 
 
-.PHONY: clean celna clena celan DDrppi wtheta distclean realclean distclena realclena dirs 
+.PHONY: clean celna clena celan python_bindings tests DDrppi wtheta distclean realclean distclena realclena dirs 
 
 DDrppi:
 	$(MAKE) -C DDrppi
 
 wtheta:
 	$(MAKE) -C wtheta
+
+python_bindings:
+	$(MAKE) -C python_bindings
 
 distclean:realclean
 
@@ -36,6 +39,7 @@ celna: clean
 install: | dirs 
 	$(MAKE) -C DDrppi install
 	$(MAKE) -C wtheta install
+	$(MAKE) -C python_bindings install 
 
 libs: | dirs
 	$(MAKE) -C DDrppi lib

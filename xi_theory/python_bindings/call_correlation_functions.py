@@ -13,10 +13,10 @@ import sys
 import numpy as np
 import _countpairs
 
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
+# try:
+#     import pandas as pd
+# except ImportError:
+#     pd = None
 
 file="../tests/data/gals_Mr19.txt"
 ### Make sure the precision agrees with the definition in ../common.mk.
@@ -25,12 +25,13 @@ file="../tests/data/gals_Mr19.txt"
 dtype=np.float32
 
 ### Check if pandas is available - much faster to read in the data through pandas
-if pd is not None:
+try:
+    import pandas as pd
     df = pd.read_csv(file,header=None,engine="c",dtype={"x":dtype,"y":dtype,"z":dtype},delim_whitespace=True)
     x = np.asarray(df[0],dtype=dtype)
     y = np.asarray(df[1],dtype=dtype)
     z = np.asarray(df[2],dtype=dtype)
-else:
+except:
     x,y,z = np.genfromtxt(file,dtype=dtype,unpack=True)
 
 boxsize=420.0
