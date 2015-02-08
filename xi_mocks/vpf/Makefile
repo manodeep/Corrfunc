@@ -47,8 +47,13 @@ libcountspheres_mocks.a: $(OBJS2) | ../../lib ../../include
 install: $(target) | ../../bin
 	cp -p $(target) ../../bin/
 
+distclean: clean
+	$(RM) ../../bin/$(target)
+	$(RM) ../../include/countspheres_mocks.h
+	$(RM) ../../lib/libcountspheres_mocks.a
+
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountspheres.a
+	$(RM) $(target) $(OBJS1) $(OBJS2) libcountspheres_mocks.a
 
 clena: clean
 celan: clean

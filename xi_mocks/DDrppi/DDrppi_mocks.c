@@ -1,17 +1,18 @@
 /* PROGRAM DDrppi
 
-   --- DDrppi rpmin rpmax nrpbin data1 data2 [pimax] > wpfile
+   --- DDrppi file1 format1 file2 format2 pimax [Nthreads] > DDfile
    --- Measure the cross-correlation function xi(rp,pi) for two different
        data files (or autocorrelation if data1=data2).
-
-      * rpmin   = inner radius of smallest bin (in Mpc/h)
-      * rpmax   = outer radius of largest bin
-      * nrpbin  = number of bins (logarithmically spaced in r)
-      * data1   = name of first data file
-      * data2   = name of second data file
-      *[pimax]  = maximum value of line-of-sight separation (default=40 Mpc/h)
-      > DDfile  = name of output file <logrp log(<rp>) pi pairs>
-      ----------------------------------------------------------------------
+						 * data1         = name of first data file
+						 * format1       = format of first data file  (a=ascii, c=csv, f=fast-food)
+						 * data2         = name of second data file
+						 * format2       = format of second data file (a=ascii, c=csv, f=fast-food)
+						 * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
+						 * pimax         = maximum line-of-sight-separation
+						 * cosmology     = flag to pick-up the cosmology combination to use (set as an array of combinations in ../utils/cosmology_params.c)
+						 * numthreads    = number of threads to use
+			      > DDfile        = name of output file. Contains <npairs rpavg logrp pi>
+									
 */
 
 #include <stdio.h>

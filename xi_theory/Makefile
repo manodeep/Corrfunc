@@ -47,6 +47,7 @@ realclean:
 	$(MAKE) -C xi_rp_pi distclean
 	$(MAKE) -C wp distclean
 	$(MAKE) -C xi distclean
+	$(MAKE) -C vpf distclean
 	$(RM) ../bin/$(target)
 	$(RM) ../lib/_countpairs.so ../lib/_countpairs.so.$(MAJOR).0.$(MINOR)
 
@@ -56,6 +57,7 @@ clean:
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean
 	$(MAKE) -C xi clean
+	$(MAKE) -C vpf clean
 	$(MAKE) -C examples clean
 	$(MAKE) -C python_bindings clean
 	$(MAKE) -C tests clean
@@ -72,6 +74,7 @@ install: dirs
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
 	$(MAKE) -C xi install
+	$(MAKE) -C vpf install
 	$(MAKE) -C python_bindings install
 
 lib: libs
@@ -80,7 +83,8 @@ libs: | dirs
 	$(MAKE) -C xi_of_r lib
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
-	$(MAKE) -C xi lib	
+	$(MAKE) -C xi lib
+	$(MAKE) -C vpf lib	
 
 tar: dist
 
