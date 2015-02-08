@@ -1,15 +1,20 @@
 /* PROGRAM vpf_mocks
 
-   --- vpf_mocks rmax nbin nc num_pN volume mocksfile mocksformat RANDfile randformat centers-file cosmology> output
+   --- vpf_mocks rmax nbin nc num_pN volume mocksfile mocksformat RANDfile randformat centers-file cosmology > output
    --- compute the void probability function for MOCK galaxies
 
       * rmax = maximum radius (in h^-1 Mpc)
       * nbin = number of radii (evenly spaced in r)
       * nc = number of centers to place (does not count rejected centers)
-      * volume = volume of sample (in Mpc^3/h^3)
-      * galaxy file, (ascii format - contains: ra,dec,cz)
-      * random file, (ascii format - contains: ra,dec,cz)
-      > output: <R P0 P1 P2 Navg Nvar>
+			* numpN              = number of counts-in-spheres to output. [numpN=1-> P0, numpN=2->P0,P1, numpN=3->P0,P1,P2...\n");
+      * volume             = volume of sample (in Mpc^3/h^3)
+      * galaxy file        = contains: ra,dec,cz)
+			* galaxy file format = (ascii, fast-food)
+      * random file        = (contains: ra,dec,cz)
+			* random file format = (ascii, fast-food)
+			* centers file       = file containing sphere centers (XYZ). If there are not enough centers, file will be truncated and re-written with centers
+			* cosmology          = flag to pick-up the cosmology combination to use (set as an array of combinations in ../utils/cosmology_params.c)
+      > output: <R P0 P1 P2 ...>
 */
 
 #include <stdio.h>
@@ -176,18 +181,19 @@ struct timeval tstart,t0,t1;
 void Printhelp(void)
 {
   fprintf(stderr,"=========================================================================\n") ;
-  fprintf(stderr,"   --- vpf_sdss rmax nbin nc volume SDSSfile RANDfile > output\n") ;
+	fprintf(stderr,"   --- vpf_mocks rmax nbin nc num_pN volume mocksfile mocksformat RANDfile randformat centers-file cosmology > output\n");
   fprintf(stderr,"   --- compute the void probability function for SDSS galaxies\n") ;
   fprintf(stderr,"      * rmax = maximum radius (in h^-1 Mpc)\n") ;
   fprintf(stderr,"      * nbin = number of radii (evenly spaced in r)\n") ;
   fprintf(stderr,"      * nc = number of centers to place (does not count rejected centers)\n") ;
+	fprintf(stderr,"      * numpN        = number of counts-in-spheres to output. [numpN=1-> P0, numpN=2->P0,P1, numpN=3->P0,P1,P2...\n");
   fprintf(stderr,"      * volume = volume of sample (in Mpc^3/h^3)\n") ;
   fprintf(stderr,"      * galaxy file, (contains: ra,dec,cz)\n") ;
   fprintf(stderr,"      * galaxy file format (a -> ascii, f->fast-food)\n") ;
   fprintf(stderr,"      * random file, (contains: ra,dec,cz)\n") ;
   fprintf(stderr,"      * random file format (a -> ascii, f-> fast-food)\n");
   fprintf(stderr,"      * file with sphere centers (centers will be read-in if enough centers exist, otherwise centers will be output into this file)\n");
-  fprintf(stderr,"      > output: <R P0 P1 P2 Navg Nvar>\n") ;
+  fprintf(stderr,"      > output: <R P0 P1 P2 ...>\n") ;
   fprintf(stderr,"=========================================================================\n") ;
 }
 
