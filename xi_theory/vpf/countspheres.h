@@ -20,15 +20,15 @@ extern "C" {
 typedef struct{
 	DOUBLE **pN;
 	DOUBLE rmax;
-	unsigned int nbin;
-	unsigned int nc;
-	unsigned int num_pN;
+	int nbin;
+	int nc;
+	int num_pN;
 } results_countspheres;
 
 
 results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X, const DOUBLE * restrict Y, const DOUBLE * restrict Z,
-																		const double rmax, const unsigned int nbin, const unsigned int nc,
-																		const unsigned int num_pN,
+																		const double rmax, const int nbin, const int nc,
+																		const int num_pN,
 																		unsigned long seed) __attribute__((warn_unused_result));
 
 void free_results_countspheres(results_countspheres **results);	

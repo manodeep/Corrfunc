@@ -31,8 +31,8 @@ void free_results_countspheres(results_countspheres **results)
 
 
 results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X, const DOUBLE * restrict Y, const DOUBLE * restrict Z,
-																		const double rmax, const unsigned int nbin, const unsigned int nc,
-																		const unsigned int num_pN,
+																		const double rmax, const int nbin, const int nc,
+																		const int num_pN,
 																		unsigned long seed)
 
 {
@@ -60,7 +60,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 #ifdef USE_AVX  
   AVX_FLOATS m_rmax_sqr = AVX_SET_FLOAT(rmax_sqr);
   AVX_FLOATS m_rupp_sqr[nbin];
-  for(unsigned int k=0;k<nbin;k++) {
+  for(int k=0;k<nbin;k++) {
     m_rupp_sqr[k] = AVX_SET_FLOAT((k+1)*rstep*rstep*(k+1));
   }
 #endif
@@ -95,7 +95,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
   init_my_progressbar(nc,&interrupted);
 
   /* loop through centers, placing each randomly */
-	unsigned int ic=0;
+	int ic=0;
 	while(ic < nc) {
     my_progressbar(ic,&interrupted);
     const DOUBLE xc = xdiff*gsl_rng_uniform (rng) + xmin;
@@ -125,7 +125,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
     assert(iy >= 0 && iy < nmesh_y && "y-position is inside limits");
     assert(iz >= 0 && iz < nmesh_z && "z-position is inside limits");
     
-    for(unsigned int ibin=0;ibin<nbin;ibin++) {
+    for(int ibin=0;ibin<nbin;ibin++) {
       counts[ibin]=0;
     }
 
@@ -254,7 +254,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 						const DOUBLE dz=z2[j]-newzpos;
 						const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
 						if(r2 >= rmax_sqr) continue;
-						const unsigned int ibin = (unsigned int) (SQRT(r2)*inv_rstep);
+						const int ibin = (int) (SQRT(r2)*inv_rstep);
 						if(ibin < nbin) counts[ibin]++;
 					}
 #endif // end of AVX section
@@ -264,13 +264,13 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 	
 		/* compute cumulative counts, i.e. counts changes from the number of galaxies
 			 in shell ibin to  the number of galaxies in shell ibin or any smaller shell */
-		for(unsigned int ibin=1;ibin<nbin;ibin++){
+		for(int ibin=1;ibin<nbin;ibin++){
 			counts[ibin]+=counts[ibin-1];
     }
     
     /* compute pN's */
-    for(unsigned int ibin=0;ibin<nbin;ibin++) {
-			for(unsigned int i=0;i<num_pN;i++) {
+    for(int ibin=0;ibin<nbin;ibin++) {
+			for(int i=0;i<num_pN;i++) {
 				if(counts[ibin] == i) {
 					pN[ibin][i] += (DOUBLE) 1.0;
 				}
@@ -297,8 +297,8 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 	results->num_pN = num_pN;
 	results->pN = (DOUBLE **) matrix_malloc(sizeof(DOUBLE), nbin, num_pN);
 	const DOUBLE inv_nc = ((DOUBLE) 1.0)/(DOUBLE) nc;
-	for(unsigned int i=0;i<num_pN;i++) {
-		for(unsigned int ibin=0;ibin<nbin;ibin++) {
+	for(int i=0;i<num_pN;i++) {
+		for(int ibin=0;ibin<nbin;ibin++) {
 			(results->pN)[ibin][i] = pN[ibin][i] * inv_nc;
 		}
 	}
