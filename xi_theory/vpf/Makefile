@@ -30,8 +30,6 @@ libcountspheres.a: $(OBJS2) | ../../lib ../../include
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countspheres.h > ../../include/countspheres.h 
 
-.PHONY: clean clena celan install lib tests 
-
 ../../lib:
 	mkdir -p ../../lib
 
@@ -55,6 +53,7 @@ clean:
 clena: clean
 celan: clean
 
+.PHONY: clean clena celan install lib tests distclean
 
 tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
 	$(MAKE) -C ../tests	vpf

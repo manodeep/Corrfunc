@@ -1,6 +1,6 @@
 include ../mocks.options ../common.mk
 
-all: dirs DDrppi wtheta libs python_bindings
+all: dirs DDrppi wtheta vpf libs python_bindings
 
 dirs:
 	mkdir -p ../lib .,/bin ../include 
@@ -26,11 +26,13 @@ realclean:
 	$(MAKE) clean
 	$(MAKE) -C DDrppi distclean
 	$(MAKE) -C wtheta distclean
+	$(MAKE) -C vpf distclean
 
 clean:
 	$(RM) $(target) $(OBJS1) 
 	$(MAKE) -C DDrppi clean
 	$(MAKE) -C wtheta clean
+	$(MAKE) -C vpf clean
 
 clena: clean
 celan: clean
@@ -39,11 +41,13 @@ celna: clean
 install: | dirs 
 	$(MAKE) -C DDrppi install
 	$(MAKE) -C wtheta install
+	$(MAKE) -C vpf install
 	$(MAKE) -C python_bindings install 
 
 libs: | dirs
 	$(MAKE) -C DDrppi lib
 	$(MAKE) -C wtheta lib
+	$(MAKE) -C vpf lib
 
 tar: dist
 
