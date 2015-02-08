@@ -44,6 +44,11 @@ libcountspheres.a: $(OBJS2) | ../../lib ../../include
 install: $(target) | ../../bin
 	cp -p $(target) ../../bin/
 
+distclean: clean
+	$(RM) ../../lib/libcountspheres.a
+	$(RM) ../../include/countspheres.h
+	$(RM) ../../bin/$(target)
+
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) libcountspheres.a
 

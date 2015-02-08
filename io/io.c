@@ -7,9 +7,7 @@
 */
 
 #include "io.h"
-#include "ftread.h"
-#include "utils.h"
-#include "function_precision.h"
+
 
 #ifndef MEMORY_INCREASE_FAC
 #define MEMORY_INCREASE_FAC 1.1
