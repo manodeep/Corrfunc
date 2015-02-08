@@ -16,7 +16,7 @@ perf.*
 wp
 xi
 vpf
-run_correlations
+run_correlations*
 test_periodic
 test_nonperiodic
 libcount*.a
