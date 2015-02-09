@@ -13,15 +13,15 @@ OBJS2  = $(SRC2:.c=.o)
 
 all: $(target) $(INCL)
 
-test_periodic: $(OBJS1) ../../common.mk Makefile \
+test_periodic: $(OBJS1) ../../theory.options ../../common.mk Makefile \
 	../xi_of_r/countpairs.c ../xi_rp_pi/countpairs_rp_pi.c ../wp/countpairs_wp.c
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -lgsl -lgslcblas -o $@
 
-test_nonperiodic: $(OBJS2) ../../common.mk Makefile \
+test_nonperiodic: $(OBJS2) ../../theory.options ../../common.mk Makefile \
 	../xi_of_r/countpairs.c ../xi_rp_pi/countpairs_rp_pi.c 
 	$(CC) $(CLINK) $(OBJS2) -o $@
 
-%.o: %.c $(INCL) ../../common.mk Makefile
+%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 tests: $(target)
@@ -32,7 +32,7 @@ wp: test_periodic
 	./test_periodic 2
 
 xi_rp_pi: test_periodic test_nonperiodic
-	./test_periodic 1 4 5 6
+	./test_periodic 1 5 6 7
 	./test_nonperiodic 1 2 
 
 xi_of_r: test_periodic test_nonperiodic
@@ -41,6 +41,9 @@ xi_of_r: test_periodic test_nonperiodic
 
 vpf: test_periodic
 	./test_periodic 3
+
+xi: test_periodic
+	./test_periodic 4
 
 %.o: %.c ../common.mk Makefile $(INCL)
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
