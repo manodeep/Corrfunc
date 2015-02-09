@@ -375,24 +375,21 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 								AVX_FLOATS m_mask_left;
 						
 								{
-								  //Check if any of the NVEC distances are less than sqr_rpmax
-									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
+
+                  //Create a mask for the NVEC distances that fall within sqr_rpmin and sqr_rpmax (sqr_rpmin <= dist < sqr_rpmax)
+									const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
+									const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
+									const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
+									
+                  //Check if any of the NVEC distances are less than sqr_rpmax
+									m_mask_left = m_rp_mask;
+
 									//If all points are >= sqr_rpmax, continue with the j-loop
 									if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
 										continue;
 									}
-						  
-									//Create a mask for the NVEC distances that fall within sqr_rpmin and sqr_rpmax (sqr_rpmin <= dist < sqr_rpmax)
-									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS));
-									if(AVX_TEST_COMPARISON(m_mask) == 0) {
-										continue;
-									}
-									
 									//Update r2 such that all distances that do not satisfy sqr_rpmin <= r2 < sqr_rpmax, get set to sqr_rpmax
-									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask);
-
-									//Update the mask that now only contains points that need to be added to the npairs histogram
-									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
+									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
 								}
 
 						  

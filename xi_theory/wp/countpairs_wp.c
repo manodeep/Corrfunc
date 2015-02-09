@@ -347,8 +347,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 								  //j equal to second->nelements to ensure that the remainder loop
 								  //does not run either.
 								  AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
-									const int test = AVX_TEST_COMPARISON(m_mask_pimax);
-									if(test == 0) {
+									if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
 									  //If the execution reaches here -> then none of the NVEC zdiff values 
 									  //are smaller than pimax. We can terminate the j-loop now. 
 
@@ -360,27 +359,20 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 									
 									//Create a mask with true bits when  0 <= zdiff < pimax.
 									m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax);
+
+                  const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_rupp_sqr[nbin-1], _CMP_LT_OS);
+									const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_rupp_sqr[0], _CMP_GE_OS);
+									const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
 									
-									//Set r2 with sqr_rpmax where the mask is false. 
-									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nbin-1],r2,m_mask_pimax);		  
-
-									//Create a mask for r2 >= sqr_rpmin
-									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[0],_CMP_GE_OS);
-
-									//Create a mask for r2 < sqr_rpmax
-									m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[nbin-1],_CMP_LT_OS);//will get utilized in the next section
-
 									//Create a combined mask by bitwise and of m1 and m_mask_left. 
 									//This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
-									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
-									
-									//Now check if any pair separations are within range
-									const int test1 = AVX_TEST_COMPARISON(m_mask);
-									
+									m_mask_left = AVX_BITWISE_AND(m_mask_pimax,m_rp_mask);
+
 									//If not, continue with the next iteration of j-loop
-									if(test1 == 0) {
-										continue;
-									}
+									if(AVX_TEST_COMPARISON(m_mask_left) == 0) continue;
+
+									//There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && dz < pimax.
+									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nbin-1], r2, m_mask_left);
 								}
 					
 #ifdef OUTPUT_RPAVG

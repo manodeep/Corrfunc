@@ -1,8 +1,8 @@
 include ../../mocks.options ../../common.mk
 
 PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "import numpy; print '-I' + numpy.__path__[0] + '/core/include/numpy/'")
-PYTHON_LINK   := $(shell python-config --ldflags) 
-PYTHON_LIBDIR := $(shell python-config --prefix)/lib
+PYTHON_LIBDIR := $(shell python-config --prefix)/lib 
+PYTHON_LINK   := $(shell python-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
 
 PROJECT := _countpairs_mocks
 LIBRARY := $(PROJECT).so.$(MAJOR).0.$(MINOR)
@@ -12,8 +12,8 @@ C_LIBRARY := ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta
 
 all: $(LIBRARY) | ../../lib
 
-$(LIBRARY): Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) $(GSL_LINK) -shared -o $@
+$(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
 	rm -f $(PROJECT).so 
 	ln -s $(LIBRARY) $(PROJECT).so
 	cp -p $(LIBRARY) ../../lib/

@@ -271,7 +271,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
     /* compute pN's */
     for(int ibin=0;ibin<nbin;ibin++) {
 			for(int i=0;i<num_pN;i++) {
-				if(counts[ibin] == i) {
+				if(counts[ibin] == (uint64_t) i) {
 					pN[ibin][i] += (DOUBLE) 1.0;
 				}
 			}

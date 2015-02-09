@@ -1,6 +1,6 @@
 include ../mocks.options ../common.mk
 
-all: dirs DDrppi wtheta vpf libs python_bindings
+all: dirs DDrppi wtheta vpf libs python_bindings examples
 
 dirs:
 	mkdir -p ../lib .,/bin ../include 
@@ -12,6 +12,12 @@ DDrppi:
 
 wtheta:
 	$(MAKE) -C wtheta
+
+vpf:
+	$(MAKE) -C vpf
+
+examples:
+	$(MAKE) -C examples
 
 python_bindings:
 	$(MAKE) -C python_bindings
