@@ -50,11 +50,11 @@ void free_results_xi(results_countpairs_xi **results)
 }
 
 results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
-									 const double boxsize, 
+																		 const double boxsize, 
 #ifdef USE_OMP
-									 const int numthreads,
+																		 const int numthreads,
 #endif
-									 const char *binfile)
+																		 const char *binfile)
 {
 	
   int bin_refine_factor=2;
@@ -78,33 +78,33 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 		
   cellarray *lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
   if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
-	fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
-	bin_refine_factor *=2;
-	const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  		
-	for(int64_t i=0;i<totncells;i++) {
-	  free(lattice[i].x);
-	  free(lattice[i].y);
-	  free(lattice[i].z);
-	}
-	free(lattice);
-	lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+		fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
+		bin_refine_factor *=2;
+		const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  		
+		for(int64_t i=0;i<totncells;i++) {
+			free(lattice[i].x);
+			free(lattice[i].y);
+			free(lattice[i].z);
+		}
+		free(lattice);
+		lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
   }
   const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  		
-/* #ifdef USE_OMP */
-/*   omp_set_num_threads(numthreads); */
-/* #pragma omp parallel for schedule(dynamic)  */
-/* #endif */
-/* 	for(int64_t icell=0;icell<totncells;icell++) { */
-/* 		const cellarray *first=&(lattice[icell]); */
-/* 		DOUBLE *x = first->x; */
-/* 		DOUBLE *y = first->y; */
-/* 		DOUBLE *z = first->z; */
-/* #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \ */
-/* 			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);										\ */
-/* 			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) } */
+#ifdef USE_OMP
+  omp_set_num_threads(numthreads);
+#pragma omp parallel for schedule(dynamic)
+#endif
+	for(int64_t icell=0;icell<totncells;icell++) {
+		const cellarray *first=&(lattice[icell]);
+		DOUBLE *x = first->x;
+		DOUBLE *y = first->y;
+		DOUBLE *z = first->z;
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
+			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);										\
+			SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) }
 		
-/* 		SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER); */
-/* 	} */
+		SGLIB_ARRAY_HEAP_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+	}
 
 	const DOUBLE side=boxsize;
   
@@ -131,6 +131,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 #endif//USE_OMP
 #endif//OUTPUT_RPAVG
 
+	const DOUBLE pimax = rpmax;
 	const DOUBLE sqr_rpmax=rupp_sqr[nrpbin-1];
   const DOUBLE sqr_rpmin=rupp_sqr[0];
 
@@ -156,7 +157,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 #ifdef USE_OMP
 #pragma omp parallel shared(numdone) 
   {
-		int tid = omp_get_thread_num();
+		const int tid = omp_get_thread_num();
 		uint64_t npairs[nrpbin];
 		for(int i=0;i<nrpbin;i++) npairs[i] = 0;
 #ifdef OUTPUT_RPAVG		
@@ -183,7 +184,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 		  numdone++;
 
 
-		  cellarray *first = &(lattice[index1]);
+		  const cellarray *first = &(lattice[index1]);
 		  const int iz = index1 % nmesh_z ;
 		  const int ix = index1 / (nmesh_z * nmesh_y) ;
 		  const int iy = (index1 - iz - ix*nmesh_z*nmesh_y)/nmesh_z ;
@@ -228,9 +229,9 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 						const DOUBLE *z2 = second->z;
 
 						for(int64_t i=0;i<first->nelements;i++) {
-							DOUBLE x1pos=x1[i] + off_xwrap;
-							DOUBLE y1pos=y1[i] + off_ywrap;;
-							DOUBLE z1pos=z1[i] + off_zwrap;
+							const DOUBLE x1pos=x1[i] + off_xwrap;
+							const DOUBLE y1pos=y1[i] + off_ywrap;;
+							const DOUBLE z1pos=z1[i] + off_zwrap;
 					  
 #ifndef USE_AVX
 							for(int64_t j=0;j<second->nelements;j+=BLOCK_SIZE) {
@@ -238,17 +239,17 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 								if(block_size > BLOCK_SIZE) block_size=BLOCK_SIZE;
 						
 								for(int jj=0;jj<block_size;jj++) {
+									const DOUBLE dz = z2[j+jj] - z1pos;
+									if(dz < 0) {
+										continue;
+									}	else if(dz >= pimax) {
+										j = second->nelements;
+									  break;
+									}
 									const DOUBLE dx = x1pos - x2[j+jj];
 									const DOUBLE dy = y1pos - y2[j+jj];
-									const DOUBLE dz = z1pos - z2[j+jj];
 									const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
-									/* const DOUBLE sqr_dz = dz*dz; */
-									/* if(dz < 0) { */
-									/* 	continue; */
-									/* }	else if(sqr_dz >= sqr_rpmax) { */
-									/* 	j = second->nelements; */
-									/*   break; */
-									/* } */
+
 									if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
 										continue;
 									}
@@ -264,7 +265,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 											break;
 										}
 									}//searching for kbin loop
-								}
+								}//jj loop
 							}//end of j loop
 					  
 #else //beginning of AVX section
@@ -290,24 +291,26 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 							int64_t j;
 							for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
 							  //Load the x/y/z arrays (NVEC at a time)
-								const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
-								const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
-								const AVX_FLOATS z2pos = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
-						
+								const AVX_FLOATS m_x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
+								const AVX_FLOATS m_y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
+								const AVX_FLOATS m_z2pos = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
+								
 								//x1-x2
-								const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1pos,x2pos);
+								const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x2pos,m_x1pos);
 								//y1-y2
-								const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1pos,y2pos);
+								const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y2pos,m_y1pos);
 								//z1-z2
-								const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1pos,z2pos);
+								const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2pos,m_z1pos);
 								
 								//set constant := sqr_rpmax
 								const AVX_FLOATS m_sqr_rpmax = AVX_SET_FLOAT(sqr_rpmax);
 								//set constant := sqr_rpmin
 								const AVX_FLOATS m_sqr_rpmin = AVX_SET_FLOAT(sqr_rpmin);
-
+								//set constant := pimax == rpmax
+								const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
+								
 								/* //set constant m_zero to 0.0 */
-								/* const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0); */
+								const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
 
 								//(x1-x2)^2
 								const AVX_FLOATS m_xdiff_sqr = AVX_SQUARE_FLOAT(m_xdiff);
@@ -327,43 +330,30 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 						
 								{
 
-								  //Check if dz^2 >= sqr_rpmax. If so, break. 
-								  /* AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff_sqr, m_sqr_rpmax,_CMP_LT_OS); */
-								  /* const int test = AVX_TEST_COMPARISON(m_mask_pimax); */
-								  /* if(test == 0) { */
-									/* 	//If the execution reaches here -> then none of the NVEC zdiff values */
-									/* 	//are smaller than sqr_rpmax. We can terminate the j-loop now. */
+								  //Check if dz >= rpmax (pimax is rpmax). If so, break. 
+								  AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff, m_pimax,_CMP_LT_OS);
+								  const int test = AVX_TEST_COMPARISON(m_mask_pimax);
+								  if(test == 0) {
+										//If the execution reaches here -> then none of the NVEC zdiff values
+										//are smaller than rpmax. We can terminate the j-loop now.
 										
-									/* 	//set j so that the remainder loop does not run */
-									/* 	j = second->nelements; */
-									/* 	//break out of the j-loop */
-									/* 	break; */
-								  /* } */
-
-									/* m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax); */
+										//set j so that the remainder loop does not run
+										j = second->nelements;
+										//break out of the j-loop
+										break;
+								  }
+									m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax);
 									
-									/* //Set r2 with sqr_rpmax where the mask is false. */
-									/* r2 = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nrpbin-1],r2,m_mask_pimax); */
-									
-								  //Check if any of the NVEC distances are less than sqr_rpmax
-									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
-									//If all points are >= sqr_rpmax, continue with the j-loop
+                  //Create a mask for the NVEC distances that fall within sqr_rpmin and sqr_rpmax (sqr_rpmin <= dist < sqr_rpmax)
+									const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
+									const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
+									const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
+									m_mask_left = AVX_BITWISE_AND(m_mask_pimax, m_rp_mask);
 									if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
 										continue;
 									}
-
-						  
-									//Create a mask for the NVEC distances that fall within sqr_rpmin and sqr_rpmax (sqr_rpmin <= dist < sqr_rpmax)
-									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS));
-									if(AVX_TEST_COMPARISON(m_mask) == 0) {
-										continue;
-									}
-									
 									//Update r2 such that all distances that do not satisfy sqr_rpmin <= r2 < sqr_rpmax, get set to sqr_rpmax
-									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask);
-
-									//Update the mask that now only contains points that need to be added to the npairs histogram
-									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);
+									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
 								}
 
 								{ 
@@ -435,17 +425,16 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 		  
 							//Now take care of the remainder. 
 							for(;j<second->nelements;j++) {
-								const DOUBLE dz = z1pos - z2[j];
-								const DOUBLE sqr_dz = dz*dz;
-								/* if(dz < 0) { */
-								/* 	continue; */
-								/* } else if(sqr_dz >= sqr_rpmax ) { */
-								/* 	break; */
-								/* } */
-								const DOUBLE dx = x1pos - x2[j];
-								const DOUBLE dy = y1pos - y2[j];
+								const DOUBLE dz = z2[j] - z1pos;//z2-z1. This ordering must be kept, otherwise the logic in dz if condition will break
+								const DOUBLE dx = x2[j] - x1pos;
+								const DOUBLE dy = y2[j] - y1pos;
+								if(dz < 0) {
+									continue;
+								} else if(dz >= pimax ) {
+									break;
+								}
 						
-								const DOUBLE r2 = (dx*dx + dy*dy + sqr_dz);
+								const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
 								if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
 									continue;
 								}
@@ -504,11 +493,17 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 			rpavg[j] += all_rpavg[i][j];
 		}
 	}
-#endif
+	matrix_free((void **) all_rpavg, numthreads);
+#endif//OUTPUT_RPAVG
+  matrix_free((void **) all_npairs, numthreads);
+#endif//USE_OMP
 
-#endif
 
-
+	//So the npairs array contains the number of pairs
+	//and the rpavg array contain the *SUM* of separations
+	//Let's divide out rpavg by npairs to actually get
+	//the mean rpavg
+	
 #ifdef OUTPUT_RPAVG  
   for(int i=0;i<nrpbin;i++) {
     if(npairs[i] > 0) {
@@ -525,26 +520,27 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 	results->rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
 	results->rpavg  = my_malloc(sizeof(DOUBLE)  , nrpbin);
 
-    const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
-    const DOUBLE density=0.5*avgweight2*ND1/(boxsize*boxsize*boxsize);//pairs are not double-counted                                                                                                                                           
-    DOUBLE rlow=0.0 ;
-    DOUBLE prefac_density_DD=avgweight1*ND1*density;
-
+	const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
+	const DOUBLE density=0.5*avgweight2*ND1/(boxsize*boxsize*boxsize);//0.5 because pairs are not double-counted
+	DOUBLE rlow=0.0 ;
+	const DOUBLE prefac_density=avgweight1*ND1*density;
+	
 	for(int i=0;i<nrpbin;i++) {
 		results->npairs[i] = npairs[i];
-		results->rupp[i] = rupp[i];
+		results->rupp[i]   = rupp[i];
 #ifdef OUTPUT_RPAVG
 		results->rpavg[i] = rpavg[i];
 #else
 		results->rpavg[i] = 0.0;
 #endif
 
-        const DOUBLE weight0 = (DOUBLE) results->npairs[i];
-        /* compute xi, dividing summed weight by that expected for a random set */
-        const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]*results->rupp[i]-rlow*rlow*rlow);
-        const DOUBLE weightrandom = prefac_density_DD*vol;
-				assert(weightrandom > 0 && "Random weight is 0.0 - this is impossible");
-				results->xi[i] = (weight0/weightrandom-1);
+		const DOUBLE weight0 = (DOUBLE) results->npairs[i];
+		/* compute xi, dividing summed weight by that expected for a random set */
+		const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]*results->rupp[i]-rlow*rlow*rlow);
+		const DOUBLE weightrandom = prefac_density*vol;
+		assert(weightrandom > 0 && "Random weight is <= 0.0 - that is impossible");
+		results->xi[i] = (weight0/weightrandom-1);
+		rlow=results->rupp[i];
 	}
 
   for(int64_t i=0;i<totncells;i++) {
@@ -558,10 +554,6 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
   free(rupp);
 	
 #ifdef USE_OMP
-  matrix_free((void **) all_npairs, numthreads);
-#ifdef OUTPUT_RPAVG
-	matrix_free((void **) all_rpavg, numthreads);
-#endif
 	
 #endif
 

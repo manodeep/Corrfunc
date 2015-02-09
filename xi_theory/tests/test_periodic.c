@@ -164,9 +164,9 @@ int test_wp(const char *correct_outputfile)
 int test_vpf(const char *correct_outputfile)
 {
 	const double rmax = 10.0;
-	const unsigned int nbin = 10;
-	const unsigned int nc = 10000;
-	const unsigned int num_pN=6;
+	const int nbin = 10;
+	const int nc = 10000;
+	const int num_pN=6;
 	const unsigned long seed=-1234;
 	results_countspheres *results = countspheres(ND1, X1, Y1, Z1,
 																							 rmax, nbin, nc,
@@ -175,10 +175,10 @@ int test_vpf(const char *correct_outputfile)
 	
   FILE *fp=my_fopen(tmpoutputfile,"w");
   const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-	for(unsigned int ibin=0;ibin<results->nbin;ibin++) {
+	for(int ibin=0;ibin<results->nbin;ibin++) {
 		const double r=(ibin+1)*rstep;
 		fprintf(fp,"%"DOUBLE_FORMAT" ", r);
-		for(unsigned int i=0;i<num_pN;i++) {
+		for(int i=0;i<num_pN;i++) {
 			fprintf(fp," %10.4e", (results->pN)[ibin][i]);
 		}
 		fprintf(fp,"\n");

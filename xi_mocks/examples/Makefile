@@ -14,7 +14,7 @@ INCL :=	../../include/countpairs_rp_pi_mocks.h ../../include/countpairs_theta_mo
 
 all: $(target) 
 
-$(target): Makefile ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
+$(target): Makefile ../../mocks.options ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) -o $@
 
 ../../lib/libcountpairs_rp_pi_mocks.a: 
@@ -23,7 +23,7 @@ $(target): Makefile ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1)
 ../../lib/libcountpairs_theta_mocks.a: 
 	$(MAKE) -C ../wtheta lib
 
-%.o: %.c ../../common.mk Makefile
+%.o: %.c ../../common.mk ../../mocks.options Makefile
 	$(CC) $(CFLAGS) -I../../include $(OPT) $(INCLUDE) -c $< -o $@
 
 .PHONY: clean clena celan 
