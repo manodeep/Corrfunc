@@ -119,7 +119,7 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 	FILE *fpcen = fopen(centers_file,"r");  
   if(fpcen != NULL) {
     double rr = 0.0;
-    fscanf(fpcen,"%*lf %*lf %*lf %lf",&rr);
+    fscanf(fpcen,"%*f %*f %*f %lf",&rr);
     num_centers_in_file = getnumlines(centers_file,'#');
     if( rr >= rmax && num_centers_in_file >= nc) {
       need_randoms = 0;

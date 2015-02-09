@@ -12,12 +12,13 @@ all: $(target) $(SRC1) $(INCL)
 $(target): $(OBJS1) $(INCL) ../../common.mk ../../theory.options Makefile 
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
-%.o: %.c $(INCL) ../../common.mk Makefile
+%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 SRC2   = countpairs_xi.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  = $(SRC2:.c=.o)
 
+libs: lib
 lib:  libcountpairs_xi.a | ../../lib ../../include 
 
 libcountpairs_xi.a: $(OBJS2) ../../common.mk ../../theory.options Makefile | ../../lib ../../include

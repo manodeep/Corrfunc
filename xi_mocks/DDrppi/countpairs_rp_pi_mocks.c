@@ -522,56 +522,54 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 #endif//FAST_DIVIDE 
 						}
 							
-						AVX_FLOATS m_Dperp;
-						{
-							AVX_FLOATS m_tmp1 = AVX_SUBTRACT_FLOATS(m_sum_of_norms,m_twice_xy_costheta);
-							m_Dperp = AVX_SUBTRACT_FLOATS(m_tmp1,m_Dpar);
-						}
+						const AVX_FLOATS m_Dperp_sqr_plus_Dpar_sqr = AVX_SUBTRACT_FLOATS(m_sum_of_norms,m_twice_xy_costheta);
+						AVX_FLOATS m_Dperp = AVX_SUBTRACT_FLOATS(m_Dperp_sqr_plus_Dpar_sqr,m_Dpar);
 			
-						AVX_FLOATS m_mask;
+						AVX_FLOATS m_mask_left;
+						//Do the mask filters in a separate scope
 						{
-							{
-								AVX_FLOATS m_tmp1 = AVX_COMPARE_FLOATS(m_Dpar,m_sqr_pimax,_CMP_LT_OS);
-								AVX_FLOATS m_tmp2 = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmax,_CMP_LT_OS);
-								AVX_FLOATS m_tmp3 = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmin,_CMP_GE_OS);
-								AVX_FLOATS m_tmp4 = AVX_BITWISE_AND(m_tmp1,m_tmp2);
-								m_mask = AVX_BITWISE_AND(m_tmp3,m_tmp4);
-								int test = AVX_TEST_COMPARISON(m_mask);
-								if(test==0)
-									continue;
-							}
-							m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,m_Dperp,m_mask);
-							m_Dpar  = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_pimax,m_Dpar,m_mask);
-#ifdef OUTPUT_RPAVG
-							union_mDperp.m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,AVX_SQRT_FLOAT(m_Dperp),m_mask);
-#endif							
-			  
-							{
-								AVX_FLOATS m_mask_left = AVX_COMPARE_FLOATS(m_Dperp,m_sqr_rpmax,_CMP_LT_OS);
-								AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0);
-								for(int kbin=nrpbin-1;kbin>=1;kbin--) {
-									const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_Dperp,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-									const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
-									m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
-									m_mask_left = AVX_COMPARE_FLOATS(m_Dperp, m_rupp_sqr[kbin-1],_CMP_LT_OS);
-									int test = AVX_TEST_COMPARISON(m_mask_left);
-									if(test==0)	break;
-								}
+							const AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_Dpar,m_sqr_pimax,_CMP_LT_OS);
+							const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(m_Dperp, m_sqr_rpmax, _CMP_LT_OS);
+							const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(m_Dperp, m_sqr_rpmin, _CMP_GE_OS);
+							const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
 
-								const AVX_FLOATS m_tmp1 = AVX_SQRT_FLOAT(m_Dpar);
-								const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_tmp1,m_inv_dpi);
-								const AVX_FLOATS m_pibin = AVX_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
-								const AVX_FLOATS m_npibin_p1 = AVX_ADD_FLOATS(m_npibin,m_one);
-								const AVX_FLOATS m_binproduct = AVX_ADD_FLOATS(AVX_MULTIPLY_FLOATS(m_rpbin,m_npibin_p1),m_pibin);
-								union_finalbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_binproduct);
+							m_mask_left = AVX_BITWISE_AND(m_mask_pimax, m_rp_mask);
+							if(AVX_TEST_COMPARISON(m_mask_left)==0) {
+								continue;
 							}
+
+							m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,m_Dperp,m_mask_left);
+							m_Dpar  = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_pimax,m_Dpar,m_mask_left);
+#ifdef OUTPUT_RPAVG
+							union_mDperp.m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,AVX_SQRT_FLOAT(m_Dperp),m_mask_left);
+#endif							
 						}
+
+						const AVX_FLOATS m_mask = m_mask_left;
+						AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0);
+						for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+							const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_Dperp,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+							const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
+							m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+							m_mask_left = AVX_COMPARE_FLOATS(m_Dperp, m_rupp_sqr[kbin-1],_CMP_LT_OS);
+							int test = AVX_TEST_COMPARISON(m_mask_left);
+							if(test==0)	break;
+						}
+
+						/* Compute the 1-D index to the [rpbin, pibin] := rpbin*(npibin+1) + pibin */
+						const AVX_FLOATS m_tmp1 = AVX_SQRT_FLOAT(m_Dpar);
+						const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_tmp1,m_inv_dpi);
+						const AVX_FLOATS m_pibin = AVX_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
+						const AVX_FLOATS m_npibin_p1 = AVX_ADD_FLOATS(m_npibin,m_one);
+						const AVX_FLOATS m_binproduct = AVX_ADD_FLOATS(AVX_MULTIPLY_FLOATS(m_rpbin,m_npibin_p1),m_pibin);
+						union_finalbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_binproduct);
+
 #if  __INTEL_COMPILER			
 #pragma unroll(NVEC)
 #endif			
 						for(int jj=0;jj<NVEC;jj++) {
 							const int ibin=union_finalbin.ibin[jj];
-								/* union_rpbin.ibin[jj]*(npibin+1) + union_pibin.ibin[jj]; */
+
 							npairs[ibin]++;
 #ifdef OUTPUT_RPAVG							
 							rpavg [ibin] += union_mDperp.Dperp[jj];

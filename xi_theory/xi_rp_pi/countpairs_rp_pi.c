@@ -353,23 +353,21 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 								//Do all the distance cuts using masks here in new scope
 								{
 									const AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
-									const int test = AVX_TEST_COMPARISON(m_mask_pimax);
-									if(test == 0) {
+									if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
 										continue;
 									}
+                  const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
+									const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
+									const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
 
-									const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_sqr_rpmin,_CMP_GE_OS);
-									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax,r2,m_mask_pimax);
-									
-									m_mask_left = AVX_COMPARE_FLOATS(r2,m_sqr_rpmax,_CMP_LT_OS);//will get utilized in the next section
-									const AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
-									int test1 = AVX_TEST_COMPARISON(m_mask);
-									if(test1 == 0) {
+									m_mask_left = AVX_BITWISE_AND(m_mask_pimax, m_rp_mask);
+									if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
 										continue;
 									}
+									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax,r2,m_mask_left);
 									
 									//So there's at least one point that is in range - let's find the bin
-									m_zdiff = AVX_BLEND_FLOATS_WITH_MASK(m_pimax, m_zdiff, m_mask);
+									m_zdiff = AVX_BLEND_FLOATS_WITH_MASK(m_pimax, m_zdiff, m_mask_left);
 #ifdef OUTPUT_RPAVG
 									union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
 #endif									
