@@ -25,27 +25,20 @@
 #include "defs.h"
 #include "utils.h"
 
-/* Library proto-types + struct definitions in the ../include directory */
+/* Library proto-types + struct definitions in the ../../include directory
+	 These are the pair-counters
+*/
 #include "countpairs.h"
 #include "countpairs_rp_pi.h"
 #include "countpairs_wp.h"
+#include "countpairs_xi.h"
+
+//for vpf. 
+#include "countspheres.h"
 
 #ifndef MAXLEN
 #define MAXLEN 500
 #endif
-
-//Just to output some colors
-
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-
-/* #define ANSI_COLOR_YELLOW  "\x1b[33m" */
-/* #define ANSI_COLOR_CYAN    "\x1b[36m" */
-
-
 
 void Printhelp(void);
 
@@ -74,7 +67,7 @@ int main(int argc, char **argv)
 	double boxsize;
 	struct timeval t0,t1;
 	DOUBLE pimax;
-		
+
 #ifndef USE_OMP
 	const char argnames[][30]={"file","format","binfile","boxsize","pimax"};
 #else
@@ -136,7 +129,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
 						"../xi_of_r/DD",file,fileformat,file,fileformat,binfile,nthreads);
 #else
-		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s'" ANSI_COLOR_RESET "\n",
 						"../xi_of_r/DD",file,fileformat,file,fileformat,binfile);
 #endif						
 
@@ -170,7 +163,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
 						"../xi_rp_pi/DDrppi",file,fileformat,file,fileformat,binfile,pimax,nthreads);
 #else
-		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf'" ANSI_COLOR_RESET "\n",
 						"../xi_rp_pi/DDrppi",file,fileformat,file,fileformat,binfile,pimax);
 #endif						
 
@@ -210,7 +203,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent wp calculation would be:\n `%s %lf %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
 						"../wp/wp",boxsize,file,fileformat,binfile,pimax,nthreads);
 #else
-		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent wp calculation would be:\n `%s %lf %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent wp calculation would be:\n `%s %lf %s %s %s %lf'" ANSI_COLOR_RESET "\n",
 						"../wp/wp",boxsize,file,fileformat,binfile,pimax);
 #endif						
 		results_countpairs_wp *results = countpairs_wp(ND1,x1,y1,z1,
@@ -234,7 +227,73 @@ int main(int argc, char **argv)
 		free_results_wp(&results);
 	}
 
+
+	//Do xi on the periodic cube
+	{
+		gettimeofday(&t0,NULL);
+#ifdef USE_OMP		
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent xi calculation would be:\n `%s %lf %s %s %s %d'" ANSI_COLOR_RESET "\n",
+						"../xi/xi",boxsize,file,fileformat,binfile,nthreads);
+#else
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent xi calculation would be:\n `%s %lf %s %s %s'" ANSI_COLOR_RESET "\n",
+						"../xi/xi",boxsize,file,fileformat,binfile);
+#endif						
+		results_countpairs_xi *results = countpairs_xi(ND1,x1,y1,z1,
+																									 boxsize,
+#ifdef USE_OMP
+																									 nthreads,
+#endif
+																									 binfile);
+
+		gettimeofday(&t1,NULL);
+		double pair_time = ADD_DIFF_TIME(t0,t1);
+		/* DOUBLE rlow=results->rupp[0]; */
+		/* for(int i=1;i<results->nbin;++i) { */
+		/* 	fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->xi[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]); */
+		/* 	rlow=results->rupp[i]; */
+		/* } */
+		
+		fprintf(stderr,ANSI_COLOR_GREEN "Done xi. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, pair_time);
+
+		//free the result structure
+		free_results_xi(&results);
+	}
+
+
+	//Now run the vpf -- not OpenMP'ized -- so will only use 1 core. 
+	{
+		gettimeofday(&t0,NULL);
+		const double rmax=10.0;
+		const int nbin=10;
+		const int nc=10000;
+		const int num_pN=6;
+		unsigned long seed=-1;
+
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent vpf calculation would be:\n `%s %lf %d %d %d %s %s %ld'" ANSI_COLOR_RESET "\n",
+						"../vpf/vpf",rmax,nbin,nc,num_pN,file,fileformat,seed);
+
+		results_countspheres *results = countspheres(ND1, x1, y1, z1,
+																								 rmax, nbin, nc,
+																								 num_pN,
+																								 seed);
+
 			
+		gettimeofday(&t1,NULL);
+		double sphere_time = ADD_DIFF_TIME(t0,t1);
+
+		//Output the results
+		/* const DOUBLE rstep = rmax/(DOUBLE)nbin ; */
+		/* for(int ibin=0;ibin<results->nbin;ibin++) { */
+		/* 	const double r=(ibin+1)*rstep; */
+		/* 	fprintf(stdout,"%"DOUBLE_FORMAT" ", r); */
+		/* 	for(int i=0;i<num_pN;i++) { */
+		/* 		fprintf(stdout," %10.4e", (results->pN)[ibin][i]); */
+		/* 	} */
+		/* 	fprintf(stdout,"\n"); */
+		/* } */
+		fprintf(stderr,ANSI_COLOR_GREEN "Done VPF. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, sphere_time);
+		free_results_countspheres(&results);
+	}
 	
 	free(x1);free(y1);free(z1);
 	return EXIT_SUCCESS;

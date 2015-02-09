@@ -264,6 +264,9 @@ int main(int argc, char **argv)
 		const char *testname = alltests_names[this_test_num];
 		if(status==EXIT_SUCCESS) {
 		  fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+			char execstring[MAXLEN];
+			my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
+			system(execstring);
 		} else {
 		  fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		  char execstring[MAXLEN];

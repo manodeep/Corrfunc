@@ -8,12 +8,12 @@ PROJECT := _countpairs
 LIBRARY := $(PROJECT).so.$(MAJOR).0.$(MINOR)
 SOURCES := _countpairs.c 
 OBJECTS := $(SOURCES:.c=.o)
-C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a
+C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a
 
 all: $(LIBRARY) | ../../lib
 
-$(LIBRARY): Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) -shared -o $@
+$(LIBRARY): $(PROJECT).c Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) -shared -o $@
 	rm -f $(PROJECT).so 
 	ln -s $(LIBRARY) $(PROJECT).so
 	cp -p $(LIBRARY) ../../lib/
@@ -34,6 +34,12 @@ $(LIBRARY): Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
 
 ../../lib/libcountpairs_wp.a: 
 	$(MAKE) -C ../wp/ lib
+
+../../lib/libcountpairs_xi.a: 
+	$(MAKE) -C ../xi/ lib
+
+../../lib/libcountspheres.a: 
+	$(MAKE) -C ../vpf/ lib
 
 install: $(LIBRARY) | ../../lib
 	cp -p $(LIBRARY) ../../lib/

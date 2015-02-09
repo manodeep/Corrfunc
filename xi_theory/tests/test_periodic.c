@@ -45,6 +45,7 @@
 #include "../xi_rp_pi/countpairs_rp_pi.c"
 #include "../wp/countpairs_wp.c"
 #include "../vpf/countspheres.c"
+#include "../xi/countpairs_xi.c"
 
 char tmpoutputfile[]="./test_periodic_output.txt";
 
@@ -193,7 +194,29 @@ int test_vpf(const char *correct_outputfile)
   return ret;
 }
 
+int test_xi(const char *correct_outputfile)
+{
+  results_countpairs_xi *results = countpairs_xi(ND1,X1,Y1,Z1,
+																								 boxsize,
+#ifdef USE_OMP
+																								 nthreads,
+#endif
+																								 binfile);
+  DOUBLE rlow=results->rupp[0];
+  FILE *fp=my_fopen(tmpoutputfile,"w");
+  for(int i=1;i<results->nbin;++i) {
+		fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->xi[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
+		rlow=results->rupp[i];
+  }
+  fclose(fp);
+  char execstring[MAXLEN];
+  my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+  int ret=system(execstring);
 
+  //free the result structure
+  free_results_xi(&results);
+  return ret;
+}
 
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat)
 {
@@ -262,22 +285,22 @@ int main(int argc, char **argv)
   int failed=0;
   int status;
   
-  const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)","Mr19 DDrppi (periodic)","Mr19 wp (periodic)","Mr19 vpf [periodic]",
+  const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)","Mr19 DDrppi (periodic)","Mr19 wp (periodic)","Mr19 vpf (periodic)","Mr19 xi periodic)",
 																				 "CMASS DDrppi DD (periodic)","CMASS DDrppi DR (periodic)","CMASS DDrppi RR (periodic)"};
   const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
-  const int function_pointer_index[] = {0,1,2,3,1,1,1};//0->DD, 1->DDrppi,2->wp
+  const int function_pointer_index[] = {0,1,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi
 
-  const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","Mr19_vpf_periodic","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
-  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
+  const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","Mr19_vpf_periodic","Mr19_xi","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
+  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
 																				"../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
-  const char firstfiletype[][MAXLEN] = {"a","f","f","f","f","f","f"};
-  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
+  const char firstfiletype[][MAXLEN] = {"a","f","f","f","f","f","f","f"};
+  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
 																				 "../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
-  const char secondfiletype[][MAXLEN] = {"a","f","f","f","f","f","f"};
-  const DOUBLE allpimax[]             = {40.0,40.0,40.0,40.0,80.0,80.0,80.0};
+  const char secondfiletype[][MAXLEN] = {"a","f","f","f","f","f","f","f"};
+  const DOUBLE allpimax[]             = {40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
 
-  int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp,test_vpf};
-  const int numfunctions=4;//4 functions total
+  int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp,test_vpf,test_xi};
+  const int numfunctions=5;//4 functions total
 
   int total_tests=0;
   
@@ -326,6 +349,9 @@ int main(int argc, char **argv)
 		double pair_time = ADD_DIFF_TIME(t0,t1);
 		if(status==EXIT_SUCCESS) {
 		  fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+			char execstring[MAXLEN];
+			my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
+			system(execstring);
 		} else {
 		  fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		  char execstring[MAXLEN];

@@ -21,7 +21,6 @@
 #include "avx_calls.h"
 #endif
 
-#define BLOCK_SIZE     NVEC
 
 #ifdef USE_OMP
 #include <omp.h>
@@ -56,7 +55,9 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 #endif
 																		 const char *binfile)
 {
-	
+	//How many bins to subdivide rmax into -> affects runtime on O(20-30%) levels.
+	//Check with your typical use-case and set appropriately. Values of 1,2 and 3 are 
+	//all you might need to check. 
   int bin_refine_factor=2;
 	
   /***********************
@@ -78,7 +79,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 		
   cellarray *lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
   if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
-		fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
+		fprintf(stderr,"%s> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n",__FUNCTION__);
 		bin_refine_factor *=2;
 		const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;  		
 		for(int64_t i=0;i<totncells;i++) {
@@ -168,7 +169,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 #endif		
 
 
-#pragma omp for  schedule(dynamic) 
+#pragma omp for  schedule(dynamic) nowait
 #endif
 		for(int64_t index1=0;index1<totncells;index1++) {
 
@@ -234,9 +235,9 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 							const DOUBLE z1pos=z1[i] + off_zwrap;
 					  
 #ifndef USE_AVX
-							for(int64_t j=0;j<second->nelements;j+=BLOCK_SIZE) {
+							for(int64_t j=0;j<second->nelements;j+=NVEC) {
 								int block_size=second->nelements - j;
-								if(block_size > BLOCK_SIZE) block_size=BLOCK_SIZE;
+								if(block_size > NVEC) block_size=NVEC;
 						
 								for(int jj=0;jj<block_size;jj++) {
 									const DOUBLE dz = z2[j+jj] - z1pos;
@@ -329,7 +330,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 								AVX_FLOATS m_mask_left;
 						
 								{
-
+									
 								  //Check if dz >= rpmax (pimax is rpmax). If so, break. 
 								  AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff, m_pimax,_CMP_LT_OS);
 								  const int test = AVX_TEST_COMPARISON(m_mask_pimax);
@@ -377,7 +378,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 										m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
 										/* m_mask_left = AVX_XOR_FLOATS(m1, m_all_ones);//XOR with 0xFFFF... gives the bins that are smaller than m_rupp_sqr[kbin] (and is faster than cmp_p(s/d) in theory) */
 
-										//Check the mask 
+										//Check the mask for the separations that fell into this kbin
 										const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
 										
 										//Do a pop-count to add the number of bits. This is somewhat wasteful, since 
@@ -522,9 +523,10 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 
 	const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
 	const DOUBLE density=0.5*avgweight2*ND1/(boxsize*boxsize*boxsize);//0.5 because pairs are not double-counted
-	DOUBLE rlow=0.0 ;
 	const DOUBLE prefac_density=avgweight1*ND1*density;
-	
+
+	DOUBLE rlow=0.0 ;
+	//The first bin contains junk
 	for(int i=0;i<nrpbin;i++) {
 		results->npairs[i] = npairs[i];
 		results->rupp[i]   = rupp[i];
@@ -535,11 +537,11 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 #endif
 
 		const DOUBLE weight0 = (DOUBLE) results->npairs[i];
+		const DOUBLE vol=M_PI*(rupp[i]*rupp[i]*rupp[i]-rlow*rlow*rlow);
 		/* compute xi, dividing summed weight by that expected for a random set */
-		const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]*results->rupp[i]-rlow*rlow*rlow);
 		const DOUBLE weightrandom = prefac_density*vol;
 		assert(weightrandom > 0 && "Random weight is <= 0.0 - that is impossible");
-		results->xi[i] = (weight0/weightrandom-1);
+		results->xi[i] = (weight0/weightrandom-1.0);
 		rlow=results->rupp[i];
 	}
 
@@ -553,9 +555,6 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
   free(lattice);
   free(rupp);
 	
-#ifdef USE_OMP
-	
-#endif
 
 	return results;
 
