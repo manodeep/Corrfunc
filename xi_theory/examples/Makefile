@@ -4,18 +4,17 @@ target = run_correlations
 
 SRC1   := run_correlations.c ../../io/ftread.c ../../io/io.c  ../../utils/utils.c ../../utils/progressbar.c 
 OBJS1  := $(SRC1:.c=.o)
-C_LIBRARIES = ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a 
+C_LIBRARIES = ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a 
 
-INCL :=	../../include/countpairs.h ../../include/countpairs_rp_pi.h ../../include/countpairs_wp.h \
+INCL :=	../../include/countpairs.h ../../include/countpairs_rp_pi.h ../../include/countpairs_wp.h ../../include/countpairs_xi.h \
 		../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/progressbar.h 
 
-
 all: $(target) 
 
 $(target): Makefile ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
-	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) -o $@
+	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) -o $@
 
 ../../lib/libcountpairs.a: 
 	$(MAKE) -C ../xi_of_r/ lib
