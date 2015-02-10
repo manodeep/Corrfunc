@@ -10,10 +10,10 @@ INCL   = countspheres_mocks.h ../../io/ftread.h ../../io/io.h ../../utils/utils.
 
 all: $(target) $(SRC1) $(INCL)
 
-$(target): $(OBJS1) $(INCL) ../../common.mk Makefile 
+$(target): $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile 
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@
 
-%.o: %.c $(INCL) ../../common.mk Makefile
+%.o: %.c $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 countspheres_mocks.o: countspheres_mocks.c $(INCL) ../../common.mk Makefile
@@ -28,12 +28,12 @@ SRC2   = countspheres_mocks.c ../../utils/gridlink.c ../../utils/utils.c ../../u
 				../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c
 
 OBJS2  = $(SRC2:.c=.o)
-libcountspheres_mocks.a: $(OBJS2) | ../../lib ../../include
+libcountspheres_mocks.a: $(OBJS2) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countspheres_mocks.h > ../../include/countspheres_mocks.h 
 
-.PHONY: clean clena celan install lib tests 
+.PHONY: clean clena celan install lib tests distclean
 
 ../../lib:
 	mkdir -p ../../lib

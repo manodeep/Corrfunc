@@ -43,12 +43,12 @@ int main(int argc, char *argv[])
   /*---Particle-distribution-variables---*/
   int64_t Ngal,Nran=0;
 	
-  DOUBLE *xgal=NULL,*ygal=NULL,*zgal=NULL;
+  DOUBLE *ra=NULL,*dec=NULL,*cz=NULL;
 	DOUBLE *xran=NULL,*yran=NULL,*zran=NULL;
 	char *galaxy_file,*galaxy_file_format,*random_file,*random_file_format,*centers_file;
 	int cosmology=1;
 	
-struct timeval tstart,t0,t1;
+	struct timeval tstart,t0,t1;
 	
   const char argnames[][100]={"rmax","nbin","ncenters","num_pN","volume","galaxy file","galaxy file-format","randoms file","randoms file-format","centers file","cosmology flag"};
   int nargs=sizeof(argnames)/(sizeof(char)*100);
@@ -97,7 +97,7 @@ struct timeval tstart,t0,t1;
   assert(rmax > 0 && "rmax must be > 0");
   assert(nbin > 0 && "Number of bins must be > 0");
   assert(nc > 0 && "Number of spheres must be > 0");
-  assert(volume > 0 && "Mock volume must be > 0");
+
 
   int need_randoms = 1;
   int64_t num_centers_in_file=0;
@@ -122,7 +122,7 @@ struct timeval tstart,t0,t1;
 
   gettimeofday(&t0,NULL);
   /*---Read-galaxy-data1-file----------------------------------*/
-  Ngal=read_positions(galaxy_file,galaxy_file_format, sizeof(DOUBLE), 3, &xgal, &ygal, &zgal);
+  Ngal=read_positions(galaxy_file,galaxy_file_format, sizeof(DOUBLE), 3, &ra, &dec, &cz);
   gettimeofday(&t1,NULL);
   fprintf(stderr,"vpf_sdss> Ngal = %"PRId64". Time to read-in galaxies=%6.2lf sec\n",Ngal,ADD_DIFF_TIME(t0,t1)) ;
 
@@ -137,14 +137,15 @@ struct timeval tstart,t0,t1;
   /*---Expected-number-of-randoms-in-sphere-------------*/
 	int threshold_neighbors;
   if(need_randoms == 1) {
-    double Nexpected = (double)Nran*(4.0*M_PI*(rmax*rmax*rmax)/3.)/volume ;
+		assert(volume > 0 && "Mock volume must be > 0");
+		double Nexpected = (double)Nran*(4.0*M_PI*(rmax*rmax*rmax)/3.)/volume ;
     fprintf(stderr,"vpf_sdss> Expected number of randoms in sphere = %lf\n",Nexpected) ;
 		threshold_neighbors = (int) (Nexpected - 3*sqrt(Nexpected));
   } else {
     threshold_neighbors = 1;//dummy value -> just to ensure that the check does not compare with uninitialized values
   }
 
-  results_countspheres_mocks *results = countspheres_mocks(Ngal, xgal, ygal, zgal,
+  results_countspheres_mocks *results = countspheres_mocks(Ngal, ra, dec, cz,
 																													 Nran, xran, yran, zran,
 																													 threshold_neighbors,
 																													 rmax, nbin, nc,
@@ -165,7 +166,7 @@ struct timeval tstart,t0,t1;
 	}
 	
 
-  free(xgal);free(ygal);free(zgal);
+  free(ra);free(dec);free(cz);
   if(need_randoms == 1) {
     free(xran);free(yran);free(zran);
   }

@@ -50,11 +50,10 @@ clean:
 clena: clean
 celan: clean
 
-
 tests: tests_periodic 
 
 tests_periodic: ../tests/tests_periodic
-	cd ../tests && ./test_periodic 0 
+	$(MAKE) -C ../tests xi
 
 ../tests/tests_periodic:
 	$(MAKE) -C ../tests
