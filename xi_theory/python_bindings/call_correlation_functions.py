@@ -94,7 +94,7 @@ nbin=10
 nspheres=10000
 num_pN=3
 seed=-1
-results_vpf = _countpairs.countpairs_vpf(rmax,nbin,nspheres,num_pN,seed,x,y,z)
+results_vpf = _countpairs.countspheres_vpf(rmax,nbin,nspheres,num_pN,seed,x,y,z)
 
 print("\n#            ******    pN: first {} bins  *******         ".format(numbins_to_print))
 print('#       r    ',end="")

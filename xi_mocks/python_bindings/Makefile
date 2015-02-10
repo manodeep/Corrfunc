@@ -8,7 +8,7 @@ PROJECT := _countpairs_mocks
 LIBRARY := $(PROJECT).so.$(MAJOR).0.$(MINOR)
 SOURCES := _countpairs_mocks.c 
 OBJECTS := $(SOURCES:.c=.o)
-C_LIBRARY := ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta_mocks.a
+C_LIBRARY := ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta_mocks.a ../../lib/libcountspheres_mocks.a 
 
 all: $(LIBRARY) | ../../lib
 
