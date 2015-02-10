@@ -187,7 +187,7 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
   
 
   /*---Shift-coordinates--------------------------------*/
-  fprintf(stderr,"vpf_sdss> maximum distance = %f\n",rcube) ;
+  fprintf(stderr,"%s> maximum distance = %f. ",__FUNCTION__,rcube) ;
   rcube = rcube + 1. ; //add buffer
 
   for(int i=0;i<Ngal;i++) {
@@ -206,7 +206,7 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
   rcube = 2*rcube ;
   const DOUBLE inv_rcube = 1.0/rcube;
   const DOUBLE rmax_sqr = rmax*rmax;
-  fprintf(stderr,"vpf_sdss> cube size = %f\n",rcube) ;
+  fprintf(stderr," Bounding cube size = %f\n",rcube) ;
 
   /*---Construct-grid-to-speed-up-neighbor-searching----*/
   //First create the 3-d linklist
@@ -419,8 +419,8 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
   }
   fclose(fpcen);
   finish_myprogressbar(&interrupted);
-  fprintf(stderr,"vpf_sdss> Placed %d centers out of %d trials.\n",isucceed,itry);
-  fprintf(stderr,"vpf_sdss> num_centers_in_file = %"PRId64" ncenters_written = %d\n",num_centers_in_file,ncenters_written);
+  fprintf(stderr,"%s> Placed %d centers out of %d trials.\n",__FUNCTION__,isucceed,itry);
+  fprintf(stderr,"%s> num_centers_in_file = %"PRId64" ncenters_written = %d\n",__FUNCTION__,num_centers_in_file,ncenters_written);
   assert(isucceed > 0 && "Placed > 0 spheres in the volume");
   if(isucceed < nc) {
     fprintf(stderr,"WARNING: Could only place `%d' out of requested `%d' spheres. Increase the random-sample size might improve the situation\n",isucceed,nc);

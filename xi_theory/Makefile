@@ -42,14 +42,14 @@ distclena:realclean
 realclena:realclean
 
 realclean:
+	$(RM) ../bin/$(target)
 	$(MAKE) clean
 	$(MAKE) -C xi_of_r distclean
 	$(MAKE) -C xi_rp_pi distclean
 	$(MAKE) -C wp distclean
 	$(MAKE) -C xi distclean
 	$(MAKE) -C vpf distclean
-	$(RM) ../bin/$(target)
-	$(RM) ../lib/_countpairs.so ../lib/_countpairs.so.$(MAJOR).0.$(MINOR)
+	$(MAKE) -C python_bindings distclean
 
 clean:
 	$(RM) $(target) $(OBJS1) 
@@ -63,12 +63,9 @@ clean:
 	$(MAKE) -C tests clean
 
 clena: clean
-
 celan: clean
-
 celna: clean
-
-install: dirs
+install: | dirs
 	cp -p $(target) ../bin
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install

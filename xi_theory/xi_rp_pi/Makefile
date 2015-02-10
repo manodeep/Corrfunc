@@ -11,20 +11,21 @@ INCL   = countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h 
 		../../utils/defs.h ../../utils/progressbar.h 
 
 
-DDrppi: $(OBJS1) $(INCL) ../../common.mk Makefile
+DDrppi: $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
-%.o: %.c $(INCL) ../../common.mk Makefile
+%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-OBJS2= wprp.o ../../utils/utils.o
-wprp: $(OBJS2) Makefile 
+OBJS2= wprp.o ../../utils/utils.o 
+wprp: $(OBJS2) ../../theory.options ../../common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS2) $(CLINK)
 
+libs: lib
 lib: libcountpairs_rp_pi.a | ../../lib
 
 OBJS3=countpairs_rp_pi.o ../../utils/gridlink.o ../../utils/utils.o ../../utils/progressbar.o 
-libcountpairs_rp_pi.a: $(OBJS3) | ../../lib ../../include
+libcountpairs_rp_pi.a: $(OBJS3) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS3)
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_rp_pi.h > ../../include/countpairs_rp_pi.h

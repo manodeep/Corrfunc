@@ -1,4 +1,4 @@
-/* File: run_correlations.c */
+/* File: run_correlations_mocks.c */
 /*
 		This file is a part of the Corrfunc package
 		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
@@ -10,8 +10,6 @@
 	Example code to show how to use the correlation function libraries
 	Author: Manodeep Sinha <manodeep@gmail.com>
 	Date: At some point in early 2015. 
-
-
 
 */
 
@@ -26,10 +24,10 @@
 #include "utils.h"
 #include "cosmology_params.h"
 
-/* Library proto-types + struct definitions in the ../include directory */
+/* Library proto-types + struct definitions in the ../..//include directory */
 #include "countpairs_rp_pi_mocks.h"
 #include "countpairs_theta_mocks.h"
-
+#include "countspheres_mocks.h"
 
 #ifndef MAXLEN
 #define MAXLEN 500
@@ -127,7 +125,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d %d'" ANSI_COLOR_RESET "\n",
 						"../DDrppi/DDrppi_mocks",file,fileformat,file,fileformat,binfile,pimax,cosmology,nthreads);
 #else
-		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf'" ANSI_COLOR_RESET "\n",
 						"../DDrppi/DDrppi_mocks",file,fileformat,file,fileformat,binfile,cosmology,pimax);
 #endif						
 
@@ -168,7 +166,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
 						"../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile,pimax,nthreads);
 #else
-		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s %lf'" ANSI_COLOR_RESET "\n",
 						"../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile,pimax);
 #endif						
 
@@ -195,6 +193,48 @@ int main(int argc, char **argv)
 		free_results_countpairs_theta(&results);
 	}
 
+
+	//Do the VPF
+	{
+		gettimeofday(&t0,NULL);
+		const double rmax=10.0;
+		const int nbin=10;
+		const int nc=10000;
+		const int num_pN=6;
+		const int64_t Nran=nc;//Need to set it to nc so that the loop runs
+		DOUBLE *xran=NULL,*yran=NULL,*zran=NULL;
+		const int threshold_neighbors=1;
+		const char centers_file[]="../tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt";
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %lf %d %d %d %lf %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
+						"../vpf/vpf_mocks",rmax,nbin,nc,num_pN,0.0,file,fileformat,"junk","junkformat",centers_file,cosmology);
+
+		results_countspheres_mocks *results = countspheres_mocks(ND1, ra1, dec1, cz1,
+																														 Nran, xran, yran, zran,
+																														 threshold_neighbors,
+																														 rmax, nbin, nc,
+																														 num_pN,
+																														 centers_file, 
+																														 cosmology);
+		
+
+
+		gettimeofday(&t1,NULL);
+		double sphere_time = ADD_DIFF_TIME(t0,t1);
+
+		//Output the results
+		/* const DOUBLE rstep = rmax/(DOUBLE)nbin ; */
+		/* for(int ibin=0;ibin<results->nbin;ibin++) { */
+		/* 	const double r=(ibin+1)*rstep; */
+		/* 	fprintf(stdout,"%10.2"DOUBLE_FORMAT" ", r); */
+		/* 	for(int i=0;i<num_pN;i++) { */
+		/* 		fprintf(stdout," %10.4e", (results->pN)[ibin][i]); */
+		/* 	} */
+		/* 	fprintf(stdout,"\n"); */
+		/* } */
+		fprintf(stderr,ANSI_COLOR_GREEN "Done VPF. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, sphere_time);
+		free_results_countspheres_mocks(&results);
+	}
+	
 			
 	
 	free(ra1);free(dec1);free(cz1);

@@ -5,7 +5,7 @@ SRC1   = test_periodic.c ../../utils/utils.c ../../utils/progressbar.c
 OBJS1  = $(SRC1:.c=.o)
 INCL  = ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c \
 				../xi_of_r/countpairs.c ../xi_rp_pi/countpairs_rp_pi.c ../wp/countpairs_wp.c \
-				../vpf/countspheres.c 
+				../vpf/countspheres.c ../xi/countpairs_xi.c
 
 
 SRC2   = test_nonperiodic.c ../../utils/utils.c ../../utils/progressbar.c 
@@ -44,9 +44,6 @@ vpf: test_periodic
 
 xi: test_periodic
 	./test_periodic 4
-
-%.o: %.c ../common.mk Makefile $(INCL)
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 .PHONY: clean clena celan install lib tests 
 

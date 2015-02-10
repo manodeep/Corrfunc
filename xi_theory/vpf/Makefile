@@ -9,13 +9,13 @@ INCL   = countspheres.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../.
 
 all: $(target) $(SRC1) $(INCL)
 
-$(target): $(OBJS1) $(INCL) ../../common.mk Makefile 
+$(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@
 
-%.o: %.c $(INCL) ../../common.mk Makefile
+%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-countspheres.o: countspheres.c $(INCL) ../../common.mk Makefile
+countspheres.o: countspheres.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
 
 SRC2   = countspheres.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 
@@ -25,7 +25,7 @@ libs: lib
 lib:  libcountspheres.a | ../../lib
 
 
-libcountspheres.a: $(OBJS2) | ../../lib ../../include
+libcountspheres.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countspheres.h > ../../include/countspheres.h 

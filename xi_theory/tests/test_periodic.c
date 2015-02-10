@@ -53,6 +53,8 @@ int test_periodic_DD(const char *correct_outputfile);
 int test_periodic_DDrppi(const char *correct_outputfile);
 int test_wp(const char *correct_outputfile);
 int test_vpf(const char *correct_outputfile);
+int test_xi(const char *correct_outputfile);
+
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
 
 //Global variables

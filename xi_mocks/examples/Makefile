@@ -5,7 +5,7 @@ target = run_correlations_mocks
 SRC1   := run_correlations_mocks.c ../../io/ftread.c ../../io/io.c  ../../utils/utils.c ../../utils/progressbar.c \
 					../../utils/cosmology_params.c 
 OBJS1  := $(SRC1:.c=.o)
-C_LIBRARIES = ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta_mocks.a 
+C_LIBRARIES = ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta_mocks.a  ../../lib/libcountspheres_mocks.a 
 
 INCL :=	../../include/countpairs_rp_pi_mocks.h ../../include/countpairs_theta_mocks.h \
 		../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
@@ -22,6 +22,9 @@ $(target): Makefile ../../mocks.options ../../common.mk $(INCL) $(C_LIBRARIES) $
 
 ../../lib/libcountpairs_theta_mocks.a: 
 	$(MAKE) -C ../wtheta lib
+
+../../lib/libcountspheres_mocks.a:
+	$(MAKE) -C ../vpf lib
 
 %.o: %.c ../../common.mk ../../mocks.options Makefile
 	$(CC) $(CFLAGS) -I../../include $(OPT) $(INCLUDE) -c $< -o $@
