@@ -8,7 +8,7 @@ logbins: $(OBJS1)  | dirs
 dirs:
 	mkdir -p lib bin include 
 
-.PHONY: clean celna clena celan xi_theory xi_mocks
+.PHONY: clean celna clena celan xi_theory xi_mocks install
 
 xi_theory: | dirs
 	$(MAKE) -C xi_theory

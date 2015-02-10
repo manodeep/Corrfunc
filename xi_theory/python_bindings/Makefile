@@ -1,8 +1,9 @@
 include ../../theory.options ../../common.mk
 
 PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "import numpy; print '-I' + numpy.__path__[0] + '/core/include/numpy/'")
-PYTHON_LINK   := $(shell python-config --ldflags) 
-PYTHON_LIBDIR := $(shell python-config --prefix)/lib
+PYTHON_LIBDIR := $(shell python-config --prefix)/lib 
+PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+
 
 PROJECT := _countpairs
 LIBRARY := $(PROJECT).so.$(MAJOR).0.$(MINOR)
@@ -13,7 +14,7 @@ C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib
 all: $(LIBRARY) | ../../lib
 
 $(LIBRARY): $(PROJECT).c Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR) -shared -o $@
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 	rm -f $(PROJECT).so 
 	ln -s $(LIBRARY) $(PROJECT).so
 	cp -p $(LIBRARY) ../../lib/
