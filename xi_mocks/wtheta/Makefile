@@ -35,7 +35,6 @@ wtheta: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 # endif
 
 libs:lib
-
 lib: libcountpairs_theta_mocks.a | ../../lib
 
 OBJS3=countpairs_theta_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o

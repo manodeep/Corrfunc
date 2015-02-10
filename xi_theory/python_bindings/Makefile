@@ -11,9 +11,9 @@ SOURCES := _countpairs.c
 OBJECTS := $(SOURCES:.c=.o)
 C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a
 
-all: $(LIBRARY) | ../../lib
+all: $(LIBRARY) $(SOURCES) | ../../lib
 
-$(LIBRARY): $(PROJECT).c Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
+$(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 	rm -f $(PROJECT).so 
 	ln -s $(LIBRARY) $(PROJECT).so
@@ -24,7 +24,7 @@ $(LIBRARY): $(PROJECT).c Makefile ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../.
 ../../lib:
 	mkdir -p ../../lib
 
-%.o: %.c Makefile ../../common.mk 
+%.o: %.c ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
 ../../lib/libcountpairs.a: 

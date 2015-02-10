@@ -11,21 +11,21 @@ INCL :=	../../include/countpairs.h ../../include/countpairs_rp_pi.h ../../includ
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/progressbar.h 
 
-all: $(target) 
+all: $(target) $(SRC1) $(INCL) $(C_LIBRARIES)
 
-$(target): Makefile ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
+$(target): Makefile ../../theory.options ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) -o $@
 
-../../lib/libcountpairs.a: 
+../../lib/libcountpairs.a: ../../theory.options ../../common.mk Makefile 
 	$(MAKE) -C ../xi_of_r/ lib
 
-../../lib/libcountpairs_rp_pi.a: 
+../../lib/libcountpairs_rp_pi.a: ../../theory.options ../../common.mk Makefile
 	$(MAKE) -C ../xi_rp_pi/ lib
 
-../../lib/libcountpairs_wp.a: 
+../../lib/libcountpairs_wp.a: ../../theory.options ../../common.mk Makefile
 	$(MAKE) -C ../wp/ lib
 
-%.o: %.c ../../common.mk Makefile
+%.o: %.c ../../theory.options ../../common.mk Makefile
 	$(CC) $(CFLAGS) -I../../include $(OPT) $(INCLUDE) -c $< -o $@
 
 .PHONY: clean clena celan 

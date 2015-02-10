@@ -21,7 +21,7 @@ OBJS2  = $(SRC2:.c=.o)
 libs: lib
 lib:  libcountpairs.a | ../../lib
 
-libcountpairs.a: $(OBJS2) ../../theory.options ../../common.mk | ../../lib ../../include
+libcountpairs.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs.h > ../../include/countpairs.h 

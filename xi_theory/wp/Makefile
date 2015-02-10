@@ -9,16 +9,18 @@ INCL   = countpairs_wp.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../
 
 all: $(target) $(SRC1) $(INCL)
 
-$(target): $(OBJS1) $(INCL) ../../common.mk Makefile 
+$(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
 	$(CC) $(CLINK) $(OBJS1) -o $@
 
-%.o: %.c $(INCL) ../../common.mk Makefile
+%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 OBJS2=countpairs_wp.o ../../utils/gridlink.o ../../utils/utils.o ../../utils/progressbar.o 
+
+libs: lib
 lib: libcountpairs_wp.a | ../../lib ../../include
 
-libcountpairs_wp.a: $(OBJS2) | ../../lib ../../include
+libcountpairs_wp.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_wp.h > ../../include/countpairs_wp.h
