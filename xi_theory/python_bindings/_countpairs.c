@@ -23,14 +23,14 @@ static char countpairs_docstring[]         =	"Calculate the 3-D \\xi auto/cross-
 static char countpairs_rp_pi_docstring[]   =	"Calculate the 2-D DD(rp,pi) auto/cross-correlation function given two sets of X1/Y1/Z1 and X2/Y2/Z2 arrays.";
 static char countpairs_wp_docstring[]      =	"Calculate the projected auto-correlation function wp (assumes PERIODIC) given one set of X1/Y1/Z1 arrays.";
 static char countpairs_xi_docstring[]      =	"Calculate the 3-d auto-correlation function xi (assumes PERIODIC) given one set of X1/Y1/Z1 arrays.";
-static char countpairs_vpf_docstring[]     =	"Calculate the counts-in-spheres given one set of X1/Y1/Z1 arrays.";
+static char countspheres_vpf_docstring[]   =	"Calculate the counts-in-spheres given one set of X1/Y1/Z1 arrays.";
 
 /* function proto-type*/
 static PyObject *countpairs_countpairs(PyObject *self, PyObject *args);
 static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args);
 static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args);
 static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args);
-static PyObject *countpairs_countpairs_vpf(PyObject *self, PyObject *args);
+static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args);
 
 PyMODINIT_FUNC init_countpairs(void);
 
@@ -39,7 +39,7 @@ static PyMethodDef module_methods[] = {
 	{"countpairs_rp_pi" ,countpairs_countpairs_rp_pi ,METH_VARARGS,countpairs_rp_pi_docstring},
 	{"countpairs_wp"    ,countpairs_countpairs_wp    ,METH_VARARGS,countpairs_wp_docstring},
 	{"countpairs_xi"    ,countpairs_countpairs_xi    ,METH_VARARGS,countpairs_xi_docstring},
-	{"countpairs_vpf"   ,countpairs_countpairs_vpf   ,METH_VARARGS,countpairs_vpf_docstring},
+	{"countspheres_vpf" ,countpairs_countspheres_vpf ,METH_VARARGS,countspheres_vpf_docstring},
 	{NULL, NULL, 0, NULL}
 };
 
@@ -402,7 +402,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args)
 	return ret;
 }
 
-static PyObject *countpairs_countpairs_vpf(PyObject *self, PyObject *args)
+static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args)
 {
 	(void) self;//to suppress the unused variable warning. Terrible hack
 	PyObject *x1_obj, *y1_obj, *z1_obj;
@@ -451,7 +451,7 @@ static PyObject *countpairs_countpairs_vpf(PyObject *self, PyObject *args)
 	Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
 
 	
-	/* Build the output list */
+	/* Build the output list (of lists, since num_pN is determined at runtime) */
 	PyObject *ret = PyList_New(0);
 	const DOUBLE rstep = rmax/(DOUBLE)nbin ;
 	for(int ibin=0;ibin<results->nbin;ibin++) {
