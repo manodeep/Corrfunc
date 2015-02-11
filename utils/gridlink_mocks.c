@@ -173,9 +173,12 @@ cellarray_mocks **gridlink2D(const int64_t np,
   int nmesh_dec,idec,max_nmesh_dec;
   cellarray_mocks **lattice=NULL;
   int assigned_n=0;
+
+#ifndef SILENT	
   struct timeval t0,t1;
   gettimeofday(&t0,NULL);
-  
+#endif
+	
   assert(dcz > 0.0 && "There has to be some depth to the survey");
   assert(rcell > 0.0 && "Minimum separation has to be non-zero");
   assert(dec_diff > 0.0 && "All of the points can not be at the same declination");
@@ -264,9 +267,11 @@ cellarray_mocks **gridlink2D(const int64_t np,
     assigned_n++;
   }
   *max_in_cell = max_n;
+#ifndef SILENT	
   gettimeofday(&t1,NULL);
   fprintf(stderr,"%s> Allocated %0.2g (MB) memory for the lattice, expected_n = %d nmesh_cz = %d max_nmesh_dec = %d np=%"PRId64". Time taken = %6.2lf sec \n",__FUNCTION__,totnbytes/(1024*1024.),expected_n,nmesh_cz,max_nmesh_dec,np,
 	  ADD_DIFF_TIME(t0,t1));
+#endif	
   /* fprintf(stderr,"np = %d assigned_n = %d\n",np,assigned_n); */
   return lattice;
 }
@@ -288,14 +293,16 @@ cellarray * gridlink1D_theta(const int64_t np,
   int ngrid_dec = 0;
   
   const DOUBLE dec_diff = dec_max-dec_min;
-  DOUBLE inv_dec_diff = 1.0/dec_diff;
+  const DOUBLE inv_dec_diff = 1.0/dec_diff;
   DOUBLE dec_cell;
   /* int idec; */
   cellarray *lattice=NULL;
   int assigned_n=0;
+
+#ifndef SILENT	
   struct timeval t0,t1;
   gettimeofday(&t0,NULL);
-  
+#endif  
   assert(thetamax > 0.0);
   assert(dec_diff > 0.0);
   assert(MEMORY_INCREASE_FAC >= 1.0);
@@ -357,9 +364,11 @@ cellarray * gridlink1D_theta(const int64_t np,
     assigned_n++;
   }
   *max_in_cell = max_n;
+#ifndef SILENT	
   gettimeofday(&t1,NULL);
   fprintf(stderr,"%s> Allocated %0.2g (MB) memory for the lattice, expected_n = %d ngrid_dec = %d np=%"PRId64". Time taken = %6.2lf sec \n",__FUNCTION__,totnbytes/(1024*1024.),expected_n,ngrid_dec,np,
 	  ADD_DIFF_TIME(t0,t1));
+#endif	
   /* fprintf(stderr,"np = %d assigned_n = %d\n",np,assigned_n); */
   return lattice;
 }
@@ -404,9 +413,10 @@ cellarray_mocks *** gridlink3D(const int64_t np,
   
   cellarray_mocks ***lattice=NULL;
   int assigned_n=0;
+#ifndef SILENT	
   struct timeval t0,t1;
   gettimeofday(&t0,NULL);
-  
+#endif  
   assert(dcz > 0.0);
   assert(rcell > 0.0);
   assert(dec_diff > 0.0);
@@ -557,9 +567,10 @@ cellarray_mocks *** gridlink3D(const int64_t np,
   }
   free(dec_binsizes);
   *max_in_cell = max_n;
+#ifndef SILENT	
   gettimeofday(&t1,NULL);
-  fprintf(stderr,"%s> Allocated %0.2g (MB) memory for the lattice, expected_n = %d (max_n = %d) nmesh_cz = %d max_nmesh_dec = %d np=%"PRId64". Time taken = %6.2lf sec \n",__FUNCTION__,totnbytes/(1024*1024.),expected_n,max_n,nmesh_cz,max_nmesh_dec,np,
-	  ADD_DIFF_TIME(t0,t1));
+  fprintf(stderr,"%s> Allocated %0.2g (MB) memory for the lattice, expected_n = %d (max_n = %d) nmesh_cz = %d max_nmesh_dec = %d np=%"PRId64". Time taken = %6.2lf sec \n",__FUNCTION__,totnbytes/(1024*1024.),expected_n,max_n,nmesh_cz,max_nmesh_dec,np, ADD_DIFF_TIME(t0,t1));
+#endif	
   /* fprintf(stderr,"np = %d assigned_n = %d\n",np,assigned_n); */
   return lattice;
 }
@@ -595,9 +606,11 @@ cellarray ** gridlink2D_theta(const int64_t np,
   
   cellarray **lattice=NULL;
   int assigned_n=0;
+#ifndef SILENT
   struct timeval t0,t1;
   gettimeofday(&t0,NULL);
-  
+#endif
+	
   assert(thetamax > 0.0);
   assert(dec_diff > 0.0);
   assert(phi_diff > 0.0);
@@ -716,9 +729,11 @@ cellarray ** gridlink2D_theta(const int64_t np,
     assigned_n++;
   }
   *max_in_cell = max_n;
+#ifndef SILENT	
   gettimeofday(&t1,NULL);
   fprintf(stderr,"%s> Allocated %0.2g (MB) memory for the lattice, expected_n = %d ngrid_dec = %d np=%"PRId64". Time taken = %6.2lf sec \n",__FUNCTION__, totnbytes/(1024*1024.),expected_n,ngrid_dec,np,
 	  ADD_DIFF_TIME(t0,t1));
+#endif	
   /* fprintf(stderr,"np = %d assigned_n = %d\n",np,assigned_n); */
   return lattice;
 }
@@ -729,4 +744,147 @@ cellarray ** gridlink2D_theta(const int64_t np,
 
 
 #endif
+
+//The following is copy-pasted from the theory-side gridlink.c (used by ../xi_mocks/vpf/countspheres_mocks.c for computing the VPF on mocks)
+double get_binsize(const double xmin,const double xmax, const double rmax, const int refine_factor, const int max_ncells, int *nlattice)  __attribute__((warn_unused_result));
+
+double get_binsize(const double xmin,const double xmax, const double rmax, const int refine_factor, const int max_ncells, int *nlattice)
+{
+  double xdiff = xmax-xmin;
+  int nmesh=(int)(refine_factor*xdiff/rmax) ;
+#ifdef PERIODIC
+  if (nmesh<(2*refine_factor+1))  {
+    fprintf(stderr,"linklist> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",nmesh) ;
+    exit(EXIT_FAILURE) ;
+  }
+#endif
+  
+  if (nmesh>max_ncells)  nmesh=max_ncells;
+  double xbinsize = xdiff/nmesh;
+  *nlattice = nmesh;
+  return xbinsize;
+}
+
+cellarray * gridlink(const int64_t np,
+					 const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
+					 const DOUBLE xmin, const DOUBLE xmax,
+					 const DOUBLE ymin, const DOUBLE ymax,
+					 const DOUBLE zmin, const DOUBLE zmax,
+					 const DOUBLE max_x_size,
+					 const DOUBLE max_y_size,
+					 const DOUBLE max_z_size,
+					 const int xbin_refine_factor,
+					 const int ybin_refine_factor,
+					 const int zbin_refine_factor,
+					 int *nlattice_x,
+					 int *nlattice_y,
+					 int *nlattice_z)
+{
+  cellarray *lattice=NULL;
+  int ix,iy,iz;
+  int nmesh_x,nmesh_y,nmesh_z;
+  DOUBLE xdiff,ydiff,zdiff;
+  DOUBLE cell_volume,box_volume;
+  DOUBLE xbinsize,ybinsize,zbinsize;
+  int64_t expected_n=0;
+  int64_t totncells;
+
+#ifndef SILENT	
+  struct timeval t0,t1;
+  gettimeofday(&t0,NULL);
+#endif
+	
+  xbinsize = get_binsize(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &nmesh_x);
+  ybinsize = get_binsize(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &nmesh_y);
+  zbinsize = get_binsize(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &nmesh_z);
+  
+  totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
+
+  xdiff = xmax-xmin;
+  ydiff = ymax-ymin;
+  zdiff = zmax-zmin;
+  
+  cell_volume=xbinsize*ybinsize*zbinsize;
+  box_volume=xdiff*ydiff*zdiff;
+  expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
+  expected_n=expected_n <= 1 ? 2:expected_n;
+#ifndef SILENT	
+  fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
+#endif	
+  lattice    = (cellarray *) my_malloc(sizeof(cellarray), totncells);
+
+  /*
+	Allocate memory for each of the fields in cellarray. Since we haven't processed the data yet, 
+	expected_n is a reasonable guess as to the number of points in the cell. 
+   */
+  for (int64_t index=0;index<totncells;index++) {
+		lattice[index].x = my_malloc(sizeof(DOUBLE),expected_n);//This allocates extra and is wasteful
+		lattice[index].y = my_malloc(sizeof(DOUBLE),expected_n);
+		lattice[index].z = my_malloc(sizeof(DOUBLE),expected_n);
+		//allocate new fields in cellarray here (if you are creating a custom correlation function)
+		lattice[index].nelements=0;
+		lattice[index].nallocated=expected_n;
+  }
+
+  DOUBLE xinv=1.0/xbinsize;
+  DOUBLE yinv=1.0/ybinsize;
+  DOUBLE zinv=1.0/zbinsize;
+
+  for (int64_t i=0;i<np;i++)  {
+    ix=(int)((x[i]-xmin)*xinv) ;
+    iy=(int)((y[i]-ymin)*yinv) ;
+    iz=(int)((z[i]-zmin)*zinv) ;
+    if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
+    if (iy>nmesh_y-1)  iy--;
+    if (iz>nmesh_z-1)  iz--;
+	if(! ( ix >= 0 && ix < nmesh_x && iy >=0 && iy < nmesh_y && iz >= 0 && iz < nmesh_z)) {
+	  fprintf(stderr,"Problem with i = %"PRId64" x = %lf y = %lf z = %lf \n",i,x[i],y[i],z[i]);
+	  fprintf(stderr,"ix = %d iy = %d iz = %d\n",ix,iy,iz);
+	}
+	assert(x[i] >= xmin && x[i] <= xmax && "x-position is within limits");
+	assert(y[i] >= ymin && y[i] <= ymax && "y-position is within limits");
+	assert(z[i] >= zmin && z[i] <= zmax && "z-position is within limits");
+	
+	assert(ix >= 0 && ix < nmesh_x && "ix is in range");
+    assert(iy >= 0 && iy < nmesh_y && "iy is in range");
+    assert(iz >= 0 && iz < nmesh_z && "iz is in range");
+
+	int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
+
+    if(lattice[index].nelements == lattice[index].nallocated) {
+      expected_n = lattice[index].nallocated*MEMORY_INCREASE_FAC;
+
+	  //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1. 
+	  //This way, we only increase by a very few particles 
+	  // at a time. Smaller memory footprint
+      while(expected_n == lattice[index].nallocated)
+				expected_n += 5;
+
+      lattice[index].x = my_realloc(lattice[index].x ,sizeof(DOUBLE),expected_n,"lattice.x");
+      lattice[index].y = my_realloc(lattice[index].y ,sizeof(DOUBLE),expected_n,"lattice.y");
+      lattice[index].z = my_realloc(lattice[index].z ,sizeof(DOUBLE),expected_n,"lattice.z");
+      
+      lattice[index].nallocated = expected_n;
+    }
+    assert(lattice[index].nelements < lattice[index].nallocated && "Ensuring that number of particles in a cell doesn't corrupt memory");
+	//Index is the 1-D index for the 3-D cell. 
+	//ipos is the ipos'th particle in that 3-D cell.
+    int64_t ipos=lattice[index].nelements;
+    lattice[index].x[ipos] = x[i];
+    lattice[index].y[ipos] = y[i];
+    lattice[index].z[ipos] = z[i];
+    lattice[index].nelements++;
+  }
+
+  //You can free the extra memory reserved by the mallocs by looping over totncells and doing a realloc(lattice[index].x,sizeof(DOUBLE),lattice[index].nelements,"lattice.x")
+  
+  *nlattice_x=nmesh_x;
+  *nlattice_y=nmesh_y;
+  *nlattice_z=nmesh_z;
+#ifndef SILENT	
+  gettimeofday(&t1,NULL);
+  fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
+#endif  
+  return lattice;
+}
 

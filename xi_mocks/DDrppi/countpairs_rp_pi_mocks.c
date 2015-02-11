@@ -50,6 +50,10 @@ void free_results_mocks(results_countpairs_mocks **results)
 
 void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz)
 {
+
+	assert(N > 0 && "Number of data-points must be non-zero");
+	assert(phi != NULL && theta != NULL && cz != NULL && "Input arrays can not be NULL");
+	/* fprintf(stderr,"N = %"PRId64" phi = %p theta = %p cz = %p\n",N,phi,theta,cz); */
 	int fix_cz  = 0;
 	int fix_ra  = 0;
 	int fix_dec = 0;
@@ -123,6 +127,14 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 #endif
   const int npibin = (int) pimax;
 
+	//Check inputs
+	assert(ND1 > 0 && "Number of data-points must be non-zero");
+	assert(phi1 != NULL && theta1 != NULL && czD1 != NULL && "Input arrays can not be NULL");
+	if(autocorr==0) {
+		assert(ND2 > 0 && "Number of data-points in data-set 2 must be non-zero");
+		assert(phi2 != NULL && theta2 != NULL && czD2 != NULL && "Input arrays for data-set 2 can not be NULL");
+	}
+	
 	//Try to initialize cosmology - code will exit if comoslogy is not implemented. 
   init_cosmology(cosmology);
 

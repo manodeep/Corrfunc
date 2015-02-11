@@ -215,11 +215,11 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 #ifndef LINK_IN_RA
 
   cellarray *lattice2 = gridlink1D_theta(ND2, 
-																							 dec_min, dec_max, thetamax, 
-																							 x2, y2, z2,theta2,
-																							 &ngrid_dec,
-																							 &max_n,
-																							 rbin_refine_factor);
+																				 dec_min, dec_max, thetamax, 
+																				 x2, y2, z2,theta2,
+																				 &ngrid_dec,
+																				 &max_n,
+																				 rbin_refine_factor);
 #else
   int *ngrid_ra=NULL;
 	const DOUBLE ra_min=0.0,ra_max=360.0;
