@@ -230,38 +230,45 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
   //Check to see if data has to be read for X1/Y1/Z1
   if (strncmp(current_file1,firstfilename,strlen(current_file1)) != 0) {
-	//replace the data-set
-	if(X1 != NULL) {
-	  free(X1);free(Y1);free(Z1);
-	}
-	ND1 = read_positions(firstfilename,firstformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
-	strncpy(current_file1,firstfilename,MAXLEN);
+		//replace the data-set
+		if(X1 != NULL) {
+			free(X1);free(Y1);free(Z1);
+		}
+
+		//Since X2 was pointing to X1, need to signal that the memory location is no longer valid
+		if(free_X2 == 0) {
+			X2 = NULL;
+			Y2 = NULL;
+			Z2 = NULL;
+		}
+		ND1 = read_positions(firstfilename,firstformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
+		strncpy(current_file1,firstfilename,MAXLEN);
   }
   
   //first check if only one unique file is asked for
   if(strncmp(firstfilename,secondfilename,strlen(firstfilename))==0) {
-	//But X2 might have read-in a different file->avoid a memory-leak
-	if(free_X2 == 1) {
-	  free(X2);free(Y2);free(Z2);
-	  free_X2 = 0;//not essential since the code returns after this section
-	}
-	X2=X1;
-	Y2=Y1;
-	Z2=Z1;
-	ND2=ND1;
-	strncpy(current_file2,secondfilename,MAXLEN);
-	return;
+		//But X2 might have read-in a different file->avoid a memory-leak
+		if(free_X2 == 1) {
+			free(X2);free(Y2);free(Z2);
+			free_X2 = 0;//not essential since the code returns after this section
+		}
+		X2=X1;
+		Y2=Y1;
+		Z2=Z1;
+		ND2=ND1;
+		strncpy(current_file2,secondfilename,MAXLEN);
+		return;
   }
-
-
+	
+	
   //Check to see if data has to be read for X2/Y2/Z2
-  if (strncmp(current_file2,secondfilename,strlen(current_file2)) != 0) {
-	//replace the data-set
-	if(free_X2 == 1) {
-	  free(X2);free(Y2);free(Z2);
-	}
-	ND2 = read_positions(secondfilename,secondformat, sizeof(DOUBLE), 3, &X2, &Y2, &Z2);
-	strncpy(current_file2,secondfilename,MAXLEN);
+  if (strncmp(current_file2,secondfilename,strlen(current_file2)) != 0 || X2 == NULL) {
+		//replace the data-set
+		if(free_X2 == 1) {
+			free(X2);free(Y2);free(Z2);
+		}
+		ND2 = read_positions(secondfilename,secondformat, sizeof(DOUBLE), 3, &X2, &Y2, &Z2);
+		strncpy(current_file2,secondfilename,MAXLEN);
   }
 }
 

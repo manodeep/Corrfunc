@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
-#include <gsl/gsl_interp.h>
 
 #include "defs.h"
 #include "utils.h"
@@ -140,9 +139,10 @@ int main(int argc, char *argv[])
 		assert(volume > 0 && "Mock volume must be > 0");
 		double Nexpected = (double)Nran*(4.0*M_PI*(rmax*rmax*rmax)/3.)/volume ;
     fprintf(stderr,"vpf_sdss> Expected number of randoms in sphere = %lf\n",Nexpected) ;
-		threshold_neighbors = (int) (Nexpected - 3*sqrt(Nexpected));
+		threshold_neighbors = (int) (Nexpected - sqrt(Nexpected));//allow 1-sigma deviation. Conservative
   } else {
     threshold_neighbors = 1;//dummy value -> just to ensure that the check does not compare with uninitialized values
+		Nran = nc;// HACK: set Nran to number of spheres requested. Code will not execute loop otherwise
   }
 
   results_countspheres_mocks *results = countspheres_mocks(Ngal, ra, dec, cz,

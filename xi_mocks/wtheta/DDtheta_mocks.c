@@ -1,18 +1,3 @@
-/* PROGRAM DDtheta
-
-   --- DDtheta thetamin thetamax nthetabin data1 data2 > DDfile
-   --- Measure the cross-correlation function w(theta) for two different
-       data files (or autocorrelation if data1=data2).
-
-      * thetamin   = inner radius of smallest bin (in degrees)
-      * thetamax   = outer radius of largest bin
-      * nthetabin  = number of bins (logarithmically spaced in theta)
-      * data1   = name of first data file
-      * data2   = name of second data file
-      > DDfile  = name of output file <logtheta log(<theta>) pairs>
-      ----------------------------------------------------------------------
-*/
-
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -98,18 +83,20 @@ int main(int argc, char **argv)
   ND1=read_positions(file1,fileformat1, sizeof(DOUBLE), 2, &phiD1,&thetaD1);
   gettimeofday(&t1,NULL);
   read_time += ADD_DIFF_TIME(t0,t1);
-  fprintf(stderr,"vpf> Read in %"PRId64" particles from file `%s'\n",ND1,file1);
+  fprintf(stderr,"DDtheta_mocks> Read in %"PRId64" particles from file `%s'\n",ND1,file1);
 
   /*---Read-data2-file----------------------------------*/
-  gettimeofday(&t0,NULL);
   if(autocorr==0) {
+		gettimeofday(&t0,NULL);
 		ND2=read_positions(file2,fileformat2, sizeof(DOUBLE), 2, &phiD2, &thetaD2);
+		gettimeofday(&t1,NULL);
+		read_time += ADD_DIFF_TIME(t0,t1);
+		fprintf(stderr,"DDtheta_mocks> Read in %"PRId64" particles from file `%s'\n",ND2,file2);
   } else {
 		ND2=ND1;
 		thetaD2 = thetaD1;
 		phiD2 = phiD1;
   }
-  gettimeofday(&t1,NULL);
 
   /*---Count-pairs--------------------------------------*/
   gettimeofday(&t0,NULL);

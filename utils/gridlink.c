@@ -152,8 +152,8 @@ cellarray * gridlink(const int64_t np,
 	  //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1. 
 	  //This way, we only increase by a very few particles 
 	  // at a time. Smaller memory footprint
-      if(expected_n == nallocated[index])
-		expected_n += 3;
+      while(expected_n == nallocated[index])
+				expected_n += 3;
 
       lattice[index].x = my_realloc(lattice[index].x ,sizeof(DOUBLE),expected_n,"lattice.x");
       lattice[index].y = my_realloc(lattice[index].y ,sizeof(DOUBLE),expected_n,"lattice.y");
