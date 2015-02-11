@@ -1,10 +1,11 @@
 include ../../mocks.options ../../common.mk
 
 target=vpf_mocks 
-SRC1   = vpf_mocks.c countspheres_mocks.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c ../../io/ftread.c ../../io/io.c \
+SRC1   = vpf_mocks.c countspheres_mocks.c ../../utils/gridlink_mocks.c ../../utils/utils.c \
+				../../utils/progressbar.c ../../io/ftread.c ../../io/io.c \
 				../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c 
 OBJS1  = $(SRC1:.c=.o)
-INCL   = countspheres_mocks.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
+INCL   = countspheres_mocks.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
 				../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 				../../utils/defs.h ../../utils/progressbar.h ../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h
 
@@ -24,7 +25,7 @@ countspheres_mocks.o: countspheres_mocks.c $(INCL) ../../common.mk Makefile
 libs: lib
 lib:  libcountspheres_mocks.a | ../../lib
 
-SRC2   = countspheres_mocks.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c \
+SRC2   = countspheres_mocks.c ../../utils/gridlink_mocks.c ../../utils/utils.c ../../utils/progressbar.c \
 				../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c
 
 OBJS2  = $(SRC2:.c=.o)
@@ -59,12 +60,10 @@ clena: clean
 celan: clean
 
 
-tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
+tests: ../tests/tests_mocks
 	$(MAKE) -C ../tests	vpf
 
-../tests/tests_periodic:
+../tests/tests_mocks:
 	$(MAKE) -C ../tests
 
-../tests/tests_nonperiodic:
-	$(MAKE) -C ../tests
 

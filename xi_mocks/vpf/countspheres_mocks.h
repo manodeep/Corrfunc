@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 #include "function_precision.h" //for definition of DOUBLE
-#include "cellarray.h"
+#include "cellarray_mocks.h"
 #include <inttypes.h> //for uint64_t
 
 

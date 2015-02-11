@@ -1,41 +1,37 @@
 include ../../mocks.options ../../common.mk
 
-target = tests_nonperiodic
+target = tests_mocks
 
-INCL  = ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c \
-				../xi_of_r/countpairs.c ../xi_rp_pi/countpairs_rp_pi.c ../wp/countpairs_wp.c \
-				../vpf/countspheres.c 
-
-SRC1   = tests_nonperiodic.c ../../utils/utils.c ../../utils/progressbar.c 
+SRC1   = tests_mocks.c ../../utils/utils.c ../../utils/progressbar.c ../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c 
 OBJS1  = $(SRC1:.c=.o)
+INCL  = ../../utils/gridlink_mocks.c ../../io/io.c ../../io/ftread.c \
+				../DDrppi/countpairs_rp_pi_mocks.c ../wtheta/countpairs_theta_mocks.c \
+				../vpf/countspheres_mocks.c ../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h 
 
-all: $(target) $(INCL) $(SRC1) 
+all: $(target) $(INCL) 
 
-tests_nonperiodic: $(OBJS1) $(INCL) ../mocks.options ../../common.mk Makefile 
+tests_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile 
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -lgsl -lgslcblas -o $@
 
-%.o: %.c $(INCL) ../mocks.options ../../common.mk Makefile
+%.o: %.c $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-tests: tests_nonperiodic
-	./test_nonperiodic
+tests: tests_mocks
+	./tests_mocks
 
-DDrppi: tests_nonperiodic
-	./test_nonperiodic 1 2  
+DDrppi: tests_mocks
+	./tests_mocks 0 3  
 
-wtheta: tests_nonperiodic
-	./test_nonperiodic 3 4 
+wtheta: tests_mocks
+	./tests_mocks 1 4 
 
-vpf: tests_nonperiodic
-	./test_nonperiodic 5
-
-%.o: %.c ../../mocks.options ../common.mk Makefile $(INCL)
-	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
+vpf: tests_mocks
+	./tests_mocks 2 5
 
 .PHONY: clean clena celan install tests 
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2)
+	$(RM) $(target) $(OBJS1)
 
 clena: clean
 

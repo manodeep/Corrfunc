@@ -4,9 +4,8 @@
 #include <gsl/gsl_interp.h>
 
 #include "defs.h"
-#include "gridlink.h"//function proto-type for gridlink
 #include "countspheres_mocks.h" //function proto-type
-#include "cellarray.h" //definition of struct cellarray
+#include "gridlink_mocks.h"//function proto-type for gridlink (which is a copy of the theory gridlink in order to avoid name-space collisions)
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar                
 #include "set_cosmo_dist.h"//cosmological distance calculations
@@ -138,9 +137,9 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 	if(need_randoms==1) {
 		fpcen = my_fopen(centers_file,"w");
 	} 
-
+#ifndef SILENT
 	fprintf(stderr,"%s> found %"PRId64" centers (need %d centers) - need randoms = %d\n",__FUNCTION__,num_centers_in_file,nc,need_randoms);
-
+#endif
 	
 	
 	//set up the interpolation for comoving distances
@@ -187,7 +186,9 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
   
 
   /*---Shift-coordinates--------------------------------*/
+#ifndef SILENT
   fprintf(stderr,"%s> maximum distance = %f. ",__FUNCTION__,rcube) ;
+#endif
   rcube = rcube + 1. ; //add buffer
 
   for(int i=0;i<Ngal;i++) {
@@ -203,17 +204,18 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
       zran[i] += rcube ;
     }
   }
-  rcube = 2*rcube ;
+  rcube = 2.0*rcube ;
   const DOUBLE inv_rcube = 1.0/rcube;
   const DOUBLE rmax_sqr = rmax*rmax;
+#ifndef SILENT
   fprintf(stderr," Bounding cube size = %f\n",rcube) ;
-
+#endif
+	
   /*---Construct-grid-to-speed-up-neighbor-searching----*/
   //First create the 3-d linklist
 	int bin_refine_factor=1;
   cellarray *lattice=NULL;//pointer to the full 3-d volume for galaxies
   cellarray *randoms_lattice=NULL;//pointer to the full 3-d volume for randoms
-  cellarray *cellstruct=NULL;//to be used as a pointer to one cell
   const DOUBLE xmin=0.0,xmax=rcube;
 	const DOUBLE ymin=0.0,ymax=rcube;
 	const DOUBLE zmin=0.0,zmax=rcube;
@@ -270,8 +272,8 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
       double rr=0.0;
       const int MAXBUFSIZE=10000;
       char buffer[MAXBUFSIZE];
-      assert( fgets(buffer,MAXBUFSIZE,fpcen) != NULL); 
-      int nitems = sscanf(buffer,"%lf %lf %lf %lf",&xcen,&ycen,&zcen,&rr);
+      assert( fgets(buffer,MAXBUFSIZE,fpcen) != NULL && "ERROR: Could not read-in centers co-ordinates"); 
+      int nitems = sscanf(buffer,"%"DOUBLE_FORMAT" %"DOUBLE_FORMAT" %"DOUBLE_FORMAT" %lf",&xcen,&ycen,&zcen,&rr);
       if(nitems != 4) {
 				fprintf(stderr,"ERROR: nitems = %d xcen = %lf ycen = %lf zcen %lf rr = %lf\n",
 								nitems,xcen,ycen,zcen,rr);
@@ -298,47 +300,48 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
       assert(iy >= 0 && iy < ngrid && "y-position is inside limits");
       assert(iz >= 0 && iz < ngrid && "z-position is inside limits");
       
-      int min_ix = ix - bin_refine_factor < 0 ?             0:ix - bin_refine_factor;
-      int max_ix = ix + bin_refine_factor > ngrid-1 ? ngrid-1:ix + bin_refine_factor;
+      const int min_ix = ix - bin_refine_factor < 0 ?             0:ix - bin_refine_factor;
+      const int max_ix = ix + bin_refine_factor > ngrid-1 ? ngrid-1:ix + bin_refine_factor;
       for(int iix=min_ix;iix<=max_ix;iix++) {
-				DOUBLE newxpos = xcen;
+				const DOUBLE newxpos = xcen;
 #ifdef USE_AVX
-				AVX_FLOATS m_newxpos = AVX_SET_FLOAT(newxpos);
+				const AVX_FLOATS m_newxpos = AVX_SET_FLOAT(newxpos);
 #endif	
 	
-				int min_iy = iy - bin_refine_factor < 0 ?             0:iy - bin_refine_factor;
-				int max_iy = iy + bin_refine_factor > ngrid-1 ? ngrid-1:iy + bin_refine_factor;
+				const int min_iy = iy - bin_refine_factor < 0 ?             0:iy - bin_refine_factor;
+				const int max_iy = iy + bin_refine_factor > ngrid-1 ? ngrid-1:iy + bin_refine_factor;
 
 				for(int iiy=min_iy;iiy<=max_iy;iiy++) {
-					DOUBLE newypos = ycen;
+					const DOUBLE newypos = ycen;
 #ifdef USE_AVX
-					AVX_FLOATS m_newypos = AVX_SET_FLOAT(newypos);
+					const AVX_FLOATS m_newypos = AVX_SET_FLOAT(newypos);
 #endif	
 
-					int min_iz = iz - bin_refine_factor < 0 ?             0:iz - bin_refine_factor;
-					int max_iz = iz + bin_refine_factor > ngrid-1 ? ngrid-1:iz + bin_refine_factor;
+					const int min_iz = iz - bin_refine_factor < 0 ?             0:iz - bin_refine_factor;
+					const int max_iz = iz + bin_refine_factor > ngrid-1 ? ngrid-1:iz + bin_refine_factor;
 
 					for(int iiz=min_iz;iiz<=max_iz;iiz++) {
-						DOUBLE newzpos = zcen;
+						const DOUBLE newzpos = zcen;
 #ifdef USE_AVX
-						AVX_FLOATS m_newzpos = AVX_SET_FLOAT(newzpos);
+						const AVX_FLOATS m_newzpos = AVX_SET_FLOAT(newzpos);
 #endif	
-						int index=iix*ngrid*ngrid + iiy*ngrid + iiz;
-						cellstruct = &(lattice[index]);
-						DOUBLE *x2 = cellstruct->x;
-						DOUBLE *y2 = cellstruct->y;
-						DOUBLE *z2 = cellstruct->z;
+						const int index=iix*ngrid*ngrid + iiy*ngrid + iiz;
+						const cellarray *cellstruct = &(lattice[index]);
+						const DOUBLE *x2 = cellstruct->x;
+						const DOUBLE *y2 = cellstruct->y;
+						const DOUBLE *z2 = cellstruct->z;
 						int ipart;
 						for(ipart=0;ipart<=(cellstruct->nelements-NVEC);ipart+=NVEC) {
 #ifndef USE_AVX
 							int ibin[NVEC];
+#if  __INTEL_COMPILER
 #pragma simd vectorlengthfor(DOUBLE)
+#endif							
 							for(int k=0;k<NVEC;k++) {
-								DOUBLE dx,dy,dz,r;
-								dx=x2[ipart+k]-newxpos;
-								dy=y2[ipart+k]-newypos;
-								dz=z2[ipart+k]-newzpos;
-								r = SQRT(dx*dx + dy*dy + dz*dz);
+								const DOUBLE dx=x2[ipart+k]-newxpos;
+								const DOUBLE dy=y2[ipart+k]-newypos;
+								const DOUBLE dz=z2[ipart+k]-newzpos;
+								const DOUBLE r = SQRT(dx*dx + dy*dy + dz*dz);
 								ibin[k] = (int) (r*inv_rstep);
 							}
 #pragma unroll(NVEC)
@@ -348,26 +351,26 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 
 							//Here is the AVX part
 #else
-							AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[ipart]);
-							AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[ipart]);
-							AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[ipart]);
-							AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x2,m_newxpos);
-							AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y2,m_newypos);
-							AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_newzpos);
+							const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[ipart]);
+							const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[ipart]);
+							const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[ipart]);
+							const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x2,m_newxpos);
+							const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y2,m_newypos);
+							const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_newzpos);
 							AVX_FLOATS m_dist  = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_xdiff),AVX_SQUARE_FLOAT(m_ydiff));
 							m_dist = AVX_ADD_FLOATS(m_dist,AVX_SQUARE_FLOAT(m_zdiff));
 							AVX_FLOATS m_mask_left = AVX_COMPARE_FLOATS(m_dist,m_rmax_sqr,_CMP_LT_OS);
-							int test = AVX_TEST_COMPARISON(m_mask_left);
+							const int test = AVX_TEST_COMPARISON(m_mask_left);
 							if(test == 0)
 								continue;
 				
 							for(int kbin=nbin-1;kbin>=1;kbin--) {
-								AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-								AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
-								int test2  = AVX_TEST_COMPARISON(m_bin_mask);
+								const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+								const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+								const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
 								counts[kbin] += AVX_BIT_COUNT_INT(test2);
 								m_mask_left = AVX_COMPARE_FLOATS(m_dist,m_rupp_sqr[kbin-1],_CMP_LT_OS);
-								int test3 = AVX_TEST_COMPARISON(m_mask_left);
+								const int test3 = AVX_TEST_COMPARISON(m_mask_left);
 								if(test3 == 0) {
 									break;
 								} else if(kbin==1){
@@ -380,14 +383,12 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 
 						//Take care of the rest
 						for(;ipart < cellstruct->nelements;ipart++) {
-							DOUBLE dx,dy,dz,r2;
-							int ibin;
-							dx=x2[ipart]-newxpos;
-							dy=y2[ipart]-newypos;
-							dz=z2[ipart]-newzpos;
-							r2 = (dx*dx + dy*dy + dz*dz);
+							const DOUBLE dx=x2[ipart]-newxpos;
+							const DOUBLE dy=y2[ipart]-newypos;
+							const DOUBLE dz=z2[ipart]-newzpos;
+							const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
 							if(r2 >= rmax_sqr) continue;
-							ibin = (int) (SQRT(r2)*inv_rstep);
+							const int ibin = (int) (SQRT(r2)*inv_rstep);
 							counts[ibin]++;
 						}
 					}
@@ -419,8 +420,10 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
   }
   fclose(fpcen);
   finish_myprogressbar(&interrupted);
+#ifndef SILENT	
   fprintf(stderr,"%s> Placed %d centers out of %d trials.\n",__FUNCTION__,isucceed,itry);
   fprintf(stderr,"%s> num_centers_in_file = %"PRId64" ncenters_written = %d\n",__FUNCTION__,num_centers_in_file,ncenters_written);
+#endif	
   assert(isucceed > 0 && "Placed > 0 spheres in the volume");
   if(isucceed < nc) {
     fprintf(stderr,"WARNING: Could only place `%d' out of requested `%d' spheres. Increase the random-sample size might improve the situation\n",isucceed,nc);
