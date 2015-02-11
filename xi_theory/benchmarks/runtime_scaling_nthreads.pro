@@ -1,6 +1,6 @@
 compile_opt idl2, strictarrsubs
 
-codes = ['../bin/DD', '../bin/DDrppi', '../bin/wp', '../bin/xi']
+codes = ['../../bin/DD', '../../bin/DDrppi', '../../bin/wp', '../../bin/xi']
 codestring = ['DD', 'DDrppi', 'wp', 'xi']
 linestyle = [0, 0, 0, 0]
 symbols = [1, 2, 4, 6]
@@ -13,7 +13,7 @@ base_execstrings = ['PARTFILE f  PARTFILE f BINFILE NTHREADS  > xx', $
                     'PARTFILE f  PARTFILE f BINFILE PIMAX NTHREADS > xx', $
                     '420.0 PARTFILE f BINFILE PIMAX NTHREADS > xx', $
                     '420.0 PARTFILE f BINFILE NTHREADS > xx']
-binfile = '../tests/bins'
+binfile = '../test/bins'
 timings_file = 'timings_Mr19_openmp.txt'
 pimax = 40.0
 ntries = 5
