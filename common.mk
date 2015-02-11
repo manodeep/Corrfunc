@@ -1,5 +1,5 @@
 ### Set the compiler -- options are icc/gcc/clang. 
-CC=gcc
+CC=icc
 #### Add any compiler specific flags you want
 CFLAGS=
 #### Add any compiler specific link flags you want
