@@ -62,5 +62,5 @@ dist:
 
 tests:
 	$(MAKE) -C tests
-	cd tests && ./test_nonperiodic
+	cd tests && ./tests_mocks
 
