@@ -32,6 +32,9 @@ $(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS)
 ../../lib/libcountpairs_theta_mocks.a: 
 	$(MAKE) -C ../wtheta lib
 
+../../lib/libcountspheres_mocks.a:
+	$(MAKE) -C ../vpf lib
+
 install: $(LIBRARY) | ../../lib
 	cp -p $(LIBRARY) ../../lib/
 	$(RM) ../../lib/$(PROJECT).so

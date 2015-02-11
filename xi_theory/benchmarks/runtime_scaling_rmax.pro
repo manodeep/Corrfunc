@@ -5,18 +5,20 @@ end
 
 compile_opt idl2, strictarrsubs
 
-codes = ['../bin/DD', '../bin/DDrppi', '../bin/wp']
-codestring = ['DD', 'DDrppi', 'wp']
-linestyle = [0, 0, 0]
-symbols = [1, 2, 4]
-colors = ['red', 'dodgerblue', 'green']
-legendstring = [tex2idl("$\xi(r)$    "), tex2idl("$\xi(r_p,\pi)$"), tex2idl("$w_p(r_p)$ ")]
+codes = ['../../bin/DD', '../../bin/DDrppi', '../../bin/wp', '../../bin/xi']
+codestring = ['DD', 'DDrppi', 'wp', 'xi']
+linestyle = [0, 0, 0, 0]
+symbols = [1, 2, 4, 6]
+colors = ['red', 'dodgerblue', 'green', 'cyan']
+legendstring = [tex2idl("$DD(r)    $"), tex2idl("$DD(r_p,\pi)$"), tex2idl("$w_p(r_p)$ "), tex2idl("$\xi(r)   $")]
 generate_eps = 1
 
 partfile = '../tests/data/gals_Mr19.ff'
 base_execstrings = ['PARTFILE f  PARTFILE f BINFILE NTHREADS  > xx', $
                     'PARTFILE f  PARTFILE f BINFILE PIMAX NTHREADS > xx', $
-                    '420.0 PARTFILE f BINFILE PIMAX NTHREADS > xx']
+                    '420.0 PARTFILE f BINFILE PIMAX NTHREADS > xx', $
+                    '420.0 PARTFILE f BINFILE NTHREADS > xx']
+
 binfile = './bins1 '
 timings_file = 'timings_Mr19_rmax.txt'
 pimax = 40.0
@@ -39,7 +41,7 @@ if (findfile(timings_file))[0] eq '' then begin
    printf, lun, "#############################################"
    for irmax = 0, NumSteps-1 do begin
       this_rmax = target_rmax[irmax]
-      execstring = "../bin/logbins 0.1 " + strn(this_rmax) + " " + strn(nrpbins) + " > " + binfile
+      execstring = "../../bin/logbins 0.1 " + strn(this_rmax) + " " + strn(nrpbins) + " > " + binfile
       spawn, execstring
       for icode = 0, ncodes-1 do begin
          execstring = codes[icode] + " " + base_execstrings[icode]
