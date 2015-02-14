@@ -46,26 +46,31 @@ int count_neighbors(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const 
       const int max_iz = iz + bin_refine_factor > ngrid-1 ? ngrid-1:iz + bin_refine_factor;
       
       for(int iiz=min_iz;iiz<=max_iz;iiz++) {
-		DOUBLE newzpos = zcen;
-		const int64_t index=iix*ngrid*ngrid + iiy*ngrid + iiz;
-		cellstruct = &(lattice[index]);
-		const DOUBLE *x2 = cellstruct->x;
-		const DOUBLE *y2 = cellstruct->y;
-		const DOUBLE *z2 = cellstruct->z;
-#if  __INTEL_COMPILER
-#pragma simd reduction(+:numngb) vectorlengthfor(DOUBLE)
-#endif
-		for(int i=0;i<cellstruct->nelements;i++) {
-		  const DOUBLE dx=x2[i]-newxpos;
-		  const DOUBLE dy=y2[i]-newypos;
-		  const DOUBLE dz=z2[i]-newzpos;
-		  const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
-		  if (r2 < rmax_sqr) numngb++;
-		}
-		
-		if(numngb > nthreshold)
-		  return numngb;
-      }
+				DOUBLE newzpos = zcen;
+				const int64_t index=iix*ngrid*ngrid + iiy*ngrid + iiz;
+				cellstruct = &(lattice[index]);
+				DOUBLE *x2 = cellstruct->pos;
+				DOUBLE *y2 = cellstruct->pos + NVEC;
+				DOUBLE *z2 = cellstruct->pos + 2*NVEC;
+				
+				for(int i=0;i<cellstruct->nelements;i+=NVEC) {
+					int block_size = cellstruct->nelements - i ;
+					if(block_size > NVEC) block_size = NVEC;
+					for(int ii=0;ii<block_size;ii++) {
+						const DOUBLE dx=x2[ii]-newxpos;
+						const DOUBLE dy=y2[ii]-newypos;
+						const DOUBLE dz=z2[ii]-newzpos;
+						const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
+						if (r2 < rmax_sqr) numngb++;
+					}
+					if(numngb > nthreshold) return numngb;
+					
+					x2 += 3*NVEC;
+					y2 += 3*NVEC;
+					z2 += 3*NVEC;
+
+				}
+			}
     }
   }
   return numngb;
@@ -327,9 +332,9 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 #endif	
 						const int index=iix*ngrid*ngrid + iiy*ngrid + iiz;
 						const cellarray *cellstruct = &(lattice[index]);
-						const DOUBLE *x2 = cellstruct->x;
-						const DOUBLE *y2 = cellstruct->y;
-						const DOUBLE *z2 = cellstruct->z;
+						DOUBLE *x2 = cellstruct->pos;
+						DOUBLE *y2 = cellstruct->pos + NVEC;
+						DOUBLE *z2 = cellstruct->pos + 2*NVEC;
 						int ipart;
 						for(ipart=0;ipart<=(cellstruct->nelements-NVEC);ipart+=NVEC) {
 #ifndef USE_AVX
@@ -338,22 +343,34 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 #pragma simd vectorlengthfor(DOUBLE)
 #endif							
 							for(int k=0;k<NVEC;k++) {
-								const DOUBLE dx=x2[ipart+k]-newxpos;
-								const DOUBLE dy=y2[ipart+k]-newypos;
-								const DOUBLE dz=z2[ipart+k]-newzpos;
+								const DOUBLE dx=x2[k]-newxpos;
+								const DOUBLE dy=y2[k]-newypos;
+								const DOUBLE dz=z2[k]-newzpos;
 								const DOUBLE r = SQRT(dx*dx + dy*dy + dz*dz);
 								ibin[k] = (int) (r*inv_rstep);
 							}
+							x2 += 3*NVEC;
+							y2 += 3*NVEC;
+							z2 += 3*NVEC;
+
+#ifdef  __INTEL_COMPILER
 #pragma unroll(NVEC)
+#endif							
 							for(int k=0;k<NVEC;k++) {
 								if(ibin[k] < nbin) counts[ibin[k]]++;
 							}
 
+							
 							//Here is the AVX part
 #else
-							const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[ipart]);
-							const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[ipart]);
-							const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[ipart]);
+							const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(x2);
+							const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(y2);
+							const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(z2);
+
+							x2 += 3*NVEC;
+							y2 += 3*NVEC;
+							z2 += 3*NVEC;
+							
 							const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x2,m_newxpos);
 							const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y2,m_newypos);
 							const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_newzpos);
@@ -382,10 +399,10 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 						}
 
 						//Take care of the rest
-						for(;ipart < cellstruct->nelements;ipart++) {
-							const DOUBLE dx=x2[ipart]-newxpos;
-							const DOUBLE dy=y2[ipart]-newypos;
-							const DOUBLE dz=z2[ipart]-newzpos;
+						for(int ipos=0;ipart < cellstruct->nelements;ipart++,ipos++) {
+							const DOUBLE dx=x2[ipos]-newxpos;
+							const DOUBLE dy=y2[ipos]-newypos;
+							const DOUBLE dz=z2[ipos]-newzpos;
 							const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
 							if(r2 >= rmax_sqr) continue;
 							const int ibin = (int) (SQRT(r2)*inv_rstep);
@@ -433,13 +450,13 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
   free(counts);
   int64_t totncells = ngrid*ngrid*ngrid;
   for(int64_t icell=0;icell < totncells;icell++) {
-    free(lattice[icell].x);
-		free(lattice[icell].y);
-		free(lattice[icell].z);
+    free(lattice[icell].pos);
+		/* free(lattice[icell].y); */
+		/* free(lattice[icell].z); */
     if(need_randoms == 1) {
-      free(randoms_lattice[icell].x);
-			free(randoms_lattice[icell].y);
-			free(randoms_lattice[icell].z);
+      free(randoms_lattice[icell].pos);
+			/* free(randoms_lattice[icell].y); */
+			/* free(randoms_lattice[icell].z); */
     }
   }
 
