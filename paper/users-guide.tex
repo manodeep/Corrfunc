@@ -143,30 +143,34 @@ The directory structure for the code looks like this:
 \dirtree{%
 .1 corrfunc.
 .2 paper.
+.2 io\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for reading in data{.} 
+  \end{minipage}.
+.2 utils\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for creating grids and helper routines{.} 
+  \end{minipage}.
+.2 bin\DotFill 
+  \begin{minipage}[t]{8cm}
+    Will be created to copy executable files when you run `make install'{.} 
+  \end{minipage}.
+.2 include\DotFill 
+  \begin{minipage}[t]{8cm}
+    Header files for static libraries{.} 
+  \end{minipage}.
+.2 lib\DotFill 
+  \begin{minipage}[t]{8cm}
+    Will be created to copy static libraries and python library after you run `make'{.} 
+  \end{minipage}.
 .2 xi\_theory.
 .3 benchmarks\DotFill
   \begin{minipage}[t]{8cm}
     IDL scripts to run benchmarks{.} 
   \end{minipage}.
-.3 bin\DotFill 
-  \begin{minipage}[t]{8cm}
-    Will be created to copy executable files when you run `make install'{.} 
-  \end{minipage}.
 .3 examples\DotFill 
   \begin{minipage}[t]{8cm}
     Source files for example C bindings using the static libraries{.} 
-  \end{minipage}.
-.3 include\DotFill 
-  \begin{minipage}[t]{8cm}
-    Header files for static libraries{.} 
-  \end{minipage}.
-.3 io\DotFill 
-  \begin{minipage}[t]{8cm}
-    Source files for reading in data{.} 
-  \end{minipage}.
-.3 lib\DotFill 
-  \begin{minipage}[t]{8cm}
-    Will be created to copy static libraries and python library after you run `make'{.} 
   \end{minipage}.
 .3 python\_bindings\DotFill 
   \begin{minipage}[t]{8cm}
@@ -180,13 +184,9 @@ The directory structure for the code looks like this:
   \begin{minipage}[t]{8cm}
     Mock galaxy catalogs for tests{.} 
   \end{minipage}.
-.3 utils\DotFill 
-  \begin{minipage}[t]{8cm}
-    Source files for creating 3-D grid and helper routines{.} 
-  \end{minipage}.
 .3 xi\_of\_r\DotFill 
   \begin{minipage}[t]{8cm}
-    Source files for $\xi(r)${.} 
+    Source files for getting pair-counts to compute $\xi(r)${.} 
   \end{minipage}.
 .3 xi\_rp\_pi\DotFill 
   \begin{minipage}[t]{8cm}
@@ -195,6 +195,48 @@ The directory structure for the code looks like this:
 .3 wp\DotFill 
   \begin{minipage}[t]{8cm}
     Source files for $w_p(r_p)${.} 
+  \end{minipage}.
+.3 xi\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for $\xi(r)$ directly on a periodic cube{.} 
+  \end{minipage}.
+.3 vpf\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files to compute the counts-in-spheres statistic{.} 
+  \end{minipage}.
+
+.2 xi\_mocks.
+.3 benchmarks\DotFill
+  \begin{minipage}[t]{8cm}
+    IDL scripts to run benchmarks for mocks{.} 
+  \end{minipage}.
+.3 examples\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for example C bindings using the static libraries for mocks{.} 
+  \end{minipage}.
+.3 python\_bindings\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files to generate python bindings for mocks{.} 
+  \end{minipage}.
+.3 tests\DotFill 
+  \begin{minipage}[t]{8cm}
+    Correct outputs for tests for mocks{.}
+  \end{minipage}.
+.4 data\DotFill 
+  \begin{minipage}[t]{8cm}
+    Mock galaxy catalogs for tests on a sphere{.} 
+  \end{minipage}.
+.3 DDrppi\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for getting pair-counts to compute $\xi(r_p,\pi)$ on mocks{.} 
+  \end{minipage}.
+.3 wtheta\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files for getting pair-counts to compute $\omega(\theta)$ {.} 
+  \end{minipage}.
+.3 vpf\DotFill 
+  \begin{minipage}[t]{8cm}
+    Source files to compute the counts-in-spheres statistic on mocks{.} 
   \end{minipage}.
 }
 

@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <gsl/gsl_interp.h>
 
-/* #include "sglib.h" */
+#include "sglib.h"
 #include "utils.h"
 #include "cellarray_mocks.h"
 #include "gridlink_mocks.h"
@@ -114,7 +114,10 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
   DOUBLE dpi,inv_dpi;
 
   int zbin_refine_factor=2;
-  
+#ifdef USE_OMP
+	if(zbin_refine_factor < numthreads/2)
+		zbin_refine_factor=numthreads/2;
+#endif
 #ifdef LINK_IN_DEC
   int rbin_refine_factor=2;
 #ifdef LINK_IN_RA
@@ -198,7 +201,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 /* 		SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,d1,i,j);											\ */
 /* 		SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,phi1,i,j) } */
 	
-/* 	SGLIB_ARRAY_HEAP_SORT(DOUBLE, d1, ND1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER); */
+/* 	SGLIB_ARRAY_QUICK_SORT(DOUBLE, d1, ND1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER); */
 
 	
   /*---Gridlink-variables----------------*/
@@ -399,39 +402,56 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 					//LINKED only in CZ
 					const cellarray_mocks *cellstruct = &(lattice2[icell]);
 #endif      
-					const DOUBLE *x2  = cellstruct->x;
-					const DOUBLE *y2  = cellstruct->y;
-					const DOUBLE *z2  = cellstruct->z;
-					const DOUBLE *cz2 = cellstruct->cz;
+					DOUBLE *x2  = cellstruct->pos;
+					DOUBLE *y2  = cellstruct->pos + NVEC;
+					DOUBLE *z2  = cellstruct->pos + 2*NVEC;
+					DOUBLE *cz2 = cellstruct->pos + 3*NVEC;
+					
 					const DOUBLE TWO=2.0;
 					const DOUBLE sqr_d1 = d1[i]*d1[i];
 		  
 #ifndef USE_AVX
-					for(int j=0;j<cellstruct->nelements;j++) {
-						const DOUBLE sqr_cz = cz2[j]*cz2[j];
-						const DOUBLE tmp = (sqr_d1 - sqr_cz);
-						const DOUBLE xy_costheta = x1*x2[j] + y1*y2[j] + z1*z2[j];
-						const DOUBLE tmp1 = (sqr_d1 + sqr_cz + TWO*xy_costheta);
-						const DOUBLE Dpar = (tmp*tmp)/tmp1;
-						if (Dpar >= sqr_pimax) continue;
+
+					DOUBLE *localx2  = x2;
+					DOUBLE *localy2  = y2;
+					DOUBLE *localz2  = z2;
+					DOUBLE *localcz2 = cz2;
+
+					for(int j=0;j<cellstruct->nelements;j+=NVEC) {
+						int block_size2=cellstruct->nelements - j;
+						if(block_size2 > NVEC) block_size2=NVEC;
+						for(int jj=0;jj<block_size2;jj++) {
+							const DOUBLE sqr_cz = localcz2[jj]*localcz2[jj];
+							const DOUBLE tmp = (sqr_d1 - sqr_cz);
+							const DOUBLE xy_costheta = x1*localx2[jj] + y1*localy2[jj] + z1*localz2[jj];
+							const DOUBLE tmp1 = (sqr_d1 + sqr_cz + TWO*xy_costheta);
+							const DOUBLE Dpar = (tmp*tmp)/tmp1;
+							if (Dpar >= sqr_pimax) continue;
 						
-						const int pibin = (int) (SQRT(Dpar)*inv_dpi);
-						const DOUBLE sqr_Dperp = sqr_d1 + sqr_cz -TWO*xy_costheta - Dpar;
-						if(sqr_Dperp >= sqr_rpmax || sqr_Dperp <= sqr_rpmin) continue;
+							const int pibin = (int) (SQRT(Dpar)*inv_dpi);
+							const DOUBLE sqr_Dperp = sqr_d1 + sqr_cz -TWO*xy_costheta - Dpar;
+							if(sqr_Dperp >= sqr_rpmax || sqr_Dperp <= sqr_rpmin) continue;
 
 #ifdef OUTPUT_RPAVG
-						const DOUBLE rp = SQRT(sqr_Dperp);
+							const DOUBLE rp = SQRT(sqr_Dperp);
 #endif
-						for(int kbin=nrpbin-1;kbin>=1;kbin--) {
-							if(sqr_Dperp >= rupp_sqr[kbin-1]) {
-								const int ibin = kbin*(npibin+1) + pibin;
-								npairs[ibin]++;
+							for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+								if(sqr_Dperp >= rupp_sqr[kbin-1]) {
+									const int ibin = kbin*(npibin+1) + pibin;
+									npairs[ibin]++;
 #ifdef OUTPUT_RPAVG
-								rpavg[ibin]+=rp;
+									rpavg[ibin]+=rp;
 #endif
-								break;
+									break;
+								}
 							}
-						}
+						}//end of jj-loop
+
+						//increment localx2/localy2 etc
+						localx2   += 4*NVEC;//this might actually exceed the allocated range but we will never dereference that
+						localy2   += 4*NVEC;
+						localz2   += 4*NVEC;
+						localcz2  += 4*NVEC;
 					}
 
 #else //Use AVX intrinsics
@@ -452,13 +472,25 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 					};
 					union float8 union_mDperp;
 #endif					
-					
+
+
+					DOUBLE *localx2  = x2;
+					DOUBLE *localy2  = y2;
+					DOUBLE *localz2  = z2;
+					DOUBLE *localcz2 = cz2;
+
 					int j;
 					for(j=0;j<=(cellstruct->nelements-NVEC);j+=NVEC){
-						const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
-						const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
-						const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
-						const AVX_FLOATS m_cz2 = AVX_LOAD_FLOATS_UNALIGNED(&cz2[j]);
+						const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx2);
+						const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy2);
+						const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz2);
+						const AVX_FLOATS m_cz2 = AVX_LOAD_FLOATS_UNALIGNED(localcz2);
+
+						localx2  += 4*NVEC;
+						localy2  += 4*NVEC;
+						localz2  += 4*NVEC;
+						localcz2 += 4*NVEC;
+						
 						const AVX_FLOATS m_sqr_cz2 = AVX_SQUARE_FLOAT(m_cz2); 
 						const AVX_FLOATS m_sum_of_norms = AVX_ADD_FLOATS(m_sqr_d1,m_sqr_cz2);
 						const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
@@ -508,7 +540,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 							
 #else
 							//we have to do this for doubles now.
-							//if the vrcpps instruction is generated, there will
+							//if the vrcpps instruction is not generated, there will
 							//be a ~70 cycle performance hit from switching between
 							//AVX and SSE modes.
 							__m128 float_tmp1 =  _mm256_cvtpd_ps(m_tmp1);
@@ -591,10 +623,10 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 					}
 		  
 					//Take care of the remainder
-					for(;j<cellstruct->nelements;j++) {
-						const DOUBLE sqr_cz = cz2[j]*cz2[j];
+					for(int ipos=0;j<cellstruct->nelements;ipos++,j++) {
+						const DOUBLE sqr_cz = localcz2[ipos]*localcz2[ipos];
 						const DOUBLE tmp = (sqr_d1 - sqr_cz);
-						const DOUBLE xy_costheta = x1*x2[j] + y1*y2[j] + z1*z2[j];
+						const DOUBLE xy_costheta = x1*localx2[ipos] + y1*localy2[ipos] + z1*localz2[ipos];
 						const DOUBLE tmp1 = (sqr_d1 + sqr_cz + TWO*xy_costheta);
 						const DOUBLE Dpar = (tmp*tmp)/tmp1;
 						if(Dpar >= sqr_pimax) continue;
@@ -677,20 +709,20 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 
 #ifndef LINK_IN_DEC
 	for(int i=0;i < ngrid;i++) {
-		free(lattice2[i].x);
-		free(lattice2[i].y);
-		free(lattice2[i].z);
-		free(lattice2[i].cz);
+		free(lattice2[i].pos);
+		/* free(lattice2[i].y); */
+		/* free(lattice2[i].z); */
+		/* free(lattice2[i].cz); */
 	}
 	free(lattice2);
 #else
 #ifndef LINK_IN_RA
 	for(int i=0; i < ngrid; i++) {
 		for(int j=0;j<ngrid_dec[i];j++) {
-			free(lattice2[i][j].x);
-			free(lattice2[i][j].y);
-			free(lattice2[i][j].z);
-			free(lattice2[i][j].cz);
+			free(lattice2[i][j].pos);
+			/* free(lattice2[i][j].y); */
+			/* free(lattice2[i][j].z); */
+			/* free(lattice2[i][j].cz); */
 		}
 		free(lattice2[i]);
 	}
@@ -700,10 +732,10 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 	for(int i=0; i < ngrid; i++) {
 		for(int j=0;j< ngrid_dec[i];j++) {
 			for(int k=0;k<ngrid_ra[i][j];k++){
-				free(lattice2[i][j][k].x);
-				free(lattice2[i][j][k].y);
-				free(lattice2[i][j][k].z);
-				free(lattice2[i][j][k].cz);
+				free(lattice2[i][j][k].pos);
+				/* free(lattice2[i][j][k].y); */
+				/* free(lattice2[i][j][k].z); */
+				/* free(lattice2[i][j][k].cz); */
 			}
 		}
 	}

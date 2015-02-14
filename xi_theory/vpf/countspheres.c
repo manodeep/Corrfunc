@@ -74,7 +74,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
   //First create the 3-d linklist
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
   gettimeofday(&t0,NULL);
-	cellarray *lattice = gridlink(np, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+	cellarray_nvec *lattice = gridlink_nvec(np, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
   gettimeofday(&t1,NULL);
 	int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z; 
 
@@ -188,24 +188,28 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 #endif
 
 					const int64_t index=iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
-					const cellarray *first = &(lattice[index]);
-					const DOUBLE *x2 = first->x;
-					const DOUBLE *y2 = first->y;
-					const DOUBLE *z2 = first->z;
+					const cellarray_nvec *first = &(lattice[index]);
+					DOUBLE *x2 = first->pos;
+					DOUBLE *y2 = first->pos + NVEC;
+					DOUBLE *z2 = first->pos + 2*NVEC;
 #ifndef USE_AVX
+
 					for(int64_t j=0;j<first->nelements;j+=NVEC) {
 						int block_size=first->nelements - j;
 						if(block_size > NVEC) block_size=NVEC;
 						for(int jj=0;jj<block_size;jj++) {
 							int ibin;
-							DOUBLE dx=x2[j+jj]-newxpos;
-							DOUBLE dy=y2[j+jj]-newypos;
-							DOUBLE dz=z2[j+jj]-newzpos;
+							DOUBLE dx=x2[jj]-newxpos;
+							DOUBLE dy=y2[jj]-newypos;
+							DOUBLE dz=z2[jj]-newzpos;
 							DOUBLE r2 = dx*dx + dy*dy + dz*dz;
 							if(r2 >= rmax_sqr) continue;
 							ibin = (int) (SQRT(r2)*inv_rstep);
 							counts[ibin]++;
 						}
+						x2 += 3*NVEC;
+						y2 += 3*NVEC;
+						z2 += 3*NVEC;
 					}
 #else //beginning of AVX section
 
@@ -216,9 +220,13 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 					int64_t j;
 					for(j=0;j<=(first->nelements-NVEC);j+=NVEC) {
 
-						const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
-						const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
-						const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
+						const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(x2);
+						const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(y2);
+						const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(z2);
+
+						x2 += 3*NVEC;
+						y2 += 3*NVEC;
+						z2 += 3*NVEC;
 						
 						const AVX_FLOATS m_dx = AVX_SUBTRACT_FLOATS(m_xc,m_x1);
 						const AVX_FLOATS m_dy = AVX_SUBTRACT_FLOATS(m_yc,m_y1);
@@ -248,10 +256,10 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 
 
 					//Take care of the rest
-					for(;j<first->nelements;j++) {
-						const DOUBLE dx=x2[j]-newxpos;
-						const DOUBLE dy=y2[j]-newypos;
-						const DOUBLE dz=z2[j]-newzpos;
+					for(int ipos=0;j<first->nelements;ipos++,j++) {
+						const DOUBLE dx=x2[ipos]-newxpos;
+						const DOUBLE dy=y2[ipos]-newypos;
+						const DOUBLE dz=z2[ipos]-newzpos;
 						const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
 						if(r2 >= rmax_sqr) continue;
 						const int ibin = (int) (SQRT(r2)*inv_rstep);
@@ -282,9 +290,9 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 	free(counts);
   gsl_rng_free (rng);
   for(int i=0;i<totncells;i++) {
-    free(lattice[i].x);
-		free(lattice[i].y);
-		free(lattice[i].z);
+    free(lattice[i].pos);
+		/* free(lattice[i].y); */
+		/* free(lattice[i].z); */
   }
   free(lattice);
 	finish_myprogressbar(&interrupted);

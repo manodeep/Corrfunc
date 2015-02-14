@@ -60,10 +60,8 @@ clena: clean
 celan: clean
 
 
-tests: ../tests/tests_mocks
+tests: 
 	$(MAKE) -C ../tests	vpf
 
-../tests/tests_mocks:
-	$(MAKE) -C ../tests
 
 

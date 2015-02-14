@@ -5,7 +5,7 @@ all: dirs DDrppi wtheta vpf libs python_bindings examples
 dirs:
 	mkdir -p ../lib .,/bin ../include 
 
-.PHONY: clean celna clena celan python_bindings tests DDrppi wtheta distclean realclean distclena realclena dirs 
+.PHONY: clean celna clena celan python_bindings tests DDrppi wtheta distclean realclean distclena realclena dirs test
 
 DDrppi:
 	$(MAKE) -C DDrppi
@@ -60,6 +60,7 @@ tar: dist
 dist:
 	hg archive $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz 
 
+test: tests
 tests:
 	$(MAKE) -C tests
 	cd tests && ./tests_mocks

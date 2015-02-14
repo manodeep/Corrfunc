@@ -198,7 +198,8 @@ int test_vpf(const char *correct_outputfile)
 
 int test_xi(const char *correct_outputfile)
 {
-  results_countpairs_xi *results = countpairs_xi(ND1,X1,Y1,Z1,
+
+	results_countpairs_xi *results = countpairs_xi(ND1,X1,Y1,Z1,
 																								 boxsize,
 #ifdef USE_OMP
 																								 nthreads,

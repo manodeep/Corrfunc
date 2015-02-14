@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "defs.h"
 #include "gridlink_mocks.h"//function proto-type for gridlink
 #include "countpairs_theta_mocks.h" //function proto-type
 #include "cellarray_mocks.h" //definition of struct cellarray_mocks
@@ -91,7 +92,6 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 																									const char *binfile)
 {
 
-  fprintf(stderr,"Running in `%s' mode \n", autocorr == 1 ? "auto-correlation":"cross-correlation");
 #if defined(LINK_IN_RA) && !defined(LINK_IN_DEC)
 #error LINK_IN_DEC Makefile option must be enabled before LINK_IN_RA is selected
 #endif 
@@ -127,6 +127,12 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 
 #ifdef LINK_IN_DEC
   int rbin_refine_factor=2;
+#ifdef USE_OMP
+	if(numthreads > 1) {
+		rbin_refine_factor=numthreads;
+	}
+#endif
+	
 #ifdef LINK_IN_RA
 	//roughly occurs around
 	int phi_bin_refine_factor=2;
@@ -192,7 +198,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
   x2=my_malloc(sizeof(*x2),ND2);
   y2=my_malloc(sizeof(*y2),ND2);
   z2=my_malloc(sizeof(*z2),ND2);
-  
+
   for(int i=0;i<ND2;i++) {
     x2[i] = COSD(theta2[i])*COSD(phi2[i]) ;
     y2[i] = COSD(theta2[i])*SIND(phi2[i]) ;
@@ -204,13 +210,36 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
     if(theta2[i] > dec_max)
       dec_max = theta2[i];
 #endif
-
   }
 
+	DOUBLE *x1,*y1,*z1;
 
+	if (autocorr==0) {
+		x1 = my_malloc(sizeof(*x1),ND1);
+		y1 = my_malloc(sizeof(*y1),ND1);
+		z1 = my_malloc(sizeof(*z1),ND1);
+		
+		for(int i=0;i<ND1;i++) {
+			x1[i] = COSD(theta1[i])*COSD(phi1[i]) ;
+			y1[i] = COSD(theta1[i])*SIND(phi1[i]) ;
+			z1[i] = SIND(theta1[i]);
+			
 #ifdef LINK_IN_DEC
-  double dec_diff = dec_max-dec_min;
-  double inv_dec_diff=1.0/dec_diff;
+			if(theta1[i] < dec_min)
+				dec_min = theta1[i];
+			if(theta1[i] > dec_max)
+				dec_max = theta1[i];
+#endif
+		}
+	} else {
+		x1 = x2;
+		y1 = y2;
+		z1 = z2;
+	}
+		
+#ifdef LINK_IN_DEC
+  DOUBLE dec_diff = dec_max-dec_min;
+  DOUBLE inv_dec_diff=1.0/dec_diff;
   int ngrid_dec=0,max_n=0;
 #ifndef LINK_IN_RA
 
@@ -220,23 +249,65 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 																				 &ngrid_dec,
 																				 &max_n,
 																				 rbin_refine_factor);
+	/* cellarray *lattice1; */
+	/* int ngrid_dec1; */
+	/* if(autocorr==0) { */
+	/* 	lattice1 = gridlink1D_theta(ND1, */
+	/* 															dec_min, dec_max, thetamax, */
+	/* 															x1, y1, z1,theta1, */
+	/* 															&ngrid_dec1, */
+	/* 															&max_n, */
+	/* 															rbin_refine_factor); */
+	/* 	assert(ngrid_dec1 == ngrid_dec && "The two lattices should have identical dec-bins"); */
+	/* } else { */
+	/* 	lattice1 = lattice2; */
+	/* } */
+
 #else
   int *ngrid_ra=NULL;
 	const DOUBLE ra_min=0.0,ra_max=360.0;
-  double inv_ra_diff=1.0/(ra_max-ra_min);
- cellarray **lattice2 = gridlink2D_theta(ND2, dec_min, dec_max, thetamax,
-																							 x2, y2, z2,
-																							 theta2,
-																							 &ngrid_dec,
-																							 phi2,ra_min,ra_max,
-																							 &ngrid_ra,
-																							 &max_n,
-																							 rbin_refine_factor,
-																							 phi_bin_refine_factor);
- 
+  const DOUBLE inv_ra_diff=1.0/(ra_max-ra_min);
+	cellarray **lattice2 = gridlink2D_theta(ND2, dec_min, dec_max, thetamax,
+																					x2, y2, z2,
+																					theta2,
+																					&ngrid_dec,
+																					phi2,ra_min,ra_max,
+																					&ngrid_ra,
+																					&max_n,
+																					rbin_refine_factor,
+																					phi_bin_refine_factor);
 
+	/* cellarray **lattice1; */
+	/* int *ngrid_ra1 = NULL; */
+	/* int ngrid_dec1 = 0; */
+	/* if(autocorr==0) { */
+	/* 	lattice1 = gridlink2D_theta(ND1, dec_min, dec_max, thetamax, */
+	/* 															x1, y1, z1, */
+	/* 															theta1, */
+	/* 															&ngrid_dec1, */
+	/* 															phi1,ra_min,ra_max, */
+	/* 															&ngrid_ra1, */
+	/* 															&max_n, */
+	/* 															rbin_refine_factor, */
+	/* 															phi_bin_refine_factor); */
+	/* 	assert(ngrid_dec1 == ngrid_dec && "The two lattices should have identical dec-bins"); */
+	/* 	for(int i=0;i<ngrid_dec1;i++) { */
+	/* 		assert(ngrid_ra1[i] == ngrid_ra[i] && "The two lattices should have identical ra-bins"); */
+	/* 	} */
+	/* 	free(ngrid_ra1); */
+	/* } else { */
+	/* 	lattice1 = lattice2; */
+	/* } */
+		
+ 
 #endif
-  free(x2);free(y2);free(z2);
+	if(autocorr == 0) {
+		free(x2);free(y2);free(z2);
+	}
+  
+	/* if(autocorr==0) { */
+	/* 	free(x1);free(y1);free(z1); */
+	/* } */
 #endif
 
   int interrupted=0;
@@ -247,246 +318,268 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
    /*---Loop-over-Data1-particles--------------------*/
 #ifdef USE_OMP
 #if !defined(LINK_IN_DEC ) && !defined(LINK_IN_RA)
-#pragma omp parallel shared(numdone) shared(x2,y2,z2)
+#pragma omp parallel shared(x2,y2,z2)
 #else	
-#pragma omp parallel shared(numdone) private(x2,y2,z2)
+#pragma omp parallel private(x2,y2,z2)
 #endif	
 	{
 		int tid = omp_get_thread_num();
-		uint64_t npairs[nthetabin];
+		uint64_t npairs[nthetabin] __attribute__ ((aligned (ALIGNMENT)));
 		for(int i=0;i<nthetabin;i++) npairs[i] = 0;
 #ifdef OUTPUT_THETAAVG
-		DOUBLE thetaavg[nthetabin];
+		DOUBLE thetaavg[nthetabin] __attribute__ ((aligned (ALIGNMENT)));
 		for(int i=0; i < nthetabin;i++) thetaavg[i] = 0.0;
 #endif
 
 
 #pragma omp for  schedule(dynamic) 
 #endif
-  for(int i=0;i<ND1;i++) {
-
+		for(int i=0;i<ND1;i++) {
 #ifdef USE_OMP
-		if (omp_get_thread_num() == 0)
+			if (omp_get_thread_num() == 0)
 #endif
-			my_progressbar(numdone,&interrupted);
-		
-		
+				my_progressbar(numdone,&interrupted);
+			
 #ifdef USE_OMP
 #pragma omp atomic
 #endif
-		numdone++;
-		
-		
-    const DOUBLE x1 = COSD(theta1[i])*COSD(phi1[i]) ;
-    const DOUBLE y1 = COSD(theta1[i])*SIND(phi1[i]) ;
-    const DOUBLE z1 = SIND(theta1[i]) ;
+			numdone++;
+			
+			
+			const DOUBLE x1pos = x1[i];
+			const DOUBLE y1pos = y1[i];
+			const DOUBLE z1pos = z1[i];
     
 #ifdef LINK_IN_DEC
-    const DOUBLE decpos = theta1[i];
-    int dec_iz = (int)(ngrid_dec*(decpos-dec_min)*inv_dec_diff);
-    if (dec_iz >= ngrid_dec) dec_iz--;
-    assert(dec_iz >= 0 && dec_iz < ngrid_dec && "Declination is within lattice2 bounds");
-    /* int dec_limits = (int) (ceil(thetamax*inv_dec_diff*ngrid_dec)); */
-    const int dec_limits = rbin_refine_factor;
-    const int min_dec = (dec_iz - dec_limits) <= 0 ? 0:dec_iz - dec_limits;
-    const int max_dec = (dec_iz + dec_limits) >= (ngrid_dec-1) ? (ngrid_dec-1):dec_iz + dec_limits;
-    for(int idec=min_dec;idec<=max_dec;idec++) {
+			const DOUBLE decpos = theta1[i];
+			int dec_iz = (int)(ngrid_dec*(decpos-dec_min)*inv_dec_diff);
+			if (dec_iz >= ngrid_dec) dec_iz--;
+			assert(dec_iz >= 0 && dec_iz < ngrid_dec && "Declination is within lattice2 bounds");
+			/* int dec_limits = (int) (ceil(thetamax*inv_dec_diff*ngrid_dec)); */
+			/* const int dec_limits = rbin_refine_factor; */
+			/* const int min_dec = (dec_iz - dec_limits) <= 0 ? 0:dec_iz - dec_limits; */
+			/* const int max_dec = (dec_iz + dec_limits) >= (ngrid_dec-1) ? (ngrid_dec-1):dec_iz + dec_limits; */
+			for(int iidec=-rbin_refine_factor;iidec<=rbin_refine_factor;iidec++) {
+				const int idec = dec_iz + iidec;
+				if(idec < 0 || idec >= ngrid_dec) continue;
+				
 #ifndef LINK_IN_RA
-      const cellarray *cellstruct = &(lattice2[idec]);
+				const cellarray *second = &(lattice2[idec]);
 #else
-      const DOUBLE rapos = phi1[i];
-      int ra_iz = (int)(ngrid_ra[idec]*(rapos-ra_min)*inv_ra_diff);
-      if (ra_iz >= ngrid_ra[idec]) ra_iz--;
-      assert(ra_iz >= 0 && ra_iz < ngrid_ra[idec] && "RA position is within bounds");
-      for(int ira_step=-phi_bin_refine_factor;ira_step<=phi_bin_refine_factor;ira_step++) {
-				const int ira = (ra_iz + ira_step + ngrid_ra[idec]) % ngrid_ra[idec];
-				const cellarray *cellstruct = &(lattice2[idec][ira]);
-#endif 
-		x2 = cellstruct->x;
-		y2 = cellstruct->y;
-		z2 = cellstruct->z;
-		const int Nloop = cellstruct->nelements;
+				const DOUBLE rapos = phi1[i];
+				int ra_iz = (int)(ngrid_ra[idec]*(rapos-ra_min)*inv_ra_diff);
+				if (ra_iz >= ngrid_ra[idec]) ra_iz--;
+				assert(ra_iz >= 0 && ra_iz < ngrid_ra[idec] && "RA position is within bounds");
+				for(int ira_step=-phi_bin_refine_factor;ira_step<=phi_bin_refine_factor;ira_step++) {
+					const int ira = (ra_iz + ira_step + ngrid_ra[idec]) % ngrid_ra[idec];
+					const cellarray *second = &(lattice2[idec][ira]);
+#endif //LINK_IN_DEC
+					
+					x2 = second->pos ;
+					y2 = second->pos + NVEC;
+					z2 = second->pos + 2*NVEC;
+					const int Nloop = second->nelements;
 #else //No linking in RA or DEC
-		const int Nloop = ND2;
+					const int Nloop = ND2;
 #endif
-		
-		
-#ifdef USE_AVX
-		const AVX_FLOATS m_x1 = AVX_SET_FLOAT(x1);
-		const AVX_FLOATS m_y1 = AVX_SET_FLOAT(y1);
-		const AVX_FLOATS m_z1 = AVX_SET_FLOAT(z1);
-#endif    
-		
-		/*---Loop-over-Data2-particles--------------------*/
-		int j;
-		for(j=0;j <=(Nloop-NVEC);j+=NVEC) {
+					
+					
+					DOUBLE *localx2 = x2;
+					DOUBLE *localy2 = y2;
+					DOUBLE *localz2 = z2;
+					
+					/*---Loop-over-Data2-particles--------------------*/
+					int j;
+					for(j=0;j <=(Nloop-NVEC);j+=NVEC) {
 #ifndef USE_AVX
-		  DOUBLE costheta[NVEC];
-		  int thetabin[NVEC];
+						DOUBLE costheta[NVEC];
+						int thetabin[NVEC];
 #ifdef OUTPUT_THETAAVG
-		  DOUBLE theta[NVEC];
+						DOUBLE theta[NVEC];
 #endif
-		  int num_bad=0;
-		  for(int k=0;k<NVEC;k++) {
-				const DOUBLE tmp = x1*x2[j+k] + y1*y2[j+k] + z1*z2[j+k];
-				costheta[k] = (tmp > 1.0) ? 1:(tmp < -1.0 ? -1.0:tmp);
+						int num_bad=0;
+						for(int k=0;k<NVEC;k++) {
+							const DOUBLE tmp = x1pos*localx2[k] + y1pos*localy2[k] + z1pos*localz2[k];
+							costheta[k] = (tmp > 1.0) ? 1:(tmp < -1.0 ? -1.0:tmp);
 #ifdef OUTPUT_THETAAVG
-				theta[k]    =  INV_PI_OVER_180*ACOS(costheta[k]) ;
+							theta[k]    =  INV_PI_OVER_180*ACOS(costheta[k]) ;
 #endif
-				if(costheta[k] > costhetamin || costheta[k] <= costhetamax) {
-					thetabin[k] = 0;
-					num_bad++;
-				} else {
-					thetabin[k] = 1;//fill get filled in later
-				}
-		  }
+							if(costheta[k] > costhetamin || costheta[k] <= costhetamax) {
+								thetabin[k] = 0;
+								num_bad++;
+							} else {
+								thetabin[k] = 1;//fill get filled in later
+							}
+						}
+#ifdef LINK_IN_DEC
+						localx2 += 3*NVEC;
+						localy2 += 3*NVEC;
+						localz2 += 3*NVEC;
+#else
+						localx2 += NVEC;
+						localy2 += NVEC;
+						localz2 += NVEC;
+#endif			
 
-		  //No pairs will be added just continue with the next iteration
-		  if(num_bad == NVEC) {
-			continue;
-		  }
-		  
-		  //Now find the bins
-		  for(int k=0;k<NVEC;k++) {
-			if(thetabin[k]==0) continue;
-			const DOUBLE this_cos_theta = costheta[k];
-			for(int ibin=nthetabin-1;ibin>=1;ibin--) {
-			  if(this_cos_theta <= costheta_upp[ibin-1]) {
-				npairs[ibin]++;
-				thetabin[k] = ibin;
-				break;
-			  }
-			}
-		  }
-
+						
+						//No pairs will be added just continue with the next iteration
+						if(num_bad == NVEC) {
+							continue;
+						}
+						
+						//Now find the bins
+						for(int k=0;k<NVEC;k++) {
+							if(thetabin[k]==0) continue;
+							const DOUBLE this_cos_theta = costheta[k];
+							for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+								if(this_cos_theta <= costheta_upp[ibin-1]) {
+									npairs[ibin]++;
+									thetabin[k] = ibin;
+									break;
+								}
+							}
+						}
+						
 #ifdef OUTPUT_THETAAVG
 #if  __INTEL_COMPILER
 #pragma unroll(NVEC)
 #endif	  
-	  for(int k=0;k<NVEC;k++) {
-		thetaavg[thetabin[k]]+=theta[k];
-	  }
+						for(int k=0;k<NVEC;k++) {
+							thetaavg[thetabin[k]]+=theta[k];
+						}
 #endif//OUTPUT_THETAAVG
-
+						
+#else //USE_AVX
+						const AVX_FLOATS m_x1 = AVX_SET_FLOAT(x1pos);
+						const AVX_FLOATS m_y1 = AVX_SET_FLOAT(y1pos);
+						const AVX_FLOATS m_z1 = AVX_SET_FLOAT(z1pos);
+						
+						
+#ifdef OUTPUT_THETAAVG
+						union int8 {
+							AVX_INTS m_ibin;
+							int ibin[NVEC];
+						};
+						union int8 union_rpbin;
+						
+						union float8{
+							AVX_FLOATS m_Dperp;
+							DOUBLE Dperp[NVEC];
+						};
+						union float8 union_mDperp;
+#endif
+						
+						//USE AVX intrinsics
+						const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx2);
+						const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy2);
+						const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz2);
+#ifdef LINK_IN_DEC
+						localx2 += 3*NVEC;
+						localy2 += 3*NVEC;
+						localz2 += 3*NVEC;
 #else
-
-#ifdef OUTPUT_THETAAVG
-	  union int8 {
-		AVX_INTS m_ibin;
-		int ibin[NVEC];
-	  };
-	  union int8 union_rpbin;
-                                          
-	  union float8{
-		AVX_FLOATS m_Dperp;
-		DOUBLE Dperp[NVEC];
-	  };
-	  union float8 union_mDperp;
-#endif
-
-	  //USE AVX intrinsics
-	  const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
-	  const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
-	  const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
-	  const AVX_FLOATS m_tmp1 = AVX_MULTIPLY_FLOATS(m_x2,m_x1);
-	  const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_y2,m_y1);
-	  const AVX_FLOATS m_tmp3 = AVX_MULTIPLY_FLOATS(m_z2,m_z1);
-	  const AVX_FLOATS m_costheta = AVX_ADD_FLOATS(m_tmp1,AVX_ADD_FLOATS(m_tmp2,m_tmp3));
-
-	  AVX_FLOATS m_mask_left = AVX_COMPARE_FLOATS(m_costheta,m_costhetamax,_CMP_GT_OS);	  
+						localx2 += NVEC;
+						localy2 += NVEC;
+						localz2 += NVEC;
+#endif			
+						
+						const AVX_FLOATS m_tmp1 = AVX_MULTIPLY_FLOATS(m_x2,m_x1);
+						const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_y2,m_y1);
+						const AVX_FLOATS m_tmp3 = AVX_MULTIPLY_FLOATS(m_z2,m_z1);
+						const AVX_FLOATS m_costheta = AVX_ADD_FLOATS(m_tmp1,AVX_ADD_FLOATS(m_tmp2,m_tmp3));
+						
+						AVX_FLOATS m_mask_left = AVX_COMPARE_FLOATS(m_costheta,m_costhetamax,_CMP_GT_OS);	  
 #ifdef DOUBLE_PREC
-	  {
-			//Only seems to help if double precision is enabled -> wrapping it within the double-prec flags
-			const AVX_FLOATS m_costhetamin = AVX_SET_FLOAT(costhetamin);
-			AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_costheta,m_costhetamin,_CMP_LE_OS);
-			AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
-			if(AVX_TEST_COMPARISON(m_mask) == 0) {
-				continue;
-			}
-	  }
+						{
+							//Only seems to help if double precision is enabled -> wrapping it within the double-prec flags
+							const AVX_FLOATS m_costhetamin = AVX_SET_FLOAT(costhetamin);
+							AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_costheta,m_costhetamin,_CMP_LE_OS);
+							AVX_FLOATS m_mask = AVX_BITWISE_AND(m1,m_mask_left);
+							if(AVX_TEST_COMPARISON(m_mask) == 0) {
+								continue;
+							}
+						}
 #endif
-		
+						
 #ifdef OUTPUT_THETAAVG
-	  //first do the acos to get the actual angles
-	  const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
-	  const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta);
-	  union_mDperp.m_Dperp = AVX_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
-	  AVX_FLOATS m_thetabin = AVX_SET_FLOAT((DOUBLE) 0.0);
+						//first do the acos to get the actual angles
+						const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
+						const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta);
+						union_mDperp.m_Dperp = AVX_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
+						AVX_FLOATS m_thetabin = AVX_SET_FLOAT((DOUBLE) 0.0);
 #endif                                    
-
-
-	  for(int kbin=nthetabin-1;kbin>=1;kbin--) {
-	    const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OS);
-	    const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
-	    const int test = AVX_TEST_COMPARISON(m_bin_mask);
+						
+						
+						for(int kbin=nthetabin-1;kbin>=1;kbin--) {
+							const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OS);
+							const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+							const int test = AVX_TEST_COMPARISON(m_bin_mask);
 #ifdef OUTPUT_THETAAVG
-		m_thetabin = AVX_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
+							m_thetabin = AVX_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
 #endif
-	    npairs[kbin] += AVX_BIT_COUNT_INT(test);
-		m_mask_left = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_GT_OS);
-	    if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
-	      break;
-	    }
-	  }
-
+							npairs[kbin] += AVX_BIT_COUNT_INT(test);
+							m_mask_left = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_GT_OS);
+							if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+								break;
+							}
+						}
+						
 #ifdef OUTPUT_THETAAVG	  
-	  union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_thetabin);
+						union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_thetabin);
 #if  __INTEL_COMPILER
 #pragma unroll(NVEC)
 #endif
-	  for(int jj=0;jj<NVEC;jj++) {
-		const int kbin = union_rpbin.ibin[jj];
-		const DOUBLE theta = union_mDperp.Dperp[jj];
-		thetaavg[kbin] += theta;
-	  }
+						for(int jj=0;jj<NVEC;jj++) {
+							const int kbin = union_rpbin.ibin[jj];
+							const DOUBLE theta = union_mDperp.Dperp[jj];
+							thetaavg[kbin] += theta;
+						}
 #endif
-
-
+						
+						
 #endif//end of AVX section
-	}//loop over particles in second data in chunks of NVEC
-	
-	
-	//Take care of the remainder
-	for(;j<Nloop;j++) {
-	  const DOUBLE costheta = x1*x2[j] + y1*y2[j] + z1*z2[j] ;
-	  if(costheta > costhetamin || costheta <= costhetamax) {
-		continue;
-	  }
-	  
+					}//loop over particles in second data in chunks of NVEC
+					
+					
+					//Take care of the remainder
+					for(int ipos=0;j<Nloop;j++,ipos++) {
+						const DOUBLE costheta = x1pos*localx2[ipos] + y1pos*localy2[ipos] + z1pos*localz2[ipos] ;
+						if(costheta > costhetamin || costheta <= costhetamax) {
+							continue;
+						}
+						
 #ifdef OUTPUT_THETAAVG
-	  const DOUBLE theta =  INV_PI_OVER_180*ACOS(costheta) ;
+						const DOUBLE theta =  INV_PI_OVER_180*ACOS(costheta) ;
 #endif	
-	  for(int ibin=nthetabin-1;ibin>=1;ibin--) {
-		if(costheta <= costheta_upp[ibin-1]) {
-		  npairs[ibin]++;
+						for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+							if(costheta <= costheta_upp[ibin-1]) {
+								npairs[ibin]++;
 #ifdef OUTPUT_THETAAVG
-		  thetaavg[ibin] += theta;
+								thetaavg[ibin] += theta;
 #endif
-		  break;
-		}
-	  }
-	}//end of remainder loop
-
-
+								break;
+							}
+						}
+					}//end of remainder loop
 #ifdef LINK_IN_DEC
 #ifdef LINK_IN_RA
-      }
+				}//finish the loop over ra-cells in second
 #endif    
-      
-    }//finish the loop over dec-cells in cellstruct
-#endif    
-  }//loop over ND1
+			}//finish the loop over dec-cells in second
+#endif//LINK_IN_DEC    
+			
+		}//loop over i
 #ifdef USE_OMP
-	for(int j=0;j<nthetabin;j++) {
-		all_npairs[tid][j] = npairs[j];
-	}
+				for(int j=0;j<nthetabin;j++) {
+					all_npairs[tid][j] = npairs[j];
+				}
 #ifdef OUTPUT_THETAAVG
-	for(int j=0;j<nthetabin;j++) {
-		all_thetaavg[tid][j] = thetaavg[j];
-	}
+				for(int j=0;j<nthetabin;j++) {
+					all_thetaavg[tid][j] = thetaavg[j];
+				}
 #endif
 	
-	}//close the omp parallel region
+			}//close the omp parallel region
 #endif
 	finish_myprogressbar(&interrupted);
 
@@ -514,24 +607,35 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 
 #ifndef LINK_IN_DEC  
   free(x2);free(y2);free(z2);
+	if(autocorr==0) {
+		free(x1);free(y1);free(z1);
+	}
 #else
 #ifndef LINK_IN_RA
   for(int i=0;i<ngrid_dec;i++) {
-    free(lattice2[i].x);
-    free(lattice2[i].y);
-    free(lattice2[i].z);
+    free(lattice2[i].pos);
+		/* if(autocorr==0) { */
+		/* 	free(lattice1[i].pos); */
+		/* } */
   }
   free(lattice2);
+	/* if(autocorr==0) { */
+	/* 	free(lattice1); */
+	/* } */
 #else
   for(int i=0;i<ngrid_dec;i++) {
     for(int j=0;j<ngrid_ra[i];j++) {
-      free(lattice2[i][j].x);
-      free(lattice2[i][j].y);
-      free(lattice2[i][j].z);
+      free(lattice2[i][j].pos);
+			/* if(autocorr==0) { */
+			/* 	free(lattice1[i][j].pos); */
+			/* } */
     }
   }
   free(ngrid_ra);
   matrix_free((void **) lattice2,ngrid_dec);
+	/* if(autocorr==0) { */
+	/* 	matrix_free((void **) lattice1,ngrid_dec); */
+	/* } */
 #endif//LINK_IN_RA  
 #endif//LINK_IN_DEC
 

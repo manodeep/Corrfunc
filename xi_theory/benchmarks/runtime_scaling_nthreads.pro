@@ -6,14 +6,14 @@ linestyle = [0, 0, 0, 0]
 symbols = [1, 2, 4, 6]
 colors = ['red', 'dodgerblue', 'green', 'cyan']
 legendstring = [tex2idl("$DD(r)    $"), tex2idl("$DD(r_p,\pi)$"), tex2idl("$w_p(r_p)$ "), tex2idl("$\xi(r)   $")]
-generate_eps = 1
+generate_eps = 0
 
 partfile = '../tests/data/gals_Mr19.ff'
 base_execstrings = ['PARTFILE f  PARTFILE f BINFILE NTHREADS  > xx', $
                     'PARTFILE f  PARTFILE f BINFILE PIMAX NTHREADS > xx', $
                     '420.0 PARTFILE f BINFILE PIMAX NTHREADS > xx', $
                     '420.0 PARTFILE f BINFILE NTHREADS > xx']
-binfile = '../test/bins'
+binfile = "../tests/bins"
 timings_file = 'timings_Mr19_openmp.txt'
 pimax = 40.0
 ntries = 5

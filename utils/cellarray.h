@@ -22,20 +22,16 @@ extern "C" {
 
 typedef struct{
   DOUBLE *x;
-  DOUBLE *y;
-  DOUBLE *z;
-  int64_t nelements;
+	DOUBLE *y;
+	DOUBLE *z;
+  int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
 } cellarray;
 
 typedef struct{
-  DOUBLE *x;
-  DOUBLE *y;
-  DOUBLE *z;
-  DOUBLE *cz;
-  int nelements;
-  int nallocated;
-} cellarray_mocks;
-
+  DOUBLE *pos;
+  int64_t nelements;
+} cellarray_nvec;//Here the xyz positions will be stored as pos[x[NVEC],y{NVEC],z[NVEC],x[NVEC]...]. Note amenable to easy sorting -> used by xi_of_r and vpf
+	
 
 #ifdef __cplusplus
 }
