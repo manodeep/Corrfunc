@@ -150,14 +150,18 @@ static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X)
 	union cos union_costheta;
 	union cos union_returnvalue;
 	union_costheta.m = X;
+	const DOUBLE minus_one = (DOUBLE) -1.0;
+	const DOUBLE one = (DOUBLE) 1.0;
+	const DOUBLE zero = (DOUBLE) 0.0;
 	
 	for(int ii=0;ii<NVEC;ii++) {														
 		const DOUBLE costheta = union_costheta.x[ii];
-		if(costheta <= 1.0 && costheta >= -1.0) {
-			union_returnvalue.x[ii] = ACOS(costheta);
+		if(costheta < minus_one) {
+			union_returnvalue.x[ii] = M_PI;
+		} else if (costheta > one) {
+			union_returnvalue.x[ii] = zero;
 		} else {
-			fprintf(stderr,"ERROR:\n");
-			exit(EXIT_FAILURE);
+			union_returnvalue.x[ii] = ACOS(costheta);
 		}
 	}																																		
 	return union_returnvalue.m;

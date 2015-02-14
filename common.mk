@@ -1,5 +1,5 @@
 ### Set the compiler -- options are icc/gcc/clang. 
-CC=icc
+CC=gcc
 #### Add any compiler specific flags you want
 CFLAGS=
 #### Add any compiler specific link flags you want
@@ -107,7 +107,7 @@ ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
   endif
   ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
      ifneq (icc,$(findstring icc,$(CC)))
-        $(error OUTPUT_THETAAVG with AVX capabilties only works with icc. Either disable AVX or use icc)
+        $(warning WARNING: OUTPUT_THETAAVG with AVX capabilties is slow with gcc (disables AVX essentially) with gcc. Try to use icc if available)
      endif
   endif
 endif
