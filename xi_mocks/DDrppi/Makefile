@@ -49,7 +49,10 @@ libcountpairs_rp_pi_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.m
 install: $(target) | ../../bin
 	cp -p $(target) ../../bin/
 
-.PHONY: clean clena celan distclean realclean install 
+.PHONY: clean clena celan distclean realclean install tests
+
+tests: 
+	$(MAKE) -C ../tests DDrppi
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) 

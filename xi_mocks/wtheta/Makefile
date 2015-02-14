@@ -55,7 +55,10 @@ libcountpairs_theta_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.m
 install: $(target) | ../../bin
 	cp -p $(target) ../../bin/
 
-.PHONY: clean clena celan distclean realclean install lib libs
+.PHONY: clean clena celan distclean realclean install lib libs tests
+
+tests:
+	$(MAKE) -C ../tests wtheta
 
 clean:
 	$(RM) $(target) $(OBJS1) $(OBJS2) 

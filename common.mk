@@ -13,7 +13,7 @@ MAJOR=1
 INCLUDE=-I../../io -I../../utils 
 
 ### The POSIX_SOURCE flag is required to get the definition of strtok_r
-CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 -Ofast
+CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
 GSL_CFLAGS := $(shell gsl-config --cflags) 
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) 
@@ -38,7 +38,7 @@ endif
 
 
 ifeq (icc,$(findstring icc,$(CC)))
-  CFLAGS += -xhost -opt-prefetch  #-vec-report6  
+  CFLAGS += -xhost -opt-prefetch #-vec-report6  
   ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 		CFLAGS += -openmp
 		CLINK  += -openmp 
@@ -107,7 +107,7 @@ ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
   endif
   ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
      ifneq (icc,$(findstring icc,$(CC)))
-        $(error OUTPUT_THETAAVG with AVX capabilties will only work with icc)
+        $(error OUTPUT_THETAAVG with AVX capabilties only works with icc. Either disable AVX or use icc)
      endif
   endif
 endif

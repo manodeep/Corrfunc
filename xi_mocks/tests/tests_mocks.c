@@ -33,7 +33,7 @@
 #endif
 
 #if !(defined(__INTEL_COMPILER)) && defined(USE_AVX)
-#error Test suite for mocks will not work without Intel ICC while USE_AVX is set. Disable USE_AVX to use the test suite with non-Intel compilers. 
+#warning Test suite for mocks will be slow without Intel ICC while USE_AVX is set. 
 #endif
 
 #ifndef SILENT
@@ -287,17 +287,17 @@ int main(int argc, char **argv)
   const char firstfilename[][MAXLEN] = {"../tests/data/Mr19_mock_northonly.rdcz.dat",
 																				"../tests/data/Mr19_mock_northonly.rdcz.dat",
 																				"../tests/data/Mr19_mock_northonly.rdcz.dat",
-																				"../tests/data/Mr19_randoms_northonly.rdcz.dat",
-																				"../tests/data/Mr19_randoms_northonly.rdcz.dat",
-																				"../tests/data/Mr19_randoms_northonly.rdcz.dat"};
-  const char firstfiletype[][MAXLEN]  = {"a","a","a","a","a","a"};
+																				"../tests/data/Mr19_randoms_northonly.rdcz.ff",
+																				"../tests/data/Mr19_randoms_northonly.rdcz.ff",
+																				"../tests/data/Mr19_randoms_northonly.rdcz.ff"};
+  const char firstfiletype[][MAXLEN]  = {"a","a","a","f","f","f"};
   const char secondfilename[][MAXLEN] = {"../tests/data/Mr19_mock_northonly.rdcz.dat",
 																				 "../tests/data/Mr19_mock_northonly.rdcz.dat",
 																				 "../tests/data/Mr19_mock_northonly.rdcz.dat",
 																				 "../tests/data/Mr19_mock_northonly.rdcz.dat",
 																				 "../tests/data/Mr19_mock_northonly.rdcz.dat",
-																				 "../tests/data/Mr19_randoms_northonly.rdcz.dat"};
-  const char secondfiletype[][MAXLEN] = {"a","a","a","a","a","a"};
+																				 "../tests/data/Mr19_randoms_northonly.rdcz.ff"};
+  const char secondfiletype[][MAXLEN] = {"a","a","a","a","a","f"};
   const DOUBLE allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0};
 
   int (*allfunctions[]) (const char *) = {test_DDrppi_mocks,test_wtheta_mocks,test_vpf_mocks};

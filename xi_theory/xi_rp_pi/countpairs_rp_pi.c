@@ -44,13 +44,13 @@ void free_results_rp_pi(results_countpairs_rp_pi **results)
 
 
 results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
-											const int64_t ND2, const DOUBLE *X2, const DOUBLE *Y2, const DOUBLE *Z2,
+																						const int64_t ND2, const DOUBLE *X2, const DOUBLE *Y2, const DOUBLE *Z2,
 #ifdef USE_OMP
-											const int numthreads,
+																						const int numthreads,
 #endif
-											const int autocorr,
-											const char *binfile,
-											const double pimax)
+																						const int autocorr,
+																						const char *binfile,
+																						const double pimax)
 {
   int bin_refine_factor=1;
 	int zbin_refine_factor=2;
@@ -61,17 +61,17 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 		bin_refine_factor=1;
 		zbin_refine_factor=1;
 	}
-#ifdef USE_OMP
-	if(numthreads > 1) {
-		if(autocorr==1) {
-			bin_refine_factor=2;
-			zbin_refine_factor=2;
-		} else {
-			bin_refine_factor=1;
-			zbin_refine_factor=1;
-		}
-	}
-#endif
+/* #ifdef USE_OMP */
+/* 	if(numthreads > 1) { */
+/* 		if(autocorr==1) { */
+/* 			bin_refine_factor=2; */
+/* 			zbin_refine_factor=2; */
+/* 		} else { */
+/* 			bin_refine_factor=1; */
+/* 			zbin_refine_factor=1; */
+/* 		} */
+/* 	} */
+/* #endif */
 	const int npibin = (int) pimax;
   /***********************
    *initializing the  bins
@@ -185,7 +185,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 		for(int i=0;i<totnbins;i++) rpavg[i] = 0.0;
 #endif			
 
-#pragma omp for  schedule(dynamic)
+#pragma omp for  schedule(dynamic) nowait
 #endif
 		/*---Loop-over-lattice1--------------------*/
 		for(int64_t index1=0;index1<totncells;index1++) {
@@ -193,7 +193,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 #ifdef USE_OMP
 		  if (omp_get_thread_num() == 0)
 #endif
-			my_progressbar(numdone,&interrupted);
+				my_progressbar(numdone,&interrupted);
 		  
 		  
 #ifdef USE_OMP
@@ -262,176 +262,210 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 						const cellarray *second = &(lattice2[index2]);
 						const cellarray *first  = &(lattice1[index1]);
 						
-						const DOUBLE *x1 = first->x;
-						const DOUBLE *y1 = first->y;
-						const DOUBLE *z1 = first->z;
+						DOUBLE *x1 = first->x;
+						DOUBLE *y1 = first->y;
+						DOUBLE *z1 = first->z;
+
+						DOUBLE *x2 = second->x;
+						DOUBLE *y2 = second->y;
+						DOUBLE *z2 = second->z;
 						
-						const DOUBLE *x2 = second->x;
-						const DOUBLE *y2 = second->y;
-						const DOUBLE *z2 = second->z;
-						
-						for(int64_t i=0;i<first->nelements;i++){
-							DOUBLE x1pos = x1[i];
-							DOUBLE y1pos = y1[i];
-							DOUBLE z1pos = z1[i];
+						for(int64_t i=0;i<first->nelements;i+=NVEC){
+							int block_size1 = first->nelements - i;
+							if(block_size1 > NVEC) block_size1 = NVEC;
+							
+							for(int ii=0;ii<block_size1;ii++) {
+								DOUBLE x1pos = x1[ii];
+								DOUBLE y1pos = y1[ii];
+								DOUBLE z1pos = z1[ii];
+								
 #ifdef PERIODIC
-							x1pos += off_xwrap;
-							y1pos += off_ywrap;
-							z1pos += off_zwrap;
+								x1pos += off_xwrap;
+								y1pos += off_ywrap;
+								z1pos += off_zwrap;
 #endif
-							
+								
+								
 #ifndef USE_AVX	//Beginning of NO AVX section
-							for(int64_t j=0;j<second->nelements;j++) {
-								const DOUBLE dx = x2[j]-x1pos;
-								const DOUBLE dy = y2[j]-y1pos;
-								const DOUBLE dz = FABS(z2[j]-z1pos);
+								DOUBLE *localx2=x2;
+								DOUBLE *localy2=y2;
+								DOUBLE *localz2=z2;
 								
-								const DOUBLE r2 = dx*dx + dy*dy;
-								if(r2 >= sqr_rpmax || r2 < sqr_rpmin || dz >= pimax) {
-									continue;
-								}
-
-#ifdef OUTPUT_RPAVG								
-								const DOUBLE r = SQRT(r2);
-#endif								
-								int pibin = (int) (dz*inv_dpi);
-								pibin = pibin > npibin ? npibin:pibin;
-								for(int kbin=nrpbin-1;kbin>=1;kbin--) {
-									if(r2 >= rupp_sqr[kbin-1]) {
-										const int ibin = kbin*(npibin+1) + pibin;
-										npairs[ibin]++;
-#ifdef OUTPUT_RPAVG										
-										rpavg[ibin]+=r;
-#endif										
-										break;
-									}
-								}
-							}
-							
-#else //beginning of AVX section
-							union int8 {
-								AVX_INTS m_ibin;
-								int ibin[NVEC];
-							};
-							union int8 union_finalbin;
-							
-#ifdef OUTPUT_RPAVG							
-							union float8{
-								AVX_FLOATS m_Dperp;
-								DOUBLE Dperp[NVEC];
-							};
-							union float8 union_mDperp;
-#endif							
-							
-							const AVX_FLOATS m_x1pos = AVX_SET_FLOAT(x1pos);
-							const AVX_FLOATS m_y1pos = AVX_SET_FLOAT(y1pos);
-							const AVX_FLOATS m_z1pos = AVX_SET_FLOAT(z1pos);
-
-							int64_t j;
-							for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
-								const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(&x2[j]);
-								const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(&y2[j]);
-								const AVX_FLOATS z2pos = AVX_LOAD_FLOATS_UNALIGNED(&z2[j]);
-								const AVX_FLOATS m_sqr_rpmax = AVX_SET_FLOAT(sqr_rpmax);
-								const AVX_FLOATS m_sqr_rpmin = AVX_SET_FLOAT(sqr_rpmin);
-								const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
-								const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
-								const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
-								const AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
-								const AVX_FLOATS m_one    = AVX_SET_FLOAT((DOUBLE) 1);
-								
-								
-								AVX_FLOATS m_zdiff       = AVX_SUBTRACT_FLOATS(z2pos,m_z1pos);
-								const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(x2pos,m_x1pos);
-								const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(y2pos,m_y1pos);
-								
-								m_zdiff = AVX_MAX_FLOATS(m_zdiff,AVX_SUBTRACT_FLOATS(m_zero,m_zdiff));//dz = fabs(dz) => dz = max(dz, -dz);
-								
-								AVX_FLOATS r2  = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_xdiff),AVX_SQUARE_FLOAT(m_ydiff));
-								AVX_FLOATS m_mask_left;
-								
-								//Do all the distance cuts using masks here in new scope
-								{
-									const AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
-									if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
-										continue;
-									}
-                  const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
-									const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
-									const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
-
-									m_mask_left = AVX_BITWISE_AND(m_mask_pimax, m_rp_mask);
-									if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
-										continue;
-									}
-									r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax,r2,m_mask_left);
+								for(int64_t j=0;j<second->nelements;j+=NVEC) {
+									int block_size2=second->nelements - j;
+									if(block_size2 > NVEC) block_size2=NVEC;
 									
-									//So there's at least one point that is in range - let's find the bin
-									m_zdiff = AVX_BLEND_FLOATS_WITH_MASK(m_pimax, m_zdiff, m_mask_left);
+									for(int jj=0;jj<block_size2;jj++) {
+										const DOUBLE dx =      localx2[jj]-x1pos;
+										const DOUBLE dy =      localy2[jj]-y1pos;
+										const DOUBLE dz = FABS(localz2[jj]-z1pos);
+										
+										const DOUBLE r2 = dx*dx + dy*dy;
+										if(r2 >= sqr_rpmax || r2 < sqr_rpmin || dz >= pimax) {
+											continue;
+										}
+										
+#ifdef OUTPUT_RPAVG								
+										const DOUBLE r = SQRT(r2);
+#endif								
+										int pibin = (int) (dz*inv_dpi);
+										pibin = pibin > npibin ? npibin:pibin;
+										for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+											if(r2 >= rupp_sqr[kbin-1]) {
+												const int ibin = kbin*(npibin+1) + pibin;
+												npairs[ibin]++;
+#ifdef OUTPUT_RPAVG										
+												rpavg[ibin]+=r;
+#endif										
+												break;
+											}
+										}
+									}//end of jj loop
+									
+									localx2 += NVEC;//this might actually exceed the allocated range but we will never dereference that
+									localy2 += NVEC;
+									localz2 += NVEC;
+								}//end of j loop
+								
+#else //beginning of AVX section
+								union int8 {
+									AVX_INTS m_ibin;
+									int ibin[NVEC];
+								};
+								union int8 union_finalbin;
+								
+#ifdef OUTPUT_RPAVG							
+								union float8{
+									AVX_FLOATS m_Dperp;
+									DOUBLE Dperp[NVEC];
+								};
+								union float8 union_mDperp;
+#endif							
+								
+								const AVX_FLOATS m_x1pos = AVX_SET_FLOAT(x1pos);
+								const AVX_FLOATS m_y1pos = AVX_SET_FLOAT(y1pos);
+								const AVX_FLOATS m_z1pos = AVX_SET_FLOAT(z1pos);
+								
+								DOUBLE *localx2 = x2;
+								DOUBLE *localy2 = y2;
+								DOUBLE *localz2 = z2;
+								
+								int64_t j;
+								for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
+									const AVX_FLOATS x2pos = AVX_LOAD_FLOATS_UNALIGNED(localx2);
+									const AVX_FLOATS y2pos = AVX_LOAD_FLOATS_UNALIGNED(localy2);
+									const AVX_FLOATS z2pos = AVX_LOAD_FLOATS_UNALIGNED(localz2);
+									
+									localx2 += NVEC;//this might actually exceed the allocated range but we will never dereference that
+									localy2 += NVEC;
+									localz2 += NVEC;
+								
+									const AVX_FLOATS m_sqr_rpmax = AVX_SET_FLOAT(sqr_rpmax);
+									const AVX_FLOATS m_sqr_rpmin = AVX_SET_FLOAT(sqr_rpmin);
+									const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
+									const AVX_FLOATS m_zero  = AVX_SET_FLOAT((DOUBLE) 0.0);
+									const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
+									const AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
+									const AVX_FLOATS m_one    = AVX_SET_FLOAT((DOUBLE) 1);
+									
+									
+									AVX_FLOATS m_zdiff       = AVX_SUBTRACT_FLOATS(z2pos,m_z1pos);
+									const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(x2pos,m_x1pos);
+									const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(y2pos,m_y1pos);
+									
+									m_zdiff = AVX_MAX_FLOATS(m_zdiff,AVX_SUBTRACT_FLOATS(m_zero,m_zdiff));//dz = fabs(dz) => dz = max(dz, -dz);
+									
+									AVX_FLOATS r2  = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_xdiff),AVX_SQUARE_FLOAT(m_ydiff));
+									AVX_FLOATS m_mask_left;
+									
+									//Do all the distance cuts using masks here in new scope
+									{
+										const AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
+										if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
+											continue;
+										}
+										const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
+										const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
+										const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
+										
+										m_mask_left = AVX_BITWISE_AND(m_mask_pimax, m_rp_mask);
+										if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+											continue;
+										}
+										r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax,r2,m_mask_left);
+										
+										//So there's at least one point that is in range - let's find the bin
+										m_zdiff = AVX_BLEND_FLOATS_WITH_MASK(m_pimax, m_zdiff, m_mask_left);
 #ifdef OUTPUT_RPAVG
-									union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
+										union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
 #endif									
-								}
-
-								const AVX_FLOATS m_pibin = AVX_MULTIPLY_FLOATS(m_zdiff,m_inv_dpi);
-								AVX_FLOATS m_rpbin     = AVX_SET_FLOAT((DOUBLE) 0);
-								//AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
-								for(int kbin=nrpbin-1;kbin>=1;kbin--) {
-									const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-									const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
-									m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
-									m_mask_left = AVX_COMPARE_FLOATS(r2, m_rupp_sqr[kbin-1],_CMP_LT_OS);
-									//m_mask_left = AVX_XOR_FLOATS(m_mask_low, m_all_ones);//XOR with 0xFFFF... gives the bins that are smaller than m_rupp_sqr[kbin] (and is faster than cmp_p(s/d) in theory)
-									const int test = AVX_TEST_COMPARISON(m_mask_left);
-									if(test==0) {
-										break;
 									}
-								}
-								const AVX_FLOATS m_npibin_p1 = AVX_ADD_FLOATS(m_npibin,m_one);
-								const AVX_FLOATS m_binproduct = AVX_ADD_FLOATS(AVX_MULTIPLY_FLOATS(m_rpbin,m_npibin_p1),m_pibin);
-								union_finalbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_binproduct);
-							
-								//update the histograms
+									
+									const AVX_FLOATS m_pibin = AVX_MULTIPLY_FLOATS(m_zdiff,m_inv_dpi);
+									AVX_FLOATS m_rpbin     = AVX_SET_FLOAT((DOUBLE) 0);
+									//AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
+									for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+										const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+										const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
+										m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+										m_mask_left = AVX_COMPARE_FLOATS(r2, m_rupp_sqr[kbin-1],_CMP_LT_OS);
+										//m_mask_left = AVX_XOR_FLOATS(m_mask_low, m_all_ones);//XOR with 0xFFFF... gives the bins that are smaller than m_rupp_sqr[kbin] (and is faster than cmp_p(s/d) in theory)
+										const int test = AVX_TEST_COMPARISON(m_mask_left);
+										if(test==0) {
+											break;
+										}
+									}
+									const AVX_FLOATS m_npibin_p1 = AVX_ADD_FLOATS(m_npibin,m_one);
+									const AVX_FLOATS m_binproduct = AVX_ADD_FLOATS(AVX_MULTIPLY_FLOATS(m_rpbin,m_npibin_p1),m_pibin);
+									union_finalbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_binproduct);
+									
+									//update the histograms
 #if defined(__ICC) || defined(__INTEL_COMPILER)
 #pragma unroll(NVEC)
 #endif		  
-								for(int jj=0;jj<NVEC;jj++) {
-									int ibin = union_finalbin.ibin[jj];
-									npairs[ibin]++;
-#ifdef OUTPUT_RPAVG
-									rpavg [ibin] += union_mDperp.Dperp[jj];
-#endif									
-								}
-							}
-
-							//remainder loop
-							for(;j<second->nelements;j++) {
-								const DOUBLE dx = x2[j]-x1pos;
-								const DOUBLE dy = y2[j]-y1pos;
-								const DOUBLE dz = FABS(z2[j]-z1pos);
-								
-								const DOUBLE r2 = dx*dx + dy*dy;
-								if(r2 >= sqr_rpmax || r2 < sqr_rpmin || dz >= pimax) {
-									continue;
-								}
-#ifdef OUTPUT_RPAVG								
-								const DOUBLE r = SQRT(r2);
-#endif								
-								int pibin = (int) (dz*inv_dpi);
-								pibin = pibin > npibin ? npibin:pibin;
-								for(int kbin=nrpbin-1;kbin>=1;kbin--) {
-									if(r2 >= rupp_sqr[kbin-1]) {
-										int ibin = kbin*(npibin+1) + pibin;
+									for(int jj=0;jj<NVEC;jj++) {
+										int ibin = union_finalbin.ibin[jj];
 										npairs[ibin]++;
 #ifdef OUTPUT_RPAVG
-										rpavg [ibin] += r;
-#endif										
-										break;
+										rpavg [ibin] += union_mDperp.Dperp[jj];
+#endif									
 									}
 								}
-							} //end of j-remainder loop
-							
+								
+								//remainder loop
+								for(int ipos=0;j<second->nelements;j++,ipos++) {
+									const DOUBLE dx =      localx2[ipos]-x1pos;
+									const DOUBLE dy =      localy2[ipos]-y1pos;
+									const DOUBLE dz = FABS(localz2[ipos]-z1pos);
+									
+									const DOUBLE r2 = dx*dx + dy*dy;
+									if(r2 >= sqr_rpmax || r2 < sqr_rpmin || dz >= pimax) {
+										continue;
+									}
+#ifdef OUTPUT_RPAVG								
+									const DOUBLE r = SQRT(r2);
+#endif								
+									int pibin = (int) (dz*inv_dpi);
+									pibin = pibin > npibin ? npibin:pibin;
+									for(int kbin=nrpbin-1;kbin>=1;kbin--) {
+										if(r2 >= rupp_sqr[kbin-1]) {
+											int ibin = kbin*(npibin+1) + pibin;
+											npairs[ibin]++;
+#ifdef OUTPUT_RPAVG
+											rpavg [ibin] += r;
+#endif										
+											break;
+										}
+									}
+								} //end of j-remainder loop
 #endif //end of AVX section
+
+							} // end of ii loop
+
+							//this might actually exceed the allocated range but we will never dereference that
+							x1 += NVEC;
+							y1 += NVEC;
+							z1 += NVEC;
 							
 						}//end of i-loop over first
 					}//iiz loop over zbin_refine_factor

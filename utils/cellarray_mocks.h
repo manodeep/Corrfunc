@@ -21,18 +21,15 @@ extern "C" {
 #define NLATMAX   100      /* maximum grid dimension in X-Y plane */
 
 typedef struct{
-  DOUBLE *x;
-  DOUBLE *y;
-  DOUBLE *z;
+  DOUBLE *pos;
+  /* DOUBLE *y; */
+  /* DOUBLE *z; */
   int nelements;
 	int nallocated;
 } cellarray;
 
 typedef struct{
-  DOUBLE *x;
-  DOUBLE *y;
-  DOUBLE *z;
-  DOUBLE *cz;
+  DOUBLE *pos;
   int nelements;
   int nallocated;
 } cellarray_mocks;

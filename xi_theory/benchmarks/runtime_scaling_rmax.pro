@@ -10,7 +10,7 @@ codestring = ['DD', 'DDrppi', 'wp', 'xi']
 linestyle = [0, 0, 0, 0]
 symbols = [1, 2, 4, 6]
 colors = ['red', 'dodgerblue', 'green', 'cyan']
-legendstring = [tex2idl("$DD(r)    $"), tex2idl("$DD(r_p,\pi)$"), tex2idl("$w_p(r_p)$ "), tex2idl("$\xi(r)   $")]
+legendstring = [tex2idl("$DD(r)    $"), tex2idl("$DD(r_p,\pi)$"), tex2idl("$w_p(r_p)    $"), tex2idl("$\xi(r)        $")]
 generate_eps = 1
 
 partfile = '../tests/data/gals_Mr19.ff'

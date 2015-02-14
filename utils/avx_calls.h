@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <immintrin.h>
 
+#include "function_precision.h"
 
 #define PREFETCH(mem)        asm ("prefetcht0 %0"::"m"(mem))
 
@@ -66,7 +67,12 @@
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_ps(FALSEVALUE,TRUEVALUE,MASK)
 
 //Trig
+#ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X)                 _mm256_acos_ps(X)
+#else
+//Other compilers do not have the vectorized arc-cosine
+#define AVX_ARC_COSINE(X)                  inv_cosine(X)
+#endif
 
 //Max
 #define AVX_MAX_FLOATS(X,Y)               _mm256_max_ps(X,Y)
@@ -114,7 +120,11 @@
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_pd(FALSEVALUE,TRUEVALUE,MASK)
 
 //Trig
+#ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X)                 _mm256_acos_pd(X)
+#else
+#define AVX_ARC_COSINE(X)                  inv_cosine(X)
+#endif
 
 //Max
 #define AVX_MAX_FLOATS(X,Y)               _mm256_max_pd(X,Y)
@@ -127,6 +137,30 @@
 #define AVX_STREAMING_STORE_FLOATS(X,Y)   _mm256_stream_pd(X,Y)
 #define AVX_STREAMING_STORE_INTS(X,Y)     _mm_stream_si128(X,Y)
 
-
-
 #endif
+
+
+#ifndef  __INTEL_COMPILER
+static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X) 
+{																																				
+	union cos{
+		AVX_FLOATS m;
+		DOUBLE x[NVEC];
+	};
+	union cos union_costheta;
+	union cos union_returnvalue;
+	union_costheta.m = X;
+	
+	for(int ii=0;ii<NVEC;ii++) {														
+		const DOUBLE costheta = union_costheta.x[ii];
+		if(costheta <= 1.0 && costheta >= -1.0) {
+			union_returnvalue.x[ii] = ACOS(costheta);
+		} else {
+			fprintf(stderr,"ERROR:\n");
+			exit(EXIT_FAILURE);
+		}
+	}																																		
+	return union_returnvalue.m;
+}
+#endif
+
