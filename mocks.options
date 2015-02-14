@@ -1,6 +1,6 @@
 #### Science use-cases for Correlation Functions on mocks
 OPT += -DOUTPUT_RPAVG  ### Enabling this DOES NOT cause too much of a runtime-hit for DDrppi (<= 10% performance hit)
-OPT += -DOUTPUT_THETAAVG
+#OPT += -DOUTPUT_THETAAVG
 
 #### Extra options for Correlation Functions on mocks
 OPT += -DLINK_IN_DEC
