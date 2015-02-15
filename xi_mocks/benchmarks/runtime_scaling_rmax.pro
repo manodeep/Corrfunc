@@ -10,8 +10,8 @@ codestring = ['DDrppi (DD)', 'wtheta (DD)', 'DDrppi (DR)', 'wtheta (DR)']
 linestyle =  [0,  0,  0,  0]
 symbols =  [1,  2,  4,  6]
 colors =  ['red',  'dodgerblue',  'green',  'cyan']
-legendstring = [tex2idl("$DD(r_p,\pi)$"), tex2idl("$DD(theta)$ "), tex2idl("$DR(r_p,\pi)$"), tex2idl("$DR(\theta)$ ")]
-generate_eps = 0
+legendstring =  [tex2idl("$DD(r_p,\pi) $"),  tex2idl("$DD(\theta)     $"),  tex2idl("$DR(r_p,\pi) $"),  tex2idl("$DR(\theta)     $")]
+generate_eps = 1
 
 partfile1 = '../tests/data/Mr19_mock_northonly.rdcz.dat'
 partfile2 = '../tests/data/Mr19_randoms_northonly.rdcz.ff'
@@ -92,6 +92,8 @@ xtitle =  'R!Dmax!N'
 ytitle =  'runtime [seconds]'
 position =  [0.2,  0.2,  0.9,  0.9]
 symsize = 4  
+legend_charsize = 2.5
+charsize = 4
 
 if generate_eps eq 0 then begin
    thick =  3
@@ -123,8 +125,9 @@ parinfo[*].value =  [0.2d,  0.5,  2.0]
 
 
 plot,  [0],  xrange =  xrange,  yrange =  yrange,  /nodata,  $
-             xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
-             xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick, /xlog, /ylog
+       xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
+       xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick, /xlog, /ylog, $
+       charsize = charsize
 
 reliable_N = 0 > 0
 for icode =  0,  ncodes-1 do begin
@@ -141,11 +144,12 @@ for icode =  0,  ncodes-1 do begin
 endfor
 
 al_legend, legendstring, psym = symbols, color = colors, /top, /left, symsize = symsize, $
-           textcolor = colors
+           textcolor = colors, charsize = legend_charsize
 
 plot,  [0],  xrange =  xrange,  yrange =  yrange,  /nodata,  $
-             xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
-             xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick, /noerase, /xlog, /ylog
+       xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
+       xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick, /noerase, /xlog, /ylog, $
+       charsize = charsize
 
 if !d.name eq 'PS' then begin
    device,  /close

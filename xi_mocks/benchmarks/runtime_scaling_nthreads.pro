@@ -5,17 +5,18 @@ codestring =  ['DDrppi (DD)',  'wtheta (DD)',  'DDrppi (DR)',  'wtheta (DR)']
 linestyle =   [0,   0,   0,   0]
 symbols =   [1,   2,   4,   6]
 colors =   ['red',   'dodgerblue',   'green',   'cyan']
-legendstring =  [tex2idl("$DD(r_p,\pi)$"),  tex2idl("$DD(theta)$ "),  tex2idl("$DR(r_p,\pi)$"),  tex2idl("$DR(\theta)$ ")]
-generate_eps =  0
+legendstring =  [tex2idl("$DD(r_p,\pi) $"),  tex2idl("$DD(\theta)     $"),  tex2idl("$DR(r_p,\pi) $"),  tex2idl("$DR(\theta)     $")]
+generate_eps =  1
 
 partfile1 =  '../tests/data/Mr19_mock_northonly.rdcz.dat'
 partfile2 =  '../tests/data/Mr19_randoms_northonly.rdcz.ff'
 base_execstrings =  ['PARTFILE1 a PARTFILE1 a BINFILE PIMAX 1 NTHREADS > xx',  $
-                     'PARTFILE1 a PARTFILE1 a BINFILE NTHREADS > xx',  $
+                     'PARTFILE1 a PARTFILE1 a ANGULAR NTHREADS > xx',  $
                      'PARTFILE2 f PARTFILE1 a BINFILE PIMAX 1 NTHREADS > xx',  $
-                     'PARTFILE2 f PARTFILE1 a BINFILE NTHREADS > xx']
+                     'PARTFILE2 f PARTFILE1 a ANGULAR NTHREADS > xx']
 
 binfile = '../tests/bins'
+angular_binfile = '../tests/angular_bins'
 timings_file = 'timings_Mr19_mocks_openmp.txt'
 pimax = 40.0
 ntries = 5
@@ -25,9 +26,10 @@ NumSteps = max_nthreads-min_nthreads+1
 ncodes = n_elements(codes)
 
 readcol, binfile, rmin, rmax, format = 'D,D', /silent
+readcol, angular_binfile, thetamin, thetamax, format = 'D,D', /silent
 if (findfile(timings_file))[0] eq '' then begin
    openw, lun, timings_file, /get_lun
-   printf, lun, "# rmax = ", max(rmax), " pimax = ", pimax
+   printf, lun, "# rmax = ", max(rmax), " pimax = ", pimax, " thetamax = ", max(thetamax)
    printf, lun, "#################################################"
    printf, lun, "#  Iteration     Nthreads     Time       Code    "
    printf, lun, "#################################################"
@@ -35,6 +37,7 @@ if (findfile(timings_file))[0] eq '' then begin
       for icode = 0, ncodes-1 do begin
          execstring = codes[icode] + " " + base_execstrings[icode]
          execstring = str_replace(execstring, 'BINFILE', binfile)
+         execstring = str_replace(execstring, 'ANGULAR', angular_binfile)
          execstring = str_replace(execstring, 'PIMAX', strn(pimax))
          execstring =  str_replace(execstring,  'PARTFILE1',  partfile1)
          execstring =  str_replace(execstring,  'PARTFILE2',  partfile2)
@@ -90,6 +93,8 @@ xtitle =  'Nthreads'
 ytitle =  'Median Speedup'
 position =  [0.2,  0.2,  0.9,  0.9]
 symsize = 4  
+legend_charsize = 2.5
+charsize = 4
 
 if generate_eps eq 0 then begin
    thick =  3
@@ -112,8 +117,9 @@ endif else begin
 endelse
 
 plot,  [0],  xrange =  xrange,  yrange =  yrange,  /nodata,  $
-             xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
-             xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick
+       xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
+       xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick, $
+       charsize = charsize
 
 for icode =  0,  ncodes-1 do begin
    this_timings = reform(timings[icode,  *])
@@ -126,11 +132,12 @@ for icode =  0,  ncodes-1 do begin
 endfor
 cgplots, xdata, xdata, line = 2, thick = thick, color = 'black'
 al_legend, legendstring, psym = symbols, color = colors, /top, /left, symsize = symsize, $
-           textcolor = colors
+           textcolor = colors, charsize = legend_charsize
 
 plot,  [0],  xrange =  xrange,  yrange =  yrange,  /nodata,  $
-             xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
-             xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick, /noerase
+       xthick =  xthick,  ythick =  ythick,  xticklen =  xticklen,  yticklen =  yticklen,  $
+       xtitle =  xtitle,  ytitle =  ytitle,  position =  position,  thick =  thick, /noerase, $
+       charsize = charsize
 
 if !d.name eq 'PS' then begin
    device,  /close
