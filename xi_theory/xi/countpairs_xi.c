@@ -1,4 +1,4 @@
-/* File: countpairs.c */
+/* File: countpairs_xi.c */
 /*
 		This file is a part of the Corrfunc package
 		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)

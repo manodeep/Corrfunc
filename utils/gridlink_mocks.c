@@ -1,24 +1,9 @@
-/* PROGRAM gridlink1D
-
-   --- gridlink np rmin rmax rcell z &ngrid &gridinit &gridlist
-   --- Creates a 1D grid and places particles into it via a linked
-   --- list.  Similar to gridlink.c, but in 1D.
-
-   ---inputs---
-      * np = number of particles
-      * rmin,rmax = particles are located in a box running from 
-                    (rmin,rmin,rmin) to (rmax,rmax,rmax).
-      * rcell = size of a single grid cell 
-      * z = array of particle coordinate that determines grid
-   ---outputs---
-      * ngrid = dimension of grid - computed from rmin,rmax,rcell
-      * grid = 1D grid array where each cell contains the index of the 
-                  first particle in that cell.
-      * gridlist = array of length np containing linked list.
-   -------------------------------------------------------------
-      If cell (iz) contains N particles with indices j1,j2,j3,...,jN, 
-      then: j1 = grid[iz], j2 = gridlist[j1], j3 = gridlist[j2],...,
-      jN = gridlist[j<N-1>], and gridlist[jN] = -1.
+/* File: gridlink_mocks.c */
+/*
+		This file is a part of the Corrfunc package
+		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+		License: MIT LICENSE. See LICENSE file under the top-level
+		directory at https://bitbucket.org/manodeep/corrfunc/
 */
 
 #include <stdio.h>

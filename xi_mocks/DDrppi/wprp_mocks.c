@@ -1,3 +1,11 @@
+/* File: wprp_mocks.c */
+/*
+		This file is a part of the Corrfunc package
+		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+		License: MIT LICENSE. See LICENSE file under the top-level
+		directory at https://bitbucket.org/manodeep/corrfunc/
+*/
+
 /* PROGRAM wprp
 
    --- wprp nrbin ND1 ND2 NR1 NR2 D1D2 D1R2 D2R1 R1R2 [pimax] > wpfile

@@ -1,3 +1,11 @@
+/* File: countpairs_theta_mocks.c */
+/*
+		This file is a part of the Corrfunc package
+		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+		License: MIT LICENSE. See LICENSE file under the top-level
+		directory at https://bitbucket.org/manodeep/corrfunc/
+*/
+
 /* PROGRAM countpairs_theta
 
    --- countpairs_theta logthetamin logthetamax nbin N1 theta1 phi1 N2 theta2 phi2 Pairs
