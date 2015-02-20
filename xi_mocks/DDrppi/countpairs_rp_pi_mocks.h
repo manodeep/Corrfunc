@@ -1,4 +1,4 @@
-/* File: countpairs_data.h */
+/* File: countpairs_rp_pi_mocks.h */
 /*
 		This file is a part of the Corrfunc package
 		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)

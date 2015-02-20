@@ -1,3 +1,11 @@
+/* File: vpf_mocks.c */
+/*
+		This file is a part of the Corrfunc package
+		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+		License: MIT LICENSE. See LICENSE file under the top-level
+		directory at https://bitbucket.org/manodeep/corrfunc/
+*/
+
 /* PROGRAM vpf_mocks
 
    --- vpf_mocks rmax nbin nc num_pN volume mocksfile mocksformat RANDfile randformat centers-file cosmology > output
