@@ -8,12 +8,12 @@ colors =   ['red',   'dodgerblue',   'green',   'cyan']
 legendstring =  [tex2idl("$DD(r_p,\pi) $"),  tex2idl("$DD(\theta)     $"),  tex2idl("$DR(r_p,\pi) $"),  tex2idl("$DR(\theta)     $")]
 generate_eps =  1
 
-partfile1 =  '../tests/data/Mr19_mock_northonly.rdcz.dat'
+partfile1 =  '../tests/data/Mr19_mock_northonly.rdcz.ff'
 partfile2 =  '../tests/data/Mr19_randoms_northonly.rdcz.ff'
-base_execstrings =  ['PARTFILE1 a PARTFILE1 a BINFILE PIMAX 1 NTHREADS > xx',  $
-                     'PARTFILE1 a PARTFILE1 a ANGULAR NTHREADS > xx',  $
-                     'PARTFILE2 f PARTFILE1 a BINFILE PIMAX 1 NTHREADS > xx',  $
-                     'PARTFILE2 f PARTFILE1 a ANGULAR NTHREADS > xx']
+base_execstrings =  ['PARTFILE1 f PARTFILE1 f BINFILE PIMAX 1 NTHREADS > xx',  $
+                     'PARTFILE1 f PARTFILE1 f ANGULAR NTHREADS > xx',  $
+                     'PARTFILE2 f PARTFILE1 f BINFILE PIMAX 1 NTHREADS > xx',  $
+                     'PARTFILE2 f PARTFILE1 f ANGULAR NTHREADS > xx']
 
 binfile = '../tests/bins'
 angular_binfile = '../tests/angular_bins'

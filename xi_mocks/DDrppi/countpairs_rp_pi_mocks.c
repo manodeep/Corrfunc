@@ -11,7 +11,8 @@
 #include <stdlib.h>
 #include <gsl/gsl_interp.h>
 
-#include "sglib.h"
+#include "defs.h"
+/* #include "sglib.h" */
 #include "utils.h"
 #include "cellarray_mocks.h"
 #include "gridlink_mocks.h"
@@ -324,10 +325,10 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 #pragma omp parallel shared(numdone)
 	{
 		const int tid = omp_get_thread_num();
-		uint64_t npairs[totnbins] __attribute__ ((aligned(64)));
+		uint64_t npairs[totnbins] __attribute__ ((aligned(ALIGNMENT)));
 		for(int i=0;i<totnbins;i++) npairs[i] = 0;
 #ifdef OUTPUT_RPAVG
-		DOUBLE rpavg[totnbins];
+		DOUBLE rpavg[totnbins] __attribute__ ((aligned(ALIGNMENT)));
 		for(int i=0;i<totnbins;i++) rpavg[i] = 0.0;
 #endif
 

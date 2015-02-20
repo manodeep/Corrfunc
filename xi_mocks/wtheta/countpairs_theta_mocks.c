@@ -127,8 +127,8 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 
 #ifdef LINK_IN_DEC
   int rbin_refine_factor=2;
-#ifdef USE_OMP
-	if(numthreads > 1) {
+#if defined(USE_OMP) && !defined(LINK_IN_RA)
+	if(rbin_refine_factor < numthreads) {
 		rbin_refine_factor=numthreads;
 	}
 #endif
