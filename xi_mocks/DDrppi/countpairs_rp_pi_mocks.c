@@ -730,8 +730,10 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 	free(lattice2);
 #else
 	//LINK_IN_RA
+	int max_nmesh_dec=0;
 	for(int i=0; i < ngrid; i++) {
 		for(int j=0;j< ngrid_dec[i];j++) {
+			if(ngrid_dec[i] > max_nmesh_dec) max_nmesh_dec = ngrid_dec[i];
 			for(int k=0;k<ngrid_ra[i][j];k++){
 				free(lattice2[i][j][k].pos);
 				/* free(lattice2[i][j][k].y); */
@@ -740,10 +742,6 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 			}
 		}
 	}
-	double dec_cell  = ASIN(rpmax/(2*d2max))*2.0*INV_PI_OVER_180;
-	int max_nmesh_dec = (int)(dec_diff*rbin_refine_factor/dec_cell) ;
-	if(max_nmesh_dec > NLATMAX)
-		max_nmesh_dec = NLATMAX;
 
 	volume_free((void ***) lattice2, ngrid, max_nmesh_dec);
 	matrix_free((void **) ngrid_ra, ngrid);
