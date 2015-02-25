@@ -190,18 +190,28 @@ the fiducial mock to attain 10 logarithmic steps in particle number ranging from
 as \texttt{Speedup/Nthreads}. Note, that \xir has super-linear scaling with \texttt{nthreads}
 up to $\sim$ 10 threads.}
 \begin{adjustbox}{max width=\textwidth}
-\begin{tabular}{ccccc} 
+\begin{tabular}{ccccccccc} 
 \toprule
-\multirow{2}{*}{\textbf{Nthreads}}   &
-\multicolumn{4}{c}{\textbf{Efficiency[\%]}} \\
+\multirow{3}{*}{\textbf{Nthreads}}   &
+\multicolumn{8}{c}{\textbf{Efficiency[\%]}} \\
+\cmidrule(l{2.0em}r{2.0em}){2-9}
+
+                                     &
+\multicolumn{4}{c}{\textbf{Theory}}  &
+\multicolumn{4}{c}{\textbf{Mocks}}  \\
 \cmidrule(l{1.0em}r{1.0em}){2-5}
-&
-\multicolumn{1}{c}{$\boldsymbol{\xir}$}    &
-\multicolumn{1}{c}{$\boldsymbol{\xirppi}$} &
-\multicolumn{1}{c}{$\boldsymbol{\wprp}$}   & 
-\multicolumn{1}{c}{$\boldsymbol{\xiofr}$}   \\
+\cmidrule(l{1.0em}r{1.0em}){6-9}
+                                               &
+\multicolumn{1}{c}{$\boldsymbol{\xir}$}        &
+\multicolumn{1}{c}{$\boldsymbol{\xirppi}$}     &
+\multicolumn{1}{c}{$\boldsymbol{\wprp}$}       & 
+\multicolumn{1}{c}{$\boldsymbol{\xiofr}$}      &
+\multicolumn{1}{c}{$\boldsymbol{DD(r_p,\pi)}$} &
+\multicolumn{1}{c}{$\boldsymbol{DD(\theta)}$}  &
+\multicolumn{1}{c}{$\boldsymbol{DR(r_p,\pi)}$} & 
+\multicolumn{1}{c}{$\boldsymbol{DR(\theta)}$}   \\
 \midrule
-\input{timings_Mr19_openmp} 
+\input{timings_Mr19_openmp_theory_and_mocks}
 \bottomrule
 \end{tabular}
 \end{adjustbox}
