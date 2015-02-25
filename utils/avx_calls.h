@@ -12,6 +12,11 @@
 #include <stdlib.h>
 #include <immintrin.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include "function_precision.h"
 
 #define PREFETCH(mem)        asm ("prefetcht0 %0"::"m"(mem))
@@ -168,3 +173,6 @@ static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X)
 }
 #endif
 
+#ifdef __cplusplus
+}
+#endif

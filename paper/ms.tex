@@ -10,6 +10,7 @@
 \usepackage{listings}
 \usepackage{caption}
 \usepackage{url}
+\usepackage{adjustbox}
 \journal{Astronomy and Computing}
 
 %%% Definitions added by Manodeep 
@@ -20,7 +21,8 @@
 \newcommand{\hkpc}{\ensuremath{{h^{-1}kpc}\xspace}}
 \newcommand{\emcee}{\texttt emcee}
 \newcommand{\rmax}{\ensuremath{{r_{max}}}\xspace}
-\newcommand{\xir}{\ensuremath{{\xi(r)}}\xspace}
+\newcommand{\xir}{\ensuremath{{DD(r)}}\xspace}
+\newcommand{\xiofr}{\ensuremath{{\xi(r)}}\xspace}
 \newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
 \newcommand{\xirppi}{\ensuremath{{\xi(r_p,\pi)}}\xspace}
 \newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
@@ -181,6 +183,31 @@ the fiducial mock to attain 10 logarithmic steps in particle number ranging from
 \caption{OpenMP scaling for \xir, \xirppi, \wprp }
 \label{fig:scaling_openmp}
 \end{figure}
+
+\begin{table}
+\centering
+\caption{\footnotesize OpenMP scaling for the three codes. Efficiencies are defined 
+as \texttt{Speedup/Nthreads}. Note, that \xir has super-linear scaling with \texttt{nthreads}
+up to $\sim$ 10 threads.}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{ccccc} 
+\toprule
+\multirow{2}{*}{\textbf{Nthreads}}   &
+\multicolumn{4}{c}{\textbf{Efficiency[\%]}} \\
+\cmidrule(l{1.0em}r{1.0em}){2-5}
+&
+\multicolumn{1}{c}{$\boldsymbol{\xir}$}    &
+\multicolumn{1}{c}{$\boldsymbol{\xirppi}$} &
+\multicolumn{1}{c}{$\boldsymbol{\wprp}$}   & 
+\multicolumn{1}{c}{$\boldsymbol{\xiofr}$}   \\
+\midrule
+\input{timings_Mr19_openmp} 
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\label{table:openmp}
+\end{table}
+
 
 \section{Conclusions}
 I have presented a suite of three fast correlation function codes that take advantage of the underlying hardware. The reasons why the codes 
