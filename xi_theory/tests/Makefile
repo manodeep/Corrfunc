@@ -16,7 +16,7 @@ test_periodic: $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -lgsl -lgslcblas -o $@
 
 test_nonperiodic: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(CLINK) $(OBJS2) -o $@
+	$(CC) $(OBJS2) $(CLINK) -o $@
 
 %.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
