@@ -165,22 +165,24 @@ the fiducial mock to attain 10 logarithmic steps in particle number ranging from
 
 \begin{figure}[htbp]
 \includegraphics[clip=true,width=\linewidth]{timings_Mr19_numpart}%
-\caption{Scaling with particle number for \xir, \xirppi, \wprp }
+\caption{Scaling with particle number for \xir, \xirppi, \wprp and \xiofr}
 \label{fig:scaling_numpart}
 \end{figure}
 
 \subsection{Scaling with \rmax}
 \begin{figure}[htbp]
-\includegraphics[clip=true,width=\linewidth]{timings_Mr19_rmax}%
-\caption{Scaling with \rmax for \xir, \xirppi, \wprp }
+\includegraphics[clip=true,width=0.5\linewidth]{timings_Mr19_rmax}%
+\includegraphics[clip=true,width=0.5\linewidth]{timings_Mr19_mocks_rmax}
+\caption{Scaling with \rmax for \xir, \xirppi, \wprp and \xiofr}
 \label{fig:scaling_rmax}
 \end{figure}
 
 
 \subsection{Scaling with OpenMP threads}
 \begin{figure}[htbp]
-\includegraphics[clip=true,width=\linewidth]{timings_Mr19_openmp}%
-\caption{OpenMP scaling for \xir, \xirppi, \wprp }
+\includegraphics[clip=true,width=0.5\linewidth]{timings_Mr19_openmp}%
+\includegraphics[clip=true,width=0.5\linewidth]{timings_Mr19_mocks_openmp}
+\caption{OpenMP scaling for \xir, \xirppi, \wprp and \xiofr}
 \label{fig:scaling_openmp}
 \end{figure}
 
@@ -194,11 +196,11 @@ up to $\sim$ 10 threads.}
 \toprule
 \multirow{3}{*}{\textbf{Nthreads}}   &
 \multicolumn{8}{c}{\textbf{Efficiency[\%]}} \\
-\cmidrule(l{2.0em}r{2.0em}){2-9}
+\cmidrule(l{3em}r{3em}){2-9}
 
                                      &
-\multicolumn{4}{c}{\textbf{Theory}}  &
-\multicolumn{4}{c}{\textbf{Mocks}}  \\
+\multicolumn{4}{c}{\textbf{Periodic Boxes}}  &
+\multicolumn{4}{c}{\textbf{Spherical Geometry}}  \\
 \cmidrule(l{1.0em}r{1.0em}){2-5}
 \cmidrule(l{1.0em}r{1.0em}){6-9}
                                                &
