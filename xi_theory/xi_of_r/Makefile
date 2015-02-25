@@ -10,7 +10,7 @@ INCL   = countpairs.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../
 all: $(target) $(SRC1) $(INCL)
 
 $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(CLINK) $(OBJS1) -o $@
+	$(CC) $(OBJS1) $(CLINK) -o $@
 
 %.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
