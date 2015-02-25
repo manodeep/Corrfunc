@@ -36,7 +36,8 @@
 
 %% Some of the short-cuts I use
 \newcommand{\rmax}{\ensuremath{{r_{max}}}\xspace}
-\newcommand{\xir}{\ensuremath{{\xi(r)}}\xspace}
+\newcommand{\xir}{\ensuremath{{DD(r)}}\xspace}
+\newcommand{\xiofr}{\ensuremath{{\xi(r)}}\xspace}
 \newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
 \newcommand{\xirppi}{\ensuremath{{\xi(r_p,\pi)}}\xspace}
 \newcommand{\pimax}{\ensuremath{{\pi_{\rm max}}}\xspace}
@@ -204,7 +205,6 @@ The directory structure for the code looks like this:
   \begin{minipage}[t]{8cm}
     Source files to compute the counts-in-spheres statistic{.} 
   \end{minipage}.
-
 .2 xi\_mocks.
 .3 benchmarks\DotFill
   \begin{minipage}[t]{8cm}
@@ -1046,15 +1046,16 @@ in a $420.0$ \hMpc cube. }
 as \texttt{Speedup/Nthreads}. Note, that \xir has super-linear scaling with \texttt{nthreads}
 up to $\sim$ 8 threads.}
 \begin{adjustbox}{max width=\textwidth}
-\begin{tabular}{cccc} 
+\begin{tabular}{ccccc} 
 \toprule
 \multirow{2}{*}{\textbf{Nthreads}}   &
-\multicolumn{3}{c}{\textbf{Efficiency[\%]}} \\
-\cmidrule(l{1.0em}r{1.0em}){2-4}
+\multicolumn{4}{c}{\textbf{Efficiency[\%]}} \\
+\cmidrule(l{1.0em}r{1.0em}){2-5}
 &
-\multicolumn{1}{c}{$\boldsymbol{\xir}$}   &
+\multicolumn{1}{c}{$\boldsymbol{\xir}$}    &
 \multicolumn{1}{c}{$\boldsymbol{\xirppi}$} &
-\multicolumn{1}{c}{$\boldsymbol{\wprp}$}     \\
+\multicolumn{1}{c}{$\boldsymbol{\wprp}$}   & 
+\multicolumn{1}{c}{$\boldsymbol{\xiofr}$}   \\
 \midrule
 \input{timings_Mr19_openmp} 
 \bottomrule

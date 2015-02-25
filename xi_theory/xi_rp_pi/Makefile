@@ -12,7 +12,7 @@ INCL   = countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h 
 
 
 DDrppi: $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
-	$(CC) $(CLINK) $(OBJS1) -o $@
+	$(CC) $(OBJS1) $(CLINK) -o $@
 
 %.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
