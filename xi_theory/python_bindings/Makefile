@@ -11,7 +11,7 @@ SOURCES := _countpairs.c
 OBJECTS := $(SOURCES:.c=.o)
 C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a
 
-all: $(LIBRARY) $(SOURCES) | ../../lib
+all: $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../theory.options ../../common.mk Makefile | ../../lib
 
 $(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@

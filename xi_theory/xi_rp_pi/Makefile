@@ -1,8 +1,6 @@
 include ../../theory.options ../../common.mk
 
 target=DDrppi wprp
-all: $(target) 
-
 
 SRC1= DDrppi.c countpairs_rp_pi.c ../../utils/utils.c ../../utils/gridlink.c ../../utils/progressbar.c ../../io/io.c ../../io/ftread.c 
 OBJS1  = $(SRC1:.c=.o)
@@ -10,6 +8,7 @@ INCL   = countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h 
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/progressbar.h 
 
+all: $(target) ../../theory.options ../../common.mk Makefile 
 
 DDrppi: $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) -o $@

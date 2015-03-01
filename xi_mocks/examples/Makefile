@@ -12,7 +12,7 @@ INCL :=	../../include/countpairs_rp_pi_mocks.h ../../include/countpairs_theta_mo
 		../../utils/function_precision.h ../../utils/cellarray_mocks.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/progressbar.h ../../utils/cosmology_params.h 
 
-all: $(target) 
+all: $(target) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile $(C_LIBRARIES)
 
 $(target): Makefile ../../mocks.options ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) -o $@

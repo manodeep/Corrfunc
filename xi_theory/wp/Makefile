@@ -7,7 +7,7 @@ INCL   = countpairs_wp.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/sglib.h ../../utils/progressbar.h 
 
-all: $(target) $(SRC1) $(INCL)
+all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
 
 $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
 	$(CC) $(OBJS1) $(CLINK) -o $@
