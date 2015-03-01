@@ -1,7 +1,6 @@
 include ../../mocks.options ../../common.mk
 
 target=DDrppi_mocks wprp_mocks
-all: $(target) 
 
 INCL   = countpairs_rp_pi_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h  ../../utils/gridlink_mocks.h ../../utils/cellarray_mocks.h \
 				../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h  \
@@ -12,6 +11,9 @@ SRC1= DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
 			../../utils/utils.c ../../io/io.c ../../io/ftread.c ../../utils/progressbar.c
 
 OBJS1=$(SRC1:.c=.o) 
+
+all: $(target) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
+
 DDrppi_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@ 
 

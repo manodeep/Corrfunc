@@ -10,7 +10,7 @@ SOURCES := _countpairs_mocks.c
 OBJECTS := $(SOURCES:.c=.o)
 C_LIBRARY := ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta_mocks.a ../../lib/libcountspheres_mocks.a 
 
-all: $(LIBRARY) | ../../lib
+all: $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../mocks.options ../../common.mk Makefile | ../../lib
 
 $(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
@@ -50,6 +50,7 @@ realclean: distclean
 
 clean:
 	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so
+
 
 celan: clean
 clena: clean

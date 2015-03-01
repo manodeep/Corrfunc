@@ -9,7 +9,7 @@ INCL   = countspheres_mocks.h ../../io/ftread.h ../../io/io.h ../../utils/utils.
 				../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 				../../utils/defs.h ../../utils/progressbar.h ../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h
 
-all: $(target) $(SRC1) $(INCL)
+all: $(target) $(SRC1) $(INCL) Makefile ../../mocks.options ../../common.mk
 
 $(target): $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile 
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@
@@ -23,7 +23,7 @@ countspheres_mocks.o: countspheres_mocks.c $(INCL) ../../common.mk Makefile
 
 
 libs: lib
-lib:  libcountspheres_mocks.a | ../../lib
+lib:  libcountspheres_mocks.a | ../../lib ../../include
 
 SRC2   = countspheres_mocks.c ../../utils/gridlink_mocks.c ../../utils/utils.c ../../utils/progressbar.c \
 				../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c
@@ -48,7 +48,7 @@ libcountspheres_mocks.a: $(OBJS2) ../../mocks.options ../../common.mk Makefile |
 install: $(target) | ../../bin
 	cp -p $(target) ../../bin/
 
-distclean: clean
+distclean: clean | ../../include ../../bin ../../lib
 	$(RM) ../../bin/$(target)
 	$(RM) ../../include/countspheres_mocks.h
 	$(RM) ../../lib/libcountspheres_mocks.a

@@ -23,9 +23,7 @@ python_bindings:
 	$(MAKE) -C python_bindings
 
 distclean:realclean
-
 distclena:realclean
-
 realclena:realclean
 
 realclean:
@@ -33,12 +31,14 @@ realclean:
 	$(MAKE) -C DDrppi distclean
 	$(MAKE) -C wtheta distclean
 	$(MAKE) -C vpf distclean
+	$(MAKE) -C python_bindings distclean
 
 clean:
 	$(RM) $(target) $(OBJS1) 
 	$(MAKE) -C DDrppi clean
 	$(MAKE) -C wtheta clean
 	$(MAKE) -C vpf clean
+	$(MAKE) -C python_bindings clean
 
 clena: clean
 celan: clean
