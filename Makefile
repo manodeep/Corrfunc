@@ -27,13 +27,12 @@ realclean:
 	$(MAKE) -C xi_mocks distclean
 
 clean:
+	$(RM) $(DISTNAME).$(MAJOR).0.$(MINOR).no_version_control.tar.gz $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz
 	$(MAKE) -C xi_theory clean
 	$(MAKE) -C xi_mocks clean
 
 clena: clean
-
 celan: clean
-
 celna: clean
 
 install: | dirs
