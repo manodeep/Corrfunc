@@ -7,22 +7,22 @@ INCL   = countspheres.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../.
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/progressbar.h 
 
-all: $(target) $(SRC1) $(INCL)
+all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
 
 $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@
 
-%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
 countspheres.o: countspheres.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
+
+%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
+	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 SRC2   = countspheres.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  = $(SRC2:.c=.o)
 
 libs: lib
-lib:  libcountspheres.a | ../../lib
+lib:  libcountspheres.a | ../../lib ../../include 
 
 
 libcountspheres.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
@@ -42,7 +42,7 @@ libcountspheres.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../.
 install: $(target) | ../../bin
 	cp -p $(target) ../../bin/
 
-distclean: clean
+distclean: clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountspheres.a
 	$(RM) ../../include/countspheres.h
 	$(RM) ../../bin/$(target)

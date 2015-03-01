@@ -1,7 +1,6 @@
 include ../../mocks.options ../../common.mk
 
 target=DDtheta_mocks wtheta
-all: $(target) 
 
 # ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
 # MKL_CHECK=mkl
@@ -13,8 +12,11 @@ INCL   = countpairs_theta_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h 
 
 SRC1= DDtheta_mocks.c  countpairs_theta_mocks.c ../../utils/gridlink_mocks.c \
 			../../utils/utils.c ../../io/io.c ../../io/ftread.c ../../utils/progressbar.c
-
 OBJS1=$(SRC1:.c=.o) 
+
+all: $(target) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
+
+
 DDtheta_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) -o $@ 
 
