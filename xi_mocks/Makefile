@@ -38,6 +38,8 @@ clean:
 	$(MAKE) -C DDrppi clean
 	$(MAKE) -C wtheta clean
 	$(MAKE) -C vpf clean
+	$(MAKE) -C examples clean
+	$(MAKE) -C tests clean
 	$(MAKE) -C python_bindings clean
 
 clena: clean

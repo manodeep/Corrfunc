@@ -16,7 +16,6 @@ OBJS1=$(SRC1:.c=.o)
 
 all: $(target) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
 
-
 DDtheta_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) -o $@ 
 
@@ -63,7 +62,7 @@ tests:
 	$(MAKE) -C ../tests wtheta
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) 
+	$(RM) $(target) $(OBJS1) $(OBJS2)
 
 clena: clean
 celan: clean

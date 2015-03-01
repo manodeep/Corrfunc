@@ -11,7 +11,7 @@ INCL :=	../../include/countpairs.h ../../include/countpairs_rp_pi.h ../../includ
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/progressbar.h 
 
-all: $(target) $(SRC1) $(INCL) $(C_LIBRARIES)
+all: $(target) $(SRC1) $(INCL) $(C_LIBRARIES) ../../theory.options ../../common.mk Makefile
 
 $(target): Makefile ../../theory.options ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) -o $@
