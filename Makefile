@@ -8,32 +8,11 @@ logbins: $(OBJS1)  | dirs
 dirs:
 	mkdir -p lib bin include 
 
-.PHONY: clean celna clena celan xi_theory xi_mocks install
-
 xi_theory: | dirs
 	$(MAKE) -C xi_theory
 
 xi_mocks: | dirs
 	$(MAKE) -C xi_mocks
-
-distclean:realclean
-
-distclena:realclean
-
-realclena:realclean
-
-realclean:
-	$(MAKE) -C xi_theory distclean
-	$(MAKE) -C xi_mocks distclean
-
-clean:
-	$(RM) $(DISTNAME).$(MAJOR).0.$(MINOR).no_version_control.tar.gz $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz
-	$(MAKE) -C xi_theory clean
-	$(MAKE) -C xi_mocks clean
-
-clena: clean
-celan: clean
-celna: clean
 
 install: | dirs
 	$(MAKE) -C xi_theory install
@@ -52,4 +31,25 @@ dist:
 tests:
 	$(MAKE) -C xi_theory tests
 	$(MAKE) -C xi_mocks tests
+
+
+.PHONY: clean celna clena celan xi_theory xi_mocks install distclean realclean
+
+distclean:realclean
+distclena:realclean
+realclena:realclean
+
+realclean:
+	$(MAKE) -C xi_theory distclean
+	$(MAKE) -C xi_mocks distclean
+
+clean:
+	$(RM) $(DISTNAME).$(MAJOR).0.$(MINOR).no_version_control.tar.gz $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz
+	$(MAKE) -C xi_theory clean
+	$(MAKE) -C xi_mocks clean
+
+clena: clean
+celan: clean
+celna: clean
+
 
