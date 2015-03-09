@@ -1,9 +1,9 @@
 include theory.options common.mk
 
-all: $(target) dirs xi_theory xi_mocks
+all: dirs xi_theory xi_mocks
 
-logbins: $(OBJS1)  | dirs 
-	$(CC) $(OBJS1)  $(CLINK) -o $@
+# logbins: logbins.c  | dirs 
+# 	$(CC) logbins.c  $(CLINK) -o $@
 
 dirs:
 	mkdir -p lib bin include 
