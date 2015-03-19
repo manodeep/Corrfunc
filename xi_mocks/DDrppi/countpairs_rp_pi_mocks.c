@@ -464,14 +464,14 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 						AVX_INTS m_ibin;
 						int ibin[NVEC];
 					};
-					union int8 union_finalbin;
+
 
 #ifdef OUTPUT_RPAVG					
 					union float8{
 						AVX_FLOATS m_Dperp;
 						DOUBLE Dperp[NVEC];
 					};
-					union float8 union_mDperp;
+
 #endif					
 
 
@@ -585,11 +585,11 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 
 							m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,m_Dperp,m_mask_left);
 							m_Dpar  = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_pimax,m_Dpar,m_mask_left);
-#ifdef OUTPUT_RPAVG
-							union_mDperp.m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,AVX_SQRT_FLOAT(m_Dperp),m_mask_left);
-#endif							
 						}
-
+#ifdef OUTPUT_RPAVG
+						union float8 union_mDperp;
+						union_mDperp.m_Dperp = AVX_BLEND_FLOATS_WITH_MASK(m_zero,AVX_SQRT_FLOAT(m_Dperp),m_mask_left);
+#endif							
 						const AVX_FLOATS m_mask = m_mask_left;
 						AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0);
 						for(int kbin=nrpbin-1;kbin>=1;kbin--) {
@@ -597,8 +597,9 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 							const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
 							m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
 							m_mask_left = AVX_COMPARE_FLOATS(m_Dperp, m_rupp_sqr[kbin-1],_CMP_LT_OS);
-							int test = AVX_TEST_COMPARISON(m_mask_left);
-							if(test==0)	break;
+							if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+								break;
+							}
 						}
 
 						/* Compute the 1-D index to the [rpbin, pibin] := rpbin*(npibin+1) + pibin */
@@ -607,6 +608,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 						const AVX_FLOATS m_pibin = AVX_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
 						const AVX_FLOATS m_npibin_p1 = AVX_ADD_FLOATS(m_npibin,m_one);
 						const AVX_FLOATS m_binproduct = AVX_ADD_FLOATS(AVX_MULTIPLY_FLOATS(m_rpbin,m_npibin_p1),m_pibin);
+						union int8 union_finalbin;
 						union_finalbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_binproduct);
 
 #if  __INTEL_COMPILER			
