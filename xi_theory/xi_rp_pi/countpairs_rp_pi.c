@@ -529,6 +529,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 		results->rupp[i] = rupp[i];
 		for(int j=0;j<npibin;j++) {
 			int index = i*(npibin+1) + j;
+			assert(index < totnbins && "index must be within range");
 			results->npairs[index] = npairs[index];
 #ifdef OUTPUT_RPAVG
 			results->rpavg[index] = rpavg[index];

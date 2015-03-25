@@ -17,6 +17,9 @@ all: $(target) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
 DDrppi_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@ 
 
+countpairs_rp_pi_mocks.o: countpairs_rp_pi_mocks.c ../../mocks.options ../../common.mk Makefile
+	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
+
 SRC2=wprp_mocks.c ../../utils/utils.c
 OBJS2=$(SRC2:.c=.o)
 wprp_mocks: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
@@ -25,8 +28,9 @@ wprp_mocks: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 %.o: %.c $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
+
 ../../utils/set_cosmo_dist.o:../../utils/set_cosmo_dist.c ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(GSL_INCLUDE) $(INCLUDE) -c $< -o $@
+	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
 
 libs: lib
 lib: libcountpairs_rp_pi_mocks.a | ../../lib

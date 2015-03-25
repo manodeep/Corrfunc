@@ -92,7 +92,7 @@ load of determining the density field even further. Typically, the modeling proc
 requiring $\sim$ millions of evaluations of the correlation function.\footnote{I will assume that creating the models themselves 
 is much faster compared to computing the correlation functions.} 
 
-Modern cpu's have a hierarchy of memory locations; the smallest and fastest are closest to the cores while the largest and slowest are the
+Modern cpu's have a hierarchy of memory locations; the smallest (and fastest) are closest to the cores while the largest (and slowest) are the
 farthest. All cpu instructions need to be carried out from cpu registers - there are $\sim 10-30$ registers typically available and the 
 access times can be thought of as instantaneous. Next up is the $L1$ cache divided into $L1D$ for data and $L1I$ for instructions cache. Since 
 the cpu always necessarily executes instructions that are close together, we will ignore the instruction cache from now on. Typical $L1$ cache 

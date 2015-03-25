@@ -3,7 +3,7 @@
 	 LICENSE: MIT 
 */
 
-This repo contains a set of codes to measure the following three OpenMP parallelized correlation measures in a cosmological box. Also, contains the associated paper to be published
+This repo contains a set of codes to measure the following OpenMP parallelized correlation measures in a cosmological box. Also, contains the associated paper to be published
 in Astronomy & Computing Journal (hopefully). 
 
 1. Measures auto/cross-correlations between two boxes. 
