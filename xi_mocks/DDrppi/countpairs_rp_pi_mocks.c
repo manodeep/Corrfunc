@@ -738,9 +738,6 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 			if(ngrid_dec[i] > max_nmesh_dec) max_nmesh_dec = ngrid_dec[i];
 			for(int k=0;k<ngrid_ra[i][j];k++){
 				free(lattice2[i][j][k].pos);
-				/* free(lattice2[i][j][k].y); */
-				/* free(lattice2[i][j][k].z); */
-				/* free(lattice2[i][j][k].cz); */
 			}
 		}
 	}
@@ -768,6 +765,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 		results->rupp[i] = rupp[i];
 		for(int j=0;j<npibin;j++) {
 			int index = i*(npibin+1) + j;
+			assert(index < totnbins && "index must be in range");
 			results->npairs[index] = npairs[index];
 #ifdef OUTPUT_RPAVG
 			results->rpavg[index] = rpavg[index];

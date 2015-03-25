@@ -152,10 +152,11 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 	
   va_list ap;
   va_start(ap,num_fields);
-	
+
+  assert(sizeof(void *) == sizeof(float *) && sizeof(void *) == sizeof(double *) && "Size of void pointer must be the same as size of float/double pointers");
   for(int i=0;i<num_fields;i++) {
-		void **source = va_arg(ap, void **);
-		*source = data[i];
+	void **source = va_arg(ap, void **);
+	*source =  data[i];
   }
   va_end(ap);
 	
