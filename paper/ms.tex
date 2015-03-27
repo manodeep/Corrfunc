@@ -25,8 +25,11 @@
 \newcommand{\xiofr}{\ensuremath{{\xi(r)}}\xspace}
 \newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
 \newcommand{\xirppi}{\ensuremath{{\xi(r_p,\pi)}}\xspace}
+\newcommand{\cis}{\ensuremath{{pN(r)}}\xspace}
+\newcommand{\ddrppi}{\ensuremath{{DD(r_p,\pi)}}\xspace}
+%% \newcommand{\ddrppi}{\ensuremath{{DD(r_p,\pi)}}\xspace}
+\newcommand{\wtheta}{\ensuremath{{DD(\theta)}}\xspace}
 \newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
-
 
 
 \lstset{
@@ -57,16 +60,20 @@
 \address[ms]{6902 Stevenson Center, Department of Physics \& Astronomy, Vanderbilt University, Nashville, TN 37235}
 
 \begin{abstract}
-We have entered the era of `Big Data' where we are gathering a tremendous amount of data that
-needs to be processed as well as modeled accurately. In particular, large galaxy surveys
-like the Sloan Digitial Sky Survey requires computing correlation functions. While measuring the
-correlation function in the data is not a bottle-neck, modeling the observed galaxy distribution correctly
-{\em} requires a MCMC chain and repeated measurements of $\xi(r)$ and/or $\xi(r_p,\pi)$. However, 
-the architecture of modern CPU's means that best performance is only obtained when cache misses 
-are kept to a minimum. Here, I present a suite of 3 correlation function codes that exploit 
-current CPU architecture and hand-written AVX  
-
-
+In the era of `Big Data', we need special computing techniques to both process the raw data as well 
+generate and evaluate models to test our theories. In particular, large galaxy surveys
+like the Sloan Digitial Sky Survey requires computing a variety of $n$-point statistics, e.g., the 
+2-pt projected correlation function, $\wprp$. While measuring the correlation function in the data is not a bottle-neck, 
+modeling the observed galaxy distribution correctly
+{\em requires} a MCMC chain and repeated measurements of $\wprp$. To efficiently 
+measure the correlation functions, we need to write code that accounts for cache hierarchies while 
+simultaneously exploits the wide vector registers present in the relatively modern CPUs.  
+Here, I present a suite of OpenMP parallelized, clustering codes that exploit current CPU micro-architecture with hand-written AVX 
+intrinsics. Given a 3-D distribution of points in a cartesian system, these codes compute spatial clustering statistics 3-D correlation functions \xir, \xiofr, \xirppi; 2-point 
+projected correlation function \wprp; counts-in-spheres \cis. For a 3-D particle distribution on the sky, the codes can compute 
+projected correlation function \ddrppi, angular correlation function \wtheta as well as \cis. These codes are designed to be blazing fast 
+and can compute \wprp for $\mathcal{O}$(1 million) galaxies in $\sim 6$ seconds on a post-2011 CPU, which is a factor of few faster than 
+the existing public correlation function routines.  
 The accompanying codes are publicly available at \url{https://bitbucket.org/manodeep/Corrfunc/}. 
 \end{abstract}
 
@@ -92,13 +99,14 @@ load of determining the density field even further. Typically, the modeling proc
 requiring $\sim$ millions of evaluations of the correlation function.\footnote{I will assume that creating the models themselves 
 is much faster compared to computing the correlation functions.} 
 
-Modern cpu's have a hierarchy of memory locations; the smallest (and fastest) are closest to the cores while the largest (and slowest) are the
-farthest. All cpu instructions need to be carried out from cpu registers - there are $\sim 10-30$ registers typically available and the 
+Modern cpu's have a hierarchy of memory locations; the smallest (and fastest) are physically located close to the computing cores 
+while the largest (and slowest) are the farthest. All cpu instructions need to be carried out from cpu registers - there are $\sim 100$ 
+registers typically available and the 
 access times can be thought of as instantaneous. Next up is the $L1$ cache divided into $L1D$ for data and $L1I$ for instructions cache. Since 
 the cpu always necessarily executes instructions that are close together, we will ignore the instruction cache from now on. Typical $L1$ cache 
-sizes range from 64KB to 128 KB. Next level up is the $L2$ cache, typically $\sim$ 256KB to 1 MB. The last level cache or the $L3$ cache 
-is usually shared across all cores on the socket and can be 10 MB to 40 MB. 
-
+sizes range from 64KB to 128 KB (shared between instruction and data). 
+Next level up is the $L2$ cache, typically $\sim$ 256KB to 1 MB. The last level cache or the $L3$ cache is usually shared across all 
+cores on the socket and can be 10 MB to 40 MB. 
 
 \section{Methods}
 We need to compute pairwise distances to get the correlation function. A naive implementation of a correlation function would compute {\em all possible} 
@@ -147,12 +155,12 @@ compute all possible pairs within \rmax.
 \subsection{\xir}
 \subsection{\xirppi}
 \subsection{\wprp}
+\subsection{}
 
 \subsection{Hand-written Vectorization Support}
 Advanced Vector Extensions (AVX) has been available in cpu's more recent than 2011. AVX allows the processing of 8 floats or 4 double simultaneously -- thus, 
 potentially increasing the throughput by a factor of 8x/4x. However, automatic vectorization is not always possible by the compiler and in those cases 
 we can write AVX vector intrinsics to directly manipulate 8 floats/4 doubles\footnote{Another option would be to use the vectorclass written by Agner Fog here: \url{http://agner.org/optimize/vectorclass/}}. 
-
 
 \section{Benchmarks \& Scaling}
 In this section we present the runtimes and scalings for different number of particles, \rmax and OpenMP threads for the codes. 

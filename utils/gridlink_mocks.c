@@ -98,7 +98,7 @@ cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czm
 	expected_n is a reasonable guess as to the number of points in the cell.
   */
   for (int64_t index=0;index<totncells;index++) {
-		const size_t memsize=4*sizeof(DOUBLE);
+		const size_t memsize=3*sizeof(DOUBLE);
 		lattice[index].pos = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
 		lattice[index].nelements=0;
 		lattice[index].nallocated = expected_n;
@@ -122,46 +122,46 @@ cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czm
 				expected_n++;
 			}
 			
-			const size_t memsize=4*sizeof(DOUBLE);
+			const size_t memsize=3*sizeof(DOUBLE);
 			lattice[index].pos  = my_realloc(lattice[index].pos ,memsize,expected_n,"lattice.pos");
 			lattice[index].nallocated = expected_n;
 		}
 		assert(lattice[index].nallocated > lattice[index].nelements && "Making sure memory access if fine");
 		/*
 			The particles are stored like this:
-			x[NVEC], y{NVEC], z[NVEC], cz[NVEC], x[NVEC],y[NVEC].....
+			x[NVEC], y{NVEC], z[NVEC], x[NVEC],y[NVEC].....
 
-			So first thing is to find how many xyzcz chunks have been written (num_nvec_bunch)
-			For each chunk of these xyzcz quantities, we have an offset of 4*NVEC elements for x.
+			So first thing is to find how many xyz chunks have been written (num_nvec_bunch)
+			For each chunk of these xyz quantities, we have an offset of 3*NVEC elements for x.
 			y is further offset by another NVEC elements (the set of x's in the current chunk)
 			And so on.
 
 			After that, we need to figure out the position within the NVEC block for each of
-			xyzcz -- given by ipos. Now we have all the pieces we need to insert the new element.
+			xyz -- given by ipos. Now we have all the pieces we need to insert the new element.
 			
 		 */
 
 		const int num_nvec_bunch = lattice[index].nelements/NVEC;
-		const int xoffset  = num_nvec_bunch * NVEC * 4;
+		const int xoffset  = num_nvec_bunch * NVEC * 3;
 		const int yoffset  = xoffset + NVEC;
 		const int zoffset  = xoffset + 2*NVEC;
-		const int czoffset = xoffset + 3*NVEC;			
+/* 		const int czoffset = xoffset + 3*NVEC;			 */
 		
 		const int ipos=lattice[index].nelements % NVEC;
 		
 		DOUBLE *xpos  = &(lattice[index].pos[xoffset]);
 		DOUBLE *ypos  = &(lattice[index].pos[yoffset]);
 		DOUBLE *zpos  = &(lattice[index].pos[zoffset]);
-		DOUBLE *czpos = &(lattice[index].pos[czoffset]);
+/* 		DOUBLE *czpos = &(lattice[index].pos[czoffset]); */
 		
 		xpos[ipos]  = cz[i]*COSD(dec[i])*COSD(ra[i]);
 		ypos[ipos]  = cz[i]*COSD(dec[i])*SIND(ra[i]);
 		zpos[ipos]  = cz[i]*SIND(dec[i]);
-		czpos[ipos] = cz[i];
+/* 		czpos[ipos] = cz[i]; */
 
-    lattice[index].nelements++;
-    if(lattice[index].nelements > max_n) {
-			max_n = lattice[index].nelements;
+		lattice[index].nelements++;
+		if(lattice[index].nelements > max_n) {
+		  max_n = lattice[index].nelements;
 		}
   }
   *max_in_cell = max_n;
@@ -224,37 +224,37 @@ cellarray_mocks **gridlink2D(const int64_t np,
   /* Find the max. number of declination cells that can be */
 	max_nmesh_dec=0;
   for(int i=0;i<nmesh_cz;i++) {
-		const int min_iz = (i - zbin_refine_factor) < 0  ? 0:i-zbin_refine_factor;
-		const DOUBLE dmin = czmin + 0.5*(min_iz+i)*cz_binsize;//Really I am taking the average of the left edges for the cz bins corresponding to i (= czmin + i*cz_binsize) and min_iz (= czmin + min_iz*cz_binsize).
+	const int min_iz = (i - zbin_refine_factor) < 0  ? 0:i-zbin_refine_factor;
+	const DOUBLE dmin = czmin + 0.5*(min_iz+i)*cz_binsize;//Really I am taking the average of the left edges for the cz bins corresponding to i (= czmin + i*cz_binsize) and min_iz (= czmin + min_iz*cz_binsize).
     const DOUBLE dec_cell = ASIN(rpmax/(2*dmin))*2.0*INV_PI_OVER_180;
     assert(dec_cell > 0.0 && "Declination binsize is non-zero");
-		const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
+	const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
     const int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
-		if(nmesh_dec > max_nmesh_dec) max_nmesh_dec = nmesh_dec;
+	if(nmesh_dec > max_nmesh_dec) max_nmesh_dec = nmesh_dec;
     ngrid_dec[i]=nmesh_dec ;
   }
 
-	//We need to create a matrix with nmesh_cz and max_nmesh_dec row/columns
-	//The crude estimate of the average number of points per cell
+  //We need to create a matrix with nmesh_cz and max_nmesh_dec row/columns
+  //The crude estimate of the average number of points per cell
   expected_n=(int)( (np/(DOUBLE) (nmesh_cz*max_nmesh_dec)) *MEMORY_INCREASE_FAC);
   expected_n = expected_n < NVEC ? NVEC:expected_n;
-	while(expected_n % NVEC != 0) {
-		expected_n++;
-	}
+  while(expected_n % NVEC != 0) {
+	expected_n++;
+  }
 	
   /*---Allocate-and-initialize-grid-arrays----------*/
   lattice = (cellarray_mocks **) matrix_malloc(sizeof(cellarray_mocks),nmesh_cz,max_nmesh_dec); //This allocates extra and is wasteful
   totnbytes += nmesh_cz*max_nmesh_dec*sizeof(cellarray_mocks);
-	for(int i=0;i<nmesh_cz;i++) {
-		const int nmesh_dec = ngrid_dec[i];
-		for(int j=0;j<nmesh_dec;j++) {
-			const size_t memsize = 4*sizeof(DOUBLE);
-      lattice[i][j].pos    = my_malloc(memsize,expected_n);
-      lattice[i][j].nelements=0;
-      lattice[i][j].nallocated=expected_n;
-      totnbytes += memsize*expected_n;
-    }
+  for(int i=0;i<nmesh_cz;i++) {
+	const int nmesh_dec = ngrid_dec[i];
+	for(int j=0;j<nmesh_dec;j++) {
+	  const size_t memsize = 3*sizeof(DOUBLE);
+	  lattice[i][j].pos    = my_malloc(memsize,expected_n);
+	  lattice[i][j].nelements=0;
+	  lattice[i][j].nallocated=expected_n;
+	  totnbytes += memsize*expected_n;
 	}
+  }
 
   
   max_n = 0;
@@ -269,36 +269,36 @@ cellarray_mocks **gridlink2D(const int64_t np,
     assert(idec >=0 && idec < ngrid_dec[iz] && "Declination index within range");
     if(lattice[iz][idec].nelements == lattice[iz][idec].nallocated) {
       expected_n = lattice[iz][idec].nallocated*MEMORY_INCREASE_FAC;
-			while(expected_n <= lattice[iz][idec].nelements || expected_n % NVEC != 0) {
-				expected_n++;
-			}
-			const size_t memsize = 4*sizeof(DOUBLE);
+	  while(expected_n <= lattice[iz][idec].nelements || expected_n % NVEC != 0) {
+		expected_n++;
+	  }
+	  const size_t memsize = 3*sizeof(DOUBLE);
       lattice[iz][idec].pos  = my_realloc(lattice[iz][idec].pos ,memsize,expected_n,"lattice.pos");
       lattice[iz][idec].nallocated = expected_n;
     }
-		assert(lattice[iz][idec].nallocated > lattice[iz][idec].nelements && "Making sure memory access is fine");
-		const int num_nvec_bunch = lattice[iz][idec].nelements/NVEC;
-		const size_t xoffset  = num_nvec_bunch * NVEC * 4;
-		const size_t yoffset  = xoffset + NVEC;
-		const size_t zoffset  = xoffset + 2*NVEC;
-		const size_t czoffset = xoffset + 3*NVEC;			
+	assert(lattice[iz][idec].nallocated > lattice[iz][idec].nelements && "Making sure memory access is fine");
+	const int num_nvec_bunch = lattice[iz][idec].nelements/NVEC;
+	const size_t xoffset  = num_nvec_bunch * NVEC * 3;
+	const size_t yoffset  = xoffset + NVEC;
+	const size_t zoffset  = xoffset + 2*NVEC;
+/* 	const size_t czoffset = xoffset + 3*NVEC;			 */
 		
-		const int ipos=lattice[iz][idec].nelements % NVEC;
-		
-		DOUBLE *xpos  = &(lattice[iz][idec].pos[xoffset]);
-		DOUBLE *ypos  = &(lattice[iz][idec].pos[yoffset]);
-		DOUBLE *zpos  = &(lattice[iz][idec].pos[zoffset]);
-		DOUBLE *czpos = &(lattice[iz][idec].pos[czoffset]);
-		
-		xpos[ipos]  = cz[i]*COSD(dec[i])*COSD(ra[i]);
-		ypos[ipos]  = cz[i]*COSD(dec[i])*SIND(ra[i]);
-		zpos[ipos]  = cz[i]*SIND(dec[i]);
-		czpos[ipos] = cz[i];
-
-		lattice[iz][idec].nelements++;
-    if(lattice[iz][idec].nelements > max_n)
-      max_n = lattice[iz][idec].nelements;
-    assigned_n++;
+	const int ipos=lattice[iz][idec].nelements % NVEC;
+	
+	DOUBLE *xpos  = &(lattice[iz][idec].pos[xoffset]);
+	DOUBLE *ypos  = &(lattice[iz][idec].pos[yoffset]);
+	DOUBLE *zpos  = &(lattice[iz][idec].pos[zoffset]);
+/* 	DOUBLE *czpos = &(lattice[iz][idec].pos[czoffset]); */
+	
+	xpos[ipos]  = cz[i]*COSD(dec[i])*COSD(ra[i]);
+	ypos[ipos]  = cz[i]*COSD(dec[i])*SIND(ra[i]);
+	zpos[ipos]  = cz[i]*SIND(dec[i]);
+/* 	czpos[ipos] = cz[i]; */
+	lattice[iz][idec].nelements++;
+	if(lattice[iz][idec].nelements > max_n) {
+	  max_n = lattice[iz][idec].nelements;
+	}
+	assigned_n++;
   }
   *max_in_cell = max_n;
 #ifndef SILENT
@@ -356,7 +356,7 @@ cellarray * gridlink1D_theta(const int64_t np,
   /*---Allocate-and-initialize-grid-arrays----------*/
   lattice = (cellarray *) my_malloc(sizeof(cellarray),ngrid_dec); //This allocates extra and is wasteful
   for(int j=0;j<ngrid_dec;j++) {
-		const size_t memsize = 3*sizeof(DOUBLE);
+	const size_t memsize = 3*sizeof(DOUBLE);
     lattice[j].pos     = my_malloc(memsize,expected_n);
     lattice[j].nelements=0;
     lattice[j].nallocated=expected_n;
@@ -470,16 +470,16 @@ cellarray_mocks *** gridlink3D(const int64_t np,
   dec_binsizes=my_malloc(sizeof(*dec_binsizes),nmesh_cz);
 
 	//First find the max. number of dec bins (max_nmesh_dec)
-	max_nmesh_dec = 0;
-	for(int iz=0;iz<nmesh_cz;iz++) {
-		const int min_iz = iz-zbin_refine_factor < 0 ? 0:iz-zbin_refine_factor;
-		const DOUBLE dmin = czmin + 0.5*(min_iz+iz)*cz_binsize;
+  max_nmesh_dec = 0;
+  for(int iz=0;iz<nmesh_cz;iz++) {
+	const int min_iz = iz-zbin_refine_factor < 0 ? 0:iz-zbin_refine_factor;
+	const DOUBLE dmin = czmin + 0.5*(min_iz+iz)*cz_binsize;
     const DOUBLE dec_cell =  ASIN(rpmax/(2*dmin))*2.0*INV_PI_OVER_180;// \sigma = 2*arcsin(C/2) -> 2*arcsin( (rpmax/d2min) /2)
     assert(dec_cell > 0.0 && "Dec-cell binsize must be non-zero");
     dec_binsizes[iz] = dec_cell;
-		const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
+	const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
     const int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
-		if(nmesh_dec > max_nmesh_dec) max_nmesh_dec = nmesh_dec;
+	if(nmesh_dec > max_nmesh_dec) max_nmesh_dec = nmesh_dec;
     ngrid_dec[iz]=nmesh_dec ;
   }
 
@@ -555,11 +555,11 @@ cellarray_mocks *** gridlink3D(const int64_t np,
 		for(int idec=0;idec<nmesh_dec;idec++) {
 			const int nmesh_ra = ngrid_ra[iz][idec];
       for(int ira=0;ira<nmesh_ra;ira++) {
-				const size_t memsize=4*sizeof(DOUBLE);//4 pointers for x/y/z/cz
-				lattice[iz][idec][ira].pos = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
-				lattice[iz][idec][ira].nelements=0;
-				lattice[iz][idec][ira].nallocated=expected_n;
-				totnbytes += memsize*expected_n;
+		const size_t memsize=3*sizeof(DOUBLE);//4 pointers for x/y/z
+		lattice[iz][idec][ira].pos = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+		lattice[iz][idec][ira].nelements=0;
+		lattice[iz][idec][ira].nallocated=expected_n;
+		totnbytes += memsize*expected_n;
       }
     }
   }
@@ -583,28 +583,28 @@ cellarray_mocks *** gridlink3D(const int64_t np,
 					expected_n++;
 				}
 				
-				const size_t memsize=4*sizeof(DOUBLE);
+				const size_t memsize=3*sizeof(DOUBLE);
 				lattice[iz][idec][ira].pos  = my_realloc(lattice[iz][idec][ira].pos ,memsize,expected_n,"lattice.pos");
 				lattice[iz][idec][ira].nallocated = expected_n;
       }
 			assert(lattice[iz][idec][ira].nallocated > lattice[iz][idec][ira].nelements && "Making sure memory access if fine");
 			const int num_nvec_bunch = lattice[iz][idec][ira].nelements/NVEC;
-			const size_t xoffset  = num_nvec_bunch * NVEC * 4;
+			const size_t xoffset  = num_nvec_bunch * NVEC * 3;
 			const size_t yoffset  = xoffset + NVEC;
 			const size_t zoffset  = xoffset + 2*NVEC;
-			const size_t czoffset = xoffset + 3*NVEC;			
+/* 			const size_t czoffset = xoffset + 3*NVEC;			 */
 
 			const int ipos=lattice[iz][idec][ira].nelements % NVEC;
 
 			DOUBLE *xpos  = &(lattice[iz][idec][ira].pos[xoffset]);
 			DOUBLE *ypos  = &(lattice[iz][idec][ira].pos[yoffset]);
 			DOUBLE *zpos  = &(lattice[iz][idec][ira].pos[zoffset]);
-			DOUBLE *czpos = &(lattice[iz][idec][ira].pos[czoffset]);
+/* 			DOUBLE *czpos = &(lattice[iz][idec][ira].pos[czoffset]); */
 
 			xpos[ipos]  = cz[i]*COSD(dec[i])*COSD(phi[i]);
 			ypos[ipos]  = cz[i]*COSD(dec[i])*SIND(phi[i]);
 			zpos[ipos]  = cz[i]*SIND(dec[i]);
-			czpos[ipos] = cz[i];
+/* 			czpos[ipos] = cz[i]; */
 			
       lattice[iz][idec][ira].nelements++;
       if(lattice[iz][idec][ira].nelements > max_n) {
