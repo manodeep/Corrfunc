@@ -70,7 +70,8 @@ extern "C" {
 #define AVX_TEST_COMPARISON(X)            _mm256_movemask_ps(X)
 
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_ps(FALSEVALUE,TRUEVALUE,MASK)
-
+#define AVX_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_ps(dest, mask, source)
+	
 //Trig
 #ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X)                 _mm256_acos_ps(X)
@@ -123,7 +124,8 @@ extern "C" {
 #define AVX_TEST_COMPARISON(X)            _mm256_movemask_pd(X)
 
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_pd(FALSEVALUE,TRUEVALUE,MASK)
-
+#define AVX_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_pd(dest, mask, source)
+	
 //Trig
 #ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X)                 _mm256_acos_pd(X)

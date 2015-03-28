@@ -359,7 +359,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 									//r2 now will contain (x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2 
 									AVX_FLOATS r2 = AVX_ADD_FLOATS(m_zdiff_sqr,m_xydiff_sqr_sum);
 									AVX_FLOATS m_mask_left;
-									
+
 									{
 										
 										//Check if dz >= rpmax (pimax is rpmax). If so, break. 
@@ -387,7 +387,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
 										//Update r2 such that all distances that do not satisfy sqr_rpmin <= r2 < sqr_rpmax, get set to sqr_rpmax
 										r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
 									}
-									
+
 									{ 
 										
 #ifdef OUTPUT_RPAVG					  
