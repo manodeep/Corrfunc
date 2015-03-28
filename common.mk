@@ -1,7 +1,9 @@
 ### Set the compiler -- options are icc/gcc/clang. 
-CC=gcc
+CC=icc
+
 #### Add any compiler specific flags you want
 CFLAGS=
+
 #### Add any compiler specific link flags you want
 CLINK=
 
@@ -38,7 +40,7 @@ endif
 
 
 ifeq (icc,$(findstring icc,$(CC)))
-  CFLAGS += -xhost -opt-prefetch #-vec-report6  
+  CFLAGS += -xhost -opt-prefetch -opt-prefetch-distance=16 -ipo #-vec-report6  
   ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 		CFLAGS += -openmp
 		CLINK  += -openmp 
@@ -47,7 +49,7 @@ else
 
   ### compiler specific flags for gcc
   ifeq (gcc,$(findstring gcc,$(CC)))
-		CFLAGS += -ftree-vectorize -funroll-loops -fprefetch-loop-arrays --param simultaneous-prefetches=8 #-ftree-vectorizer-verbose=6 -fopt-info-vec-missed #-fprofile-use -fprofile-correction #-fprofile-generate
+		CFLAGS += -ftree-vectorize -funroll-loops -fprefetch-loop-arrays --param simultaneous-prefetches=4 #-ftree-vectorizer-verbose=6 -fopt-info-vec-missed #-fprofile-use -fprofile-correction #-fprofile-generate
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 			CFLAGS += -fopenmp
 			CLINK  += -fopenmp
@@ -67,7 +69,7 @@ else
   endif
 
   #### common options for gcc and clang
-  # CFLAGS  += -march=native
+  CFLAGS  += -march=native
 	CFLAGS  += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual  
   CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
   CLINK += -lm

@@ -119,6 +119,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 	if(zbin_refine_factor < numthreads/2)
 		zbin_refine_factor=numthreads/2;
 #endif
+	
 #ifdef LINK_IN_DEC
   int rbin_refine_factor=2;
 #ifdef LINK_IN_RA
@@ -293,6 +294,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 #else
   //Linking in cz, Dec, RA
 	const DOUBLE ra_max=360.0,ra_min=0.0;
+	/* const DOUBLE ra_max = 267.0, ra_min = 109.0; */
   const DOUBLE inv_ra_diff=1.0/(ra_max-ra_min);
   int **ngrid_ra=NULL;
   /* fprintf(stderr,"ra_min = %lf ra_max = %lf\n",ra_min,ra_max); */
@@ -422,20 +424,29 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 						int block_size2=cellstruct->nelements - j;
 						if(block_size2 > NVEC) block_size2=NVEC;
 						for(int jj=0;jj<block_size2;jj++) {
-							const DOUBLE sqr_cz = localcz2[jj]*localcz2[jj];
-							const DOUBLE tmp = (sqr_d1 - sqr_cz);
-							const DOUBLE xy_costheta = x1*localx2[jj] + y1*localy2[jj] + z1*localz2[jj];
-							const DOUBLE tmp1 = (sqr_d1 + sqr_cz + TWO*xy_costheta);
-							const DOUBLE Dpar = (tmp*tmp)/tmp1;
-							if (Dpar >= sqr_pimax) continue;
-						
-							const int pibin = (int) (SQRT(Dpar)*inv_dpi);
-							const DOUBLE sqr_Dperp = sqr_d1 + sqr_cz -TWO*xy_costheta - Dpar;
-							if(sqr_Dperp >= sqr_rpmax || sqr_Dperp <= sqr_rpmin) continue;
-
+							const DOUBLE parx = x1 + localx2[jj];
+							const DOUBLE pary = y1 + localy2[jj];
+							const DOUBLE parz = z1 + localz2[jj];
+							
+							const DOUBLE perpx = x1 - localx2[jj];
+							const DOUBLE perpy = y1 - localy2[jj];
+							const DOUBLE perpz = z1 - localz2[jj];
+							
+							const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
+							if(sqr_s >= sqr_max_sep) continue;
+							
+							const DOUBLE tmp  = (parx*perpx+pary*perpy+parz*perpz);
+							const DOUBLE tmp1 = (parx*parx+pary*pary+parz*parz);
+							const DOUBLE sqr_Dpar = (tmp*tmp)/tmp1;
+							if(sqr_Dpar >= sqr_pimax) continue;
+							
+							const int pibin  = (sqr_Dpar >= sqr_pimax) ? npibin:(int) (SQRT(sqr_Dpar)*inv_dpi);
+							const DOUBLE sqr_Dperp  = sqr_s - sqr_Dpar;
+							if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
 #ifdef OUTPUT_RPAVG
 							const DOUBLE rp = SQRT(sqr_Dperp);
-#endif
+#endif						
+
 							for(int kbin=nrpbin-1;kbin>=1;kbin--) {
 								if(sqr_Dperp >= rupp_sqr[kbin-1]) {
 									const int ibin = kbin*(npibin+1) + pibin;
@@ -523,9 +534,6 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 						  //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and 
 						  //we would discard the pair.
 						  const AVX_FLOATS m_mask_3d_sep = AVX_COMPARE_FLOATS(m_sqr_sep, m_max_sep, _CMP_LT_OQ);
-						  if(AVX_TEST_COMPARISON(m_mask_3d_sep)==0) {
-							continue;
-						  }
 
 						  const AVX_FLOATS m_sqr_norm_l = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_parx), AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_pary), AVX_SQUARE_FLOAT(m_parz)));
 
@@ -533,12 +541,13 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 						  //However, division is slow -> so we will check if \pimax^2 * |l| ^2 < |s.l|^2. If not, then the 
 						  //value of \pi (after division) *must* be larger than \pimax -> in which case we would 
 						  //not count that pair anway. 
-/* 						  const AVX_FLOATS m_sqr_pimax_times_l = AVX_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l); */
-/* 						  const AVX_FLOATS m_mask_pimax_sep = AVX_COMPARE_FLOATS(m_numerator, m_sqr_pimax_times_l, _CMP_LT_OQ);// is pi < pimax ? */
-/* 						  //If the bits are all 0, then *none* of the pairs satisfy the pimax constraints. */
-/* 						  if(AVX_TEST_COMPARISON(m_mask_pimax_sep)==0) { */
-/* 							continue; */
-/* 						  } */
+						  const AVX_FLOATS m_sqr_pimax_times_l = AVX_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
+						  const AVX_FLOATS m_mask_pimax_sep = AVX_COMPARE_FLOATS(m_numerator, m_sqr_pimax_times_l, _CMP_LT_OQ);// is pi < pimax ?
+						  //If the bits are all 0, then *none* of the pairs satisfy the pimax + rpmax constraints.
+							const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_3d_sep, m_mask_pimax_sep);
+						  if(AVX_TEST_COMPARISON(m_mask)==0) {
+								continue;
+						  }
 
 #ifndef FAST_DIVIDE
 							m_sqr_Dpar = AVX_DIVIDE_FLOATS(m_numerator,m_sqr_norm_l);

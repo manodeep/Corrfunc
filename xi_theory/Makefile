@@ -65,7 +65,7 @@ clean:
 clena: clean
 celan: clean
 celna: clean
-install: | dirs
+install: $(target) | dirs
 	cp -p $(target) ../bin
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
