@@ -13,9 +13,11 @@
        * rmax = maximum radius (in h^-1 Mpc)
        * nbin = number of radial bins (evenly spaced in r)
        * nc = number of centers to place
-       * seed = random number seed
-       * < particle distribution in fastfood.out format
-       * > output <r P0 P1 P2 Navg Nsig xscal>
+	   * num_pN = how many particles/spheres to report
+	   * file = file name containing the particles
+	   * file_format = format for the input file in the previous line (a-> ascii, f->fastfood)
+	   * seed = random number seed
+       * > output <r P0 P1 P2 ....Pnum_pN-1>
 */
 
 #include <stdio.h>
