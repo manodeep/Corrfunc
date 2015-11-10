@@ -1,5 +1,4 @@
 language: C
-sudo: false
 
 before_install:
   - wget "ftp://ftp.gnu.org/gnu/gsl/gsl-1.6.tar.gz"
