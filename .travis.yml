@@ -1,10 +1,6 @@
 language: C
 sudo: false
 
-compiler:
-  - gcc
-  - clang
-	
 before_install:
   - wget "ftp://ftp.gnu.org/gnu/gsl/gsl-1.6.tar.gz"
   - tar xvzf gsl-1.6.tar.gz
