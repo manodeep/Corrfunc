@@ -1,9 +1,14 @@
 language: C
 
+compiler:
+  - gcc
+  - clang
+
 before_install:
-  - wget "ftp://ftp.gnu.org/gnu/gsl/gsl-1.6.tar.gz"
-  - tar xvzf gsl-1.6.tar.gz
-	- cd gsl-1.6 && ./configure --prefix=$HOME/gsl && make && make install
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq gsl-bin libgsl0-dev
+
 	
-script: make install
-			
+script: make install 
+
+
