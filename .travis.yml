@@ -6,7 +6,7 @@ compiler:
   - clang
 
 before_install:
-  - sudo apt-get install -qq gsl
+  - sudo apt-get update && sudo apt-get install -qq gsl
 	
 script: make install
 
