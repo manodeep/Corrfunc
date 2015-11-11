@@ -110,5 +110,6 @@ Corrfunc is released under the MIT license. Basically, do what you want
 with the code including using it in commercial application.
 
 # Project URL
- 
+
+* website (http://manodeep.github.io/Corrfunc/) 
 * version control (https://github.com/manodeep/corrfunc)
