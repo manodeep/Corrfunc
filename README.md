@@ -3,6 +3,10 @@
 	 LICENSE: MIT 
 */
 
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE)
+[![Coverity Scan](https://img.shields.io/coverity/scan/6982.svg)](https://scan.coverity.com/projects/manodeep-corrfunc)
+				 
+
 #Description
 
 This repo contains a set of codes to measure the following OpenMP parallelized clustering 
