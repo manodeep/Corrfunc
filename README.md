@@ -5,7 +5,7 @@
 
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE)
 [![Coverity Scan](https://img.shields.io/coverity/scan/6982.svg)](https://scan.coverity.com/projects/manodeep-corrfunc)
-[![Travis Build]https://travis-ci.org/manodeep/Corrfunc.svg?branch=python3)](https://travis-ci.org/manodeep/Corrfunc)
+[![Travis Build](https://travis-ci.org/manodeep/Corrfunc.svg?branch=python3)](https://travis-ci.org/manodeep/Corrfunc)
 
 #Description
 
