@@ -1,9 +1,7 @@
-/* Author: Manodeep Sinha <manodeep@gmail.com>
-	 Date: At some point in 2015. 
-	 LICENSE: MIT 
-*/
-
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE)
+[![DOI](https://zenodo.org/badge/19184/manodeep/Corrfunc.svg)](https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc)
+
+
 
 #Description
 
@@ -101,6 +99,10 @@ combination of 1/2 for (z)bin_refine_factor might be faster on your platform.
 
 Pairwise is written/maintained by Manodeep Sinha. Please contact the [author](mailto:manodeep@gmail.com) in
 case of any issues.
+
+#Citing
+
+If you use the code, please cite using the Zenodo DOI
 
 # LICENSE
 
