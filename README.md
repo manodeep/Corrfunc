@@ -3,7 +3,7 @@
 
 
 
-#Description
+# Description
 
 This repo contains a set of codes to measure the following OpenMP parallelized clustering 
 measures in a cosmological box (co-moving XYZ) or on a mock (RA, DEC, CZ). Also, 
@@ -79,7 +79,7 @@ default - code will not compile if the CPU does not support AVX instructions.
 On Linux, check for "avx" in /proc/cpuinfo under flags. If you do not have
 AVX, but have a SSE4 system instead, email me - I will send you a copy of
 the code with SSE4 intrinsics. Or, take the relevant SSE code from the public repo at 
-[pairwise](https://bitbucket.org/manodeep/pairwise).
+[pairwise](https://manodeep.github.io/pairwise).
 
 3. USE_OMP -- uses OpenMP parallelization. Scaling is great for DD (perfect scaling
 up to 12 threads in my tests) and okay (runtime becomes constant ~6-8 threads in
@@ -100,9 +100,9 @@ combination of 1/2 for (z)bin_refine_factor might be faster on your platform.
 Pairwise is written/maintained by Manodeep Sinha. Please contact the [author](mailto:manodeep@gmail.com) in
 case of any issues.
 
-#Citing
+# Citing
 
-If you use the code, please cite using the Zenodo DOI
+If you use the code, please cite using the Zenodo DOI. 
 
 # LICENSE
 
@@ -111,5 +111,5 @@ with the code including using it in commercial application.
 
 # Project URL
 
-* website (http://manodeep.github.io/Corrfunc/) 
+* website (https://manodeep.github.io/Corrfunc/) 
 * version control (https://github.com/manodeep/corrfunc)
