@@ -64,7 +64,6 @@ else
 		ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
       $(warning clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options)
 			OPT=$(filter-out USE_OMP,$(OPT))
-			echo $OPT
      endif
   endif
 
