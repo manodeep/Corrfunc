@@ -131,7 +131,8 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 	FILE *fpcen = fopen(centers_file,"r");  
   if(fpcen != NULL) {
     double rr = 0.0;
-    fscanf(fpcen,"%*f %*f %*f %lf",&rr);
+    int num_read = fscanf(fpcen,"%*f %*f %*f %lf",&rr);
+		assert(num_read == 1 && "Could not read max. sphere radius from the centers file");
     num_centers_in_file = getnumlines(centers_file,'#');
     if( rr >= rmax && num_centers_in_file >= nc) {
       need_randoms = 0;
