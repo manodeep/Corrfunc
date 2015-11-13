@@ -1,0 +1,17 @@
+language: c
+
+## use container based travis ci
+sudo: false
+
+compiler:
+  - gcc
+  - clang
+
+addons: {apt: { packages: "gsl-bin", "libgsl0-dev" } } 	
+
+install: make distclean && make -j4 && make install
+
+script:
+  - make tests
+  - cd xi_theory/python_bindings && python call_correlation_functions.py
+  - cd ../../xi_mocks/python_bindings && python call_correlation_functions_mocks.py
