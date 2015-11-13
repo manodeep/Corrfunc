@@ -74,7 +74,7 @@ matrix:
 #       env: COMPILER=clang V='Apple LLVM 7.0.0' # Apple LLVM version 7.0.0 (clang-700.0.72)
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install python2.7 && brew install numpy ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install numpy ; fi
 			
 script:
   - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
