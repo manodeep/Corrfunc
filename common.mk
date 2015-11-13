@@ -61,8 +61,8 @@ else
   ### compiler specific flags for clang
   ifeq (clang,$(findstring clang,$(CC)))
 		CFLAGS += -funroll-loops
-    ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-      $(error clang does not support OpenMP - please use gcc/icc for compiling with openmp)
+		ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
+      $(warning clang does not support OpenMP - please use gcc/icc for compiling with openmp)
      endif
   endif
 
