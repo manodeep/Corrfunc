@@ -78,22 +78,13 @@ matrix:
 
     - os: osx
       compiler: clang
-      env: COMPILER=clang
+      env:
+        - COMPILER=clang
 
-      before_install:
-			  - brew update
-				- brew install numpy && brew install gsl
-# 				- brew outdated gsl || brew upgrade gsl
-# 				- brew outdated numpy || brew upgrade numpy
-
-
-    - os: osx
-      osx_image: xcode7
-      compiler: clang
-      env: COMPILER=clang V='Apple LLVM 7.0.0'
-
-      before_install:
-			  - brew update && brew install numpy && brew install gsl
+			before_install:
+        - brew update
+        - brew install gsl
+        - brew install numpy
 
 script:
   - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
