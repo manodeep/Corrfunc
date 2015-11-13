@@ -63,7 +63,7 @@ else
 		CFLAGS += -funroll-loops
 		ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
       $(warning clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options)
-			OPT=$(filter-out USE_OMP,$(OPT))
+         OPT:=$(filter-out -DUSE_OMP,$(OPT))
      endif
   endif
 
@@ -78,6 +78,7 @@ else
   CLINK += -lm
 endif
 
+$(info $$OPT is [${OPT}])
 
 ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
 	BLAS_INCLUDE:=-DMKL_ILP64 -m64 -I$(MKLROOT)/include 
