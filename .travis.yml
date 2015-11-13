@@ -63,23 +63,26 @@ matrix:
           packages: ['clang-3.7','libgsl0-dev','python-numpy']
       env: COMPILER=clang-3.7 V=3.7
 
-    - os: linux
-      compiler: gcc
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['gcc-5','libgsl0-dev','python-numpy']
-      env:
-        - COMPILER=gcc-5
-      before_script:
-        - pip install --user cpp-coveralls
-      after_success:
-        - coveralls --gcov gcov-5 --gcov-options '\-lp' --exclude xi_theory/tests  --exclude xi_mocks/tests --exclude examples
+#     - os: linux
+#       compiler: gcc
+#       addons:
+#         apt:
+#           sources: ['ubuntu-toolchain-r-test']
+#           packages: ['gcc-5','libgsl0-dev','python-numpy']
+#       env:
+#         - COMPILER=gcc-5
+#       before_script:
+#         - pip install --user cpp-coveralls
+#       after_success:
+#         - coveralls --gcov gcov-5 --gcov-options '\-lp' --exclude xi_theory/tests  --exclude xi_mocks/tests --exclude examples
 
-#     - os: osx
-#       compiler: clang
-#       env: COMPILER=clang V='Apple LLVM 6.0' # Apple LLVM version 6.0 (clang-600.0.54) (based on LLVM 3.5svn)
+    - os: osx
+      compiler: clang
+      env: COMPILER=clang V='Apple LLVM 6.0' # Apple LLVM version 6.0 (clang-600.0.54) (based on LLVM 3.5svn)
 
+      before_install:
+			  - brew update && brew install numpy && brew install gsl
+			
 #     - os: osx
 #       osx_image: xcode7
 #       compiler: clang
