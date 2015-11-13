@@ -245,13 +245,14 @@ int main(int argc, char **argv)
 		fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 		char execstring[MAXLEN];
 		my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-		system(execstring);
+		run_system_call(execstring);
 	  } else {
 		fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+		failed++;
 		char execstring[MAXLEN];
 		my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
-		system(execstring);
-		failed++;
+		run_system_call(execstring);
+
 	  }
 	}
   } else {
