@@ -1,13 +1,10 @@
-/* Author: Manodeep Sinha <manodeep@gmail.com>
-	 Date: At some point in 2015. 
-	 LICENSE: MIT 
-*/
-
+[![Release](https://img.shields.io/github/release/manodeep/Corrfunc.svg)](https://github.com/manodeep/Corrfunc/releases/latest)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE)
-[![Coverity Scan](https://img.shields.io/coverity/scan/6982.svg)](https://scan.coverity.com/projects/manodeep-corrfunc)
+[![DOI](https://zenodo.org/badge/19184/manodeep/Corrfunc.svg)](https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc)
 [![Travis Build](https://travis-ci.org/manodeep/Corrfunc.svg?branch=python3)](https://travis-ci.org/manodeep/Corrfunc)
+[![Issues](https://img.shields.io/github/issues/manodeep/Corrfunc.svg)](https://github.com/manodeep/Corrfunc/issues)
 
-#Description
+# Description
 
 This repo contains a set of codes to measure the following OpenMP parallelized clustering 
 measures in a cosmological box (co-moving XYZ) or on a mock (RA, DEC, CZ). Also, 
@@ -83,7 +80,7 @@ default - code will not compile if the CPU does not support AVX instructions.
 On Linux, check for "avx" in /proc/cpuinfo under flags. If you do not have
 AVX, but have a SSE4 system instead, email me - I will send you a copy of
 the code with SSE4 intrinsics. Or, take the relevant SSE code from the public repo at 
-[pairwise](https://bitbucket.org/manodeep/pairwise).
+[pairwise](https://manodeep.github.io/pairwise).
 
 3. USE_OMP -- uses OpenMP parallelization. Scaling is great for DD (perfect scaling
 up to 12 threads in my tests) and okay (runtime becomes constant ~6-8 threads in
@@ -101,8 +98,12 @@ combination of 1/2 for (z)bin_refine_factor might be faster on your platform.
 
 # Author
 
-Pairwise is written/maintained by Manodeep Sinha. Please contact the [author](mailto:manodeep@gmail.com) in
+Corrfunc is written/maintained by Manodeep Sinha. Please contact the [author](mailto:manodeep@gmail.com) in
 case of any issues.
+
+# Citing
+
+If you use the code, please cite using the Zenodo DOI. 
 
 # LICENSE
 
@@ -110,5 +111,6 @@ Corrfunc is released under the MIT license. Basically, do what you want
 with the code including using it in commercial application.
 
 # Project URL
- 
-* version control (https://bitbucket.org/manodeep/corrfunc)
+
+* website (https://manodeep.github.io/Corrfunc/) 
+* version control (https://github.com/manodeep/Corrfunc)

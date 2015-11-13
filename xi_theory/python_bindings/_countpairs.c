@@ -5,6 +5,7 @@
 		License: MIT LICENSE. See LICENSE file under the top-level
 		directory at https://bitbucket.org/manodeep/corrfunc/
 */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <Python.h>
 #include <arrayobject.h>
@@ -16,6 +17,28 @@
 
 //for the vpf
 #include "countspheres.h"
+
+
+struct module_state {
+	PyObject *error;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#define INITERROR return NULL
+
+#else //python2 follows
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#define INITERROR return 
+#endif 
+
+static PyObject *error_out(PyObject *module) {
+	struct module_state *st = GETSTATE(module);
+	PyErr_SetString(st->error, "something bad happened");
+	return NULL;
+}
+
 
 //Docstrings for the methods
 static char module_docstring[]             =	"This module provides an interface for calculating correlation functions using C.";
@@ -35,6 +58,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args);
 PyMODINIT_FUNC init_countpairs(void);
 
 static PyMethodDef module_methods[] = {
+	{"error_out", (PyCFunction)error_out, METH_NOARGS, NULL},
 	{"countpairs"       ,countpairs_countpairs       ,METH_VARARGS,countpairs_docstring},
 	{"countpairs_rp_pi" ,countpairs_countpairs_rp_pi ,METH_VARARGS,countpairs_rp_pi_docstring},
 	{"countpairs_wp"    ,countpairs_countpairs_wp    ,METH_VARARGS,countpairs_wp_docstring},
@@ -44,16 +68,68 @@ static PyMethodDef module_methods[] = {
 };
 
 
-PyMODINIT_FUNC init_countpairs(void)
-{
-	PyObject *m = Py_InitModule3("_countpairs", module_methods, module_docstring);
-	if (m == NULL)
-		return;
+#if PY_MAJOR_VERSION >= 3
 
-	/* Load `numpy` functionality. */
-	import_array();
+static int _countpairs_traverse(PyObject *m, visitproc visit, void *arg) {
+	Py_VISIT(GETSTATE(m)->error);
+	return 0;
 }
 
+static int _countpairs_clear(PyObject *m) {
+	Py_CLEAR(GETSTATE(m)->error);
+	return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+	PyModuleDef_HEAD_INIT,
+	"_countpairs",
+	NULL,
+	sizeof(struct module_state),
+	module_methods,
+	NULL,
+	_countpairs_traverse,
+	_countpairs_clear,
+  NULL
+};
+
+
+PyObject *PyInit_countpairs(void)
+
+#else
+PyMODINIT_FUNC init_countpairs(void)
+#endif
+{
+
+
+#if PY_MAJOR_VERSION >= 3
+	PyObject *module = PyModule_Create(&moduledef);
+#else
+	PyObject *module = Py_InitModule3("_countpairs", module_methods, module_docstring);
+#endif
+	
+	if (module == NULL) {
+		INITERROR;
+	}
+
+	struct module_state *st = GETSTATE(module);
+
+	st->error = PyErr_NewException("_countpairs.Error", NULL, NULL);
+	if (st->error == NULL) {
+		Py_DECREF(module);
+		INITERROR;
+	}
+
+	
+	/* Load `numpy` functionality. */
+	import_array();
+
+
+#if PY_MAJOR_VERSION >= 3
+	return module;
+#endif
+
+}
 
 
 static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
@@ -69,13 +145,13 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 
 	/* Interpret the input objects as numpy arrays. */
 #ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_ARRAY_IN_ARRAY);
 #else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
 #endif
 	
 	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
@@ -88,13 +164,13 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 
 	/* Interpret the input objects as numpy arrays. */
 #ifdef DOUBLE_PREC	
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_DOUBLE,	NPY_ARRAY_IN_ARRAY);
 #else
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
 #endif
 	
 	if (x2_array == NULL || y2_array == NULL || z2_array == NULL) {
@@ -167,13 +243,13 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 
 	/* Interpret the input objects as numpy arrays. */
 #ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_ARRAY_IN_ARRAY);
 #else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
 #endif
 	
 	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
@@ -186,13 +262,13 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 
 	/* Interpret the input objects as numpy arrays. */
 #ifdef DOUBLE_PREC	
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_DOUBLE,	NPY_ARRAY_IN_ARRAY);
 #else
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
 #endif
 	
 	if (x2_array == NULL || y2_array == NULL || z2_array == NULL) {
@@ -267,13 +343,13 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 
 	/* Interpret the input objects as numpy arrays. */
 #ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_ARRAY_IN_ARRAY);
 #else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
 #endif
 	
 	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
@@ -342,13 +418,13 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args)
 
 	/* Interpret the input objects as numpy arrays. */
 #ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_ARRAY_IN_ARRAY);
 #else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
 #endif
 	
 	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
@@ -416,13 +492,13 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args)
 
 	/* Interpret the input objects as numpy arrays. */
 #ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_ARRAY_IN_ARRAY);
 #else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_ARRAY_IN_ARRAY);
 #endif
 	
 	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {

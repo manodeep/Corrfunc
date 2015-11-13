@@ -1,15 +1,30 @@
+notifications:
+  email: false
+
 language: c
+sudo: false
 
-compiler:
-  - gcc
-  - clang
+matrix:
+  fast_finish: true
+  include:
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['gcc-4.8','libgsl0-dev','python-numpy']
+      env: COMPILER=gcc-4.8
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq gsl-bin libgsl0-dev
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['gcc-4.9','libgsl0-dev','python-numpy']
+      env: COMPILER=gcc-4.9
 
-install: `gsl-config --prefix' && make -j4 && make install
-	
-script: make tests
 
-
+script:
+  - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
+  - cd xi_theory/python_bindings && python call_correlation_functions.py
+  - cd ../../xi_mocks/python_bindings && python call_correlation_functions_mocks.py
