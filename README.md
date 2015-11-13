@@ -2,7 +2,6 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE)
 [![DOI](https://zenodo.org/badge/19184/manodeep/Corrfunc.svg)](https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc)
 [![Travis Build](https://travis-ci.org/manodeep/Corrfunc.svg?branch=master)](https://travis-ci.org/manodeep/Corrfunc)
-[![Coverage](https://coveralls.io/repos/manodeep/Corrfunc/badge.svg?branch=master&service=github)](https://coveralls.io/github/manodeep/Corrfunc?branch=master)
 [![Issues](https://img.shields.io/github/issues/manodeep/Corrfunc.svg)](https://github.com/manodeep/Corrfunc/issues)
 
 # Description
