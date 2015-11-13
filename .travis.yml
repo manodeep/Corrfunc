@@ -76,15 +76,15 @@ matrix:
 #       after_success:
 #         - coveralls --gcov gcov-5 --gcov-options '\-lp' --exclude xi_theory/tests  --exclude xi_mocks/tests --exclude examples
 
-    - os: osx
-      compiler: clang
-      env:
-        - COMPILER=clang
+#     - os: osx
+#       compiler: clang
+#       env:
+#         - COMPILER=clang
 
-			before_install:
-        - brew update
-        - brew install gsl
-        - brew install numpy
+# 			before_install:
+#         - brew update
+#         - brew install gsl
+#         - brew install numpy
 
 script:
   - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
