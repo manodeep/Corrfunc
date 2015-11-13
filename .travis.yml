@@ -7,7 +7,16 @@ compiler:
   - gcc
   - clang
 
-addons: {apt: { packages: "gsl-bin", "libgsl0-dev" } } 	
+addons:
+  apt:
+	  sources:
+		  - ubuntu-toolchain-r-test
+	  packages:
+      - gsl-bin
+      - libgsl0-dev
+
+before_install:
+  - `gsl-config --prefix`
 
 install: make distclean && make -j4 && make install
 
