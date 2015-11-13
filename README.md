@@ -1,6 +1,6 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE)
 [![DOI](https://zenodo.org/badge/19184/manodeep/Corrfunc.svg)](https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc)
-
+[![Travis Build](https://travis-ci.org/manodeep/Corrfunc.svg?branch=master)](https://travis-ci.org/manodeep/Corrfunc)
 
 
 # Description
@@ -97,7 +97,7 @@ combination of 1/2 for (z)bin_refine_factor might be faster on your platform.
 
 # Author
 
-Pairwise is written/maintained by Manodeep Sinha. Please contact the [author](mailto:manodeep@gmail.com) in
+Corrfunc is written/maintained by Manodeep Sinha. Please contact the [author](mailto:manodeep@gmail.com) in
 case of any issues.
 
 # Citing
@@ -112,4 +112,4 @@ with the code including using it in commercial application.
 # Project URL
 
 * website (https://manodeep.github.io/Corrfunc/) 
-* version control (https://github.com/manodeep/corrfunc)
+* version control (https://github.com/manodeep/Corrfunc)
