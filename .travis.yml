@@ -53,7 +53,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.6']
           packages: ['clang-3.6','libgsl0-dev','python-numpy']
-      env: COMPILER=clang-3.6
+      env: COMPILER=clang-3.6 V=3.6
 
     - os: linux
       compiler: clang
@@ -61,7 +61,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.7']
           packages: ['clang-3.7','libgsl0-dev','python-numpy']
-      env: COMPILER=clang-3.7
+      env: COMPILER=clang-3.7 V=3.7
 
     - os: linux
       compiler: gcc
