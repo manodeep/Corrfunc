@@ -78,15 +78,22 @@ matrix:
 
     - os: osx
       compiler: clang
-      env: COMPILER=clang V='Apple LLVM 6.0' # Apple LLVM version 6.0 (clang-600.0.54) (based on LLVM 3.5svn)
+      env: COMPILER=clang
+
+      before_install:
+			  - brew update
+				- brew install numpy && brew install gsl
+# 				- brew outdated gsl || brew upgrade gsl
+# 				- brew outdated numpy || brew upgrade numpy
+
+
+    - os: osx
+      osx_image: xcode7
+      compiler: clang
+      env: COMPILER=clang V='Apple LLVM 7.0.0'
 
       before_install:
 			  - brew update && brew install numpy && brew install gsl
-			
-#     - os: osx
-#       osx_image: xcode7
-#       compiler: clang
-#       env: COMPILER=clang V='Apple LLVM 7.0.0' # Apple LLVM version 7.0.0 (clang-700.0.72)
 
 script:
   - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
