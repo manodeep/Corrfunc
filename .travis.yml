@@ -63,15 +63,18 @@ matrix:
           packages: ['clang-3.7','libgsl0-dev','python-numpy']
       env: COMPILER=clang-3.7
 
-#     - os: osx
-#       compiler: clang
-#       env: COMPILER=clang V='Apple LLVM 6.0' # Apple LLVM version 6.0 (clang-600.0.54) (based on LLVM 3.5svn)
+    - os: osx
+      compiler: clang
+      env: COMPILER=clang V='Apple LLVM 6.0' # Apple LLVM version 6.0 (clang-600.0.54) (based on LLVM 3.5svn)
 
 #     - os: osx
 #       osx_image: xcode7
 #       compiler: clang
 #       env: COMPILER=clang V='Apple LLVM 7.0.0' # Apple LLVM version 7.0.0 (clang-700.0.72)
 
+before_install:
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install python2.7 && brew install numpy ; fi
+			
 script:
   - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
   - cd xi_theory/python_bindings && python call_correlation_functions.py
