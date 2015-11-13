@@ -73,6 +73,6 @@ matrix:
 #       env: COMPILER=clang V='Apple LLVM 7.0.0' # Apple LLVM version 7.0.0 (clang-700.0.72)
 
 script:
-  - make -j4 tests CC=$COMPILER
+  - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
   - cd xi_theory/python_bindings && python call_correlation_functions.py
   - cd ../../xi_mocks/python_bindings && python call_correlation_functions_mocks.py
