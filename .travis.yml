@@ -68,9 +68,9 @@ matrix:
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-5','libgsl0-dev','python-numpy']
+          packages: ['gcc-5','libgsl0-dev','python-numpy']
       env:
-        - COMPILER=g++-5
+        - COMPILER=gcc-5
       before_script:
         - pip install --user cpp-coveralls
       after_success:
