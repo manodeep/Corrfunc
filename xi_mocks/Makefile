@@ -60,7 +60,7 @@ libs: | dirs
 tar: dist
 
 dist:
-	hg archive $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz 
+	hg archive $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).tar.gz 
 
 test: tests
 tests:
