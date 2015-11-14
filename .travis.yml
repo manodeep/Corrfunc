@@ -25,6 +25,6 @@ matrix:
 
 
 script:
-  - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
+  - make -j4 distclean && make install CC=$COMPILER && make -j4 tests CC=$COMPILER
   - cd xi_theory/python_bindings && python call_correlation_functions.py
   - cd ../../xi_mocks/python_bindings && python call_correlation_functions_mocks.py
