@@ -1,7 +1,5 @@
 ### Set the compiler -- options are icc/gcc/clang. 
-ifndef CC
 CC=gcc
-endif
 
 #### Add any compiler specific flags you want
 CFLAGS=
