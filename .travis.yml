@@ -14,6 +14,8 @@ matrix:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.8','libgsl0-dev','python-numpy']
       env: COMPILER=gcc-4.8
+			before_install:
+			  - pip install numpy --user
 
     - os: linux
       compiler: gcc
@@ -22,6 +24,8 @@ matrix:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.9','libgsl0-dev','python-numpy']
       env: COMPILER=gcc-4.9
+			before_install:
+			  - pip install numpy --user
 
 
 script:
