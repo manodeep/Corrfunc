@@ -5,7 +5,7 @@
 		License: MIT LICENSE. See LICENSE file under the top-level
 		directory at https://bitbucket.org/manodeep/corrfunc/
 */
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+/* #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION */
 
 #include <Python.h>
 #include <arrayobject.h>
@@ -24,20 +24,19 @@ struct module_state {
 };
 
 #if PY_MAJOR_VERSION >= 3
+//python3 follows
 #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 #define INITERROR return NULL
+PyObject *PyInit__countpairs(void);
 
-#else //python2 follows
+#else 
+//python2 follows
 #define GETSTATE(m) (&_state)
 static struct module_state _state;
 #define INITERROR return 
-#endif 
+PyMODINIT_FUNC init_countpairs(void);
 
-static PyObject *error_out(PyObject *module) {
-	struct module_state *st = GETSTATE(module);
-	PyErr_SetString(st->error, "something bad happened");
-	return NULL;
-}
+#endif 
 
 
 //Docstrings for the methods
@@ -47,6 +46,7 @@ static char countpairs_rp_pi_docstring[]   =	"Calculate the 2-D DD(rp,pi) auto/c
 static char countpairs_wp_docstring[]      =	"Calculate the projected auto-correlation function wp (assumes PERIODIC) given one set of X1/Y1/Z1 arrays.";
 static char countpairs_xi_docstring[]      =	"Calculate the 3-d auto-correlation function xi (assumes PERIODIC) given one set of X1/Y1/Z1 arrays.";
 static char countspheres_vpf_docstring[]   =	"Calculate the counts-in-spheres given one set of X1/Y1/Z1 arrays.";
+static char error_out_docstring[]          =  "Error-handler for the module.";
 
 /* function proto-type*/
 static PyObject *countpairs_countpairs(PyObject *self, PyObject *args);
@@ -54,18 +54,24 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args);
 static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args);
 static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args);
 static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args);
-
-PyMODINIT_FUNC init_countpairs(void);
+static PyObject *countpairs_error_out(PyObject *module);
 
 static PyMethodDef module_methods[] = {
-	{"error_out", (PyCFunction)error_out, METH_NOARGS, NULL},
-	{"countpairs"       ,countpairs_countpairs       ,METH_VARARGS,countpairs_docstring},
-	{"countpairs_rp_pi" ,countpairs_countpairs_rp_pi ,METH_VARARGS,countpairs_rp_pi_docstring},
-	{"countpairs_wp"    ,countpairs_countpairs_wp    ,METH_VARARGS,countpairs_wp_docstring},
-	{"countpairs_xi"    ,countpairs_countpairs_xi    ,METH_VARARGS,countpairs_xi_docstring},
-	{"countspheres_vpf" ,countpairs_countspheres_vpf ,METH_VARARGS,countspheres_vpf_docstring},
+	{"countpairs_error_out"  ,(PyCFunction) countpairs_error_out        ,METH_NOARGS, error_out_docstring},
+	{"countpairs"            ,(PyCFunction) countpairs_countpairs       ,METH_VARARGS,countpairs_docstring},
+	{"countpairs_rp_pi"      ,(PyCFunction) countpairs_countpairs_rp_pi ,METH_VARARGS,countpairs_rp_pi_docstring},
+	{"countpairs_wp"         ,(PyCFunction) countpairs_countpairs_wp    ,METH_VARARGS,countpairs_wp_docstring},
+	{"countpairs_xi"         ,(PyCFunction) countpairs_countpairs_xi    ,METH_VARARGS,countpairs_xi_docstring},
+	{"countspheres_vpf"      ,(PyCFunction) countpairs_countspheres_vpf ,METH_VARARGS,countspheres_vpf_docstring},
 	{NULL, NULL, 0, NULL}
 };
+
+static PyObject *countpairs_error_out(PyObject *module) {
+	(void) module;//to avoid unused warning
+	struct module_state *st = GETSTATE(module);
+	PyErr_SetString(st->error, "something bad happened");
+	return NULL;
+}
 
 
 #if PY_MAJOR_VERSION >= 3
@@ -84,7 +90,7 @@ static int _countpairs_clear(PyObject *m) {
 static struct PyModuleDef moduledef = {
 	PyModuleDef_HEAD_INIT,
 	"_countpairs",
-	NULL,
+	module_docstring,
 	sizeof(struct module_state),
 	module_methods,
 	NULL,
@@ -94,7 +100,7 @@ static struct PyModuleDef moduledef = {
 };
 
 
-PyObject *PyInit_countpairs(void)
+PyObject *PyInit__countpairs(void)
 
 #else
 PyMODINIT_FUNC init_countpairs(void)
@@ -114,7 +120,7 @@ PyMODINIT_FUNC init_countpairs(void)
 
 	struct module_state *st = GETSTATE(module);
 
-	st->error = PyErr_NewException("_countpairs.Error", NULL, NULL);
+	st->error = PyErr_NewException("_countpairs.error", NULL, NULL);
 	if (st->error == NULL) {
 		Py_DECREF(module);
 		INITERROR;

@@ -49,7 +49,7 @@ results_DD = _countpairs.countpairs(autocorr,nthreads,binfile,x,y,z,x,y,z)
 print("\n#      **** DD(r): first {} bins  *******       ".format(numbins_to_print))
 print("#      rmin        rmax       rpavg       npairs")
 print("################################################")
-for ibin in xrange(numbins_to_print):
+for ibin in range(numbins_to_print):
     items = results_DD[ibin]
     print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10d}".format(items[0],items[1],items[2],items[3]))
 print("------------------------------------------------")
@@ -60,7 +60,7 @@ results_DDrppi = _countpairs.countpairs_rp_pi(autocorr,nthreads,pimax,binfile,x,
 print("\n#            ****** DD(rp,pi): first {} bins  *******      ".format(numbins_to_print))
 print("#      rmin        rmax       rpavg     pi_upper     npairs")
 print("###########################################################")
-for ibin in xrange(numbins_to_print):
+for ibin in range(numbins_to_print):
     items = results_DDrppi[ibin]
     print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}".format(items[0],items[1],items[2],items[3],items[4]))
 print("-----------------------------------------------------------")
@@ -71,7 +71,7 @@ results_wp = _countpairs.countpairs_wp(boxsize,pimax,nthreads,binfile,x,y,z)
 print("\n#            ******    wp: first {} bins  *******         ".format(numbins_to_print))
 print("#      rmin        rmax       rpavg        wp       npairs")
 print("##########################################################")
-for ibin in xrange(numbins_to_print):
+for ibin in range(numbins_to_print):
     items = results_wp[ibin]
     print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}".format(items[0],items[1],items[2],items[3],items[4]))
 print("-----------------------------------------------------------")
@@ -81,7 +81,7 @@ results_xi = _countpairs.countpairs_xi(boxsize,nthreads,binfile,x,y,z)
 print("\n#            ******    xi: first {} bins  *******         ".format(numbins_to_print))
 print("#      rmin        rmax       rpavg        xi       npairs")
 print("##########################################################")
-for ibin in xrange(numbins_to_print):
+for ibin in range(numbins_to_print):
     items = results_xi[ibin]
     print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}".format(items[0],items[1],items[2],items[3],items[4]))
 print("-----------------------------------------------------------")
@@ -99,21 +99,21 @@ results_vpf = _countpairs.countspheres_vpf(rmax,nbin,nspheres,num_pN,seed,x,y,z)
 print("\n#            ******    pN: first {} bins  *******         ".format(numbins_to_print))
 print('#       r    ',end="")
 
-for ipn in xrange(num_pN):
+for ipn in range(num_pN):
     print('        p{:0d}      '.format(ipn),end="")
 
 print("")
 
 print("###########",end="")
-for ipn in xrange(num_pN):
+for ipn in range(num_pN):
     print('################',end="")
 print("")
 
 
-for ibin in xrange(numbins_to_print):
+for ibin in range(numbins_to_print):
     items = results_vpf[ibin]
     print('{0:10.2f} '.format(items[0]),end="")
-    for ipn in xrange(num_pN):
+    for ipn in range(num_pN):
         print(' {0:15.4e}'.format(items[ipn+1]),end="")
     print("")
 

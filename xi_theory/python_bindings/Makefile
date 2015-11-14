@@ -1,11 +1,7 @@
 include ../../theory.options ../../common.mk
 
-PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-I' + numpy.__path__[0] + '/core/include/numpy/')")
-PYTHON_LIBDIR := $(shell python-config --prefix)/lib
-PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
-
 PROJECT := _countpairs
-LIBRARY := $(PROJECT).so.$(MAJOR).0.$(MINOR)
+LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 SOURCES := _countpairs.c 
 OBJECTS := $(SOURCES:.c=.o)
 C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a

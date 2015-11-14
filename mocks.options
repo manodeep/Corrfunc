@@ -8,6 +8,6 @@ OPT += -DLINK_IN_RA
 
 #### Code specs for both data Correlation Functions
 OPT += -DDOUBLE_PREC
-OPT += -DUSE_AVX
+#OPT += -DUSE_AVX
 OPT += -DUSE_OMP
 #OPT += -DFAST_DIVIDE ##replaces divide in DDrppi with approximate divides. If you really must get that extra ~20% performance boost

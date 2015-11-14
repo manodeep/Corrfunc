@@ -1,7 +1,5 @@
-### Set the compiler -- options are icc/gcc/clang. 
-ifndef CC
-CC=gcc
-endif
+### Set the default compiler -- options are icc/gcc/clang. 
+CC ?= gcc
 
 #### Add any compiler specific flags you want
 CFLAGS=
@@ -10,9 +8,10 @@ CFLAGS=
 CLINK=
 
 ### You should NOT edit below this line
-DISTNAME=corrfunc
+DISTNAME=Corrfunc
+MAJOR=0
 MINOR=0
-MAJOR=1
+PATCHLEVEL=1
 
 INCLUDE=-I../../io -I../../utils 
 
@@ -21,6 +20,19 @@ CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC 
 GSL_CFLAGS := $(shell gsl-config --cflags) 
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) 
+
+python_version_full := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
+python_version_major := $(word 1,${python_version_full})
+
+ifeq ($(python_version_major), 2)
+PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-I' + numpy.__path__[0] + '/core/include/numpy/')")
+PYTHON_LIBDIR := $(shell python-config --prefix)/lib 
+PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+else
+PYTHON_CFLAGS := $(shell python3-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-I' + numpy.__path__[0] + '/core/include/numpy/')")
+PYTHON_LIBDIR := $(shell python3-config --prefix)/lib
+PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python3-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+endif
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))

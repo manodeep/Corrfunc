@@ -23,10 +23,10 @@ libs: | dirs
 	$(MAKE) -C xi_mocks libs
 
 tar: 
-	hg archive $(DISTNAME).$(MAJOR).0.$(MINOR).no_version_control.tar.gz -X ".hg*"
+	hg archive $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).no_version_control.tar.gz -X ".hg*"
 
 dist:
-	hg archive $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz 
+	hg archive $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).tar.gz 
 
 tests:
 	$(MAKE) -C xi_theory tests
@@ -44,7 +44,7 @@ realclean:
 	$(MAKE) -C xi_mocks distclean
 
 clean:
-	$(RM) $(DISTNAME).$(MAJOR).0.$(MINOR).no_version_control.tar.gz $(DISTNAME).$(MAJOR).0.$(MINOR).tar.gz
+	$(RM) $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).no_version_control.tar.gz $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).tar.gz
 	$(MAKE) -C xi_theory clean
 	$(MAKE) -C xi_mocks clean
 
