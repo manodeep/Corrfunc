@@ -1,5 +1,5 @@
 ### Set the default compiler -- options are icc/gcc/clang. 
-CC ?= gcc
+CC = gcc
 
 #### Add any compiler specific flags you want
 CFLAGS=
