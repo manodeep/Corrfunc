@@ -19,9 +19,6 @@ $(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS)
 ../../lib:
 	mkdir -p ../../lib
 
-%.o: %.c Makefile ../../common.mk 
-	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
-
 ../../lib/libcountpairs_rp_pi_mocks.a: 
 	$(MAKE) -C ../DDrppi lib
 
@@ -35,6 +32,9 @@ install: $(LIBRARY) | ../../lib
 	cp -p $(LIBRARY) ../../lib/
 	$(RM) ../../lib/$(PROJECT).so
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
+
+%.o: %.c Makefile ../../common.mk $(C_LIBRARY)
+	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
 .PHONY: clean clena celan install 
 
