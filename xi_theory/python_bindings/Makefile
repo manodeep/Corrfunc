@@ -24,9 +24,6 @@ $(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY
 ../../lib:
 	mkdir -p ../../lib
 
-%.o: %.c ../../theory.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
-
 ../../lib/libcountpairs.a: 
 	$(MAKE) -C ../xi_of_r/ lib
 
@@ -42,6 +39,9 @@ $(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY
 ../../lib/libcountspheres.a: 
 	$(MAKE) -C ../vpf/ lib
 
+%.o: %.c ../../theory.options ../../common.mk Makefile $(C_LIBRARY)
+	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
+
 install: $(LIBRARY) | ../../lib
 	cp -p $(LIBRARY) ../../lib/
 	$(RM) ../../lib/$(PROJECT).so 
@@ -51,12 +51,12 @@ distclean: clean | ../../lib
 	$(RM) ../../lib/$(LIBRARY)
 	$(RM) ../../lib/$(PROJECT).so
 
-.PHONY: clean clena celan install distclean
+.PHONY: clean celna clena celan install distclean
 
 clean:
 	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so 
 
 celan: clean
-
+celna: clean
 clena: clean
 
