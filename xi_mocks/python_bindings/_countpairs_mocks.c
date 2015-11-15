@@ -35,6 +35,13 @@ PyMODINIT_FUNC init_countpairs_mocks(void);
 
 #endif 
 
+
+#ifdef DOUBLE_PREC
+#define ELEMENT_SIZE NPY_DOUBLE
+#else
+#define ELEMENT_SIZE NPY_FLOAT
+#endif
+
 //Docstrings for the methods
 static char module_docstring[]             =	"This module provides an interface for calculating correlation functions on MOCKS (spherical geometry) using C.";
 static char countpairs_rp_pi_docstring[]   =	"Calculate the 2-D DD(rp,pi) auto/cross-correlation function given two sets of ra/dec/cz and ra/dec/cz arrays.";
@@ -147,15 +154,9 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
 		return NULL;
 
 	/* Interpret the input objects as numpy arrays. */
-#ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
-#else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-#endif
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, ELEMENT_SIZE,	NPY_ARRAY_IN_ARRAY);
 	
 	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
 		Py_XDECREF(x1_array);
@@ -166,15 +167,9 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
 
 
 	/* Interpret the input objects as numpy arrays. */
-#ifdef DOUBLE_PREC	
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
-#else
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-#endif
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, ELEMENT_SIZE,	NPY_ARRAY_IN_ARRAY);
 	
 	if (x2_array == NULL || y2_array == NULL || z2_array == NULL) {
 		Py_XDECREF(x2_array);
@@ -249,13 +244,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
 		return NULL;
 
 	/* Interpret the input objects as numpy arrays. */
-#ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-#else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-#endif
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
 	
 	if (x1_array == NULL || y1_array == NULL) {
 		Py_XDECREF(x1_array);
@@ -264,13 +254,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
 	}
 
 	/* Interpret the input objects as numpy arrays. */
-#ifdef DOUBLE_PREC	
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-#else
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-#endif
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
 	
 	if (x2_array == NULL || y2_array == NULL) {
 		Py_XDECREF(x2_array);
@@ -351,15 +336,9 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
 		return NULL;
 
 	/* Interpret the input objects as numpy arrays. */
-#ifdef DOUBLE_PREC	
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
-#else
-	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, NPY_FLOAT, NPY_IN_ARRAY);
-#endif
+	PyObject *x1_array = PyArray_FROM_OTF(x1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y1_array = PyArray_FROM_OTF(y1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z1_array = PyArray_FROM_OTF(z1_obj, ELEMENT_SIZE,	NPY_ARRAY_IN_ARRAY);
 	
 	if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
 		Py_XDECREF(x1_array);
@@ -370,15 +349,9 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
 
 
 	/* Interpret the input objects as numpy arrays. */
-#ifdef DOUBLE_PREC	
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_DOUBLE,	NPY_IN_ARRAY);
-#else
-	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, NPY_FLOAT, NPY_IN_ARRAY);
-#endif
+	PyObject *x2_array = PyArray_FROM_OTF(x2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *y2_array = PyArray_FROM_OTF(y2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+	PyObject *z2_array = PyArray_FROM_OTF(z2_obj, ELEMENT_SIZE,	NPY_ARRAY_IN_ARRAY);
 	
 	if (x2_array == NULL || y2_array == NULL || z2_array == NULL) {
 		Py_XDECREF(x2_array);
