@@ -22,7 +22,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION
         - source activate test
         - conda install --yes numpy=$NUMPY_VERSION
       
@@ -37,7 +37,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION
         - source activate test
         - conda install --yes numpy=$NUMPY_VERSION
         
@@ -49,7 +49,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION
         - source activate test
         - conda install --yes numpy=$NUMPY_VERSION
 
@@ -60,7 +60,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION
         - source activate test
         - conda install --yes numpy=$NUMPY_VERSION
 
