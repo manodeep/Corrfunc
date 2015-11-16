@@ -11,6 +11,10 @@ env:
 matrix:
   fast_finish: true
 
+  ### let osx fail for the time being, while I figure out the details
+  allow_failures:
+    os: osx
+  
   include:
     #### osx with clang doesn't use openmp -> so they are the slowest. Run them first
     # - os: osx
