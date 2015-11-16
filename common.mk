@@ -88,8 +88,9 @@ else
   ifeq (clang,$(findstring clang,$(CC)))
 		CFLAGS += -funroll-loops
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-      $(error clang does not support OpenMP - please use gcc/icc for compiling with openmp)
-     endif
+      $(warning clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options)
+      OPT:=$(filter-out -DUSE_OMP,$(OPT))
+		endif
   endif
 
   ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
