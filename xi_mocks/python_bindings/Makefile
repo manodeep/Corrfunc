@@ -48,7 +48,7 @@ install: $(PHONY_FIX_PY_LINK) $(LIBRARY) | ../../lib
 %.o: %.c Makefile ../../common.mk $(C_LIBRARY)
 	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
-.PHONY: clean clena celan install 
+.PHONY: clean clena celan install sharedlib
 
 distclean: clean | ../../lib
 	$(RM) ../../lib/$(LIBRARY)
