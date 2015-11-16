@@ -4,10 +4,6 @@ notifications:
 language: c
 sudo: false
 
-compiler:
-  - gcc
-  - clang
-
 env:
   global:
     - NUMPY_VERSION=1.9
