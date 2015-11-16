@@ -58,7 +58,22 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test','llvm-toolchain-precise-3.5']
           packages: ['clang-3.5','libgsl0-dev']
-      env: COMPILER=clang-3.5 V=3.5 PYTHON_VERSION=2.7
+      env: COMPILER=clang-3.5 V=3.5 PYTHON_VERSION=3.4
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - source activate test
+        - conda install -q --yes numpy=$NUMPY_VERSION
+
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test','llvm-toolchain-precise-3.5']
+          packages: ['clang-3.6','libgsl0-dev']
+      env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -95,7 +110,7 @@ matrix:
         - source activate test
         - conda install -q --yes numpy=$NUMPY_VERSION gcc=4.8
         - brew update && brew install gsl
-        
+
 install:
   - make -j4 distclean && make -j4 install CC=$COMPILER
         
