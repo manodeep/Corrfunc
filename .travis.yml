@@ -23,7 +23,14 @@ matrix:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.8','libgsl0-dev']
       env: COMPILER=gcc-4.8
-
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q -n test python=$TRAVIS_PYTHON_VERSION
+        - source activate test
+        - conda install --yes numpy=$NUMPY_VERSION
+      
     - os: linux
       compiler: gcc
       python: "2.7"
@@ -32,33 +39,43 @@ matrix:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.8','libgsl0-dev']
       env: COMPILER=gcc-4.8
-
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q -n test python=$TRAVIS_PYTHON_VERSION
+        - source activate test
+        - conda install --yes numpy=$NUMPY_VERSION
+        
       
     - os: osx
       compiler: clang
       python: "2.7"
       env: COMPILER=clang-3.6 V=3.6
-      before_script:
+      before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$(TRAVIS_PYTHON_VERSION)
+        - conda create -q -n test python=$TRAVIS_PYTHON_VERSION
         - source activate test
-        - conda 
+        - conda install --yes numpy=$NUMPY_VERSION
 
     - os: osx
       compiler: clang
       python: "3.4"
       env: COMPILER=clang-3.6 V=3.6
-      before_script:
+      before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$(TRAVIS_PYTHON_VERSION)
+        - conda create -q -n test python=$TRAVIS_PYTHON_VERSION
         - source activate test
-        - conda install --yes numpy=$(NUMPY_VERSION)
+        - conda install --yes numpy=$NUMPY_VERSION
+
+install:
+  - make -j4 distclean && make -j4 install CC=$COMPILER
         
 script:
-  - make -j4 distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
+  - make -j4 tests CC=$COMPILER
   - cd xi_theory/python_bindings && python call_correlation_functions.py
   - cd ../../xi_mocks/python_bindings && python call_correlation_functions_mocks.py
