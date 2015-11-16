@@ -47,9 +47,10 @@ PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
 endif
 
 
+comma := ,
 ### Another check for stack-size. travis ci chokes on this with gcc
-PYTHON_LINK := $(filter-out '-Wl,-stack_size,1000000,', $(PYTHON_LINK))
-PYTHON_LINK := $(filter-out '-stack_size,1000000,', $(PYTHON_LINK))
+PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
 endif
 
 

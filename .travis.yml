@@ -21,7 +21,7 @@ matrix:
     #   compiler: clang
     #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7
     #   before_install:
-    #     - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
+    #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
     #     - bash miniconda.sh -b -p $HOME/miniconda
     #     - export PATH="$HOME/miniconda/bin:$PATH"
     #     - conda create -q --yes -n test python=$PYTHON_VERSION
@@ -33,7 +33,7 @@ matrix:
     #   compiler: clang
     #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.4
     #   before_install:
-    #     - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
+    #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
     #     - bash miniconda.sh -b -p $HOME/miniconda
     #     - export PATH="$HOME/miniconda/bin:$PATH"
     #     - conda create -q --yes -n test python=$PYTHON_VERSION
@@ -47,7 +47,7 @@ matrix:
       compiler: clang
       env: COMPILER=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.4
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
         - conda create -q --yes -n test python=$PYTHON_VERSION
@@ -122,7 +122,7 @@ matrix:
       compiler: gcc
       env: COMPILER=gcc-4.8 PYTHON_VERSION=3.4
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
         - conda create -q --yes -n test python=$PYTHON_VERSION
