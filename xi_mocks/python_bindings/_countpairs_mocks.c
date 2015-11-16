@@ -55,8 +55,6 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
 static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *args);
 static PyObject *countpairs_mocks_error_out(PyObject *module);
 
-PyMODINIT_FUNC init_countpairs_mocks(void);
-
 static PyMethodDef module_methods[] = {
 	{"countpairs_mocks_error_out"   ,(PyCFunction) countpairs_mocks_error_out        ,METH_NOARGS, error_out_docstring},
 	{"countpairs_rp_pi_mocks"       ,(PyCFunction) countpairs_countpairs_rp_pi_mocks ,METH_VARARGS,countpairs_rp_pi_docstring},
