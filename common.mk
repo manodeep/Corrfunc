@@ -45,7 +45,13 @@ FIX_PYTHON_LINK = 1
 PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
 PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
 endif
+
+
+### Another check for stack-size. travis ci chokes on this with gcc
+PYTHON_LINK := $(filter-out -Wl,-stack_size,1000000, $(PYTHON_LINK))
 endif
+
+
 
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
