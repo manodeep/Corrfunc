@@ -4,29 +4,61 @@ notifications:
 language: c
 sudo: false
 
+compiler:
+  - gcc
+  - clang
+
+env:
+  global:
+    - NUMPY_VERSION=1.9
+  
 matrix:
   fast_finish: true
   include:
     - os: linux
       compiler: gcc
+      python: "3.4"
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test']
-          packages: ['gcc-4.8','libgsl0-dev','python-numpy']
+          packages: ['gcc-4.8','libgsl0-dev']
       env: COMPILER=gcc-4.8
 
     - os: linux
       compiler: gcc
+      python: "2.7"
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test']
-          packages: ['gcc-4.9','libgsl0-dev','python-numpy']
-      env: COMPILER=gcc-4.9
-    	before_install:
-    	  - pip install numpy --user
+          packages: ['gcc-4.8','libgsl0-dev']
+      env: COMPILER=gcc-4.8
 
+      
+    - os: osx
+      compiler: clang
+      python: "2.7"
+      env: COMPILER=clang-3.6 V=3.6
+      before_script:
+        - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q -n test python=$(TRAVIS_PYTHON_VERSION)
+        - source activate test
+        - conda 
 
+    - os: osx
+      compiler: clang
+      python: "3.4"
+      env: COMPILER=clang-3.6 V=3.6
+      before_script:
+        - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q -n test python=$(TRAVIS_PYTHON_VERSION)
+        - source activate test
+        - conda install --yes numpy=$(NUMPY_VERSION)
+        
 script:
-  - make -j4 distclean && make install CC=$COMPILER && make -j4 tests CC=$COMPILER
+  - make -j4 distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
   - cd xi_theory/python_bindings && python call_correlation_functions.py
   - cd ../../xi_mocks/python_bindings && python call_correlation_functions_mocks.py
