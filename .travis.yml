@@ -13,21 +13,35 @@ matrix:
 
   include:
     #### osx with clang doesn't use openmp -> so they are the slowest. Run them first
-    - os: osx
-      compiler: clang
-      env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7
-      before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
-        - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
-        - brew update && brew install gsl 
+    # - os: osx
+    #   compiler: clang
+    #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7
+    #   before_install:
+    #     - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
+    #     - bash miniconda.sh -b -p $HOME/miniconda
+    #     - export PATH="$HOME/miniconda/bin:$PATH"
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION
+    #     - source activate test
+    #     - conda install -q --yes numpy=$NUMPY_VERSION
+    #     - brew update && brew install gsl 
+
+    # - os: osx
+    #   compiler: clang
+    #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.4
+    #   before_install:
+    #     - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
+    #     - bash miniconda.sh -b -p $HOME/miniconda
+    #     - export PATH="$HOME/miniconda/bin:$PATH"
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION
+    #     - source activate test
+    #     - conda install -q --yes numpy=$NUMPY_VERSION 
+    #     - brew update && brew install gsl
+
 
     - os: osx
+      osx_image: xcode7
       compiler: clang
-      env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.4
+      env: COMPILER=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.4
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -36,7 +50,8 @@ matrix:
         - source activate test
         - conda install -q --yes numpy=$NUMPY_VERSION 
         - brew update && brew install gsl
-
+                     
+    
     - os: linux
       compiler: gcc
       addons:
@@ -71,7 +86,7 @@ matrix:
       compiler: clang
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test','llvm-toolchain-precise-3.5']
+          sources: ['ubuntu-toolchain-r-test','llvm-toolchain-precise-3.6']
           packages: ['clang-3.6','libgsl0-dev']
       env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7
       before_install:
