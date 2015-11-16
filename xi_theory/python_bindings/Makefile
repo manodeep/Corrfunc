@@ -5,16 +5,25 @@ LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 SOURCES := _countpairs.c 
 OBJECTS := $(SOURCES:.c=.o)
 C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a
+PHONY_FIX_PY_LINK := 
 
-all: $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../theory.options ../../common.mk Makefile | ../../lib
+ifeq ($(FIX_PYTHON_LINK), 1)
+PHONY_FIX_PY_LINK = sharedlib
+endif
+
+all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../theory.options ../../common.mk Makefile | ../../lib
 
 $(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
-	rm -f $(PROJECT).so 
+	$(RM) -f $(PROJECT).so
 	ln -s $(LIBRARY) $(PROJECT).so
-	cp -p $(LIBRARY) ../../lib/
-	rm -f ../../lib/$(PROJECT).so 
-	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
+
+sharedlib: $(LIBRARY) | ../../lib
+	@{ \
+		CURRENT_PYTHON_LIB=`otool -L $(LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
+		PYTHON_LIB_NAME=libpython$(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).dylib ; \
+		install_name_tool -change $$CURRENT_PYTHON_LIB @loader_path/../lib/$$PYTHON_LIB_NAME $(LIBRARY); \
+	}
 
 ../../lib:
 	mkdir -p ../../lib
@@ -37,7 +46,7 @@ $(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY
 %.o: %.c ../../theory.options ../../common.mk Makefile $(C_LIBRARY)
 	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
-install: $(LIBRARY) | ../../lib
+install: $(PHONY_FIX_PY_LINK) $(LIBRARY) | ../../lib
 	cp -p $(LIBRARY) ../../lib/
 	$(RM) ../../lib/$(PROJECT).so 
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
@@ -46,7 +55,7 @@ distclean: clean | ../../lib
 	$(RM) ../../lib/$(LIBRARY)
 	$(RM) ../../lib/$(PROJECT).so
 
-.PHONY: clean celna clena celan install distclean
+.PHONY: clean celna clena celan install distclean sharedlib
 
 clean:
 	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so 
