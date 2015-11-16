@@ -13,58 +13,54 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      python: "3.4"
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.8','libgsl0-dev']
-      env: COMPILER=gcc-4.8
+      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.4
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$TRAVIS_PYTHON_VERSION
+        - conda create -q -n test python=$PYTHON_VERSION
         - source activate test
         - conda install --yes numpy=$NUMPY_VERSION
       
     - os: linux
       compiler: gcc
-      python: "2.7"
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.8','libgsl0-dev']
-      env: COMPILER=gcc-4.8
+      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.4
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$TRAVIS_PYTHON_VERSION
+        - conda create -q -n test python=$PYTHON_VERSION
         - source activate test
         - conda install --yes numpy=$NUMPY_VERSION
         
       
     - os: osx
       compiler: clang
-      python: "2.7"
-      env: COMPILER=clang-3.6 V=3.6
+      env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$TRAVIS_PYTHON_VERSION
+        - conda create -q -n test python=$PYTHON_VERSION
         - source activate test
         - conda install --yes numpy=$NUMPY_VERSION
 
     - os: osx
       compiler: clang
-      python: "3.4"
-      env: COMPILER=clang-3.6 V=3.6
+      env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.4
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q -n test python=$TRAVIS_PYTHON_VERSION
+        - conda create -q -n test python=$PYTHON_VERSION
         - source activate test
         - conda install --yes numpy=$NUMPY_VERSION
 
