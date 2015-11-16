@@ -24,7 +24,7 @@ matrix:
         - export PATH="$HOME/miniconda/bin:$PATH"
         - conda create -q --yes -n test python=$PYTHON_VERSION
         - source activate test
-        - conda install -q--yes numpy=$NUMPY_VERSION
+        - conda install -q --yes numpy=$NUMPY_VERSION
 
     - os: linux
       compiler: clang
@@ -39,7 +39,7 @@ matrix:
         - export PATH="$HOME/miniconda/bin:$PATH"
         - conda create -q --yes -n test python=$PYTHON_VERSION
         - source activate test
-        - conda install -q--yes numpy=$NUMPY_VERSION
+        - conda install -q --yes numpy=$NUMPY_VERSION
         
     - os: linux
       compiler: gcc
