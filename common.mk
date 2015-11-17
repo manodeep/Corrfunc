@@ -1,5 +1,5 @@
-### Set the compiler -- options are icc/gcc/clang. 
-CC=gcc
+### Set the default compiler -- options are icc/gcc/clang. 
+CC = gcc
 
 #### Add any compiler specific flags you want
 CFLAGS=
@@ -8,9 +8,10 @@ CFLAGS=
 CLINK=
 
 ### You should NOT edit below this line
-DISTNAME=corrfunc
+DISTNAME=Corrfunc
+MAJOR=0
 MINOR=0
-MAJOR=1
+PATCHLEVEL=1
 
 INCLUDE=-I../../io -I../../utils 
 
@@ -19,6 +20,41 @@ CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC 
 GSL_CFLAGS := $(shell gsl-config --cflags) 
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) 
+
+PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
+PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
+PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
+
+ifeq ($(PYTHON_VERSION_MAJOR), 2)
+PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-I' + numpy.__path__[0] + '/core/include/numpy/')")
+PYTHON_LIBDIR := $(shell python-config --prefix)/lib 
+PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+else
+PYTHON_CFLAGS := $(shell python3-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-I' + numpy.__path__[0] + '/core/include/numpy/')")
+PYTHON_LIBDIR := $(shell python3-config --prefix)/lib
+PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python3-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+endif
+
+### Check if conda is being used on OSX - then we need to fix python link libraries
+UNAME := $(shell uname)
+FIX_PYTHON_LINK = 0
+ifeq ($(UNAME), Darwin)
+PATH_TO_PYTHON := $(shell which python)
+ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
+FIX_PYTHON_LINK = 1
+PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
+PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
+endif
+
+
+comma := ,
+### Another check for stack-size. travis ci chokes on this with gcc
+PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+endif
+
+
+
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))
@@ -119,3 +155,4 @@ ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
     $(warning Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set)
   endif
 endif
+

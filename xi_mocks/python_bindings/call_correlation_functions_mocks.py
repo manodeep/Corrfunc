@@ -54,7 +54,7 @@ results_DDrppi = _countpairs_mocks.countpairs_rp_pi_mocks(autocorr, cosmology,nt
 print("\n#            ****** DD(rp,pi): first {} bins  *******      ".format(numbins_to_print))
 print("#      rmin        rmax       rpavg     pi_upper     npairs")
 print("###########################################################")
-for ibin in xrange(numbins_to_print):
+for ibin in range(numbins_to_print):
     items = results_DDrppi[ibin]
     print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}".format(items[0],items[1],items[2],items[3],items[4]))
 print("-----------------------------------------------------------")
@@ -65,7 +65,7 @@ results_wtheta = _countpairs_mocks.countpairs_theta_mocks(autocorr, cosmology, n
 print("\n#         ******  wtheta: first {} bins  *******        ".format(numbins_to_print))
 print("#      thetamin        thetamax       thetaavg      npairs")
 print("##########################################################")
-for ibin in xrange(numbins_to_print):
+for ibin in range(numbins_to_print):
     items = results_wtheta[ibin]
     print("{0:14.4f} {1:14.4f} {2:14.4f} {3:14d}".format(items[0],items[1],items[2],items[3]))
 print("-----------------------------------------------------------")
