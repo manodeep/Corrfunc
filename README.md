@@ -103,7 +103,19 @@ case of any issues.
 
 # Citing
 
-If you use the code, please cite using the Zenodo DOI. 
+If you use the code, please cite using the Zenodo DOI. The BibTex entry for the code is  
+
+```
+@misc{Corrfunc,
+  author       = {Manodeep Sinha},
+  title        = {{Corrfunc: Development release to create zenodo DOI 
+                   Corrfunc: Development release to create zenodo DOI}},
+  month        = nov,
+  year         = 2015,
+  doi          = {10.5281/zenodo.33655},
+  url          = {http://dx.doi.org/10.5281/zenodo.33655}
+}
+```
 
 # LICENSE
 
