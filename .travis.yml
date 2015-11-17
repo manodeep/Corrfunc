@@ -4,89 +4,103 @@ notifications:
 language: c
 sudo: false
 
+env:
+  global:
+    - NUMPY_VERSION=1.7
+  
 matrix:
   fast_finish: true
+
+  ### let osx fail for the time being, while I figure out the details
+  allow_failures:
+    os: osx
+  
   include:
+    #### osx with clang doesn't use openmp -> so they are the slowest. Run them first
+    # - os: osx
+    #   compiler: clang
+    #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7
+    #   before_install:
+    #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+    #     - bash miniconda.sh -b -p $HOME/miniconda
+    #     - export PATH="$HOME/miniconda/bin:$PATH"
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION
+    #     - source activate test
+    #     - conda install -q --yes numpy=$NUMPY_VERSION
+    #     - brew update && brew install gsl 
+
+    # - os: osx
+    #   compiler: clang
+    #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.4
+    #   before_install:
+    #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+    #     - bash miniconda.sh -b -p $HOME/miniconda
+    #     - export PATH="$HOME/miniconda/bin:$PATH"
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION
+    #     - source activate test
+    #     - conda install -q --yes numpy=$NUMPY_VERSION 
+    #     - brew update && brew install gsl
+
+    # - os: osx
+    #   osx_image: xcode7
+    #   compiler: clang
+    #   env: COMPILER=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+    #   before_install:
+    #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+    #     - bash miniconda.sh -b -p $HOME/miniconda
+    #     - export PATH="$HOME/miniconda/bin:$PATH"
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION
+    #     - source activate test
+    #     - conda install -q --yes numpy=$NUMPY_VERSION 
+    #     - brew update && brew install gsl
+                     
+    - os: linux
+      compiler: clang
+      addons:
+        apt: 
+          sources: ['ubuntu-toolchain-r-test','llvm-toolchain-precise-3.6']
+          packages: ['clang-3.6','libgsl0-dev']
+      env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - source activate test
+        - conda install -q --yes numpy=$NUMPY_VERSION
+        
     - os: linux
       compiler: gcc
       addons:
         apt:
           sources: ['ubuntu-toolchain-r-test']
-          packages: ['gcc-4.8','libgsl0-dev','python-numpy']
-      env: COMPILER=gcc-4.8
+          packages: ['gcc-4.8','libgsl0-dev']
+      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.5
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - source activate test
+        - conda install -q --yes numpy=$NUMPY_VERSION
 
-    - os: linux
+    - os: osx
       compiler: gcc
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['gcc-4.9','libgsl0-dev','python-numpy']
-      env: COMPILER=gcc-4.9
+      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.5
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - source activate test
+        - conda install -q --yes numpy=$NUMPY_VERSION gcc=4.8
+        - brew update && brew install gsl
 
-    - os: linux
-      compiler: gcc
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['gcc-5','libgsl0-dev','python-numpy']
-      env: COMPILER=gcc-5
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['libgsl0-dev','python-numpy']
-      env: COMPILER=clang V=3.4
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.5']
-          packages: ['clang-3.5','libgsl0-dev','python-numpy']
-      env: COMPILER=clang-3.5 V=3.5
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.6']
-          packages: ['clang-3.6','libgsl0-dev','python-numpy']
-      env: COMPILER=clang-3.6 V=3.6
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.7']
-          packages: ['clang-3.7','libgsl0-dev','python-numpy']
-      env: COMPILER=clang-3.7 V=3.7
-
-#     - os: linux
-#       compiler: gcc
-#       addons:
-#         apt:
-#           sources: ['ubuntu-toolchain-r-test']
-#           packages: ['gcc-5','libgsl0-dev','python-numpy']
-#       env:
-#         - COMPILER=gcc-5
-#       before_script:
-#         - pip install --user cpp-coveralls
-#       after_success:
-#         - coveralls --gcov gcov-5 --gcov-options '\-lp' --exclude xi_theory/tests  --exclude xi_mocks/tests --exclude examples
-
-#     - os: osx
-#       compiler: clang
-#       env:
-#         - COMPILER=clang
-
-# 			before_install:
-#         - brew update
-#         - brew install gsl
-#         - brew install numpy
-
+install:
+  - make -j4 distclean && make -j4 install CC=$COMPILER
+        
 script:
-  - make distclean && make -j4 install CC=$COMPILER && make -j4 tests CC=$COMPILER
+  - make -j4 tests CC=$COMPILER
   - cd xi_theory/python_bindings && python call_correlation_functions.py
   - cd ../../xi_mocks/python_bindings && python call_correlation_functions_mocks.py
+  
