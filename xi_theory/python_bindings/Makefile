@@ -55,7 +55,11 @@ distclean: clean | ../../lib
 	$(RM) ../../lib/$(LIBRARY)
 	$(RM) ../../lib/$(PROJECT).so
 
+<<<<<<< HEAD
 .PHONY: clean celna clena celan install distclean sharedlib
+=======
+.PHONY: clean celna clena celan install distclean
+>>>>>>> master
 
 clean:
 	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so 

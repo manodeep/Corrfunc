@@ -112,7 +112,6 @@ else
   CLINK += -lm
 endif
 
-
 ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
 	BLAS_INCLUDE:=-DMKL_ILP64 -m64 -I$(MKLROOT)/include 
   ##Use the Intel MKL library. Check the compiler + openmp
