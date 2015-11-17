@@ -3,6 +3,7 @@
 [![DOI](https://zenodo.org/badge/19184/manodeep/Corrfunc.svg)](https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc)
 [![Travis Build](https://travis-ci.org/manodeep/Corrfunc.svg?branch=master)](https://travis-ci.org/manodeep/Corrfunc)
 [![Issues](https://img.shields.io/github/issues/manodeep/Corrfunc.svg)](https://github.com/manodeep/Corrfunc/issues)
+[![Coverity](https://img.shields.io/coverity/scan/6982.svg)](https://scan.coverity.com/projects/manodeep-corrfunc)
 
 # Description
 

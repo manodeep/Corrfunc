@@ -18,3 +18,5 @@ wprp
 bin/*
 include/*
 run_correlations
+*.tgz
+cov-int
