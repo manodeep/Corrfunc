@@ -41,41 +41,41 @@ can be combined using ``wprp`` to produce the Landy-Szalay estimator for $w_p(r_
 
 # Science options
 
-1. PERIODIC (ignored in case of wp/xi) -- switches PERIODIC boundary
+1. ``PERIODIC`` (ignored in case of wp/xi) -- switches periodic boundary
 conditions on/off. Enabled by default. 
 
-2. OUTPUT_RPAVG -- switches on output of <rp> in each ``rp`` bin. Can be
+2. ``OUTPUT_RPAVG`` -- switches on output of ``<rp>`` in each ``rp`` bin. Can be
 a massive performance hit (~ 2.2x in case of wp). Disabled by default.
-Needs code option DOUBLE_PREC to be enabled as well. For the mocks, 
-OUTPUT_RPAVG causes only a mild increase in runtime and is enabled by 
+Needs code option ``DOUBLE_PREC`` to be enabled as well. For the mocks, 
+``OUTPUT_RPAVG`` causes only a mild increase in runtime and is enabled by 
 default.
 
-3. OUTPUT_THETAAVG -- switches on output of <theta> in each theta bin. 
+3. ``OUTPUT_THETAAVG`` -- switches on output of <theta> in each theta bin. 
 Can be extremely slow (~5x) depending on compiler, and CPU capabilities. 
 Disabled by default. 
 
 
 ## Mocks
 
-1. LINK_IN_DEC -- creates binning in declination for mocks. Please check that for 
+1. ``LINK_IN_DEC`` -- creates binning in declination for mocks. Please check that for 
 your desired binning in $r_p$/$\theta$, this binning does not produce incorrect 
 results (due to numerical precision). 
 
-2. LINK_IN_RA -- creates binning in RA once binning in DEC has been enabled. Same 
-numerical issues as LINK_IN_DEC
+2. ``LINK_IN_RA`` -- creates binning in RA once binning in DEC has been enabled. Same 
+numerical issues as ``LINK_IN_DEC``
 
-3. FAST_DIVIDE --  Divisions are slow but required $DD(r_p,\pi)$. This Makefile
+3. ``FAST_DIVIDE`` --  Divisions are slow but required $DD(r_p,\pi)$. This Makefile
 option (in mocks.options) replaces the divisions to a reciprocal followed by a 
 Newton-Raphson. The code will run ~20% faster at the expense of some numerical precision. 
 Please check that the loss of precision is not important for your use-case. Also, note 
-that the mocks tests for $DD(r_p, \pi)$*will fail* if you enable FAST_DIVIDE. 
+that the mocks tests for $DD(r_p, \pi)$ *will fail* if you enable ``FAST_DIVIDE``. 
 
 # Common Code options for both Mocks and Cosmological Boxes
 
-1. DOUBLE_PREC -- does the calculations in double precision. Disabled
+1. ``DOUBLE_PREC`` -- does the calculations in double precision. Disabled
 by default. 
 
-2. USE_AVX -- uses the AVX instruction set found in Intel/AMD CPUs >= 2011
+2. ``USE_AVX`` -- uses the AVX instruction set found in Intel/AMD CPUs >= 2011
 (Intel: Sandy Bridge or later; AMD: Bulldozer or later). Enabled by
 default - code will not compile if the CPU does not support AVX instructions.
 On Linux, check for "avx" in /proc/cpuinfo under flags. If you do not have
@@ -83,17 +83,17 @@ AVX, but have a SSE4 system instead, email me - I will send you a copy of
 the code with SSE4 intrinsics. Or, take the relevant SSE code from the public repo at 
 [pairwise](https://manodeep.github.io/pairwise).
 
-3. USE_OMP -- uses OpenMP parallelization. Scaling is great for DD (perfect scaling
+3. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD (perfect scaling
 up to 12 threads in my tests) and okay (runtime becomes constant ~6-8 threads in
-my tests) for DDrppi and wp. 
+my tests) for ``DDrppi`` and ``wp``. 
 
 
 *Optimization for your architecture*
 
-1. The values of bin_refine_factor and/or zbin_refine_factor in the countpairs_*.c
+1. The values of ``bin_refine_factor`` and/or ``zbin_refine_factor`` in the countpairs_*.c
 files control the cache-misses, and consequently, the runtime. In my trial-and-error
 methods, I have seen any values larger than 3 are always slower. But some different
-combination of 1/2 for (z)bin_refine_factor might be faster on your platform. 
+combination of 1/2 for ``(z)bin_refine_factor`` might be faster on your platform. 
 
 2. If you have AVX2/AVX-512/KNC, you will need to rewrite the entire AVX section.
 
