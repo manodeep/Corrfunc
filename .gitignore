@@ -20,3 +20,4 @@ include/*
 run_correlations
 *.tgz
 cov-int
+*.gcno
