@@ -29,19 +29,19 @@ sharedlib: $(LIBRARY) | ../../lib
 	mkdir -p ../../lib
 
 ../../lib/libcountpairs.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi_of_r/ lib
+	$(MAKE) -C ../xi_of_r lib
 
 ../../lib/libcountpairs_rp_pi.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi_rp_pi/ lib
+	$(MAKE) -C ../xi_rp_pi lib
 
 ../../lib/libcountpairs_wp.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../wp/ lib
+	$(MAKE) -C ../wp lib
 
 ../../lib/libcountpairs_xi.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi/ lib
+	$(MAKE) -C ../xi lib
 
 ../../lib/libcountspheres.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../vpf/ lib
+	$(MAKE) -C ../vpf lib
 
 %.o: %.c ../../theory.options ../../common.mk Makefile $(C_LIBRARY)
 	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@

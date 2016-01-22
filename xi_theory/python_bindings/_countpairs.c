@@ -9,54 +9,8 @@
 
 #include <Python.h>
 
-
-/* numpy gives a warning about throwing away const qualifiers.
-   I can't fix it, so silencing the compiler warning for -Wcast-qual
-   while the numpy header is compiled.  Of course, the statements
-   are different for each compiler.
-
-   This #pragma diagnostic was introduced in GCC 4.6 or so
-   -- so with older compilers, this line will add "unknown pragma"
-   warnings. Neither icc (14.0.3) nor clang (3.5.2) produce this warning,
-
-   As a note, in case some clang version starts producing the warning,
-   then, the following lines can be used to silence it
-
-   #if defined(__clang__)
-   #pragma clang diagnostic push
-   #endif
-
-   #include ..
-   #pragma clang diagnost pop
-
-   For icc, if the warning appear, then one way would be to trick icc
-   into thinking that numpy is a system header by using (note, MSVC
-   does not support this):
-
-   #pragma system_header
-   #include ..
-
-   If that does not work, then
-
-   #pragma warning ( disable : warningnumber)
-   #include ..
-
-   should do the trick. 
-*/
-
-
-#if defined(__GNUC__) || defined(__GNUG__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#endif
-
 /* Now, include the numpy header*/
 #include <arrayobject.h>
-
-/* numpy is done. Turn warnings back on*/
-#if defined(__GNUC__) || defined(__GNUG__)
-#pragma GCC diagnostic pop
-#endif
 
 //for correlation functions
 #include "countpairs.h"
