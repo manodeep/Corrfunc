@@ -5,7 +5,6 @@ from __future__ import (absolute_import, print_function)
 import os
 import sys
 import re
-from Corrfunc.utils import rd
 
 ## Make sure we are running on posix (Linux, Unix, MAC OSX)    
 if os.name != 'posix':
