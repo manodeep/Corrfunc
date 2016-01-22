@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 Example python code to call the 3 correlation function
 routines from python. (The codes are written in C)
@@ -12,41 +15,24 @@ import os
 import sys
 import re
 import numpy as np
+from Corrfunc import _countpairs, rd
 import time
-try: 
-    from Corrfunc import _countpairs, rd
-except ImportError:
-    import _countpairs
-    if sys.version_info[0] >= 3:
-        def rd(filename):
-            with open(filename, encoding="utf-8") as f:
-                r = f.read()
-                
-            return r
-    else:
-        def rd(filename):
-            with open(filename) as f:
-                r = f.read()
-
-            return r
 
 tstart=time.time()
-file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"../tests/data/","gals_Mr19.txt")
+file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"../xi_theory/tests/data/","gals_Mr19.txt")
 ## Figure out the datatype, use the header file in the include directory
 ## because that is most likely correct (common.mk might have been modified
 ## but not recompiled)
 include_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            "../../include/", "countpairs.h")
+                            "../include/", "countpairs.h")
 includes = rd(include_file)
 vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes, re.I).group(1)
-print("vector_type = {}".format(vector_type))
 allowed_types = {"float":np.float32,"double":np.float}
 if vector_type not in list(allowed_types.keys()):
     print("Error: Unknown precision={} found in header file {}. Allowed types are `{}'".format(vector_type,include_file,allowed_types))
     sys.exit()
 
 dtype = allowed_types[vector_type]
-print("vector_type = {} dtype = {}".format(vector_type,dtype))
 
 ### check if pandas is available - much faster to read in the data through pandas
 t0=time.time()
@@ -67,7 +53,7 @@ print("Done reading the data - time taken = {0:10.1f} seconds.\nBeginning Correl
 boxsize=420.0
 nthreads=4
 pimax=40.0
-binfile=os.path.join(os.path.dirname(os.path.abspath(__file__)),"../tests/","bins")
+binfile=os.path.join(os.path.dirname(os.path.abspath(__file__)),"../xi_theory/tests/","bins")
 autocorr=1
 numbins_to_print=5
 
