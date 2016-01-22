@@ -4,9 +4,6 @@
 from __future__ import (division, print_function, absolute_import,
                                                 unicode_literals)
 import sys
-from ._countpairs import *
-from ._countpairs_mocks import *
-from .utils import *
 
 __all__ = ['_countpairs','_countpairs_mocks','utils']
 __version__ = "0.0.1"
