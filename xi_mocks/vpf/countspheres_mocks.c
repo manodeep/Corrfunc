@@ -121,9 +121,9 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 	init_cosmology(cosmology);
 
   //Input validation
-	assert(rmax > 0.0 && "rmax has to be positive");
-	assert(nbin >=1 && "Number of bins has to be at least 1");
-	assert(nc >=1   && "Number of spheres has to be at least 1");
+	assert(rmax > 0.0  && "rmax has to be positive");
+	assert(nbin >=1    && "Number of bins has to be at least 1");
+	assert(nc >=1      && "Number of spheres has to be at least 1");
 	assert(num_pN >= 1 && "Number of pN's requested must be at least 1");
 
 	int need_randoms=0;
@@ -140,12 +140,10 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
     } else {
       fclose(fpcen);
       num_centers_in_file = 0;
-      fpcen = my_fopen(centers_file,"w");
       need_randoms = 1;
     }
   } else {
     num_centers_in_file = 0;
-    
     need_randoms = 1;
   }
 	if(need_randoms==1) {

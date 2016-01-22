@@ -17,9 +17,6 @@ $(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS)
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
 	rm -f $(PROJECT).so 
 	ln -s $(LIBRARY) $(PROJECT).so
-	cp -p $(LIBRARY) ../../lib/
-	rm -f ../../lib/$(PROJECT).so
-	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
 
 sharedlib: $(LIBRARY) | ../../lib
 	@{ \
@@ -31,18 +28,18 @@ sharedlib: $(LIBRARY) | ../../lib
 ../../lib:
 	mkdir -p ../../lib
 
-../../lib/libcountpairs_rp_pi_mocks.a: 
+../../lib/libcountpairs_rp_pi_mocks.a: ../../mocks.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../DDrppi lib
 
-../../lib/libcountpairs_theta_mocks.a: 
+../../lib/libcountpairs_theta_mocks.a: ../../mocks.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../wtheta lib
 
-../../lib/libcountspheres_mocks.a:
+../../lib/libcountspheres_mocks.a: ../../mocks.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../vpf lib
 
 install: $(PHONY_FIX_PY_LINK) $(LIBRARY) | ../../lib
 	cp -p $(LIBRARY) ../../lib/
-	$(RM) ../../lib/$(PROJECT).so
+	$(RM) -f ../../lib/$(PROJECT).so
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
 
 %.o: %.c Makefile ../../common.mk $(C_LIBRARY)
