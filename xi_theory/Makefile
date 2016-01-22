@@ -1,10 +1,17 @@
 include ../theory.options ../common.mk
 
-target=logbins 
-all: $(target) dirs DD DDrppi wp xi libs examples python_bindings 
+target:=logbins
+targets:=$(target) dirs DD DDrppi wp xi vpf examples 
+
+ifneq ($(COMPILE_PYTHON_EXT), 0)
+targets += python_bindings
+else
+$(warning Not compiling C extensions for theory. Python or numpy not available)
+endif
+
+all: $(targets) 
 
 OBJS1= logbins.o ../utils/utils.o 
-
 logbins: $(OBJS1)  | dirs 
 	$(CC) $(OBJS1)  $(CLINK) -o $@
 
@@ -12,9 +19,9 @@ logbins: $(OBJS1)  | dirs
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
 dirs:
-	mkdir -p ../lib .,/bin ../include 
+	mkdir -p ../lib ../bin ../include 
 
-.PHONY: clean celna clena celan DD DDrppi libs install wp tests distclean realclean distclena realclena examples dirs xi
+.PHONY: clean celna clena celan $(targets) libs install tests distclean realclean distclena realclena
 
 DD:
 	$(MAKE) -C xi_of_r
@@ -28,6 +35,9 @@ wp:
 xi:
 	$(MAKE) -C xi
 
+vpf:
+	$(MAKE) -C vpf
+
 python_bindings: libs
 	$(MAKE) -C python_bindings
 
@@ -36,9 +46,7 @@ examples: libs
 	$(MAKE) -C examples
 
 distclean:realclean
-
 distclena:realclean
-
 realclena:realclean
 
 realclean:
