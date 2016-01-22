@@ -1,29 +1,64 @@
 ### Set the default compiler -- options are icc/gcc/clang. 
-CC = gcc
+CC:=gcc
 
 #### Add any compiler specific flags you want
-CFLAGS=
+CFLAGS:=
 
 #### Add any compiler specific link flags you want
-CLINK=
+CLINK:=
 
 ### You should NOT edit below this line
-DISTNAME=Corrfunc
-MAJOR=0
-MINOR=0
-PATCHLEVEL=1
+DISTNAME:=Corrfunc
+MAJOR:=0
+MINOR:=0
+PATCHLEVEL:=1
+VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
-INCLUDE=-I../../io -I../../utils 
-
+INCLUDE:=-I../../io -I../../utils
 ### The POSIX_SOURCE flag is required to get the definition of strtok_r
 CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
 GSL_CFLAGS := $(shell gsl-config --cflags) 
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) 
 
+
+COMPILE_PYTHON_EXT := 1
 PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
 PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
 PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
+
+## I only need this so that I can print out the full python version (correctly)
+## in case of error
+PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
+
+## Check numpy version
+NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell python -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
+NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
+NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
+
+## Same reason as python patch level. 
+NUMPY_VERSION_PATCH := $(word 3,${NUMPY_VERSION_FULL})
+
+### Check for minimum python + numpy versions. In theory, I should also check
+### that *any* python and numpy are available but that seems too much effort
+MIN_PYTHON_MAJOR := 2
+MIN_PYTHON_MINOR := 6
+
+MIN_NUMPY_MAJOR  := 1
+MIN_NUMPY_MINOR  := 7
+
+PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
+NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
+
+ifneq ($(PYTHON_AVAIL),true)
+$(warning Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR))
+COMPILE_PYTHON_EXT := 0
+endif
+
+ifneq ($(NUMPY_AVAIL),true)
+$(warning Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR))
+COMPILE_PYTHON_EXT := 0
+endif
 
 ifeq ($(PYTHON_VERSION_MAJOR), 2)
 PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-I' + numpy.__path__[0] + '/core/include/numpy/')")
@@ -37,13 +72,14 @@ endif
 
 ### Check if conda is being used on OSX - then we need to fix python link libraries
 UNAME := $(shell uname)
-FIX_PYTHON_LINK = 0
+FIX_PYTHON_LINK := 0
 ifeq ($(UNAME), Darwin)
 PATH_TO_PYTHON := $(shell which python)
 ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
-FIX_PYTHON_LINK = 1
+FIX_PYTHON_LINK := 1
 PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
 PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
+# PYTHON_LINK += -dynamiclib -Wl,-single_module -undefined dynamic_lookup -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION) 
 endif
 
 
@@ -112,6 +148,26 @@ else
   CLINK += -lm
 endif
 
+ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
+  ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
+    $(error DOUBLE_PREC must be enabled with OUTPUT_THETAAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs))
+  endif
+  ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+     ifneq (icc,$(findstring icc,$(CC)))
+        $(warning WARNING: OUTPUT_THETAAVG with AVX capabilties is slow with gcc (disables AVX essentially) with gcc. Try to use icc if available)
+     endif
+  endif
+endif
+
+ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
+  ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+    $(warning Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set)
+  endif
+endif
+
+
+### The following sections are currently not relevant for the Corrfunc package
+### but I do not want to have to figure this out again! 
 ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
 	BLAS_INCLUDE:=-DMKL_ILP64 -m64 -I$(MKLROOT)/include 
   ##Use the Intel MKL library. Check the compiler + openmp
@@ -137,22 +193,5 @@ else
 ##Use some OpenMP parallel BLAS library (OpenBlas/ATLAS, for instance)
 BLAS_INCLUDE:=
 BLAS_LINK:=
-endif
-
-ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
-  ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
-    $(error DOUBLE_PREC must be enabled with OUTPUT_THETAAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs))
-  endif
-  ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-     ifneq (icc,$(findstring icc,$(CC)))
-        $(warning WARNING: OUTPUT_THETAAVG with AVX capabilties is slow with gcc (disables AVX essentially) with gcc. Try to use icc if available)
-     endif
-  endif
-endif
-
-ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
-  ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-    $(warning Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set)
-  endif
 endif
 

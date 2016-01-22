@@ -8,14 +8,14 @@ C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib
 PHONY_FIX_PY_LINK := 
 
 ifeq ($(FIX_PYTHON_LINK), 1)
-PHONY_FIX_PY_LINK = sharedlib
+PHONY_FIX_PY_LINK := sharedlib
 endif
 
 all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../theory.options ../../common.mk Makefile | ../../lib
 
 $(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
-	$(RM) -f $(PROJECT).so
+	$(RM) $(PROJECT).so
 	ln -s $(LIBRARY) $(PROJECT).so
 
 sharedlib: $(LIBRARY) | ../../lib
@@ -28,19 +28,19 @@ sharedlib: $(LIBRARY) | ../../lib
 ../../lib:
 	mkdir -p ../../lib
 
-../../lib/libcountpairs.a: 
+../../lib/libcountpairs.a: ../../theory.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../xi_of_r/ lib
 
-../../lib/libcountpairs_rp_pi.a: 
+../../lib/libcountpairs_rp_pi.a: ../../theory.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../xi_rp_pi/ lib
 
-../../lib/libcountpairs_wp.a: 
+../../lib/libcountpairs_wp.a: ../../theory.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../wp/ lib
 
-../../lib/libcountpairs_xi.a: 
+../../lib/libcountpairs_xi.a: ../../theory.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../xi/ lib
 
-../../lib/libcountspheres.a: 
+../../lib/libcountspheres.a: ../../theory.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../vpf/ lib
 
 %.o: %.c ../../theory.options ../../common.mk Makefile $(C_LIBRARY)

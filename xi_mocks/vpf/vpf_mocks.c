@@ -35,10 +35,6 @@
 #include "io.h"
 #include "countspheres_mocks.h"
 
-#ifdef USE_AVX
-#include "avx_calls.h"
-#endif
-
 void Printhelp(void) ;
 
 int main(int argc, char *argv[])
@@ -126,20 +122,20 @@ int main(int argc, char *argv[])
     num_centers_in_file = 0;
     need_randoms = 1;
   }
-  fprintf(stderr,"vpf_sdss> found %"PRId64" centers (need %d centers) - need randoms = %d\n",num_centers_in_file,nc,need_randoms);
+  fprintf(stderr,"vpf_mocks> found %"PRId64" centers (need %d centers) - need randoms = %d\n",num_centers_in_file,nc,need_randoms);
 
   gettimeofday(&t0,NULL);
   /*---Read-galaxy-data1-file----------------------------------*/
   Ngal=read_positions(galaxy_file,galaxy_file_format, sizeof(DOUBLE), 3, &ra, &dec, &cz);
   gettimeofday(&t1,NULL);
-  fprintf(stderr,"vpf_sdss> Ngal = %"PRId64". Time to read-in galaxies=%6.2lf sec\n",Ngal,ADD_DIFF_TIME(t0,t1)) ;
+  fprintf(stderr,"vpf_mocks> Ngal = %"PRId64". Time to read-in galaxies=%6.2lf sec\n",Ngal,ADD_DIFF_TIME(t0,t1)) ;
 
   /*---Read-random-file---------------------------------*/
   if(need_randoms == 1) {
     gettimeofday(&t0,NULL);
 		Nran = read_positions(random_file,random_file_format, sizeof(DOUBLE), 3, &xran, &yran, &zran);
     gettimeofday(&t1,NULL);
-    fprintf(stderr,"vpf_sdss> Nrandoms = %"PRId64". Time to read-in randoms = %6.2lf sec\n",Nran,ADD_DIFF_TIME(t0,t1)) ;
+    fprintf(stderr,"vpf_mocks> Nrandoms = %"PRId64". Time to read-in randoms = %6.2lf sec\n",Nran,ADD_DIFF_TIME(t0,t1)) ;
   }    
 
   /*---Expected-number-of-randoms-in-sphere-------------*/
@@ -147,7 +143,7 @@ int main(int argc, char *argv[])
   if(need_randoms == 1) {
 		assert(volume > 0 && "Mock volume must be > 0");
 		double Nexpected = (double)Nran*(4.0*M_PI*(rmax*rmax*rmax)/3.)/volume ;
-    fprintf(stderr,"vpf_sdss> Expected number of randoms in sphere = %lf\n",Nexpected) ;
+    fprintf(stderr,"vpf_mocks> Expected number of randoms in sphere = %lf\n",Nexpected) ;
 		threshold_neighbors = (int) (Nexpected - sqrt(Nexpected));//allow 1-sigma deviation. Conservative
   } else {
     threshold_neighbors = 1;//dummy value -> just to ensure that the check does not compare with uninitialized values
@@ -180,7 +176,7 @@ int main(int argc, char *argv[])
     free(xran);free(yran);free(zran);
   }
   gettimeofday(&t1,NULL);
-  fprintf(stderr,"vpf_sdss> Done. Ngal = %"PRId64". Time taken = %6.2lf sec\n",Ngal,ADD_DIFF_TIME(tstart,t1));
+  fprintf(stderr,"vpf_mocks> Done. Ngal = %"PRId64". Time taken = %6.2lf sec\n",Ngal,ADD_DIFF_TIME(tstart,t1));
 
 	free_results_countspheres_mocks(&results);
   return EXIT_SUCCESS ;

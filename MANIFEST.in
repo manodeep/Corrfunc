@@ -1,0 +1,13 @@
+include README.md Makefile .travis.yml common.mk theory.options mocks.options FAQ INSTALL LICENSE
+
+recursive-include xi_theory             *.c *.h Makefile
+recursive-include xi_mocks              *.c *.h Makefile
+recursive-include io                    *.c *.h
+recursive-include utils                 *.c *.h
+recursive-include include               *.h 
+
+recursive-include xi_theory/tests       Mr19_* cmass* bins
+recursive-include xi_theory/tests/data  *.ff *.txt
+recursive-include xi_mocks/tests        bins angular_bins Mr19*
+recursive-include xi_mocks/tests/data   *.txt *.dat *.ff
+

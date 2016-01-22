@@ -15,7 +15,6 @@ extern "C" {
 #include "function_precision.h" //for definition of DOUBLE
 #include <inttypes.h> //for uint64_t
 
-
 //define the results structure
 typedef struct{
   uint64_t *npairs;
