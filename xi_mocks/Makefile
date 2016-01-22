@@ -1,11 +1,19 @@
 include ../mocks.options ../common.mk
 
-all: dirs DDrppi wtheta vpf libs python_bindings examples
+targets:= dirs DDrppi wtheta vpf examples
+
+ifneq ($(COMPILE_PYTHON_EXT), 0)
+targets += python_bindings
+else
+$(warning Not compiling C extensions for mocks. Python or numpy not available)
+endif
+
+all: $(targets) 
 
 dirs:
-	mkdir -p ../lib .,/bin ../include 
+	mkdir -p ../lib ../bin ../include 
 
-.PHONY: clean celna clena celan python_bindings tests DDrppi wtheta distclean realclean distclena realclena dirs test
+.PHONY: clean celna clena celan $(targets) tests distclean realclean distclena realclena dirs test  python_bindings libs all 
 
 DDrppi:
 	$(MAKE) -C DDrppi
@@ -34,7 +42,6 @@ realclean:
 	$(MAKE) -C python_bindings distclean
 
 clean:
-	$(RM) $(target) $(OBJS1) 
 	$(MAKE) -C DDrppi clean
 	$(MAKE) -C wtheta clean
 	$(MAKE) -C vpf clean

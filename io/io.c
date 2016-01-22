@@ -13,6 +13,11 @@
 #define MEMORY_INCREASE_FAC 1.1
 #endif
 
+#ifndef MAXLEN
+#define MAXLEN 500
+#endif
+
+
 int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...)
 {
   int64_t np;
@@ -20,6 +25,44 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 	assert((size == 4 || size == 8) && "Size of each position element can be either 4 (float) or 8 (double)");
 	
   void *data[num_fields];
+  {
+    //new scope - just to check if file is gzipped.
+    //in that case, use gunzip to unzip the file.
+    // *ALL* file open calls in this scope
+    // are to fopen and *NOT* my_fopen.
+
+    FILE *fp = fopen(filename,"r");
+    if(fp == NULL) {
+      /* file does not exist. let's see if the filename.gz file does */
+      char buf[MAXLEN] = "";
+      my_snprintf(buf, MAXLEN,"%s.gz",filename);
+      fp = fopen(buf,"r");
+      if (fp == NULL) {
+        /* well then, file not found*/
+        fprintf(stderr,"ERROR: Could not find file: neither as `%s' nor as `%s'\n",filename,buf);
+        exit(EXIT_FAILURE);
+      } else {
+        /* found the gzipped file. Use a system call to uncompress. */
+        fclose(fp);
+
+        /*
+          Note, I am using `filename` rather than `buf` both
+          because C standards say that using the same buffer
+          as both source and destination is *undefined behaviour*.
+          
+          Check under "NOTES", towards the end of "man 3 snprintf".
+        */
+        my_snprintf(buf,MAXLEN,"gunzip %s.gz",filename);
+        fprintf(stderr,ANSI_COLOR_YELLOW "Could not locate `%s' but found the gzip file `%s.gz'.\nRunning system command `" ANSI_COLOR_BLUE "%s"ANSI_COLOR_YELLOW"' now to uncompress"ANSI_COLOR_RESET "\n",filename,filename,buf);
+        run_system_call(buf);
+      }
+    } else {
+      //file exists -> nothing to do. 
+      fclose(fp);
+    }
+  }
+
+  
   if(strncmp(format,"f",1)==0) { /*Read-in fast-food file*/
 		//read fast-food file
 		size_t bytes=sizeof(int) + sizeof(float)*9 + sizeof(int);//skip fdat
