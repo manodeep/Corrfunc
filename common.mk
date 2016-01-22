@@ -61,11 +61,11 @@ COMPILE_PYTHON_EXT := 0
 endif
 
 ifeq ($(PYTHON_VERSION_MAJOR), 2)
-PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-I' + numpy.__path__[0] + '/core/include/numpy/')")
+PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
 PYTHON_LIBDIR := $(shell python-config --prefix)/lib 
 PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
 else
-PYTHON_CFLAGS := $(shell python3-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-I' + numpy.__path__[0] + '/core/include/numpy/')")
+PYTHON_CFLAGS := $(shell python3-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
 PYTHON_LIBDIR := $(shell python3-config --prefix)/lib
 PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python3-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
 endif
