@@ -22,7 +22,7 @@ sharedlib: $(LIBRARY) | ../../lib
 	@{ \
 		CURRENT_PYTHON_LIB=`otool -L $(LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
 		PYTHON_LIB_NAME=libpython$(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).dylib ; \
-		install_name_tool -change $$CURRENT_PYTHON_LIB @loader_path/../lib/$$PYTHON_LIB_NAME $(LIBRARY); \
+		install_name_tool -change $$CURRENT_PYTHON_LIB @rpath/../lib/$$PYTHON_LIB_NAME $(LIBRARY); \
 	}
 
 ../../lib:
