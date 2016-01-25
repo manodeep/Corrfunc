@@ -1,4 +1,4 @@
-include theory.options common.mk
+include common.mk
 
 all: dirs xi_theory xi_mocks
 
