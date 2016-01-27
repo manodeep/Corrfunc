@@ -66,8 +66,7 @@ class build_ext_subclass( build_ext ):
             
             ## Blatantly copied from the Android distutils setup.py
             if sources is None:
-                raise Exception, \
-                    ("in 'ext_modules' option (extension '%s')," +
+                raise Exception("in 'ext_modules' option (extension '%s')," +
                      "'sources must be present and must be '" + 
                      "a list of source filename") % ext.name
             
@@ -172,9 +171,10 @@ def setup_packages():
                 'xi_theory/vpf/*.c','xi_theory/vpf/*.h','xi_theory/vpf/Makefile',
                 'xi_theory/tests/*.c','xi_theory/tests/*.h','xi_theory/tests/Makefile',
                 'xi_theory/python_bindings/*.c','xi_theory/python_bindings/*.h','xi_theory/python_bindings/Makefile',
+                'include/*.h',
                 ],
             },
-        install_requires=['setuptools','numpy>={}.{}'.format(min_numpy_major,min_numpy_minor),'python>={}.{}'.format(min_py_major,min_py_minor)],
+        install_requires=['setuptools','numpy>={}.{}'.format(min_numpy_major,min_numpy_minor)],
         zip_safe=False,
         cmdclass = {'build_ext': build_ext_subclass },
         )

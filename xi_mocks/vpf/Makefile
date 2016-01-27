@@ -20,7 +20,8 @@ $(target): $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 countspheres_mocks.o: countspheres_mocks.c $(INCL) ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
 
-
+../../utils/set_cosmo_dist.o:../../utils/set_cosmo_dist.c ../../mocks.options ../../common.mk Makefile
+	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
 
 libs: lib
 lib:  libcountspheres_mocks.a | ../../lib ../../include

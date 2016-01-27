@@ -14,9 +14,13 @@ from __future__ import print_function
 import os
 import sys
 import re
-import numpy as np
-from Corrfunc import _countpairs, rd
 import time
+import numpy as np
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
+from Corrfunc import _countpairs, rd
 
 tstart=time.time()
 file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"../xi_theory/tests/data/","gals_Mr19.txt")
@@ -38,14 +42,15 @@ dtype = allowed_types[vector_type]
 t0=time.time()
 print("Reading in the data...")
 try:
-    import pandas as pd
-    df = pd.read_csv(file,header=None,engine="c",dtype={"x":dtype,"y":dtype,"z":dtype},delim_whitespace=True)
-    x = np.asarray(df[0],dtype=dtype)
-    y = np.asarray(df[1],dtype=dtype)
-    z = np.asarray(df[2],dtype=dtype)
-except ImportError:
-    print("Warning: Could not read in data with pandas -- due to error : {}. Falling back to slower numpy.".format(sys.exc_info()[0]))
-    x,y,z = np.genfromtxt(file,dtype=dtype,unpack=True)
+    if pd is not None:
+        df  = pd.read_csv(file,header=None,engine="c",dtype={"x":dtype,"y":dtype,"z":dtype},delim_whitespace=True)
+        x  = np.asarray(df[0],dtype=dtype)
+        y = np.asarray(df[1],dtype=dtype)
+        z  = np.asarray(df[2],dtype=dtype)
+    else:
+        x,y,z = np.genfromtxt(file,dtype=dtype,unpack=True)
+except:
+    pass
 
 t1=time.time()    
 print("Done reading the data - time taken = {0:10.1f} seconds.\nBeginning Correlation functions calculations".format(t1-t0))

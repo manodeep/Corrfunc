@@ -142,12 +142,13 @@ int main(int argc, char **argv)
 																						 binfile);
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-/* 		DOUBLE rlow=results->rupp[0]; */
-/* 		for(int i=1;i<results->nbin;i++) { */
-/* 			fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]); */
-/* 			rlow=results->rupp[i]; */
-/* 		} */
-		
+#if 0
+		DOUBLE rlow=results->rupp[0];
+		for(int i=1;i<results->nbin;i++) {
+			fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]);
+			rlow=results->rupp[i];
+		}
+#endif		
 		fprintf(stderr,ANSI_COLOR_GREEN "Done 3-d auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);
 		//The results structure contains the pair-counts
 		
@@ -178,15 +179,17 @@ int main(int argc, char **argv)
 		
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-/* 		const int npibin = results->npibin; */
-/* 		const DOUBLE dpi = pimax/(DOUBLE)results->npibin ; */
-/* 		for(int i=1;i<results->nbin;i++) { */
-/* 			const double logrp = LOG10(results->rupp[i]); */
-/* 			for(int j=0;j<npibin;j++) { */
-/* 				int index = i*(npibin+1) + j; */
-/* 				fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi); */
-/* 			} */
-/* 		} */
+#if 0
+		const int npibin = results->npibin;
+		const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
+		for(int i=1;i<results->nbin;i++) {
+			const double logrp = LOG10(results->rupp[i]);
+			for(int j=0;j<npibin;j++) {
+				int index = i*(npibin+1) + j;
+				fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+			}
+		}
+#endif
 		fprintf(stderr,ANSI_COLOR_GREEN "Done DD(rp,pi) auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);		
 		
 
@@ -215,12 +218,14 @@ int main(int argc, char **argv)
 																									 pimax);
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-/* 		DOUBLE rlow=results->rupp[0]; */
-/* 		for(int i=1;i<results->nbin;++i) { */
-/* 			fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]); */
-/* 			rlow=results->rupp[i]; */
-/* 		} */
-		
+#if 0
+		DOUBLE rlow=results->rupp[0];
+		for(int i=1;i<results->nbin;++i) {
+			fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
+			rlow=results->rupp[i];
+		}
+#endif
+    
 		fprintf(stderr,ANSI_COLOR_GREEN "Done wp. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, pair_time);
 
 		//free the result structure
@@ -247,12 +252,14 @@ int main(int argc, char **argv)
 
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-		/* DOUBLE rlow=results->rupp[0]; */
-		/* for(int i=1;i<results->nbin;++i) { */
-		/* 	fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->xi[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]); */
-		/* 	rlow=results->rupp[i]; */
-		/* } */
-		
+#if 0
+		DOUBLE rlow=results->rupp[0];
+		for(int i=1;i<results->nbin;++i) {
+			fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->xi[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
+			rlow=results->rupp[i];
+		}
+#endif
+    
 		fprintf(stderr,ANSI_COLOR_GREEN "Done xi. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, pair_time);
 
 		//free the result structure
@@ -281,16 +288,18 @@ int main(int argc, char **argv)
 		gettimeofday(&t1,NULL);
 		double sphere_time = ADD_DIFF_TIME(t0,t1);
 
+#if 0
 		//Output the results
-		/* const DOUBLE rstep = rmax/(DOUBLE)nbin ; */
-		/* for(int ibin=0;ibin<results->nbin;ibin++) { */
-		/* 	const double r=(ibin+1)*rstep; */
-		/* 	fprintf(stdout,"%"DOUBLE_FORMAT" ", r); */
-		/* 	for(int i=0;i<num_pN;i++) { */
-		/* 		fprintf(stdout," %10.4e", (results->pN)[ibin][i]); */
-		/* 	} */
-		/* 	fprintf(stdout,"\n"); */
-		/* } */
+		const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+		for(int ibin=0;ibin<results->nbin;ibin++) {
+			const double r=(ibin+1)*rstep;
+			fprintf(stdout,"%"DOUBLE_FORMAT" ", r);
+			for(int i=0;i<num_pN;i++) {
+				fprintf(stdout," %10.4e", (results->pN)[ibin][i]);
+			}
+			fprintf(stdout,"\n");
+		}
+#endif
 		fprintf(stderr,ANSI_COLOR_GREEN "Done VPF. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, sphere_time);
 		free_results_countspheres(&results);
 	}

@@ -14,18 +14,18 @@ from __future__ import print_function
 import os
 import sys
 import re
-import numpy as np
 import time
-from Corrfunc import _countpairs_mocks,rd
+import numpy as np
 try:
     import pandas as pd
 except ImportError:
     pd = None
 
+from Corrfunc import _countpairs_mocks, rd
+
+
 tstart=time.time()
 file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"../xi_mocks/tests/data/","Mr19_mock_northonly.rdcz.dat")
-
-
 
 
 ### The following section to figure out data-types seems to be no longer
@@ -48,7 +48,6 @@ dtype = np.float32
 ### Check if pandas is available - much faster to read in the data through pandas
 t0=time.time()
 print("Reading in the data...")
-pd = None
 try:
     if pd is not None:
         df  = pd.read_csv(file,header=None,engine="c",dtype={"x":dtype,"y":dtype,"z":dtype},delim_whitespace=True)

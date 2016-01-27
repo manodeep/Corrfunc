@@ -61,32 +61,39 @@ COMPILE_PYTHON_EXT := 0
 endif
 
 ifeq ($(PYTHON_VERSION_MAJOR), 2)
-PYTHON_CFLAGS := $(shell python-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
-PYTHON_LIBDIR := $(shell python-config --prefix)/lib 
-PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+PYTHON_CONFIG_EXE:=python-config
 else
-PYTHON_CFLAGS := $(shell python3-config --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
-PYTHON_LIBDIR := $(shell python3-config --prefix)/lib
-PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(shell python3-config --ldflags) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+PYTHON_CONFIG_EXE:=python3-config
 endif
+PYTHON_CFLAGS := $(shell $(PYTHON_CONFIG_EXE) --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
+PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
+PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
+PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
 
 ### Check if conda is being used on OSX - then we need to fix python link libraries
 UNAME := $(shell uname)
 FIX_PYTHON_LINK := 0
 ifeq ($(UNAME), Darwin)
+## use the clang assembler instead of GNU assembler
+## http://stackoverflow.com/questions/10327939/erroring-on-no-such-instruction-while-assembling-project-on-mac-os-x-lion
+ifeq (gcc,$(findstring gcc,$(CC)))
+  CFLAGS += -Wa,-q
+endif
 PATH_TO_PYTHON := $(shell which python)
 ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
 FIX_PYTHON_LINK := 1
 PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
 PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-# PYTHON_LINK += -dynamiclib -Wl,-single_module -undefined dynamic_lookup -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION) 
+PYTHON_LINK += -dynamiclib -Wl,-single_module -undefined dynamic_lookup -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION) 
 endif
 
 
-comma := ,
 ### Another check for stack-size. travis ci chokes on this with gcc
-PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
-PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+# comma := ,
+# PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+# PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+# PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
 endif
 
 
@@ -132,9 +139,15 @@ else
   ifeq (clang,$(findstring clang,$(CC)))
 		CFLAGS += -funroll-loops
 		ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-      $(warning clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options)
-         OPT:=$(filter-out -DUSE_OMP,$(OPT))
-     endif
+      CLANG_VERSION:=$(shell $(CC) -dumpversion 2>&1)
+      ifeq ($(CLANG_OMP_AVAIL),1)
+			  CFLAGS += -fopenmp
+			  CLINK  += -fopenmp=libomp
+      else
+        $(warning clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options)
+        OPT:=$(filter-out -DUSE_OMP,$(OPT))
+      endif
+    endif
   endif
 
   ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
