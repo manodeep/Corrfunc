@@ -27,7 +27,7 @@ $(target): Makefile ../../mocks.options ../../common.mk $(INCL) $(C_LIBRARIES) $
 	$(MAKE) -C ../vpf lib
 
 %.o: %.c ../../common.mk ../../mocks.options Makefile
-	$(CC) $(CFLAGS) -I../../include $(OPT) $(INCLUDE) -c $< -o $@
+	$(CC) $(CFLAGS) -I../../include $(INCLUDE) $(OPT) -c $< -o $@
 
 .PHONY: clean clena celan 
 
@@ -35,7 +35,6 @@ clean:
 	$(RM) $(target) $(OBJS1) 
 
 clena: clean
-
 celan: clean
 
 
