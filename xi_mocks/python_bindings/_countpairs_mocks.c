@@ -61,11 +61,10 @@ static char module_docstring[] =	"This module provides an interface for calculat
   "\n"
   "countpairs_rp_pi_mocks: Calculate the 2-D DD(rp,pi) auto/cross-correlation function given two sets of ra/dec/cz and ra/dec/cz arrays.\n"
   "countpairs_theta_mocks: Calculate DD(theta) auto/cross-correlation function given two sets of ra/dec/cz and ra/dec/cz arrays.\n"
-  "countspheres_vpf_mocks: Calculate the counts-in-spheres given one set of ra/dec/cz.\n";
+  "countspheres_vpf_mocks: Calculate the counts-in-spheres given one set of ra/dec/cz.\n"
+  "\n\n"
+  "See `Corrfunc/call_correlation_functions_mocks.py` for example calls to each function.\n";
 
-/* static char countpairs_rp_pi_docstring[]   =	"Calculate the 2-D DD(rp,pi) auto/cross-correlation function given two sets of ra/dec/cz and ra/dec/cz arrays."; */
-/* static char countpairs_theta_docstring[]   =	"Calculate DD(theta) auto/cross-correlation function given two sets of ra/dec/cz and ra/dec/cz arrays."; */
-/* static char countspheres_vpf_docstring[]   =	"Calculate the counts-in-spheres given one set of X1/Y1/Z1 arrays."; */
 static char error_out_docstring[]          =  "Error-handler for the module.";
 
 /* function proto-type*/

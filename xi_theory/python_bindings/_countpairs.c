@@ -59,12 +59,16 @@ PyMODINIT_FUNC init_countpairs(void);
 
 
 //Docstrings for the methods
-static char module_docstring[]             =	"This module provides an interface for calculating clustering statistics using python extensions written in C.";
-/* static char countpairs_docstring[]         =	"Calculate the 3-D xi auto/cross-correlation function given two sets of X1/Y1/Z1 and X2/Y2/Z2 arrays."; */
-/* static char countpairs_rp_pi_docstring[]   =	"Calculate the 2-D DD(rp,pi) auto/cross-correlation function given two sets of X1/Y1/Z1 and X2/Y2/Z2 arrays."; */
-/* static char countpairs_wp_docstring[]      =	"Calculate the projected auto-correlation function wp (assumes PERIODIC) given one set of X1/Y1/Z1 arrays."; */
-/* static char countpairs_xi_docstring[]      =	"Calculate the 3-d auto-correlation function xi (assumes PERIODIC) given one set of X1/Y1/Z1 arrays."; */
-/* static char countspheres_vpf_docstring[]   =	"Calculate the counts-in-spheres given one set of X1/Y1/Z1 arrays."; */
+static char module_docstring[]             =	"This module provides an interface for calculating clustering statistics using python extensions written in C.\n"
+  "\n"
+  "countpairs       : Calculate the 3-D xi auto/cross-correlation function given two sets of X1/Y1/Z1 and X2/Y2/Z2 arrays.\n"
+  "countpairs_rp_pi : Calculate the 2-D DD(rp,pi) auto/cross-correlation function given two sets of X1/Y1/Z1 and X2/Y2/Z2 arrays.\n"
+  "countpairs_wp    : Calculate the projected auto-correlation function wp (assumes PERIODIC) given one set of X1/Y1/Z1 arrays.\n"
+  "countpairs_xi    : Calculate the 3-d auto-correlation function xi (assumes PERIODIC) given one set of X1/Y1/Z1 arrays.\n"
+  "countpairs_vpf   : Calculate the counts-in-spheres given one set of X1/Y1/Z1 arrays.\n"
+  "\n\n"
+  "See `Corrfunc/call_correlation_functions.py` for example calls to each function.\n";
+
 static char error_out_docstring[]          =  "Error-handler for the module.";
 
 /* function proto-type*/
@@ -116,7 +120,7 @@ static PyMethodDef module_methods[] = {
 	 "specified in the ``binfile``. If ``OUTPUT_RPAVG`` is not defined in\n"
    "``theory.options`` then ``ravg`` will be set to 0.0 for all bins. ``npairs``\n"
    "contains the number of pairs in that bin and can be used to compute the\n"
-   "actual "XI_UNICODE"(r) by combining with RR counts\n."
+   "actual "XI_UNICODE"(r) by combining with RR counts.\n"
 		 },
 	{"countpairs_rp_pi"      ,(PyCFunction) countpairs_countpairs_rp_pi ,METH_VARARGS,
 	 "countpairs_rp_pi(autocorr, nthreads, "PIMAX_UNICODE", binfile, X1, Y1, Z1, X2, Y2, Z2)\n"
@@ -178,7 +182,6 @@ static PyMethodDef module_methods[] = {
    "nthreads=4\n"
    "DD = countpairs(autocorr,nthreads,'../xi_theory/tests/bins',x,y,z,x,y,z)\n"
    "\n"
-   "See `Corrfunc/call_correlation_functions.py`\n"
   },
 	{"countpairs_wp"         ,(PyCFunction) countpairs_countpairs_wp    ,METH_VARARGS,
 	 "countpairs_wp(boxsize, "PIMAX_UNICODE", nthreads, binfile, X1, Y1, Z1)\n"
