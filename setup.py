@@ -65,6 +65,7 @@ class build_ext_subclass( build_ext ):
             sources = ext.sources
             
             ## Blatantly copied from the Android distutils setup.py
+            ## But then modified to make it python3 compatible! 
             if sources is None:
                 raise Exception("in 'ext_modules' option (extension '%s')," +
                      "'sources must be present and must be '" + 
@@ -73,7 +74,7 @@ class build_ext_subclass( build_ext ):
             if len(sources)==1:
                 ext_dir = os.path.dirname(sources[0])
             else:
-                ### not debugged - might be wrong
+                ### not debugged - likely to be wrong
                 ext_dir = os.path.commonprefix(sources)
                 
             command = "cd {} && make -j2".format(ext_dir)
@@ -98,7 +99,7 @@ class build_ext_subclass( build_ext ):
 
 
 python_dirs = ["xi_theory/python_bindings",
-                "xi_mocks/python_bindings"]
+               "xi_mocks/python_bindings"]
 extensions = []
 for pdir in python_dirs:
     mk = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -157,8 +158,6 @@ def setup_packages():
         packages=find_packages(),
         ext_package=name,
         ext_modules=extensions,
-        scripts=['Corrfunc/call_correlation_functions.py','Corrfunc/call_correlation_functions_mocks.py'],
-        include_package_data=True,
         package_data={
             '':['xi_theory/tests/bins',
                 'xi_mocks/tests/bins','xi_mocks/tests/angular_bins',
@@ -171,9 +170,9 @@ def setup_packages():
                 'xi_theory/vpf/*.c','xi_theory/vpf/*.h','xi_theory/vpf/Makefile',
                 'xi_theory/tests/*.c','xi_theory/tests/*.h','xi_theory/tests/Makefile',
                 'xi_theory/python_bindings/*.c','xi_theory/python_bindings/*.h','xi_theory/python_bindings/Makefile',
-                'include/*.h',
                 ],
             },
+        include_package_data=True,
         install_requires=['setuptools','numpy>={}.{}'.format(min_numpy_major,min_numpy_minor)],
         zip_safe=False,
         cmdclass = {'build_ext': build_ext_subclass },
