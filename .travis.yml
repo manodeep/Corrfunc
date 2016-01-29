@@ -131,6 +131,6 @@ install:
         
 script:
   - make -j4 tests CC=$COMPILER
-  - cd xi_theory/python_bindings && python call_correlation_functions.py
-  - cd ../../xi_mocks/python_bindings && python call_correlation_functions_mocks.py
+  - cd Corrfunc && python call_correlation_functions.py
+  - cd Corrfunc && python call_correlation_functions_mocks.py
   
