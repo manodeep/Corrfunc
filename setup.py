@@ -3,6 +3,7 @@
 
 from __future__ import (absolute_import, print_function)
 import os
+import fnmatch
 import sys
 import re
 
@@ -45,10 +46,10 @@ if sys.version_info[0] < min_py_major or (sys.version_info[0] == min_py_major  a
 ## numpy 1.7 supports python 2.4-2.5; python 3.1-3.3. 
 
 try:
-    from setuptools import setup, Extension, find_packages
+    from setuptools import setup, Extension
     from setuptools.command.build_ext import build_ext
 except ImportError:
-    from distutils.core import setup, Extension, find_packages
+    from distutils.core import setup, Extension
     from distutils.command.build_ext import build_ext
 
 if sys.argv[-1] == "publish":
@@ -56,7 +57,7 @@ if sys.argv[-1] == "publish":
     sys.exit()
     
         
-            
+
 class build_ext_subclass( build_ext ):
     def build_extensions(self):
         ### Everything has already been configured within Make - so just call make
@@ -98,33 +99,66 @@ class build_ext_subclass( build_ext ):
             # print("Made extension {}.so in path = {} ".format(ext.name,self.get_ext_fullpath(ext.name)))
 
 
-python_dirs = ["xi_theory/python_bindings",
-               "xi_mocks/python_bindings"]
-extensions = []
-for pdir in python_dirs:
-    mk = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+
+def generate_extensions(python_dirs):            
+    extensions = []
+    for pdir in python_dirs:
+        mk = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     pdir, "Makefile"))
-    project       = re.search(r'PROJECT\s*:*=\s*(\w+)', mk).group(1)
-    src_files     = re.findall(r'SOURCES\s*:*=\s*(\w+\.c)', mk)
+        project       = re.search(r'PROJECT\s*:*=\s*(\w+)', mk).group(1)
+        src_files     = re.findall(r'SOURCES\s*:*=\s*(\w+\.c)', mk)
 
-    sources = [os.path.join(pdir,f) for f in src_files]
-    # print("Found project = {} in dir = {} with sources = {}".format(project,pdir,sources))
-    ext = Extension("{}".format(project),
-                    sources=sources,
-                    )
+        sources = [os.path.join(pdir,f) for f in src_files]
+        ## print("Found project = {} in dir = {} with sources = {}".format(project,pdir,sources))
+        ext = Extension("{}".format(project),
+                        sources=sources,
+                        )
     
-    extensions.append(ext)
+        extensions.append(ext)
 
+    return extensions
+
+### Only python >= 3.5 supports the recursive glob, hence
+### defining the function that works on all reasonable pythons
+### http://stackoverflow.com/questions/2186525/use-a-glob-to-find-files-recursively-in-python
+def recursive_glob(rootdir='.', patterns=['*']):
+    return [os.path.join(looproot, filename)
+            for looproot, _, filenames in os.walk(rootdir)
+            for filename in filenames for p in patterns 
+            if fnmatch.fnmatch(filename, p)]
 
 ### Taken from numpy setup.py    
 def setup_packages():
 
-    ## protect the user in case they run python setup.py not from root directory
+    ### protect the user in case they run python setup.py not from root directory
     src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     old_path = os.getcwd()
     os.chdir(src_path)
     sys.path.insert(0, src_path)
     
+    ### find all the data-files required
+    dirs_patterns = {'xi_theory/tests/data/':['*.ff','*.txt','*.txt.gz','*.dat'],
+                     'xi_mocks/tests/data':['*.ff','*.txt','*.txt.gz','*.dat'],
+                     'xi_theory/tests':['Mr19*','bins*','cmass*'],
+                     'xi_mocks/tests':['Mr19*','bins*','angular_bins*'],
+                     'include':['count*.h'],
+                     'lib':['libcount*.a']
+                     }
+    data_files = []
+    for d in dirs_patterns:
+        patterns = dirs_patterns[d]
+        f = recursive_glob(d,patterns)
+        print("f = {}".format(f))
+        data_files.extend(f)
+
+    ### change them to be relative to package dir rather than root
+    data_files = ["../{}".format(d) for d in data_files]
+        
+    
+    ### create a list of the python extensions 
+    python_dirs = ["xi_theory/python_bindings",
+                   "xi_mocks/python_bindings"]
+    extensions = generate_extensions(python_dirs)        
     metadata = dict(
         name=name,
         version=version,
@@ -153,29 +187,16 @@ def setup_packages():
             ],
         license='MIT',
         ### Solaris might work, Windows will almost certainly not work
-        platforms = [ "Linux", "Mac OS-X", "Unix"],
+        platforms = [ "Linux", "Mac OSX", "Unix"],
         keywords=['correlation functions','simulations','surveys','galaxies'],
-        packages=find_packages(),
+        packages=[name],
         ext_package=name,
         ext_modules=extensions,
-        package_data={
-            '':['xi_theory/tests/bins',
-                'xi_mocks/tests/bins','xi_mocks/tests/angular_bins',
-                'xi_theory/tests/Mr19*','xi_theory/tests/cmass*','xi_theory/tests/data/*.ff','xi_theory/tests/data/*.txt',
-                'xi_mocks/tests/Mr19*','xi_mocks/tests/data/*.dat','xi_mocks/tests/data/*.ff','xi_mocks/tests/data/*.txt',
-                'xi_theory/xi_of_r/*.c','xi_theory/xi_of_r/*.h','xi_theory/xi_of_r/Makefile',
-                'xi_theory/xi_rp_pi/*.c','xi_theory/xi_rp_pi/*.h','xi_theory/xi_rp_pi/Makefile',
-                'xi_theory/wp/*.c','xi_theory/wp/*.h','xi_theory/wp/Makefile',
-                'xi_theory/xi/*.c','xi_theory/xi/*.h','xi_theory/xi/Makefile',
-                'xi_theory/vpf/*.c','xi_theory/vpf/*.h','xi_theory/vpf/Makefile',
-                'xi_theory/tests/*.c','xi_theory/tests/*.h','xi_theory/tests/Makefile',
-                'xi_theory/python_bindings/*.c','xi_theory/python_bindings/*.h','xi_theory/python_bindings/Makefile',
-                ],
-            },
+        package_data={'':data_files},
         include_package_data=True,
         install_requires=['setuptools','numpy>={}.{}'.format(min_numpy_major,min_numpy_minor)],
         zip_safe=False,
-        cmdclass = {'build_ext': build_ext_subclass },
+        cmdclass = {'build_ext': build_ext_subclass},
         )
 
 
