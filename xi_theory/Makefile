@@ -98,6 +98,7 @@ dist:
 
 tests:
 	$(MAKE) -C tests
-	cd tests && ./test_periodic
 	cd tests && ./test_nonperiodic
+	cd tests && ./test_periodic
+
 

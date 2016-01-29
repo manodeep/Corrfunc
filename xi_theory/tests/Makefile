@@ -13,7 +13,7 @@ OBJS2  := $(SRC2:.c=.o)
 all: $(target) $(INCL) uncompress
 
 test_periodic: $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -lgsl -lgslcblas -o $@
+	$(CC) $(OBJS1) $(GSL_LINK) -lgsl -lgslcblas $(CLINK) -o $@
 
 test_nonperiodic: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile 
 	$(CC) $(OBJS2) $(CLINK) -o $@
@@ -22,8 +22,9 @@ test_nonperiodic: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 tests: $(target) 
-	./test_periodic
 	./test_nonperiodic
+	./test_periodic
+
 
 uncompress: | data
 	@{\
