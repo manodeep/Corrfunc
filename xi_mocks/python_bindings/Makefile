@@ -21,8 +21,11 @@ $(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS)
 sharedlib: $(LIBRARY) | ../../lib
 	@{ \
 		CURRENT_PYTHON_LIB=`otool -L $(LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
-		PYTHON_LIB_NAME=libpython$(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).dylib ; \
-		install_name_tool -change $$CURRENT_PYTHON_LIB @rpath/../lib/$$PYTHON_LIB_NAME $(LIBRARY); \
+    PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
+		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
+		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
+		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(LIBRARY); \
+		fi ;\
 	}
 
 ../../lib:

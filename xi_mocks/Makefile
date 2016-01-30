@@ -5,7 +5,7 @@ targets:= dirs DDrppi wtheta vpf examples
 ifneq ($(COMPILE_PYTHON_EXT), 0)
 targets += python_bindings
 else
-$(warning Not compiling C extensions for mocks. Python or numpy not available)
+$(warning Not compiling C extensions for mocks. Either python or numpy not available)
 endif
 
 all: $(targets) 
@@ -24,10 +24,10 @@ wtheta:
 vpf:
 	$(MAKE) -C vpf
 
-examples:
+examples: libs
 	$(MAKE) -C examples
 
-python_bindings:
+python_bindings: libs 
 	$(MAKE) -C python_bindings
 
 distclean:realclean
@@ -53,11 +53,11 @@ clena: clean
 celan: clean
 celna: clean
 
-install: | dirs 
+install: examples | dirs 
 	$(MAKE) -C DDrppi install
 	$(MAKE) -C wtheta install
 	$(MAKE) -C vpf install
-	$(MAKE) -C python_bindings install 
+	$(MAKE) -C python_bindings install
 
 libs: | dirs
 	$(MAKE) -C DDrppi lib

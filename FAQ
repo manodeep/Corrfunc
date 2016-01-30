@@ -83,4 +83,16 @@ else
 fi 
 ----------------------
 
+C. Problems running tests with conda gcc on a MAC:
+
+If you get the following error while running tests,
+
+---------------
+cd tests && ./test_nonperiodic
+dyld: Library not loaded: @rpath/./libgomp.1.dylib
+---------------
+
+then, the fix is, as above, to use `install_name_tool -change @rpath/./libgomp.1.dylib /path/to/anaconda/(envs..)/lib/libgomp.1.dylib test_nonperiodic'
+and then rerun "make tests".
+
 
