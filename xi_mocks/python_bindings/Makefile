@@ -15,7 +15,7 @@ all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../mocks.options
 
 $(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
-	rm -f $(PROJECT).so 
+	$(RM) $(PROJECT).so 
 	ln -s $(LIBRARY) $(PROJECT).so
 
 sharedlib: $(LIBRARY) | ../../lib
@@ -39,7 +39,7 @@ sharedlib: $(LIBRARY) | ../../lib
 
 install: $(PHONY_FIX_PY_LINK) $(LIBRARY) | ../../lib
 	cp -p $(LIBRARY) ../../lib/
-	$(RM) -f ../../lib/$(PROJECT).so
+	$(RM) ../../lib/$(PROJECT).so
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
 
 %.o: %.c Makefile ../../common.mk $(C_LIBRARY)
