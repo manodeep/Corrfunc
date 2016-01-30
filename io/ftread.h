@@ -6,8 +6,7 @@
 		directory at https://bitbucket.org/manodeep/corrfunc/
 */
 
-#ifndef __FTREAD_H
-#define __FTREAD_H
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,4 +22,4 @@ int my_ftread(void *ptr,size_t size,size_t nitems,FILE *stream);
 }
 #endif
 	
-#endif
+

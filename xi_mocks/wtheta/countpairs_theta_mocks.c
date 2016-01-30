@@ -145,8 +145,8 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 	//roughly occurs around
 	int phi_bin_refine_factor=2;
 	if(thetamax >= 25) {
-		fprintf(stderr,ANSI_COLOR_YELLOW "LINK_IN_RA can produce incorrect answers if the angular limits are large. Please cross-check with the output where LINK_IN_RA is not defined.\n");	
-		fprintf(stderr,"If increasing phi_bin_refine_factor changes the answer -- that is a good indication that the calculation is incorrect" ANSI_COLOR_RESET "\n");
+		fprintf(stderr,ANSI_COLOR_YELLOW "LINK_IN_RA can produce incorrect answers if the angular limits are large. Please cross-check with the output where LINK_IN_RA is not defined. " ANSI_COLOR_RESET"\n");	
+		fprintf(stderr,ANSI_COLOR_YELLOW "If increasing phi_bin_refine_factor changes the answer -- that is a good indication that the calculation is incorrect" ANSI_COLOR_RESET "\n");
 		phi_bin_refine_factor=1;//do not change this line. Increases the chance of incorrect answers.
 	}
   
