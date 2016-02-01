@@ -1,4 +1,7 @@
-include ../theory.options ../common.mk
+include ../theory.options 
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include ../common.mk
+endif
 
 target:=logbins
 targets:=$(target) dirs DD DDrppi wp xi vpf examples 
@@ -90,11 +93,6 @@ libs: | dirs
 	$(MAKE) -C wp lib
 	$(MAKE) -C xi lib
 	$(MAKE) -C vpf lib	
-
-tar: dist
-
-dist:
-	hg archive $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).tar.gz 
 
 tests:
 	$(MAKE) -C tests

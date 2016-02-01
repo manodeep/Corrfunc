@@ -1,4 +1,8 @@
-include ../../theory.options ../../common.mk
+include ../../theory.options
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include ../../common.mk
+endif
+
 
 target=DD 
 SRC1   = DD.c countpairs.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c ../../io/ftread.c ../../io/io.c 
