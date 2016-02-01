@@ -1,4 +1,7 @@
-include ../theory.options ../common.mk
+include ../theory.options 
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include ../common.mk
+endif
 
 target:=logbins
 targets:=$(target) dirs DD DDrppi wp xi vpf examples 
@@ -6,7 +9,7 @@ targets:=$(target) dirs DD DDrppi wp xi vpf examples
 ifneq ($(COMPILE_PYTHON_EXT), 0)
 targets += python_bindings
 else
-$(warning Not compiling C extensions for theory. Python or numpy not available)
+$(warning Not compiling C extensions for theory. Either python or numpy not available)
 endif
 
 all: $(targets) 
@@ -73,7 +76,7 @@ clean:
 clena: clean
 celan: clean
 celna: clean
-install: $(target) | dirs
+install: $(target) examples | dirs
 	cp -p $(target) ../bin
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
@@ -91,13 +94,9 @@ libs: | dirs
 	$(MAKE) -C xi lib
 	$(MAKE) -C vpf lib	
 
-tar: dist
-
-dist:
-	hg archive $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).tar.gz 
-
 tests:
 	$(MAKE) -C tests
-	cd tests && ./test_periodic
 	cd tests && ./test_nonperiodic
+	cd tests && ./test_periodic
+
 

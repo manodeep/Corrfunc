@@ -7,6 +7,7 @@
 xx*
 yy*
 zz*
+.DS_Store
 *.pyc
 DD
 build*

@@ -1,4 +1,7 @@
-include ../../mocks.options ../../common.mk
+include ../../mocks.options 
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include ../../common.mk
+endif
 
 target=DDrppi_mocks wprp_mocks
 
@@ -61,7 +64,7 @@ tests:
 	$(MAKE) -C ../tests DDrppi
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) 
+	$(RM) $(target) $(OBJS1) $(OBJS2)  libcountpairs_rp_pi_mocks.a
 
 clena: clean
 celan: clean

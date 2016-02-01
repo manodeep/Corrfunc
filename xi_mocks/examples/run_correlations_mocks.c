@@ -125,8 +125,8 @@ int main(int argc, char **argv)
 		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d %d'" ANSI_COLOR_RESET "\n",
 						"../DDrppi/DDrppi_mocks",file,fileformat,file,fileformat,binfile,pimax,cosmology,nthreads);
 #else
-		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf'" ANSI_COLOR_RESET "\n",
-						"../DDrppi/DDrppi_mocks",file,fileformat,file,fileformat,binfile,cosmology,pimax);
+		fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
+						"../DDrppi/DDrppi_mocks",file,fileformat,file,fileformat,binfile,pimax,cosmology);
 #endif						
 
 		results_countpairs_mocks *results  = countpairs_mocks(ND1,ra1,dec1,cz1,
@@ -141,15 +141,17 @@ int main(int argc, char **argv)
 
 		gettimeofday(&t1,NULL);
 		double pair_time = ADD_DIFF_TIME(t0,t1);
-		/* const DOUBLE dpi = pimax/(DOUBLE)results->npibin ; */
-		/* const int npibin = results->npibin; */
-		/* for(int i=1;i<results->nbin;i++) { */
-		/* 	const double logrp = LOG10(results->rupp[i]); */
-		/* 	for(int j=0;j<npibin;j++) { */
-		/* 		int index = i*(npibin+1) + j; */
-		/* 		fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi); */
-		/* 	} */
-		/* } */
+#if 0
+		const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
+		const int npibin = results->npibin;
+		for(int i=1;i<results->nbin;i++) {
+			const double logrp = LOG10(results->rupp[i]);
+			for(int j=0;j<npibin;j++) {
+				int index = i*(npibin+1) + j;
+				fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+			}
+		}
+#endif
 		fprintf(stderr,ANSI_COLOR_GREEN "Done DD(rp,pi) auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);		
 		
 
@@ -181,12 +183,14 @@ int main(int argc, char **argv)
 		gettimeofday(&t1,NULL);
 		DOUBLE pair_time = ADD_DIFF_TIME(t0,t1);
 
+#if 0    
 		/*---Output-Pairs-------------------------------------*/
-		/* DOUBLE theta_low = results->theta_upp[0]; */
-		/* for(int i=1;i<results->nbin;i++) { */
-		/* 	fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->theta_avg[i],theta_low,results->theta_upp[i]); */
-		/* 	theta_low=results->theta_upp[i]; */
-		/* } */
+		DOUBLE theta_low = results->theta_upp[0];
+		for(int i=1;i<results->nbin;i++) {
+			fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->theta_avg[i],theta_low,results->theta_upp[i]);
+			theta_low=results->theta_upp[i];
+		}
+#endif    
 		fprintf(stderr,ANSI_COLOR_GREEN "Done wtheta. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, pair_time);
 
 		//free the result structure
@@ -221,16 +225,18 @@ int main(int argc, char **argv)
 		gettimeofday(&t1,NULL);
 		double sphere_time = ADD_DIFF_TIME(t0,t1);
 
+#if 0    
 		//Output the results
-		/* const DOUBLE rstep = rmax/(DOUBLE)nbin ; */
-		/* for(int ibin=0;ibin<results->nbin;ibin++) { */
-		/* 	const double r=(ibin+1)*rstep; */
-		/* 	fprintf(stdout,"%10.2"DOUBLE_FORMAT" ", r); */
-		/* 	for(int i=0;i<num_pN;i++) { */
-		/* 		fprintf(stdout," %10.4e", (results->pN)[ibin][i]); */
-		/* 	} */
-		/* 	fprintf(stdout,"\n"); */
-		/* } */
+		const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+		for(int ibin=0;ibin<results->nbin;ibin++) {
+			const double r=(ibin+1)*rstep;
+			fprintf(stdout,"%10.2"DOUBLE_FORMAT" ", r);
+			for(int i=0;i<num_pN;i++) {
+				fprintf(stdout," %10.4e", (results->pN)[ibin][i]);
+			}
+			fprintf(stdout,"\n");
+		}
+#endif    
 		fprintf(stderr,ANSI_COLOR_GREEN "Done VPF. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds" ANSI_COLOR_RESET "\n", ND1, sphere_time);
 		free_results_countspheres_mocks(&results);
 	}

@@ -6,8 +6,7 @@
 		directory at https://bitbucket.org/manodeep/corrfunc/
 */
 
-#ifndef __COSMOLOGY_PARAMS_H
-#define __COSMOLOGY_PARAMS_H
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +23,7 @@ extern double HUBBLE;
 extern double LITTLE_H;
 extern double SIGMA_8;
 extern double NS;
+extern int active_cosmology;
 
 void init_cosmology(const int lasdamas_cosmology);
 
@@ -31,4 +31,3 @@ void init_cosmology(const int lasdamas_cosmology);
 }
 #endif
 		
-#endif
