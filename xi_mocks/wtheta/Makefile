@@ -65,7 +65,7 @@ tests:
 	$(MAKE) -C ../tests wtheta
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2)
+	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_theta_mocks.a
 
 clena: clean
 celan: clean

@@ -11,7 +11,7 @@ __all__ = ['_countpairs','_countpairs_mocks','utils']
 ### following the accepted answer in:
 ### http://stackoverflow.com/questions/19913653/no-unicode-in-all-for-a-packages-init
 __all__ = [n.encode('ascii') for n in __all__]
-__version__ = "0.0.1"
+__version__ = "0.2.0"
 
 if sys.version_info[0] >= 3:
     def rd(filename):

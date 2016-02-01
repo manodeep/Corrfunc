@@ -148,7 +148,6 @@ def setup_packages():
     for d in dirs_patterns:
         patterns = dirs_patterns[d]
         f = recursive_glob(d,patterns)
-        print("f = {}".format(f))
         data_files.extend(f)
 
     ### change them to be relative to package dir rather than root
