@@ -39,7 +39,12 @@ def main():
     ## but not recompiled)
     include_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "../include/", "countpairs_rp_pi_mocks.h")
-    includes = rd(include_file)
+    try:
+        includes = rd(include_file)
+    except (IOError, OSError) as e:
+        print("ERROR: Could not find file {}.\nPlease compile the `Corrfunc' library directly before running python setup.py install".format(include_file))
+        raise
+
     vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes, re.I).group(1)
     allowed_types = {"float":np.float32,"double":np.float}
     if vector_type not in list(allowed_types.keys()):
@@ -73,9 +78,9 @@ def main():
     numbins_to_print=5
     cosmology=1
 
-    print("RA min = {} max = {}".format(np.min(ra),np.max(ra)))
-    print("DEC min = {} max = {}".format(np.min(dec),np.max(dec)))
-    print("cz min = {} max = {}".format(np.min(cz),np.max(cz)))
+    print("RA min  = {:10.3f} max = {:10.3f}".format(np.min(ra),np.max(ra)))
+    print("DEC min = {:10.3f} max = {:10.3f}".format(np.min(dec),np.max(dec)))
+    print("cz min  = {:10.3f} max = {:10.3f}".format(np.min(cz),np.max(cz)))
 
     print("\nRunning 2-D correlation function xi(rp,pi)")
     results_DDrppi = _countpairs_mocks.countpairs_rp_pi_mocks(autocorr, cosmology,nthreads,pimax,binfile,ra,dec,cz,ra,dec,cz)

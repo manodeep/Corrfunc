@@ -31,7 +31,11 @@ def main():
     ## but not recompiled)
     include_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "../include/", "countpairs.h")
-    includes = rd(include_file)
+    try:
+        includes = rd(include_file)
+    except (IOError, OSError) as e:
+        print("ERROR: Could not find file {}.\nPlease compile the `Corrfunc' library directly before running python setup.py install".format(include_file))
+        raise
     vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes, re.I).group(1)
     allowed_types = {"float":np.float32,"double":np.float}
     if vector_type not in list(allowed_types.keys()):
