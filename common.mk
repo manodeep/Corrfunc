@@ -109,24 +109,21 @@ ifeq ($(UNAME), Darwin)
  endif
 endif
 
-## export all the Makefile variables
-export
-
-PYTHON_CHECKED ?= 0
+export PYTHON_CHECKED ?= 0
 ifeq ($(PYTHON_CHECKED), 0)
-  COMPILE_PYTHON_EXT := 1
-  PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
-  PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
-  PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
+  export COMPILE_PYTHON_EXT := 1
+  export PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
+  export PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
+  export PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
 
   ## I only need this so that I can print out the full python version (correctly)
   ## in case of error
   PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
 
   ## Check numpy version
-  NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell python -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
-  NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
-  NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
+  export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell python -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
+  export NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
+  export NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
 
   ## Same reason as python patch level. 
   NUMPY_VERSION_PATCH := $(word 3,${NUMPY_VERSION_FULL})
@@ -157,14 +154,14 @@ ifeq ($(PYTHON_CHECKED), 0)
   else
     PYTHON_CONFIG_EXE:=python3-config
   endif
-  PYTHON_CFLAGS := $(shell $(PYTHON_CONFIG_EXE) --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
-  PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
-  PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
-  PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
-  PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
+  export PYTHON_CFLAGS := $(shell $(PYTHON_CONFIG_EXE) --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
+  export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
+  export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
+  export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+  export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
 
   ### Check if conda is being used on OSX - then we need to fix python link libraries
-  FIX_PYTHON_LINK := 0
+  export FIX_PYTHON_LINK := 0
   ifeq ($(UNAME), Darwin)
     PATH_TO_PYTHON := $(shell which python)
     ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
