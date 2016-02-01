@@ -16,7 +16,8 @@ double HUBBLE;
 double LITTLE_H;
 double SIGMA_8;
 double NS;
-int cosmology=-1;
+int active_cosmology=-1;
+int cosmology_initialized=0;
 
 void init_cosmology(const int which_cosmology)
 {
@@ -46,7 +47,8 @@ void init_cosmology(const int which_cosmology)
 		fprintf(stderr,"ERROR: Cosmology=%d not implemented..exiting\n",which_cosmology);
 		exit(EXIT_FAILURE);
 	}
-	
+
+  cosmology_initialized=1;
 	HUBBLE=100.0*LITTLE_H;
-	cosmology=which_cosmology;
+	active_cosmology=which_cosmology;
 }

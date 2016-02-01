@@ -6,8 +6,7 @@
 		directory at https://bitbucket.org/manodeep/corrfunc/
 */
 
-#ifndef _PROGRESSBAR_H_
-#define _PROGRESSBAR_H_
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,5 +26,3 @@ void finish_myprogressbar(int *interrupted);
 }
 #endif
 
-
-#endif

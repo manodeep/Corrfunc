@@ -1,4 +1,7 @@
-include ../../mocks.options ../../common.mk
+include ../../mocks.options
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include ../../common.mk
+endif
 
 target=DDtheta_mocks wtheta
 
@@ -62,7 +65,7 @@ tests:
 	$(MAKE) -C ../tests wtheta
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2)
+	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_theta_mocks.a
 
 clena: clean
 celan: clean

@@ -4,12 +4,14 @@
 from __future__ import (division, print_function, absolute_import,
                                                 unicode_literals)
 import sys
-from ._countpairs import *
-from ._countpairs_mocks import *
-from .utils import *
 
 __all__ = ['_countpairs','_countpairs_mocks','utils']
-__version__ = "0.0.1"
+
+### from Corrfunc import * throws: TypeError: Item in ``from list'' not a string
+### following the accepted answer in:
+### http://stackoverflow.com/questions/19913653/no-unicode-in-all-for-a-packages-init
+__all__ = [n.encode('ascii') for n in __all__]
+__version__ = "0.2.0"
 
 if sys.version_info[0] >= 3:
     def rd(filename):
