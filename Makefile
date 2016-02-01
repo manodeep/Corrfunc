@@ -1,4 +1,7 @@
-include theory.options common.mk
+include theory.options
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include common.mk
+endif
 
 all: dirs xi_theory xi_mocks
 
@@ -19,12 +22,6 @@ libs: | dirs
 	$(MAKE) -C xi_theory libs
 	$(MAKE) -C xi_mocks libs
 
-tar: 
-	hg archive $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).no_version_control.tar.gz -X ".hg*"
-
-dist:
-	hg archive $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).tar.gz 
-
 tests:
 	$(MAKE) -C xi_theory tests
 	$(MAKE) -C xi_mocks tests
@@ -41,7 +38,6 @@ realclean:
 	$(MAKE) -C xi_mocks distclean
 
 clean:
-	$(RM) $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).no_version_control.tar.gz $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).tar.gz
 	$(MAKE) -C xi_theory clean
 	$(MAKE) -C xi_mocks clean
 

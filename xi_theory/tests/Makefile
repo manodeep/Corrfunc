@@ -1,4 +1,7 @@
-include ../../theory.options ../../common.mk
+include ../../theory.options
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include ../../common.mk
+endif
 
 target := test_periodic test_nonperiodic
 SRC1   := test_periodic.c ../../utils/utils.c ../../utils/progressbar.c 

@@ -1,4 +1,7 @@
-include ../../mocks.options ../../common.mk
+include ../../mocks.options
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include ../../common.mk
+endif
 
 target=DDtheta_mocks wtheta
 

@@ -21,81 +21,88 @@ GSL_CFLAGS := $(shell gsl-config --cflags)
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) 
 
+all: python-check
+.PHONY: python-check
 
-COMPILE_PYTHON_EXT := 1
-PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
-PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
-PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
+python-check: PYTHON-CHECK
 
-## I only need this so that I can print out the full python version (correctly)
-## in case of error
-PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
+PYTHON-CHECK:
+ $(warning running python check)
+ COMPILE_PYTHON_EXT := 1
+ PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
+ PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
+ PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
 
-## Check numpy version
-NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell python -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
-NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
-NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
+ ## I only need this so that I can print out the full python version (correctly)
+ ## in case of error
+ PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
 
-## Same reason as python patch level. 
-NUMPY_VERSION_PATCH := $(word 3,${NUMPY_VERSION_FULL})
+ ## Check numpy version
+ NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell python -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
+ NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
+ NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
 
-### Check for minimum python + numpy versions. In theory, I should also check
-### that *any* python and numpy are available but that seems too much effort
-MIN_PYTHON_MAJOR := 2
-MIN_PYTHON_MINOR := 6
+ ## Same reason as python patch level. 
+ NUMPY_VERSION_PATCH := $(word 3,${NUMPY_VERSION_FULL})
 
-MIN_NUMPY_MAJOR  := 1
-MIN_NUMPY_MINOR  := 7
+ ### Check for minimum python + numpy versions. In theory, I should also check
+ ### that *any* python and numpy are available but that seems too much effort
+ MIN_PYTHON_MAJOR := 2
+ MIN_PYTHON_MINOR := 6
 
-PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
-NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
+ MIN_NUMPY_MAJOR  := 1
+ MIN_NUMPY_MINOR  := 7
 
-ifneq ($(PYTHON_AVAIL),true)
-$(warning Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR))
-COMPILE_PYTHON_EXT := 0
-endif
+ PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
+ NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
 
-ifneq ($(NUMPY_AVAIL),true)
-$(warning Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR))
-COMPILE_PYTHON_EXT := 0
-endif
+ ifneq ($(PYTHON_AVAIL),true)
+ $(warning Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR))
+ COMPILE_PYTHON_EXT := 0
+ endif
 
-ifeq ($(PYTHON_VERSION_MAJOR), 2)
-PYTHON_CONFIG_EXE:=python-config
-else
-PYTHON_CONFIG_EXE:=python3-config
-endif
-PYTHON_CFLAGS := $(shell $(PYTHON_CONFIG_EXE) --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
-PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
-PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
-PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
-PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
+ ifneq ($(NUMPY_AVAIL),true)
+ $(warning Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR))
+ COMPILE_PYTHON_EXT := 0
+ endif
 
-### Check if conda is being used on OSX - then we need to fix python link libraries
-UNAME := $(shell uname)
-FIX_PYTHON_LINK := 0
-ifeq ($(UNAME), Darwin)
-## use the clang assembler instead of GNU assembler
-## http://stackoverflow.com/questions/10327939/erroring-on-no-such-instruction-while-assembling-project-on-mac-os-x-lion
-ifeq (gcc,$(findstring gcc,$(CC)))
-  CFLAGS += -Wa,-q
-endif
-PATH_TO_PYTHON := $(shell which python)
-ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
-FIX_PYTHON_LINK := 1
-PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
-PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-PYTHON_LINK += -dynamiclib -Wl,-single_module -undefined dynamic_lookup -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION) 
-endif
+ ifeq ($(PYTHON_VERSION_MAJOR), 2)
+ PYTHON_CONFIG_EXE:=python-config
+ else
+ PYTHON_CONFIG_EXE:=python3-config
+ endif
+ PYTHON_CFLAGS := $(shell $(PYTHON_CONFIG_EXE) --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
+ PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
+ PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
+ PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+ PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
+
+ ### Check if conda is being used on OSX - then we need to fix python link libraries
+ UNAME := $(shell uname)
+ FIX_PYTHON_LINK := 0
+ ifeq ($(UNAME), Darwin)
+ ## use the clang assembler instead of GNU assembler
+ ## http://stackoverflow.com/questions/10327939/erroring-on-no-such-instruction-while-assembling-project-on-mac-os-x-lion
+ ifeq (gcc,$(findstring gcc,$(CC)))
+	 CFLAGS += -Wa,-q
+ endif
+ PATH_TO_PYTHON := $(shell which python)
+ ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
+ FIX_PYTHON_LINK := 1
+ PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
+ PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
+ PYTHON_LINK += -dynamiclib -Wl,-single_module -undefined dynamic_lookup -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION) 
+ endif
 
 
-### Another check for stack-size. travis ci chokes on this with gcc
-# comma := ,
-# PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
-# PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
-# PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
-endif
+ ### Another check for stack-size. travis ci chokes on this with gcc
+ # comma := ,
+ # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+ # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+ # PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+ endif
 
+### Done with python checks
 
 
 

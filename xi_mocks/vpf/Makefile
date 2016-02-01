@@ -1,4 +1,7 @@
-include ../../mocks.options ../../common.mk
+include ../../mocks.options
+ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
+  include ../../common.mk
+endif
 
 target=vpf_mocks 
 SRC1   = vpf_mocks.c countspheres_mocks.c ../../utils/gridlink_mocks.c ../../utils/utils.c \
