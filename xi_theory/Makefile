@@ -3,8 +3,7 @@ ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
   include ../common.mk
 endif
 
-target:=logbins
-targets:=$(target) dirs DD DDrppi wp xi vpf examples 
+targets:=dirs DD DDrppi wp xi vpf examples 
 
 ifneq ($(COMPILE_PYTHON_EXT), 0)
 targets += python_bindings
@@ -12,7 +11,7 @@ else
 $(warning Not compiling C extensions for theory. Either python or numpy not available)
 endif
 
-all: $(targets) 
+all: $(targets) logbins
 
 OBJS1= logbins.o ../utils/utils.o 
 logbins: $(OBJS1)  | dirs 
@@ -53,7 +52,7 @@ distclena:realclean
 realclena:realclean
 
 realclean:
-	$(RM) ../bin/$(target)
+	$(RM) ../bin/logbins
 	$(MAKE) clean
 	$(MAKE) -C xi_of_r distclean
 	$(MAKE) -C xi_rp_pi distclean
@@ -61,9 +60,10 @@ realclean:
 	$(MAKE) -C xi distclean
 	$(MAKE) -C vpf distclean
 	$(MAKE) -C python_bindings distclean
+	$(MAKE) -C tests clean
 
 clean:
-	$(RM) $(target) $(OBJS1) 
+	$(RM) logbins $(OBJS1) 
 	$(MAKE) -C xi_of_r clean
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean
@@ -76,8 +76,8 @@ clean:
 clena: clean
 celan: clean
 celna: clean
-install: $(target) examples | dirs
-	cp -p $(target) ../bin
+install: logbins examples | dirs
+	cp -p logbins ../bin
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
@@ -94,9 +94,7 @@ libs: | dirs
 	$(MAKE) -C xi lib
 	$(MAKE) -C vpf lib	
 
-tests:
+test: tests
+tests:  
 	$(MAKE) -C tests
-	cd tests && ./test_nonperiodic
-	cd tests && ./test_periodic
-
 
