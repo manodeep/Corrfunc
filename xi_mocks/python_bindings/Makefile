@@ -45,6 +45,9 @@ install: $(PHONY_FIX_PY_LINK) $(LIBRARY) | ../../lib
 	$(RM) ../../lib/$(PROJECT).so
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
 
+tests: $(PHONY_FIX_PY_LINK) $(LIBRARY) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
+	python call_correlation_functions_mocks.py
+
 %.o: %.c Makefile ../../common.mk $(C_LIBRARY)
 	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 

@@ -127,12 +127,9 @@ matrix:
     #     - brew update && brew install gsl 
 
 install:
-  - make -j4 distclean && make -j4 install CC=$COMPILER
+  - make install CC=$COMPILER
   - python setup.py install
         
 script:
-  - make -j4 tests CC=$COMPILER
-  - cd Corrfunc
-  - python call_correlation_functions.py
-  - python call_correlation_functions_mocks.py
+  - make tests CC=$COMPILER
   
