@@ -78,7 +78,7 @@ class build_ext_subclass( build_ext ):
                 ### not debugged - likely to be wrong
                 ext_dir = os.path.commonprefix(sources)
                 
-            command = "cd {} && make -j2".format(ext_dir)
+            command = "cd {} && make ".format(ext_dir)
             # print("about to execute command `{}`. sources = {}".format(command,sources))
             proc = subprocess.Popen(command, stderr=subprocess.STDOUT, shell=True)
             output, stderr = proc.communicate(input)
@@ -166,10 +166,11 @@ def setup_packages():
         maintainer='Manodeep Sinha',
         maintainer_email='manodeep@gmail.com',
         url='http://github.com/manodeep/Corrfunc',
+        download_url='https://github.com/manodeep/Corrfunc/archive/v0.2-beta.tar.gz',
         description='Blazing fast correlation functions on the CPU',
         long_description=rd('README.md'),
         classifiers = [
-            'Development Status :: 3 - Alpha',
+            'Development Status :: 4 - Beta',
             'Intended Audience :: Developers',
             "Intended Audience :: Science/Research",
             'License :: OSI Approved :: MIT License',

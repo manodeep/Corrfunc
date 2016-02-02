@@ -147,6 +147,6 @@ for ibin in range(numbins_to_print):
 print("-----------------------------------------------------------")
 
 tend=time.time()
-print("Done with all functions. Total time taken = {0:10.1f} seconds. Read-in time = {1:10.1f} seconds.".format(tend-tstart,t1-t0))
+print("Done with all THEORY python functions. Total time taken = {0:10.1f} seconds. Read-in time = {1:10.1f} seconds.".format(tend-tstart,t1-t0))
 
 

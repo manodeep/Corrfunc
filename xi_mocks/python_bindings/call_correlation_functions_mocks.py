@@ -91,9 +91,6 @@ for ibin in range(numbins_to_print):
     print("{0:14.4f} {1:14.4f} {2:14.4f} {3:14d}".format(items[0],items[1],items[2],items[3]))
 print("-----------------------------------------------------------")
 
-print("Done with all MOCK correlation calculations.")
-
-
 print("Beginning the VPF")
 ## Max. sphere radius of 10 Mpc
 rmax=10.0
@@ -131,5 +128,5 @@ for ibin in range(numbins_to_print):
 print("-----------------------------------------------------------")
 
 tend=time.time()
-print("Done with all the MOCK clustering calculations. Total time taken = {:0.2f} seconds.".format(tend-tstart))
+print("Done with all the MOCK python functions. Total time taken = {:0.2f} seconds.".format(tend-tstart))
       
