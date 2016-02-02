@@ -1,0 +1,12 @@
+\begin{thebibliography}{1}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+\expandafter\ifx\csname url\endcsname\relax
+  \def\url#1{\texttt{#1}}\fi
+\expandafter\ifx\csname urlprefix\endcsname\relax\def\urlprefix{URL }\fi
+
+\bibitem[{{Foreman-Mackey} et~al.(2013){Foreman-Mackey}, {Hogg}, {Lang}, and
+  {Goodman}}]{foreman-mackey_etal_13}
+{Foreman-Mackey}, D., {Hogg}, D.~W., {Lang}, D., {Goodman}, J., Mar. 2013.
+  {emcee: The MCMC Hammer}. \pasp 125, 306--312.
+
+\end{thebibliography}
