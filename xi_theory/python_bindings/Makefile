@@ -55,6 +55,9 @@ install: $(PHONY_FIX_PY_LINK) $(LIBRARY) | ../../lib
 	$(RM) ../../lib/$(PROJECT).so 
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
 
+tests: $(PHONY_FIX_PY_LINK) $(LIBRARY) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
+	python call_correlation_functions.py
+
 distclean: clean | ../../lib
 	$(RM) ../../lib/$(LIBRARY)
 	$(RM) ../../lib/$(PROJECT).so

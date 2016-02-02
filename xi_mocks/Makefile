@@ -67,13 +67,7 @@ libs: | dirs
 	$(MAKE) -C wtheta lib
 	$(MAKE) -C vpf lib
 
-tar: dist
-
-dist:
-	hg archive $(DISTNAME).$(MAJOR).$(MINOR).$(PATCHLEVEL).tar.gz 
-
 test: tests
 tests:
 	$(MAKE) -C tests
-	cd tests && ./tests_mocks
 

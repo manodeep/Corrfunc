@@ -3,7 +3,13 @@ ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
   include ../../common.mk
 endif
 
-target := test_periodic test_nonperiodic
+targets := test_periodic test_nonperiodic
+ifneq ($(COMPILE_PYTHON_EXT), 0)
+targets += python_lib
+else
+$(warning Skipping python tests since python or numpy is unavailable)
+endif
+
 SRC1   := test_periodic.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS1  := $(SRC1:.c=.o)
 INCL   := ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c \
@@ -13,21 +19,26 @@ INCL   := ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c \
 SRC2   := test_nonperiodic.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  := $(SRC2:.c=.o)
 
-all: $(target) $(INCL) uncompress
+all: tests $(targets) $(INCL) uncompress ../../theory.options ../../common.mk Makefile
 
 test_periodic: $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(OBJS1) $(GSL_LINK) -lgsl -lgslcblas $(CLINK) -o $@
+	@$(CC) $(OBJS1) $(GSL_LINK) -lgsl -lgslcblas $(CLINK) -o $@
 
 test_nonperiodic: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(OBJS2) $(CLINK) -o $@
+	@$(CC) $(OBJS2) $(CLINK) -o $@
 
 %.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
-	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+	@$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-tests: $(target) 
-	./test_nonperiodic
-	./test_periodic
+python_lib: tests $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib
+	@echo 
+	@echo "All THEORY tests are done. Now checking that the C extensions work."
+	@echo 
+	@$(MAKE) -C ../python_bindings tests
 
+tests: test_periodic test_nonperiodic
+	@./test_nonperiodic
+	@./test_periodic
 
 uncompress: | data
 	@{\
@@ -57,7 +68,7 @@ xi: test_periodic
 .PHONY: clean clena celan install tests uncompress
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2)
+	$(RM) $(targets) $(OBJS1) $(OBJS2)
 
 clena: clean
 
