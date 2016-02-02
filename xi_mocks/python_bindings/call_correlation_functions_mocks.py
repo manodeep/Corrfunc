@@ -8,23 +8,31 @@ Requires: numpy
 
 """
 from __future__ import print_function
-import os,sys,re
+import os
+import sys
+import re
 import numpy as np
-import _countpairs_mocks
 import time
 
-if sys.version_info[0] >= 3:
-    def rd(filename):
-        with open(filename, encoding="utf-8") as f:
-            r = f.read()
-            
-        return r
-else:
-    def rd(filename):
-        with open(filename) as f:
-            r = f.read()
-            
-        return r
+
+# Import from current directory first,
+# and then from the package. 
+try: 
+    import _countpairs_mocks
+    if sys.version_info[0] >= 3:
+        def rd(filename):
+            with open(filename, encoding="utf-8") as f:
+                r = f.read()
+                
+            return r
+    else:
+        def rd(filename):
+            with open(filename) as f:
+                r = f.read()
+
+            return r
+except ImportError:
+    from Corrfunc import _countpairs_mocks, rd
 
 tstart=time.time()
 file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"../tests/data/","Mr19_mock_northonly.rdcz.dat")
