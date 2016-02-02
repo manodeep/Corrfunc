@@ -7,6 +7,7 @@
 xx*
 yy*
 zz*
+*dSYM*
 .DS_Store
 *.pyc
 DD
@@ -27,3 +28,13 @@ test_*period*
 *.tgz
 cov-int
 *.gcno
+
+*.log
+*.out*
+*.d
+*.fls
+*.aux*
+*.*make
+*.blg
+*.spl
+*.toc
