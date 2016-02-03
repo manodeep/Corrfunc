@@ -40,6 +40,9 @@ tests: test_periodic test_nonperiodic
 	@./test_nonperiodic
 	@./test_periodic
 
+../../lib:
+	mkdir -p $@
+
 uncompress: | data
 	@{\
 		cd data ; \

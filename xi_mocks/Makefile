@@ -13,8 +13,10 @@ endif
 
 all: $(targets) 
 
-dirs:
-	mkdir -p ../lib ../bin ../include 
+dirs: | ../lib ../bin ../include
+
+../lib ../bin ../include:
+	mkdir -p $@
 
 .PHONY: clean celna clena celan $(targets) tests distclean realclean distclena realclena dirs test  python_bindings libs all 
 

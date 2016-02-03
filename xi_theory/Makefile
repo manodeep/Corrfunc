@@ -20,8 +20,10 @@ logbins: $(OBJS1)  | dirs
 %.o: %.c 
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
-dirs:
-	mkdir -p ../lib ../bin ../include 
+dirs:  | ../lib ../bin ../include
+
+../lib ../bin ../include:
+	mkdir -p $@
 
 .PHONY: clean celna clena celan $(targets) libs install tests distclean realclean distclena realclena
 
