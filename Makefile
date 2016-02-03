@@ -6,7 +6,9 @@ endif
 all: dirs xi_theory xi_mocks
 
 dirs: | lib bin include
-	mkdir -p lib bin include 
+
+lib bin include: 
+	mkdir -p $@
 
 xi_theory: | dirs
 	$(MAKE) -C xi_theory

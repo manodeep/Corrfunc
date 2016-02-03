@@ -1,4 +1,5 @@
 include README.md Makefile .travis.yml common.mk theory.options mocks.options FAQ INSTALL LICENSE
+include xi_theory/python_bindings/call_correlation_functions.py xi_mocks/python_bindings/call_correlation_functions_mocks.py
 
 recursive-include xi_theory             *.c *.h Makefile
 recursive-include xi_mocks              *.c *.h Makefile
