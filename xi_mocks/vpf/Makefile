@@ -40,14 +40,8 @@ libcountspheres_mocks.a: $(OBJS2) ../../mocks.options ../../common.mk Makefile |
 
 .PHONY: clean clena celan install lib tests distclean
 
-../../lib:
-	mkdir -p ../../lib
-
-../../include:
-	mkdir -p ../../include
-
-../../bin:
-	mkdir -p ../../bin
+../../lib ../../bin ../../include:
+	mkdir -p $@
 
 install: $(target) | ../../bin
 	cp -p $(target) ../../bin/

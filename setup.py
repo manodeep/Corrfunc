@@ -7,23 +7,13 @@ import fnmatch
 import sys
 import re
 
+import Corrfunc
+from Corrfunc import rd
+
 ## Make sure we are running on posix (Linux, Unix, MAC OSX)    
 if os.name != 'posix':
     sys.exit("Sorry, Windows is not supported")
 
-
-if sys.version_info[0] >= 3:
-    def rd(filename):
-        with open(filename, encoding="utf-8") as f:
-            r = f.read()
-            
-        return r
-else:
-    def rd(filename):
-        with open(filename) as f:
-            r = f.read()
-            
-        return r
 
 common = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     "common.mk"))
@@ -32,9 +22,12 @@ major = re.search(r'MAJOR\s*:*=\s*(\d)',common).group(1)
 minor = re.search(r'MINOR\s*:*=\s*(\d)',common).group(1)
 patch = re.search(r'PATCHLEVEL\s*:*=\s*(\d)',common).group(1)
 version = "{}.{}.{}".format(major,minor,patch)
+## Check that version matches
+if Corrfunc.__version__ != version:
+    sys.exit("ERROR: Version mis-match. Python version found = {} while C version claims {}\n".format(Corrfunc.__version__, version))
+
 min_py_major = int(re.search(r'MIN_PYTHON_MAJOR\s*:=\s*(\d)',common).group(1))
 min_py_minor = int(re.search(r'MIN_PYTHON_MINOR\s*:=\s*(\d)',common).group(1))
-
 
 min_numpy_major = int(re.search(r'MIN_NUMPY_MAJOR\s*:=\s*(\d)',common).group(1))
 min_numpy_minor = int(re.search(r'MIN_NUMPY_MINOR\s*:=\s*(\d)',common).group(1))
@@ -55,13 +48,22 @@ except ImportError:
 if sys.argv[-1] == "publish":
     os.system("python setup.py sdist upload")
     sys.exit()
-    
-        
+
+
+def run_command(command):
+    import subprocess
+    # print("about to execute command `{}`. sources = {}".format(command,sources))
+    proc = subprocess.Popen(command, stderr=subprocess.STDOUT, shell=True)
+    output, stderr = proc.communicate(input)
+    status = proc.wait()
+    if status:
+        raise Exception("command = {} failed with status {:d}".format(command,status),
+                        output, status)
+
 
 class build_ext_subclass( build_ext ):
     def build_extensions(self):
         ### Everything has already been configured within Make - so just call make
-        import subprocess
         for ext in self.extensions:
             sources = ext.sources
             
@@ -79,14 +81,8 @@ class build_ext_subclass( build_ext ):
                 ext_dir = os.path.commonprefix(sources)
                 
             command = "cd {} && make ".format(ext_dir)
-            # print("about to execute command `{}`. sources = {}".format(command,sources))
-            proc = subprocess.Popen(command, stderr=subprocess.STDOUT, shell=True)
-            output, stderr = proc.communicate(input)
-            status = proc.wait()
-            if status:
-                raise Exception("command = {} failed with status {:d}".format(command,status),
-                                output, status)
-
+            run_command(command)
+            
             import shutil
             import errno
             try:
@@ -96,7 +92,6 @@ class build_ext_subclass( build_ext ):
                     raise
 
             shutil.copyfile('{}.so'.format(os.path.join(ext_dir,ext.name)),self.get_ext_fullpath(ext.name))
-            # print("Made extension {}.so in path = {} ".format(ext.name,self.get_ext_fullpath(ext.name)))
 
 
 
@@ -136,7 +131,21 @@ def setup_packages():
     os.chdir(src_path)
     sys.path.insert(0, src_path)
     
-    ### find all the data-files required
+    
+    ### create a list of the python extensions 
+    python_dirs = ["xi_theory/python_bindings",
+                   "xi_mocks/python_bindings"]
+    extensions = generate_extensions(python_dirs)
+
+    ### only run this if not creating source dist
+    if "sdist" not in sys.argv:
+        command = "make install"
+        run_command(command)
+
+    ### find all the data-files required.
+    ### Now the lib + associated header files have been generated
+    ### and put in lib/ and include/
+    ### This step must run after ``make install``
     dirs_patterns = {'xi_theory/tests/data/':['*.ff','*.txt','*.txt.gz','*.dat'],
                      'xi_mocks/tests/data':['*.ff','*.txt','*.txt.gz','*.dat'],
                      'xi_theory/tests':['Mr19*','bins*','cmass*'],
@@ -152,13 +161,9 @@ def setup_packages():
 
     ### change them to be relative to package dir rather than root
     data_files = ["../{}".format(d) for d in data_files]
-        
-    
-    ### create a list of the python extensions 
-    python_dirs = ["xi_theory/python_bindings",
-                   "xi_mocks/python_bindings"]
-    extensions = generate_extensions(python_dirs)        
-    base_url = "https://github.com/manodeep/Corrfunc/"
+
+    ### All book-keeping is done. 
+    base_url = "https://github.com/manodeep/Corrfunc"
     metadata = dict(
         name=name,
         version=version,

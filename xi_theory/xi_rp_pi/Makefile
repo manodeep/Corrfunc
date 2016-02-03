@@ -32,14 +32,8 @@ libcountpairs_rp_pi.a: $(OBJS3) ../../theory.options ../../common.mk Makefile | 
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_rp_pi.h > ../../include/countpairs_rp_pi.h
 
-../../lib:
-	mkdir -p ../../lib
-
-../../bin:
-	mkdir -p ../../bin
-
-../../include:
-	mkdir -p ../../include
+../../lib ../../bin ../../include:
+	mkdir -p $@
 
 install: $(target) | ../../bin 
 	cp -p $(target) ../../bin/
