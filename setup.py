@@ -158,6 +158,7 @@ def setup_packages():
     python_dirs = ["xi_theory/python_bindings",
                    "xi_mocks/python_bindings"]
     extensions = generate_extensions(python_dirs)        
+    base_url = "https://github.com/manodeep/Corrfunc/"
     metadata = dict(
         name=name,
         version=version,
@@ -165,8 +166,8 @@ def setup_packages():
         author_email='manodeep@gmail.com',
         maintainer='Manodeep Sinha',
         maintainer_email='manodeep@gmail.com',
-        url='http://github.com/manodeep/Corrfunc',
-        download_url='https://github.com/manodeep/Corrfunc/archive/v0.2-beta.tar.gz',
+        url=base_url,
+        download_url='{0}/archive/{1}-{2}.tar.gz'.format(base_url,name,version),
         description='Blazing fast correlation functions on the CPU',
         long_description=rd('README.md'),
         classifiers = [
@@ -175,7 +176,7 @@ def setup_packages():
             "Intended Audience :: Science/Research",
             'License :: OSI Approved :: MIT License',
             'Natural Language :: English',
-            'Operating System :: Linux, OSX',
+            'Operating System :: POSIX',
             'Programming Language :: C',
             'Programming Language :: Python',
             'Programming Language :: Python :: 2',

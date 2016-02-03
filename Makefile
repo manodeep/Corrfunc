@@ -5,7 +5,7 @@ endif
 
 all: dirs xi_theory xi_mocks
 
-dirs:
+dirs: | lib bin include
 	mkdir -p lib bin include 
 
 xi_theory: | dirs
