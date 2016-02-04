@@ -83,6 +83,13 @@ else
 fi 
 ----------------------
 
+Using the clang assembler is now default when compiling with gcc on a MAC. 
+This is achieved in [common.mk](common.mk) by adding the compiler flag -Wa,-q. 
+However, if this causes errors and you are confident your gcc version supports
+AVX instructions, then you can remove that -Wa,-q flag from common.mk. 
+Note, that a normal install of XCode command line tools will have clang masquerading
+as gcc. You can tell if gcc --version mentions clang. 
+
 C. Problems running tests with conda gcc on a MAC:
 
 If you get the following error while running tests,
