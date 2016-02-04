@@ -11,6 +11,31 @@ This repo contains a set of codes to measure the following OpenMP parallelized c
 measures in a cosmological box (co-moving XYZ) or on a mock (RA, DEC, CZ). Also, 
 contains the associated paper to be published in Astronomy & Computing Journal (at some point). 
 
+# Installation
+
+## Pre-requisites
+1. OpenMP capable compiler like ``icc``, ``gcc`` or ``clang >= 3.7``. If not available, please disable ``USE_OMP`` option option in ``theory.options`` and ``mocks.options``. You might need to ask your sys-admin for system-wide installs of the compiler; if you prefer to install your own then ``conda install gcc`` (MAC/linux) or ``(sudo) port install gcc5`` (on MAC) should work. *Note ``gcc`` on macports defaults to ``gcc48`` and the portfile is currently broken on ``El Capitan``*.
+2. ``gsl``. Use either ``conda install -c https://conda.anaconda.org/asmeurer gsl`` (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl`` if necessary. 
+3. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions. 
+4. ``numpy>=1.7`` for compiling the C extensions. 
+
+*If python and/or numpy are not available, then the C extensions will not be compiled*. 
+
+## Preferred Method
+
+`git clone https://github.com/manodeep/Corrfunc/`
+
+Assuming you have `gcc` in your ``PATH``, `make` and `make install` should compile and install the C libraries + python extensions within the source directory. If you would like to install the python C extensions in your environment, then ``python setup.py install (--user)`` should be sufficient. 
+
+## Alternative
+The python package is directly installable via ``pip``. Unfortunately, the package is too big to upload to [PyPI](http://pypi.python.org/), so the relevant install command is ``pip install https://github.com/manodeep/Corrfunc/archive/Corrfunc-0.2.0.tar.gz``. 
+
+## Installation notes
+
+If compilation went smoothly, please run ``make tests`` to ensure the code is working correctly. Depending on the hardware and compilation options, the tests might take more than a few minutes. *Note that the tests are exhaustive and not traditional unit tests*. 
+
+While I have tried to ensure that the package compiles and runs out of the box, cross-platform compatibility turns out to be incredibly hard. If you run into any issues during compilation and you have all of the pre-requisistes, please see the [FAQ](FAQ) or [email me](mailto:manodeep@gmail.com). Also, feel free to create a new issue with the `Installation` label. 
+
 ## Clustering Measures on a Cosmological box
 
 All codes that work on cosmological boxes with co-moving positions are located in the 
@@ -77,7 +102,7 @@ by default.
 
 2. ``USE_AVX`` -- uses the AVX instruction set found in Intel/AMD CPUs >= 2011
 (Intel: Sandy Bridge or later; AMD: Bulldozer or later). Enabled by
-default - code will not compile if the CPU does not support AVX instructions.
+default - code will run much slower if the CPU does not support AVX instructions.
 On Linux, check for "avx" in /proc/cpuinfo under flags. If you do not have
 AVX, but have a SSE4 system instead, email me - I will send you a copy of
 the code with SSE4 intrinsics. Or, take the relevant SSE code from the public repo at 
