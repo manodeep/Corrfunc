@@ -23,8 +23,12 @@ contains the associated paper to be published in Astronomy & Computing Journal (
 
 ## Preferred Method
 
-`git clone https://github.com/manodeep/Corrfunc/`
-
+```
+$ git clone https://github.com/manodeep/Corrfunc/
+$ make 
+$ make install
+$ python setup.py install (--user)
+```
 Assuming you have `gcc` in your ``PATH``, `make` and `make install` should compile and install the C libraries + python extensions within the source directory. If you would like to install the python C extensions in your environment, then ``python setup.py install (--user)`` should be sufficient. 
 
 ## Alternative
