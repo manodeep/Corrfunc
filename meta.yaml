@@ -1,0 +1,42 @@
+package:
+  name: corrfunc
+  version: "0.2.0"
+
+source:
+  fn: Corrfunc-0.2.0.tar.gz
+  url: https://github.com/manodeep/Corrfunc/archive/0.2.0.tar.gz
+  md5: 8261A1A751963553D33FBA8F0F6303C3
+  sha1: A1877395F66B450C69555B1AB18B99294D9FA808
+  sha256: 0AC524EB41B09B8B6ACF8BC8960B82ACBDF1F7A807A45CDFD47166CF4771D72F
+    
+requirements:
+  build:
+    - gcc
+    - gsl
+    - python
+    - numpy
+    - setuptools 
+
+  run:
+    - python
+    - numpy
+
+build:
+  script: make install && python setup.py install 
+  binary_relocation: False
+  skip: True # [win]
+  
+test:
+  imports:
+    - Corrfunc
+
+about:
+  home: http://manodeep.github.io/Corrfunc/
+  license: MIT
+  license_file: LICENSE
+  
+extra:
+  maintainers:
+    - Manodeep Sinha <manodeep@gmail.com>
+    
+    

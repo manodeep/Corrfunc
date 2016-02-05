@@ -21,7 +21,7 @@
 #include "cosmology_params.h"
 #include "set_cosmo_dist.h"
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
 #endif
 
@@ -241,7 +241,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
     rupp_sqr[i] = rupp[i]*rupp[i];
 	}	
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
   AVX_FLOATS m_rupp_sqr[nrpbin];
 	AVX_FLOATS m_kbin[nrpbin];
   for(int i=0;i<nrpbin;i++) {
@@ -413,7 +413,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 /* 					const DOUBLE TWO=2.0; */
 /* 					const DOUBLE sqr_d1 = d1[i]*d1[i]; */
 		  
-#ifndef USE_AVX
+#if !(defined(USE_AVX) && defined(__AVX__))
 
 					DOUBLE *localx2  = x2;
 					DOUBLE *localy2  = y2;
