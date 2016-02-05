@@ -30,7 +30,7 @@
 #include "progressbar.h" //for the progressbar
 
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
 #endif
 
@@ -181,7 +181,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 #endif
 #endif
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
   AVX_FLOATS m_costheta_upp[nthetabin] ;
   for(int i=0;i<nthetabin;i++) {  
     /* fprintf(stderr," i = %d theta_upp[i-1] = %lf cos(theta_upp[i-1] = %lf cos(theta_upp[i]) = %lf \n",i, theta_upp[i-1],COSD(theta_upp[i-1]),COSD(theta_upp[i])); */
@@ -399,7 +399,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 					/*---Loop-over-Data2-particles--------------------*/
 					int j;
 					for(j=0;j <=(Nloop-NVEC);j+=NVEC) {
-#ifndef USE_AVX
+#if !(defined(USE_AVX) && defined(__AVX__))
 						DOUBLE costheta[NVEC];
 						int thetabin[NVEC];
 #ifdef OUTPUT_THETAAVG

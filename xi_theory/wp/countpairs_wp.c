@@ -23,7 +23,7 @@
 
 #include "sglib.h"
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
 #endif
 
@@ -136,7 +136,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 	}
 
 	
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
   AVX_FLOATS m_rupp_sqr[nbin];
 	for(int i=0;i<nbin;i++) {
     m_rupp_sqr[i] = AVX_SET_FLOAT(rupp_sqr[i]);
@@ -270,7 +270,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 								const DOUBLE y1pos = y1[ii] + off_ywrap;
 								const DOUBLE z1pos = z1[ii] + off_zwrap;
 
-#ifndef USE_AVX							
+#if !(defined(USE_AVX) && defined(__AVX__))							
 								DOUBLE *localx2 = x2;
 								DOUBLE *localy2 = y2;
 								DOUBLE *localz2 = z2;
