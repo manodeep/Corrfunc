@@ -7,7 +7,7 @@ recursive-include io                    *.c *.h
 recursive-include utils                 *.c *.h
 
 recursive-include xi_theory/tests       Mr19_* cmass* bins
-recursive-include xi_theory/tests/data  *.ff *.txt
+recursive-include xi_theory/tests/data  *.ff 
 recursive-include xi_mocks/tests        bins angular_bins Mr19*
 recursive-include xi_mocks/tests/data   *.txt *.dat *.ff
 

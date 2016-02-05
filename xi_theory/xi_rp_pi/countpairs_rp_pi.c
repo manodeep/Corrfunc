@@ -16,7 +16,7 @@
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
 #endif
 
@@ -160,7 +160,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 #endif
 
 	
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
   AVX_FLOATS m_rupp_sqr[nrpbin];
   AVX_FLOATS m_kbin[nrpbin];
   for(int i=0;i<nrpbin;i++) {
@@ -286,7 +286,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 #endif
 								
 								
-#ifndef USE_AVX	//Beginning of NO AVX section
+#if !(defined(USE_AVX) && defined(__AVX__))	//Beginning of NO AVX section
 								DOUBLE *localx2=x2;
 								DOUBLE *localy2=y2;
 								DOUBLE *localz2=z2;

@@ -18,7 +18,7 @@
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
 #endif
 
@@ -65,7 +65,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
   const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep;
   /* const DOUBLE inv_rcube = ((DOUBLE) 1.0)/rcube; */
   const DOUBLE rmax_sqr = rmax*rmax;
-#ifdef USE_AVX  
+#if defined(USE_AVX) && defined(__AVX__)  
   AVX_FLOATS m_rmax_sqr = AVX_SET_FLOAT(rmax_sqr);
   AVX_FLOATS m_rupp_sqr[nbin];
   for(int k=0;k<nbin;k++) {
@@ -200,7 +200,7 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 					DOUBLE *x2 = first->pos;
 					DOUBLE *y2 = first->pos + NVEC;
 					DOUBLE *z2 = first->pos + 2*NVEC;
-#ifndef USE_AVX
+#if !(defined(USE_AVX) && defined(__AVX__))
 
 					for(int64_t j=0;j<first->nelements;j+=NVEC) {
 						int block_size=first->nelements - j;
