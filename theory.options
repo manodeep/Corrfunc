@@ -4,7 +4,7 @@ OPT = -DPERIODIC
 
 #### Code specs for both theory and data Correlation Functions
 #OPT += -DDOUBLE_PREC
-#OPT += -DUSE_AVX
+OPT += -DUSE_AVX
 OPT += -DUSE_OMP
 
 

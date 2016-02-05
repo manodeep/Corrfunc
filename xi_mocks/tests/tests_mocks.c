@@ -33,7 +33,7 @@
 #endif
 
 #if !(defined(__INTEL_COMPILER)) && defined(USE_AVX)
-#warning Test suite for mocks will be slow without Intel ICC while USE_AVX is set. 
+#warning Test suite for mocks are faster with Intel compiler, icc, AVX libraries. 
 #endif
 
 #ifndef SILENT
