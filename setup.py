@@ -146,10 +146,10 @@ def setup_packages():
     ### Now the lib + associated header files have been generated
     ### and put in lib/ and include/
     ### This step must run after ``make install``
-    dirs_patterns = {'xi_theory/tests/data/':['*.ff','*.txt','*.txt.gz','*.dat'],
-                     'xi_mocks/tests/data':['*.ff','*.txt','*.txt.gz','*.dat'],
-                     'xi_theory/tests':['Mr19*','bins*','cmass*'],
-                     'xi_mocks/tests':['Mr19*','bins*','angular_bins*'],
+    dirs_patterns = {'xi_theory/tests/data': ['*.ff','*.txt','*.txt.gz','*.dat'],
+                     'xi_mocks/tests/data' : ['*.ff','*.txt','*.txt.gz','*.dat'],
+                     'xi_theory/tests'     : ['Mr19*','bins*','cmass*'],
+                     'xi_mocks/tests'      : ['Mr19*','bins*','angular_bins*'],
                      'include':['count*.h'],
                      'lib':['libcount*.a']
                      }
