@@ -19,7 +19,7 @@
 #include "set_cosmo_dist.h"//cosmological distance calculations
 #include "cosmology_params.h"//init_cosmology 
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
 #endif
 
@@ -256,7 +256,7 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 	const DOUBLE rstep = rmax/(DOUBLE)nbin ;
 	const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep;
 	
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
   AVX_FLOATS m_rupp_sqr[nbin];
   AVX_FLOATS m_rmax_sqr = AVX_SET_FLOAT(rmax_sqr);
 	for(int k=0;k<nbin;k++) {
@@ -316,7 +316,7 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
       const int max_ix = ix + bin_refine_factor > ngrid-1 ? ngrid-1:ix + bin_refine_factor;
       for(int iix=min_ix;iix<=max_ix;iix++) {
 				const DOUBLE newxpos = xcen;
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 				const AVX_FLOATS m_newxpos = AVX_SET_FLOAT(newxpos);
 #endif	
 	
@@ -325,7 +325,7 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 
 				for(int iiy=min_iy;iiy<=max_iy;iiy++) {
 					const DOUBLE newypos = ycen;
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 					const AVX_FLOATS m_newypos = AVX_SET_FLOAT(newypos);
 #endif	
 
@@ -334,7 +334,7 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 
 					for(int iiz=min_iz;iiz<=max_iz;iiz++) {
 						const DOUBLE newzpos = zcen;
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
 						const AVX_FLOATS m_newzpos = AVX_SET_FLOAT(newzpos);
 #endif	
 						const int index=iix*ngrid*ngrid + iiy*ngrid + iiz;
@@ -344,7 +344,7 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 						DOUBLE *z2 = cellstruct->pos + 2*NVEC;
 						int ipart;
 						for(ipart=0;ipart<=(cellstruct->nelements-NVEC);ipart+=NVEC) {
-#ifndef USE_AVX
+#if !(defined(USE_AVX) && defined(__AVX__))
 							int ibin[NVEC];
 #if  __INTEL_COMPILER
 #pragma simd vectorlengthfor(DOUBLE)

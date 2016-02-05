@@ -202,7 +202,7 @@ void Printhelp(void)
   fprintf(stderr,"Precision = float\n");
 #endif
 
-#ifdef USE_AVX
+#if defined(USE_AVX) && defined(__AVX__)
   fprintf(stderr,"Use AVX = True\n");
 #else   
   fprintf(stderr,"Use AVX = False\n");
