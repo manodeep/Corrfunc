@@ -301,12 +301,12 @@ int main(int argc, char **argv)
   const int function_pointer_index[] = {0,1,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi
 
   const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","Mr19_vpf_periodic","Mr19_xi","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
-  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
+  const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
 																				"../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
-  const char firstfiletype[][MAXLEN] = {"a","f","f","f","f","f","f","f"};
-  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.txt","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
+  const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
+  const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
 																				 "../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
-  const char secondfiletype[][MAXLEN] = {"a","f","f","f","f","f","f","f"};
+  const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
   const DOUBLE allpimax[]             = {40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
 
   int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp,test_vpf,test_xi};

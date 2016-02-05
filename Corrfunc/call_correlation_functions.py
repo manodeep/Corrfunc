@@ -16,51 +16,15 @@ import sys
 import re
 import time
 import numpy as np
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
-from Corrfunc import _countpairs, rd
-
+from Corrfunc import _countpairs, rd, utils
+from .utils import read_catalog
 
 def main():
     tstart=time.time()
-    file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"../xi_theory/tests/data/","gals_Mr19.txt")
-    ## Figure out the datatype, use the header file in the include directory
-    ## because that is most likely correct (common.mk might have been modified
-    ## but not recompiled)
-    include_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                "../include/", "countpairs.h")
-    try:
-        includes = rd(include_file)
-    except (IOError, OSError) as e:
-        print("ERROR: Could not find file {}.\nPlease compile the `Corrfunc' library directly before running python setup.py install".format(include_file))
-        raise
-    vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes, re.I).group(1)
-    allowed_types = {"float":np.float32,"double":np.float}
-    if vector_type not in list(allowed_types.keys()):
-        print("Error: Unknown precision={} found in header file {}. Allowed types are `{}'".format(vector_type,include_file,allowed_types))
-        sys.exit()
-
-    dtype = allowed_types[vector_type]
-
-    ### check if pandas is available - much faster to read in the data through pandas
-    t0=time.time()
-    print("Reading in the data...")
-    try:
-        if pd is not None:
-            df  = pd.read_csv(file,header=None,engine="c",dtype={"x":dtype,"y":dtype,"z":dtype},delim_whitespace=True)
-            x  = np.asarray(df[0],dtype=dtype)
-            y = np.asarray(df[1],dtype=dtype)
-            z  = np.asarray(df[2],dtype=dtype)
-        else:
-            x,y,z = np.genfromtxt(file,dtype=dtype,unpack=True)
-    except:
-        pass
-
+    t0 = tstart
+    x,y,z = read_catalog()
     t1=time.time()    
     print("Done reading the data - time taken = {0:10.1f} seconds.\nBeginning Correlation functions calculations".format(t1-t0))
-
     boxsize=420.0
     nthreads=4
     pimax=40.0

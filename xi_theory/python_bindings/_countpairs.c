@@ -177,7 +177,7 @@ static PyMethodDef module_methods[] = {
    "-------\n"
    "import numpy as np\n"
    "from Corrfunc._countpairs import countpairs\n"
-   "x,y,z = np.genfromtxt('../xi_theory/tests/data/gals_Mr19.txt',dtype=np.float32,unpack=True)\n"
+   "x,y,z = np.genfromtxt('/path/to/ascii/galaxy/file/(x y z)',dtype=np.float32,unpack=True)\n"
    "autocorr=1\n"
    "nthreads=4\n"
    "DD = countpairs(autocorr,nthreads,'../xi_theory/tests/bins',x,y,z,x,y,z)\n"
