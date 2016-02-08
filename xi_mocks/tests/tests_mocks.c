@@ -303,20 +303,27 @@ int main(int argc, char **argv)
   int (*allfunctions[]) (const char *) = {test_DDrppi_mocks,test_wtheta_mocks,test_vpf_mocks};
   const int numfunctions=3;//3 functions total
 
-  int total_tests=0;
+  int total_tests=0,skipped=0;
   
   if(argc==1) {
 	//nothing was passed at the command-line run all tests
 	for(int i=0;i<ntests;i++) {
+    int function_index = function_pointer_index[i];
+    assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+    const char *testname = alltests_names[i];
+    int skip_test=test_all_files_present(2,firstfilename[i],secondfilename[i]);
+    if(skip_test != 0) {
+      fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". Test data-file(s) (`%s',`%s') not found\n", testname, firstfilename[i], secondfilename[i]);
+      skipped++;
+      continue;
+    }
+    
 	  read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
 	  pimax=allpimax[i];
-	  int function_index = function_pointer_index[i];
-	  assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
 	  gettimeofday(&t0,NULL);
 	  status = (*allfunctions[function_index])(correct_outoutfiles[i]);
 	  gettimeofday(&t1,NULL);
 	  double pair_time=ADD_DIFF_TIME(t0,t1);
-	  const char *testname = alltests_names[i];
 	  total_tests++;
 	  if(status==EXIT_SUCCESS) {
 		fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
@@ -337,16 +344,23 @@ int main(int argc, char **argv)
 	for(int i=1;i<argc;i++){
 	  int this_test_num = atoi(argv[i]);
 	  if(this_test_num >= 0 && this_test_num < ntests) {
+			int function_index = function_pointer_index[this_test_num];
+			assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+      const char *testname = alltests_names[this_test_num];
+      int skip_test=test_all_files_present(2,firstfilename[this_test_num],secondfilename[this_test_num]);
+      if(skip_test != 0) {
+        fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". Test data-file(s) (`%s',`%s') not found\n", testname, firstfilename[this_test_num], secondfilename[this_test_num]);
+        skipped++;
+        continue;
+      }
+
 			total_tests++;
 			read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
 			pimax=allpimax[this_test_num];
-			int function_index = function_pointer_index[this_test_num];
-			assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
 			gettimeofday(&t0,NULL);
 			status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
 			gettimeofday(&t1,NULL);
 			double pair_time = ADD_DIFF_TIME(t0,t1);
-			const char *testname = alltests_names[this_test_num];
 			if(status==EXIT_SUCCESS) {
 				fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
 				char execstring[MAXLEN];
@@ -372,6 +386,10 @@ int main(int argc, char **argv)
 	fprintf(stderr,ANSI_COLOR_RED "FAILED %d out of %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", failed, total_tests, total_time);
   } else {
 	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: ALL %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", total_tests, total_time);
+  }
+  if(skipped > 0) {
+    fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: %d tests" ANSI_COLOR_RESET "\n", skipped);
+    fprintf(stderr,"Tests are skipped on the PyPI installed code-base. Please use the git repo if you want to run the entire suite of tests\n");
   }
 
   if(RA2 != RA1) {
