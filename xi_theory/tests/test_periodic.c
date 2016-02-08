@@ -310,82 +310,96 @@ int main(int argc, char **argv)
   const DOUBLE allpimax[]             = {40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
 
   int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp,test_vpf,test_xi};
-  const int numfunctions=5;//4 functions total
+  const int numfunctions=5;//5 functions total
 
-  int total_tests=0;
+  int total_tests=0,skipped=0;
   
   if(argc==1) {
-	//nothing was passed at the command-line run all tests
-	for(int i=0;i<ntests;i++) {
-	  read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
-	  pimax=allpimax[i];
-	  int function_index = function_pointer_index[i];
-	  assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
-	  gettimeofday(&t0,NULL);
-	  const char *testname = alltests_names[i];
-/* 	  fprintf(stderr,"Running test: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RESET "\n", testname); */
-	  status = (*allfunctions[function_index])(correct_outoutfiles[i]);
-	  gettimeofday(&t1,NULL);
-	  double pair_time = ADD_DIFF_TIME(t0,t1);
-	  total_tests++;
-	  if(status==EXIT_SUCCESS) {
-		fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
-		char execstring[MAXLEN];
-		my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-		run_system_call(execstring);
-	  } else {
-		fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
-		failed++;
-		char execstring[MAXLEN];
-		my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
-		run_system_call(execstring);
+    //nothing was passed at the command-line -> run all tests
+    for(int i=0;i<ntests;i++) {
+      int function_index = function_pointer_index[i];
+      assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+      const char *testname = alltests_names[i];
+      int skip_test=test_all_files_present(2,firstfilename[i],secondfilename[i]);
+      if(skip_test != 0) {
+        fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". File(s) not found\n", testname);
+        skipped++;
+        continue;
+      }
+      read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
+      pimax=allpimax[i];
+      gettimeofday(&t0,NULL);
+      status = (*allfunctions[function_index])(correct_outoutfiles[i]);
+      gettimeofday(&t1,NULL);
+      double pair_time = ADD_DIFF_TIME(t0,t1);
+      total_tests++;
+      if(status==EXIT_SUCCESS) {
+        fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+        char execstring[MAXLEN];
+        my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
+        run_system_call(execstring);
+      } else {
+        fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+        failed++;
+        char execstring[MAXLEN];
+        my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
+        run_system_call(execstring);
 
-	  }
-	}
+      }
+    }
   } else {
-	//run specific tests
-	for(int i=1;i<argc;i++){
-	  int this_test_num = atoi(argv[i]);
-	  if(this_test_num >= 0 && this_test_num < ntests) {
-		total_tests++;
-		read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
-		pimax=allpimax[this_test_num];
-		int function_index = function_pointer_index[this_test_num];
-		assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
-		const char *testname = alltests_names[this_test_num];
-		gettimeofday(&t0,NULL);
-/* 		fprintf(stderr,"Running test: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RESET "\n", testname); */
-		status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
-		gettimeofday(&t1,NULL);
-		double pair_time = ADD_DIFF_TIME(t0,t1);
-		if(status==EXIT_SUCCESS) {
-		  fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
-			char execstring[MAXLEN];
-			my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-			run_system_call(execstring);
-		} else {
-		  fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
-		  failed++;
-		  char execstring[MAXLEN];
-		  my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
-		  run_system_call(execstring);
+    //run specific tests
+    for(int i=1;i<argc;i++){
+      int this_test_num = atoi(argv[i]);
+      if(this_test_num >= 0 && this_test_num < ntests) {
+        int function_index = function_pointer_index[this_test_num];
+        assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
+        const char *testname = alltests_names[this_test_num];
+        int skip_test=test_all_files_present(2,firstfilename[this_test_num],secondfilename[this_test_num]);
+        if(skip_test != 0) {
+          fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". File(s) not found\n", testname);
+          skipped++;
+          continue;
+        }
+        total_tests++;
+        read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
+        pimax=allpimax[this_test_num];
+        gettimeofday(&t0,NULL);
+        status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
+        gettimeofday(&t1,NULL);
+        double pair_time = ADD_DIFF_TIME(t0,t1);
+        if(status==EXIT_SUCCESS) {
+          fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+          char execstring[MAXLEN];
+          my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
+          run_system_call(execstring);
+        } else {
+          fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+          failed++;
+          char execstring[MAXLEN];
+          my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
+          run_system_call(execstring);
 
-		}
-	  }
-	}
+        }
+      }
+    }
   }
 
   
   gettimeofday(&t1,NULL);
   double total_time = ADD_DIFF_TIME(tstart,t1);
   if(failed > 0) {
-	fprintf(stderr,ANSI_COLOR_RED "FAILED %d out of %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", failed, total_tests, total_time);
+    fprintf(stderr,ANSI_COLOR_RED "FAILED %d out of %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", failed, total_tests, total_time);
   } else {
-	fprintf(stderr,ANSI_COLOR_GREEN "PASSED: ALL %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", total_tests, total_time);
+    fprintf(stderr,ANSI_COLOR_GREEN "PASSED: ALL %d tests. Total time = %8.2lf seconds " ANSI_COLOR_RESET "\n", total_tests, total_time);
+  }
+  if(skipped > 0) {
+    fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: %d tests" ANSI_COLOR_RESET "\n", skipped);
+    fprintf(stderr,"Tests are skipped on the PyPI installed code-base. Please use the git repo if you want to run the entire suite of tests\n");
   }
 
   if(X2 != X1) {
-	free(X2);free(Y2);free(Z2);
+    free(X2);free(Y2);free(Z2);
   }
   free(X1);free(Y1);free(Z1);
   return EXIT_SUCCESS;
