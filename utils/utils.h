@@ -20,7 +20,6 @@
 #include<sys/time.h>
 #include<stdarg.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,8 +64,9 @@ void volume_free(void ***v,int64_t nrow,int64_t ncol);
 extern void run_system_call(const char *execstring);
 
 extern void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
-//end function declarations
 
+extern int test_all_files_present(const int nfiles, ...);
+//end function declarations
 
 #ifdef __cplusplus
 }
