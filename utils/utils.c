@@ -419,4 +419,31 @@ int64_t getnumlines(const char *fname,const char comment)
 }
 
 
+int test_all_files_present(const int nfiles, ...)
+{
+  /* sets i'th bit for i'th missing file
+     return value is 0 *iff* all files are present
+     and readable.
+   */
+  
+  int absent=0;
+  va_list filenames;
+  va_start(filenames, nfiles);
+  assert(nfiles <= 31 && "Can only test for 31 files simultaneously");
+  for(int i=0;i<nfiles;i++) {
+    const char *f = va_arg(filenames, const char *);
+    FILE *fp = fopen(f,"r");
+    if(fp == NULL) {
+      absent |= 1;
+    } else {
+      fclose(fp);
+    }
+    absent <<= 1;
+  }
+  va_end(filenames);
+
+  return absent;
+}  
+
+
 /* #undef __USE_XOPEN2K */
