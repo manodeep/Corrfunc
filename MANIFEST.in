@@ -9,5 +9,9 @@ recursive-include utils                 *.c *.h
 recursive-include xi_theory/tests       Mr19_* cmass* bins
 recursive-include xi_theory/tests/data  *.ff 
 recursive-include xi_mocks/tests        bins angular_bins Mr19*
-recursive-include xi_mocks/tests/data   *.txt *.dat *.ff
+recursive-include xi_mocks/tests/data   *.txt *.dat 
+
+exclude xi_theory/tests/data/random_Zspace.ff
+exclude xi_mocks/tests/data/Mr19_randoms_northonly.rdcz.ff
+
 

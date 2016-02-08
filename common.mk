@@ -19,7 +19,7 @@ INCLUDE:=-I../../io -I../../utils
 CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
 GSL_CFLAGS := $(shell gsl-config --cflags) 
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
-GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR) 
+GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR)
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
   ifneq (clang,$(findstring clang,$(CC)))
@@ -168,7 +168,7 @@ ifeq ($(PYTHON_CHECKED), 0)
       FIX_PYTHON_LINK := 1
       PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
       PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-      PYTHON_LINK += -dynamiclib -Wl,-single_module -undefined dynamic_lookup -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION) 
+      PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION) 
     endif
 
     ### Another check for stack-size. travis ci chokes on this with gcc

@@ -91,8 +91,17 @@ class build_ext_subclass( build_ext ):
                 if exception.errno != errno.EEXIST:
                     raise
 
-            shutil.copyfile('{}.so'.format(os.path.join(ext_dir,ext.name)),self.get_ext_fullpath(ext.name))
+            # full_name='{}.so.{}'.format(os.path.join(ext_dir,ext.name),version)
+            # full_build_name='{}.{}'.format(self.get_ext_fullpath(ext.name),version)
 
+            full_name='{}.so'.format(os.path.join(ext_dir,ext.name))
+            full_build_name='{}'.format(self.get_ext_fullpath(ext.name))
+
+            shutil.copyfile(full_name, full_build_name)
+            shutil.copyfile('{}.so'.format(os.path.join(ext_dir,ext.name)),self.get_ext_fullpath(ext.name))
+            # print("name = {} source = {} dest = {}".format(ext.name, full_name, full_build_name))
+            #command="ln -s {} {}.so".format(full_build_name,self.get_ext_fullpath(ext.name))
+            #os.symlink(full_build_name,self.get_ext_fullpath(ext.name))
 
 
 def generate_extensions(python_dirs):            
