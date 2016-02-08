@@ -88,7 +88,7 @@ for ibin in range(numbins_to_print):
     print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}".format(items[0],items[1],items[2],items[3],items[4]))
 print("-----------------------------------------------------------")
 
-
+binfile=os.path.join(os.path.dirname(os.path.abspath(__file__)),"../tests/","angular_bins")
 print("\nRunning angular correlation function w(theta)")
 results_wtheta = _countpairs_mocks.countpairs_theta_mocks(autocorr, cosmology, nthreads, binfile, ra,dec, ra,dec)
 print("\n#         ******  wtheta: first {} bins  *******        ".format(numbins_to_print))

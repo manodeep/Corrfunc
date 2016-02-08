@@ -1,18 +1,18 @@
 package:
   name: corrfunc
-  version: "0.2.0"
+  version: "0.2.1"
 
 source:
-  fn: Corrfunc-0.2.0.tar.gz
-  url: https://github.com/manodeep/Corrfunc/archive/0.2.0.tar.gz
-  md5: 8261A1A751963553D33FBA8F0F6303C3
-  sha1: A1877395F66B450C69555B1AB18B99294D9FA808
-  sha256: 0AC524EB41B09B8B6ACF8BC8960B82ACBDF1F7A807A45CDFD47166CF4771D72F
-    
+  path: dist
+  fn: Corrfunc-0.2.1.tar.gz
+  md5: 54e2b777517f074847f11223344a1577
+
+  # fn: Corrfunc-0.2.1.tar.gz
+  # url: https://github.com/manodeep/Corrfunc/archive/0.2.1.tar.gz
+  # md5: 2bd15dac1706cb59b5ddb528cd5c7db2
+
 requirements:
   build:
-    - gcc
-    - gsl
     - python
     - numpy
     - setuptools 
@@ -22,18 +22,37 @@ requirements:
     - numpy
 
 build:
+  detect_binary_files_with_prefix: True
   script: make install && python setup.py install 
-  binary_relocation: False
-  skip: True # [win]
+  binary_relocation: True
+  skip: True #[win]
   
 test:
+  files:
+    - xi_theory/tests/data/gals_Mr19.ff
+    - xi_mocks/tests/data/Mr19_mock_northonly.rdcz.dat
+    - include/countpairs.h
+    - include/countpairs_rp_pi_mocks.h
+    - xi_theory/tests/bins
+    - xi_mocks/tests/bins
+    - xi_mocks/tests/angular_bins
+    - xi_mocks/tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt
   imports:
     - Corrfunc
+    - Corrfunc._countpairs
+    - Corrfunc._countpairs_mocks
+    - Corrfunc.call_correlation_functions
+    - Corrfunc.call_correlation_functions_mocks
 
+  commands:
+    - python -c "import Corrfunc.call_correlation_functions as c; c.main()"
+    - python -c "import Corrfunc.call_correlation_functions_mocks as m; m.main()"
+	
 about:
   home: http://manodeep.github.io/Corrfunc/
   license: MIT
   license_file: LICENSE
+  summary: Blazing fast correlation functions on the CPU
   
 extra:
   maintainers:
