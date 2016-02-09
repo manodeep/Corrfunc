@@ -395,7 +395,7 @@ int main(int argc, char **argv)
   }
   if(skipped > 0) {
     fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: %d tests" ANSI_COLOR_RESET "\n", skipped);
-    fprintf(stderr,"Tests are skipped on the PyPI installed code-base. Please use the git repo if you want to run the entire suite of tests\n");
+    fprintf(stderr,ANSI_COLOR_MAGENTA "Tests are skipped on the PyPI installed code-base. Please use the git repo if you want to run the entire suite of tests"ANSI_COLOR_RESET"\n\n");
   }
 
   if(X2 != X1) {
