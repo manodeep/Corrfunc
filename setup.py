@@ -171,6 +171,13 @@ def setup_packages():
     ### change them to be relative to package dir rather than root
     data_files = ["../{}".format(d) for d in data_files]
 
+    ## Fix long description for PyPI
+    try:
+        import pypandoc
+        long_description = pypandoc.convert('README.md', 'rst')
+    except(IOError, ImportError):
+        long_description = rd('README.md')
+    
     ### All book-keeping is done. 
     base_url = "https://github.com/manodeep/Corrfunc"
     metadata = dict(
@@ -183,7 +190,7 @@ def setup_packages():
         url=base_url,
         download_url='{0}/archive/{1}-{2}.tar.gz'.format(base_url,name,version),
         description='Blazing fast correlation functions on the CPU',
-        long_description=rd('README.md'),
+        long_description=long_description,
         classifiers = [
             'Development Status :: 4 - Beta',
             'Intended Audience :: Developers',

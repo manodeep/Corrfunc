@@ -27,12 +27,13 @@ contains the associated paper to be published in Astronomy & Computing Journal (
 $ git clone https://github.com/manodeep/Corrfunc/
 $ make 
 $ make install
+$ make tests 
 $ python setup.py install (--user)
 ```
 Assuming you have `gcc` in your ``PATH``, `make` and `make install` should compile and install the C libraries + python extensions within the source directory. If you would like to install the python C extensions in your environment, then ``python setup.py install (--user)`` should be sufficient. 
 
 ## Alternative
-The python package is directly installable via ``pip``. Unfortunately, the package is too big to upload to [PyPI](http://pypi.python.org/), so the relevant install command is ``pip install https://github.com/manodeep/Corrfunc/archive/Corrfunc-0.2.0.tar.gz``. 
+The python package is directly installable via ``pip install Corrfunc``. 
 
 ## Installation notes
 
