@@ -166,10 +166,10 @@ ifeq ($(PYTHON_CHECKED), 0)
     PATH_TO_PYTHON := $(shell which python)
     ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
       FIX_PYTHON_LINK := 1
-      PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
-      PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-      PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION) 
     endif
+    PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
+    PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
+    PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION)
 
     ### Another check for stack-size. travis ci chokes on this with gcc
     # comma := ,
