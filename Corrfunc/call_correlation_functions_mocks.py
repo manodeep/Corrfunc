@@ -12,7 +12,6 @@ Requires: numpy
 """
 from __future__ import print_function
 import os
-import sys
 import re
 import time
 import numpy as np
@@ -22,7 +21,6 @@ except ImportError:
     pd = None
 
 from Corrfunc import _countpairs_mocks, rd
-
 
 def main():
 
@@ -42,13 +40,13 @@ def main():
     try:
         includes = rd(include_file)
     except (IOError, OSError) as e:
-        print("ERROR: Could not find file {}.\nPlease compile the `Corrfunc' library directly before running python setup.py install".format(include_file))
+        print("ERROR: Could not find file {0}.\nPlease compile the `Corrfunc' library directly before running python setup.py install".format(include_file))
         raise
 
     vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes, re.I).group(1)
     allowed_types = {"float":np.float32,"double":np.float}
     if vector_type not in list(allowed_types.keys()):
-        raise TypeError("Error: Unknown precision={} found in header file {}. Allowed types are `{}'".format(vector_type,include_file,allowed_types))
+        raise TypeError("Error: Unknown precision={0} found in header file {1}. Allowed types are `{2}'".format(vector_type,include_file,allowed_types))
 
     dtype = allowed_types[vector_type]
     dtype = np.float32
@@ -78,13 +76,13 @@ def main():
     numbins_to_print=5
     cosmology=1
 
-    print("RA min  = {:10.3f} max = {:10.3f}".format(np.min(ra),np.max(ra)))
-    print("DEC min = {:10.3f} max = {:10.3f}".format(np.min(dec),np.max(dec)))
-    print("cz min  = {:10.3f} max = {:10.3f}".format(np.min(cz),np.max(cz)))
+    print("RA min  = {0:10.3f} max = {1:10.3f}".format(np.min(ra),np.max(ra)))
+    print("DEC min = {0:10.3f} max = {1:10.3f}".format(np.min(dec),np.max(dec)))
+    print("cz min  = {0:10.3f} max = {1:10.3f}".format(np.min(cz),np.max(cz)))
 
     print("\nRunning 2-D correlation function xi(rp,pi)")
     results_DDrppi = _countpairs_mocks.countpairs_rp_pi_mocks(autocorr, cosmology,nthreads,pimax,binfile,ra,dec,cz,ra,dec,cz)
-    print("\n#            ****** DD(rp,pi): first {} bins  *******      ".format(numbins_to_print))
+    print("\n#            ****** DD(rp,pi): first {0} bins  *******      ".format(numbins_to_print))
     print("#      rmin        rmax       rpavg     pi_upper     npairs")
     print("###########################################################")
     for ibin in range(numbins_to_print):
@@ -95,7 +93,7 @@ def main():
     binfile=os.path.join(os.path.dirname(os.path.abspath(__file__)),"../xi_mocks/tests/","angular_bins")
     print("\nRunning angular correlation function w(theta)")
     results_wtheta = _countpairs_mocks.countpairs_theta_mocks(autocorr, cosmology, nthreads, binfile, ra,dec, ra,dec)
-    print("\n#         ******  wtheta: first {} bins  *******        ".format(numbins_to_print))
+    print("\n#         ******  wtheta: first {0} bins  *******        ".format(numbins_to_print))
     print("#      thetamin        thetamax       thetaavg      npairs")
     print("##########################################################")
     for ibin in range(numbins_to_print):
@@ -115,11 +113,11 @@ def main():
     centers_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),"../xi_mocks/tests/data/","Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
     Nran=num_spheres ## set it so that the code runs the loop
     results_vpf = _countpairs_mocks.countspheres_vpf_mocks(rmax,nbin,num_spheres,num_pN,threshold_neighbors,centers_file,cosmology,ra,dec,cz,ra,dec,cz)
-    print("\n#            ******    pN: first {} bins  *******         ".format(numbins_to_print))
+    print("\n#            ******    pN: first {0} bins  *******         ".format(numbins_to_print))
     print('#       r    ',end="")
 
     for ipn in range(num_pN):
-        print('        p{:0d}      '.format(ipn),end="")
+        print('        p{0:0d}      '.format(ipn),end="")
 
     print("")
 
@@ -139,7 +137,7 @@ def main():
     print("-----------------------------------------------------------")
     print("Done with the VPF.")
     tend=time.time()
-    print("Done with all the MOCK clustering calculations. Total time taken = {:0.2f} seconds.".format(tend-tstart))
+    print("Done with all the MOCK clustering calculations. Total time taken = {0:0.2f} seconds.".format(tend-tstart))
 
 
 if __name__ == "__main__":

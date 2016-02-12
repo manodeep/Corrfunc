@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-from __future__ import (absolute_import, print_function)
+from __future__ import (division, print_function)
+
 import os
 import fnmatch
 import sys
@@ -21,10 +22,10 @@ name = re.search(r'DISTNAME\s*:*=\s*(\w+)', common).group(1)
 major = re.search(r'MAJOR\s*:*=\s*(\d)',common).group(1)
 minor = re.search(r'MINOR\s*:*=\s*(\d)',common).group(1)
 patch = re.search(r'PATCHLEVEL\s*:*=\s*(\d)',common).group(1)
-version = "{}.{}.{}".format(major,minor,patch)
+version = "{0}.{1}.{2}".format(major,minor,patch)
 ## Check that version matches
 if Corrfunc.__version__ != version:
-    sys.exit("ERROR: Version mis-match. Python version found = {} while C version claims {}\n".format(Corrfunc.__version__, version))
+    sys.exit("ERROR: Version mis-match. Python version found = {0} while C version claims {1}\n".format(Corrfunc.__version__, version))
 
 min_py_major = int(re.search(r'MIN_PYTHON_MAJOR\s*:=\s*(\d)',common).group(1))
 min_py_minor = int(re.search(r'MIN_PYTHON_MINOR\s*:=\s*(\d)',common).group(1))
@@ -34,7 +35,7 @@ min_numpy_minor = int(re.search(r'MIN_NUMPY_MINOR\s*:=\s*(\d)',common).group(1))
    
 ## Enforce minimum python version
 if sys.version_info[0] < min_py_major or (sys.version_info[0] == min_py_major  and sys.version_info[1] < min_py_minor):
-    raise RuntimeError('Sorry. Found python {}.{} but minimum required python version is {}.{}'.format(sys.version_info[0],sys.version_info[1],min_py_major,min_py_minor))
+    raise RuntimeError('Sorry. Found python {0}.{1} but minimum required python version is {2}.{3}'.format(sys.version_info[0],sys.version_info[1],min_py_major,min_py_minor))
 
 ## numpy 1.7 supports python 2.4-2.5; python 3.1-3.3. 
 
@@ -52,12 +53,12 @@ if sys.argv[-1] == "publish":
 
 def run_command(command):
     import subprocess
-    # print("about to execute command `{}`. sources = {}".format(command,sources))
+    # print("about to execute command `{0}`. sources = {1}".format(command,sources))
     proc = subprocess.Popen(command, stderr=subprocess.STDOUT, shell=True)
     output, stderr = proc.communicate(input)
     status = proc.wait()
     if status:
-        raise Exception("command = {} failed with status {:d}".format(command,status),
+        raise Exception("command = {0} failed with status {1:d}".format(command,status),
                         output, status)
 
 
@@ -80,7 +81,7 @@ class build_ext_subclass( build_ext ):
                 ### not debugged - likely to be wrong
                 ext_dir = os.path.commonprefix(sources)
                 
-            command = "cd {} && make ".format(ext_dir)
+            command = "cd {0} && make ".format(ext_dir)
             run_command(command)
             
             import shutil
@@ -91,16 +92,15 @@ class build_ext_subclass( build_ext ):
                 if exception.errno != errno.EEXIST:
                     raise
 
-            # full_name='{}.so.{}'.format(os.path.join(ext_dir,ext.name),version)
-            # full_build_name='{}.{}'.format(self.get_ext_fullpath(ext.name),version)
+            # full_name='{0}.so.{1}'.format(os.path.join(ext_dir,ext.name),version)
+            # full_build_name='{0}.{1}'.format(self.get_ext_fullpath(ext.name),version)
 
-            full_name='{}.so'.format(os.path.join(ext_dir,ext.name))
-            full_build_name='{}'.format(self.get_ext_fullpath(ext.name))
+            full_name='{0}.so'.format(os.path.join(ext_dir,ext.name))
+            full_build_name='{0}'.format(self.get_ext_fullpath(ext.name))
 
             shutil.copyfile(full_name, full_build_name)
-            shutil.copyfile('{}.so'.format(os.path.join(ext_dir,ext.name)),self.get_ext_fullpath(ext.name))
-            # print("name = {} source = {} dest = {}".format(ext.name, full_name, full_build_name))
-            #command="ln -s {} {}.so".format(full_build_name,self.get_ext_fullpath(ext.name))
+            shutil.copyfile('{0}.so'.format(os.path.join(ext_dir,ext.name)),self.get_ext_fullpath(ext.name))
+            # print("name = {0} source = {1} dest = {2}".format(ext.name, full_name, full_build_name))
             #os.symlink(full_build_name,self.get_ext_fullpath(ext.name))
 
 
@@ -109,12 +109,12 @@ def generate_extensions(python_dirs):
     for pdir in python_dirs:
         mk = rd(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     pdir, "Makefile"))
-        project       = re.search(r'PROJECT\s*:*=\s*(\w+)', mk).group(1)
-        src_files     = re.findall(r'SOURCES\s*:*=\s*(\w+\.c)', mk)
+        project   = re.search(r'PROJECT\s*:*=\s*(\w+)', mk).group(1)
+        src_files = re.findall(r'SOURCES\s*:*=\s*(\w+\.c)', mk)
 
         sources = [os.path.join(pdir,f) for f in src_files]
-        ## print("Found project = {} in dir = {} with sources = {}".format(project,pdir,sources))
-        ext = Extension("{}".format(project),
+        ## print("Found project = {0} in dir = {1} with sources = {2}".format(project,pdir,sources))
+        ext = Extension("{0}".format(project),
                         sources=sources,
                         )
     
@@ -169,7 +169,7 @@ def setup_packages():
         data_files.extend(f)
 
     ### change them to be relative to package dir rather than root
-    data_files = ["../{}".format(d) for d in data_files]
+    data_files = ["../{0}".format(d) for d in data_files]
 
     ## Fix long description for PyPI
     try:
@@ -216,7 +216,7 @@ def setup_packages():
         ext_modules=extensions,
         package_data={'':data_files},
         include_package_data=True,
-        install_requires=['setuptools','numpy>={}.{}'.format(min_numpy_major,min_numpy_minor)],
+        install_requires=['setuptools','numpy>={0}.{1}'.format(min_numpy_major,min_numpy_minor),'future'],
         zip_safe=False,
         cmdclass = {'build_ext': build_ext_subclass},
         )
