@@ -22,23 +22,23 @@ OBJS2  := $(SRC2:.c=.o)
 all: tests $(targets) $(INCL) uncompress ../../theory.options ../../common.mk Makefile
 
 test_periodic: $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
-	@$(CC) $(OBJS1) $(GSL_LINK) -lgsl -lgslcblas $(CLINK) -o $@
+	$(CC) $(OBJS1) $(GSL_LINK) -lgsl -lgslcblas $(CLINK) -o $@
 
 test_nonperiodic: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile 
-	@$(CC) $(OBJS2) $(CLINK) -o $@
+	$(CC) $(OBJS2) $(CLINK) -o $@
 
 %.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
-	@$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 python_lib: tests $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib
 	@echo 
 	@echo "All THEORY tests are done. Now checking that the C extensions work."
 	@echo 
-	@$(MAKE) -C ../python_bindings tests
+	$(MAKE) -C ../python_bindings tests
 
 tests: test_periodic test_nonperiodic
-	@./test_nonperiodic
-	@./test_periodic
+	./test_nonperiodic
+	./test_periodic
 
 ../../lib:
 	mkdir -p $@

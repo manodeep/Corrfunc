@@ -19,28 +19,28 @@ INCL   := ../../utils/gridlink_mocks.c ../../io/io.c ../../io/ftread.c \
 all: tests $(targets) $(INCL) ../../mocks.options ../../common.mk Makefile
 
 tests_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile 
-	@$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -lgsl -lgslcblas -o $@
+	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -lgsl -lgslcblas -o $@
 
 %.o: %.c $(INCL) ../../mocks.options ../../common.mk Makefile
-	@$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 python_lib: tests $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib
 	@echo 
 	@echo "All MOCKS tests are done. Now checking that the C extensions work."
 	@echo 
-	@$(MAKE) -C ../python_bindings tests
+	$(MAKE) -C ../python_bindings tests
 
 tests: tests_mocks
-	@./tests_mocks
+	./tests_mocks
 
 DDrppi: tests_mocks
-	@./tests_mocks 0 3  
+	./tests_mocks 0 3  
 
 wtheta: tests_mocks
-	@./tests_mocks 1 4 
+	./tests_mocks 1 4 
 
 vpf: tests_mocks
-	@./tests_mocks 2 5
+	./tests_mocks 2 5
 
 .PHONY: clean clena celan install tests $(targets)
 
