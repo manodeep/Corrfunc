@@ -1,9 +1,9 @@
 /* File: cellarray.h */
 /*
-		This file is a part of the Corrfunc package
-		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
-		License: MIT LICENSE. See LICENSE file under the top-level
-		directory at https://github.com/manodeep/Corrfunc/
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
 */
 
 #pragma once
@@ -20,18 +20,18 @@ extern "C" {
 
 #define NLATMAX   100      /* maximum grid dimension in X-Y plane */
 
-typedef struct{
-  DOUBLE *x;
-	DOUBLE *y;
-	DOUBLE *z;
-  int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
-} cellarray;
+    typedef struct{
+        DOUBLE *x;
+        DOUBLE *y;
+        DOUBLE *z;
+        int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
+    } cellarray;
 
-typedef struct{
-  DOUBLE *pos;
-  int64_t nelements;
-} cellarray_nvec;//Here the xyz positions will be stored as pos[x[NVEC],y{NVEC],z[NVEC],x[NVEC]...]. Note amenable to easy sorting -> used by xi_of_r and vpf
-	
+    typedef struct{
+        DOUBLE *pos;
+        int64_t nelements;
+    } cellarray_nvec;//Here the xyz positions will be stored as pos[x[NVEC],y{NVEC],z[NVEC],x[NVEC]...]. Note amenable to easy sorting -> used by xi_of_r and vpf
+
 
 #ifdef __cplusplus
 }
