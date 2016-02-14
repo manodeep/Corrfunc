@@ -31,7 +31,20 @@ matrix:
         - conda create -q --yes -n test python=$PYTHON_VERSION
         - source activate test
         - conda install -q --yes numpy=$NUMPY_VERSION
-        - brew update && brew tap homebrew/versions && brew install gcc5 && brew install gsl 
+        - brew update && brew tap homebrew/versions && brew reinstall gcc5 --without-multilib && brew install gsl
+
+    - os: osx
+      compiler: clang
+      env: COMPILER=clang-omp PYTHON_VERSION=2.7 CFLAGS=-I/usr/local/include/libiomp -fopenmp CLINK=-L/usr/local/lib -liomp5 -fopenmp
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - source activate test
+        - conda install -q --yes numpy=$NUMPY_VERSION
+        - brew update && brew install clang-omp gsl 
+        
 
     # - os: osx
     #   compiler: clang
@@ -124,7 +137,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['gcc-4.8','libgsl0-dev']
-      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.2
+      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.3
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -157,8 +170,7 @@ matrix:
         - export PATH="$HOME/miniconda/bin:$PATH"
         - conda create -q --yes -n test python=$PYTHON_VERSION
         - source activate test
-        - conda install -q --yes gcc numpy=$NUMPY_VERSION
-        - conda install -c asmeurer gsl
+        - conda install -q --yes gcc numpy=$NUMPY_VERSION -c asmeurer gsl
 
 install:
   - make install CC=$COMPILER
