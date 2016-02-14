@@ -1,9 +1,9 @@
 /* File: avx_calls.h */
 /*
-		This file is a part of the Corrfunc package
-		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
-		License: MIT LICENSE. See LICENSE file under the top-level
-		directory at https://github.com/manodeep/Corrfunc/
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
 */
 
 #pragma once
@@ -59,7 +59,7 @@ extern "C" {
 #define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X);
 
 
-// X OP Y
+    // X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_ps(X,Y,OP)
 #define AVX_BITWISE_AND(X,Y)              _mm256_and_ps(X,Y)
 #define AVX_BITWISE_OR(X,Y)               _mm256_or_ps(X,Y)
@@ -71,23 +71,23 @@ extern "C" {
 
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_ps(FALSEVALUE,TRUEVALUE,MASK)
 #define AVX_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_ps(dest, mask, source)
-	
-//Trig
+
+    //Trig
 #ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X)                 _mm256_acos_ps(X)
 #else
-//Other compilers do not have the vectorized arc-cosine
+    //Other compilers do not have the vectorized arc-cosine
 #define AVX_ARC_COSINE(X)                  inv_cosine(X)
 #endif
 
-//Max
+    //Max
 #define AVX_MAX_FLOATS(X,Y)               _mm256_max_ps(X,Y)
 
-//Casting (does not actual convert between types)
+    //Casting (does not actual convert between types)
 #define AVX_CAST_FLOAT_TO_INT(X)          _mm256_castps_si256(X)
 #define AVX_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_ps(X)
 
-//Streaming store
+    //Streaming store
 #define AVX_STREAMING_STORE_FLOATS(X,Y)   _mm256_stream_ps(X,Y)
 #define AVX_STREAMING_STORE_INTS(X,Y)     _mm256_stream_si256(X,Y)
 
@@ -111,7 +111,7 @@ extern "C" {
 #define AVX_LOG10_FLOAT(X)                _mm256_log10_pd(X)
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_pd(X)
 
-// X OP Y
+    // X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_pd(X,Y,OP)
 #define AVX_BITWISE_AND(X,Y)              _mm256_and_pd(X,Y)
 #define AVX_BITWISE_OR(X,Y)               _mm256_or_pd(X,Y)
@@ -125,22 +125,22 @@ extern "C" {
 
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_pd(FALSEVALUE,TRUEVALUE,MASK)
 #define AVX_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_pd(dest, mask, source)
-	
-//Trig
+
+    //Trig
 #ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X)                 _mm256_acos_pd(X)
 #else
 #define AVX_ARC_COSINE(X)                  inv_cosine(X)
 #endif
 
-//Max
+    //Max
 #define AVX_MAX_FLOATS(X,Y)               _mm256_max_pd(X,Y)
 
-//Casting (does not actual convert between types)
+    //Casting (does not actual convert between types)
 #define AVX_CAST_FLOAT_TO_INT(X)          _mm256_castpd_si256(X)
 #define AVX_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_pd(X)
 
-//Streaming store
+    //Streaming store
 #define AVX_STREAMING_STORE_FLOATS(X,Y)   _mm256_stream_pd(X,Y)
 #define AVX_STREAMING_STORE_INTS(X,Y)     _mm_stream_si128(X,Y)
 
@@ -148,31 +148,31 @@ extern "C" {
 
 
 #ifndef  __INTEL_COMPILER
-static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X) 
-{																																				
-	union cos{
-		AVX_FLOATS m;
-		DOUBLE x[NVEC];
-	};
-	union cos union_costheta;
-	union cos union_returnvalue;
-	union_costheta.m = X;
-	const DOUBLE minus_one = (DOUBLE) -1.0;
-	const DOUBLE one = (DOUBLE) 1.0;
-	const DOUBLE zero = (DOUBLE) 0.0;
-	
-	for(int ii=0;ii<NVEC;ii++) {														
-		const DOUBLE costheta = union_costheta.x[ii];
-		if(costheta < minus_one) {
-			union_returnvalue.x[ii] = M_PI;
-		} else if (costheta > one) {
-			union_returnvalue.x[ii] = zero;
-		} else {
-			union_returnvalue.x[ii] = ACOS(costheta);
-		}
-	}																																		
-	return union_returnvalue.m;
-}
+    static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X)
+    {
+        union cos{
+            AVX_FLOATS m;
+            DOUBLE x[NVEC];
+        };
+        union cos union_costheta;
+        union cos union_returnvalue;
+        union_costheta.m = X;
+        const DOUBLE minus_one = (DOUBLE) -1.0;
+        const DOUBLE one = (DOUBLE) 1.0;
+        const DOUBLE zero = (DOUBLE) 0.0;
+
+        for(int ii=0;ii<NVEC;ii++) {
+            const DOUBLE costheta = union_costheta.x[ii];
+            if(costheta < minus_one) {
+                union_returnvalue.x[ii] = M_PI;
+            } else if (costheta > one) {
+                union_returnvalue.x[ii] = zero;
+            } else {
+                union_returnvalue.x[ii] = ACOS(costheta);
+            }
+        }
+        return union_returnvalue.m;
+    }
 #endif
 
 #ifdef __cplusplus
