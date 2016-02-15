@@ -30,11 +30,13 @@ matrix:
   include:
     #### osx with clang doesn't use openmp -> so they are the slowest. Run them first
     - os: osx
-      osx_image: xcode7.2    
+      osx_image: xcode7.3
       compiler: gcc
-      env: COMPILER=gcc-4.8 PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 FAMILY=gcc V=4.8
+      env: COMPILER=gcc-4.8 FAMILY=gcc V='4.8' PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 
       before_install:
-        - brew update && brew tap homebrew/versions && brew install gcc48 --without-multilib      
+        - brew update
+        - brew outdated xctool || brew upgrade xctool
+        - brew tap homebrew/versions && brew install gcc48 --without-multilib      
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
@@ -42,11 +44,13 @@ matrix:
         - source activate test
 
     - os: osx
-      osx_image: xcode7.2    
+      osx_image: xcode7.3    
       compiler: clang
-      env: COMPILER=clang-omp PYTHON_VERSION=2.7 FAMILY=clang V=3.5
+      env: COMPILER=clang-omp FAMILY=clang V='3.5' PYTHON_VERSION=2.7 
       before_install:
-        - brew update && brew tap homebrew/versions && brew install clang-omp
+        - brew update
+        - brew outdated xctool || brew upgrade xctool
+        - brew tap homebrew/versions && brew install clang-omp
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
@@ -54,23 +58,22 @@ matrix:
         - source activate test
         - conda install -q --yes -c asmeurer gsl        
 
-    # - os: osx
-    #   osx_image: xcode7
-    #   compiler: clang
-    #   env: COMPILER=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
-    #   before_install:
-    #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-    #     - bash miniconda.sh -b -p $HOME/miniconda
-    #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION
-    #     - source activate test
-    #     - conda install -q --yes numpy=$NUMPY_VERSION 
-    #     - brew update && brew install gsl
+    - os: osx
+      osx_image: xcode7.3
+      compiler: clang
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - source activate test
+        - conda install -q --yes -c asmeurer gsl
 
     - os: osx
-      osx_image: xcode7.2    
+      osx_image: xcode7.3
       compiler: gcc
-      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.5 FAMILY=gcc V=4.8
+      env: COMPILER=gcc-4.8 V='4.8' PYTHON_VERSION=3.5 FAMILY=gcc
       before_install:
         - brew update && brew tap homebrew/versions && brew install gcc48 --without-multilib
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
@@ -116,10 +119,6 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      # addons:
-      #   apt:
-      #     sources: ['ubuntu-toolchain-r-test']
-      #     packages: ['gcc-4.8','libgsl0-dev']
       env: COMPILER=gcc PYTHON_VERSION=2.6 NUMPY_VERSION=1.7
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -132,27 +131,7 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      # addons:
-      #   apt:
-      #     sources: ['ubuntu-toolchain-r-test']
-      #     packages: ['gcc-4.8','libgsl0-dev']
       env: COMPILER=gcc PYTHON_VERSION=2.7
-      before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
-        - source activate test
-
-    - os: linux
-      dist: trusty
-      sudo: required
-      compiler: gcc
-      # addons:
-      #   apt:
-      #     sources: ['ubuntu-toolchain-r-test']
-      #     packages: ['gcc-4.8','libgsl0-dev']
-      env: COMPILER=gcc PYTHON_VERSION=2.6
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -164,11 +143,7 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      # addons:
-      #   apt:
-      #     sources: ['ubuntu-toolchain-r-test']
-      #     packages: ['gcc-4.8','libgsl0-dev']
-      env: COMPILER=gcc PYTHON_VERSION=3.3
+      env: COMPILER=gcc PYTHON_VERSION=3.3 
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -180,10 +155,6 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      # addons:
-      #   apt:
-      #     sources: ['ubuntu-toolchain-r-test']
-      #     packages: ['gcc-4.8','libgsl0-dev']
       env: COMPILER=gcc PYTHON_VERSION=3.5
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
