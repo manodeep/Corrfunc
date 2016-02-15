@@ -61,9 +61,13 @@ endif
 ifeq (clang,$(findstring clang,$(CC)))
 CFLAGS += -funroll-loops
 ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-CLANG_VERSION:=$(shell $(CC) -dumpversion 2>&1)
-ifeq ($(CLANG_OMP_AVAIL),1) || ifeq(clang-omp,$(findstring clang-omp,$(CC)))
-CFLAGS += -fopenmp
+# CLANG_VERSION := $(shell [ $(CC) -v | grep version | sed "s/.*version([0-9]*\.[0-9]*\).*/\1/)" ])
+# $(info $$CLANG_VERSION is [${CLANG_VERSION}])
+ifeq (clang-omp,$(findstring clang-omp,$(CC)))
+CLANG_OMP_AVAIL :=1
+endif
+ifeq ($(CLANG_OMP_AVAIL),1)
+CFLAGS += -fopenmp=libomp
 CLINK  += -fopenmp=libomp
 else
 $(warning clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options)
