@@ -11,7 +11,7 @@ notifications:
 env:
   global:
     - NUMPY_VERSION=1.9
-  
+
 addons: 
   apt:
     sources:
@@ -30,23 +30,20 @@ matrix:
   include:
     #### osx with clang doesn't use openmp -> so they are the slowest. Run them first
     - os: osx
-      osx_image: xcode7.3
       compiler: gcc
-      env: COMPILER=gcc FAMILY=gcc V='4.8' PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 
+      env: COMPILER=gcc-4.9 FAMILY=gcc V='4.9' PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 
       before_install:
         # - brew update
-        # - brew tap homebrew/versions && brew install gcc48 --without-multilib      
+        # - brew tap homebrew/versions && brew install gcc48 --without-multilib
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
         - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes gcc
         - conda install -q --yes -c asmeurer gsl
 
 
     # - os: osx
-    #   osx_image: xcode7.3    
     #   compiler: clang
     #   env: COMPILER=clang-omp FAMILY=clang V='3.5' PYTHON_VERSION=2.7 
     #   before_install:
@@ -61,7 +58,6 @@ matrix:
     #     - conda install -q --yes -c asmeurer gsl        
 
     # - os: osx
-    #   osx_image: xcode7.3
     #   compiler: clang
     #   env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
     #   before_install:
@@ -73,7 +69,6 @@ matrix:
     #     - conda install -q --yes -c asmeurer gsl
 
     # - os: osx
-    #   osx_image: xcode7.3
     #   compiler: gcc
     #   env: COMPILER=gcc-4.8 V='4.8' PYTHON_VERSION=3.5 FAMILY=gcc
     #   before_install:
