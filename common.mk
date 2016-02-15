@@ -16,7 +16,11 @@ VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
 INCLUDE:=-I../../io -I../../utils
 ### The POSIX_SOURCE flag is required to get the definition of strtok_r
-CFLAGS += -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
+CFLAGS 	+= -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
+GSL_FOUND := $(shell command -v gsl-config)
+ifndef GSL_FOUND
+$(error GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION))
+endif
 GSL_CFLAGS := $(shell gsl-config --cflags)
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR)
