@@ -23,40 +23,26 @@ matrix:
     #### osx with clang doesn't use openmp -> so they are the slowest. Run them first
     - os: osx
       compiler: gcc
-      env: COMPILER=gcc-5 V=3.6 PYTHON_VERSION=2.7
+      env: COMPILER=gcc-5 PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 FAMILY=gcc V=5.0
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
-        - brew update && brew tap homebrew/versions && brew reinstall gcc5 --without-multilib && brew install gsl
+        - brew update && brew tap homebrew/versions && brew install gcc5 --without-multilib && brew install gsl
 
     - os: osx
       compiler: clang
-      env: COMPILER=clang-omp PYTHON_VERSION=2.7 CFLAGS=-I/usr/local/include/libiomp -fopenmp CLINK=-L/usr/local/lib -liomp5 -fopenmp
+      env: COMPILER=clang-omp PYTHON_VERSION=2.7 FAMILY=clang V=3.7
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
-        - brew update && brew install clang-omp gsl 
-        
+        - brew update && brew tap homebrew/versions && brew install clang-omp gsl 
 
-    # - os: osx
-    #   compiler: clang
-    #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.4
-    #   before_install:
-    #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-    #     - bash miniconda.sh -b -p $HOME/miniconda
-    #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION
-    #     - source activate test
-    #     - conda install -q --yes numpy=$NUMPY_VERSION 
-    #     - brew update && brew install gsl
 
     # - os: osx
     #   osx_image: xcode7
@@ -70,6 +56,17 @@ matrix:
     #     - source activate test
     #     - conda install -q --yes numpy=$NUMPY_VERSION 
     #     - brew update && brew install gsl
+
+    - os: osx
+      compiler: gcc
+      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.5 FAMILY=gcc V=4.8
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION gcc
+        - source activate test
+        - conda install -q --yes -c asmeurer gsl
                      
     - os: linux
       compiler: clang
@@ -82,9 +79,8 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
 
     - os: linux
       compiler: clang
@@ -97,10 +93,23 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
         
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['gcc-4.8','libgsl0-dev']
+      env: COMPILER=gcc-4.8 PYTHON_VERSION=2.6 NUMPY_VERSION=1.7
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - source activate test
+
     - os: linux
       compiler: gcc
       addons:
@@ -112,9 +121,8 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
 
     - os: linux
       compiler: gcc
@@ -127,9 +135,8 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
         
     - os: linux
       compiler: gcc
@@ -142,9 +149,8 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
 
     - os: linux
       compiler: gcc
@@ -157,20 +163,9 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
-        - conda install -q --yes numpy=$NUMPY_VERSION
         
-    - os: osx
-      compiler: gcc
-      env: COMPILER=gcc-4.8 PYTHON_VERSION=3.5 FAMILY=gcc V=4.8
-      before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION
-        - source activate test
-        - conda install -q --yes gcc numpy=$NUMPY_VERSION -c asmeurer gsl
 
 install:
   - make install CC=$COMPILER
