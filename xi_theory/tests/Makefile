@@ -7,7 +7,7 @@ targets := test_periodic test_nonperiodic
 ifneq ($(COMPILE_PYTHON_EXT), 0)
 targets += python_lib
 else
-$(warning Skipping python tests since python or numpy is unavailable)
+$(warning $(ccmagenta) Skipping python tests since python or numpy is unavailable $(ccreset))
 endif
 
 SRC1   := test_periodic.c ../../utils/utils.c ../../utils/progressbar.c 

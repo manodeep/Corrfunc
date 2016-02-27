@@ -35,7 +35,7 @@ wtheta: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 
 # mkl:
 # ifndef MKLROOT
-# 	$(error You have requested MKL but MKLROOT environment variable is not defined)
+# 	$(error $(ccred) You have requested MKL but MKLROOT environment variable is not defined $(ccreset))
 # endif
 
 libs:lib

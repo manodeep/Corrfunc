@@ -14,12 +14,20 @@ MINOR:=2
 PATCHLEVEL:=3
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
+## Colored text output
+## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
+ccreset:=$(shell echo "\033[0;0m")
+ccred:=$(shell echo "\033[0;31m")
+ccmagenta:=$(shell echo "\033[0;35m")
+ccgreen:=$(shell echo "\033[0;32m")
+## end of colored text output
+
 INCLUDE:=-I../../io -I../../utils
 ### The POSIX_SOURCE flag is required to get the definition of strtok_r
 CFLAGS 	+= -Wsign-compare -Wall -Wextra -Wshadow -Wunused -std=c99 -g -m64 -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
 GSL_FOUND := $(shell gsl-config --version)
 ifndef GSL_FOUND
-$(error GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION))
+$(error $(ccred) GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION) $(ccreset))
 endif
 GSL_CFLAGS := $(shell gsl-config --cflags)
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
@@ -27,13 +35,13 @@ GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR)
 
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 ifneq (clang,$(findstring clang,$(CC)))
-$(warning Recommended compiler for a serial build is clang)
+$(warning $(ccmagenta) Recommended compiler for a serial build is clang $(ccreset))
 endif
 endif
 
 ifeq (OUTPUT_RPAVG,$(findstring OUTPUT_RPAVG,$(OPT)))
 ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
-$(error DOUBLE_PREC must be enabled with OUTPUT_RPAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs))
+$(error $(ccred) DOUBLE_PREC must be enabled with OUTPUT_RPAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs) $(ccreset))
 endif
 endif
 
@@ -74,7 +82,7 @@ ifeq ($(CLANG_OMP_AVAIL),1)
 CFLAGS += -fopenmp=libomp
 CLINK  += -fopenmp=libomp
 else
-$(warning clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options)
+$(warning $(ccmagenta) clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
 OPT:=$(filter-out -DUSE_OMP,$(OPT))
 endif
 endif
@@ -93,18 +101,18 @@ endif
 
 ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
 ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
-$(error DOUBLE_PREC must be enabled with OUTPUT_THETAAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs))
+$(error $(ccred) DOUBLE_PREC must be enabled with OUTPUT_THETAAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs) $(ccreset))
 endif
 ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
 ifneq (icc,$(findstring icc,$(CC)))
-$(warning WARNING: OUTPUT_THETAAVG with AVX capabilties is slow with gcc (disables AVX essentially) with gcc. Try to use icc if available)
+$(warning $(ccmagenta) WARNING: OUTPUT_THETAAVG with AVX capabilties is slow with gcc (disables AVX essentially) with gcc. Try to use icc if available $(ccreset))
 endif
 endif
 endif
 
 ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
 ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-$(warning Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set)
+$(warning $(ccmagenta) Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set $(ccreset))
 endif
 endif
 
@@ -148,12 +156,12 @@ PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( 
 NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
 
 ifneq ($(PYTHON_AVAIL),true)
-$(warning Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR))
+$(warning $(ccmagenta) Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR) $(ccreset))
 COMPILE_PYTHON_EXT := 0
 endif
 
 ifneq ($(NUMPY_AVAIL),true)
-$(warning Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR))
+$(warning $(ccmagenta) Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR) $(ccreset))
 COMPILE_PYTHON_EXT := 0
 endif
 
