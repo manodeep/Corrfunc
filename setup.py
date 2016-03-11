@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
+
 from __future__ import (division, print_function)
 
 import os
@@ -33,7 +34,6 @@ if Corrfunc.__version__ != version:
 
 min_py_major = int(re.search(r'MIN_PYTHON_MAJOR\s*:=\s*(\d)', common).group(1))
 min_py_minor = int(re.search(r'MIN_PYTHON_MINOR\s*:=\s*(\d)', common).group(1))
-
 min_np_major = int(re.search(r'MIN_NUMPY_MAJOR\s*:=\s*(\d)', common).group(1))
 min_np_minor = int(re.search(r'MIN_NUMPY_MINOR\s*:=\s*(\d)', common).group(1))
 
@@ -44,7 +44,6 @@ if version_info[0] < min_py_major or \
     python version is {2}.{3}'.format(version_info[0],
                                       version_info[1],
                                       min_py_major, min_py_minor))
-
 # numpy 1.7 supports python 2.4-2.5; python 3.1-3.3.
 try:
     from setuptools import setup, Extension
@@ -130,15 +129,13 @@ def generate_extensions(python_dirs):
                         )
 
         extensions.append(ext)
-
     return extensions
+
 
 # Only python >= 3.5 supports the recursive glob, hence
 # defining the function that works on all reasonable pythons
 # http://stackoverflow.com/questions/2186525/use-a-glob-to-
 # find-files-recursively-in-python
-
-
 def recursive_glob(rootdir='.', patterns=['*']):
     return [path.join(looproot, filename)
             for looproot, _, filenames in os.walk(rootdir)

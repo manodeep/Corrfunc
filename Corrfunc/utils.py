@@ -171,6 +171,7 @@ def read_catalog(filebase=None):
                 f = allowed_exts[e]
                 x, y, z = f(filename + e, dtype)
                 return x, y, z
+
         raise IOError("Could not locate {0} with any of these extensions \
         = {1}".format(filename, allowed_exts.keys()))
     else:
@@ -183,4 +184,4 @@ def read_catalog(filebase=None):
             x, y, z = f(filebase, np.float)
             return x, y, z
 
-        raise IOError("Could not locate file {0}", filebase)
+        raise IOError("Could not locate file {0}".format(filebase))
