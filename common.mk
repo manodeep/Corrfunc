@@ -33,6 +33,17 @@ GSL_CFLAGS := $(shell gsl-config --cflags)
 GSL_LIBDIR := $(shell gsl-config --prefix)/lib
 GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR)
 
+
+# Check if code is running on travis
+ifeq (osx, $(findstring osx, ${TRAVIS_OS_NAME}))
+$(info hererehehehre)
+ifeq (USE_AVX, $(findstring USE_AVX,$(OPT)))
+$(warning $(ccmagenta) TRAVIS CI OSX workers do not seem to support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
+OPT:=$(filter-out -DUSE_AVX,$(OPT))
+endif
+endif
+# done with removing USE_AVX under osx on Travis
+
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 ifneq (clang,$(findstring clang,$(CC)))
 $(warning $(ccmagenta) Recommended compiler for a serial build is clang $(ccreset))
@@ -123,16 +134,6 @@ ifeq ($(UNAME), Darwin)
 ifeq (gcc,$(findstring gcc,$(CC)))
 CFLAGS += -Wa,-q
 endif
-
-# Check if code is running on travis
-ifeq (osx, $(findstring osx, ${TRAVIS_OS_NAME}))
-$(info hererehehehre)
-ifeq (USE_AVX, $(findstring USE_AVX,$(OPT)))
-$(warning $(ccmagenta) TRAVIS CI OSX workers do not seem to support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
-OPT:=$(filter-out -DUSE_AVX,$(OPT))
-endif
-endif
-# done with removing USE_AVX under osx on Travis
 
 endif
 
