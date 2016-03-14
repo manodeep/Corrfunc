@@ -125,6 +125,7 @@ CFLAGS += -Wa,-q
 endif
 
 # Check if code is running on travis
+@echo $(ccmagenta) TRAVIS_OS_NAME is $$TRAVIS_OS_NAME $(ccreset)
 ifeq ($$TRAVIS_OS_NAME,"osx")
 ifeq (USE_AVX, $(findstring USE_AVX,$(OPT)))
 $(warning $(ccmagenta) TRAVIS CI OSX workers do not seem to support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
