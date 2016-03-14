@@ -1,24 +1,24 @@
 /* File: vpf.c */
 /*
-		This file is a part of the Corrfunc package
-		Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
-		License: MIT LICENSE. See LICENSE file under the top-level
-		directory at https://github.com/manodeep/Corrfunc/
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
 */
 
 /* PROGRAM VPF
 
    --- vpf rmax nbin nc seed [ivel] [zstep] < particle distribution > vpf
    --- compute void probability function
-       * rmax = maximum radius (in h^-1 Mpc)
-       * nbin = number of radial bins (evenly spaced in r)
-       * nc = number of centers to place
-	   * num_pN = how many particles/spheres to report
-	   * file = file name containing the particles
-	   * file_format = format for the input file in the previous line (a-> ascii, f->fastfood)
-	   * seed = random number seed
-       * > output <r P0 P1 P2 ....Pnum_pN-1>
-*/
+   * rmax = maximum radius (in h^-1 Mpc)
+   * nbin = number of radial bins (evenly spaced in r)
+   * nc = number of centers to place
+   * num_pN = how many particles/spheres to report
+   * file = file name containing the particles
+   * file_format = format for the input file in the previous line (a-> ascii, f->fastfood)
+   * seed = random number seed
+   * > output <r P0 P1 P2 ....Pnum_pN-1>
+   */
 
 #include <stdio.h>
 #include <math.h>
@@ -36,128 +36,127 @@ void Printhelp(void);
 
 int main(int argc, char *argv[])
 {
-  double rmax;
-  int nbin,nc,num_pN;
-  unsigned long seed=-1;
-  char *file=NULL,*fileformat=NULL;
+    double rmax;
+    int nbin,nc,num_pN;
+    unsigned long seed=-1;
+    char *file=NULL,*fileformat=NULL;
 
-  /*---VPF-variables----------------*/
-	const char argnames[][30]={"rmax","nbins","ncentres","num_pN","file","format","seed"};
-	int nargs=sizeof(argnames)/(sizeof(char)*30);
-	
-  int64_t np;
-  DOUBLE *x,*y,*z;
+    /*---VPF-variables----------------*/
+    const char argnames[][30]={"rmax","nbins","ncentres","num_pN","file","format","seed"};
+    int nargs=sizeof(argnames)/(sizeof(char)*30);
 
-  struct timeval tstart,t0,t1;
-  gettimeofday(&tstart,NULL);
+    int64_t np;
+    DOUBLE *x,*y,*z;
 
-  /*---Read-arguments-----------------------------------*/
-	if(argc< (nargs+1)) {
-		Printhelp() ;
-		fprintf(stderr,"\nFound: %d parameters\n ",argc-1);
-		int i;
-		for(i=1;i<argc;i++) {
-			if(i <= nargs)
-				fprintf(stderr,"\t\t %s = `%s' \n",argnames[i-1],argv[i]);
-			else
-				fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
-		}
-		if(i <= nargs) {
-			fprintf(stderr,"\nMissing required parameters \n");
-			for(i=argc;i<=nargs;i++)
-				fprintf(stderr,"\t\t %s = `?'\n",argnames[i-1]);
-		}
-		return EXIT_FAILURE;
-	}
-	
-	rmax = atof(argv[1]);
-	nbin = atoi(argv[2]);
-	nc   = atoi(argv[3]);
-	num_pN = atoi(argv[4]);
-	file =  argv[5];
-	fileformat = argv[6];
-	seed = atol(argv[7]);
+    struct timeval tstart,t0,t1;
+    gettimeofday(&tstart,NULL);
 
-	assert(nbin >=1 && "Number of bins has to be at least 1");
-	assert(nc >=1   && "Number of spheres has to be at least 1");
-	assert(num_pN >= 1 && "Number of pN's requested must be at least 1");
+    /*---Read-arguments-----------------------------------*/
+    if(argc< (nargs+1)) {
+        Printhelp() ;
+        fprintf(stderr,"\nFound: %d parameters\n ",argc-1);
+        int i;
+        for(i=1;i<argc;i++) {
+            if(i <= nargs)
+                fprintf(stderr,"\t\t %s = `%s' \n",argnames[i-1],argv[i]);
+            else
+                fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
+        }
+        if(i <= nargs) {
+            fprintf(stderr,"\nMissing required parameters \n");
+            for(i=argc;i<=nargs;i++)
+                fprintf(stderr,"\t\t %s = `?'\n",argnames[i-1]);
+        }
+        return EXIT_FAILURE;
+    }
 
-  fprintf(stderr,"Running `%s' with the parameters \n",argv[0]);
-	fprintf(stderr,"\n\t\t -------------------------------------\n");
-	for(int i=1;i<argc;i++) {
-		if(i <= nargs) {
-			fprintf(stderr,"\t\t %-10s = %s \n",argnames[i-1],argv[i]);
-		}  else {
-			fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
-		}
-	}
-	fprintf(stderr,"\t\t -------------------------------------\n");
+    rmax = atof(argv[1]);
+    nbin = atoi(argv[2]);
+    nc   = atoi(argv[3]);
+    num_pN = atoi(argv[4]);
+    file =  argv[5];
+    fileformat = argv[6];
+    seed = atol(argv[7]);
+
+    assert(nbin >=1 && "Number of bins has to be at least 1");
+    assert(nc >=1   && "Number of spheres has to be at least 1");
+    assert(num_pN >= 1 && "Number of pN's requested must be at least 1");
+
+    fprintf(stderr,"Running `%s' with the parameters \n",argv[0]);
+    fprintf(stderr,"\n\t\t -------------------------------------\n");
+    for(int i=1;i<argc;i++) {
+        if(i <= nargs) {
+            fprintf(stderr,"\t\t %-10s = %s \n",argnames[i-1],argv[i]);
+        }  else {
+            fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
+        }
+    }
+    fprintf(stderr,"\t\t -------------------------------------\n");
 
 
-  
-  /*---Read-particle-file-----------------------------------------------------*/
-  gettimeofday(&t0,NULL);
-	np = read_positions(file,fileformat, sizeof(DOUBLE), 3, &x, &y, &z);
-	gettimeofday(&t1,NULL);
 
-	results_countspheres *results = countspheres(np, x, y, z,
-																							 rmax, nbin, nc,
-																							 num_pN,
-																							 seed);
+    /*---Read-particle-file-----------------------------------------------------*/
+    gettimeofday(&t0,NULL);
+    np = read_positions(file,fileformat, sizeof(DOUBLE), 3, &x, &y, &z);
+    gettimeofday(&t1,NULL);
 
-	//Output the results
-  const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-	for(int ibin=0;ibin<results->nbin;ibin++) {
-		const double r=(ibin+1)*rstep;
-    fprintf(stdout,"%"DOUBLE_FORMAT" ", r);
-		for(int i=0;i<num_pN;i++) {
-			fprintf(stdout," %10.4e", (results->pN)[ibin][i]);
-		}
-		fprintf(stdout,"\n");
-  }
-	
-  free(x);free(y);free(z);
-	free_results_countspheres(&results);
-  gettimeofday(&t1,NULL);
-  fprintf(stderr,"vpf> Done. Ngal = %"PRId64". Time taken = %0.2lf seconds \n",np,ADD_DIFF_TIME(tstart,t1));
-  
-  return EXIT_SUCCESS;
+    results_countspheres *results = countspheres(np, x, y, z,
+                                                 rmax, nbin, nc,
+                                                 num_pN,
+                                                 seed);
+
+    //Output the results
+    const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+    for(int ibin=0;ibin<results->nbin;ibin++) {
+        const double r=(ibin+1)*rstep;
+        fprintf(stdout,"%"DOUBLE_FORMAT" ", r);
+        for(int i=0;i<num_pN;i++) {
+            fprintf(stdout," %10.4e", (results->pN)[ibin][i]);
+        }
+        fprintf(stdout,"\n");
+    }
+
+    free(x);free(y);free(z);
+    free_results_countspheres(&results);
+    gettimeofday(&t1,NULL);
+    fprintf(stderr,"vpf> Done. Ngal = %"PRId64". Time taken = %0.2lf seconds \n",np,ADD_DIFF_TIME(tstart,t1));
+
+    return EXIT_SUCCESS;
 }
 
 /*---Print-help-information---------------------------*/
 void Printhelp(void)
 {
 
-	fprintf(stderr,"=========================================================================\n") ;
-	fprintf(stderr,"   --- vpf rmax nbins nspheres numpN file format seed > VPFfile\n") ;
-	fprintf(stderr,"   --- Measures the counts-in-spheres in a simulation box\n") ;
-	fprintf(stderr,"     * rmax         = size of the biggest sphere\n");
-	fprintf(stderr,"     * nbins        = number of bins to use for the counts-in-spheres\n");
-	fprintf(stderr,"     * nspheres     = number of random spheres to place on the cube\n");
-	fprintf(stderr,"     * numpN        = number of counts-in-spheres to output. [numpN=1-> P0, numpN=2->P0,P1, numpN=3->P0,P1,P2...\n");
-	fprintf(stderr,"     * file         = name of data file\n") ;
-	fprintf(stderr,"     * format       = format of data file  (a=ascii, c=csv, f=fast-food)\n") ;
-	fprintf(stderr,"     * seed         = seed for random number generator\n");
-	fprintf(stderr,"     > VPFfile      = name of output file <r P0 P1 P2 ...>\n") ;
-	fprintf(stderr,"\n\tCompile options: \n");
+    fprintf(stderr,"=========================================================================\n") ;
+    fprintf(stderr,"   --- vpf rmax nbins nspheres numpN file format seed > VPFfile\n") ;
+    fprintf(stderr,"   --- Measures the counts-in-spheres in a simulation box\n") ;
+    fprintf(stderr,"     * rmax         = size of the biggest sphere\n");
+    fprintf(stderr,"     * nbins        = number of bins to use for the counts-in-spheres\n");
+    fprintf(stderr,"     * nspheres     = number of random spheres to place on the cube\n");
+    fprintf(stderr,"     * numpN        = number of counts-in-spheres to output. [numpN=1-> P0, numpN=2->P0,P1, numpN=3->P0,P1,P2...\n");
+    fprintf(stderr,"     * file         = name of data file\n") ;
+    fprintf(stderr,"     * format       = format of data file  (a=ascii, c=csv, f=fast-food)\n") ;
+    fprintf(stderr,"     * seed         = seed for random number generator\n");
+    fprintf(stderr,"     > VPFfile      = name of output file <r P0 P1 P2 ...>\n") ;
+    fprintf(stderr,"\n\tCompile options: \n");
 #ifdef PERIODIC
-	fprintf(stderr,"Periodic = True\n");
+    fprintf(stderr,"Periodic = True\n");
 #else
-	fprintf(stderr,"Periodic = False\n");
+    fprintf(stderr,"Periodic = False\n");
 #endif
-	
-#ifdef DOUBLE_PREC
-	fprintf(stderr,"Precision = double\n");
-#else
-	fprintf(stderr,"Precision = float\n");
-#endif
-	
-#if defined(USE_AVX) && defined(__AVX__)
-	fprintf(stderr,"Use AVX = True\n");
-#else
-	fprintf(stderr,"Use AVX = False\n");
-#endif
-	
-	fprintf(stderr,"=========================================================================\n") ;
-}
 
+#ifdef DOUBLE_PREC
+    fprintf(stderr,"Precision = double\n");
+#else
+    fprintf(stderr,"Precision = float\n");
+#endif
+
+#if defined(USE_AVX) && defined(__AVX__)
+    fprintf(stderr,"Use AVX = True\n");
+#else
+    fprintf(stderr,"Use AVX = False\n");
+#endif
+
+    fprintf(stderr,"=========================================================================\n") ;
+}

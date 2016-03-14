@@ -8,7 +8,7 @@ targets:=dirs DD DDrppi wp xi vpf examples
 ifneq ($(COMPILE_PYTHON_EXT), 0)
 targets += python_bindings
 else
-$(warning Not compiling C extensions for theory. Either python or numpy not available)
+$(warning $(ccmagenta) Not compiling C extensions for theory. Either python or numpy not available $(ccreset))
 endif
 
 all: $(targets) logbins
