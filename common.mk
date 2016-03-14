@@ -36,7 +36,6 @@ GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR)
 
 # Check if code is running on travis
 ifeq (osx, $(findstring osx, ${TRAVIS_OS_NAME}))
-$(info hererehehehre)
 ifeq (USE_AVX, $(findstring USE_AVX,$(OPT)))
 $(warning $(ccmagenta) TRAVIS CI OSX workers do not seem to support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
 OPT:=$(filter-out -DUSE_AVX,$(OPT))
