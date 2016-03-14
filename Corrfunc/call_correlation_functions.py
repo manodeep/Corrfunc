@@ -16,7 +16,7 @@ from __future__ import (division, print_function, absolute_import,
 import os.path as path
 import time
 from Corrfunc import _countpairs
-from .utils import read_catalog
+from Corrfunc.utils import read_catalog
 
 
 def main():
