@@ -123,6 +123,16 @@ ifeq ($(UNAME), Darwin)
 ifeq (gcc,$(findstring gcc,$(CC)))
 CFLAGS += -Wa,-q
 endif
+
+# Check if code is running on travis
+ifeq ($$TRAVIS_OS_NAME,"osx")
+ifeq (USE_AVX, $(findstring USE_AVX,$(OPT)))
+$(warning $(ccmagenta) TRAVIS CI OSX workers do not seem to support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
+OPT:=$(filter-out -DUSE_AVX,$(OPT))
+endif
+endif
+# done with removing USE_AVX under osx on Travis
+
 endif
 
 export PYTHON_CHECKED ?= 0
