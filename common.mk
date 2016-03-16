@@ -43,6 +43,20 @@ endif
 endif
 # done with removing USE_AVX under osx on Travis
 
+# Now check if gcc is set to be the compiler but if clang is really under the hood.
+export GCC_IS_CLANG ?= -1
+ifeq ($(GCC_IS_CLANG), -1)
+GCC_VERSION := $(shell gcc --version)
+ifeq (clang,$(findstring clang,$(GCC_VERSION)))
+export GCC_IS_CLANG := 1
+else
+export GCC_IS_CLANG := 0
+endif
+# $(info $$GCC_VERSION is [${GCC_VERSION}])
+# $(info $$GCC_IS_CLANG is [${GCC_IS_CLANG}])
+endif
+
+
 ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 ifneq (clang,$(findstring clang,$(CC)))
 $(warning $(ccmagenta) Recommended compiler for a serial build is clang $(ccreset))
@@ -131,7 +145,10 @@ ifeq ($(UNAME), Darwin)
 ## use the clang assembler instead of GNU assembler
 ## http://stackoverflow.com/questions/10327939/erroring-on-no-such-instruction-while-assembling-project-on-mac-os-x-lion
 ifeq (gcc,$(findstring gcc,$(CC)))
+ifneq ($(GCC_IS_CLANG), 1)
+## Only add -Wa,-q flag if it is true gcc. if clang is operating under gcc, no need to add this flag
 CFLAGS += -Wa,-q
+endif
 endif
 
 endif
