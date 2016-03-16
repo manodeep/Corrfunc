@@ -44,16 +44,16 @@ endif
 # done with removing USE_AVX under osx on Travis
 
 # Now check if gcc is set to be the compiler but if clang is really under the hood.
-export GCC_IS_CLANG ?= -1
-ifeq ($(GCC_IS_CLANG), -1)
-GCC_VERSION := $(shell gcc --version)
-ifeq (clang,$(findstring clang,$(GCC_VERSION)))
-export GCC_IS_CLANG := 1
+export CC_IS_CLANG ?= -1
+ifeq ($(CC_IS_CLANG), -1)
+CC_VERSION := $(shell $(CC) --version)
+ifeq (clang,$(findstring clang,$(CC_VERSION)))
+export CC_IS_CLANG := 1
 else
-export GCC_IS_CLANG := 0
+export CC_IS_CLANG := 0
 endif
-# $(info $$GCC_VERSION is [${GCC_VERSION}])
-# $(info $$GCC_IS_CLANG is [${GCC_IS_CLANG}])
+# $(info $$CC_VERSION is [${CC_VERSION}])
+# $(info $$CC_IS_CLANG is [${CC_IS_CLANG}])
 endif
 
 
@@ -85,6 +85,7 @@ endif
 else
 
 ### compiler specific flags for gcc
+ifneq ($(CC_IS_CLANG), 1)
 ifeq (gcc,$(findstring gcc,$(CC)))
 CFLAGS += -ftree-vectorize -funroll-loops -fprefetch-loop-arrays --param simultaneous-prefetches=4 #-ftree-vectorizer-verbose=6 -fopt-info-vec-missed #-fprofile-use -fprofile-correction #-fprofile-generate
 ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
@@ -92,13 +93,13 @@ CFLAGS += -fopenmp
 CLINK  += -fopenmp
 endif
 endif
-
+else
 ### compiler specific flags for clang
-ifeq (clang,$(findstring clang,$(CC)))
 CFLAGS += -funroll-loops
 ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-# CLANG_VERSION := $(shell [ $(CC) -v | grep version | sed "s/.*version([0-9]*\.[0-9]*\).*/\1/)" ])
+# CLANG_VERSION := $(shell [ $(CC) --version | grep version | sed "s/.*version([0-9]*\.[0-9]*\).*/\1/)" ])
 # $(info $$CLANG_VERSION is [${CLANG_VERSION}])
+## Need to do a version check clang >= 3.7 supports OpenMP. If it is Apple clang, then it doesn't support OpenMP.
 ifeq (clang-omp,$(findstring clang-omp,$(CC)))
 CLANG_OMP_AVAIL :=1
 endif
@@ -106,7 +107,16 @@ ifeq ($(CLANG_OMP_AVAIL),1)
 CFLAGS += -fopenmp=libomp
 CLINK  += -fopenmp=libomp
 else
-$(warning $(ccmagenta) clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
+
+# I dislike being warned multiple times but the compiler warning will not
+# be visible if the entire codebase is being compiled. 
+# export WARNING_PRINTED ?= 0
+# ifeq ($(WARNING_PRINTED), 0)
+$(warning $(ccmagenta)clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
+infovar := "OPT:=$$(filter-out -DUSE_OMP,$$(OPT))"
+$(info $(ccmagenta)If you are sure your version of clang (must be >= 3.7, NOT Apple clang) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
+# export WARNING_PRINTED := 1
+# endif
 OPT:=$(filter-out -DUSE_OMP,$(OPT))
 endif
 endif
@@ -145,7 +155,7 @@ ifeq ($(UNAME), Darwin)
 ## use the clang assembler instead of GNU assembler
 ## http://stackoverflow.com/questions/10327939/erroring-on-no-such-instruction-while-assembling-project-on-mac-os-x-lion
 ifeq (gcc,$(findstring gcc,$(CC)))
-ifneq ($(GCC_IS_CLANG), 1)
+ifneq ($(CC_IS_CLANG), 1)
 ## Only add -Wa,-q flag if it is true gcc. if clang is operating under gcc, no need to add this flag
 CFLAGS += -Wa,-q
 endif
