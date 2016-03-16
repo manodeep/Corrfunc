@@ -44,30 +44,40 @@ endif
 # done with removing USE_AVX under osx on Travis
 
 # Now check if gcc is set to be the compiler but if clang is really under the hood.
-export GCC_IS_CLANG ?= -1
-ifeq ($(GCC_IS_CLANG), -1)
-GCC_VERSION := $(shell gcc --version)
-ifeq (clang,$(findstring clang,$(GCC_VERSION)))
-export GCC_IS_CLANG := 1
+export CC_IS_CLANG ?= -1
+ifeq ($(CC_IS_CLANG), -1)
+CC_VERSION := $(shell $(CC) --version)
+ifeq (clang,$(findstring clang,$(CC_VERSION)))
+export CC_IS_CLANG := 1
 else
-export GCC_IS_CLANG := 0
+export CC_IS_CLANG := 0
 endif
-# $(info $$GCC_VERSION is [${GCC_VERSION}])
-# $(info $$GCC_IS_CLANG is [${GCC_IS_CLANG}])
+# $(info $$CC_VERSION is [${CC_VERSION}])
+# $(info $$CC_IS_CLANG is [${CC_IS_CLANG}])
 endif
+# Done with checking if clang is underneath gcc
 
 
-ifneq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-ifneq (clang,$(findstring clang,$(CC)))
-$(warning $(ccmagenta) Recommended compiler for a serial build is clang $(ccreset))
-endif
-endif
-
+## Check for conflicting options
 ifeq (OUTPUT_RPAVG,$(findstring OUTPUT_RPAVG,$(OPT)))
 ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
 $(error $(ccred) DOUBLE_PREC must be enabled with OUTPUT_RPAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs) $(ccreset))
 endif
 endif
+
+ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
+ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
+$(error $(ccred) DOUBLE_PREC must be enabled with OUTPUT_THETAAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs) $(ccreset))
+endif
+endif
+
+ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
+ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+$(warning $(ccmagenta) Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set $(ccreset))
+endif
+endif
+## done with check for conflicting options
+
 
 ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
 VECTOR_TYPE:=float
@@ -81,77 +91,81 @@ CFLAGS += -xhost -opt-prefetch -opt-prefetch-distance=16 #-vec-report6
 ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 CFLAGS += -openmp
 CLINK  += -openmp
-endif
-else
+endif ##openmp with icc
+else ## not icc -> gcc or clang follow
 
+## Warning that w(theta) with OUTPUT_THETAAVG is very slow without icc
+## Someday I am going to fix that by linking with MKL 
+ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
+$(warning $(ccmagenta) WARNING: OUTPUT_THETAAVG with AVX capabilties is slow with gcc/clang (disables AVX essentially) with gcc/clang. Try to use icc if available $(ccreset))
+endif
+endif
+
+### GCC is slightly more complicated. CC might be called gcc but it might be clang underneath
 ### compiler specific flags for gcc
+ifneq ($(CC_IS_CLANG), 1)
+
+## Real gcc here
 ifeq (gcc,$(findstring gcc,$(CC)))
 CFLAGS += -ftree-vectorize -funroll-loops -fprefetch-loop-arrays --param simultaneous-prefetches=4 #-ftree-vectorizer-verbose=6 -fopt-info-vec-missed #-fprofile-use -fprofile-correction #-fprofile-generate
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+CFLAGS += -Wa,-q
+endif
+
 ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
 CFLAGS += -fopenmp
 CLINK  += -fopenmp
-endif
-endif
+endif #openmp with gcc
+endif #gcc findstring
 
+
+else ##CC is clang
+CLANG_OMP_AVAIL := 0
 ### compiler specific flags for clang
-ifeq (clang,$(findstring clang,$(CC)))
 CFLAGS += -funroll-loops
 ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-# CLANG_VERSION := $(shell [ $(CC) -v | grep version | sed "s/.*version([0-9]*\.[0-9]*\).*/\1/)" ])
-# $(info $$CLANG_VERSION is [${CLANG_VERSION}])
 ifeq (clang-omp,$(findstring clang-omp,$(CC)))
 CLANG_OMP_AVAIL :=1
-endif
+else
+# CLANG_VERSION := $(shell [ $(CC) --version | grep version | sed "s/.*version([0-9]*\.[0-9]*\).*/\1/)" ])
+# $(info $$CLANG_VERSION is [${CLANG_VERSION}])
+## Need to do a version check clang >= 3.7 supports OpenMP. If it is Apple clang, then it doesn't support OpenMP.
+## All of the version checks go here. If OpenMP is supported, update CLANG_OMP_AVAIL to 1.
+endif 
+
 ifeq ($(CLANG_OMP_AVAIL),1)
 CFLAGS += -fopenmp=libomp
 CLINK  += -fopenmp=libomp
 else
-$(warning $(ccmagenta) clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
+# I dislike being warned multiple times but the compiler warning will not
+# be visible if the entire codebase is being compiled. 
+# export WARNING_PRINTED ?= 0
+# ifeq ($(WARNING_PRINTED), 0)
+$(warning $(ccmagenta)clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
+infovar := "OPT:=$$(filter-out -DUSE_OMP,$$(OPT))"
+$(info $(ccmagenta)If you are sure your version of clang (must be >= 3.7, NOT Apple clang) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
+# export WARNING_PRINTED := 1
+# endif
 OPT:=$(filter-out -DUSE_OMP,$(OPT))
-endif
-endif
-endif
+endif # CLANG_OMP_AVAIL is not 1
+endif # USE_OMP
+endif # CC is clang
 
+#### common options for gcc and clang
 ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
 CFLAGS  +=  -mavx -mpopcnt
 endif
 
-#### common options for gcc and clang
 CFLAGS  += -march=native
 CFLAGS  += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
 CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
 CLINK += -lm
-endif
 
-ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
-ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
-$(error $(ccred) DOUBLE_PREC must be enabled with OUTPUT_THETAAVG -- loss of precision will give you incorrect results for the outer bins (>=20-30 million pairs) $(ccreset))
-endif
-ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-ifneq (icc,$(findstring icc,$(CC)))
-$(warning $(ccmagenta) WARNING: OUTPUT_THETAAVG with AVX capabilties is slow with gcc (disables AVX essentially) with gcc. Try to use icc if available $(ccreset))
-endif
-endif
-endif
+endif #not icc
 
-ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
-ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-$(warning $(ccmagenta) Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set $(ccreset))
-endif
-endif
 
-UNAME := $(shell uname)
-ifeq ($(UNAME), Darwin)
-## use the clang assembler instead of GNU assembler
-## http://stackoverflow.com/questions/10327939/erroring-on-no-such-instruction-while-assembling-project-on-mac-os-x-lion
-ifeq (gcc,$(findstring gcc,$(CC)))
-ifneq ($(GCC_IS_CLANG), 1)
-## Only add -Wa,-q flag if it is true gcc. if clang is operating under gcc, no need to add this flag
-CFLAGS += -Wa,-q
-endif
-endif
-
-endif
 
 export PYTHON_CHECKED ?= 0
 ifeq ($(PYTHON_CHECKED), 0)
