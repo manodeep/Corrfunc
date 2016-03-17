@@ -27,8 +27,8 @@ contains the associated paper to be published in Astronomy & Computing Journal (
 $ git clone https://github.com/manodeep/Corrfunc/
 $ make 
 $ make install
-$ make tests 
 $ python setup.py install (--user)
+$ make tests 
 ```
 Assuming you have `gcc` in your ``PATH``, `make` and `make install` should compile and install the C libraries + python extensions within the source directory. If you would like to install the python C extensions in your environment, then ``python setup.py install (--user)`` should be sufficient. 
 
