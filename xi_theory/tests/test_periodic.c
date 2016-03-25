@@ -339,7 +339,8 @@ int main(int argc, char **argv)
                 my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
                 run_system_call(execstring);
             } else {
-                fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+                fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds.\nIncorrect output stored in file `%s.%d' " ANSI_COLOR_RESET "\n",
+                        testname,pair_time, tmpoutputfile, i);
                 failed++;
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
@@ -374,12 +375,12 @@ int main(int argc, char **argv)
                     my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
                     run_system_call(execstring);
                 } else {
-                    fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
+                    fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds.\nIncorrect output stored in file `%s.%d' " ANSI_COLOR_RESET "\n",
+                            testname,pair_time, tmpoutputfile, this_test_num);
                     failed++;
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
                     run_system_call(execstring);
-
                 }
             }
         }

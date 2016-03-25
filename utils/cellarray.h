@@ -20,18 +20,24 @@ extern "C" {
 
 #define NLATMAX   100      /* maximum grid dimension in X-Y plane */
 
-    typedef struct{
-        DOUBLE *x;
-        DOUBLE *y;
-        DOUBLE *z;
-        int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
-    } cellarray;
+typedef struct{
+    DOUBLE *x;
+    DOUBLE *y;
+    DOUBLE *z;
+    int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
+} cellarray;
 
-    typedef struct{
-        DOUBLE *pos;
-        int64_t nelements;
-    } cellarray_nvec;//Here the xyz positions will be stored as pos[x[NVEC],y{NVEC],z[NVEC],x[NVEC]...]. Note amenable to easy sorting -> used by xi_of_r and vpf
+typedef struct{
+    DOUBLE *pos;
+    int64_t nelements;
+} cellarray_nvec;//Here the xyz positions will be stored as pos[x[NVEC],y{NVEC],z[NVEC],x[NVEC]...]. Note amenable to easy sorting -> used by xi_of_r and vpf
 
+
+/* This cellarray will avoid duplicating the particle positions */
+typedef struct{
+    int64_t start;
+    int64_t nelements;
+} cellarray_index;
 
 #ifdef __cplusplus
 }
