@@ -19,6 +19,7 @@ VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 ccreset:=$(shell echo "\033[0;0m")
 ccred:=$(shell echo "\033[0;31m")
 ccmagenta:=$(shell echo "\033[0;35m")
+ccblue:=$(shell echo "\033[0;34m") 
 ccgreen:=$(shell echo "\033[0;32m")
 ## end of colored text output
 
@@ -145,7 +146,7 @@ else
 # ifeq ($(WARNING_PRINTED), 0)
 $(warning $(ccmagenta)clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
 infovar := "OPT:=$$(filter-out -DUSE_OMP,$$(OPT))"
-$(info $(ccmagenta)If you are sure your version of clang (must be >= 3.7, NOT Apple clang) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
+$(info $(ccmagenta)If you are sure your version of clang ($(ccblue) must be >= 3.7, NOT Apple clang $(ccmagenta)) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
 # export WARNING_PRINTED := 1
 # endif
 OPT:=$(filter-out -DUSE_OMP,$(OPT))
@@ -158,10 +159,10 @@ ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
 CFLAGS  +=  -mavx -mpopcnt
 endif
 
-CFLAGS  += -march=native
+CFLAGS  += -march=native -fno-strict-aliasing
 CFLAGS  += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
 CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
-CLINK += -lm
+CLINK += -lm 
 
 endif #not icc
 

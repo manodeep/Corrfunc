@@ -295,12 +295,12 @@ int main(int argc, char **argv)
     int failed=0;
     int status;
 
-    const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)","Mr19 DDrppi (periodic)","Mr19 wp (periodic)","Mr19 vpf (periodic)","Mr19 xi periodic)",
+    const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)","Mr19 wp (periodic)","Mr19 DDrppi (periodic)","Mr19 vpf (periodic)","Mr19 xi periodic)",
                                            "CMASS DDrppi DD (periodic)","CMASS DDrppi DR (periodic)","CMASS DDrppi RR (periodic)"};
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
-    const int function_pointer_index[] = {0,1,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi
+    const int function_pointer_index[] = {0,2,1,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi
 
-    const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","Mr19_vpf_periodic","Mr19_xi","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
+    const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_wp","Mr19_DDrppi_periodic","Mr19_vpf_periodic","Mr19_xi","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
     const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
                                           "../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
     const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
