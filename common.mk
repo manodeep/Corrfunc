@@ -45,7 +45,10 @@ endif
 # Now check if gcc is set to be the compiler but if clang is really under the hood.
 export CC_IS_CLANG ?= -1
 ifeq ($(CC_IS_CLANG), -1)
-  CC_VERSION := $(shell $(CC) --version)
+  CC_VERSION := $(shell $(CC) --version 2>/dev/null)
+  ifndef CC_VERSION
+    $(error $(ccred)Could not find $$CC = ${CC}$(ccreset))
+  endif
   ifeq (clang,$(findstring clang,$(CC_VERSION)))
     export CC_IS_CLANG := 1
   else
@@ -122,18 +125,23 @@ else ## not icc -> gcc or clang follow
     CFLAGS += -funroll-loops
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
       ifeq (clang-omp,$(findstring clang-omp,$(CC)))
-        CLANG_OMP_AVAIL :=true
+        CLANG_OMP_AVAIL:=true
       else
-        ## Need to do a version check clang >= 3.7 supports OpenMP. If it is Apple clang, then it doesn't support OpenMP.
-        ## All of the version checks go here. If OpenMP is supported, update CLANG_OMP_AVAIL to 1.
-        CLANG_VERSION_FULL := $(shell $(CC) --version | grep version | grep -oP '(?<=version )\S+')
-        CLANG_VERSION_FULL :=  $(subst ., ,$(CLANG_VERSION_FULL))
-        CLANG_VERSION_MAJOR := $(word 1,${CLANG_VERSION_FULL})
-        CLANG_VERSION_MINOR := $(word 2,${CLANG_VERSION_FULL})
-        CLANG_MAJOR_MIN_OPENMP := 3
-        CLANG_MINOR_MIN_OPENMP := 7
-        CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo true)
-      endif 
+        # Apple clang/gcc does not support OpenMP
+        ifeq (Apple, $(findstring Apple, $(CC_VERSION)))
+          CLANG_OMP_AVAIL:= false
+        else
+          ## Need to do a version check clang >= 3.7 supports OpenMP. If it is Apple clang, then it doesn't support OpenMP.
+          ## All of the version checks go here. If OpenMP is supported, update CLANG_OMP_AVAIL to 1.
+          CLANG_VERSION_FULL := $(shell $(CC) --version | grep version | grep -oP '(?<=version )\S+')
+          CLANG_VERSION_FULL :=  $(subst ., ,$(CLANG_VERSION_FULL))
+          CLANG_VERSION_MAJOR := $(word 1,${CLANG_VERSION_FULL})
+          CLANG_VERSION_MINOR := $(word 2,${CLANG_VERSION_FULL})
+          CLANG_MAJOR_MIN_OPENMP := 3
+          CLANG_MINOR_MIN_OPENMP := 7
+          CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo true)
+        endif #Apple check
+      endif  #clang-omp check
 
       ifeq ($(CLANG_OMP_AVAIL),true)
         CFLAGS += -fopenmp=libomp
@@ -143,7 +151,7 @@ else ## not icc -> gcc or clang follow
         # be visible if the entire codebase is being compiled. 
         # export WARNING_PRINTED ?= 0
         # ifeq ($(WARNING_PRINTED), 0)
-        $(warning $(ccmagenta)clang does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
+        $(warning $(ccmagenta) $$CC = ${CC} does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
         infovar := "OPT:=$$(filter-out -DUSE_OMP,$$(OPT))"
         $(info $(ccmagenta)If you are sure your version of clang ($(ccblue) must be >= 3.7, NOT Apple clang $(ccmagenta)) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
         # export WARNING_PRINTED := 1
