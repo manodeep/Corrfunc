@@ -335,7 +335,6 @@ cellarray_index * gridlink_index(const int64_t np,
                                  int *nlattice_z)
 {
     cellarray_index *lattice=NULL;
-    int ix,iy,iz;
     int nmesh_x,nmesh_y,nmesh_z;
     DOUBLE xdiff,ydiff,zdiff;
     DOUBLE cell_volume,box_volume;
@@ -369,6 +368,9 @@ cellarray_index * gridlink_index(const int64_t np,
     fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
 #endif
     lattice    = (cellarray_index *) my_malloc(sizeof(cellarray_index), totncells);
+    for(int i=0;i<totncells;i++) {
+      lattice[i].nelements=0;
+    }
 
 
     int *cell_index = my_malloc(sizeof(*cell_index), np);//each particle needs to get a cell index. 
@@ -382,9 +384,9 @@ cellarray_index * gridlink_index(const int64_t np,
     DOUBLE zinv=1.0/zbinsize;
 
     for (int64_t i=0;i<np;i++)  {
-        ix=(int)((x[i]-xmin)*xinv) ;
-        iy=(int)((y[i]-ymin)*yinv) ;
-        iz=(int)((z[i]-zmin)*zinv) ;
+        int ix=(int)((x[i]-xmin)*xinv) ;
+        int iy=(int)((y[i]-ymin)*yinv) ;
+        int iz=(int)((z[i]-zmin)*zinv) ;
         if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
         if (iy>nmesh_y-1)  iy--;
         if (iz>nmesh_z-1)  iz--;
