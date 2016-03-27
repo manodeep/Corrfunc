@@ -369,9 +369,9 @@ cellarray_index * gridlink_index(const int64_t np,
 #endif
     lattice    = (cellarray_index *) my_malloc(sizeof(cellarray_index), totncells);
     for(int i=0;i<totncells;i++) {
-      lattice[i].nelements=0;
+      lattice[i].start = LONG_MAX;//Hoping to crash the code if I incorrectly try to access this!
+      lattice[i].nelements = 0;
     }
-
 
     int *cell_index = my_malloc(sizeof(*cell_index), np);//each particle needs to get a cell index. 
     /*

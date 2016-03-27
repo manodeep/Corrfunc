@@ -119,17 +119,19 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 #endif
     for(int64_t icell=0;icell<totncells;icell++) {
         const cellarray_index *first=&(lattice[icell]);
-        const int64_t start = first->start;
-        DOUBLE *x = X + start;
-        DOUBLE *y = Y + start;
-        DOUBLE *z = Z + start;
-
+        if(first->nelements > 0) {
+          const int64_t start = first->start;
+          DOUBLE *x = X + start;
+          DOUBLE *y = Y + start;
+          DOUBLE *z = Z + start;
+          
 #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
             SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);               \
             SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) }
-
-        SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
-#undef MULTIPLE_ARRAY_EXCHANGER        
+          
+          SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+#undef MULTIPLE_ARRAY_EXCHANGER
+        }
     }
 #if defined(USE_AVX) && defined(__AVX__)
     AVX_FLOATS m_rupp_sqr[nbin];
@@ -200,7 +202,6 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 #pragma omp atomic
 #endif
             numdone++;
-
 
             const int iz = index1 % nmesh_z;
             const int ix = index1 / (nmesh_y * nmesh_z );
