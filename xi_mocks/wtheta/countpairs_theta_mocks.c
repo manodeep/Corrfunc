@@ -27,8 +27,10 @@
 #include "countpairs_theta_mocks.h" //function proto-type
 #include "cellarray_mocks.h" //definition of struct cellarray_mocks
 #include "utils.h" //all of the utilities
-#include "progressbar.h" //for the progressbar
 
+#ifndef SILENT
+#include "progressbar.h" //for the progressbar
+#endif
 
 #if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
@@ -318,10 +320,12 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
     /* } */
 #endif
 
+
+#ifndef SILENT    
     int interrupted=0;
     int numdone=0;
-
     init_my_progressbar(ND1,&interrupted);
+#endif    
 
     /*---Loop-over-Data1-particles--------------------*/
 #ifdef USE_OMP
@@ -343,6 +347,8 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 #pragma omp for  schedule(dynamic)
 #endif
         for(int i=0;i<ND1;i++) {
+
+#ifndef SILENT          
 #ifdef USE_OMP
             if (omp_get_thread_num() == 0)
 #endif
@@ -352,6 +358,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 #pragma omp atomic
 #endif
             numdone++;
+#endif//SILENT            
 
 
             const DOUBLE x1pos = x1[i];
@@ -589,7 +596,10 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 
     }//close the omp parallel region
 #endif
+
+#ifndef SILENT    
     finish_myprogressbar(&interrupted);
+#endif    
 
 #ifdef USE_OMP
     uint64_t npairs[nthetabin];

@@ -3,12 +3,17 @@ ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
   include ../../common.mk
 endif
 
-target=wp
-SRC1= wp.c countpairs_wp.c ../../utils/utils.c ../../utils/gridlink.c ../../utils/progressbar.c ../../io/io.c ../../io/ftread.c 
-OBJS1  = $(SRC1:.c=.o)
-INCL   = countpairs_wp.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
+target := wp
+SRC1   := wp.c countpairs_wp.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c 
+OBJS1  := $(SRC1:.c=.o)
+INCL   := countpairs_wp.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h ../../utils/sglib.h ../../utils/progressbar.h 
+		../../utils/defs.h ../../utils/sglib.h  
+
+ifeq ($(OUTPUT_PGBAR), 1)
+SRC1 += ../../utils/progressbar.c
+INCL += ../../utils/progressbar.h 
+endif
 
 all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
 

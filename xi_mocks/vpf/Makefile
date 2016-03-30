@@ -3,14 +3,19 @@ ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
   include ../../common.mk
 endif
 
-target=vpf_mocks 
-SRC1   = vpf_mocks.c countspheres_mocks.c ../../utils/gridlink_mocks.c ../../utils/utils.c \
-				../../utils/progressbar.c ../../io/ftread.c ../../io/io.c \
-				../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c 
-OBJS1  = $(SRC1:.c=.o)
-INCL   = countspheres_mocks.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
+target := vpf_mocks 
+SRC1   := vpf_mocks.c countspheres_mocks.c ../../utils/gridlink_mocks.c ../../utils/utils.c \
+				../../io/ftread.c ../../io/io.c ../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c 
+INCL   := countspheres_mocks.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
 				../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-				../../utils/defs.h ../../utils/progressbar.h ../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h
+				../../utils/defs.h ../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h
+
+ifeq ($(OUTPUT_PGBAR), 1)
+SRC1 += ../../utils/progressbar.c
+INCL += ../../utils/progressbar.h 
+endif
+
+OBJS1  := $(SRC1:.c=.o)
 
 all: $(target) $(SRC1) $(INCL) Makefile ../../mocks.options ../../common.mk
 

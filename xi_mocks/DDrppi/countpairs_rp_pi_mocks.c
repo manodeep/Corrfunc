@@ -16,10 +16,13 @@
 #include "utils.h"
 #include "cellarray_mocks.h"
 #include "gridlink_mocks.h"
-#include "progressbar.h"
 #include "countpairs_rp_pi_mocks.h"
 #include "cosmology_params.h"
 #include "set_cosmo_dist.h"
+
+#ifndef SILENT
+#include "progressbar.h"
+#endif
 
 #if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
@@ -321,11 +324,17 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
     /* const DOUBLE cz_binsize=(d2max-d2min)/ngrid; */
     const DOUBLE inv_cz_binsize=ngrid/(d2max-d2min);
 
+#ifndef SILENT    
     int interrupted=0,numdone=0;
     init_my_progressbar(ND1,&interrupted);
+#endif    
 
 #ifdef USE_OMP
+#ifndef SILENT    
 #pragma omp parallel shared(numdone)
+#else
+#pragma omp parallel
+#endif//SILENT    
     {
         const int tid = omp_get_thread_num();
         uint64_t npairs[totnbins] __attribute__ ((aligned(ALIGNMENT)));
@@ -336,9 +345,12 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 #endif
 
 #pragma omp for  schedule(dynamic)
-#endif
+#endif//USE_OMP
         /*---Loop-over-Data1-particles--------------------*/
         for(int i=0;i<ND1;i++) {
+
+
+#ifndef SILENT          
 #ifdef USE_OMP
             if (omp_get_thread_num() == 0)
 #endif
@@ -349,7 +361,8 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 #pragma omp atomic
 #endif
             numdone++;
-
+#endif//SILENT
+            
             const DOUBLE x1 = d1[i]*COSD(theta1[i])*COSD(phi1[i]) ;
             const DOUBLE y1 = d1[i]*COSD(theta1[i])*SIND(phi1[i]) ;
             const DOUBLE z1 = d1[i]*SIND(theta1[i]) ;
@@ -715,7 +728,9 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
     }//close the omp parallel region
 #endif//USE_OMP
 
+#ifndef SILENT    
     finish_myprogressbar(&interrupted);
+#endif    
 
 #ifdef USE_OMP
     uint64_t npairs[totnbins];

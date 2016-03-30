@@ -3,15 +3,19 @@ ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
   include ../../common.mk
 endif
 
-target=DDrppi_mocks wprp_mocks
-
-INCL   = countpairs_rp_pi_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h  ../../utils/gridlink_mocks.h ../../utils/cellarray_mocks.h \
+target := DDrppi_mocks wprp_mocks
+SRC1   := DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
+          ../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c \
+			    ../../utils/utils.c ../../io/io.c ../../io/ftread.c
+INCL   := countpairs_rp_pi_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h  ../../utils/gridlink_mocks.h ../../utils/cellarray_mocks.h \
 				../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h  \
-				../../utils/utils.h	../../utils/function_precision.h ../../utils/avx_calls.h ../../utils/defs.h ../../utils/progressbar.h 
+				../../utils/utils.h	../../utils/function_precision.h ../../utils/avx_calls.h ../../utils/defs.h
 
-SRC1= DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
-			../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c \
-			../../utils/utils.c ../../io/io.c ../../io/ftread.c ../../utils/progressbar.c
+ifeq ($(OUTPUT_PGBAR), 1)
+SRC1 += ../../utils/progressbar.c
+INCL += ../../utils/progressbar.h 
+endif
+
 
 OBJS1=$(SRC1:.c=.o) 
 
