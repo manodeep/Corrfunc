@@ -21,6 +21,8 @@ contains the associated paper to be published in Astronomy & Computing Journal (
 
 *If python and/or numpy are not available, then the C extensions will not be compiled*. 
 
+*Default compiler on MAC is set to `clang`, if you want to specify a different compiler, you will have to call `make CC=yourcompiler`*
+
 ## Preferred Method
 
 ```
