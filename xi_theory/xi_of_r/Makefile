@@ -6,7 +6,6 @@ endif
 
 target := DD 
 SRC1   := DD.c countpairs.c ../../utils/gridlink.c ../../utils/utils.c ../../io/ftread.c ../../io/io.c 
-OBJS1  := $(SRC1:.c=.o)
 INCL   := countpairs.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h 
@@ -15,7 +14,7 @@ ifeq ($(OUTPUT_PGBAR), 1)
 SRC1 += ../../utils/progressbar.c
 INCL += ../../utils/progressbar.h 
 endif
-
+OBJS1  := $(SRC1:.c=.o)
 
 all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
 
@@ -25,13 +24,17 @@ $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 %.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-SRC2   = countpairs.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c 
+SRC2   = countpairs.c ../../utils/gridlink.c ../../utils/utils.c
+ifeq ($(OUTPUT_PGBAR), 1)
+SRC2 += ../../utils/progressbar.c
+endif
+
 OBJS2  = $(SRC2:.c=.o)
 
 libs: lib
 lib:  libcountpairs.a | ../../lib
 
-libcountpairs.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
+libcountpairs.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs.h > ../../include/countpairs.h
