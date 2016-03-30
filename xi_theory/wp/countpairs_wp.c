@@ -19,7 +19,10 @@
 #include "utils.h" //all of the utilities
 #include "gridlink.h"//function proto-type for gridlink
 #include "countpairs_wp.h" //function proto-type
+
+#ifndef SILENT
 #include "progressbar.h" //for the progressbar
+#endif
 
 #include "sglib.h"
 
@@ -170,13 +173,20 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 #endif//OUTPUT_RPAVG
 #endif// USE_OMP
 
-    const DOUBLE side=boxsize;
+    const DOUBLE side=boxsize; 
+
+#ifndef SILENT    
     int interrupted=0;
     int64_t numdone=0;
     init_my_progressbar(totncells,&interrupted);
+#endif    
 
 #ifdef USE_OMP
+#ifndef SILENT
 #pragma omp parallel shared(numdone)
+#else
+#pragma omp parallel    
+#endif//SILENT
     {
         const int tid = omp_get_thread_num();
         uint64_t npair[nbin];
@@ -194,7 +204,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 #pragma omp for schedule(dynamic) nowait
 #endif//USE_OMP
         for(int index1=0;index1<totncells;index1++) {
-
+#ifndef SILENT
 #ifdef USE_OMP
             if (omp_get_thread_num() == 0)
 #endif
@@ -205,7 +215,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
 #pragma omp atomic
 #endif
             numdone++;
-
+#endif//SILENT
 
             const int iz = index1 % nmesh_z;
             const int ix = index1 / (nmesh_y * nmesh_z );
@@ -479,8 +489,10 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
         }
     }//omp parallel
 #endif
-    finish_myprogressbar(&interrupted);
 
+#ifndef SILENT    
+    finish_myprogressbar(&interrupted);
+#endif
 
 
 

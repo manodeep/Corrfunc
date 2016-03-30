@@ -16,7 +16,10 @@
 #include "countspheres.h" //function proto-type
 #include "cellarray.h" //definition of struct cellarray
 #include "utils.h" //all of the utilities
+
+#ifndef SILENT
 #include "progressbar.h" //for the progressbar
+#endif
 
 #if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
@@ -99,13 +102,17 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
     const DOUBLE inv_ydiff = ((DOUBLE) 1.0)/ydiff;
     const DOUBLE inv_zdiff = ((DOUBLE) 1.0)/zdiff;
 
+#ifndef SILENT    
     int interrupted=0;
     init_my_progressbar(nc,&interrupted);
-
+#endif
+    
     /* loop through centers, placing each randomly */
     int ic=0;
     while(ic < nc) {
+#ifndef SILENT      
         my_progressbar(ic,&interrupted);
+#endif        
         const DOUBLE xc = xdiff*gsl_rng_uniform (rng) + xmin;
         const DOUBLE yc = ydiff*gsl_rng_uniform (rng) + ymin;
         const DOUBLE zc = zdiff*gsl_rng_uniform (rng) + zmin;
@@ -303,7 +310,10 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
         /* free(lattice[i].z); */
     }
     free(lattice);
+    
+#ifndef SILENT
     finish_myprogressbar(&interrupted);
+#endif    
 
     //prepare the results
     results_countspheres *results = my_malloc(sizeof(*results),1);
