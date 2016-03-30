@@ -190,6 +190,7 @@ ifeq ($(DO_CHECKS), 1)
             CLANG_MAJOR_MIN_OPENMP := 3
             CLANG_MINOR_MIN_OPENMP := 7
             CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo true)
+            CLANG_IS_38 := $(shell [ $(CLANG_VERSION_MAJOR) -eq 3 -a $(CLANG_VERSION_MINOR) -eq 8  ] && echo true)
           endif #Apple check
 	      endif  #clang-omp check
 
@@ -198,14 +199,18 @@ ifeq ($(DO_CHECKS), 1)
             CFLAGS += -fopenmp=libomp
             CLINK  += -fopenmp=libomp
             ifeq ($(UNAME), Darwin)
+
               CLANG_LD_ERROR := "dyld: Library not loaded: @rpath/libLLVM.dylib\nReferenced from: /opt/local/libexec/llvm-3.8/lib/libLTO.dylib\nReason: image not found\n"
               export CLANG_LD_WARNING_PRINTED ?= 0
               ifeq ($(CLANG_LD_WARNING_PRINTED), 0)
-                $(warning $(ccmagenta) Enabling OpenMP with clang.)
-                $(warning You might see this $(ccred)$(CLANG_LD_ERROR)$(ccmagenta) error with the final linking step.)
-                $(info $(ccmagenta)Use the following to fix the issue $(ccgreen) "sudo install_name_tool -change @executable_path/../lib/libLTO.dylib @rpath/../lib/libLTO.dylib /opt/local/libexec/ld64/ld-latest"$(ccreset))
-                export CLANG_LD_WARNING_PRINTED := 1
-              endif #Clang warning printed
+                $(info $(ccmagenta)Enabling OpenMP with clang.$(ccreset))
+                ifeq ($(CLANG_IS_38), true)
+                  $(warning With $(ccgreen)clang-3.8$(ccreset), You might see this $(ccred)$(CLANG_LD_ERROR)$(ccmagenta) error with the final linking step.$(ccreset))
+                  $(info $(ccmagenta)Use the following to fix the issue $(ccgreen) "sudo install_name_tool -change @executable_path/../lib/libLTO.dylib @rpath/../lib/libLTO.dylib /opt/local/libexec/ld64/ld-latest"$(ccreset))
+                  $(info $(ccmagenta)You can see the bug report here $(ccgreen)"https://trac.macports.org/ticket/50853"$(ccreset))
+                  export CLANG_LD_WARNING_PRINTED := 1
+                endif #clang-3.8
+              endif #clang warning printed
             endif #Darwin
           endif #Apple clang. If at some point Apple clang supports OpenMP, then there will need to be an else above this endif. 
         else
