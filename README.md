@@ -27,8 +27,8 @@ contains the associated paper to be published in Astronomy & Computing Journal (
 $ git clone https://github.com/manodeep/Corrfunc/
 $ make 
 $ make install
-$ make tests 
 $ python setup.py install (--user)
+$ make tests 
 ```
 Assuming you have `gcc` in your ``PATH``, `make` and `make install` should compile and install the C libraries + python extensions within the source directory. If you would like to install the python C extensions in your environment, then ``python setup.py install (--user)`` should be sufficient. 
 
@@ -99,6 +99,19 @@ option (in mocks.options) replaces the divisions to a reciprocal followed by a
 Newton-Raphson. The code will run ~20% faster at the expense of some numerical precision. 
 Please check that the loss of precision is not important for your use-case. Also, note 
 that the mocks tests for $DD(r_p, \pi)$ *will fail* if you enable ``FAST_DIVIDE``. 
+
+# Running the codes
+
+The documentation is lacking currently but I am actively working on it. 
+
+## Using the command-line interface
+Navigate to the correct directory. Make sure that the options, set in either ``theory.options`` or ``mocks.options`` in the root directory are what you want. If not, edit those two files (and possibly ``common.mk``), and recompile. Then, you can use the command-line executables in each individual subdirectory corresponding to the clustering measure you are interested in. For example, if you want to compute the full 3-D correlation function, ``\xi(r)``, then navigate to ``xi_theory/xi`` and run the executable ``xi``. If you run executables without any arguments, the message will you tell you all the required arguments. 
+
+## Calling from C 
+Look under the ``xi_theory/examples/run_correlations.c`` and ``xi_mocks/examples/run_correlations_mocks.c`` to see examples of calling the C API directly. If you run the executables, ``run_correlations`` and ``run_correlations_mocks``, the output will also show how to call the command-line interface for the various clustering measures. 
+
+## Calling from Python 
+If all went well, the codes can be directly called from ``python``. Please see ``Corrfunc/call_correlation_functions.py`` and ``Corrfunc/call_correlation_functions_mocks.py`` for examples on how to use the Python interface. 
 
 # Common Code options for both Mocks and Cosmological Boxes
 
