@@ -15,9 +15,12 @@
 #include "countspheres_mocks.h" //function proto-type
 #include "gridlink_mocks.h"//function proto-type for gridlink (which is a copy of the theory gridlink in order to avoid name-space collisions)
 #include "utils.h" //all of the utilities
-#include "progressbar.h" //for the progressbar
 #include "set_cosmo_dist.h"//cosmological distance calculations
 #include "cosmology_params.h"//init_cosmology
+
+#ifndef SILENT
+#include "progressbar.h" //for the progressbar
+#endif
 
 #if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
@@ -267,15 +270,21 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
 
     itry=0 ;
     isucceed=0 ;
-    int interrupted;
     int ncenters_written=0;
-    init_my_progressbar(nc, &interrupted);
-    while(isucceed < nc && itry < Nran) {
-        my_progressbar(isucceed,&interrupted);
 
-        DOUBLE xcen,ycen,zcen;
-        int Nnbrs_ran=0;
-        if((need_randoms == 1 && isucceed > num_centers_in_file) || num_centers_in_file == 0) {
+#ifndef SILENT    
+    int interrupted;
+    init_my_progressbar(nc, &interrupted);
+#endif    
+    while(isucceed < nc && itry < Nran) {
+
+#ifndef SILENT      
+      my_progressbar(isucceed,&interrupted);
+#endif      
+
+      DOUBLE xcen,ycen,zcen;
+      int Nnbrs_ran=0;
+      if((need_randoms == 1 && isucceed > num_centers_in_file) || num_centers_in_file == 0) {
             xcen = xran[itry] ;
             ycen = yran[itry] ;
             zcen = zran[itry] ;
@@ -443,8 +452,9 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
         itry++ ;
     }
     fclose(fpcen);
-    finish_myprogressbar(&interrupted);
+
 #ifndef SILENT
+    finish_myprogressbar(&interrupted);
     fprintf(stderr,"%s> Placed %d centers out of %d trials.\n",__FUNCTION__,isucceed,itry);
     fprintf(stderr,"%s> num_centers_in_file = %"PRId64" ncenters_written = %d\n",__FUNCTION__,num_centers_in_file,ncenters_written);
 #endif
