@@ -42,6 +42,18 @@ ifeq (osx, $(findstring osx, ${TRAVIS_OS_NAME}))
 endif
 # done with removing USE_AVX under osx on Travis
 
+# Check if all progressbar output is to be suppressed
+OUTPUT_PGBAR := 1
+ifeq (SILENT, $(findstring SILENT, $(CFLAGS)))
+  OUTPUT_PGBAR := 0
+endif
+
+ifeq (SILENT, $(findstring SILENT, $(OPT)))
+  OUTPUT_PGBAR := 0
+endif
+#end of progressbar checks
+
+
 # Now check if gcc is set to be the compiler but if clang is really under the hood.
 export CC_IS_CLANG ?= -1
 ifeq ($(CC_IS_CLANG), -1)
