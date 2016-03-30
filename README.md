@@ -1,6 +1,6 @@
 [![Release](https://img.shields.io/github/release/manodeep/Corrfunc.svg)](https://github.com/manodeep/Corrfunc/releases/latest)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE)
-[![DOI](https://zenodo.org/badge/19184/manodeep/Corrfunc.svg)](https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc)
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.48552.svg)](http://dx.doi.org/10.5281/zenodo.48552)
 [![Travis Build](https://travis-ci.org/manodeep/Corrfunc.svg?branch=master)](https://travis-ci.org/manodeep/Corrfunc)
 [![Issues](https://img.shields.io/github/issues/manodeep/Corrfunc.svg)](https://github.com/manodeep/Corrfunc/issues)
 [![Coverity](https://img.shields.io/coverity/scan/6982.svg)](https://scan.coverity.com/projects/manodeep-corrfunc)
@@ -150,14 +150,13 @@ case of any issues.
 If you use the code, please cite using the Zenodo DOI. The BibTex entry for the code is  
 
 ```
-@misc{Corrfunc,
+@misc{manodeep_sinha_2016_48552,
   author       = {Manodeep Sinha},
-  title        = {{Corrfunc: Development release to create zenodo DOI 
-                   Corrfunc: Development release to create zenodo DOI}},
-  month        = nov,
-  year         = 2015,
-  doi          = {10.5281/zenodo.33655},
-  url          = {http://dx.doi.org/10.5281/zenodo.33655}
+  title        = {Corrfunc: Corrfunc-0.2.3},
+  month        = mar,
+  year         = 2016,
+  doi          = {10.5281/zenodo.48552},
+  url          = {http://dx.doi.org/10.5281/zenodo.48552}
 }
 ```
 
