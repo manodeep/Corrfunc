@@ -62,7 +62,7 @@ def read_catalog(filebase=None):
             pd = None
 
         if pd is not None:
-            df = pd.read_csv(file, header=None,
+            df = pd.read_csv(filename, header=None,
                              engine="c",
                              dtype={"x": return_dtype,
                                     "y": return_dtype,
@@ -73,7 +73,7 @@ def read_catalog(filebase=None):
             z = np.asarray(df[2], dtype=return_dtype)
 
         else:
-            x, y, z = np.genfromtxt(file, dtype=return_dtype, unpack=True)
+            x, y, z = np.genfromtxt(filename, dtype=return_dtype, unpack=True)
 
         return x, y, z
 
