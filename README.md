@@ -162,6 +162,11 @@ If you use the code, please cite using the Zenodo DOI. The BibTex entry for the 
 }
 ```
 
+# Mailing list
+
+If you have questions or comments about the package, please do so on the mailing list:
+https://groups.google.com/forum/#!forum/corrfunc
+
 # LICENSE
 
 Corrfunc is released under the MIT license. Basically, do what you want
