@@ -175,13 +175,14 @@ ifeq ($(DO_CHECKS), 1)
         endif #openmp with gcc
       endif #gcc findstring
     else ##CC is clang
-	    ### compiler specific flags for clang
+      ### compiler specific flags for clang
       CLANG_OMP_AVAIL := false
-      CFLAGS += -funroll-loops
       export APPLE_CLANG := 0
       ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
         ifeq (clang-omp,$(findstring clang-omp,$(CC)))
           CLANG_OMP_AVAIL:=true
+          CFLAGS += -fopenmp
+          CLINK  += -liomp5
         else
           # Apple clang/gcc does not support OpenMP
           ifeq (Apple, $(findstring Apple, $(CC_VERSION)))
@@ -202,19 +203,18 @@ ifeq ($(DO_CHECKS), 1)
             CLANG_MINOR_MIN_OPENMP := 7
             CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo true)
             CLANG_IS_38 := $(shell [ $(CLANG_VERSION_MAJOR) -eq 3 -a $(CLANG_VERSION_MINOR) -eq 8  ] && echo true)
+            CFLAGS += -fopenmp=libomp
+            CLINK  += -fopenmp=libomp
           endif #Apple check
         endif  #clang-omp check
 
         ifeq ($(CLANG_OMP_AVAIL),true)
           ifeq ($(APPLE_CLANG),0)
-            CFLAGS += -fopenmp=libomp
-            CLINK  += -fopenmp=libomp
             ifeq ($(UNAME), Darwin)
-
+              $(info $(ccmagenta)Enabling OpenMP with clang.$(ccreset))
               CLANG_LD_ERROR := "dyld: Library not loaded: @rpath/libLLVM.dylib\nReferenced from: /opt/local/libexec/llvm-3.8/lib/libLTO.dylib\nReason: image not found\n"
               export CLANG_LD_WARNING_PRINTED ?= 0
               ifeq ($(CLANG_LD_WARNING_PRINTED), 0)
-                $(info $(ccmagenta)Enabling OpenMP with clang.$(ccreset))
                 ifeq ($(CLANG_IS_38), true)
                   $(warning With $(ccgreen)clang-3.8$(ccreset), You might see this $(ccred)$(CLANG_LD_ERROR)$(ccmagenta) error with the final linking step.$(ccreset))
                   $(info $(ccmagenta)Use the following to fix the issue $(ccgreen) "sudo install_name_tool -change @executable_path/../lib/libLTO.dylib @rpath/../lib/libLTO.dylib /opt/local/libexec/ld64/ld-latest"$(ccreset))
@@ -246,9 +246,10 @@ ifeq ($(DO_CHECKS), 1)
       CFLAGS  +=  -mavx -mpopcnt
     endif
 
-    CFLAGS  += -march=native -fno-strict-aliasing
-    CFLAGS  += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
-    CFLAGS  +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
+    CFLAGS += -funroll-loops
+    CFLAGS += -march=native -fno-strict-aliasing
+    CFLAGS += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
+    CFLAGS +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
     CLINK += -lm 
   endif #not icc
 
