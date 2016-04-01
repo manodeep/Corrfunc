@@ -14,10 +14,11 @@ contains the associated paper to be published in Astronomy & Computing Journal (
 # Installation
 
 ## Pre-requisites
-1. OpenMP capable compiler like ``icc``, ``gcc`` or ``clang >= 3.7``. If not available, please disable ``USE_OMP`` option option in ``theory.options`` and ``mocks.options``. You might need to ask your sys-admin for system-wide installs of the compiler; if you prefer to install your own then ``conda install gcc`` (MAC/linux) or ``(sudo) port install gcc5`` (on MAC) should work. *Note ``gcc`` on macports defaults to ``gcc48`` and the portfile is currently broken on ``El Capitan``*.
-2. ``gsl``. Use either ``conda install -c https://conda.anaconda.org/asmeurer gsl`` (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl`` if necessary. 
-3. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions. 
-4. ``numpy>=1.7`` for compiling the C extensions. 
+1. ``make >= 3.80``
+2. OpenMP capable compiler like ``icc``, ``gcc`` or ``clang >= 3.7``. If not available, please disable ``USE_OMP`` option option in ``theory.options`` and ``mocks.options``. You might need to ask your sys-admin for system-wide installs of the compiler; if you prefer to install your own then ``conda install gcc`` (MAC/linux) or ``(sudo) port install gcc5`` (on MAC) should work. *Note ``gcc`` on macports defaults to ``gcc48`` and the portfile is currently broken on ``El Capitan``*.
+3. ``gsl``. Use either ``conda install -c https://conda.anaconda.org/asmeurer gsl`` (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl`` if necessary. 
+4. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions. 
+5. ``numpy>=1.7`` for compiling the C extensions. 
 
 *If python and/or numpy are not available, then the C extensions will not be compiled*. 
 
