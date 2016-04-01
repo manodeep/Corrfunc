@@ -182,7 +182,7 @@ ifeq ($(DO_CHECKS), 1)
         ifeq (clang-omp,$(findstring clang-omp,$(CC)))
           CLANG_OMP_AVAIL:=true
           CFLAGS += -fopenmp
-          CLINK  += -Xclang -fopenmp=libiomp5
+          CLINK  += -liomp5
         else
           # Apple clang/gcc does not support OpenMP
           ifeq (Apple, $(findstring Apple, $(CC_VERSION)))
