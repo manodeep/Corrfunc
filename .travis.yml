@@ -43,19 +43,19 @@ matrix:
         - conda install -q --yes -c asmeurer gsl
 
 
-    # - os: osx
-    #   compiler: clang
-    #   env: COMPILER=clang-omp FAMILY=clang V='3.5' PYTHON_VERSION=2.7 
-    #   before_install:
-    #     # - brew update
-    #     # - brew outdated xctool || brew upgrade xctool
-    #     # - brew tap homebrew/versions && brew install clang-omp
-    #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
-    #     - bash miniconda.sh -b -p $HOME/miniconda
-    #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
-    #     - source activate test
-    #     - conda install -q --yes -c asmeurer gsl        
+    - os: osx
+      compiler: clang
+      env: COMPILER=clang-omp FAMILY=clang V='3.5' PYTHON_VERSION=2.7
+      before_install:
+        - brew update
+        - brew outdated xctool || brew upgrade xctool
+        - brew tap homebrew/versions && brew install clang-omp
+        - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - source activate test
+        - conda install -q --yes -c asmeurer gsl        
 
     # - os: osx
     #   compiler: clang
