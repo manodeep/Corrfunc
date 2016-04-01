@@ -16,6 +16,7 @@ VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
 ## Colored text output
 ## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
+export SHELL:=$(shell which sh)
 ccreset:=$(shell echo "\033[0;0m")
 ccred:=$(shell echo "\033[0;31m")
 ccmagenta:=$(shell echo "\033[0;35m")
@@ -35,13 +36,19 @@ endif
 ## Only set everything if the command is not "make clean"
 ifeq ($(DO_CHECKS), 1)
   ## Make clang the default compiler on Mac
+  ## But first check for clang-omp, use that if available
   UNAME := $(shell uname)
   ifeq ($(UNAME), Darwin)
-    CC := clang
+    CLANG_OMP_FOUND := $(shell clang-omp --version 2>/dev/null)
+    ifndef CLANG_OMP_FOUND
+      CC := clang
+    else
+      CC := clang-omp
+    endif
   endif
 
   # Now check if gcc is set to be the compiler but if clang is really under the hood.
-	export CC_IS_CLANG ?= -1
+  export CC_IS_CLANG ?= -1
   ifeq ($(CC_IS_CLANG), -1)
     CC_VERSION := $(shell $(CC) --version 2>/dev/null)
     ifndef CC_VERSION
@@ -157,7 +164,7 @@ ifeq ($(DO_CHECKS), 1)
 	        ifeq ($(CLANG_ASM_WARNING_PRINTED), 0)
             $(warning $(ccmagenta) WARNING: gcc on Mac does not support intrinsics. Attempting to use the clang assembler $(ccreset))
             $(warning $(ccmagenta) If you see the error message $(ccred) "/opt/local/bin/as: assembler (/opt/local/bin/clang) not installed" $(ccmagenta) then try the following fix $(ccreset))
-            $(warning $(ccmagenta) Either install clang ($(ccgreen)for macports use, "sudo port install clang-3.8"$(ccmagenta)) or remove option $(ccgreen)"USE_AVX"$(ccmagenta) from both the $(ccgreen)"theory.options"$(ccmagenta) and $(ccgreen)"mocks.options"$(ccmagenta) files$(ccreset))
+            $(warning $(ccmagenta) Either install clang ($(ccgreen)for Macports use, "sudo port install clang-3.8"$(ccmagenta)) or remove option $(ccgreen)"USE_AVX"$(ccmagenta) from both the $(ccgreen)"theory.options"$(ccmagenta) and $(ccgreen)"mocks.options"$(ccmagenta) files$(ccreset))
             export CLANG_ASM_WARNING_PRINTED := 1
           endif # warning printed
         endif
@@ -179,7 +186,11 @@ ifeq ($(DO_CHECKS), 1)
           # Apple clang/gcc does not support OpenMP
           ifeq (Apple, $(findstring Apple, $(CC_VERSION)))
             CLANG_OMP_AVAIL:= false
-	          export APPLE_CLANG := 1
+            $(warning $(ccmagenta)Compiler is Apple clang and does not support OpenMP$(ccreset))
+            $(info $(ccmagenta)If you want OpenMP support, please install clang with OpenMP support$(ccreset))
+            $(info $(ccmagenta)For homebrew, use $(ccgreen)"brew update && (brew outdated xctool || brew upgrade xctool) && brew tap homebrew/versions && brew install clang-omp"$(ccreset))
+            $(info $(ccmagenta)For Macports, use $(ccgreen)"sudo port install clang-3.8 +assertions +debug + openmp"$(ccreset))
+            export APPLE_CLANG := 1
           else
             ## Need to do a version check clang >= 3.7 supports OpenMP. If it is Apple clang, then it doesn't support OpenMP.
             ## All of the version checks go here. If OpenMP is supported, update CLANG_OMP_AVAIL to 1.
@@ -192,7 +203,7 @@ ifeq ($(DO_CHECKS), 1)
             CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo true)
             CLANG_IS_38 := $(shell [ $(CLANG_VERSION_MAJOR) -eq 3 -a $(CLANG_VERSION_MINOR) -eq 8  ] && echo true)
           endif #Apple check
-	      endif  #clang-omp check
+        endif  #clang-omp check
 
         ifeq ($(CLANG_OMP_AVAIL),true)
           ifeq ($(APPLE_CLANG),0)
