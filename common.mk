@@ -14,16 +14,6 @@ MINOR:=2
 PATCHLEVEL:=3
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
-## Colored text output
-## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
-export SHELL:=$(shell which sh)
-ccreset:=$(shell echo "\033[0;0m")
-ccred:=$(shell echo "\033[0;31m")
-ccmagenta:=$(shell echo "\033[0;35m")
-ccgreen:=$(shell echo "\033[0;32m")
-ccblue:=$(shell echo "\033[0;34m")
-## end of colored text output
-
 DO_CHECKS := 1
 ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
@@ -38,6 +28,21 @@ ifeq ($(DO_CHECKS), 1)
   ## Make clang the default compiler on Mac
   ## But first check for clang-omp, use that if available
   UNAME := $(shell uname)
+
+  ## Colored text output
+  ## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
+  ## Except, you have to use "echo -e" on linux and "echo" on Mac
+  ECHO_COMMAND := echo -e
+  ifeq ($(UNAME), Darwin)
+    ECHO_COMMAND := echo
+  endif
+  ccreset :=$(shell $(ECHO_COMMAND) "\033[0;0m")
+  ccred:=$(shell $(ECHO_COMMAND) "\033[0;31m")
+  ccmagenta:=$(shell $(ECHO_COMMAND) "\033[0;35m")
+  ccgreen:=$(shell $(ECHO_COMMAND) "\033[0;32m")
+  ccblue:=$(shell $(ECHO_COMMAND) "\033[0;34m")
+  ## end of colored text output
+
 
   ## First check make version. Versions of make older than 3.80 will crash
   ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
@@ -62,6 +67,33 @@ ifeq ($(DO_CHECKS), 1)
       CC := clang-omp
     endif
   endif
+  # Check if CPU supports AVX -> this trumps everything. For instance, compiler might
+  # support AVX but the cpu might not. Then compilation will work fine but there will
+  # be a runtime crash with "Illegal Instruction"
+  ifeq ($(UNAME), Darwin)
+    # On a MAC, best to use sysctl
+    AVX_AVAIL := $(shell sysctl -n machdep.cpu.features 2>/dev/null | grep -o -i AVX | tr '[:lower:]' '[:upper:]')
+  else
+    # On Linux/Unix, just grep on /proc/cpuinfo
+    # There might be multiple cores, so just take the first line
+    # (Is it possible that someone has one core that has AVX and another that doesnt?)
+    AVX_AVAIL := $(shell grep -o -i AVX /proc/cpuinfo 2>/dev/null | head -n 1 | tr '[:lower:]' '[:upper:]' )
+  endif
+  REMOVE_AVX :=0
+  ifdef AVX_AVAIL
+    ifneq ($(AVX_AVAIL) , AVX)
+      REMOVE_AVX := 1
+    endif
+  else
+    REMOVE_AVX :=1
+  endif
+
+  ifeq ($(REMOVE_AVX), 1)
+    $(warning $(ccmagenta) CPU does not seem support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
+    OPT:=$(filter-out -DUSE_AVX,$(OPT))
+  endif
+  # end of checking if CPU supports AVX      
+
 
   # Now check if gcc is set to be the compiler but if clang is really under the hood.
   export CC_IS_CLANG ?= -1
@@ -101,15 +133,6 @@ ifeq ($(DO_CHECKS), 1)
   GSL_CFLAGS := $(shell gsl-config --cflags)
   GSL_LIBDIR := $(shell gsl-config --prefix)/lib
   GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR)
-
-  # Check if code is running on travis
-  ifeq (osx, $(findstring osx, ${TRAVIS_OS_NAME}))
-    ifeq (USE_AVX, $(findstring USE_AVX,$(OPT)))
-      $(warning $(ccmagenta) TRAVIS CI OSX workers do not seem to support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
-      OPT:=$(filter-out -DUSE_AVX,$(OPT))
-  endif
-  endif
-  # done with removing USE_AVX under osx on Travis
 
   # Check if all progressbar output is to be suppressed
   OUTPUT_PGBAR := 1
