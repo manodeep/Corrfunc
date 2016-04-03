@@ -271,13 +271,13 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
                             const DOUBLE x1pos = *x1++ + off_xwrap;
                             const DOUBLE y1pos = *y1++ + off_ywrap;
                             const DOUBLE z1pos = *z1++ + off_zwrap;
-
-                            DOUBLE *x2 = second->x;
-                            DOUBLE *y2 = second->y;
-                            DOUBLE *z2 = second->z;
-
-                            int64_t j;
-                            for(j=0;j<=(second->nelements-NVEC);j+=NVEC) {
+                            
+                            int64_t j = (index1 == index2) ? i+1:0;
+                            DOUBLE *x2 = second->x + j;
+                            DOUBLE *y2 = second->y + j;
+                            DOUBLE *z2 = second->z + j;
+                            
+                            for(;j<=(second->nelements-NVEC);j+=NVEC) {
 
 #if !(defined(USE_AVX) && defined(__AVX__))
                                 for(int jj=0;jj<NVEC;jj++) {
@@ -291,12 +291,12 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
                                         j = second->nelements;
                                         break;
                                     }
-
+                                    
                                     const DOUBLE r2 = dx*dx + dy*dy;
                                     if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
                                         continue;
                                     }
-                                    
+
 #ifdef OUTPUT_RPAVG
                                     const DOUBLE r = SQRT(r2);
 #endif
@@ -434,19 +434,23 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
                                 } else if(dz >= pimax) {
                                     break;
                                 }
+                                
                                 const DOUBLE r2 = dx*dx + dy*dy;
+                                if(r2 >=sqr_rpmax || r2 < sqr_rpmin) {
+                                    continue;
+                                }
+
+                                
 #ifdef OUTPUT_RPAVG
                                 const DOUBLE r = SQRT(r2);
 #endif
-                                if(r2 < sqr_rpmax && r2 >= sqr_rpmin) {
-                                    for(int kbin=nbin-1;kbin>=1;kbin--) {
-                                        if(r2 >= rupp_sqr[kbin-1] && r2 < rupp_sqr[kbin]) {
-                                            npair[kbin]++;
+                                for(int kbin=nbin-1;kbin>=1;kbin--) {
+                                    if(r2 >= rupp_sqr[kbin-1] && r2 < rupp_sqr[kbin]) {
+                                        npair[kbin]++;
 #ifdef OUTPUT_RPAVG
-                                            rpavg[kbin] += r;
+                                        rpavg[kbin] += r;
 #endif
-                                            break;
-                                        }
+                                        break;
                                     }
                                 }
                             }//remainder loop over cellstruct second
