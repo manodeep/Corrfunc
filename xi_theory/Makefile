@@ -1,17 +1,15 @@
-include ../theory.options 
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../common.mk
-endif
+include ../theory.options ../common.mk
 
 targets:=dirs DD DDrppi wp xi vpf examples 
 
 ifneq ($(COMPILE_PYTHON_EXT), 0)
-targets += python_bindings
+  PYTHON_DIR := python_bindings
 else
-$(warning $(ccmagenta) Not compiling C extensions for theory. Either python or numpy not available $(ccreset))
+  PYTHON_DIR := 
+  $(warning $(ccmagenta) Not compiling C extensions for theory. Either python or numpy not available $(ccreset))
 endif
 
-all: $(targets) logbins
+all: $(targets) $(PYTHON_DIR) logbins
 
 OBJS1= logbins.o ../utils/utils.o 
 logbins: $(OBJS1)  | dirs 
@@ -43,6 +41,7 @@ vpf:
 	$(MAKE) -C vpf
 
 python_bindings: libs
+
 	$(MAKE) -C python_bindings
 
 ### Must create the libraries first before making the examples.
@@ -78,7 +77,7 @@ clean:
 clena: clean
 celan: clean
 celna: clean
-install: logbins examples | dirs
+install: logbins examples $(targets) $(PYTHON_DIR) | dirs
 	cp -p logbins ../bin
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install

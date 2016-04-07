@@ -8,8 +8,16 @@ C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib
 PHONY_FIX_PY_LINK := 
 
 ifeq ($(FIX_PYTHON_LINK), 1)
-PHONY_FIX_PY_LINK := sharedlib
+  PHONY_FIX_PY_LINK := sharedlib
 endif
+
+ifeq ($(UNAME), Darwin)
+  LINKER_FLAGS := -install_name "$(LIBRARY)"
+else
+  LINKER_FLAGS := -Wl,-soname=$(PROJECT).$(MAJOR)
+endif
+
+
 
 all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../theory.options ../../common.mk Makefile | ../../lib
 
@@ -18,7 +26,7 @@ $(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY
 	$(RM) $(PROJECT).so
 	ln -s $(LIBRARY) $(PROJECT).so
 
-sharedlib: $(LIBRARY) | ../../lib
+sharedlib: $(LIBRARY)
 	@{ \
 		CURRENT_PYTHON_LIB=`otool -L $(LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
 		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
@@ -50,10 +58,13 @@ sharedlib: $(LIBRARY) | ../../lib
 %.o: %.c ../../theory.options ../../common.mk Makefile $(C_LIBRARY)
 	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
-install: $(PHONY_FIX_PY_LINK) $(LIBRARY) | ../../lib
+install: $(PHONY_FIX_PY_LINK) ../../lib/$(LIBRARY) | ../../lib
+
+../../lib/$(LIBRARY): $(LIBRARY)
 	cp -p $(LIBRARY) ../../lib/
-	$(RM) ../../lib/$(PROJECT).so 
+	$(RM) ../../lib/$(PROJECT).so
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
+
 
 tests: $(PHONY_FIX_PY_LINK) $(LIBRARY) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
 	python call_correlation_functions.py
@@ -65,7 +76,7 @@ distclean: clean | ../../lib
 .PHONY: clean celna clena celan install distclean sharedlib
 
 clean:
-	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so 
+	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so
 
 celan: clean
 celna: clean

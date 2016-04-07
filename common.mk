@@ -25,10 +25,7 @@ endif
 
 ## Only set everything if the command is not "make clean"
 ifeq ($(DO_CHECKS), 1)
-  ## Make clang the default compiler on Mac
-  ## But first check for clang-omp, use that if available
   UNAME := $(shell uname)
-
   ## Colored text output
   ## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
   ## Except, you have to use "echo -e" on linux and "echo" on Mac
@@ -42,7 +39,6 @@ ifeq ($(DO_CHECKS), 1)
   ccgreen:=$(shell $(ECHO_COMMAND) "\033[0;32m")
   ccblue:=$(shell $(ECHO_COMMAND) "\033[0;34m")
   ## end of colored text output
-
 
   ## First check make version. Versions of make older than 3.80 will crash
   ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
@@ -58,7 +54,8 @@ ifeq ($(DO_CHECKS), 1)
     $(error $(ccmagenta)Project requires make >= 3.80 to compile.$(ccreset))
   endif
 
-
+  ## Make clang the default compiler on Mac
+  ## But first check for clang-omp, use that if available
   ifeq ($(UNAME), Darwin)
     CLANG_OMP_FOUND := $(shell clang-omp --version 2>/dev/null)
     ifndef CLANG_OMP_FOUND
@@ -303,7 +300,7 @@ ifeq ($(DO_CHECKS), 1)
 
     ## I only need this so that I can print out the full python version (correctly)
     ## in case of error
-	  PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
+    PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
 
     ## Check numpy version
     export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell python -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
@@ -355,13 +352,13 @@ ifeq ($(DO_CHECKS), 1)
       PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
       PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
       PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-      PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION)
+      PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(MAJOR).$(MINOR) -Wl,-current_version,$(VERSION)
 
       ### Another check for stack-size. travis ci chokes on this with gcc
       # comma := ,
       # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
       # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
-	    # PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+      # PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
     endif #Darwin checks
     export PYTHON_CHECKED:=1
   endif

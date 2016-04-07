@@ -9,7 +9,12 @@ Requires: numpy
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-from future.utils import bytes_to_native_str
+try:
+    from future.utils import bytes_to_native_str
+except ImportError:
+    print("\n\tPlease run python setup.py install before using the 'Corrfunc' package\n")
+    raise
+
 import os.path as path
 import sys
 import time

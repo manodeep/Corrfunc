@@ -8,13 +8,19 @@ C_LIBRARY := ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta
 PHONY_FIX_PY_LINK := 
 
 ifeq ($(FIX_PYTHON_LINK), 1)
-PHONY_FIX_PY_LINK = sharedlib
+  PHONY_FIX_PY_LINK = sharedlib
+endif
+
+ifeq ($(UNAME), Darwin)
+  LINKER_FLAGS := -install_name "$(LIBRARY)"
+else
+  LINKER_FLAGS := -Wl,-soname=$(PROJECT).$(MAJOR)
 endif
 
 all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../mocks.options ../../common.mk Makefile | ../../lib
 
 $(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) -L$(PYTHON_LIBDIR) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
 	$(RM) $(PROJECT).so 
 	ln -s $(LIBRARY) $(PROJECT).so
 
@@ -40,9 +46,12 @@ sharedlib: $(LIBRARY) | ../../lib
 ../../lib/libcountspheres_mocks.a: ../../mocks.options ../../common.mk Makefile | ../../lib
 	$(MAKE) -C ../vpf lib
 
-install: $(PHONY_FIX_PY_LINK) $(LIBRARY) | ../../lib
-	cp -p $(LIBRARY) ../../lib/
-	$(RM) ../../lib/$(PROJECT).so
+
+install: $(PHONY_FIX_PY_LINK) ../../lib/$(LIBRARY) | ../../lib
+
+../../lib/$(LIBRARY): $(LIBRARY)
+	cp -p $(LIBRARY) $@
+	$(RM) ../../lib/$(PROJECT).so 
 	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
 
 tests: $(PHONY_FIX_PY_LINK) $(LIBRARY) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
