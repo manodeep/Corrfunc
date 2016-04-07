@@ -114,7 +114,48 @@ Navigate to the correct directory. Make sure that the options, set in either ``t
 Look under the ``xi_theory/examples/run_correlations.c`` and ``xi_mocks/examples/run_correlations_mocks.c`` to see examples of calling the C API directly. If you run the executables, ``run_correlations`` and ``run_correlations_mocks``, the output will also show how to call the command-line interface for the various clustering measures. 
 
 ## Calling from Python 
-If all went well, the codes can be directly called from ``python``. Please see ``Corrfunc/call_correlation_functions.py`` and ``Corrfunc/call_correlation_functions_mocks.py`` for examples on how to use the Python interface. 
+If all went well, the codes can be directly called from ``python``. Please see ``Corrfunc/call_correlation_functions.py`` and ``Corrfunc/call_correlation_functions_mocks.py`` for examples on how to use the Python interface. Here are a few examples:
+
+```python
+from __future__ import print_function
+import os.path as path
+import numpy as np
+import Corrfunc
+from Corrfunc._countpairs import countpairs_wp as wp
+
+# Setup the problem for wp
+boxsize = 500.0
+pimax = 40.0
+nthreads = 4
+
+# Create a fake data-set.
+Npts = 100000
+x = np.float32(np.random.random(Npts))
+y = np.float32(np.random.random(Npts))
+z = np.float32(np.random.random(Npts))
+x *= boxsize
+y *= boxsize
+z *= boxsize
+
+# Use a file with histogram bins, containing Nbins pairs of (rmin rmax)
+binfile = path.join(path.dirname(path.abspath(Corrfunc.__file__)), "../xi_theory/tests/", "bins")
+
+# Call wp
+wp_results = wp(boxsize, pimax, nthreads, binfile, x, y, z)
+
+# Print the results
+print("###########################################")
+print("##   rmin       rmax        wp       npairs")
+print("###########################################")
+for wp in wp_results:
+    print("{0:10.4f} {1:10.4f} {2:12.6f} {3:8d}"
+          .format(wp[0], wp[1], wp[3], wp[4]))
+                                                    
+```
+
+# Benchmark against Existing Codes
+
+Please see this [gist](https://gist.github.com/manodeep/cffd9a5d77510e43ccf0) for some benchmarks with current codes.
 
 # Common Code options for both Mocks and Cosmological Boxes
 
