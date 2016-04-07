@@ -111,12 +111,12 @@ class BuildExtSubclass(build_ext):
 
             shutil.copyfile(full_name, full_build_name)
 
-            # symlink newly created library in the Corrfunc module directory.
+            # just copy the newly created library in the Corrfunc module directory.
             # Installed Corrfunc version will automatically get the extensions
             #os.remove(pkg_in_srcdir)
             #os.symlink('{0}'.format(path.join('../', full_name)),
             #           pkg_in_srcdir)
-
+            shutil.copyfile(full_name, pkg_in_srcdir)
 
 def generate_extensions(python_dirs):
     extensions = []
