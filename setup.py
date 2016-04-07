@@ -113,9 +113,9 @@ class BuildExtSubclass(build_ext):
 
             # symlink newly created library in the Corrfunc module directory.
             # Installed Corrfunc version will automatically get the extensions
-            os.remove(pkg_in_srcdir)
-            os.symlink('{0}'.format(path.join('../', full_name)),
-                       pkg_in_srcdir)
+            #os.remove(pkg_in_srcdir)
+            #os.symlink('{0}'.format(path.join('../', full_name)),
+            #           pkg_in_srcdir)
 
 
 def generate_extensions(python_dirs):
