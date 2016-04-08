@@ -35,7 +35,10 @@ libcountpairs.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../../
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
+
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
 	cp -p $(target) ../../bin/
 
 distclean: clean | ../../lib ../../include ../../bin

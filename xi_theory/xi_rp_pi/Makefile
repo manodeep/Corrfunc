@@ -1,15 +1,11 @@
-include ../../theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../theory.options ../../common.mk
 
-target=DDrppi wprp
-
-SRC1= DDrppi.c countpairs_rp_pi.c ../../utils/utils.c ../../utils/gridlink.c ../../utils/progressbar.c ../../io/io.c ../../io/ftread.c 
-OBJS1  = $(SRC1:.c=.o)
-INCL   = countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
+target := DDrppi wprp
+SRC1  := DDrppi.c countpairs_rp_pi.c ../../utils/utils.c ../../utils/gridlink.c ../../utils/progressbar.c ../../io/io.c ../../io/ftread.c 
+INCL  := countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/progressbar.h 
+OBJS1 := $(SRC1:.c=.o)
 
 all: $(target) ../../theory.options ../../common.mk Makefile 
 
@@ -35,8 +31,14 @@ libcountpairs_rp_pi.a: $(OBJS3) ../../theory.options ../../common.mk Makefile | 
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin 
-	cp -p $(target) ../../bin/
+install: ../../bin/wprp ../../bin/DDrppi | ../../bin
+
+../../bin/wprp: wprp
+	cp -p $< $@
+
+../../bin/DDrppi: DDrppi
+	cp -p $< $@
+
 
 .PHONY: clean clena celan install lib tests
 

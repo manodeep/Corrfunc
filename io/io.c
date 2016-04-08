@@ -21,8 +21,8 @@
 int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...)
 {
     int64_t np;
-    assert(num_fields >= 1 && "You have to request at least one field to read-in");
-    assert((size == 4 || size == 8) && "Size of each position element can be either 4 (float) or 8 (double)");
+    XASSERT(num_fields >= 1, "Number of fields to read-in = %d must be at least 1\n", num_fields);
+    XASSERT((size == 4 || size == 8), "Size of fields = %zu must be either 4 or 8\n", size);
 
     void *data[num_fields];
     {
@@ -83,7 +83,7 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
         //so rewind by 4 bytes  prepare for calls to ftread
         my_fseek(fp, -sizeof(dummy), SEEK_CUR);
         dummy /= np;
-        assert((dummy == 4 || dummy == 8) && "File must contain either 4 byte (float) or 8 byte(double) precision");
+        XASSERT((dummy == 4 || dummy == 8), "Data-type in file = %u must be either 4 byte (float) or 8 byte(double) precision", dummy);
 
         if(dummy == size) {
             for(int i=0;i<num_fields;i++) {
@@ -91,13 +91,13 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
             }
         } else {
 #ifndef SILENT
-            fprintf(stderr,"WARNING: File was written in a different precision than requested (file precision = %u requested precision = %zu)\n",dummy,size);
+            fprintf(stderr,ANSI_COLOR_MAGENTA"WARNING: File was written in a different precision than requested (file precision = %u requested precision = %zu)"ANSI_COLOR_RESET"\n",dummy,size);
 #endif
             //Okay so the file was written in a different precision.
             //First, print a warning message and then read-in correctly with the
             //requested precision
             if(dummy == 4) {
-                assert(size == 8 && "Expected to be storing to doubles");
+                XASSERT(size == 8, "size = %zu should have been 8 (doubles were expected)\n", size);
                 float *tmp = my_malloc(dummy,np);
                 //read-in the fields
                 for(int i=0;i<num_fields;i++) {
@@ -109,7 +109,7 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
                 //free memory
                 free(tmp);
             } else {
-                assert(size == 4 && "Expected to be storing to doubles");
+                XASSERT(size == 4, "size = %zu should have been 4 (floats were expected)\n", size);
                 double *tmp = my_malloc(dummy,np);
 
                 //read-in the fields
@@ -196,7 +196,10 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
     va_list ap;
     va_start(ap,num_fields);
 
-    assert(sizeof(void *) == sizeof(float *) && sizeof(void *) == sizeof(double *) && "Size of void pointer must be the same as size of float/double pointers");
+    XASSERT((sizeof(void *) == sizeof(float *) && sizeof(void *) == sizeof(double *)),
+            "Size of void pointer = %zu must be the same as size of float pointer = %zu and sizeof double pointers = %zu\n",
+            sizeof(void *), sizeof(float *), sizeof(double *));
+    
     for(int i=0;i<num_fields;i++) {
         void **source = va_arg(ap, void **);
         *source =  data[i];

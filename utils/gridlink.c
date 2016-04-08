@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "defs.h"
 #include "gridlink.h"
@@ -74,7 +75,6 @@ cellarray * gridlink(const int64_t np,
                      int *nlattice_z)
 {
     cellarray *lattice=NULL;
-    int ix,iy,iz;
     int nmesh_x,nmesh_y,nmesh_z;
     int64_t *nallocated=NULL;
     DOUBLE xdiff,ydiff,zdiff;
@@ -129,23 +129,25 @@ cellarray * gridlink(const int64_t np,
     DOUBLE zinv=1.0/zbinsize;
 
     for (int64_t i=0;i<np;i++)  {
-        ix=(int)((x[i]-xmin)*xinv) ;
-        iy=(int)((y[i]-ymin)*yinv) ;
-        iz=(int)((z[i]-zmin)*zinv) ;
+        int ix=(int)((x[i]-xmin)*xinv) ;
+        int iy=(int)((y[i]-ymin)*yinv) ;
+        int iz=(int)((z[i]-zmin)*zinv) ;
         if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
         if (iy>nmesh_y-1)  iy--;
         if (iz>nmesh_z-1)  iz--;
-        if(! ( ix >= 0 && ix < nmesh_x && iy >=0 && iy < nmesh_y && iz >= 0 && iz < nmesh_z)) {
-            fprintf(stderr,"Problem with i = %"PRId64" x = %lf y = %lf z = %lf \n",i,x[i],y[i],z[i]);
-            fprintf(stderr,"ix = %d iy = %d iz = %d\n",ix,iy,iz);
-        }
-        assert(x[i] >= xmin && x[i] <= xmax && "x-position is within limits");
-        assert(y[i] >= ymin && y[i] <= ymax && "y-position is within limits");
-        assert(z[i] >= zmin && z[i] <= zmax && "z-position is within limits");
+        XASSERT(x[i] >= xmin && x[i] <= xmax,
+                "x[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, x[i], xmin, xmax);
+        XASSERT(y[i] >= ymin && y[i] <= ymax,
+                "y[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, y[i], ymin, ymax);
+        XASSERT(z[i] >= zmin && z[i] <= zmax,
+                "z[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, z[i], zmin, zmax);
 
-        assert(ix >= 0 && ix < nmesh_x && "ix is in range");
-        assert(iy >= 0 && iy < nmesh_y && "iy is in range");
-        assert(iz >= 0 && iz < nmesh_z && "iz is in range");
+        XASSERT(ix >= 0 && ix < nmesh_x, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
+        XASSERT(iy >= 0 && iy < nmesh_y, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
+        XASSERT(iz >= 0 && iz < nmesh_z, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
 
         int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
 
@@ -164,7 +166,10 @@ cellarray * gridlink(const int64_t np,
             lattice[index].z = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
             nallocated[index] = expected_n;
         }
-        assert(lattice[index].nelements < nallocated[index] && "Ensuring that number of particles in a cell doesn't corrupt memory");
+        XASSERT(lattice[index].nelements < nallocated[index],
+                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
+                index, lattice[index].nelements, nallocated[index]);
+
         const int64_t ipos = lattice[index].nelements;
         lattice[index].x[ipos] = x[i];
         lattice[index].y[ipos] = y[i];
@@ -201,7 +206,6 @@ cellarray_nvec * gridlink_nvec(const int64_t np,
                                int *nlattice_z)
 {
     cellarray_nvec *lattice=NULL;
-    int ix,iy,iz;
     int nmesh_x,nmesh_y,nmesh_z;
     int64_t *nallocated=NULL;
     DOUBLE xdiff,ydiff,zdiff;
@@ -254,9 +258,9 @@ cellarray_nvec * gridlink_nvec(const int64_t np,
     DOUBLE zinv=1.0/zbinsize;
 
     for (int64_t i=0;i<np;i++)  {
-        ix=(int)((x[i]-xmin)*xinv) ;
-        iy=(int)((y[i]-ymin)*yinv) ;
-        iz=(int)((z[i]-zmin)*zinv) ;
+        int ix=(int)((x[i]-xmin)*xinv) ;
+        int iy=(int)((y[i]-ymin)*yinv) ;
+        int iz=(int)((z[i]-zmin)*zinv) ;
         if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
         if (iy>nmesh_y-1)  iy--;
         if (iz>nmesh_z-1)  iz--;
@@ -264,13 +268,19 @@ cellarray_nvec * gridlink_nvec(const int64_t np,
             fprintf(stderr,"Problem with i = %"PRId64" x = %lf y = %lf z = %lf \n",i,x[i],y[i],z[i]);
             fprintf(stderr,"ix = %d iy = %d iz = %d\n",ix,iy,iz);
         }
-        assert(x[i] >= xmin && x[i] <= xmax && "x-position is within limits");
-        assert(y[i] >= ymin && y[i] <= ymax && "y-position is within limits");
-        assert(z[i] >= zmin && z[i] <= zmax && "z-position is within limits");
+        XASSERT(x[i] >= xmin && x[i] <= xmax,
+                "x[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, x[i], xmin, xmax);
+        XASSERT(y[i] >= ymin && y[i] <= ymax,
+                "y[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, y[i], ymin, ymax);
+        XASSERT(z[i] >= zmin && z[i] <= zmax,
+                "z[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, z[i], zmin, zmax);
 
-        assert(ix >= 0 && ix < nmesh_x && "ix is in range");
-        assert(iy >= 0 && iy < nmesh_y && "iy is in range");
-        assert(iz >= 0 && iz < nmesh_z && "iz is in range");
+        XASSERT(ix >= 0 && ix < nmesh_x, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
+        XASSERT(iy >= 0 && iy < nmesh_y, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
+        XASSERT(iz >= 0 && iz < nmesh_z, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
 
         int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
 
@@ -287,7 +297,10 @@ cellarray_nvec * gridlink_nvec(const int64_t np,
             lattice[index].pos = my_realloc(lattice[index].pos ,memsize,expected_n,"lattice.pos");
             nallocated[index] = expected_n;
         }
-        assert(lattice[index].nelements < nallocated[index] && "Ensuring that number of particles in a cell doesn't corrupt memory");
+        XASSERT(lattice[index].nelements < nallocated[index],
+                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
+                index, lattice[index].nelements, nallocated[index]);
+
         const int num_nvec_bunch = lattice[index].nelements/NVEC;
         const size_t xoffset = num_nvec_bunch * NVEC * 3;
         const size_t yoffset = xoffset + NVEC;
@@ -319,7 +332,7 @@ cellarray_nvec * gridlink_nvec(const int64_t np,
 /* Need SGLIB to simultaneously sort the particles */
 #include "sglib.h"
 
-cellarray_index * gridlink_index(const int64_t np,
+struct cellarray_index * gridlink_index(const int64_t np,
                                  DOUBLE *x, DOUBLE *y, DOUBLE *z,
                                  const DOUBLE xmin, const DOUBLE xmax,
                                  const DOUBLE ymin, const DOUBLE ymax,
@@ -334,7 +347,7 @@ cellarray_index * gridlink_index(const int64_t np,
                                  int *nlattice_y,
                                  int *nlattice_z)
 {
-    cellarray_index *lattice=NULL;
+
     int nmesh_x,nmesh_y,nmesh_z;
     DOUBLE xdiff,ydiff,zdiff;
     DOUBLE cell_volume,box_volume;
@@ -367,15 +380,16 @@ cellarray_index * gridlink_index(const int64_t np,
 #ifndef SILENT
     fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
 #endif
-    lattice    = (cellarray_index *) my_malloc(sizeof(cellarray_index), totncells);
-    for(int i=0;i<totncells;i++) {
+    struct cellarray_index *lattice  = (struct cellarray_index *) my_malloc(sizeof(*lattice), totncells);
+    for(int64_t i=0;i<totncells;i++) {
       lattice[i].start = LONG_MAX;//Hoping to crash the code if I incorrectly try to access this!
       lattice[i].nelements = 0;
     }
 
-    int *cell_index = my_malloc(sizeof(*cell_index), np);//each particle needs to get a cell index. 
+    int64_t *cell_index = my_malloc(sizeof(*cell_index), np);//each particle needs to get a cell index.
+
     /*
-      Allocate memory for each of the fields in cellarray_index. Since we haven't processed the data yet,
+      Allocate memory for each of the fields in struct cellarray_index. Since we haven't processed the data yet,
       expected_n is a reasonable guess as to the number of points in the cell.
     */
 
@@ -390,19 +404,21 @@ cellarray_index * gridlink_index(const int64_t np,
         if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
         if (iy>nmesh_y-1)  iy--;
         if (iz>nmesh_z-1)  iz--;
-        if(! ( ix >= 0 && ix < nmesh_x && iy >=0 && iy < nmesh_y && iz >= 0 && iz < nmesh_z)) {
-            fprintf(stderr,"Problem with i = %"PRId64" x = %lf y = %lf z = %lf \n",i,x[i],y[i],z[i]);
-            fprintf(stderr,"ix = %d iy = %d iz = %d\n",ix,iy,iz);
-        }
-        assert(x[i] >= xmin && x[i] <= xmax && "x-position is within limits");
-        assert(y[i] >= ymin && y[i] <= ymax && "y-position is within limits");
-        assert(z[i] >= zmin && z[i] <= zmax && "z-position is within limits");
+        XASSERT(x[i] >= xmin && x[i] <= xmax,
+                "x[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, x[i], xmin, xmax);
+        XASSERT(y[i] >= ymin && y[i] <= ymax,
+                "y[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, y[i], ymin, ymax);
+        XASSERT(z[i] >= zmin && z[i] <= zmax,
+                "z[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, z[i], zmin, zmax);
 
-        assert(ix >= 0 && ix < nmesh_x && "ix is in range");
-        assert(iy >= 0 && iy < nmesh_y && "iy is in range");
-        assert(iz >= 0 && iz < nmesh_z && "iz is in range");
+        XASSERT(ix >= 0 && ix < nmesh_x, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
+        XASSERT(iy >= 0 && iy < nmesh_y, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
+        XASSERT(iz >= 0 && iz < nmesh_z, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
 
-        int index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
+        const int64_t index = ix*nmesh_y*nmesh_z + (int64_t) iy*nmesh_z + (int64_t) iz;
         cell_index[i] = index;
     }
 
@@ -410,20 +426,21 @@ cellarray_index * gridlink_index(const int64_t np,
 #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);                   \
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);\
-        SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, cell_index, i,j)}
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t,cell_index,i,j)}
     
     SGLIB_ARRAY_QUICK_SORT(int64_t, cell_index, np, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
 
     
-    int start_cell = 0;
+    int64_t start_cell = 0;
     lattice[start_cell].start=0;
     lattice[start_cell].nelements=1;
-    assert(cell_index[0] == start_cell && "First cell index must be 0");
+    XASSERT(cell_index[0] == start_cell,
+            ANSI_COLOR_RED"BUG: First cell index =%"PRId64" must equal start cell = %"PRId64 ANSI_COLOR_RESET"\n",
+            cell_index[0], start_cell);
     for(int64_t i=1;i<np;i++) {
         const int64_t icell = cell_index[i];
         if(icell != start_cell) {
-            /* lattice[start_cell].nelements = i - lattice[start_cell].start; */
             lattice[icell].start = i;
             lattice[icell].nelements = 1;
             start_cell = icell;
@@ -431,11 +448,81 @@ cellarray_index * gridlink_index(const int64_t np,
             lattice[icell].nelements++;
         }
     }
-    
     free(cell_index);
+    
+
+    /* Now figure out the neighbouring cells*/
+    //First create a giant list of cells opened
+    bool *opened = my_malloc(sizeof(bool), totncells * totncells);
+    for(int64_t i=0;i < totncells * totncells; i++) {
+        opened[i] = false;
+    }
+    //WARNING: This only loops forward in z -> should be used only for wp/xi
+    const int64_t nx_ngb = 2*xbin_refine_factor + 1;
+    const int64_t ny_ngb = 2*ybin_refine_factor + 1;
+    const int64_t nz_ngb = zbin_refine_factor + 1;
+    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
+
+    for(int64_t icell=0;icell<totncells;icell++) {
+        const int iz = icell % nmesh_z;
+        const int ix = icell / (nmesh_y * nmesh_z );
+        const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
+        XASSERT(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz),
+                ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
+                icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
+        
+        struct cellarray_index *first = &(lattice[icell]);
+        first->num_ngb = 0;
+        first->xwrap = my_calloc(sizeof(*(first->xwrap)), max_ngb_cells);
+        first->ywrap = my_calloc(sizeof(*(first->ywrap)), max_ngb_cells);
+        first->zwrap = my_calloc(sizeof(*(first->zwrap)), max_ngb_cells);
+        first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+
+        for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
+            const int iiix = (ix + iix + nmesh_x) % nmesh_x;
+            const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
+            
+            for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
+                const int iiiy = (iy + iiy + nmesh_y) % nmesh_y;
+                const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
+
+                /* If you need to double-count pairs, change the initialization of iiz to -zbin_refine_factor.
+                   Also, change nz_ngb to 2*zbin_refine_factor + 1, and change the wrapping for off_zwrap and make it same as off_xwrap/off_ywrap */
+                for(int64_t iiz=0;iiz<=zbin_refine_factor;iiz++){
+                    const int iiiz = (iz + iiz + nmesh_z) % nmesh_z;
+                    const DOUBLE off_zwrap = ((iz + iiz) < nmesh_z) ? 0.0:-zdiff;
+                    const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
+                    if(icell2 == icell) {
+                        continue;
+                    }
+                    const int64_t index1 = icell2 * totncells + icell;
+                    const int64_t index2 = icell * totncells + icell2;
+
+                    if(opened[index1] == true) {
+                        continue;
+                    }
+
+                    const int64_t ngb_index = first->num_ngb;
+                    XASSERT(ngb_index < max_ngb_cells,"ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
+                    first->ngb_cells[ngb_index] = &(lattice[icell2]);
+                    first->xwrap[ngb_index] = off_xwrap;
+                    first->ywrap[ngb_index] = off_ywrap;
+                    first->zwrap[ngb_index] = off_zwrap;
+                    first->num_ngb++;
+
+                    opened[index1] = true;
+                    opened[index2] = true;
+                }
+            }
+        }
+
+    }
+    free(opened);
+    
     *nlattice_x=nmesh_x;
     *nlattice_y=nmesh_y;
     *nlattice_z=nmesh_z;
+    
 #ifndef SILENT
     gettimeofday(&t1,NULL);
     fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
