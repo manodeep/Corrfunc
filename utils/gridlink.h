@@ -30,7 +30,7 @@ extern "C" {
                          int *nlattice_x,
                          int *nlattice_y,
                          int *nlattice_z) __attribute__((warn_unused_result));
-
+    void free_cellarray(cellarray *lattice, const int64_t totncells);
 
     cellarray_nvec * gridlink_nvec(const int64_t np,
                                    const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
@@ -46,12 +46,17 @@ extern "C" {
                                    int *nlattice_x,
                                    int *nlattice_y,
                                    int *nlattice_z) __attribute__((warn_unused_result));
+    void free_cellarray_nvec(cellarray_nvec *lattice, const int64_t totncells);
 
 
+    /* void free_cellarray_index(cellarray_index *lattice, const int64_t totncells); */
+    
     void get_max_min(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
                      DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z);
 
 
+
+    
 #ifdef __cplusplus
 }
 #endif

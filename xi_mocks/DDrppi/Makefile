@@ -3,7 +3,7 @@ ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
   include ../../common.mk
 endif
 
-target := DDrppi_mocks wprp_mocks
+targets := DDrppi_mocks wprp_mocks
 SRC1   := DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
           ../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c \
 			    ../../utils/utils.c ../../io/io.c ../../io/ftread.c
@@ -19,7 +19,7 @@ endif
 
 OBJS1=$(SRC1:.c=.o) 
 
-all: $(target) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
+all: $(targets) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
 
 DDrppi_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@ 
@@ -53,8 +53,10 @@ libcountpairs_rp_pi_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.m
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
-	cp -p $(target) ../../bin/
+install: ../../bin/DDrppi_mocks ../../bin/wprp_mocks | ../../bin
+
+../../bin/%_mocks: %_mocks
+	cp -p $< $@
 
 .PHONY: clean clena celan distclean realclean install tests
 
@@ -62,14 +64,14 @@ tests:
 	$(MAKE) -C ../tests DDrppi
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2)  libcountpairs_rp_pi_mocks.a
+	$(RM) $(targets) $(OBJS1) $(OBJS2)  libcountpairs_rp_pi_mocks.a
 
 clena: clean
 celan: clean
 
 distclean:clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountpairs_rp_pi_mocks.a ../../include/countpairs_rp_pi_mocks.h
-	cd ../../bin && $(RM) $(target)
+	cd ../../bin && $(RM) $(targets)
 
 realclean: distclean
 distclena: distclean

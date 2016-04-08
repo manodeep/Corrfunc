@@ -53,8 +53,6 @@ void get_max_min_data(const int64_t ND1, const DOUBLE * restrict cz,
 
 }
 
-
-
 cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czmax, const DOUBLE pimax,
                             const DOUBLE *dec, const DOUBLE *ra, const DOUBLE *cz,
                             int *ngrid,int *max_in_cell,

@@ -304,12 +304,8 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 
     free(counts);
     gsl_rng_free (rng);
-    for(int i=0;i<totncells;i++) {
-        free(lattice[i].pos);
-        /* free(lattice[i].y); */
-        /* free(lattice[i].z); */
-    }
-    free(lattice);
+
+    free_cellarray_nvec(lattice, totncells);
     
 #ifndef SILENT
     finish_myprogressbar(&interrupted);

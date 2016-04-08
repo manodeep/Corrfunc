@@ -87,12 +87,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
         fprintf(stderr,"%s> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n",__FUNCTION__);
         bin_refine_factor *=2;
         const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-        for(int64_t i=0;i<totncells;i++) {
-            free(lattice[i].x);
-            free(lattice[i].y);
-            free(lattice[i].z);
-        }
-        free(lattice);
+        free_cellarray(lattice, totncells);
         lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
@@ -565,13 +560,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DO
         rlow=results->rupp[i];
     }
 
-    for(int64_t i=0;i<totncells;i++) {
-        free(lattice[i].x);
-        free(lattice[i].y);
-        free(lattice[i].z);
-    }
-
-    free(lattice);
+    free_cellarray(lattice, totncells);
     free(rupp);
 
 

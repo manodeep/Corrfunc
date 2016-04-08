@@ -552,21 +552,11 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
     }
 
     free(rupp);
-    for(int64_t i=0;i<totncells;i++) {
-        free(lattice1[i].x);
-        free(lattice1[i].y);
-        free(lattice1[i].z);
-        if(autocorr==0) {
-            free(lattice2[i].x);
-            free(lattice2[i].y);
-            free(lattice2[i].z);
-        }
+    free_cellarray(lattice1,totncells);
+    if(autocorr == 0) {
+        free_cellarray(lattice2, totncells);
     }
-
-    free(lattice1);
-    if(autocorr==0) {
-        free(lattice2);
-    }
+    
 #ifdef USE_OMP
     matrix_free((void **) all_npairs, numthreads);
 #ifdef OUTPUT_RPAVG
