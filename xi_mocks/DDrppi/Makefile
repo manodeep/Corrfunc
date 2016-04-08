@@ -1,15 +1,10 @@
-include ../../mocks.options 
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../mocks.options ../../common.mk
 
-target=DDrppi_mocks wprp_mocks
-
-INCL   = countpairs_rp_pi_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h  ../../utils/gridlink_mocks.h ../../utils/cellarray_mocks.h \
+target := DDrppi_mocks wprp_mocks
+INCL   := countpairs_rp_pi_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h  ../../utils/gridlink_mocks.h ../../utils/cellarray_mocks.h \
 				../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h  \
 				../../utils/utils.h	../../utils/function_precision.h ../../utils/avx_calls.h ../../utils/defs.h ../../utils/progressbar.h 
-
-SRC1= DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
+SRC1 := DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
 			../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c \
 			../../utils/utils.c ../../io/io.c ../../io/ftread.c ../../utils/progressbar.c
 
@@ -23,8 +18,8 @@ DDrppi_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 countpairs_rp_pi_mocks.o: countpairs_rp_pi_mocks.c ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
 
-SRC2=wprp_mocks.c ../../utils/utils.c
-OBJS2=$(SRC2:.c=.o)
+SRC2  := wprp_mocks.c ../../utils/utils.c
+OBJS2 := $(SRC2:.c=.o)
 wprp_mocks: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS2) $(CLINK) -o $@ 
 
@@ -38,7 +33,7 @@ wprp_mocks: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 libs: lib
 lib: libcountpairs_rp_pi_mocks.a | ../../lib
 
-OBJS3=countpairs_rp_pi_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o \
+OBJS3 :=countpairs_rp_pi_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o \
 			../../utils/set_cosmo_dist.o ../../utils/cosmology_params.o 
 
 libcountpairs_rp_pi_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
@@ -49,8 +44,13 @@ libcountpairs_rp_pi_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.m
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
-	cp -p $(target) ../../bin/
+install: ../../bin/DDrppi_mocks ../../bin/wprp_mocks | ../../bin
+
+../../bin/wprp_mocks: wprp_mocks
+	cp -p $< $@
+
+../../bin/DDrppi_mocks: DDrppi_mocks
+	cp -p $< $@
 
 .PHONY: clean clena celan distclean realclean install tests
 

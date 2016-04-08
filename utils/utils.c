@@ -271,13 +271,15 @@ void* my_malloc(size_t size,int64_t N)
 {
     void *x = NULL;
     x = malloc(N*size);
-    size_t megabytes = N*size/(1024.0*1024.0);
     if (x==NULL){
         fprintf(stderr,"malloc for %"PRId64" elements with %zu bytes failed..aborting\n",N,size);
         exit(EXIT_FAILURE);
-    } else {
-        if(megabytes > 100)
-            fprintf(stderr,"\n Successfully allocated  %"PRId64" elements with total size %zu (MB) \n",N, megabytes);
+/* #ifndef SILENT */
+/*     } else { */
+/*         const size_t megabytes = N*size/(1024.0*1024.0); */
+/*         if(megabytes > 100) */
+/*             fprintf(stderr,"\n Successfully allocated  %"PRId64" elements with total size %zu (MB) \n",N, megabytes); */
+/* #endif         */
     }
     return x;
 
@@ -429,7 +431,7 @@ int test_all_files_present(const int nfiles, ...)
     int absent=0;
     va_list filenames;
     va_start(filenames, nfiles);
-    assert(nfiles <= 31 && "Can only test for 31 files simultaneously");
+    XASSERT(nfiles <= 31, "Can only test for 31 files simultaneously. nfiles = %d \n",nfiles);
     for(int i=0;i<nfiles;i++) {
         const char *f = va_arg(filenames, const char *);
         FILE *fp = fopen(f,"r");

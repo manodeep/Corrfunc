@@ -1,12 +1,10 @@
-include ../../theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../theory.options ../../common.mk
 
-target=vpf 
-SRC1   = vpf.c countspheres.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c ../../io/ftread.c ../../io/io.c 
-OBJS1  = $(SRC1:.c=.o)
-INCL   = countspheres.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
+
+target := vpf 
+SRC1   := vpf.c countspheres.c ../../utils/gridlink.c ../../utils/utils.c ../../utils/progressbar.c ../../io/ftread.c ../../io/io.c 
+OBJS1  := $(SRC1:.c=.o)
+INCL   := countspheres.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/progressbar.h 
 
@@ -36,7 +34,9 @@ libcountspheres.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../.
 ../../bin ../../include ../../lib:
 	mkdir -p $@
 
-install: $(target) | ../../bin
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
 	cp -p $(target) ../../bin/
 
 distclean: clean | ../../lib ../../include ../../bin

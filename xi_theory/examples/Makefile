@@ -1,9 +1,6 @@
-include ../../theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../theory.options ../../common.mk
 
-target = run_correlations
+target := run_correlations
 
 SRC1   := run_correlations.c ../../io/ftread.c ../../io/io.c  ../../utils/utils.c ../../utils/progressbar.c 
 OBJS1  := $(SRC1:.c=.o)

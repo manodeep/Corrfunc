@@ -34,10 +34,15 @@ typedef struct{
 
 
 /* This cellarray will avoid duplicating the particle positions */
-typedef struct{
+struct cellarray_index{
     int64_t start;
     int64_t nelements;
-} cellarray_index;
+    struct cellarray_index **ngb_cells;
+    DOUBLE *xwrap;
+    DOUBLE *ywrap;
+    DOUBLE *zwrap;
+    int64_t num_ngb;
+};
 
 #ifdef __cplusplus
 }

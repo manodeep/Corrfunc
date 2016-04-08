@@ -54,7 +54,7 @@ void get_max_min(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * r
 
 
 
-cellarray_index * gridlink_index(const int64_t np,
+struct cellarray_index * gridlink_index(const int64_t np,
                                  DOUBLE *x, DOUBLE *y, DOUBLE *z,
                                  const DOUBLE xmin, const DOUBLE xmax,
                                  const DOUBLE ymin, const DOUBLE ymax,

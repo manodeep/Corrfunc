@@ -62,7 +62,7 @@ cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czm
 {
     int nmesh,max_n;
     const DOUBLE czdiff = (czmax-czmin);
-    assert(czdiff > 0.0 && "There needs to be some width in cz for the data");
+    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"DOUBLE_FORMAT"\n", czdiff);
     const DOUBLE inv_czdiff=1.0/czdiff;
 
     /* Instead of directly assigning to int nmesh via
@@ -109,7 +109,7 @@ cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czm
     for(int64_t i=0;i<np;i++) {
         int iz = (int)(nmesh*(cz[i]-czmin)*inv_czdiff) ;
         if (iz >= nmesh) iz--;
-        assert(iz >= 0 && iz < nmesh && "cz is inside bounds");
+        XASSERT(iz >= 0 && iz < nmesh, "iz (cz bin index) = %d must be within [0,%d)\n", iz, nmesh);
 
         const int64_t index = iz;
         if(lattice[index].nelements == lattice[index].nallocated) {
@@ -126,7 +126,10 @@ cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czm
             lattice[index].pos  = my_realloc(lattice[index].pos ,memsize,expected_n,"lattice.pos");
             lattice[index].nallocated = expected_n;
         }
-        assert(lattice[index].nallocated > lattice[index].nelements && "Making sure memory access if fine");
+        XASSERT(lattice[index].nelements < lattice[index].nallocated,
+                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %d must be less than allocated memory = %d" ANSI_COLOR_RESET"\n",
+                index, lattice[index].nelements, lattice[index].nallocated);
+
         /*
           The particles are stored like this:
           x[NVEC], y{NVEC], z[NVEC], x[NVEC],y[NVEC].....
@@ -203,12 +206,10 @@ cellarray_mocks **gridlink2D(const int64_t np,
     struct timeval t0,t1;
     gettimeofday(&t0,NULL);
 #endif
-
-    assert(czdiff > 0.0 && "There has to be some depth to the survey");
-    assert(pimax > 0.0 && "Minimum los separation has to be non-zero");
-    assert(dec_diff > 0.0 && "All of the points can not be at the same declination");
-
-    assert(MEMORY_INCREASE_FAC >= 1.0 && "Memory increase factor must be >=1 ");
+    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"DOUBLE_FORMAT"\n", czdiff);
+    XASSERT(pimax > 0.0, "Minimum los separation = %"DOUBLE_FORMAT" must be non-zero\n", pimax);
+    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"DOUBLE_FORMAT" must be non-zero\n", dec_diff);
+    XASSERT(MEMORY_INCREASE_FAC >= 1.0, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
 
     //Written this way to work around INT overflows
     const DOUBLE this_nmesh = zbin_refine_factor*czdiff/pimax ;
@@ -227,7 +228,7 @@ cellarray_mocks **gridlink2D(const int64_t np,
         const int min_iz = (i - zbin_refine_factor) < 0  ? 0:i-zbin_refine_factor;
         const DOUBLE dmin = czmin + 0.5*(min_iz+i)*cz_binsize;//Really I am taking the average of the left edges for the cz bins corresponding to i (= czmin + i*cz_binsize) and min_iz (= czmin + min_iz*cz_binsize).
         const DOUBLE dec_cell = ASIN(rpmax/(2*dmin))*2.0*INV_PI_OVER_180;
-        assert(dec_cell > 0.0 && "Declination binsize is non-zero");
+        XASSERT(dec_cell > 0.0, "Declination binsize=%"DOUBLE_FORMAT" in cz bin = %d must be positive\n", dec_cell, i);
         const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
         const int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
         if(nmesh_dec > max_nmesh_dec) max_nmesh_dec = nmesh_dec;
@@ -262,11 +263,16 @@ cellarray_mocks **gridlink2D(const int64_t np,
     for(int i=0;i<np;i++) {
         int iz = (int)((cz[i]-czmin)*inv_cz_binsize) ;
         if (iz >= nmesh_cz) iz--;
-        assert(iz >=0 && iz < nmesh_cz && "cz position is within bounds");
-        assert(dec[i] >= dec_min && dec[i] <= dec_max && "Declination within bounds");
+        XASSERT(iz >= 0 && iz < nmesh_cz, "iz (cz bin index) = %d must be within [0,%d)\n", iz, nmesh_cz);
+        XASSERT(dec[i] >= dec_min && dec[i] <= dec_max,
+                "dec[%d] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, dec[i], dec_min, dec_max);
         int idec = (int)(ngrid_dec[iz]*(dec[i]-dec_min)*inv_dec_diff);
         if(idec >= ngrid_dec[iz]) idec--;
-        assert(idec >=0 && idec < ngrid_dec[iz] && "Declination index within range");
+        XASSERT(idec >= 0 && idec < ngrid_dec[iz],
+                "idec (dec bin index) = %d must be within [0,%d) for iz (zbin index) = %d\n",
+                idec, ngrid_dec[iz], iz);
+
         if(lattice[iz][idec].nelements == lattice[iz][idec].nallocated) {
             expected_n = lattice[iz][idec].nallocated*MEMORY_INCREASE_FAC;
             while(expected_n <= lattice[iz][idec].nelements || expected_n % NVEC != 0) {
@@ -276,7 +282,10 @@ cellarray_mocks **gridlink2D(const int64_t np,
             lattice[iz][idec].pos  = my_realloc(lattice[iz][idec].pos ,memsize,expected_n,"lattice.pos");
             lattice[iz][idec].nallocated = expected_n;
         }
-        assert(lattice[iz][idec].nallocated > lattice[iz][idec].nelements && "Making sure memory access is fine");
+        XASSERT(lattice[iz][idec].nelements < lattice[iz][idec].nallocated,
+                ANSI_COLOR_RED"BUG: lattice[%d][%d].nelements = %d must be less than allocated memory = %d" ANSI_COLOR_RESET"\n",
+                iz, idec, lattice[iz][idec].nelements, lattice[iz][idec].nallocated);
+
         const int num_nvec_bunch = lattice[iz][idec].nelements/NVEC;
         const size_t xoffset  = num_nvec_bunch * NVEC * 3;
         const size_t yoffset  = xoffset + NVEC;
@@ -335,11 +344,11 @@ cellarray * gridlink1D_theta(const int64_t np,
     struct timeval t0,t1;
     gettimeofday(&t0,NULL);
 #endif
-    assert(thetamax > 0.0);
-    assert(dec_diff > 0.0);
-    assert(MEMORY_INCREASE_FAC >= 1.0);
 
-
+    XASSERT(thetamax > 0.0, "Minimum angular separation = %"DOUBLE_FORMAT" must be positive\n", thetamax);
+    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"DOUBLE_FORMAT" must be non-zero\n", dec_diff);
+    XASSERT(MEMORY_INCREASE_FAC >= 1.0, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
+    
     /* Find the max. number of declination cells that can be */
     const DOUBLE this_ngrid_dec = dec_diff*rbin_refine_factor/thetamax;
     const int ngrid_dec = this_ngrid_dec > NLATMAX ? NLATMAX:(int) this_ngrid_dec;
@@ -369,7 +378,8 @@ cellarray * gridlink1D_theta(const int64_t np,
     for(int i=0;i<np;i++) {
         int idec = (int)(ngrid_dec*(dec[i]-dec_min)*inv_dec_diff);
         if(idec >=ngrid_dec) idec--;
-        assert(idec >=0 && idec < ngrid_dec && "Declination is within bounds");
+        XASSERT(idec >= 0 && idec < ngrid_dec,
+                "idec (dec bin index) = %d must be within [0, %d)", idec, ngrid_dec);
         if(lattice[idec].nelements == lattice[idec].nallocated) {
             expected_n = lattice[idec].nallocated*MEMORY_INCREASE_FAC;
             while(expected_n <= lattice[idec].nelements || expected_n % NVEC != 0){
@@ -380,7 +390,10 @@ cellarray * gridlink1D_theta(const int64_t np,
             lattice[idec].pos  = my_realloc(lattice[idec].pos, memsize,expected_n,"lattice.pos");
             lattice[idec].nallocated = expected_n;
         }
-        assert(lattice[idec].nallocated > lattice[idec].nelements && "Enough memory has been allocated to assign particles");
+        XASSERT(lattice[idec].nelements < lattice[idec].nallocated,
+                ANSI_COLOR_RED"BUG: lattice[%d].nelements = %d must be less than allocated memory = %d" ANSI_COLOR_RESET"\n",
+                idec, lattice[idec].nelements, lattice[idec].nallocated);
+
         const int num_nvec_bunch = lattice[idec].nelements/NVEC;
         const size_t xoffset = num_nvec_bunch * NVEC * 3;
         const size_t yoffset = xoffset + NVEC;
@@ -450,12 +463,13 @@ cellarray_mocks *** gridlink3D(const int64_t np,
     struct timeval t0,t1;
     gettimeofday(&t0,NULL);
 #endif
-    assert(czdiff   > 0.0 && "Data must have some depth in cz");
-    assert(pimax    > 0.0 && "Minimum los separation has to be non-zero");
-    assert(dec_diff > 0.0 && "Data must have some width in declination");
-    assert(phi_diff > 0.0 && "Data must have some width in RA");
 
-    assert(MEMORY_INCREASE_FAC >= 1.0);
+    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"DOUBLE_FORMAT"\n", czdiff);
+    XASSERT(pimax > 0.0, "Minimum los separation = %"DOUBLE_FORMAT" must be non-zero\n", pimax);
+    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"DOUBLE_FORMAT" must be non-zero\n", dec_diff);
+    XASSERT(phi_diff > 0.0, "All of the points can not be at the same RA. RA difference = %"DOUBLE_FORMAT" must be non-zero\n", phi_diff);
+    XASSERT(MEMORY_INCREASE_FAC >= 1.0, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
+
 
     const DOUBLE this_nmesh = zbin_refine_factor*czdiff/pimax ;
     nmesh_cz = this_nmesh > NLATMAX ? NLATMAX:(int) this_nmesh;
@@ -475,7 +489,7 @@ cellarray_mocks *** gridlink3D(const int64_t np,
         const int min_iz = iz-zbin_refine_factor < 0 ? 0:iz-zbin_refine_factor;
         const DOUBLE dmin = czmin + 0.5*(min_iz+iz)*cz_binsize;
         const DOUBLE dec_cell =  ASIN(rpmax/(2*dmin))*2.0*INV_PI_OVER_180;// \sigma = 2*arcsin(C/2) -> 2*arcsin( (rpmax/d2min) /2)
-        assert(dec_cell > 0.0 && "Dec-cell binsize must be non-zero");
+        XASSERT(dec_cell > 0.0, "Declination binsize=%"DOUBLE_FORMAT" in cz bin = %d must be positive\n", dec_cell, iz);
         dec_binsizes[iz] = dec_cell;
         const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
         const int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
@@ -523,7 +537,8 @@ cellarray_mocks *** gridlink3D(const int64_t np,
                     phi_cell = 120.0;
                 }
             }
-            assert(phi_cell > 0.0 && "RA bin-width is positive");
+            XASSERT(phi_cell > 0.0, "RA binsize=%"DOUBLE_FORMAT" in [cz,dec] bin = (%d,%d) must be positive\n", phi_cell, iz, idec);
+
             phi_cell = phi_cell > 120.0 ? 120.0:phi_cell;
             /* fprintf(stderr,"iz = %4d idec = %4d dec_cell = %6.3lf dec_binsize=%6.2lf this_dec = %6.2lf phi_cell = %7.2lf \n",iz,idec,dec_cell,dec_binsize,dec_min + idec*dec_binsize,phi_cell); */
             const DOUBLE this_nmesh_ra = phi_diff*phibin_refine_factor/phi_cell;
@@ -570,13 +585,20 @@ cellarray_mocks *** gridlink3D(const int64_t np,
         if(cz[i] >=czmin && cz[i] <= czmax) {
             int iz = (int)((cz[i]-czmin)*inv_cz_binsize) ;
             if (iz >= nmesh_cz) iz--;
-            assert(iz >=0 && iz < nmesh_cz && "cz (particle) position is within bounds");
+            XASSERT(iz >= 0 && iz < nmesh_cz, "iz (cz bin index) = %d must be within [0,%d)\n", iz, nmesh_cz);
             int idec = (int)(ngrid_dec[iz]*(dec[i]-dec_min)*inv_dec_diff);
             if(idec >= ngrid_dec[iz]) idec--;
-            assert(idec >=0 && idec < ngrid_dec[iz] && "Dec (particle) position within bounds");
+            XASSERT(idec >=0 && idec < ngrid_dec[iz],
+                    "Declination index for particle position = %d must be within [0, %d) for cz-bin = %d\n",
+                    idec, ngrid_dec[iz], iz);
+            
+            
             int ira = (int) (ngrid_ra[iz][idec]*(phi[i]-phi_min)*inv_phi_diff);
             if(ira >= ngrid_ra[iz][idec]) ira--;
-            assert(ira >=0 && ira < ngrid_ra[iz][idec] && "RA (particle) position within bounds");
+            XASSERT(ira >=0 && ira < ngrid_ra[iz][idec],
+                    "RA index for particle position = %d must be within [0, %d) for (cz, dec) bin indices = (%d, %d)\n",
+                    ira, ngrid_ra[iz][idec], iz, idec);
+            
             if(lattice[iz][idec][ira].nelements == lattice[iz][idec][ira].nallocated) {
                 expected_n = lattice[iz][idec][ira].nallocated*MEMORY_INCREASE_FAC;
                 while(expected_n <= lattice[iz][idec][ira].nelements || expected_n % NVEC != 0) {
@@ -587,7 +609,11 @@ cellarray_mocks *** gridlink3D(const int64_t np,
                 lattice[iz][idec][ira].pos  = my_realloc(lattice[iz][idec][ira].pos ,memsize,expected_n,"lattice.pos");
                 lattice[iz][idec][ira].nallocated = expected_n;
             }
-            assert(lattice[iz][idec][ira].nallocated > lattice[iz][idec][ira].nelements && "Making sure memory access if fine");
+            XASSERT(lattice[iz][idec][ira].nelements < lattice[iz][idec][ira].nallocated,
+                    ANSI_COLOR_RED"BUG: lattice[%d][%d][%d].nelements = %d must be less than allocated memory = %d" ANSI_COLOR_RESET"\n",
+                    iz, idec, ira, lattice[iz][idec][ira].nelements, lattice[iz][idec][ira].nallocated);
+
+            
             const int num_nvec_bunch = lattice[iz][idec][ira].nelements/NVEC;
             const size_t xoffset  = num_nvec_bunch * NVEC * 3;
             const size_t yoffset  = xoffset + NVEC;
@@ -641,10 +667,10 @@ cellarray ** gridlink2D_theta(const int64_t np,
     const DOUBLE phi_diff = phi_max - phi_min;
     int *ngrid_ra=NULL;
 
-    assert(thetamax > 0.0 && "Max. theta separation requested must be non-zero");
-    assert(dec_diff > 0.0 && "Data must have some width in declination");
-    assert(phi_diff > 0.0 && "Data must have some width in RA");
-    assert(MEMORY_INCREASE_FAC >= 1.0);
+    XASSERT(thetamax > 0.0, "Minimum angular separation = %"DOUBLE_FORMAT" must be positive\n", thetamax);
+    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"DOUBLE_FORMAT" must be non-zero\n", dec_diff);
+    XASSERT(phi_diff > 0.0, "All of the points can not be at the same RA. RA difference = %"DOUBLE_FORMAT" must be non-zero\n", phi_diff);
+    XASSERT(MEMORY_INCREASE_FAC >= 1.0, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
 
     const DOUBLE inv_dec_diff = 1.0/dec_diff;
     const DOUBLE inv_phi_diff = 1.0/phi_diff;
@@ -660,7 +686,9 @@ cellarray ** gridlink2D_theta(const int64_t np,
     *ngrid_declination=ngrid_dec;
 
     DOUBLE dec_binsize=dec_diff/ngrid_dec;
-    assert(NLATMAX >= (2*phibin_refine_factor + 1) && "NLATMAX needs to be larger than the minimum required number of ra cells for correct code function");
+    XASSERT(NLATMAX >= (2*phibin_refine_factor + 1),
+            "NLATMAX = %d needs to be larger than the minimum required number of ra cells = %d\n",
+            NLATMAX, 2*phibin_refine_factor + 1);
 
     *ngrid_phi = my_malloc(sizeof(*ngrid_ra),ngrid_dec);
     ngrid_ra = *ngrid_phi;
@@ -691,7 +719,7 @@ cellarray ** gridlink2D_theta(const int64_t np,
                 phi_cell = max_phi_cell;
             }
         }
-        assert(phi_cell > 0.0 && "Making sure that RA bin-width is non-zero");
+        XASSERT(phi_cell > 0.0, "RA binsize=%"DOUBLE_FORMAT" in declination bin = %d must be positive\n", phi_cell, idec);
         phi_cell = phi_cell > max_phi_cell ? max_phi_cell:phi_cell;
         const DOUBLE this_nmesh_ra = phi_diff*phibin_refine_factor/phi_cell;
         int nmesh_ra = this_nmesh_ra > NLATMAX ? this_nmesh_ra:(int) this_nmesh_ra;
@@ -730,10 +758,17 @@ cellarray ** gridlink2D_theta(const int64_t np,
     for(int i=0;i<np;i++) {
         int idec = (int)(ngrid_dec*(dec[i]-dec_min)*inv_dec_diff);
         if(idec >= ngrid_dec) idec--;
-        assert(idec >=0 && idec < ngrid_dec);
+        
+        XASSERT(idec >=0 && idec < ngrid_dec,
+                "Declination index for particle position = %d must be within [0, %d)\n",
+                idec, ngrid_dec);
+
         int ira  = (int)(ngrid_ra[idec]*(phi[i]-phi_min)*inv_phi_diff);
         if(ira >=ngrid_ra[idec]) ira--;
-        assert(ira >=0 && ira < ngrid_ra[idec]);
+        XASSERT(ira >=0 && ira < ngrid_ra[idec],
+                "RA index for particle position = %d must be within [0, %d) for declination bin = %d\n",
+                idec, ngrid_ra[idec], idec);
+
         if(lattice[idec][ira].nelements == lattice[idec][ira].nallocated) {
             expected_n = lattice[idec][ira].nallocated*MEMORY_INCREASE_FAC;
             while(expected_n <= lattice[idec][ira].nelements || expected_n % NVEC != 0) {
@@ -744,8 +779,10 @@ cellarray ** gridlink2D_theta(const int64_t np,
             lattice[idec][ira].pos = my_realloc(lattice[idec][ira].pos ,memsize,expected_n,"lattice.pos");
             lattice[idec][ira].nallocated = expected_n;
         }
-        assert(lattice[idec][ira].nallocated > lattice[idec][ira].nelements && "Making sure memory access if fine");
-
+        XASSERT(lattice[idec][ira].nelements < lattice[idec][ira].nallocated,
+                ANSI_COLOR_RED"BUG: lattice[%d][%d].nelements = %d must be less than allocated memory = %d" ANSI_COLOR_RESET"\n",
+                idec, ira, lattice[idec][ira].nelements, lattice[idec][ira].nallocated);
+        
         const int num_nvec_bunch = lattice[idec][ira].nelements/NVEC;
         const size_t xoffset = num_nvec_bunch * NVEC * 3;
         const size_t yoffset = xoffset + NVEC;
@@ -815,11 +852,10 @@ cellarray * gridlink(const int64_t np,
     cellarray *lattice=NULL;
     int ix,iy,iz;
     int nmesh_x,nmesh_y,nmesh_z;
-    int64_t *nallocated=NULL;
     DOUBLE xdiff,ydiff,zdiff;
     DOUBLE cell_volume,box_volume;
     DOUBLE xbinsize,ybinsize,zbinsize;
-    int64_t expected_n=0;
+    int expected_n=0;
     int64_t totncells;
     size_t totnbytes=0;
 
@@ -840,14 +876,13 @@ cellarray * gridlink(const int64_t np,
 
     cell_volume=xbinsize*ybinsize*zbinsize;
     box_volume=xdiff*ydiff*zdiff;
-    expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
+    expected_n=(int)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
     expected_n=expected_n < NVEC ? NVEC:expected_n;
     while((expected_n % NVEC) != 0)
         expected_n++;
 
     lattice    = (cellarray *) my_malloc(sizeof(cellarray), totncells);
-    nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
-
+    int *nallocated = (int *) my_malloc(sizeof(*nallocated), totncells);
 
     totnbytes += sizeof(cellarray)*totncells;
     totnbytes += 3*sizeof(DOUBLE)*totncells;
@@ -877,13 +912,19 @@ cellarray * gridlink(const int64_t np,
             fprintf(stderr,"Problem with i = %"PRId64" x = %lf y = %lf z = %lf \n",i,x[i],y[i],z[i]);
             fprintf(stderr,"ix = %d iy = %d iz = %d\n",ix,iy,iz);
         }
-        assert(x[i] >= xmin && x[i] <= xmax && "x-position is within limits");
-        assert(y[i] >= ymin && y[i] <= ymax && "y-position is within limits");
-        assert(z[i] >= zmin && z[i] <= zmax && "z-position is within limits");
+        XASSERT(x[i] >= xmin && x[i] <= xmax,
+                "x[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, x[i], xmin, xmax);
+        XASSERT(y[i] >= ymin && y[i] <= ymax,
+                "y[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, y[i], ymin, ymax);
+        XASSERT(z[i] >= zmin && z[i] <= zmax,
+                "z[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                i, z[i], zmin, zmax);
 
-        assert(ix >= 0 && ix < nmesh_x && "ix is in range");
-        assert(iy >= 0 && iy < nmesh_y && "iy is in range");
-        assert(iz >= 0 && iz < nmesh_z && "iz is in range");
+        XASSERT(ix >= 0 && ix < nmesh_x, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
+        XASSERT(iy >= 0 && iy < nmesh_y, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
+        XASSERT(iz >= 0 && iz < nmesh_z, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
 
         int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
 
@@ -900,7 +941,11 @@ cellarray * gridlink(const int64_t np,
             lattice[index].pos = my_realloc(lattice[index].pos ,memsize,expected_n,"lattice.pos");
             nallocated[index] = expected_n;
         }
-        assert(lattice[index].nelements < nallocated[index] && "Ensuring that number of particles in a cell doesn't corrupt memory");
+        XASSERT(lattice[index].nelements < nallocated[index],
+                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %d must be less than allocated memory = %d" ANSI_COLOR_RESET"\n",
+                index, lattice[index].nelements, nallocated[index]);
+
+        
         const int num_nvec_bunch = lattice[index].nelements/NVEC;
         const size_t xoffset = num_nvec_bunch * NVEC * 3;
         const size_t yoffset = xoffset + NVEC;

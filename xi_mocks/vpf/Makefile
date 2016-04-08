@@ -43,7 +43,9 @@ libcountspheres_mocks.a: $(OBJS2) ../../mocks.options ../../common.mk Makefile |
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
 	cp -p $(target) ../../bin/
 
 distclean: clean | ../../include ../../bin ../../lib

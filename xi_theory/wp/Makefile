@@ -1,12 +1,9 @@
-include ../../theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../theory.options ../../common.mk
 
-target=wp
-SRC1= wp.c countpairs_wp.c ../../utils/utils.c ../../utils/gridlink.c ../../utils/progressbar.c ../../io/io.c ../../io/ftread.c 
-OBJS1  = $(SRC1:.c=.o)
-INCL   = countpairs_wp.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
+target := wp
+SRC1   := wp.c countpairs_wp.c  ../../utils/utils.c ../../utils/gridlink.c ../../utils/progressbar.c ../../io/io.c ../../io/ftread.c
+OBJS1  := $(SRC1:.c=.o)
+INCL   := countpairs_wp.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h ../../utils/sglib.h ../../utils/progressbar.h 
 
@@ -18,22 +15,25 @@ $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 %.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-OBJS2=countpairs_wp.o ../../utils/gridlink.o ../../utils/utils.o ../../utils/progressbar.o 
 
+OBJS2 :=countpairs_wp.o 
 libs: lib
 lib: libcountpairs_wp.a | ../../lib ../../include
 
 libcountpairs_wp.a: $(OBJS2) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS2)
+	ar rcs $@ $(OBJS2) 
 	cp -p $@ ../../lib/
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_wp.h > ../../include/countpairs_wp.h
 
-.PHONY: clean clena celan install lib tests distclean
+.PHONY: clean clena celan install lib tests distclean utils
 
-../../lib ../../bin ../../include:
+../../lib ../../bin ../../include: 
 	mkdir -p $@
 
-install: $(target) | ../../bin
+
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
 	cp -p $(target) ../../bin/
 
 distclean: clean | ../../lib ../../include ../../bin
@@ -41,7 +41,7 @@ distclean: clean | ../../lib ../../include ../../bin
 	cd ../../bin && $(RM) $(target)
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
+	$(RM) $(target) $(OBJS1) libcountpairs_wp.a
 
 clena: clean
 
