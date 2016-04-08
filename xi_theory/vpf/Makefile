@@ -44,8 +44,10 @@ libcountspheres.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefil
 ../../bin ../../include ../../lib:
 	mkdir -p $@
 
-install: $(target) | ../../bin
-	cp -p $(target) ../../bin/
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
+	cp -p $< $@
 
 distclean: clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountspheres.a

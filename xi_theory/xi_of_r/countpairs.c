@@ -115,12 +115,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
         fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
         int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-        for(int64_t i=0;i<totncells;i++) {
-            free(lattice1[i].pos);
-            /* free(lattice1[i].y); */
-            /* free(lattice1[i].z); */
-        }
-        free(lattice1);
+        free_cellarray_nvec(lattice1, totncells);
         lattice1 = gridlink_nvec(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
 
@@ -593,20 +588,9 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 #endif
     }
 
-    for(int64_t i=0;i<totncells;i++) {
-        free(lattice1[i].pos);
-        /* free(lattice1[i].y); */
-        /* free(lattice1[i].z); */
-        if(autocorr==0) {
-            free(lattice2[i].pos);
-            /* free(lattice2[i].y); */
-            /* free(lattice2[i].z); */
-        }
-    }
-
-    free(lattice1);
-    if(autocorr==0) {
-        free(lattice2);
+    free_cellarray_nvec(lattice1, totncells);
+    if(autocorr == 0) {
+        free_cellarray_nvec(lattice2, totncells);
     }
     free(rupp);
 

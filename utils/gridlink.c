@@ -58,6 +58,36 @@ void get_max_min(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * r
 }
 
 
+void free_cellarray(cellarray *lattice, const int64_t totncells)
+{
+    for(int64_t i=0;i<totncells;i++) {
+        free(lattice[i].x);
+        free(lattice[i].y);
+        free(lattice[i].z);
+    }
+    free(lattice);
+}    
+
+void free_cellarray_nvec(cellarray_nvec *lattice, const int64_t totncells)
+{
+    for(int64_t i=0;i<totncells;i++) {
+        free(lattice[i].pos);
+    }
+    free(lattice);
+}
+
+/* void free_cellarray_index(cellarray_index *lattice, const int64_t totncells) */
+/* { */
+/*     for(int64_t i=0;i<totncells;i++){ */
+/*         free(lattice[i].xwrap); */
+/*         free(lattice[i].ywrap); */
+/*         free(lattice[i].zwrap); */
+/*         free(lattice[i].ngb_cells); */
+/*     } */
+/*     free(lattice); */
+/* } */
+
+
 cellarray * gridlink(const int64_t np,
                      const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
                      const DOUBLE xmin, const DOUBLE xmax,
@@ -109,7 +139,7 @@ cellarray * gridlink(const int64_t np,
     fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
 #endif
     lattice    = (cellarray *) my_malloc(sizeof(cellarray), totncells);
-    nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
+    nallocated = (int64_t *)   my_malloc(sizeof(*nallocated)      , totncells);
 
     /*
       Allocate memory for each of the fields in cellarray. Since we haven't processed the data yet,

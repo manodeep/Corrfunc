@@ -77,14 +77,16 @@ clean:
 clena: clean
 celan: clean
 celna: clean
-install: logbins examples $(targets) $(PYTHON_DIR) | dirs
-	cp -p logbins ../bin
+install: ../bin/logbins examples $(targets) $(PYTHON_DIR) | dirs
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
 	$(MAKE) -C xi install
 	$(MAKE) -C vpf install
 	$(MAKE) -C python_bindings install
+
+../bin/logbins: logbins
+	cp -p logbins ../bin
 
 lib: libs
 

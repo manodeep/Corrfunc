@@ -1,13 +1,10 @@
-include ../../mocks.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../mocks.options ../../common.mk
 
 # ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
 # MKL_CHECK=mkl
 # endif
 
-target := DDtheta_mocks wtheta
+targets := DDtheta_mocks wtheta
 SRC1   := DDtheta_mocks.c  countpairs_theta_mocks.c ../../utils/gridlink_mocks.c \
 			../../utils/utils.c ../../io/io.c ../../io/ftread.c
 INCL   := countpairs_theta_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
@@ -21,7 +18,7 @@ endif
 
 OBJS1=$(SRC1:.c=.o) 
 
-all: $(target) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
+all: $(targets) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
 
 DDtheta_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) -o $@ 
@@ -54,8 +51,13 @@ libcountpairs_theta_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.m
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
-	cp -p $(target) ../../bin/
+install: ../../bin/DDtheta_mocks ../../bin/wtheta | ../../bin
+
+../../bin/DDtheta_mocks:DDtheta_mocks
+	cp -p $< $@
+
+../../bin/wtheta: wtheta
+	cp -p $< $@
 
 .PHONY: clean clena celan distclean realclean install lib libs tests
 
@@ -63,14 +65,14 @@ tests:
 	$(MAKE) -C ../tests wtheta
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_theta_mocks.a
+	$(RM) $(targets) $(OBJS1) $(OBJS2) libcountpairs_theta_mocks.a
 
 clena: clean
 celan: clean
 
 distclean:clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountpairs_theta_mocks.a ../../include/countpairs_theta_mocks.h
-	cd ../../bin && $(RM) $(target)
+	cd ../../bin && $(RM) $(targets)
 
 realclean: distclean
 distclena: distclean

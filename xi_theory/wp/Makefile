@@ -29,11 +29,13 @@ OBJS2 += ../../utils/progressbar.o
 endif
 
 libs: lib
-lib: libcountpairs_wp.a | ../../lib ../../include
+lib: ../../lib/libcountpairs_wp.a | ../../lib ../../include
 
 libcountpairs_wp.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
-	cp -p $@ ../../lib/
+
+../../lib/libcountpairs_wp.a: libcountpairs_wp.a
+	cp -p $< $@
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_wp.h > ../../include/countpairs_wp.h
 
 .PHONY: clean clena celan install lib tests distclean
@@ -41,8 +43,10 @@ libcountpairs_wp.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefi
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
-	cp -p $(target) ../../bin/
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
+	cp -p $< $@
 
 distclean: clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountpairs_wp.a ../../include/countpairs_wp.h

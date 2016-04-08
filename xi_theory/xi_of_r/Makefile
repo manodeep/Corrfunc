@@ -30,13 +30,14 @@ SRC2 += ../../utils/progressbar.c
 endif
 
 OBJS2  = $(SRC2:.c=.o)
-
 libs: lib
-lib:  libcountpairs.a | ../../lib
+lib:  ../../lib/libcountpairs.a | ../../lib
 
 libcountpairs.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
-	cp -p $@ ../../lib/
+
+../../lib/libcountpairs.a: libcountpairs.a
+	cp -p $< $@
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs.h > ../../include/countpairs.h
 
 .PHONY: clean clena celan install lib tests distclean
@@ -44,8 +45,10 @@ libcountpairs.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile 
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
-	cp -p $(target) ../../bin/
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
+	cp -p $< $@
 
 distclean: clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountpairs.a ../../include/countpairs.h

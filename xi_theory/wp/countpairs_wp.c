@@ -111,12 +111,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
         bin_refine_factor *=2;
         zbin_refine_factor *=2;
         const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
-        for(int64_t i=0;i<totncells;i++) {
-            free(lattice[i].x);
-            free(lattice[i].y);
-            free(lattice[i].z);
-        }
-        free(lattice);
+        free_cellarray(lattice, totncells);
         lattice = gridlink(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
@@ -510,12 +505,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
     }
 #endif
 
-    for(int64_t i=0;i<totncells;i++) {
-        free(lattice[i].x);
-        free(lattice[i].y);
-        free(lattice[i].z);
-    }
-    free(lattice);
+    free_cellarray(lattice, totncells);
 
     //Pack in the results
     results_countpairs_wp *results = my_malloc(sizeof(*results), 1);
@@ -542,7 +532,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DO
         results->rpavg[i] = 0.0;
 #endif
         const DOUBLE weight0 = (DOUBLE) results->npairs[i];
-        /* compute xi, dividing summed weight by that expected for a random set */
+        /* compute wp, dividing summed weight by that expected for a random set */
         const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]-rlow*rlow)*twice_pimax;
         const DOUBLE weightrandom = prefac_density_DD*vol;
         results->wp[i] = (weight0/weightrandom-1)*twice_pimax;
