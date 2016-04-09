@@ -13,10 +13,10 @@ all: $(targets) $(PYTHON_DIR) logbins
 
 OBJS1= logbins.o ../utils/utils.o 
 logbins: $(OBJS1)  | dirs 
-	$(CC) $(OBJS1) -o $@
+	$(CC) $(OBJS1) $(CLINK) -o $@
 
-%.o: %.c 
-	$(CC) $(CFLAGS) -std=c99 -c $< -o $@ 
+%.o: %.c Makefile ../common.mk ../theory.options
+	$(CC) $(CFLAGS) -c $< -o $@ 
 
 dirs:  | ../lib ../bin ../include
 

@@ -15,19 +15,6 @@ PATCHLEVEL:=3
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
 
-## First check make version. Versions of make older than 3.80 will crash
-ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
-  ## Order-only attributes were added to make version 3.80
-  $(warning $(ccmagenta)Please upgrade $(ccblue)make$(ccreset))
-  ifeq ($(UNAME), Darwin)
-    $(info $(ccmagenta)on Mac+homebrew, use $(ccgreen)"brew outdated xctool || brew upgrade xctool"$(ccreset))
-    $(info $(ccmagenta)Otherwise, install $(ccblue)XCode command-line tools$(ccmagenta) directly: $(ccgreen)"xcode-select --install"$(ccreset))
-    $(info $(ccmagenta)This link: $(ccgreen)"http://railsapps.github.io/xcode-command-line-tools.html"$(ccmagenta) has some more details$(ccreset))
-  else
-    $(info $(ccmagenta)On Linux: Try some variant of $(ccgreen)"sudo apt-get update && sudo apt-get upgrade"(ccreset))
-  endif
-  $(error $(ccmagenta)Project requires make >= 3.80 to compile.$(ccreset))
-endif
 
 DO_CHECKS := 1
 ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
@@ -38,13 +25,24 @@ ifeq (distclean,$(findstring distclean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
 endif
 
-ifeq (install,$(findstring install,$(MAKECMDGOALS)))
-  DO_CHECKS := 0
-endif
-
-
 ## Only set everything if the command is not "make clean"
 ifeq ($(DO_CHECKS), 1)
+  ## First check make version. Versions of make older than 3.80 will crash
+  ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
+    ## Order-only attributes were added to make version 3.80
+    $(warning $(ccmagenta)Please upgrade $(ccblue)make$(ccreset))
+    ifeq ($(UNAME), Darwin)
+      $(info $(ccmagenta)on Mac+homebrew, use $(ccgreen)"brew outdated xctool || brew upgrade xctool"$(ccreset))
+      $(info $(ccmagenta)Otherwise, install $(ccblue)XCode command-line tools$(ccmagenta) directly: $(ccgreen)"xcode-select --install"$(ccreset))
+      $(info $(ccmagenta)This link: $(ccgreen)"http://railsapps.github.io/xcode-command-line-tools.html"$(ccmagenta) has some more details$(ccreset))
+    else
+      $(info $(ccmagenta)On Linux: Try some variant of $(ccgreen)"sudo apt-get update && sudo apt-get upgrade"(ccreset))
+    endif
+    $(error $(ccmagenta)Project requires make >= 3.80 to compile.$(ccreset))
+  endif
+  #end of checks for make. 
+
+
   UNAME := $(shell uname)
   ## Colored text output
   ## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
