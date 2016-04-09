@@ -52,9 +52,6 @@ celan: clean
 
 tests: tests_periodic 
 
-tests_periodic: ../tests/tests_periodic
+tests_periodic: 
 	$(MAKE) -C ../tests xi
-
-../tests/tests_periodic:
-	$(MAKE) -C ../tests
 
