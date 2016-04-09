@@ -42,7 +42,7 @@ The python package is directly installable via ``pip install Corrfunc``.
 
 If compilation went smoothly, please run ``make tests`` to ensure the code is working correctly. Depending on the hardware and compilation options, the tests might take more than a few minutes. *Note that the tests are exhaustive and not traditional unit tests*. 
 
-While I have tried to ensure that the package compiles and runs out of the box, cross-platform compatibility turns out to be incredibly hard. If you run into any issues during compilation and you have all of the pre-requisistes, please see the [FAQ](FAQ) or [email me](mailto:manodeep@gmail.com). Also, feel free to create a new issue with the `Installation` label. 
+While I have tried to ensure that the package compiles and runs out of the box, cross-platform compatibility turns out to be incredibly hard. If you run into any issues during compilation and you have all of the pre-requisites, please see the [FAQ](FAQ) or [email me](mailto:manodeep@gmail.com). Also, feel free to create a new issue with the `Installation` label. 
 
 ## Clustering Measures on a Cosmological box
 
