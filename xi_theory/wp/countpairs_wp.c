@@ -577,21 +577,21 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
      ************************/
     double *rupp;
     double rpmin,rpmax;
-    int nbin;
-    setup_bins(binfile,&rpmin,&rpmax,&nbin,&rupp);
+    int nrpbins;
+    setup_bins(binfile,&rpmin,&rpmax,&nrpbins,&rupp);
     assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
-    assert(nbin > 0 && "Number of rp bins is valid");
+    assert(nrpbins > 0 && "Number of rp bins is valid");
 
     const DOUBLE xmin = 0.0, xmax=boxsize;
     const DOUBLE ymin = 0.0, ymax=boxsize;
     const DOUBLE zmin = 0.0, zmax=boxsize;
-    DOUBLE rupp_sqr[nbin];
-    for(int i=0;i<nbin;i++) {
+    DOUBLE rupp_sqr[nrpbins];
+    for(int i=0;i<nrpbins;i++) {
         rupp_sqr[i] = rupp[i]*rupp[i];
     }
 
     const DOUBLE sqr_rpmin = rupp_sqr[0];
-    const DOUBLE sqr_rpmax = rupp_sqr[nbin-1];
+    const DOUBLE sqr_rpmax = rupp_sqr[nrpbins-1];
     /* const DOUBLE sqr_pimax = (DOUBLE) pimax*pimax; */
 
     //set up the 3-d grid structure. Each element of the structure contains a
@@ -602,13 +602,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
         bin_refine_factor *=2;
         zbin_refine_factor *=2;
         const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
-        for(int64_t i=0;i<totncells;i++){
-            free(lattice[i].xwrap);
-            free(lattice[i].ywrap);
-            free(lattice[i].zwrap);
-            free(lattice[i].ngb_cells);
-        }
-        free(lattice);
+        free_cellarray_index(lattice, totncells);
         lattice = gridlink_index(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
@@ -635,13 +629,13 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
         }
     }
 #if defined(USE_AVX) && defined(__AVX__)
-    AVX_FLOATS m_rupp_sqr[nbin];
-    for(int i=0;i<nbin;i++) {
+    AVX_FLOATS m_rupp_sqr[nrpbins];
+    for(int i=0;i<nrpbins;i++) {
         m_rupp_sqr[i] = AVX_SET_FLOAT(rupp_sqr[i]);
     }
 #ifdef OUTPUT_RPAVG
-    AVX_FLOATS m_kbin[nbin];
-    for(int i=0;i<nbin;i++) {
+    AVX_FLOATS m_kbin[nrpbins];
+    for(int i=0;i<nrpbins;i++) {
         m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
     }
 #endif//RPAVG
@@ -650,19 +644,19 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 
 #ifdef USE_OMP
     omp_set_num_threads(numthreads);
-    uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nbin);
+    uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbins);
 #ifdef OUTPUT_RPAVG
-    DOUBLE **all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), numthreads, nbin);
+    DOUBLE **all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), numthreads, nrpbins);
 #endif//OUTPUT_RPAVG
 
 #else//USE_OMP
-    uint64_t npair[nbin];
-    for(int i=0;i<nbin;i++) {
+    uint64_t npair[nrpbins];
+    for(int i=0;i<nrpbins;i++) {
         npair[i]=0;
     }
 #ifdef OUTPUT_RPAVG
-    DOUBLE rpavg[nbin];
-    for(int i=0;i<nbin;i++) {
+    DOUBLE rpavg[nrpbins];
+    for(int i=0;i<nrpbins;i++) {
         rpavg[i]=0;
     }
 #endif//OUTPUT_RPAVG
@@ -676,13 +670,13 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 #pragma omp parallel shared(numdone)
     {
         const int tid = omp_get_thread_num();
-        uint64_t npair[nbin];
-        for(int i=0;i<nbin;i++) {
+        uint64_t npair[nrpbins];
+        for(int i=0;i<nrpbins;i++) {
             npair[i]=0;
         }
 #ifdef OUTPUT_RPAVG
-        DOUBLE rpavg[nbin];
-        for(int i=0;i<nbin;i++) {
+        DOUBLE rpavg[nrpbins];
+        for(int i=0;i<nrpbins;i++) {
             rpavg[i]=0.0;
         }
 #endif
@@ -709,7 +703,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
                 continue;
             }
             
-            same_cell_wp_kernel(first, X, Y, Z, sqr_rpmax, sqr_rpmin, nbin, rupp_sqr, pimax
+            same_cell_wp_kernel(first, X, Y, Z, sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax
 #ifdef USE_AVX
                                 ,m_rupp_sqr
 #ifdef OUTPUT_RPAVG
@@ -727,7 +721,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
                 const DOUBLE off_xwrap = first->xwrap[ngb];
                 const DOUBLE off_ywrap = first->ywrap[ngb];
                 const DOUBLE off_zwrap = first->zwrap[ngb];
-                different_cell_wp_kernel(first, second,X, Y, Z,sqr_rpmax, sqr_rpmin, nbin, rupp_sqr, pimax, off_xwrap, off_ywrap, off_zwrap
+                different_cell_wp_kernel(first, second,X, Y, Z,sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax, off_xwrap, off_ywrap, off_zwrap
 #ifdef USE_AVX
                                          ,m_rupp_sqr
 #ifdef OUTPUT_RPAVG
@@ -743,7 +737,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
             }//ngb loop
         }//index1 loop
 #ifdef USE_OMP
-        for(int j=0;j<nbin;j++) {
+        for(int j=0;j<nrpbins;j++) {
             all_npairs[tid][j] = npair[j];
 #ifdef OUTPUT_RPAVG
             all_rpavg[tid][j] = rpavg[j];
@@ -755,11 +749,11 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 
 
 #ifdef USE_OMP
-    uint64_t npair[nbin];
+    uint64_t npair[nrpbins];
 #ifdef OUTPUT_RPAVG
-    DOUBLE rpavg[nbin];
+    DOUBLE rpavg[nrpbins];
 #endif
-    for(int i=0;i<nbin;i++) {
+    for(int i=0;i<nrpbins;i++) {
         npair[i] = 0;
 #ifdef OUTPUT_RPAVG
         rpavg[i] = 0.0;
@@ -767,7 +761,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     }
 
     for(int i=0;i<numthreads;i++) {
-        for(int j=0;j<nbin;j++) {
+        for(int j=0;j<nrpbins;j++) {
             npair[j] += all_npairs[i][j];
 #ifdef OUTPUT_RPAVG
             rpavg[j] += all_rpavg[i][j];
@@ -781,29 +775,23 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 #endif//USE_OMP
 
 #ifdef OUTPUT_RPAVG
-    for(int i=0;i<nbin;i++) {
+    for(int i=0;i<nrpbins;i++) {
         if(npair[i] > 0) {
             rpavg[i] /= (DOUBLE) npair[i];
         }
     }
 #endif
 
-    for(int64_t i=0;i<totncells;i++){
-        free(lattice[i].xwrap);
-        free(lattice[i].ywrap);
-        free(lattice[i].zwrap);
-        free(lattice[i].ngb_cells);
-    }
-    free(lattice);
+    free_cellarray_index(lattice, totncells);
 
     //Pack in the results
     results_countpairs_wp *results = my_malloc(sizeof(*results), 1);
-    results->nbin  = nbin;
+    results->nbin  = nrpbins;
     results->pimax = pimax;
-    results->npairs = my_malloc(sizeof(uint64_t), results->nbin);
-    results->wp = my_malloc(sizeof(DOUBLE), results->nbin);
-    results->rupp   = my_malloc(sizeof(DOUBLE)  , results->nbin);
-    results->rpavg  = my_malloc(sizeof(DOUBLE)  , results->nbin);
+    results->npairs = my_malloc(sizeof(uint64_t), nrpbins);
+    results->wp = my_malloc(sizeof(DOUBLE), nrpbins);
+    results->rupp   = my_malloc(sizeof(DOUBLE), nrpbins);
+    results->rpavg  = my_malloc(sizeof(DOUBLE), nrpbins);
 
 
     const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
@@ -812,7 +800,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     DOUBLE prefac_density_DD=avgweight1*ND*density;
     DOUBLE twice_pimax = 2.0*pimax;
 
-    for(int i=0;i<results->nbin;i++) {
+    for(int i=0;i<nrpbins;i++) {
         results->npairs[i] = npair[i];
         results->rupp[i] = rupp[i];
 #ifdef OUTPUT_RPAVG

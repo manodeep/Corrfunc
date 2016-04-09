@@ -38,6 +38,36 @@ double get_binsize(const double xmin,const double xmax, const double rmax, const
     return xbinsize;
 }
 
+void free_cellarray(cellarray *lattice, const int64_t totncells)
+{
+    for(int64_t i=0;i<totncells;i++) {
+        free(lattice[i].x);
+        free(lattice[i].y);
+        free(lattice[i].z);
+    }
+    free(lattice);
+}
+
+void free_cellarray_nvec(cellarray_nvec *lattice, const int64_t totncells)
+{
+    for(int64_t i=0;i<totncells;i++) {
+        free(lattice[i].pos);
+    }
+    free(lattice);
+}
+
+void free_cellarray_index(cellarray_index *lattice, const int64_t totncells)
+{
+    for(int64_t i=0;i<totncells;i++){
+        free(lattice[i].xwrap);
+        free(lattice[i].ywrap);
+        free(lattice[i].zwrap);
+        free(lattice[i].ngb_cells);
+    }
+    free(lattice);
+}
+
+
 void get_max_min(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
                  DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z)
 {
