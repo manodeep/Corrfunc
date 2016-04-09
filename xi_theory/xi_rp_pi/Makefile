@@ -46,8 +46,7 @@ libcountpairs_rp_pi.a: $(OBJS3) $(INCL) ../../theory.options ../../common.mk Mak
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: ../../bin/$(targets) | ../../bin 
-	cp -p $(targets) ../../bin/
+install: ../../bin/DDrppi ../../bin/wprp | ../../bin 
 
 ../../bin/DDrppi: DDrppi
 	cp -p $< $@
