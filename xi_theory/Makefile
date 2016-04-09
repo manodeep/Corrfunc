@@ -13,10 +13,10 @@ all: $(targets) $(PYTHON_DIR) logbins
 
 OBJS1= logbins.o ../utils/utils.o 
 logbins: $(OBJS1)  | dirs 
-	$(CC) $(CFLAGS) $(OBJS1)  $(CLINK) -o $@
+	$(CC) $(OBJS1) -o $@
 
 %.o: %.c 
-	$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CFLAGS) -std=c99 -c $< -o $@ 
 
 dirs:  | ../lib ../bin ../include
 
