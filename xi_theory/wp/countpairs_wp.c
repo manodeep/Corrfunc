@@ -155,9 +155,9 @@ static inline void same_cell_wp_kernel(const cellarray_index * first,
             const AVX_FLOATS m_zero  = AVX_SET_FLOAT(ZERO);
             
             const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z2[j:j+NVEC-1] - z1
-            const AVX_FLOATS m_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[j])^2
-            const AVX_FLOATS m_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[j])^2
-            AVX_FLOATS r2  = AVX_ADD_FLOATS(m_xdiff,m_ydiff);
+            const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[j])^2
+            const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[j])^2
+            AVX_FLOATS r2  = AVX_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
             
             AVX_FLOATS m_mask_left;
             
@@ -411,9 +411,9 @@ static inline void different_cell_wp_kernel(const cellarray_index * first, const
             
             const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z2[j:j+NVEC-1] - z1
             /* const AVX_FLOATS m_sqr_zdiff = AVX_SQUARE_FLOAT(m_zdiff); */
-            const AVX_FLOATS m_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[j])^2
-            const AVX_FLOATS m_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[j])^2
-            AVX_FLOATS r2  = AVX_ADD_FLOATS(m_xdiff,m_ydiff);
+            const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[j])^2
+            const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[j])^2
+            AVX_FLOATS r2  = AVX_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
             
             AVX_FLOATS m_mask_left;
             
