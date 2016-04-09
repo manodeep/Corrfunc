@@ -13,7 +13,7 @@ all: $(targets) $(PYTHON_DIR) logbins
 
 OBJS1= logbins.o ../utils/utils.o 
 logbins: $(OBJS1)  | dirs 
-	$(CC) $(OBJS1)  $(CLINK) -o $@
+	$(CC) $(CFLAGS) $(OBJS1)  $(CLINK) -o $@
 
 %.o: %.c 
 	$(CC) $(CFLAGS) -c $< -o $@ 
@@ -45,7 +45,10 @@ python_bindings: libs
 	$(MAKE) -C python_bindings
 
 ### Must create the libraries first before making the examples.
-examples: libs
+examples: examples/run_correlations 
+
+## Not a phony target
+examples/run_correlations: libs
 	$(MAKE) -C examples
 
 distclean:realclean
