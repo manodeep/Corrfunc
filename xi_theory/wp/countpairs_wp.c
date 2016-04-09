@@ -15,7 +15,7 @@
 
 #include "defs.h"
 #include "function_precision.h"
-#include "cellarray.h" //definition of struct cellarray
+#include "cellarray.h" //definition of struct cellarray_index
 #include "utils.h" //all of the utilities
 #include "gridlink.h"//function proto-type for gridlink
 #include "countpairs_wp.h" //function proto-type
@@ -53,7 +53,7 @@ void free_results_wp(results_countpairs_wp **results)
     tmp = NULL;
 }
 
-static inline void same_cell_wp_kernel(const struct cellarray_index * first,
+static inline void same_cell_wp_kernel(const cellarray_index * first,
                                        DOUBLE * restrict const X,DOUBLE * restrict const Y, DOUBLE * restrict const Z, 
                                        const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax
 #ifdef USE_AVX
@@ -277,7 +277,7 @@ static inline void same_cell_wp_kernel(const struct cellarray_index * first,
     }
 }    
 
-static inline void different_cell_wp_kernel(const struct cellarray_index * first, const struct cellarray_index *second,
+static inline void different_cell_wp_kernel(const cellarray_index * first, const cellarray_index *second,
                                             DOUBLE * restrict const X,DOUBLE * restrict const Y,DOUBLE * restrict const Z,
                                             const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[], const DOUBLE pimax,
                                             const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
@@ -596,7 +596,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 
     //set up the 3-d grid structure. Each element of the structure contains a
     //pointer to the cellarray structure that itself contains all the points
-    struct cellarray_index *lattice = gridlink_index(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+    cellarray_index *lattice = gridlink_index(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
         fprintf(stderr,"countpairs_wp> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
@@ -619,7 +619,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 #pragma omp parallel for schedule(dynamic)
 #endif
     for(int64_t icell=0;icell<totncells;icell++) {
-        const struct cellarray_index *first=&(lattice[icell]);
+        const cellarray_index *first=&(lattice[icell]);
         if(first->nelements > 0) {
           const int64_t start = first->start;
           DOUBLE *x = X + start;
@@ -704,7 +704,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
             numdone++;
 
             /* First do the same-cell calculations */
-            const struct cellarray_index *first  = &(lattice[index1]);
+            const cellarray_index *first  = &(lattice[index1]);
             if(first->nelements == 0) {
                 continue;
             }
@@ -723,7 +723,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
                                 ,npair);
 
             for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
-                struct cellarray_index *second = first->ngb_cells[ngb];
+                cellarray_index *second = first->ngb_cells[ngb];
                 const DOUBLE off_xwrap = first->xwrap[ngb];
                 const DOUBLE off_ywrap = first->ywrap[ngb];
                 const DOUBLE off_zwrap = first->zwrap[ngb];
