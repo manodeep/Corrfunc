@@ -33,11 +33,13 @@ typedef struct{
 } cellarray_nvec;//Here the xyz positions will be stored as pos[x[NVEC],y{NVEC],z[NVEC],x[NVEC]...]. Note amenable to easy sorting -> used by xi_of_r and vpf
 
 
+typedef struct cellarray_index cellarray_index;
+    
 /* This cellarray will avoid duplicating the particle positions */
 struct cellarray_index{
     int64_t start;
     int64_t nelements;
-    struct cellarray_index **ngb_cells;
+    cellarray_index **ngb_cells;
     DOUBLE *xwrap;
     DOUBLE *ywrap;
     DOUBLE *zwrap;
