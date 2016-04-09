@@ -100,7 +100,6 @@ extern "C" {
                          int *nlattice_x,
                          int *nlattice_y,
                          int *nlattice_z) __attribute__((warn_unused_result));
-    void free_cellarray_mocks(cellarray_mocks *lattice, const int64_t totncells);
     
     
 #ifdef __cplusplus

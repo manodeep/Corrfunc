@@ -51,6 +51,7 @@ extern "C" {
 #ifdef DOUBLE_PREC
 #define DOUBLE double
 #define DOUBLE_FORMAT "lf"
+#define ZERO   0.0
 #define NVEC   NVECD
 #define SQRT   sqrt
 #define LOG    log
@@ -66,6 +67,7 @@ extern "C" {
 #else
 #define DOUBLE float
 #define DOUBLE_FORMAT "f"
+#define ZERO   0.0f
 #define NVEC   NVECF
 #define SQRT   sqrtf
 #define LOG    logf
