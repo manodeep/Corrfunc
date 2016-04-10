@@ -247,6 +247,7 @@ ifeq ($(PYTHON_CHECKED), 0)
     PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
     PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
     PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(VERSION) -Wl,-current_version,$(VERSION)
+    PYTHON_LINK += -headerpad_max_install_names
 
     ### Another check for stack-size. travis ci chokes on this with gcc
     # comma := ,
