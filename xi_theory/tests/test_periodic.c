@@ -44,6 +44,7 @@
 #include "../xi_of_r/countpairs.c"
 #include "../xi_rp_pi/countpairs_rp_pi.c"
 #include "../wp/countpairs_wp.c"
+#include "../wp/wp_kernels.c"
 #include "../vpf/countspheres.c"
 #include "../xi/countpairs_xi.c"
 
