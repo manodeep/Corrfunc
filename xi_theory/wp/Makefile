@@ -4,11 +4,11 @@ target := wp
 SRC1   := wp.c countpairs_wp.c wp_kernels.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c 
 INCL   := countpairs_wp.h wp_kernels.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h ../../utils/sglib.h  
+		../../utils/defs.h ../../utils/sglib.h same_cell_wp_kernels.c diff_cells_wp_kernels.c
 
 ifeq ($(OUTPUT_PGBAR), 1)
-SRC1 += ../../utils/progressbar.c
-INCL += ../../utils/progressbar.h 
+  SRC1 += ../../utils/progressbar.c
+  INCL += ../../utils/progressbar.h 
 endif
 OBJS1  := $(SRC1:.c=.o)
 

@@ -43,8 +43,10 @@
 #include "ftread.c"
 #include "../xi_of_r/countpairs.c"
 #include "../xi_rp_pi/countpairs_rp_pi.c"
+
 #include "../wp/countpairs_wp.c"
 #include "../wp/wp_kernels.c"
+
 #include "../vpf/countspheres.c"
 #include "../xi/countpairs_xi.c"
 
@@ -301,7 +303,7 @@ int main(int argc, char **argv)
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
     const int function_pointer_index[] = {0,1,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi
 
-    const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","Mr19_vpf_periodic","Mr19_xi","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
+    const char correct_outputfiles[][MAXLEN] = {"Mr19_DD_periodic","Mr19_DDrppi_periodic","Mr19_wp","Mr19_vpf_periodic","Mr19_xi","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
     const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
                                           "../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
     const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
@@ -330,7 +332,7 @@ int main(int argc, char **argv)
             read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
             pimax=allpimax[i];
             gettimeofday(&t0,NULL);
-            status = (*allfunctions[function_index])(correct_outoutfiles[i]);
+            status = (*allfunctions[function_index])(correct_outputfiles[i]);
             gettimeofday(&t1,NULL);
             double pair_time = ADD_DIFF_TIME(t0,t1);
             total_tests++;
@@ -366,7 +368,7 @@ int main(int argc, char **argv)
                 read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
                 pimax=allpimax[this_test_num];
                 gettimeofday(&t0,NULL);
-                status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
+                status = (*allfunctions[function_index])(correct_outputfiles[this_test_num]);
                 gettimeofday(&t1,NULL);
                 double pair_time = ADD_DIFF_TIME(t0,t1);
                 if(status==EXIT_SUCCESS) {
