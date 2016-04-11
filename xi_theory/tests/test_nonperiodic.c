@@ -94,7 +94,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     fclose(fp);
 
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     free_results(&results);
@@ -126,7 +126,7 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
     const int function_pointer_index[] = {0,1,1};//0->DD, 1->DDrppi
 
-    const char correct_outoutfiles[][MAXLEN] = {"Mr19_DD_nonperiodic","Mr19_DDrppi_nonperiodic","cmass_DR_nonperiodic"};
+    const char correct_outputfiles[][MAXLEN] = {"Mr19_DD_nonperiodic","Mr19_DDrppi_nonperiodic","cmass_DR_nonperiodic"};
     const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff"};
     const char firstfiletype[][MAXLEN] = {"f","f","f"};
     const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/random_Zspace.ff"};
@@ -244,7 +244,7 @@ int main(int argc, char **argv)
             read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
             pimax=allpimax[i];
             gettimeofday(&t0,NULL);
-            status = (*allfunctions[function_index])(correct_outoutfiles[i]);
+            status = (*allfunctions[function_index])(correct_outputfiles[i]);
             gettimeofday(&t1,NULL);
             double pair_time=ADD_DIFF_TIME(t0,t1);
 
@@ -260,7 +260,7 @@ int main(int argc, char **argv)
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
                 run_system_call(execstring);
-
+                fprintf(stderr, ANSI_COLOR_RED "Failed output copied to %s.%d correct output is in %s"ANSI_COLOR_RESET"\n", tmpoutputfile, i, correct_outputfiles[i]);
             }
         }
     } else {
@@ -281,7 +281,7 @@ int main(int argc, char **argv)
                 read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
                 pimax=allpimax[this_test_num];
                 gettimeofday(&t0,NULL);
-                status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
+                status = (*allfunctions[function_index])(correct_outputfiles[this_test_num]);
                 gettimeofday(&t1,NULL);
                 double pair_time = ADD_DIFF_TIME(t0,t1);
                 if(status==EXIT_SUCCESS) {
@@ -295,11 +295,11 @@ int main(int argc, char **argv)
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
                     run_system_call(execstring);
+                    fprintf(stderr, ANSI_COLOR_RED "Failed output copied to %s.%d correct output is in %s"ANSI_COLOR_RESET"\n", tmpoutputfile, this_test_num, correct_outputfiles[this_test_num]);
                 }
             }
         }
     }
-
 
     gettimeofday(&t1,NULL);
     double total_time = ADD_DIFF_TIME(tstart,t1);
