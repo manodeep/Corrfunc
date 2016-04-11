@@ -100,7 +100,7 @@ int test_periodic_DD(const char *correct_outputfile)
     fclose(fp);
 
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     free_results(&results);
@@ -132,7 +132,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -157,7 +157,7 @@ int test_wp(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -189,7 +189,7 @@ int test_vpf(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -214,7 +214,7 @@ int test_xi(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
                 run_system_call(execstring);
-
+                fprintf(stderr, ANSI_COLOR_RED "Failed output copied to %s.%d correct output is in %s"ANSI_COLOR_RESET"\n", tmpoutputfile, i, correct_outputfiles[i]);
             }
         }
     } else {
@@ -380,7 +380,7 @@ int main(int argc, char **argv)
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
                     run_system_call(execstring);
-
+                    fprintf(stderr, ANSI_COLOR_RED "Failed output copied to %s.%d correct output is in %s"ANSI_COLOR_RESET"\n", tmpoutputfile, this_test_num, correct_outputfiles[this_test_num]);
                 }
             }
         }
