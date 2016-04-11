@@ -46,7 +46,9 @@ extern "C" {
 
 #else
 
-#error "Either SSE or AVX must be defined"
+#define REGISTER_WIDTH 64    
+#define NVECF 2
+#define NVECD 1    
 
 #endif//SSE
 
