@@ -38,7 +38,7 @@ extern "C" {
 
 #else
 
-#ifdef __SSE_4.2__
+#ifdef __SSE4_2__
     
 #define REGISTER_WIDTH 128  //cpu supports sse instructions
 #define NVECF  4  //8 floats per xmm register
