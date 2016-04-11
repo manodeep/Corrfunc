@@ -403,5 +403,5 @@ int main(int argc, char **argv)
         free(X2);free(Y2);free(Z2);
     }
     free(X1);free(Y1);free(Z1);
-    return EXIT_SUCCESS;
+    return failed;
 }
