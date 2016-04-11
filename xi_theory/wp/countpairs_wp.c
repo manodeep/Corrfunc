@@ -28,10 +28,6 @@
 
 #include "sglib.h"
 
-#if defined(USE_AVX) && defined(__AVX__)
-#include "avx_calls.h"
-#endif
-
 #ifdef USE_OMP
 #include <omp.h>
 #endif
@@ -140,19 +136,6 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 #undef MULTIPLE_ARRAY_EXCHANGER
         }
     }
-#if defined(USE_AVX) && defined(__AVX__)
-    AVX_FLOATS m_rupp_sqr[nrpbins];
-    for(int i=0;i<nrpbins;i++) {
-        m_rupp_sqr[i] = AVX_SET_FLOAT(rupp_sqr[i]);
-    }
-#ifdef OUTPUT_RPAVG
-    AVX_FLOATS m_kbin[nrpbins];
-    for(int i=0;i<nrpbins;i++) {
-        m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
-    }
-#endif//RPAVG
-#endif
-
 
 #ifdef USE_OMP
     omp_set_num_threads(numthreads);
@@ -226,14 +209,9 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
                 continue;
             }
             
-            same_cell_wp_kernel(first, X, Y, Z, sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax
-#ifdef USE_AVX
-                                ,m_rupp_sqr
-#ifdef OUTPUT_RPAVG
-                                ,m_kbin
-#endif
-#endif
-                                
+            same_cell_wp_driver(first,
+                                X, Y, Z,
+                                sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax
 #ifdef OUTPUT_RPAVG
                                 ,rpavg
 #endif
@@ -244,14 +222,10 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
                 const DOUBLE off_xwrap = first->xwrap[ngb];
                 const DOUBLE off_ywrap = first->ywrap[ngb];
                 const DOUBLE off_zwrap = first->zwrap[ngb];
-                different_cell_wp_kernel(first, second,X, Y, Z,sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax, off_xwrap, off_ywrap, off_zwrap
-#ifdef USE_AVX
-                                         ,m_rupp_sqr
-#ifdef OUTPUT_RPAVG
-                                         ,m_kbin
-#endif                                                 
-#endif                                                 
-                                         
+                diff_cells_wp_driver(first, second,
+                                     X, Y, Z,
+                                     sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
+                                     off_xwrap, off_ywrap, off_zwrap
 #ifdef OUTPUT_RPAVG
                                          ,rpavg
 #endif

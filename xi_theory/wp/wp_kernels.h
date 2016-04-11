@@ -20,40 +20,24 @@ extern "C" {
 #include "avx_calls.h"
 #endif
 
-void same_cell_wp_kernel(const cellarray_index * first,
+void same_cell_wp_driver(const cellarray_index * first,
                          DOUBLE * restrict const X,DOUBLE * restrict const Y, DOUBLE * restrict const Z, 
-                         const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax
-#ifdef USE_AVX
-                         ,const AVX_FLOATS m_rupp_sqr[] 
+                         const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax
 #ifdef OUTPUT_RPAVG
-                         ,const AVX_FLOATS m_kbin[]
-#endif                                            
-#endif                                            
-                                       
-                                       
-#ifdef OUTPUT_RPAVG
-                         ,DOUBLE src_rpavg[]
+                         ,DOUBLE *src_rpavg
 #endif                         
                          ,uint64_t *src_npairs);
 
 
     
-void different_cell_wp_kernel(const cellarray_index * first, const cellarray_index *second,
-                              DOUBLE * restrict const X,DOUBLE * restrict const Y,DOUBLE * restrict const Z,
-                              const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[], const DOUBLE pimax,
-                              const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-#ifdef USE_AVX
-                              ,const AVX_FLOATS m_rupp_sqr[] 
+void diff_cells_wp_driver(const cellarray_index * first, const cellarray_index *second,
+                          DOUBLE * restrict const X,DOUBLE * restrict const Y,DOUBLE * restrict const Z,
+                          const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                          const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
 #ifdef OUTPUT_RPAVG
-                              ,const AVX_FLOATS m_kbin[]
-#endif                                            
-#endif                                            
-                                            
-                                            
-#ifdef OUTPUT_RPAVG
-                              ,DOUBLE src_rpavg[]
+                          ,DOUBLE *src_rpavg
 #endif                         
-                              ,uint64_t *src_npairs);
+                          ,uint64_t *src_npairs);
     
 #ifdef __cplusplus
 }

@@ -1,14 +1,10 @@
-include ../mocks.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../common.mk
-endif
+include ../common.mk
 
 targets:= dirs DDrppi wtheta vpf examples
-
 ifneq ($(COMPILE_PYTHON_EXT), 0)
-targets += python_bindings
+  targets += python_bindings
 else
-$(warning $(ccmagenta) Not compiling C extensions for mocks. Either python or numpy not available $(ccreset))
+  $(warning $(ccmagenta) Not compiling C extensions for mocks. Either python or numpy not available $(ccreset))
 endif
 
 all: $(targets) 
