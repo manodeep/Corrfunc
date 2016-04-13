@@ -27,7 +27,7 @@
 #endif
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -553,7 +553,7 @@ static inline void different_cell_xi_kernel(const cellarray_index * first, const
 
 results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
                                      const double boxsize,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                      const int numthreads,
 #endif
                                      const char *binfile)
@@ -591,7 +591,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     omp_set_num_threads(numthreads);
 #pragma omp parallel for schedule(dynamic)
 #endif
@@ -614,7 +614,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
 
     /* const DOUBLE side=boxsize; */
 
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     uint64_t npairs[nbins];
 #ifdef OUTPUT_RPAVG
     DOUBLE rpavg[nbins];
@@ -664,7 +664,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
 #endif    
 
     /*---Loop-over-Data1-particles--------------------*/
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #ifndef SILENT
 #pragma omp parallel shared(numdone)
 #else
@@ -688,13 +688,13 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
         for(int64_t index1=0;index1<totncells;index1++) {
 
 #ifndef SILENT          
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
             if (omp_get_thread_num() == 0)
 #endif
                 my_progressbar(numdone,&interrupted);
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #pragma omp atomic
 #endif
             numdone++;
@@ -738,7 +738,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
                 
             }//ngb loop
         }//index1 loop
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         for(int j=0;j<nbins;j++) {
             all_npairs[tid][j] = npairs[j];
         }
@@ -755,7 +755,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
     finish_myprogressbar(&interrupted);
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     uint64_t npairs[nbins];
     for(int i=0;i<nbins;i++) npairs[i] = 0;
 

@@ -74,7 +74,7 @@ char binfile[]="../tests/bins";
 char angular_binfile[]="../tests/angular_bins";
 DOUBLE pimax=40.0;
 double boxsize=420.0;
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 const int nthreads=4;
 #endif
 const int cosmology_flag=1;
@@ -91,7 +91,7 @@ int test_DDrppi_mocks(const char *correct_outputfile)
     //Do DD(rp,pi) counts
     results_countpairs_mocks *results  = countpairs_mocks(ND1,RA1,DEC1,CZ1,
                                                           ND2,RA2,DEC2,CZ2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                           nthreads,
 #endif
                                                           autocorr,
@@ -125,7 +125,7 @@ int test_wtheta_mocks(const char *correct_outputfile)
 
     results_countpairs_theta *results = countpairs_theta_mocks(ND1,RA1,DEC1,
                                                                ND2,RA2,DEC2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                                nthreads,
 #endif
                                                                autocorr,

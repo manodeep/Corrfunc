@@ -26,7 +26,7 @@ extern "C" {
 
     results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
                                     const int64_t ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                     const int numthreads,
 #endif
                                     const int autocorr,

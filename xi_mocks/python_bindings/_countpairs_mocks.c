@@ -460,7 +460,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
 
     results_countpairs_mocks *results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
                                                           ND2,phiD2,thetaD2,czD2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                           nthreads,
 #endif
                                                           autocorr,
@@ -555,7 +555,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
 
     results_countpairs_theta *results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
                                                                ND2,phiD2,thetaD2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                                nthreads,
 #endif
                                                                autocorr,

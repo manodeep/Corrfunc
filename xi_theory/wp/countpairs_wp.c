@@ -28,7 +28,7 @@
 
 #include "sglib.h"
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -58,7 +58,7 @@ void free_results_wp(results_countpairs_wp **results)
 
 results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
                                      const double boxsize,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                      const int numthreads,
 #endif
                                      const char *binfile,
@@ -69,7 +69,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     int nmesh_x, nmesh_y, nmesh_z;
 
 
-    /* #ifdef USE_OMP */
+    /* #if defined(USE_OMP) && defined(_OPENMP) */
     /*  if(numthreads == 1) { */
     /*      bin_refine_factor=2; */
     /*      zbin_refine_factor=1; */
@@ -116,7 +116,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     omp_set_num_threads(numthreads);
 #pragma omp parallel for schedule(dynamic)
 #endif
@@ -137,7 +137,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
         }
     }
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     omp_set_num_threads(numthreads);
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbins);
 #ifdef OUTPUT_RPAVG
@@ -164,7 +164,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 #endif    
 
     
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #ifndef SILENT
 #pragma omp parallel shared(numdone)
 #else
@@ -190,13 +190,13 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 
 
 #ifndef SILENT          
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
             if (omp_get_thread_num() == 0)
 #endif
                 my_progressbar(numdone,&interrupted);
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #pragma omp atomic
 #endif
             numdone++;
@@ -233,7 +233,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
                 
             }//ngb loop
         }//index1 loop
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         for(int j=0;j<nrpbins;j++) {
             all_npairs[tid][j] = npair[j];
 #ifdef OUTPUT_RPAVG
@@ -248,7 +248,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
 #endif
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     uint64_t npair[nrpbins];
 #ifdef OUTPUT_RPAVG
     DOUBLE rpavg[nrpbins];
