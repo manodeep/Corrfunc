@@ -130,7 +130,7 @@ def read_catalog(filebase=None):
                 array = np.fromfile(f, input_dtype, ngal)
                 skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
                 pos[field] = array if return_dtype == input_dtype \
-                             else return_dtype(array)
+                             else [return_dtype(a) for a in array]
 
         x = pos['x']
         y = pos['y']

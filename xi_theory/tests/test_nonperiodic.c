@@ -62,7 +62,7 @@ DOUBLE *X2=NULL,*Y2=NULL,*Z2=NULL;
 char binfile[]="bins";
 DOUBLE pimax=40.0;
 double boxsize=420.0;
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 const int nthreads=4;
 #endif
 
@@ -78,7 +78,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     //Do the straight-up DD counts
     results_countpairs *results = countpairs(ND1,X1,Y1,Z1,
                                              ND2,X2,Y2,Z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                              nthreads,
 #endif
                                              autocorr,
@@ -107,7 +107,7 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
 
     results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,X1,Y1,Z1,
                                                          ND2,X2,Y2,Z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                          nthreads,
 #endif
                                                          autocorr,

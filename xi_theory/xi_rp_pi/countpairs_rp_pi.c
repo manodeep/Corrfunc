@@ -23,7 +23,7 @@
 #include "avx_calls.h"
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -48,7 +48,7 @@ void free_results_rp_pi(results_countpairs_rp_pi **results)
 
 results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
                                             const int64_t ND2, const DOUBLE *X2, const DOUBLE *Y2, const DOUBLE *Z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                             const int numthreads,
 #endif
                                             const int autocorr,
@@ -64,7 +64,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
         bin_refine_factor=1;
         zbin_refine_factor=1;
     }
-    /* #ifdef USE_OMP */
+    /* #if defined(USE_OMP) && defined(_OPENMP) */
     /*  if(numthreads > 1) { */
     /*      if(autocorr==1) { */
     /*          bin_refine_factor=2; */
@@ -143,7 +143,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
     const DOUBLE sqr_rpmax=rupp_sqr[nrpbin-1];
     const DOUBLE sqr_rpmin=rupp_sqr[0];
 
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     uint64_t npairs[totnbins];
 #ifdef OUTPUT_RPAVG
     DOUBLE rpavg[totnbins];
@@ -178,7 +178,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
     init_my_progressbar(totncells,&interrupted);
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #ifndef SILENT    
 #pragma omp parallel shared(numdone)
 #else
@@ -199,13 +199,13 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
         for(int64_t index1=0;index1<totncells;index1++) {
 
 #ifndef SILENT
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
             if (omp_get_thread_num() == 0)
 #endif
                 my_progressbar(numdone,&interrupted);
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #pragma omp atomic
 #endif
             numdone++;
@@ -482,7 +482,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
                 }//iiy loop over bin_refine_factor
             }//iix loop over bin_refine_factor
         }//index1 loop over totncells
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         for(int i=0;i<totnbins;i++) {
             all_npairs[tid][i] = npairs[i];
 #ifdef OUTPUT_RPAVG
@@ -497,7 +497,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
 #endif
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     uint64_t npairs[totnbins];
 #ifdef OUTPUT_RPAVG
     DOUBLE rpavg[totnbins];
@@ -557,7 +557,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1,
         free_cellarray(lattice2, totncells);
     }
     
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     matrix_free((void **) all_npairs, numthreads);
 #ifdef OUTPUT_RPAVG
     matrix_free((void **) all_rpavg, numthreads);

@@ -436,7 +436,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 
     results_countpairs *results = countpairs(ND1,X1,Y1,Z1,
                                              ND2,X2,Y2,Z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                              nthreads,
 #endif
                                              autocorr,
@@ -521,7 +521,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 
     results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,X1,Y1,Z1,
                                                          ND2,X2,Y2,Z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                          nthreads,
 #endif
                                                          autocorr,
@@ -590,7 +590,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 
     results_countpairs_wp *results = countpairs_wp(ND1,X1,Y1,Z1,
                                                    boxsize,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                    nthreads,
 #endif
                                                    binfile,
@@ -662,7 +662,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args)
 
     results_countpairs_xi *results = countpairs_xi(ND1,X1,Y1,Z1,
                                                    boxsize,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                    nthreads,
 #endif
                                                    binfile);

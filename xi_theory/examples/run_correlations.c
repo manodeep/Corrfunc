@@ -52,7 +52,7 @@ void Printhelp(void)
     fprintf(stderr,"     * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
     fprintf(stderr,"     * boxsize      = BoxSize (in same units as X/Y/Z of the data)\n");
     fprintf(stderr,"     * pimax        = pimax   (in same units as X/Y/Z of the data)\n");
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"     * numthreads   = number of threads to use\n");
 #endif
     fprintf(stderr,"=========================================================================" ANSI_COLOR_RESET "\n") ;
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     struct timeval t0,t1;
     DOUBLE pimax;
 
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     const char argnames[][30]={"file","format","binfile","boxsize","pimax"};
 #else
     int nthreads=4;//default to 4 threads
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
             my_snprintf(binfile,MAXLEN,"%s",argv[3]);
             boxsize=atof(argv[4]);
             pimax=atof(argv[5]);
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
             nthreads = atoi(argv[6]);
 #endif
         }
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     fprintf(stderr,"\t\t %-10s = %s \n",argnames[2],binfile);
     fprintf(stderr,"\t\t %-10s = %10.4lf\n",argnames[3],boxsize);
     fprintf(stderr,"\t\t %-10s = %10.4lf\n",argnames[4],pimax);
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"\t\t %-10s = %d\n",argnames[5],nthreads);
 #endif
     fprintf(stderr,"\t\t -------------------------------------" ANSI_COLOR_RESET "\n");
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
     //Do the straight-up DD counts
     {
         gettimeofday(&t0,NULL);
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
                 "../xi_of_r/DD",file,fileformat,file,fileformat,binfile,nthreads);
 #else
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
         results_countpairs *results = countpairs(ND1,x1,y1,z1,
                                                  ND2,x2,y2,z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                  nthreads,
 #endif
                                                  autocorr,
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
     //Do the DD(rp, pi) counts
     {
         gettimeofday(&t0,NULL);
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
                 "../xi_rp_pi/DDrppi",file,fileformat,file,fileformat,binfile,pimax,nthreads);
 #else
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
 
         results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,x1,y1,z1,
                                                              ND2,x2,y2,z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                              nthreads,
 #endif
                                                              autocorr,
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
     //Do the wp counts
     {
         gettimeofday(&t0,NULL);
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent wp calculation would be:\n `%s %lf %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
                 "../wp/wp",boxsize,file,fileformat,binfile,pimax,nthreads);
 #else
@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 #endif
         results_countpairs_wp *results = countpairs_wp(ND1,x1,y1,z1,
                                                        boxsize,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                        nthreads,
 #endif
                                                        binfile,
@@ -236,7 +236,7 @@ int main(int argc, char **argv)
     //Do xi on the periodic cube
     {
         gettimeofday(&t0,NULL);
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent xi calculation would be:\n `%s %lf %s %s %s %d'" ANSI_COLOR_RESET "\n",
                 "../xi/xi",boxsize,file,fileformat,binfile,nthreads);
 #else
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 #endif
         results_countpairs_xi *results = countpairs_xi(ND1,x1,y1,z1,
                                                        boxsize,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                        nthreads,
 #endif
                                                        binfile);

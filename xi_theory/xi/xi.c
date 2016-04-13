@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
 
     /*---Corrfunc-variables----------------*/
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     const char argnames[][30]={"boxsize","file","format","binfile"};
 #else
     int nthreads=2;
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     fileformat=argv[3];
     binfile=argv[4];
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     nthreads=atoi(argv[5]);
     assert(nthreads >= 1 && "Number of threads must be at least 1");
 #endif
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     gettimeofday(&t0,NULL);
     results_countpairs_xi *results = countpairs_xi(ND1, x1, y1, z1,
                                                    boxsize,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                    nthreads,
 #endif
                                                    binfile);
@@ -155,7 +155,7 @@ void Printhelp(void)
     fprintf(stderr,"     * file         = name of data file\n") ;
     fprintf(stderr,"     * format       = format of data file  (a=ascii, c=csv, f=fast-food)\n") ;
     fprintf(stderr,"     * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif
 
@@ -190,7 +190,7 @@ void Printhelp(void)
     fprintf(stderr,"Use AVX = False\n");
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"Use OMP = True\n");
 #else
     fprintf(stderr,"Use OMP = False\n");

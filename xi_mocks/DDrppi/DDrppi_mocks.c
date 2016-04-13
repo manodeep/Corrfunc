@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     gettimeofday(&t_start,NULL);
 
     /*---Corrfunc-variables----------------*/
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","cosmology flag"};
 #else
     int nthreads=2;
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     sscanf(argv[6],"%"DOUBLE_FORMAT,&pimax) ;
     cosmology = atoi(argv[7]);
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     nthreads=atoi(argv[8]);
     assert(nthreads >= 1 && "Number of threads must be at least 1");
 #endif
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
     /*---Count-pairs--------------------------------------*/
     results_countpairs_mocks *results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
                                                           ND2,phiD2,thetaD2,czD2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                           nthreads,
 #endif
                                                           autocorr,
@@ -183,7 +183,7 @@ void Printhelp(void)
     fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
     fprintf(stderr,"     * pimax         = maximum line-of-sight-separation\n") ;
     fprintf(stderr,"     * cosmology     = flag to pick-up the cosmology combination to use (set as an array of combinations in ../utils/cosmology_params.c)\n") ;
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif
     fprintf(stderr,"     > DDfile        = name of output file. Contains <npairs rpavg logrp pi>\n") ;
@@ -208,7 +208,7 @@ void Printhelp(void)
     fprintf(stderr,"Use AVX = False\n");
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"Use OMP = True\n");
 #else
     fprintf(stderr,"Use OMP = False\n");

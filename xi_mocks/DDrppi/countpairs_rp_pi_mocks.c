@@ -28,7 +28,7 @@
 #include "avx_calls.h"
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -106,7 +106,7 @@ void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz)
 
 results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1, DOUBLE *czD1,
                                             const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2, DOUBLE *czD2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                             const int numthreads,
 #endif
                                             const int autocorr,
@@ -118,7 +118,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
     DOUBLE dpi,inv_dpi;
 
     int zbin_refine_factor=2;
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     if(zbin_refine_factor < numthreads/2)
         zbin_refine_factor=numthreads/2;
 #endif
@@ -213,7 +213,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
     /*---Gridlink-variables----------------*/
     int ngrid;
     const int totnbins = (nrpbin+1)*(npibin+1);
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     uint64_t npairs[totnbins];
 #ifdef OUTPUT_RPAVG
     DOUBLE rpavg[totnbins];
@@ -329,7 +329,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
     init_my_progressbar(ND1,&interrupted);
 #endif    
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #ifndef SILENT    
 #pragma omp parallel shared(numdone)
 #else
@@ -351,13 +351,13 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 
 
 #ifndef SILENT          
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
             if (omp_get_thread_num() == 0)
 #endif
                 my_progressbar(numdone,&interrupted);
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #pragma omp atomic
 #endif
             numdone++;
@@ -717,7 +717,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
 #endif
             }//icell loop over cz cells
         }//i loop over ND1 particles
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         for(int i=0;i<totnbins;i++) {
             all_npairs[tid][i] = npairs[i];
 #ifdef OUTPUT_RPAVG
@@ -732,7 +732,7 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
     finish_myprogressbar(&interrupted);
 #endif    
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     uint64_t npairs[totnbins];
 #ifdef OUTPUT_RPAVG
     DOUBLE rpavg[totnbins];
