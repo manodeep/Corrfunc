@@ -13,8 +13,8 @@ __all__ = ["_countpairs", "_countpairs_mocks", "utils"]
 # for-a-packages-init
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
-    
-__version__ = "0.2.3"
+
+__version__ = "1.0.0"
 
 if sys.version_info[0] >= 3:
     def rd(filename):
