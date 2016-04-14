@@ -423,9 +423,9 @@ struct cellarray_index * gridlink_index(const int64_t np,
       expected_n is a reasonable guess as to the number of points in the cell.
     */
 
-    DOUBLE xinv=1.0/xbinsize;
-    DOUBLE yinv=1.0/ybinsize;
-    DOUBLE zinv=1.0/zbinsize;
+    const DOUBLE xinv=1.0/xbinsize;
+    const DOUBLE yinv=1.0/ybinsize;
+    const DOUBLE zinv=1.0/zbinsize;
 
     for (int64_t i=0;i<np;i++)  {
         int ix=(int)((x[i]-xmin)*xinv) ;
@@ -461,13 +461,9 @@ struct cellarray_index * gridlink_index(const int64_t np,
     SGLIB_ARRAY_QUICK_SORT(int64_t, cell_index, np, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
 
-    
-    int64_t start_cell = 0;
+    int64_t start_cell = cell_index[0];
     lattice[start_cell].start=0;
     lattice[start_cell].nelements=1;
-    XASSERT(cell_index[0] == start_cell,
-            ANSI_COLOR_RED"BUG: First cell index =%"PRId64" must equal start cell = %"PRId64 ANSI_COLOR_RESET"\n",
-            cell_index[0], start_cell);
     for(int64_t i=1;i<np;i++) {
         const int64_t icell = cell_index[i];
         if(icell != start_cell) {

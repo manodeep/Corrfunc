@@ -561,8 +561,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
     //How many bins to subdivide rmax into -> affects runtime on O(20-30%) levels.
     //Check with your typical use-case and set appropriately. Values of 1,2 and 3 are
     //all you might need to check.
-    int bin_refine_factor=1;
-
+    int bin_refine_factor=2;
 
     /***********************
      *initializing the  bins
@@ -574,6 +573,8 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
     assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
     assert(nbins > 0 && "Number of rp bins must be > 0");
 
+    if(rpmax < 0.05*boxsize) bin_refine_factor = 1;
+    
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
     const DOUBLE xmin = 0.0, xmax=boxsize;
