@@ -106,12 +106,17 @@ class BuildExtSubclass(build_ext):
 
             full_name = '{0}.so'.format(path.join(ext_dir, ext.name))
             full_build_name = '{0}'.format(self.get_ext_fullpath(ext.name))
+            pkg_sourcedir = '{0}'.format(path.join(ext_dir, '../../Corrfunc'))
+            pkg_in_srcdir = '{0}/{1}.so'.format(pkg_sourcedir, ext.name)
 
             shutil.copyfile(full_name, full_build_name)
-            # print("name = {0} source = {1} dest = {2}"
-            #       .format(ext.name, full_name, full_build_name))
-            # os.symlink(full_build_name, self.get_ext_fullpath(ext.name))
 
+            # just copy the newly created library in the Corrfunc module directory.
+            # Installed Corrfunc version will automatically get the extensions
+            #os.remove(pkg_in_srcdir)
+            #os.symlink('{0}'.format(path.join('../', full_name)),
+            #           pkg_in_srcdir)
+            shutil.copyfile(full_name, pkg_in_srcdir)
 
 def generate_extensions(python_dirs):
     extensions = []
@@ -183,13 +188,7 @@ def setup_packages():
 
     # change them to be relative to package dir rather than root
     data_files = ["../{0}".format(d) for d in data_files]
-
-    # Fix long description for PyPI
-    try:
-        import pypandoc
-        long_description = pypandoc.convert('README.md', 'rst')
-    except(IOError, ImportError):
-        long_description = rd('README.md')
+    long_description = rd('README.rst')
 
     # All book-keeping is done.
     base_url = "https://github.com/manodeep/Corrfunc"

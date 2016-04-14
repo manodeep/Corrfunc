@@ -11,8 +11,8 @@ INCL   := countspheres_mocks.h ../../io/ftread.h ../../io/io.h ../../utils/utils
 				../../utils/defs.h ../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h
 
 ifeq ($(OUTPUT_PGBAR), 1)
-SRC1 += ../../utils/progressbar.c
-INCL += ../../utils/progressbar.h 
+  SRC1 += ../../utils/progressbar.c
+  INCL += ../../utils/progressbar.h 
 endif
 
 OBJS1  := $(SRC1:.c=.o)
@@ -48,8 +48,10 @@ libcountspheres_mocks.a: $(OBJS2) ../../mocks.options ../../common.mk Makefile |
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
-	cp -p $(target) ../../bin/
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
+	cp -p $< $@
 
 distclean: clean | ../../include ../../bin ../../lib
 	$(RM) ../../bin/$(target)

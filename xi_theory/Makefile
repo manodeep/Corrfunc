@@ -1,23 +1,21 @@
-include ../theory.options 
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../common.mk
-endif
+include ../theory.options ../common.mk
 
 targets:=dirs DD DDrppi wp xi vpf examples 
 
 ifneq ($(COMPILE_PYTHON_EXT), 0)
-targets += python_bindings
+  PYTHON_DIR := python_bindings
 else
-$(warning $(ccmagenta) Not compiling C extensions for theory. Either python or numpy not available $(ccreset))
+  PYTHON_DIR := 
+  $(warning $(ccmagenta) Not compiling C extensions for theory. Either python or numpy not available $(ccreset))
 endif
 
-all: $(targets) logbins
+all: $(targets) $(PYTHON_DIR) logbins
 
 OBJS1= logbins.o ../utils/utils.o 
 logbins: $(OBJS1)  | dirs 
-	$(CC) $(OBJS1)  $(CLINK) -o $@
+	$(CC) $(OBJS1) $(CLINK) -o $@
 
-%.o: %.c 
+%.o: %.c Makefile ../common.mk ../theory.options
 	$(CC) $(CFLAGS) -c $< -o $@ 
 
 dirs:  | ../lib ../bin ../include
@@ -43,10 +41,14 @@ vpf:
 	$(MAKE) -C vpf
 
 python_bindings: libs
+
 	$(MAKE) -C python_bindings
 
 ### Must create the libraries first before making the examples.
-examples: libs
+examples: examples/run_correlations 
+
+## Not a phony target
+examples/run_correlations: libs
 	$(MAKE) -C examples
 
 distclean:realclean
@@ -78,14 +80,16 @@ clean:
 clena: clean
 celan: clean
 celna: clean
-install: logbins examples | dirs
-	cp -p logbins ../bin
+install: ../bin/logbins examples $(targets) $(PYTHON_DIR) | dirs
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
 	$(MAKE) -C xi install
 	$(MAKE) -C vpf install
 	$(MAKE) -C python_bindings install
+
+../bin/logbins: logbins
+	cp -p logbins ../bin
 
 lib: libs
 

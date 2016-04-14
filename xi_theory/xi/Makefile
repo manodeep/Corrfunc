@@ -30,11 +30,13 @@ endif
 OBJS2 := $(SRC2:.c=.o)
 
 libs: lib
-lib:  libcountpairs_xi.a | ../../lib ../../include 
+lib:  ../../lib/libcountpairs_xi.a | ../../lib ../../include 
 
 libcountpairs_xi.a: $(OBJS2) $(INCL) ../../common.mk ../../theory.options Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS2)
-	cp -p $@ ../../lib/
+
+../../lib/libcountpairs_xi.a: libcountpairs_xi.a
+	cp -p $< $@
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_xi.h > ../../include/countpairs_xi.h 
 
 .PHONY: clean clena celan install lib tests distclean
@@ -42,8 +44,10 @@ libcountpairs_xi.a: $(OBJS2) $(INCL) ../../common.mk ../../theory.options Makefi
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin
-	cp -p $(target) ../../bin/
+install: ../../bin/$(target) | ../../bin
+
+../../bin/$(target): $(target)
+	cp -p $< $@
 
 distclean: clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountpairs_xi.a ../../include/countpairs_xi.h
@@ -57,9 +61,6 @@ celan: clean
 
 tests: tests_periodic 
 
-tests_periodic: ../tests/tests_periodic
+tests_periodic: 
 	$(MAKE) -C ../tests xi
-
-../tests/tests_periodic:
-	$(MAKE) -C ../tests
 

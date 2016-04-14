@@ -1,8 +1,3 @@
-include theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include common.mk
-endif
-
 all: dirs xi_theory xi_mocks
 
 dirs: | lib bin include
