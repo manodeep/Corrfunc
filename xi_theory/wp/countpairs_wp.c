@@ -99,6 +99,8 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
         rupp_sqr[i] = rupp[i]*rupp[i];
     }
 
+    if(rpmax < 0.05*boxsize) bin_refine_factor = 1;
+    
     const DOUBLE sqr_rpmin = rupp_sqr[0];
     const DOUBLE sqr_rpmax = rupp_sqr[nrpbins-1];
 
