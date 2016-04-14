@@ -24,7 +24,7 @@
 #endif
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -46,7 +46,7 @@ void free_results(results_countpairs **results)
 
 results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
                                 const int64_t ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                 const int numthreads,
 #endif
                                 const int autocorr,
@@ -59,7 +59,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
     } else {
         bin_refine_factor=1;
     }
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     if(numthreads > 1) {
 
         //I have written it this way to maintain
@@ -115,12 +115,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
         fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
         int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-        for(int64_t i=0;i<totncells;i++) {
-            free(lattice1[i].pos);
-            /* free(lattice1[i].y); */
-            /* free(lattice1[i].z); */
-        }
-        free(lattice1);
+        free_cellarray_nvec(lattice1, totncells);
         lattice1 = gridlink_nvec(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
 
@@ -141,7 +136,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
     const DOUBLE zdiff = (zmax-zmin);
 #endif
 
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     uint64_t npairs[nrpbin];
     for(int i=0; i < nrpbin;i++) npairs[i] = 0;
 #else
@@ -155,7 +150,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
     }
 
 #ifdef OUTPUT_RPAVG
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     DOUBLE rpavg[nrpbin];
     for(int i=0; i < nrpbin;i++) {
         rpavg[i] = 0.0;
@@ -191,7 +186,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 #endif    
 
     /*---Loop-over-Data1-particles--------------------*/
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #ifndef SILENT    
 #pragma omp parallel shared(numdone)
 #else
@@ -215,13 +210,13 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 
           /* If the silent option is enabled, avoid outputting anything unnecessary*/
 #ifndef SILENT          
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
             if (omp_get_thread_num() == 0)
 #endif
                 my_progressbar(numdone,&interrupted);
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #pragma omp atomic
 #endif
             numdone++;
@@ -528,7 +523,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
             }//iix loop over bin_refine_factor
 
         }//index1 loop over totncells
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         for(int j=0;j<nrpbin;j++) {
             all_npairs[tid][j] = npairs[j];
         }
@@ -545,7 +540,7 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
     finish_myprogressbar(&interrupted);
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     uint64_t npairs[nrpbin];
     for(int i=0;i<nrpbin;i++) npairs[i] = 0;
 
@@ -593,24 +588,13 @@ results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, cons
 #endif
     }
 
-    for(int64_t i=0;i<totncells;i++) {
-        free(lattice1[i].pos);
-        /* free(lattice1[i].y); */
-        /* free(lattice1[i].z); */
-        if(autocorr==0) {
-            free(lattice2[i].pos);
-            /* free(lattice2[i].y); */
-            /* free(lattice2[i].z); */
-        }
-    }
-
-    free(lattice1);
-    if(autocorr==0) {
-        free(lattice2);
+    free_cellarray_nvec(lattice1, totncells);
+    if(autocorr == 0) {
+        free_cellarray_nvec(lattice2, totncells);
     }
     free(rupp);
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     matrix_free((void **) all_npairs, numthreads);
 #ifdef OUTPUT_RPAVG
     matrix_free((void **) all_rpavg, numthreads);

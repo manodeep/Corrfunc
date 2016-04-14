@@ -27,7 +27,7 @@ extern "C" {
 
     results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *theta1, DOUBLE *phi1, DOUBLE *czD1,
                                                 const int64_t ND2, DOUBLE *theta2, DOUBLE *phi2, DOUBLE *czD2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                 const int numthreads,
 #endif
                                                 const int autocorr,

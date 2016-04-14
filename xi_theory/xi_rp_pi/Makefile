@@ -3,10 +3,10 @@ ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
   include ../../common.mk
 endif
 
-target:= DDrppi wprp
+targets := DDrppi wprp
 
-SRC1  := DDrppi.c countpairs_rp_pi.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c 
-INCL  := countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
+SRC1   := DDrppi.c countpairs_rp_pi.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c 
+INCL   := countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
 		../../utils/defs.h 
 
@@ -16,7 +16,7 @@ INCL += ../../utils/progressbar.h
 endif
 OBJS1 := $(SRC1:.c=.o)
 
-all: $(target) ../../theory.options ../../common.mk Makefile 
+all: $(targets) ../../theory.options ../../common.mk Makefile 
 
 DDrppi: $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) -o $@
@@ -29,35 +29,41 @@ wprp: $(OBJS2) ../../theory.options ../../common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS2) $(CLINK)
 
 libs: lib
-lib: libcountpairs_rp_pi.a | ../../lib
+lib: ../../lib/libcountpairs_rp_pi.a | ../../lib
 
 OBJS3 := countpairs_rp_pi.o ../../utils/gridlink.o ../../utils/utils.o
 ifeq ($(OUTPUT_PGBAR), 1)
-OBJS3 += ../../utils/progressbar.o
+  OBJS3 += ../../utils/progressbar.o
 endif
+
 libcountpairs_rp_pi.a: $(OBJS3) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS3)
-	cp -p $@ ../../lib/
+
+../../lib/libcountpairs_rp_pi.a: libcountpairs_rp_pi.a
+	cp -p $< $@
 	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_rp_pi.h > ../../include/countpairs_rp_pi.h
 
 ../../lib ../../bin ../../include:
 	mkdir -p $@
 
-install: $(target) | ../../bin 
-	cp -p $(target) ../../bin/
+install: ../../bin/DDrppi ../../bin/wprp | ../../bin 
+
+../../bin/DDrppi: DDrppi
+	cp -p $< $@
+../../bin/wprp: wprp
+	cp -p $< $@
 
 .PHONY: clean clena celan install lib tests
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
+	$(RM) $(targets) $(OBJS1) $(OBJS2) $(OBJS3) libcountpairs_rp_pi.a
 
 clena: clean
-
 celan: celan
 
 distclean:clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountpairs_rp_pi.a ../../include/countpairs_rp_pi.h
-	cd ../../bin && $(RM) $(target)
+	cd ../../bin && $(RM) $(targets)
 
 tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
 	$(MAKE) -C ../tests xi_rp_pi

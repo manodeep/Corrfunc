@@ -27,7 +27,7 @@ extern "C" {
 
     results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
                                                       const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                       const int numthreads,
 #endif
                                                       const int autocorr,
@@ -35,7 +35,7 @@ extern "C" {
 
     results_countpairs_theta * countpairs_theta_brute_force(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
                                                             const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                             const int numthreads,
 #endif
                                                             const int autocorr,

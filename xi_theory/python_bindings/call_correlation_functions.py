@@ -9,7 +9,12 @@ Requires: numpy
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-from future.utils import bytes_to_native_str
+try:
+    from future.utils import bytes_to_native_str
+except ImportError:
+    print("\n\tPlease run python setup.py install before using the 'Corrfunc' package\n")
+    raise
+
 import os.path as path
 import sys
 import time
@@ -64,7 +69,7 @@ def read_catalog(filebase=None):
             pd = None
 
         if pd is not None:
-            df = pd.read_csv(file, header=None,
+            df = pd.read_csv(filename, header=None,
                              engine="c",
                              dtype={"x": return_dtype,
                                     "y": return_dtype,
@@ -75,7 +80,7 @@ def read_catalog(filebase=None):
             z = np.asarray(df[2], dtype=return_dtype)
 
         else:
-            x, y, z = np.genfromtxt(file, dtype=return_dtype, unpack=True)
+            x, y, z = np.genfromtxt(filename, dtype=return_dtype, unpack=True)
 
         return x, y, z
 

@@ -36,7 +36,7 @@
 #include "avx_calls.h"
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -95,7 +95,7 @@ void check_ra_dec(const int64_t N, DOUBLE *phi, DOUBLE *theta)
 
 results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
                                                   const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                   const int numthreads,
 #endif
                                                   const int autocorr,
@@ -117,7 +117,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
     /* #error The brute force code does not work */
     /*      results_countpairs_theta *results = countpairs_theta_brute_force(ND1,phi1,theta1, */
     /*                                                                                                                                       ND2,phi2,theta2, */
-    /* #ifdef USE_OMP */
+    /* #if defined(USE_OMP) && defined(_OPENMP) */
     /*                                                                                                                                       numthreads, */
     /* #endif */
     /*                                                                                                                                       autocorr, */
@@ -158,7 +158,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 
 
 
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     uint64_t npairs[nthetabin];
     for(int i=0;i<nthetabin;i++) npairs[i]=0;
 #else
@@ -175,7 +175,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
     const DOUBLE costhetamax=costheta_upp[nthetabin-1];
 
 #ifdef OUTPUT_THETAAVG
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     DOUBLE thetaavg[nthetabin];
     for(int i=0;i<nthetabin;i++) thetaavg[i] = 0.0;
 #else
@@ -328,7 +328,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 #endif    
 
     /*---Loop-over-Data1-particles--------------------*/
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #if !defined(LINK_IN_DEC ) && !defined(LINK_IN_RA)
 #pragma omp parallel shared(x2,y2,z2)
 #else
@@ -349,12 +349,12 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
         for(int i=0;i<ND1;i++) {
 
 #ifndef SILENT          
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
             if (omp_get_thread_num() == 0)
 #endif
                 my_progressbar(numdone,&interrupted);
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
 #pragma omp atomic
 #endif
             numdone++;
@@ -584,7 +584,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 #endif//LINK_IN_DEC
 
         }//loop over i
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
         for(int j=0;j<nthetabin;j++) {
             all_npairs[tid][j] = npairs[j];
         }
@@ -601,7 +601,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
     finish_myprogressbar(&interrupted);
 #endif    
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     uint64_t npairs[nthetabin];
     for(int i=0;i<nthetabin;i++) npairs[i] = 0;
 
@@ -658,7 +658,7 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 #endif//LINK_IN_DEC
 
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     matrix_free((void **) all_npairs, numthreads);
 #ifdef OUTPUT_THETAVG
     matrix_free((void **) all_thetaavg, numthreads);

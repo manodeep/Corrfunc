@@ -25,7 +25,7 @@ int main(int argc, char **argv)
     char *fileformat1=NULL,*fileformat2=NULL;
     char *binfile=NULL;
 
-#ifndef USE_OMP
+#if !(defined(USE_OMP) && defined(_OPENMP))
     const char argnames[][30]={"file1","format1","file2","format2","binfile"};
 #else
     int nthreads;
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     file2=argv[3];
     fileformat2=argv[4];
     binfile=argv[5];
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     nthreads=atoi(argv[6]);
     assert(nthreads >= 1 && "Number of threads must be at least 1");
 #endif
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     gettimeofday(&t0,NULL);
     results_countpairs_theta *results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
                                                                ND2,phiD2,thetaD2,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                                                nthreads,
 #endif
                                                                autocorr,
@@ -152,7 +152,7 @@ void Printhelp(void)
     fprintf(stderr,"     * file2       = name of second data file\n") ;
     fprintf(stderr,"     * format2     = format of second data file\n") ;
     fprintf(stderr,"     * binfile     = name of ascii file containing the theta-bins (thetamin thetamax for each bin)\n") ;
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"     * numthreads  = number of threads to use\n");
 #endif
 
@@ -193,7 +193,7 @@ void Printhelp(void)
     fprintf(stderr,"Use AVX = False\n");
 #endif
 
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"Use OMP = True\n");
 #else
     fprintf(stderr,"Use OMP = False\n");

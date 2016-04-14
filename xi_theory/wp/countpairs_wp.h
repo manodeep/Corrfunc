@@ -28,7 +28,7 @@ extern "C" {
 
     results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
                                          const double boxsize,
-#ifdef USE_OMP
+#if defined(USE_OMP) && defined(_OPENMP)
                                          const int numthreads,
 #endif
                                          const char *binfile,
