@@ -188,13 +188,7 @@ def setup_packages():
 
     # change them to be relative to package dir rather than root
     data_files = ["../{0}".format(d) for d in data_files]
-
-    # Fix long description for PyPI
-    try:
-        import pypandoc
-        long_description = pypandoc.convert('README.md', 'rst')
-    except(IOError, ImportError):
-        long_description = rd('README.md')
+    long_description = rd('README.rst')
 
     # All book-keeping is done.
     base_url = "https://github.com/manodeep/Corrfunc"
