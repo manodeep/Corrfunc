@@ -1,7 +1,4 @@
-include ../../theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../theory.options ../../common.mk
 
 target := vpf 
 SRC1   := vpf.c countspheres.c ../../utils/gridlink.c ../../utils/utils.c ../../io/ftread.c ../../io/io.c 

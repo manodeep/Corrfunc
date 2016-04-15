@@ -20,8 +20,8 @@ endif
 all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../mocks.options ../../common.mk Makefile | ../../lib
 
 $(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
-	$(RM) $(PROJECT).so 
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(LINKER_FLAGS) $(CLINK) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
+	$(RM) $(PROJECT).so
 	ln -s $(LIBRARY) $(PROJECT).so
 
 sharedlib: $(LIBRARY) | ../../lib
