@@ -22,11 +22,11 @@ endif
 all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../theory.options ../../common.mk Makefile | ../../lib
 
 $(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
+	$(CC) $(OBJECTS) $(C_LIBRARY) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 	$(RM) $(PROJECT).so
 	ln -s $(LIBRARY) $(PROJECT).so
 
-sharedlib: $(LIBRARY)
+sharedlib: $(LIBRARY) | ../../lib
 	@{ \
 		CURRENT_PYTHON_LIB=`otool -L $(LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
 		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \

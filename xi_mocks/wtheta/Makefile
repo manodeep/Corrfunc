@@ -23,8 +23,8 @@ all: $(targets) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
 DDtheta_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS1) $(CLINK) -o $@ 
 
-SRC2=wtheta.c ../../utils/utils.c
-OBJS2=$(SRC2:.c=.o)
+SRC2  :=wtheta.c ../../utils/utils.c
+OBJS2 :=$(SRC2:.c=.o)
 wtheta: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 	$(CC) $(OBJS2) $(CLINK) -o $@ 
 
@@ -42,7 +42,7 @@ wtheta: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 libs:lib
 lib: libcountpairs_theta_mocks.a | ../../lib
 
-OBJS3=countpairs_theta_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o
+OBJS3 := countpairs_theta_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o
 libcountpairs_theta_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
 	ar rcs $@ $(OBJS3)
 	cp -p $@ ../../lib/

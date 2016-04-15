@@ -11,6 +11,7 @@ import sys
 from sys import version_info
 import re
 
+# partial import
 import Corrfunc
 from Corrfunc import rd
 
@@ -26,6 +27,7 @@ major = re.search(r'MAJOR\s*:*=\s*(\d)', common).group(1)
 minor = re.search(r'MINOR\s*:*=\s*(\d)', common).group(1)
 patch = re.search(r'PATCHLEVEL\s*:*=\s*(\d)', common).group(1)
 version = "{0}.{1}.{2}".format(major, minor, patch)
+
 # Check that version matches
 if Corrfunc.__version__ != version:
     msg = "ERROR: Version mis-match. Python version found = {0} \
