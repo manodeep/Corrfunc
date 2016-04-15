@@ -584,11 +584,14 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
         fprintf(stderr,"%s> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n",__FUNCTION__);
         bin_refine_factor *=2;
         const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-        free_cellarray_index(lattice, totncells);
+        const int periodic = 1;
+        free_cellarray_index(lattice, totncells, periodic);
         lattice = gridlink_index(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-
+    const int double_count = 0;
+    const int periodic = 1;
+    assign_ngb_cells(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, bin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, double_count, periodic);
 
 #if defined(USE_OMP) && defined(_OPENMP)
     omp_set_num_threads(numthreads);
@@ -611,7 +614,6 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
         }
     }
 
-    /* const DOUBLE side=boxsize; */
 
 #if !(defined(USE_OMP) && defined(_OPENMP))
     uint64_t npairs[nbins];
@@ -823,7 +825,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
         rlow=results->rupp[i];
     }
 
-    free_cellarray_index(lattice, totncells);
+    free_cellarray_index(lattice, totncells, periodic);
     free(rupp);
 
 
