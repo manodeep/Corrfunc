@@ -13,8 +13,11 @@ endif
 SRC1   := test_periodic.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS1  := $(SRC1:.c=.o)
 INCL   := ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c \
-	../xi_of_r/countpairs.c ../xi_rp_pi/countpairs_rp_pi.c ../wp/countpairs_wp.c ../wp/wp_kernels.c ../wp/same_cell_wp_kernels.c ../wp/diff_cells_wp_kernels.c \
-	../vpf/countspheres.c ../xi/countpairs_xi.c 
+	../xi_of_r/countpairs.c ../xi_of_r/countpairs_driver.c ../xi_of_r/countpairs_kernels.c \
+        ../xi_rp_pi/countpairs_rp_pi.c \
+        ../wp/countpairs_wp.c ../wp/wp_kernels.c ../wp/same_cell_wp_kernels.c ../wp/diff_cells_wp_kernels.c \
+	../vpf/countspheres.c \
+        ../xi/countpairs_xi.c 
 
 SRC2   := test_nonperiodic.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  := $(SRC2:.c=.o)

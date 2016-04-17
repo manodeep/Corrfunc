@@ -42,6 +42,7 @@
 #include "io.c"
 #include "ftread.c"
 #include "../xi_of_r/countpairs.c"
+#include "../xi_of_r/countpairs_driver.c"
 #include "../xi_rp_pi/countpairs_rp_pi.c"
 
 #include "../wp/countpairs_wp.c"

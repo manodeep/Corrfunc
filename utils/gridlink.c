@@ -460,7 +460,7 @@ struct cellarray_index * gridlink_index(const int64_t np,
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);                   \
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);\
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t,cell_index,i,j)}
-    
+
     SGLIB_ARRAY_QUICK_SORT(int64_t, cell_index, np, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
 
@@ -495,7 +495,7 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                       const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                       const int nmesh_x, const int nmesh_y, const int nmesh_z,
                       const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff, 
-                      const int double_count, const int periodic)
+                      const int autocorr, const int periodic)
 {
     /* Now figure out the neighbouring cells*/
     //First create a giant list of cells opened
@@ -506,7 +506,7 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
 
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
     const int64_t ny_ngb = 2*ybin_refine_factor + 1;
-    const int64_t nz_ngb = (double_count == 1) ? 2*zbin_refine_factor + 1: zbin_refine_factor+1;
+    const int64_t nz_ngb = (autocorr == 0) ? 2*zbin_refine_factor + 1: zbin_refine_factor+1;
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
     for(int64_t icell=0;icell<totncells;icell++) {
@@ -539,7 +539,7 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                 const int iiiy = (periodic == 1) ? periodic_iy:non_periodic_iy;
                 if(iiiy < 0 || iiiy >= nmesh_y) continue;
                 const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
-                const int start_iz = (double_count == 1) ? -zbin_refine_factor:0;
+                const int start_iz = (autocorr == 0) ? -zbin_refine_factor:0;
                 for(int64_t iiz=start_iz;iiz<=zbin_refine_factor;iiz++){
                     const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
                     const int non_periodic_iz = iz + iiz;
@@ -548,7 +548,12 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
 
                     const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
                     const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
-                    if(icell2 == icell) {
+
+                    //For cases where we are not double-counting (i.e., wp and xi), the same-cell
+                    //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
+                    //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
+                    //kernels in that case!
+                    if(autocorr == 1 && icell2 == icell) {
                         continue;
                     }
                     const int64_t index1 = icell2 * totncells + icell;
