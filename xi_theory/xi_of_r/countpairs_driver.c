@@ -33,7 +33,7 @@ void countpairs_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
 #endif
                        ,uint64_t *src_npairs)
 {
-    
+
 #if defined(USE_AVX) && defined(__AVX__)
     /*----------------- AVX --------------------*/
     AVX_FLOATS m_rupp_sqr[nbin];
@@ -122,17 +122,28 @@ void countpairs_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
         const DOUBLE zpos = *z0++;
 #endif        
 
-        int64_t j = (same_cell == 1) ? i+1:0;
+        DOUBLE *localz1 = ((DOUBLE *) z1) ;
+        int64_t j= 0;
+        if(same_cell == 1) {
+            j = i+1;
+            localz1 += j;
+        } else {
+            while(j < N1){
+                const DOUBLE dz = *localz1++ - zpos;
+                if(dz > -rpmax) break;
+                j++;
+            }
+            localz1 -= 1;
+        }
         DOUBLE *localx1 = ((DOUBLE *) x1) + j;
         DOUBLE *localy1 = ((DOUBLE *) y1) + j;
-        DOUBLE *localz1 = ((DOUBLE *) z1) + j;
 
         for(;j<N1;j++) {
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
             const DOUBLE dz = *localz1++ - zpos;
 
-            if(dz >= rpmax) continue;
+            if(dz >= rpmax) break;
             
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;

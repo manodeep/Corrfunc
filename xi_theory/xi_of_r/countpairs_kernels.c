@@ -54,11 +54,22 @@ static inline void countpairs_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
 #endif        
+        DOUBLE *localz1 = ((DOUBLE *) z1);
 
-        int64_t j= (same_cell == 1) ? i+1:0;
+        int64_t j= 0;
+        if(same_cell == 1) {
+            j = i+1;
+            localz1 += j;
+        } else {
+            while(j < N1){
+                const DOUBLE dz = *localz1++ - zpos;
+                if(dz > -rpmax) break;
+                j++;
+            }
+            localz1 -= 1;
+        }
         DOUBLE *localx1 = ((DOUBLE *) x1) + j;
         DOUBLE *localy1 = ((DOUBLE *) y1) + j;
-        DOUBLE *localz1 = ((DOUBLE *) z1) + j;
 
         for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
             const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
@@ -107,9 +118,8 @@ static inline void countpairs_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
                 //no future iteration in j can produce a zdiff value less than pimax.
                 AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
                 if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
-                    //None of the dz^2 values satisfies dz^2 < pimax^2
-                    // => no pairs can be added -> continue and process the next NVEC
-                    continue;
+                    j = N1;
+                    break;
                 }
                 
                 const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
@@ -171,9 +181,9 @@ static inline void countpairs_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
 
-            /* if(dz >= rpmax) { */
-            /*     continue; */
-            /* } */
+            if(dz >= rpmax) {
+                break;
+            }
             
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
@@ -247,10 +257,21 @@ static inline void countpairs_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
         const DOUBLE zpos = *z0++;
 #endif        
 
-        int64_t j=(same_cell == 1) ? i+1:0;
+        DOUBLE *localz1 = ((DOUBLE *) z1) ;
+        int64_t j= 0;
+        if(same_cell == 1) {
+            j = i+1;
+            localz1 += j;
+        } else {
+            while(j < N1){
+                const DOUBLE dz = *localz1++ - zpos;
+                if(dz > -rpmax) break;
+                j++;
+            }
+            localz1 -= 1;
+        }
         DOUBLE *localx1 = ((DOUBLE *) x1) + j;
         DOUBLE *localy1 = ((DOUBLE *) y1) + j;
-        DOUBLE *localz1 = ((DOUBLE *) z1) + j;
         
 		for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
 #ifdef OUTPUT_RPAVG
@@ -293,9 +314,8 @@ static inline void countpairs_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
 			{
                 const SSE_FLOATS m_pimax_mask = SSE_COMPARE_FLOATS_LT(m_zdiff,m_pimax);
                 if(SSE_TEST_COMPARISON(m_pimax_mask) == 0) {
-                    /* j = N1; */
-                    /* break; */
-                    continue;
+                    j = N1;
+                    break;
                 }
                 
                 const SSE_FLOATS m_rpmin_mask = SSE_COMPARE_FLOATS_GE(r2, m_sqr_rpmin);
@@ -347,7 +367,7 @@ static inline void countpairs_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
 			const DOUBLE dx = *localx1++ - xpos;
 			const DOUBLE dy = *localy1++ - ypos;
 			const DOUBLE dz = *localz1++ - zpos;
-            if(dz >= rpmax) continue;
+            if(dz >= rpmax) break;
             
 			const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
 			if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
