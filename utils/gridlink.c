@@ -499,9 +499,12 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
 {
     /* Now figure out the neighbouring cells*/
     //First create a giant list of cells opened
-    bool *opened = my_malloc(sizeof(bool), totncells * totncells);
-    for(int64_t i=0;i < totncells * totncells; i++) {
-        opened[i] = false;
+    bool *opened;
+    if(autocorr == 1) {
+        opened = my_malloc(sizeof(bool), totncells * totncells);
+        for(int64_t i=0;i < totncells * totncells; i++) {
+            opened[i] = false;
+        }
     }
 
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
@@ -559,7 +562,8 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                     const int64_t index1 = icell2 * totncells + icell;
                     const int64_t index2 = icell * totncells + icell2;
 
-                    if(opened[index1] == true) {
+                    
+                    if(autocorr == 1 && opened[index1] == true) {
                         continue;
                     }
 
@@ -576,13 +580,17 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                     } 
                     first->num_ngb++;
 
-                    opened[index1] = true;
-                    opened[index2] = true;
+                    if(autocorr == 1) {
+                        opened[index1] = true;
+                        opened[index2] = true;
+                    }
                 }
             }
         }
 
     }
-    free(opened);
+    if(autocorr == 1) {
+        free(opened);
+    }
 }    
 
