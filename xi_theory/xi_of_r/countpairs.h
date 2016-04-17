@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+            
+#include "defs.h"//for add_diff_time    
 #include "function_precision.h" //for definition of DOUBLE
 #include <inttypes.h> //for uint64_t
 
@@ -24,8 +26,8 @@ extern "C" {
         int nbin;
     } results_countpairs;
 
-    results_countpairs * countpairs(const int64_t ND1, const DOUBLE * const X1, const DOUBLE * const Y1, const DOUBLE  * const Z1,
-                                    const int64_t ND2, const DOUBLE * const X2, const DOUBLE * const Y2, const DOUBLE  * const Z2,
+    results_countpairs * countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
+                                    const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
                                     const int numthreads,
 #endif
