@@ -119,8 +119,7 @@ results_countpairs * countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBL
     if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
         fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
-        int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-        free_cellarray_index(lattice1, totncells, periodic);
+        free(lattice1);
         lattice1 = gridlink_index(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
 
