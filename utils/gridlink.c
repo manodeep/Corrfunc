@@ -60,7 +60,9 @@ void free_cellarray_index(cellarray_index *lattice, const int64_t totncells, con
 {
     
     for(int64_t i=0;i<totncells;i++){
-        if(free_wraps == 1 && lattice[i].nelements > 0) {
+        if(lattice[i].nelements == 0) continue;
+
+        if(free_wraps == 1) {
             free(lattice[i].xwrap);
             free(lattice[i].ywrap);
             free(lattice[i].zwrap);
@@ -513,7 +515,8 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
     for(int64_t icell=0;icell<totncells;icell++) {
-        if(lattice1[icell].nelements == 0) continue;
+        struct cellarray_index *first = &(lattice1[icell]);
+        if(first->nelements == 0) continue;
         const int iz = icell % nmesh_z;
         const int ix = icell / (nmesh_y * nmesh_z );
         const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
@@ -521,7 +524,7 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                 ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
                 icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
         
-        struct cellarray_index *first = &(lattice1[icell]);
+
         first->num_ngb = 0;
         if(periodic == 1) {
             first->xwrap = my_malloc(sizeof(*(first->xwrap)), max_ngb_cells);
@@ -566,7 +569,6 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                     }
                     const int64_t index1 = icell2 * totncells + icell;
                     const int64_t index2 = icell * totncells + icell2;
-
                     
                     if(autocorr == 1 && opened[index1] == true) {
                         continue;
