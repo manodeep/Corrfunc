@@ -112,8 +112,7 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
         bin_refine_factor *=2;
         zbin_refine_factor *=2;
         const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
-        const int periodic = 1;
-        free_cellarray_index(lattice, totncells, periodic);
+        free(lattice);
         lattice = gridlink_index(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
@@ -288,7 +287,8 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     }
 #endif
 
-    free_cellarray_index(lattice, totncells, periodic);
+    const int free_wraps = 1;
+    free_cellarray_index(lattice, totncells, free_wraps);
 
     //Pack in the results
     results_countpairs_wp *results = my_malloc(sizeof(*results), 1);

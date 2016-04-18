@@ -56,11 +56,11 @@ void free_cellarray_nvec(cellarray_nvec *lattice, const int64_t totncells)
     free(lattice);
 }
 
-void free_cellarray_index(cellarray_index *lattice, const int64_t totncells, const int periodic)
+void free_cellarray_index(cellarray_index *lattice, const int64_t totncells, const int free_wraps)
 {
     
     for(int64_t i=0;i<totncells;i++){
-        if(periodic == 1) {
+        if(free_wraps == 1) {
             free(lattice[i].xwrap);
             free(lattice[i].ywrap);
             free(lattice[i].zwrap);
@@ -499,7 +499,7 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
 {
     /* Now figure out the neighbouring cells*/
     //First create a giant list of cells opened
-    bool *opened;
+    bool *opened=NULL;
     if(autocorr == 1) {
         opened = my_malloc(sizeof(bool), totncells * totncells);
         for(int64_t i=0;i < totncells * totncells; i++) {
@@ -526,6 +526,10 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
             first->xwrap = my_malloc(sizeof(*(first->xwrap)), max_ngb_cells);
             first->ywrap = my_malloc(sizeof(*(first->ywrap)), max_ngb_cells);
             first->zwrap = my_malloc(sizeof(*(first->zwrap)), max_ngb_cells);
+        } else {
+            first->xwrap = NULL;
+            first->ywrap = NULL;
+            first->zwrap = NULL;
         }
         first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
 
@@ -592,5 +596,6 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
     if(autocorr == 1) {
         free(opened);
     }
+    
 }    
 
