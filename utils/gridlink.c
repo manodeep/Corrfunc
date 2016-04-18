@@ -499,7 +499,7 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
 {
     /* Now figure out the neighbouring cells*/
     //First create a giant list of cells opened
-    bool *opened;
+    bool *opened=NULL;
     if(autocorr == 1) {
         opened = my_malloc(sizeof(bool), totncells * totncells);
         for(int64_t i=0;i < totncells * totncells; i++) {
