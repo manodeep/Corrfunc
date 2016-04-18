@@ -60,7 +60,7 @@ void free_cellarray_index(cellarray_index *lattice, const int64_t totncells, con
 {
     
     for(int64_t i=0;i<totncells;i++){
-        if(free_wraps == 1) {
+        if(free_wraps == 1 && lattice[i].nelements > 0) {
             free(lattice[i].xwrap);
             free(lattice[i].ywrap);
             free(lattice[i].zwrap);
@@ -513,6 +513,7 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
     for(int64_t icell=0;icell<totncells;icell++) {
+        if(lattice1[icell].nelements == 0) continue;
         const int iz = icell % nmesh_z;
         const int ix = icell / (nmesh_y * nmesh_z );
         const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
