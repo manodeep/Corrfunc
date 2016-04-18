@@ -84,13 +84,13 @@ results_countpairs * countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBL
     /***********************
      *initializing the  bins
      ************************/
-    double *rupp;
+    double *rupp=NULL;
     int nrpbin ;
     double rpmin,rpmax;
     setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
     assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
     assert(nrpbin > 0 && "Number of rp bins is valid");
-
+    
     //Find the min/max of the data
     DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
     xmin=1e10;ymin=1e10;zmin=1e10;
@@ -119,8 +119,7 @@ results_countpairs * countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBL
     if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
         fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
-        int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-        free_cellarray_index(lattice1, totncells, periodic);
+        free(lattice1);
         lattice1 = gridlink_index(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
 
@@ -396,10 +395,13 @@ results_countpairs * countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBL
         results->rpavg[i] = 0.0;
 #endif
     }
-
-    free_cellarray_index(lattice1, totncells, periodic);
+    int free_wraps = periodic == 1 ? 1:0;
+    free_cellarray_index(lattice1, totncells, free_wraps);
     if(autocorr == 0) {
-        free_cellarray_index(lattice2, totncells, periodic);
+        //if cross-correlation, the second cell will not have
+        //any mallocs with each cell element. -> so just free
+        //the lattice struct. 
+        free(lattice2);
     }
     free(rupp);
 

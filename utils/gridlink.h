@@ -70,7 +70,7 @@ struct cellarray_index * gridlink_index(const int64_t np,
                                  int *nlattice_x,
                                  int *nlattice_y,
                                  int *nlattice_z) __attribute__((warn_unused_result));
-    void free_cellarray_index(cellarray_index *lattice, const int64_t totncells, const int periodic);
+    void free_cellarray_index(cellarray_index *lattice, const int64_t totncells, const int free_wraps);
 void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *lattice2, const int64_t totncells,
                       const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                       const int nmesh_x, const int nmesh_y, const int nmesh_z,
