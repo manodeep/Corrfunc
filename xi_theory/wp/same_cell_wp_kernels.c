@@ -314,9 +314,9 @@ static inline void same_cell_sse_intrinsics(DOUBLE * x0, DOUBLE * y0, DOUBLE * z
             union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
             //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
-#pragma unroll(NVEC)
+#pragma unroll(SSE_NVEC)
 #endif
-            for(int jj=0;jj<NVEC;jj++) {
+            for(int jj=0;jj<SSE_NVEC;jj++) {
                 const int kbin = union_rpbin.ibin[jj];
                 const DOUBLE r = union_mDperp.Dperp[jj];
                 rpavg[kbin] += r;

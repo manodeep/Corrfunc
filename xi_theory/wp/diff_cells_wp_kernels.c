@@ -68,13 +68,13 @@ static inline void diff_cells_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
 #ifdef OUTPUT_RPAVG
             union int8 {
                 AVX_INTS m_ibin;
-                int ibin[NVEC];
+                int ibin[AVX_NVEC];
             };
             union int8 union_rpbin;
             
             union float8{
                 AVX_FLOATS m_Dperp;
-                DOUBLE Dperp[NVEC];
+                DOUBLE Dperp[AVX_NVEC];
             };
             union float8 union_mDperp;
 #endif
@@ -154,7 +154,7 @@ static inline void diff_cells_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
             union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
             //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
-#pragma unroll(NVEC)
+#pragma unroll(AVX_NVEC)
 #endif
             for(int jj=0;jj<AVX_NVEC;jj++) {
                 const int kbin = union_rpbin.ibin[jj];
@@ -330,7 +330,7 @@ static inline void diff_cells_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
             union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
             //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
-#pragma unroll(NVEC)
+#pragma unroll(SSE_NVEC)
 #endif
             for(int jj=0;jj<SSE_NVEC;jj++) {
                 const int kbin = union_rpbin.ibin[jj];
