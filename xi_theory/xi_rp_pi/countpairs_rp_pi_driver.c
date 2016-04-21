@@ -20,8 +20,7 @@
 //actual implementations. The appropriate
 //AVX or SSE header files are included in the
 //kernel files
-#undef __SSE4_2__    
-#undef __AVX__
+
 #include "countpairs_rp_pi_kernels.c"
 
 void countpairs_rp_pi_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
@@ -37,8 +36,6 @@ void countpairs_rp_pi_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N
 #endif
                              ,uint64_t *src_npairs)
 {
-
-
 
 #if defined(USE_AVX) && defined(__AVX__)
     /*----------------- AVX --------------------*/
@@ -77,15 +74,14 @@ void countpairs_rp_pi_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N
     for(int i=0;i<nbin;i++) {
         m_rupp_sqr[i] = SSE_SET_FLOAT(rupp_sqr[i]);
     }
-#ifdef OUTPUT_RPAVG
     SSE_FLOATS m_kbin[nbin];
     for(int i=0;i<nbin;i++) {
         m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
     }
-#endif//RPAVG + SSE
+
     countpairs_rp_pi_sse_intrinsics(x0, y0, z0, N0,
                                     x1, y1, z1, N1, same_cell,
-                                    sqr_rpmax, sqr_rpmin,  nbin, npibin, rupp_sqr, rpmax
+                                    sqr_rpmax, sqr_rpmin,  nbin, npibin, rupp_sqr, pimax
 #ifdef PERIODIC
                                     ,off_xwrap, off_ywrap, off_zwrap
 #endif                              
@@ -101,22 +97,23 @@ void countpairs_rp_pi_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N
 #else
 
     /*----------------- FALLBACK CODE --------------------*/
-    uint64_t npairs[nbin];
-    for(int i=0;i<nbin;i++) {
+    const int64_t totnbins = (npibin+1)*(nbin+1);
+    uint64_t npairs[totnbins];
+    for(int i=0;i<totnbins;i++) {
         npairs[i]=0;
     }
 #ifdef OUTPUT_RPAVG
-    DOUBLE rpavg[nbin];
-    for(int i=0;i<nbin;i++) {
+    DOUBLE rpavg[totnbins];
+    for(int i=0;i<totnbins;i++) {
         rpavg[i]=0;
     }
 #endif//OUTPUT_RPAVG
 
 #warning USING NAIVE CODE
-    /* fprintf(stderr,"In driver: N1 = %"PRId64" N2=%"PRId64"\n", N0, N1); */
+
     const DOUBLE dpi = pimax/npibin;
     const DOUBLE inv_dpi = 1.0/dpi;
-
+    
     /* naive implementation that is guaranteed to compile */
     for(int64_t i=0;i<N0;i++) {
 #ifdef PERIODIC        
@@ -149,7 +146,7 @@ void countpairs_rp_pi_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
             const DOUBLE dz = FABS((*localz1++ - zpos));
-            if(dz >= pimax) break;
+            if(dz >= pimax) continue;
             
             const DOUBLE r2 = dx*dx + dy*dy ;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
@@ -171,15 +168,13 @@ void countpairs_rp_pi_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N
             }
         }
     }
-
-    for(int i=0;i<nbin;i++) {
+    for(int i=0;i<totnbins;i++) {
         src_npairs[i] += npairs[i];
 #ifdef OUTPUT_RPAVG
         src_rpavg[i] += rpavg[i];
 #endif        
     }
     /*----------------- FALLBACK CODE --------------------*/
-    /* fprintf(stderr,"OUT OF driver: N1 = %"PRId64" N2=%"PRId64"\n", N0, N1); */
     return;
 
 #endif//SSE

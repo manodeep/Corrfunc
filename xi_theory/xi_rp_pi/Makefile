@@ -5,7 +5,7 @@ targets := DDrppi wprp
 SRC1   := DDrppi.c countpairs_rp_pi.c countpairs_rp_pi_driver.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c 
 INCL   := countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h countpairs_rp_pi_kernels.c
+		../../utils/defs.h countpairs_rp_pi_kernels.c countpairs_rp_pi_driver.h
 
 ifeq ($(OUTPUT_PGBAR), 1)
 SRC1 += ../../utils/progressbar.c
@@ -28,7 +28,7 @@ wprp: $(OBJS2) ../../theory.options ../../common.mk Makefile
 libs: lib
 lib: ../../lib/libcountpairs_rp_pi.a | ../../lib
 
-OBJS3 := countpairs_rp_pi.o ../../utils/gridlink.o ../../utils/utils.o
+OBJS3 := countpairs_rp_pi.o countpairs_rp_pi_driver.o ../../utils/gridlink.o ../../utils/utils.o
 ifeq ($(OUTPUT_PGBAR), 1)
   OBJS3 += ../../utils/progressbar.o
 endif

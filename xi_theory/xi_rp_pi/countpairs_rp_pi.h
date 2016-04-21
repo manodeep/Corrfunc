@@ -32,7 +32,7 @@ extern "C" {
 #endif
                                                 const int autocorr,
                                                 const char *binfile,
-                                                const double pimax)  __attribute__((warn_unused_result));
+                                                const DOUBLE pimax)  __attribute__((warn_unused_result));
 
     void free_results_rp_pi(results_countpairs_rp_pi **results);
 

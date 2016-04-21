@@ -20,7 +20,6 @@
 #include "progressbar.h" //for the progressbar
 #endif
 
-
 #include "countpairs_rp_pi_driver.h"
 
 #if defined(USE_OMP) && defined(_OPENMP)
@@ -53,28 +52,10 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBL
 #endif
                                             const int autocorr,
                                             const char *binfile,
-                                            const double pimax)
+                                            const DOUBLE pimax)
 {
-    int bin_refine_factor=1;
-    int zbin_refine_factor=2;
-    if(autocorr==1) {
-        bin_refine_factor=2;
-        zbin_refine_factor=2;
-    } else {
-        bin_refine_factor=1;
-        zbin_refine_factor=1;
-    }
-    /* #if defined(USE_OMP) && defined(_OPENMP) */
-    /*  if(numthreads > 1) { */
-    /*      if(autocorr==1) { */
-    /*          bin_refine_factor=2; */
-    /*          zbin_refine_factor=2; */
-    /*      } else { */
-    /*          bin_refine_factor=1; */
-    /*          zbin_refine_factor=1; */
-    /*      } */
-    /*  } */
-    /* #endif */
+    int bin_refine_factor=2;
+    int zbin_refine_factor=1;
     const int npibin = (int) pimax;
 #ifdef PERIODIC
     const int periodic = 1;
@@ -92,7 +73,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBL
     setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
     assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
     assert(nrpbin > 0 && "Number of rp bins is valid");
-
+    
     //Find the min/max of the data
     DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
     xmin=1e10;ymin=1e10;zmin=1e10;
@@ -114,10 +95,14 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBL
     fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
     fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
 #endif
+    const DOUBLE xdiff = (xmax-xmin);
+    const DOUBLE ydiff = (ymax-ymin);
+    const DOUBLE zdiff = (zmax-zmin);
+    if(rpmax < 0.05*xdiff) bin_refine_factor = 1;
 
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_index *lattice1 = gridlink_index(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+    cellarray_index *lattice1 = gridlink_index(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax,pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
         fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
@@ -137,9 +122,6 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBL
         lattice2 = lattice1;
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-    const DOUBLE xdiff = (xmax-xmin);
-    const DOUBLE ydiff = (ymax-ymin);
-    const DOUBLE zdiff = (zmax-zmin);
 
     //Generate the unique set of neighbouring cells to count over. 
     assign_ngb_cells(lattice1, lattice2, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff, autocorr, periodic);
@@ -276,17 +258,13 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBL
 #endif
                                         ,npairs);
 
-                interrupted=1;
             }
-            fprintf(stderr,"done with auto for index1=%"PRId64"\n",index1);
-            /* int64_t ngb_part = 0; */
             for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
                 const cellarray_index *second = first->ngb_cells[ngb];
                 if(second->nelements == 0) {
                     continue;
                 }
                 const int same_cell = 0;
-                /* ngb_part += second->nelements; */
                 DOUBLE *x2 = X2 + second->start;
                 DOUBLE *y2 = Y2 + second->start;
                 DOUBLE *z2 = Z2 + second->start;
@@ -297,7 +275,6 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBL
 #endif
                 
                 const int64_t N2 = second->nelements;
-                fprintf(stderr,"Running with ngb = %4"PRId64"\n", ngb);
 
                 countpairs_rp_pi_driver(x1, y1, z1, N1,
                                         x2, y2, z2, N2,
@@ -311,12 +288,7 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBL
 #endif
                                         ,npairs);
 
-                fprintf(stderr,"....done\n");
-                                
-                
             }//loop over ngb cells
-            fprintf(stderr,"done with index1 = %"PRId64"\n",index1);
-            
         }//index1 loop over totncells
 #if defined(USE_OMP) && defined(_OPENMP)
         for(int i=0;i<totnbins;i++) {
