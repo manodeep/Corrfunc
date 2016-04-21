@@ -25,8 +25,8 @@ extern "C" {
         int npibin;
     } results_countpairs_rp_pi;
 
-    results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, const DOUBLE *X1, const DOUBLE *Y1, const DOUBLE *Z1,
-                                                const int64_t ND2, const DOUBLE *X2, const DOUBLE *Y2, const DOUBLE *Z2,
+    results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
+                                                const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE *Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                 const int numthreads,
 #endif
