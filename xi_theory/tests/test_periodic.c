@@ -48,10 +48,11 @@
 #include "../xi_rp_pi/countpairs_rp_pi_driver.c"
 
 #include "../wp/countpairs_wp.c"
-#include "../wp/wp_kernels.c"
+#include "../wp/wp_driver.c"
 
 #include "../vpf/countspheres.c"
 #include "../xi/countpairs_xi.c"
+#include "../xi/xi_driver.c"
 
 char tmpoutputfile[]="./test_periodic_output.txt";
 
