@@ -20,24 +20,15 @@ extern "C" {
 #include "avx_calls.h"
 #endif
 
-void same_cell_wp_driver(const cellarray_index * first,
-                         DOUBLE * restrict const X,DOUBLE * restrict const Y, DOUBLE * restrict const Z, 
-                         const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax
-#ifdef OUTPUT_RPAVG
-                         ,DOUBLE *src_rpavg
-#endif                         
-                         ,uint64_t *src_npairs);
-
-
     
-void diff_cells_wp_driver(const cellarray_index * first, const cellarray_index *second,
-                          DOUBLE * restrict const X,DOUBLE * restrict const Y,DOUBLE * restrict const Z,
-                          const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
-                          const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+    void wp_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                   DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
+                   const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                   const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
 #ifdef OUTPUT_RPAVG
-                          ,DOUBLE *src_rpavg
+                   ,DOUBLE *src_rpavg
 #endif                         
-                          ,uint64_t *src_npairs);
+                   ,uint64_t *src_npairs);
     
 #ifdef __cplusplus
 }

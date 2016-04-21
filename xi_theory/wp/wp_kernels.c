@@ -1,4 +1,4 @@
-/* File: same_cell_wp_kernels.c */
+/* File: wp_kernels.c */
 /*
   This file is a part of the Corrfunc package
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
@@ -18,17 +18,20 @@
 #include "utils.h"
 #include "function_precision.h"
 
+
 #if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
 
-static inline void same_cell_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                            const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax
-                                            ,const AVX_FLOATS *m_rupp_sqr
+static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                     DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
+                                     const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                                     const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                     ,const AVX_FLOATS *m_rupp_sqr
 #ifdef OUTPUT_RPAVG
-                                            ,const AVX_FLOATS *m_kbin
-                                            ,DOUBLE *src_rpavg
+                                     ,const AVX_FLOATS *m_kbin
+                                     ,DOUBLE *src_rpavg
 #endif                         
-                                            ,uint64_t *src_npairs)
+                                     ,uint64_t *src_npairs)
 {
     uint64_t *npairs = my_calloc(sizeof(*npairs), nbin);
 #ifdef OUTPUT_RPAVG
@@ -36,20 +39,35 @@ static inline void same_cell_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
     for(int i=0;i<nbin;i++) {
         rpavg[i] = ZERO;
     }
-#endif    
+#endif
     
     for(int64_t i=0;i<N0;i++) {
-        const DOUBLE xpos = *x0++;
-        const DOUBLE ypos = *y0++;
-        const DOUBLE zpos = *z0++;
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
 
-        DOUBLE *x1 = x0;
-        DOUBLE *y1 = y0;
-        DOUBLE *z1 = z0;
+        DOUBLE *localz1 = (DOUBLE *) z1;
 
-		int64_t j = i+1;
-		for(;j<=(N0 - AVX_NVEC);j+=AVX_NVEC){
+        int64_t j=0;
+        if(same_cell == 1) {
+            j = i+1;
+            localz1 += j;
+        } else {
+            while(j < N1){
+                const DOUBLE dz = *localz1++ - zpos;
+                if(dz > -pimax) break;
+                j++;
+            }
+            localz1--;
+        }
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
 
+        for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
+            const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
+            const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
+            const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(zpos);
+            
 #ifdef OUTPUT_RPAVG
             union int8 {
                 AVX_INTS m_ibin;
@@ -63,28 +81,23 @@ static inline void same_cell_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
             };
             union float8 union_mDperp;
 #endif
-            const AVX_FLOATS m_xpos = AVX_SET_FLOAT(xpos);
-            const AVX_FLOATS m_ypos = AVX_SET_FLOAT(ypos);
-            const AVX_FLOATS m_zpos = AVX_SET_FLOAT(zpos);
-
-
-            const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(x1);
-			const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(y1);
-			const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(z1);
+            const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
+            const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
+            const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
             
-			x1 += AVX_NVEC;
-			y1 += AVX_NVEC;
-			z1 += AVX_NVEC;
+            localx1 += AVX_NVEC;//this might actually exceed the allocated range but we will never dereference that
+            localy1 += AVX_NVEC;
+            localz1 += AVX_NVEC;
 
             const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
             const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
             const AVX_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
             
-			const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_x1, m_xpos));
-            const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_y1, m_ypos));
-            const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1, m_zpos);
-            
+            const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1, m_zpos);//z2[j:j+NVEC-1] - z1
+            const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x1));//(x0 - x[j])^2
+            const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y1));//(y0 - y[j])^2
             AVX_FLOATS r2  = AVX_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
+            
             AVX_FLOATS m_mask_left;
             
             //Do all the distance cuts using masks here in new scope
@@ -94,22 +107,14 @@ static inline void same_cell_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                 //that implies the zdiff values are also monotonically increasing
                 //Therefore, if none of the zdiff values are less than pimax, then
                 //no future iteration in j can produce a zdiff value less than pimax.
-                //The code terminates the j-loop early in that case (and also sets
-                //j equal to first->nelements to ensure that the remainder loop
-                //does not run either.
                 AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
                 if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
-                    //If the execution reaches here -> then none of the AVX_NVEC zdiff values
-                    //are smaller than pimax. We can terminate the j-loop now.
-                    
-                    //set j so that the remainder loop does not run
-                    j = N0;
-                    //break out of the j-loop
+                    //None of the dz^2 values satisfies dz^2 < pimax^2
+                    // => no pairs can be added -> continue and process the next NVEC
+                    j=N1;
                     break;
                 }
                 
-                /* //Create a mask with true bits when  0 <= zdiff < pimax. */
-                /* m_mask_pimax = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_zdiff,m_zero,_CMP_GE_OS),m_mask_pimax); */
                 const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
                 const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
                 const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
@@ -117,14 +122,13 @@ static inline void same_cell_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                 //Create a combined mask by bitwise and of m1 and m_mask_left.
                 //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
                 m_mask_left = AVX_BITWISE_AND(m_mask_pimax,m_rp_mask);
-
                 
                 //If not, continue with the next iteration of j-loop
                 if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
                     continue;
                 }
                 
-                //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && dz < pimax.
+                //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
                 r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
             }
             
@@ -161,57 +165,68 @@ static inline void same_cell_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                 rpavg[kbin] += r;
             }
 #endif//OUTPUT_RPAVG
-		}//j loop		
 
-        //remainder j loop
-		for(;j<N0;j++) {
-            const DOUBLE dx = *x1++ - xpos;
-            const DOUBLE dy = *y1++ - ypos;
-            const DOUBLE dz = *z1++ - zpos;
-            if(dz >= pimax) break;
+        }//end of j-loop
+        
+        //remainder loop 
+        for(;j<N1;j++){
+            const DOUBLE dz = *localz1++ - zpos;
+            const DOUBLE dx = *localx1++ - xpos;
+            const DOUBLE dy = *localy1++ - ypos;
 
+            if(dz >= pimax) {
+                break;
+            } 
+            
             const DOUBLE r2 = dx*dx + dy*dy;
-            if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
+            if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
+                continue;
+            }
             
 #ifdef OUTPUT_RPAVG
             const DOUBLE r = SQRT(r2);
 #endif
-          
-		  for(int kbin=nbin-1;kbin>=1;kbin--){
-				if(r2 >= rupp_sqr[kbin-1]) {
-					npairs[kbin]++;
+
+            
+            for(int kbin=nbin-1;kbin>=1;kbin--) {
+                if(r2 >= rupp_sqr[kbin-1]) {
+                    npairs[kbin]++;
 #ifdef OUTPUT_RPAVG
                     rpavg[kbin] += r;
-                    
-#endif                    
-					break;
-				}
-		  }//searching for kbin loop
-		}//remainder j loop
-	}//i-loop over all particles in cell
+#endif
+                    break;
+                }
+            }
+        }//remainder loop over second set of particles
+    }//loop over first set of particles
 
-	for(int i=0;i<nbin;i++) {
-		src_npairs[i] += npairs[i];
+    for(int i=0;i<nbin;i++) {
+        src_npairs[i] += npairs[i];
 #ifdef OUTPUT_RPAVG
-        src_rpavg[i] += rpavg[i];
+        src_rpavg[i]  += rpavg[i];
 #endif        
-	}
-	free(npairs);
+    }
+    free(npairs);
+    
 }
-#endif//AVX
+
+#endif //__AVX__
+
 
 
 #if defined (__SSE4_2__)
 #include "sse_calls.h"
 
-static inline void same_cell_sse_intrinsics(DOUBLE * x0, DOUBLE * y0, DOUBLE * z0, const int64_t N0,
-                                            const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax
-                                            ,const SSE_FLOATS m_rupp_sqr[] 
+static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                     DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
+                                     const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
+                                     const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                     ,const SSE_FLOATS *m_rupp_sqr
 #ifdef OUTPUT_RPAVG
-                                            ,const SSE_FLOATS m_kbin[]
-                                            ,DOUBLE src_rpavg[]
+                                     ,const SSE_FLOATS *m_kbin
+                                     ,DOUBLE *src_rpavg
 #endif                         
-                                            ,uint64_t *src_npairs)
+                                     ,uint64_t *src_npairs)
 {
     uint64_t *npairs = my_calloc(sizeof(*npairs), nbin);
 #ifdef OUTPUT_RPAVG
@@ -219,20 +234,31 @@ static inline void same_cell_sse_intrinsics(DOUBLE * x0, DOUBLE * y0, DOUBLE * z
     for(int i=0;i<nbin;i++) {
         rpavg[i] = ZERO;
     }
-#endif    
+#endif
 
     for(int64_t i=0;i<N0;i++) {
-        const DOUBLE xpos = *x0++;
-        const DOUBLE ypos = *y0++;
-        const DOUBLE zpos = *z0++;
-        
-		DOUBLE *x1 = x0;
-		DOUBLE *y1 = y0;
-		DOUBLE *z1 = z0;
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
 
-		int64_t j = i+1;		
-		for(;j<=(N0 - SSE_NVEC);j+=SSE_NVEC){
 
+        DOUBLE *localz1 = z1;
+        int64_t j=0;
+        if(same_cell == 1) {
+            j = i+1;
+            localz1 += j;
+        } else {
+            while(j < N1){
+                const DOUBLE dz = *localz1++ - zpos;
+                if(dz > -pimax) break;
+                j++;
+            }
+            localz1--;
+        }
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
+
+		for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
 #ifdef OUTPUT_RPAVG
             union int4{
                 SSE_INTS m_ibin;
@@ -250,20 +276,16 @@ static inline void same_cell_sse_intrinsics(DOUBLE * x0, DOUBLE * y0, DOUBLE * z
             const SSE_FLOATS m_ypos = SSE_SET_FLOAT(ypos);
             const SSE_FLOATS m_zpos = SSE_SET_FLOAT(zpos);
 
-            const SSE_FLOATS m_x1 = SSE_LOAD_FLOATS_UNALIGNED(x1);
-			const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(y1);
-			const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(z1);
+            const SSE_FLOATS m_x1 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
+			const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
+			const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
 
-			x1 += SSE_NVEC;
-			y1 += SSE_NVEC;
-			z1 += SSE_NVEC;
+			localx1 += SSE_NVEC;
+			localy1 += SSE_NVEC;
+			localz1 += SSE_NVEC;
 
             const SSE_FLOATS m_pimax = SSE_SET_FLOAT(pimax);
-            /* const SSE_FLOATS m_zero  = SSE_SET_FLOAT(ZERO); */
-            
-            //set constant := sqr_rpmax
 			const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
-			//set constant := sqr_rpmin
 			const SSE_FLOATS m_sqr_rpmin = SSE_SET_FLOAT(sqr_rpmin);
 			
 
@@ -276,7 +298,7 @@ static inline void same_cell_sse_intrinsics(DOUBLE * x0, DOUBLE * y0, DOUBLE * z
 			{
                 const SSE_FLOATS m_pimax_mask = SSE_COMPARE_FLOATS_LT(m_zdiff,m_pimax);
                 if(SSE_TEST_COMPARISON(m_pimax_mask) == 0) {
-                    j = N0;
+                    j = N1;
                     break;
                 }
                 
@@ -325,10 +347,10 @@ static inline void same_cell_sse_intrinsics(DOUBLE * x0, DOUBLE * y0, DOUBLE * z
             
 		}			
 
-		for(;j<N0;j++) {
-			const DOUBLE dx = *x1++ - xpos;
-			const DOUBLE dy = *y1++ - ypos;
-			const DOUBLE dz = *z1++ - zpos;
+		for(;j<N1;j++) {
+			const DOUBLE dx = *localx1++ - xpos;
+			const DOUBLE dy = *localy1++ - ypos;
+			const DOUBLE dz = *localz1++ - zpos;
             if(dz >= pimax) break;
             
 			const DOUBLE r2 = dx*dx + dy*dy;
@@ -358,5 +380,4 @@ static inline void same_cell_sse_intrinsics(DOUBLE * x0, DOUBLE * y0, DOUBLE * z
 	free(npairs);
 }
 
-#endif //SSE 4.2
-
+#endif //__SSE4_2__

@@ -15,7 +15,7 @@ OBJS1  := $(SRC1:.c=.o)
 INCL   := ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c \
 	../xi_of_r/countpairs.c ../xi_of_r/countpairs_driver.c ../xi_of_r/countpairs_kernels.c \
         ../xi_rp_pi/countpairs_rp_pi.c ../xi_rp_pi/countpairs_rp_pi_driver.c ../xi_rp_pi/countpairs_rp_pi_kernels.c \
-        ../wp/countpairs_wp.c ../wp/wp_driver.c ../wp/same_cell_wp_kernels.c ../wp/diff_cells_wp_kernels.c \
+        ../wp/countpairs_wp.c ../wp/wp_driver.c ../wp/wp_kernels.c \
 	../vpf/countspheres.c \
         ../xi/countpairs_xi.c ../xi/xi_driver.c ../xi/xi_kernels.c
 
