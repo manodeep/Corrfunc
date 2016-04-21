@@ -90,6 +90,6 @@ extern "C" {
 #define SSE_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm_blendv_pd(FALSEVALUE,TRUEVALUE,MASK)
 
 
-
+#define SSE_MAX_FLOATS(X,Y)               _mm_max_pd(X,Y)
 
 #endif
