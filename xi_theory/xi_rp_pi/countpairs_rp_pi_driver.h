@@ -22,7 +22,7 @@ void countpairs_rp_pi_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N
 #ifdef PERIODIC
                              ,const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
 #endif                        
-                             ,const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin, const DOUBLE *rupp_sqr, const DOUBLE rpmax
+                             ,const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin, const DOUBLE *rupp_sqr, const DOUBLE pimax
                              
 #ifdef OUTPUT_RPAVG
                              ,DOUBLE *src_rpavg
