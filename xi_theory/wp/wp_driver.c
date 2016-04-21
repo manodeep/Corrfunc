@@ -1,4 +1,4 @@
-/* File: wp_kernels.c */
+/* File: wp_driver.c */
 /*
   This file is a part of the Corrfunc package
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
@@ -16,7 +16,7 @@
 #include "defs.h"
 #include "function_precision.h"
 #include "cellarray.h" //definition of struct cellarray_index
-#include "wp_kernels.h"//the function prototypes
+#include "wp_driver.h"//the function prototypes
 
 //directly include the kernel files with
 //actual implementation. 

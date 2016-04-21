@@ -20,7 +20,7 @@
 #include "gridlink.h"//function proto-type for gridlink
 #include "countpairs_wp.h" //function proto-type
 
-#include "wp_kernels.h" //all kernel proto-types
+#include "wp_driver.h" //all kernel proto-types
 
 #ifndef SILENT
 #include "progressbar.h" //for the progressbar

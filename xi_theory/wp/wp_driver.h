@@ -1,4 +1,4 @@
-/* File: wp_kernels.h */
+/* File: wp_driver.h */
 /*
   This file is a part of the Corrfunc package
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
