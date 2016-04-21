@@ -44,8 +44,9 @@
 #include "ftread.c"
 #include "../xi_of_r/countpairs.c"
 #include "../xi_of_r/countpairs_driver.c"
-#include "../xi_rp_pi/countpairs_rp_pi.c"
 
+#include "../xi_rp_pi/countpairs_rp_pi.c"
+#include "../xi_rp_pi/countpairs_rp_pi_driver.c"
 
 char tmpoutputfile[]="./test_nonperiodic_output.txt";
 
