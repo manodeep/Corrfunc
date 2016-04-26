@@ -153,7 +153,7 @@ extern "C" {
     {
         union cos{
             AVX_FLOATS m;
-            DOUBLE x[NVEC];
+            DOUBLE x[AVX_NVEC];
         };
         union cos union_costheta;
         union cos union_returnvalue;
@@ -162,7 +162,7 @@ extern "C" {
         const DOUBLE one = (DOUBLE) 1.0;
         const DOUBLE zero = (DOUBLE) 0.0;
 
-        for(int ii=0;ii<NVEC;ii++) {
+        for(int ii=0;ii<AVX_NVEC;ii++) {
             const DOUBLE costheta = union_costheta.x[ii];
             if(costheta < minus_one) {
                 union_returnvalue.x[ii] = M_PI;

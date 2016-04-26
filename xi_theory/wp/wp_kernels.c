@@ -26,20 +26,25 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                                      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
                                      const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
                                      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                     ,const AVX_FLOATS *m_rupp_sqr
 #ifdef OUTPUT_RPAVG
-                                     ,const AVX_FLOATS *m_kbin
                                      ,DOUBLE *src_rpavg
 #endif                         
                                      ,uint64_t *src_npairs)
 {
     uint64_t *npairs = my_calloc(sizeof(*npairs), nbin);
+    AVX_FLOATS m_rupp_sqr[nbin];
+    for(int i=0;i<nbin;i++) {
+        m_rupp_sqr[i] = AVX_SET_FLOAT(rupp_sqr[i]);
+    }
 #ifdef OUTPUT_RPAVG
+    AVX_FLOATS m_kbin[nbin];
     DOUBLE rpavg[nbin];
     for(int i=0;i<nbin;i++) {
+        m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
         rpavg[i] = ZERO;
     }
-#endif
+#endif//RPAVG + AVX
+
     
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
@@ -63,6 +68,7 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
 
+#pragma unroll(2)
         for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
             const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
             const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
@@ -209,7 +215,6 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
     free(npairs);
     
 }
-
 #endif //__AVX__
 
 
@@ -221,13 +226,22 @@ static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                                      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
                                      const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
                                      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                     ,const SSE_FLOATS *m_rupp_sqr
 #ifdef OUTPUT_RPAVG
-                                     ,const SSE_FLOATS *m_kbin
                                      ,DOUBLE *src_rpavg
 #endif                         
                                      ,uint64_t *src_npairs)
 {
+    SSE_FLOATS m_rupp_sqr[nbin];
+    for(int i=0;i<nbin;i++) {
+        m_rupp_sqr[i] = SSE_SET_FLOAT(rupp_sqr[i]);
+    }
+#ifdef OUTPUT_RPAVG
+    SSE_FLOATS m_kbin[nbin];
+    for(int i=0;i<nbin;i++) {
+        m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
+    }
+#endif//RPAVG + SSE
+    
     uint64_t *npairs = my_calloc(sizeof(*npairs), nbin);
 #ifdef OUTPUT_RPAVG
     DOUBLE rpavg[nbin];
@@ -381,3 +395,83 @@ static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
 }
 
 #endif //__SSE4_2__
+
+
+
+//Fallback code that should always compile
+static inline void wp_fallback(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                               DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
+                               const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
+                               const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+#ifdef OUTPUT_RPAVG
+                               ,DOUBLE *src_rpavg
+#endif                         
+                               ,uint64_t *src_npairs)
+{
+
+    /*----------------- FALLBACK CODE --------------------*/
+    uint64_t npairs[nbin];
+    for(int i=0;i<nbin;i++) {
+        npairs[i]=0;
+    }
+#ifdef OUTPUT_RPAVG
+    DOUBLE rpavg[nbin];
+    for(int i=0;i<nbin;i++) {
+        rpavg[i]=0;
+    }
+#endif//OUTPUT_RPAVG
+
+    /* naive implementation that is guaranteed to compile */
+    for(int64_t i=0;i<N0;i++) {
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
+
+        DOUBLE *localz1 = (DOUBLE *) z1; 
+        int64_t j=0;
+        if(same_cell == 1) {
+            j = i+1;
+            localz1 += j;
+        } else {
+            while(j < N1){
+                const DOUBLE dz = *localz1++ - zpos;
+                if(dz > -pimax) break;
+                j++;
+            }
+            localz1--;
+        }
+        DOUBLE *localx1 = x1 + j; 
+        DOUBLE *localy1 = y1 + j;
+
+        
+        for(;j<N1;j++) {
+            const DOUBLE dx = *localx1++ - xpos;
+            const DOUBLE dy = *localy1++ - ypos;
+            const DOUBLE dz = *localz1++ - zpos;
+            if(dz >=pimax) break;
+
+            const DOUBLE r2 = dx*dx + dy*dy;
+            if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
+#ifdef OUTPUT_RPAVG
+            const DOUBLE r = SQRT(r2);
+#endif
+            for(int kbin=nbin-1;kbin>=1;kbin--){
+                if(r2 >= rupp_sqr[kbin-1]) {
+                    npairs[kbin]++;
+#ifdef OUTPUT_RPAVG
+                    rpavg[kbin] += r;
+#endif                    
+                    break;
+                }
+            }//searching for kbin loop                                                               
+        }
+    }
+
+    for(int i=0;i<nbin;i++) {
+        src_npairs[i] += npairs[i];
+#ifdef OUTPUT_RPAVG
+        src_rpavg[i] += rpavg[i];
+#endif        
+    }
+    /*----------------- FALLBACK CODE --------------------*/
+}
