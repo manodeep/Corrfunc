@@ -111,7 +111,7 @@ def main():
                   100.0*len(good)/len(ind)))
 
         fig = plt.figure(1, figsize=(8, 8))
-        figsize = 0.7
+        figsize = 0.6
         left = 0.1
         bottom = 0.1
         top_aspect = 0.15
@@ -123,6 +123,18 @@ def main():
         axhist.axis('off')
         axhist.hist(N1_parts[ind], gridsize, range=xlimits,
                     color='0.5')
+
+        hist_time_area = [left + figsize, bottom, figsize*top_aspect, figsize]
+        ax_time = plt.axes(hist_time_area)
+        ax_time.autoscale(enable=True, axis="x")
+        ax_time.set_ylim(ylimits)
+        plt.setp(ax_time.get_yticklabels(), visible=False)
+        plt.setp(ax_time.get_xticklabels(), visible=False)
+        ax_time.axis('off')
+        ax_time.hist(N1_parts[ind], gridsize, weights=this_timing[ind],
+                     range=xlimits, orientation="horizontal",
+                     color='0.5')
+        
         im_area = [left, bottom, figsize, figsize]
         ax = plt.axes(im_area)
         ax.set_autoscale_on(False)
@@ -168,9 +180,10 @@ def main():
                        cmap=mycmap, gridsize=gridsize)
         plt.figtext(left+figsize-0.03, bottom+figsize-0.05,
                     '{0}'.format(legend[i]), fontsize=16, ha='right')
-        cbar_offset = 0.05
+        cbar_offset = 0.08
         cbar_width = 0.03
-        cbar_ax = fig.add_axes([left + figsize + cbar_offset, bottom,
+        cbar_ax = fig.add_axes([left + figsize + figsize*top_aspect +
+                                cbar_offset, bottom,
                                 cbar_width, figsize])
         cb = fig.colorbar(im, extend='both', format="%.1f",
                           ticks=np.linspace(cb_range[0], cb_range[1],
@@ -184,6 +197,7 @@ def main():
         fig.clear()
         ax.clear()
         axhist.clear()
+        ax_time.clear()
         plt.close(fig)
         
 if __name__ == '__main__':
