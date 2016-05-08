@@ -8,6 +8,14 @@ parallelized clustering measures in a cosmological box (co-moving XYZ)
 or on a mock (RA, DEC, CZ). Also, contains the associated paper to be
 published in Astronomy & Computing Journal (at some point).
 
+Why Should You Use it
+======================
+
+1. **Fast** All theory pair-counting is at least an order of magnitude faster than all existing public codes. Particularly suited for MCMC. 
+2. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
+3. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
+4. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
+
 Installation
 ============
 
@@ -56,7 +64,7 @@ python C extensions in your environment, then
 Alternative
 -----------
 
-The python package is directly installable via ``pip install Corrfunc``.
+The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Not recommended unless you are desperate (i.e., `email me <mailto:manodeep@gmail.com>`__ if you are having install issues). 
 
 Installation notes
 ------------------
