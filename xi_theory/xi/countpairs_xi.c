@@ -815,7 +815,7 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
 #endif
 
         const DOUBLE weight0 = (DOUBLE) results->npairs[i];
-        const DOUBLE vol=M_PI*(rupp[i]*rupp[i]*rupp[i]-rlow*rlow*rlow);
+        const DOUBLE vol=4.0/3.0*M_PI*(rupp[i]*rupp[i]*rupp[i]-rlow*rlow*rlow);
         /* compute xi, dividing summed weight by that expected for a random set */
         const DOUBLE weightrandom = prefac_density*vol;
         assert(weightrandom > 0 && "Random weight is <= 0.0 - that is impossible");
