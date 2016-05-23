@@ -65,7 +65,7 @@ def main():
     ylabel = xlabel
 
     cb_diff = (cb_range[1] - cb_range[0])
-    positive_Ncolors = int((cb_range[1]-1.0)/cb_diff * 256)
+    positive_Ncolors = int((cb_range[1] - 1.0) / cb_diff * 256)
     negative_Ncolors = 256 - positive_Ncolors
     colors1 = cm.OrRd(np.linspace(0.0, 1.0, negative_Ncolors))
     colors2 = cm.viridis(np.linspace(0.0, 1.0, positive_Ncolors))
@@ -78,13 +78,13 @@ def main():
         cntr_fmt = r'%r\%%'
     else:
         cntr_fmt = '%r%%'
-    
+
     for i in xrange(numfiles):
         if i == 0:
             continue
         this_timing = (all_timings[i])['time']
         ind = (np.where((this_timing > 0.0) & (base_timing > 0.0)))[0]
-        speedup = base_timing[ind]/this_timing[ind]
+        speedup = base_timing[ind] / this_timing[ind]
         all_speedup.append(speedup)
         print("Min speedup = {0}. Max = {1}".format(
             min(speedup), max(speedup)))
@@ -97,8 +97,8 @@ def main():
                   legend[i],
                   bad_timings,
                   len(bad),
-                  100.0*len(bad)/len(ind)))
-        
+                  100.0 * len(bad) / len(ind)))
+
         good = (np.where(speedup > 1.0))[0]
         good_timings_base = np.sum(base_timing[ind[good]])
         good_timings = np.sum(this_timing[ind[good]])
@@ -108,14 +108,14 @@ def main():
                   legend[i],
                   good_timings,
                   len(good),
-                  100.0*len(good)/len(ind)))
+                  100.0 * len(good) / len(ind)))
 
         fig = plt.figure(1, figsize=(8, 8))
         figsize = 0.7
         left = 0.1
         bottom = 0.1
         top_aspect = 0.15
-        hist_area = [left, bottom+figsize, figsize, figsize*top_aspect]
+        hist_area = [left, bottom + figsize, figsize, figsize * top_aspect]
         axhist = plt.axes(hist_area)
         axhist.autoscale(enable=True, axis="y")
         axhist.set_xlim(xlimits)
@@ -166,7 +166,7 @@ def main():
         im = ax.hexbin(N1_parts[ind], N2_parts[ind], C=speedup[ind],
                        vmin=cb_range[0], vmax=cb_range[1],
                        cmap=mycmap, gridsize=gridsize)
-        plt.figtext(left+figsize-0.03, bottom+figsize-0.05,
+        plt.figtext(left + figsize - 0.03, bottom + figsize - 0.05,
                     '{0}'.format(legend[i]), fontsize=16, ha='right')
         cbar_offset = 0.05
         cbar_width = 0.03
@@ -174,7 +174,7 @@ def main():
                                 cbar_width, figsize])
         cb = fig.colorbar(im, extend='both', format="%.1f",
                           ticks=np.linspace(cb_range[0], cb_range[1],
-                                            cb_diff+1.0),
+                                            cb_diff + 1.0),
                           cax=cbar_ax)
         cb.set_label('Speedup rel. to non-vectorized code')
         plt.savefig('{1}_Speedup_{0}.png'.format(legend[i], base_string),
@@ -185,6 +185,6 @@ def main():
         ax.clear()
         axhist.clear()
         plt.close(fig)
-        
+
 if __name__ == '__main__':
     main()
