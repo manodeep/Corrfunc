@@ -68,7 +68,9 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
 
+#if __INTEL_COMPILER            
 #pragma unroll(2)
+#endif        
         for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
             const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
             const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
