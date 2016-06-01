@@ -245,9 +245,7 @@ Common Code options for both Mocks and Cosmological Boxes
    Enabled by default - code will run much slower if the CPU does not
    support AVX instructions. On Linux, check for "avx" in /proc/cpuinfo
    under flags. If you do not have AVX, but have a SSE4 system instead,
-   email me - I will send you a copy of the code with SSE4 intrinsics.
-   Or, take the relevant SSE code from the public repo at
-   `pairwise <https://manodeep.github.io/pairwise>`__.
+   then check the ``develop`` branch for the SSE4 code. 
 
 3. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD
    (perfect scaling up to 12 threads in my tests) and okay (runtime
