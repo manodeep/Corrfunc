@@ -1,14 +1,11 @@
-include ../../theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../theory.options ../../common.mk
 
 targets := DDrppi wprp
 
-SRC1   := DDrppi.c countpairs_rp_pi.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c 
+SRC1   := DDrppi.c countpairs_rp_pi.c countpairs_rp_pi_driver.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c 
 INCL   := countpairs_rp_pi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
 		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h 
+		../../utils/defs.h countpairs_rp_pi_kernels.c countpairs_rp_pi_driver.h
 
 ifeq ($(OUTPUT_PGBAR), 1)
 SRC1 += ../../utils/progressbar.c
@@ -31,7 +28,7 @@ wprp: $(OBJS2) ../../theory.options ../../common.mk Makefile
 libs: lib
 lib: ../../lib/libcountpairs_rp_pi.a | ../../lib
 
-OBJS3 := countpairs_rp_pi.o ../../utils/gridlink.o ../../utils/utils.o
+OBJS3 := countpairs_rp_pi.o countpairs_rp_pi_driver.o ../../utils/gridlink.o ../../utils/utils.o
 ifeq ($(OUTPUT_PGBAR), 1)
   OBJS3 += ../../utils/progressbar.o
 endif
@@ -65,13 +62,8 @@ distclean:clean | ../../lib ../../include ../../bin
 	$(RM) ../../lib/libcountpairs_rp_pi.a ../../include/countpairs_rp_pi.h
 	cd ../../bin && $(RM) $(targets)
 
-tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
+tests: $(SRC1)
 	$(MAKE) -C ../tests xi_rp_pi
 
-../tests/tests_periodic:
-	$(MAKE) -C ../tests
-
-../tests/tests_nonperiodic:
-	$(MAKE) -C ../tests
 
 

@@ -14,14 +14,16 @@ MINOR:=0
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
-
-
 DO_CHECKS := 1
 ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
 endif
 
 ifeq (distclean,$(findstring distclean,$(MAKECMDGOALS)))
+  DO_CHECKS := 0
+endif
+
+ifeq (realclean,$(findstring realclean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
 endif
 

@@ -56,12 +56,17 @@ void free_cellarray_nvec(cellarray_nvec *lattice, const int64_t totncells)
     free(lattice);
 }
 
-void free_cellarray_index(cellarray_index *lattice, const int64_t totncells)
+void free_cellarray_index(cellarray_index *lattice, const int64_t totncells, const int free_wraps)
 {
+    
     for(int64_t i=0;i<totncells;i++){
-        free(lattice[i].xwrap);
-        free(lattice[i].ywrap);
-        free(lattice[i].zwrap);
+        if(lattice[i].nelements == 0) continue;
+
+        if(free_wraps == 1) {
+            free(lattice[i].xwrap);
+            free(lattice[i].ywrap);
+            free(lattice[i].zwrap);
+        }
         free(lattice[i].ngb_cells);
     }
     free(lattice);
@@ -457,7 +462,7 @@ struct cellarray_index * gridlink_index(const int64_t np,
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);                   \
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);\
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t,cell_index,i,j)}
-    
+
     SGLIB_ARRAY_QUICK_SORT(int64_t, cell_index, np, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
 
@@ -476,79 +481,10 @@ struct cellarray_index * gridlink_index(const int64_t np,
     }
     free(cell_index);
     
-
-    /* Now figure out the neighbouring cells*/
-    //First create a giant list of cells opened
-    bool *opened = my_malloc(sizeof(bool), totncells * totncells);
-    for(int64_t i=0;i < totncells * totncells; i++) {
-        opened[i] = false;
-    }
-    //WARNING: This only loops forward in z -> should be used only for wp/xi
-    const int64_t nx_ngb = 2*xbin_refine_factor + 1;
-    const int64_t ny_ngb = 2*ybin_refine_factor + 1;
-    const int64_t nz_ngb = zbin_refine_factor + 1;
-    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
-
-    for(int64_t icell=0;icell<totncells;icell++) {
-        const int iz = icell % nmesh_z;
-        const int ix = icell / (nmesh_y * nmesh_z );
-        const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
-        XASSERT(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz),
-                ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
-                icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
-        
-        struct cellarray_index *first = &(lattice[icell]);
-        first->num_ngb = 0;
-        first->xwrap = my_calloc(sizeof(*(first->xwrap)), max_ngb_cells);
-        first->ywrap = my_calloc(sizeof(*(first->ywrap)), max_ngb_cells);
-        first->zwrap = my_calloc(sizeof(*(first->zwrap)), max_ngb_cells);
-        first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
-
-        for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
-            const int iiix = (ix + iix + nmesh_x) % nmesh_x;
-            const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
-            
-            for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
-                const int iiiy = (iy + iiy + nmesh_y) % nmesh_y;
-                const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
-
-                /* If you need to double-count pairs, change the initialization of iiz to -zbin_refine_factor.
-                   Also, change nz_ngb to 2*zbin_refine_factor + 1, and change the wrapping for off_zwrap and make it same as off_xwrap/off_ywrap */
-                for(int64_t iiz=0;iiz<=zbin_refine_factor;iiz++){
-                    const int iiiz = (iz + iiz + nmesh_z) % nmesh_z;
-                    const DOUBLE off_zwrap = ((iz + iiz) < nmesh_z) ? 0.0:-zdiff;
-                    const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
-                    if(icell2 == icell) {
-                        continue;
-                    }
-                    const int64_t index1 = icell2 * totncells + icell;
-                    const int64_t index2 = icell * totncells + icell2;
-
-                    if(opened[index1] == true) {
-                        continue;
-                    }
-
-                    const int64_t ngb_index = first->num_ngb;
-                    XASSERT(ngb_index < max_ngb_cells,"ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
-                    first->ngb_cells[ngb_index] = &(lattice[icell2]);
-                    first->xwrap[ngb_index] = off_xwrap;
-                    first->ywrap[ngb_index] = off_ywrap;
-                    first->zwrap[ngb_index] = off_zwrap;
-                    first->num_ngb++;
-
-                    opened[index1] = true;
-                    opened[index2] = true;
-                }
-            }
-        }
-
-    }
-    free(opened);
-    
     *nlattice_x=nmesh_x;
     *nlattice_y=nmesh_y;
     *nlattice_z=nmesh_z;
-    
+
 #ifndef SILENT
     gettimeofday(&t1,NULL);
     fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
@@ -556,4 +492,113 @@ struct cellarray_index * gridlink_index(const int64_t np,
     return lattice;
 }
 
+
+void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *lattice2, const int64_t totncells,
+                      const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
+                      const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                      const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff, 
+                      const int autocorr, const int periodic)
+{
+    /* Now figure out the neighbouring cells*/
+    //First create a giant list of cells opened
+    bool *opened=NULL;
+    if(autocorr == 1) {
+        opened = my_malloc(sizeof(bool), totncells * totncells);
+        for(int64_t i=0;i < totncells * totncells; i++) {
+            opened[i] = false;
+        }
+    }
+
+    const int64_t nx_ngb = 2*xbin_refine_factor + 1;
+    const int64_t ny_ngb = 2*ybin_refine_factor + 1;
+    const int64_t nz_ngb = (autocorr == 0) ? 2*zbin_refine_factor + 1: zbin_refine_factor+1;
+    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
+
+    for(int64_t icell=0;icell<totncells;icell++) {
+        struct cellarray_index *first = &(lattice1[icell]);
+        if(first->nelements == 0) continue;
+        const int iz = icell % nmesh_z;
+        const int ix = icell / (nmesh_y * nmesh_z );
+        const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
+        XASSERT(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz),
+                ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
+                icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
+        
+
+        first->num_ngb = 0;
+        if(periodic == 1) {
+            first->xwrap = my_malloc(sizeof(*(first->xwrap)), max_ngb_cells);
+            first->ywrap = my_malloc(sizeof(*(first->ywrap)), max_ngb_cells);
+            first->zwrap = my_malloc(sizeof(*(first->zwrap)), max_ngb_cells);
+        } else {
+            first->xwrap = NULL;
+            first->ywrap = NULL;
+            first->zwrap = NULL;
+        }
+        first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+
+        for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
+            const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;
+            const int non_periodic_ix = ix + iix;
+            const int iiix = (periodic == 1) ? periodic_ix:non_periodic_ix;
+            if(iiix < 0 || iiix >= nmesh_x) continue;
+            const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
+            
+            for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
+                const int periodic_iy = (iy + iiy + nmesh_y) % nmesh_y;
+                const int non_periodic_iy = iy + iiy;
+                const int iiiy = (periodic == 1) ? periodic_iy:non_periodic_iy;
+                if(iiiy < 0 || iiiy >= nmesh_y) continue;
+                const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
+                const int start_iz = (autocorr == 0) ? -zbin_refine_factor:0;
+                for(int64_t iiz=start_iz;iiz<=zbin_refine_factor;iiz++){
+                    const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
+                    const int non_periodic_iz = iz + iiz;
+                    const int iiiz = (periodic == 1) ? periodic_iz:non_periodic_iz;
+                    if(iiiz < 0 || iiiz >= nmesh_z) continue;
+
+                    const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
+                    const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
+
+                    //For cases where we are not double-counting (i.e., wp and xi), the same-cell
+                    //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
+                    //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
+                    //kernels in that case!
+                    if(autocorr == 1 && icell2 == icell) {
+                        continue;
+                    }
+                    const int64_t index1 = icell2 * totncells + icell;
+                    const int64_t index2 = icell * totncells + icell2;
+                    
+                    if(autocorr == 1 && opened[index1] == true) {
+                        continue;
+                    }
+
+                    const int64_t ngb_index = first->num_ngb;
+                    XASSERT(ngb_index < max_ngb_cells,"ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
+                    first->ngb_cells[ngb_index] = &(lattice2[icell2]);
+
+                    //Note the xwrap/ywraps do not have memory allocated for them in the
+                    //non-periodic case. 
+                    if(periodic == 1) {
+                        first->xwrap[ngb_index] = off_xwrap;
+                        first->ywrap[ngb_index] = off_ywrap;
+                        first->zwrap[ngb_index] = off_zwrap;
+                    } 
+                    first->num_ngb++;
+
+                    if(autocorr == 1) {
+                        opened[index1] = true;
+                        opened[index2] = true;
+                    }
+                }
+            }
+        }
+
+    }
+    if(autocorr == 1) {
+        free(opened);
+    }
+    
+}    
 

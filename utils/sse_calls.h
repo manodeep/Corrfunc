@@ -35,6 +35,7 @@ extern "C" {
 #define SSE_MULTIPLY_FLOATS(X,Y)         _mm_mul_ps(X,Y)
 #define SSE_SUBTRACT_FLOATS(X,Y)         _mm_sub_ps(X,Y)
 #define SSE_ADD_FLOATS(X,Y)              _mm_add_ps(X,Y)
+#define SSE_DIVIDE_FLOATS(X,Y)           _mm_div_ps(X,Y)
 #define SSE_SQRT_FLOAT(X)                _mm_sqrt_ps(X)
 #define SSE_TRUNCATE_FLOAT_TO_INT(X)     _mm_cvttps_epi32(X)
 #define SSE_SQUARE_FLOAT(X)              _mm_mul_ps(X,X)
@@ -70,6 +71,7 @@ extern "C" {
 #define SSE_MULTIPLY_FLOATS(X,Y)         _mm_mul_pd(X,Y)
 #define SSE_SUBTRACT_FLOATS(X,Y)         _mm_sub_pd(X,Y)
 #define SSE_ADD_FLOATS(X,Y)              _mm_add_pd(X,Y)
+#define SSE_DIVIDE_FLOATS(X,Y)           _mm_div_pd(X,Y)
 #define SSE_SQRT_FLOAT(X)                _mm_sqrt_pd(X)
 #define SSE_SQUARE_FLOAT(X)              _mm_mul_pd(X,X)
 
@@ -90,6 +92,6 @@ extern "C" {
 #define SSE_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm_blendv_pd(FALSEVALUE,TRUEVALUE,MASK)
 
 
-
+#define SSE_MAX_FLOATS(X,Y)               _mm_max_pd(X,Y)
 
 #endif

@@ -28,7 +28,7 @@ test_*period*
 *.tgz
 cov-int
 *.gcno
-
+*.ipynb
 *.log
 *.out*
 *.d
