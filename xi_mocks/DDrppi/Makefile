@@ -1,7 +1,4 @@
-include ../../mocks.options 
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+include ../../mocks.options ../../common.mk
 
 targets := DDrppi_mocks wprp_mocks
 SRC1   := DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
@@ -42,7 +39,7 @@ wprp_mocks: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
 libs: lib
 lib: libcountpairs_rp_pi_mocks.a | ../../lib
 
-OBJS3=countpairs_rp_pi_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o \
+OBJS3 :=countpairs_rp_pi_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o \
 			../../utils/set_cosmo_dist.o ../../utils/cosmology_params.o 
 
 libcountpairs_rp_pi_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include

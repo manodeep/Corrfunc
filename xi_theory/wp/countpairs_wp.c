@@ -20,7 +20,7 @@
 #include "gridlink.h"//function proto-type for gridlink
 #include "countpairs_wp.h" //function proto-type
 
-#include "wp_kernels.h" //all kernel proto-types
+#include "wp_driver.h" //all kernel proto-types
 
 #ifndef SILENT
 #include "progressbar.h" //for the progressbar
@@ -68,19 +68,6 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     int bin_refine_factor=2,zbin_refine_factor=1;
     int nmesh_x, nmesh_y, nmesh_z;
 
-
-    /* #if defined(USE_OMP) && defined(_OPENMP) */
-    /*  if(numthreads == 1) { */
-    /*      bin_refine_factor=2; */
-    /*      zbin_refine_factor=1; */
-    /*  } else { */
-    /*      //seems redundant - but I can not discount the possibility that some */
-    /*      //combination of these refine factors will be faster on a different architecture. */
-    /*      bin_refine_factor=2; */
-    /*      zbin_refine_factor=1; */
-    /*  } */
-    /* #endif */
-
     /***********************
      *initializing the  bins
      ************************/
@@ -111,11 +98,13 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
         fprintf(stderr,"countpairs_wp> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
         zbin_refine_factor *=2;
-        const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
-        free_cellarray_index(lattice, totncells);
+        free(lattice);
         lattice = gridlink_index(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
+    const int periodic = 1;
+    const int autocorr = 1;
+    assign_ngb_cells(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, autocorr, periodic);
 
 
 #if defined(USE_OMP) && defined(_OPENMP)
@@ -210,28 +199,40 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
             if(first->nelements == 0) {
                 continue;
             }
-            
-            same_cell_wp_driver(first,
-                                X, Y, Z,
-                                sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax
+
+            int same_cell = 1;
+            DOUBLE *x1 = X + first->start;
+            DOUBLE *y1 = Y + first->start;
+            DOUBLE *z1 = Z + first->start;
+            const int64_t N1 = first->nelements;
+
+            wp_driver(x1, y1, z1, N1,
+                      x1, y1, z1, N1, same_cell,
+                      sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
+                      ZERO, ZERO, ZERO
 #ifdef OUTPUT_RPAVG
-                                ,rpavg
+                      ,rpavg
 #endif
-                                ,npair);
+                      ,npair);
 
             for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
                 cellarray_index *second = first->ngb_cells[ngb];
+                DOUBLE *x2 = X + second->start;
+                DOUBLE *y2 = Y + second->start;
+                DOUBLE *z2 = Z + second->start;
+                const int64_t N2 = second->nelements;
                 const DOUBLE off_xwrap = first->xwrap[ngb];
                 const DOUBLE off_ywrap = first->ywrap[ngb];
                 const DOUBLE off_zwrap = first->zwrap[ngb];
-                diff_cells_wp_driver(first, second,
-                                     X, Y, Z,
-                                     sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                     off_xwrap, off_ywrap, off_zwrap
+                same_cell = 0;
+                wp_driver(x1, y1, z1, N1,
+                          x2, y2, z2, N2, same_cell,
+                          sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
+                          off_xwrap, off_ywrap, off_zwrap
 #ifdef OUTPUT_RPAVG
-                                         ,rpavg
+                          ,rpavg
 #endif
-                                         ,npair);
+                          ,npair);
                 
             }//ngb loop
         }//index1 loop
@@ -284,7 +285,8 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     }
 #endif
 
-    free_cellarray_index(lattice, totncells);
+    const int free_wraps = 1;
+    free_cellarray_index(lattice, totncells, free_wraps);
 
     //Pack in the results
     results_countpairs_wp *results = my_malloc(sizeof(*results), 1);

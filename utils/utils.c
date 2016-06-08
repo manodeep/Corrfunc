@@ -422,7 +422,7 @@ int test_all_files_present(const int nfiles, ...)
     int absent=0;
     va_list filenames;
     va_start(filenames, nfiles);
-    assert(nfiles <= 31 && "Can only test for 31 files simultaneously");
+    XASSERT(nfiles <= 31, "Can only test for 31 files simultaneously. nfiles = %d \n",nfiles);
     for(int i=0;i<nfiles;i++) {
         const char *f = va_arg(filenames, const char *);
         FILE *fp = fopen(f,"r");
