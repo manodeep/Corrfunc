@@ -146,7 +146,7 @@ Mocks
    enabled. Same numerical issues as ``LINK_IN_DEC``
 
 3. ``FAST_DIVIDE`` -- Divisions are slow but required
-   :math:`DD(r_p,\pi)`. This Makefile option (in mocks.options) replaces
+   :math:`DD(r_p,\pi)`. This ``Makefile`` option (in ``mocks.options``) replaces
    the divisions to a reciprocal followed by a Newton-Raphson. The code
    will run ~20% faster at the expense of some numerical precision.
    Please check that the loss of precision is not important for your
@@ -243,25 +243,27 @@ Common Code options for both Mocks and Cosmological Boxes
 2. ``USE_AVX`` -- uses the AVX instruction set found in Intel/AMD CPUs
    >= 2011 (Intel: Sandy Bridge or later; AMD: Bulldozer or later).
    Enabled by default - code will run much slower if the CPU does not
-   support AVX instructions. On Linux, check for "avx" in /proc/cpuinfo
-   under flags. If you do not have AVX, but have a SSE4 system instead,
-   then check the ``develop`` branch for the SSE4 code. 
+   support AVX instructions. The ``Makefile`` will automatically check
+   for "AVX" support and disable this option for unsupported CPUs. 
 
 3. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD
    (perfect scaling up to 12 threads in my tests) and okay (runtime
    becomes constant ~6-8 threads in my tests) for ``DDrppi`` and ``wp``.
+   Enabled by default. The ``Makefile`` will compare the `CC` variable with
+   known OpenMP enabled compilers and set compile options accordingly. 
 
 *Optimization for your architecture*
 
 1. The values of ``bin_refine_factor`` and/or ``zbin_refine_factor`` in
-   the countpairs\_\*.c files control the cache-misses, and
+   the ``countpairs\_\*.c`` files control the cache-misses, and
    consequently, the runtime. In my trial-and-error methods, I have seen
    any values larger than 3 are always slower. But some different
    combination of 1/2 for ``(z)bin_refine_factor`` might be faster on
    your platform.
 
-2. If you have AVX2/AVX-512/KNC, you will need to rewrite the entire AVX
-   section.
+2. If you have AVX2/AVX-512/KNC, you will need to add a new kernel within
+   the ``*_kernels.c`` and edit the runtime dispatch code to call this new
+   kernel. 
 
 Author
 ======
