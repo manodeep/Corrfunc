@@ -10,7 +10,7 @@ CLINK:=
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=1
-MINOR:=0
+MINOR:=1
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
