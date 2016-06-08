@@ -53,7 +53,7 @@
 
 \begin{frontmatter}
 
-\title{Cache is King: Presenting a Suite of Fast, Correlation Function Codes}
+\title{Cache is King: Presenting a Suite of Fast Correlation Function Codes}
 
 \author[ms]{Manodeep Sinha}
 \ead{manodeep.sinha@vanderbilt.edu}
@@ -63,18 +63,23 @@
 In the era of `Big Data', we need special computing techniques to both process the raw data as well 
 generate and evaluate models to test our theories. In particular, large galaxy surveys
 like the Sloan Digitial Sky Survey requires computing a variety of $n$-point statistics, e.g., the 
-2-pt projected correlation function, $\wprp$. While measuring the correlation function in the data is not a bottle-neck, 
-modeling the observed galaxy distribution correctly
-{\em requires} a MCMC chain and repeated measurements of $\wprp$. To efficiently 
+2-pt projected correlation function, $\wprp$. 
+Since the clustering measure on the data is only done once, time taken to do
+this measurement is not a bottleneck. However, modeling the observed galaxy distribution correctly
+{\em requires} a MCMC chain and repeated measurements of some clustering statistic. To efficiently 
 measure the correlation functions, we need to write code that accounts for cache hierarchies while 
 simultaneously exploits the wide vector registers present in the relatively modern CPUs.  
 Here, I present a suite of OpenMP parallelized, clustering codes that exploit current CPU micro-architecture with hand-written AVX 
-intrinsics. Given a 3-D distribution of points in a cartesian system, these codes compute spatial clustering statistics 3-D correlation functions \xir, \xiofr, \xirppi; 2-point 
-projected correlation function \wprp; counts-in-spheres \cis. For a 3-D particle distribution on the sky, the codes can compute 
+intrinsics. Given a 3-D distribution of points in a cartesian system (i.e.,
+generated from cosmological simulations), these codes compute spatial clustering statistics 3-D correlation functions \xir, \xiofr, \xirppi; 2-point 
+projected correlation function \wprp; counts-in-spheres \cis. For a 3-D
+particle distribution on the sky (i.e., mock galaxy catalogs, real observed galaxies), the codes can compute 
 projected correlation function \ddrppi, angular correlation function \wtheta as well as \cis. These codes are designed to be blazing fast 
 and can compute \wprp for $\mathcal{O}$(1 million) galaxies in $\sim 6$ seconds on a post-2011 CPU, which is a factor of few faster than 
-the existing public correlation function routines.  
-The accompanying codes are publicly available at \url{https://github.com/manodeep/Corrfunc/}. 
+the existing public correlation function routines.  The accompanying codes are
+publicly available at \url{https://github.com/manodeep/Corrfunc/} while
+benchmarks with existing codes are available at \url{https://gist.github.com/manodeep/cffd9a5d77510e43ccf0}.
+
 \end{abstract}
 
 \begin{keyword}
