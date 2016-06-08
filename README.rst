@@ -279,15 +279,15 @@ for the code is
 
 ::
 
-    @misc{manodeep_sinha_2016_49720,
-      author       = {Manodeep Sinha},
-      title        = {Corrfunc: Corrfunc-1.0.0},
-      month        = apr,
-      year         = 2016,
-      doi          = {10.5281/zenodo.49720},
-      url          = {http://dx.doi.org/10.5281/zenodo.49720}
-    }
-
+   @misc{manodeep_sinha_2016_55161,
+       author       = {Manodeep Sinha},
+       title        = {Corrfunc: Corrfunc-1.1.0},
+       month        = jun,
+       year         = 2016,
+       doi          = {10.5281/zenodo.55161},
+       url          = {http://dx.doi.org/10.5281/zenodo.55161}
+   }
+       
 Mailing list
 ============
 
