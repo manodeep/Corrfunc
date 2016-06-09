@@ -110,11 +110,11 @@ All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 
 1. ``DDrppi`` -- The standard auto/cross correlation between two data
    sets. The outputs, DD, DR and RR can be combined using ``wprp`` to
-   produce the Landy-Szalay estimator for :math:`w_p(r_p)`.
+   produce the Landy-Szalay estimator for `wp(rp)`.
 
 2. ``wtheta`` -- Computes angular correlation function between two data
    sets. The outputs from ``DDtheta_mocks`` need to be combined with
-   ``wtheta`` to get the full :math:`\omega(\theta)`
+   ``wtheta`` to get the full `\omega(\theta)`
 
 3. ``vpf`` -- Computes the void probability function on mocks.
 
@@ -138,7 +138,7 @@ Mocks
 -----
 
 1. ``LINK_IN_DEC`` -- creates binning in declination for mocks. Please
-   check that for your desired binning in :math:`r_p`/:math:`\theta`,
+   check that for your desired binning in `r_p` or `\theta`,
    this binning does not produce incorrect results (due to numerical
    precision).
 
@@ -146,11 +146,11 @@ Mocks
    enabled. Same numerical issues as ``LINK_IN_DEC``
 
 3. ``FAST_DIVIDE`` -- Divisions are slow but required
-   :math:`DD(r_p,\pi)`. This ``Makefile`` option (in ``mocks.options``) replaces
+   `DD(r_p,\pi)`. This ``Makefile`` option (in ``mocks.options``) replaces
    the divisions to a reciprocal followed by a Newton-Raphson. The code
    will run ~20% faster at the expense of some numerical precision.
    Please check that the loss of precision is not important for your
-   use-case. Also, note that the mocks tests for :math:`DD(r_p, \pi)`
+   use-case. Also, note that the mocks tests for `DD(r_p, \pi)`
    *will fail* if you enable ``FAST_DIVIDE``.
 
 Running the codes
