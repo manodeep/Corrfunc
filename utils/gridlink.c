@@ -27,7 +27,8 @@ double get_binsize(const double xmin,const double xmax, const double rmax, const
     int nmesh=(int)(refine_factor*xdiff/rmax) ;
 #ifdef PERIODIC
     if (nmesh<(2*refine_factor+1))  {
-        fprintf(stderr,"linklist> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",nmesh) ;
+        fprintf(stderr,"%s> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",__FILE__,nmesh) ;
+        fprintf(stderr,"%s> Please reduce Rmax = %lf to be a smaller fraction of the region that the particles occupy = %lf\n",__FILE__,rmax,xdiff);
         exit(EXIT_FAILURE) ;
     }
 #endif
