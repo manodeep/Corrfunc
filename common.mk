@@ -2,7 +2,7 @@
 CC:=gcc
 
 #### Add any compiler specific flags you want
-CFLAGS:=-Wnull-dereference -Winit-self -Wmissing-format-attribute -Wduplicated-cond -Wundef -Wunsafe-loop-optimizations
+CFLAGS:=
 
 #### Add any compiler specific link flags you want
 CLINK:=
