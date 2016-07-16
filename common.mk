@@ -286,7 +286,9 @@ ifeq ($(DO_CHECKS), 1)
 
     #### common options for gcc and clang
     ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-      CFLAGS  +=  -mavx -mpopcnt
+      CFLAGS  +=  -mavx
+    else
+      CFLAGS += -mno-avx
     endif
 
     CFLAGS += -funroll-loops
