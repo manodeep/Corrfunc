@@ -183,6 +183,37 @@ int my_snprintf(char *buffer,int len,const char *format, ...)
     return nwritten;
 }
 
+int is_big_endian(void)
+{
+    union {
+        uint32_t i;
+        char c[4];
+    } e = { 0x01000000 };
+
+    return e.c[0];
+}
+
+void byte_swap(const char *in, const size_t size, char *out)
+{
+    assert(size <= 16 && "No intrinsic C data-type exists with size larger than 16 bytes");
+    //point to the last byte
+    char *in_char = in + (size - 1UL);
+
+    //point to the first byte in output
+    char *out_char = out;
+
+    //Start filling in from the front in the output string
+    //taking input from the end of the input
+    for(int i=0;i<size;i++) {
+        *out_char = *in_char;
+        out_char++;
+        in_char--;
+    }
+    return out;
+}    
+
+
+
 //Taken from the inter-webs: http://stackoverflow.com/questions/1024389/print-an-int-in-binary-representation-using-c
 char * int2bin(int a, char *buffer, int buf_size)
 {
