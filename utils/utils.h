@@ -61,7 +61,7 @@
      extern void print_time(struct timeval t0,struct timeval t1,const char *s);
      extern int64_t getnumlines(const char *fname,const char comment);
      extern int is_big_endian(void);
-     extern void byte_swap(const char *in, const size_t size, char *out);
+     extern void byte_swap(char * const in, const size_t size, char *out);
 
      //memory routines
      extern void* my_realloc(void *x,size_t size,int64_t N,const char *varname);
