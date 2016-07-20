@@ -1,6 +1,7 @@
 \documentclass[preprint, 12pt, authoryear]{elsarticle}
 
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{aas_macros}
 \usepackage{rotating}
 \usepackage{xspace}
@@ -20,8 +21,11 @@
 \newcommand{\hMpc}{\ensuremath{{h^{-1}Mpc}\xspace}}
 \newcommand{\hkpc}{\ensuremath{{h^{-1}kpc}\xspace}}
 \newcommand{\emcee}{\texttt emcee}
+\newcommand{\corrfunc}{{\tt Corrfunc}\xspace}
 \newcommand{\rmax}{\ensuremath{{{\mathcal{R}}_{max}}}\xspace}
 \newcommand{\rmaxcubed}{\ensuremath{{\mathcal{R}^{3}_{max}}}\xspace}
+\newcommand{\lbox}{\ensuremath{\mathcal{L}}\xspace}
+\newcommand{\npart}{\ensuremath{\mathcal{N}}\xspace}
 \newcommand{\xir}{\ensuremath{{DD(r)}}\xspace}
 \newcommand{\xiofr}{\ensuremath{{\xi(r)}}\xspace}
 \newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
@@ -55,7 +59,7 @@
 
 \begin{frontmatter}
 
-\title{Cache is King: Presenting {\tt Corrfunc} -- a Suite of Fast Correlation Function Codes}
+\title{Cache is King: Presenting \corrfunc -- a Suite of Fast Correlation Function Codes}
 
 \author[ms]{Manodeep Sinha}
 \ead{manodeep.sinha@vanderbilt.edu}
@@ -73,19 +77,19 @@ clustering statistics. In order to efficiently compute {\em any} clustering stat
 we need to write code that is tuned for the underlying hardware. For
 modern CPUs, such tuning involves proper utilization of the cache hierarchy {\em and}
 vectorization with Single Instruction Multiple Data (SIMD) capable wide vector registers. 
-In this paper, I present {\tt Corrfunc} --  a suite of OpenMP parallelized, clustering
+In this paper, I present \corrfunc --  a suite of OpenMP parallelized, clustering
 codes that exploit current CPU micro-architecture with hand-written Advanced
 Vector Extensions (\avx) and  Streaming SIMD Extensions (\sse) intrinsics. 
 Given a 3-D distribution of points in a cartesian system (i.e.,
-generated from cosmological simulations), {\tt Corrfunc} can compute spatial
+generated from cosmological simulations), \corrfunc can compute spatial
 3-D correlation functions \xir, \xiofr, \xirppi; 2-point 
 projected correlation function \wprp; counts-in-spheres \cis. For a 3-D
 particle distribution on the sky (i.e., mock galaxy catalogs, observed galaxies), the codes can compute 
 projected correlation function \ddrppi, angular correlation function \wtheta as
-well as \cis.  By design, {\tt Corrfunc} is highly optimized 
+well as \cis.  By design, \corrfunc is highly optimized 
 and can compute \wprp for $\mathcal{O}$(1 million) galaxies in
 $\sim 6$ seconds on a post-2011 CPU, which is a factor of few faster than 
-existing public correlation function routines.  {\tt Corrfunc} is
+existing public correlation function routines.  \corrfunc is
 publicly available at \url{https://github.com/manodeep/Corrfunc/} while
 benchmarks with existing codes are available at
 \url{https://gist.github.com/manodeep/cffd9a5d77510e43ccf0}.
@@ -126,13 +130,13 @@ cores on the socket and can be 10 MB to 40 MB.
 \subsection{OPTIMIZATION STRATEGIES}
 
 \section{PACKAGE SUMMARY}
-{\tt Corrfunc} is written primarily in {\tt C} and comes with convenient
+\corrfunc is written primarily in {\tt C} and comes with convenient
 {\tt python} wrappers for typical clustering statistics. The fundamental design
-principles for {\tt Corrfunc} are the following:
+principles for \corrfunc are the following:
 \begin{enumerate}
-  \item Correct -- {\tt Corrfunc} has a base set of correct outputs for every statistic
+  \item Correct -- \corrfunc has a base set of correct outputs for every statistic
     generated either through slow, brute-force methods or independent, 
-    external codes. Within {\tt Corrfunc}, every clustering statistic is covered with at least one
+    external codes. Within \corrfunc, every clustering statistic is covered with at least one
     test case that {\em requires} reproducing this `known-correct' result {\em
       exactly}. The `PASS/FAIL' status for each test is the direct output of {\tt diff -q
       test\_output known\_correct\_output}.  
@@ -140,11 +144,11 @@ principles for {\tt Corrfunc} are the following:
     Corrfunc}. The code-base has been repeatedly analyzed with Intel VTune
     (\url{https://software.intel.com/en-us/intel-vtune-amplifier-xe})
     on a variety of platforms to optimize the innermost loops. 
-  \item Portable -- {\tt Corrfunc} is written in {\tt ISO/IEC 9899:1999}
+  \item Portable -- \corrfunc is written in {\tt ISO/IEC 9899:1999}
     compliant {\tt C}. All instruction set specific codes are protected via compile-time constant
     definitions.
 \end{enumerate}
-Every clustering statistic in {\tt Corrfunc} can either be accessed through the
+Every clustering statistic in \corrfunc can either be accessed through the
 API call (e.g., via {\tt python}), linking with the static libraries) or as
 a command-line executable. 
 
@@ -160,14 +164,18 @@ implementation of the algorithm matters. For instance, a linked-list in each cel
 usual linked-list is very cache-unfriendly. Each dereference requires a read
 from a new region of memory and an almost guaranteed cache miss. } 
 We can now compute the theoretical complexity of the proposed algorithm. Let
-$\mathcal{L}$ be the side-length of the cube over which $\mathcal{N}$ points are distributed, then
+\lbox be the side-length of the cube over which $\mathcal{N}$ points are distributed, then
 each cell contains $r_{\mathrm max}^3\times \mathcal{N/V}$ particles. To compute the
 correlation function, we have to loop over each point, and then {\em all} of
 the points in the neighboring cells. This results in a complexity of 
-$\mathcal{O(N{\dfrac{\rmax}/L}^3}$. A typical \rmax is $\sim 10-20\% \times
-\mathcal{L}$, therefore ordering the particles in cells of size \rmax should
-result in a speedup of $(\rmax/\mathcal{L})^3 \sim 125-1000$ compared to the
-brute-force algorithm. 
+$\mathcal{O(NM)}$, where $\mathcal{M} = \mathcal{N}\times\left(\rmax/\lbox\right)^3$. Typical \rmax is $\sim 0.10-0.2\times
+\lbox$, therefore ordering the particles in cells of size \rmax should
+result in a speedup of $(\rmax/\lbox)^3 \sim 125-1000$ compared to the
+brute-force algorithm. Since every possible pair within \rmax has to be
+examined, the algorithm deteriorates to $\mathcal{O(N}^2)$ for \rmax comparable
+to \lbox. Space partitioning tree based approaches are far more suitable for
+cases where \rmax is $\gtrsim \lbox/3$~\citep[e.g.,][]{mlpack2013,
+  feng_kdcount}. 
 
 \subsection{Partitioning the Particles based on \rmax}
 Fig.~\ref{fig:grid} shows a schematic 2-D grid that corresponds to our partitioning scheme.
