@@ -46,10 +46,10 @@ Pre-requisites
 5. ``numpy>=1.7`` for compiling the C extensions.
 
 *If python and/or numpy are not available, then the C extensions will
-not be compiled*.
+not be compiled.*
 
-*Default compiler on MAC is set to ``clang``, if you want to specify a
-different compiler, you will have to call ``make CC=yourcompiler``*
+*Default compiler on MAC is set to* ``clang``, *if you want to specify a
+different compiler, you will have to call* ``make CC=yourcompiler``
 
 Preferred Method
 ----------------
