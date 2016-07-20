@@ -16,6 +16,13 @@ Why Should You Use it
 3. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
 4. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
 
+Benchmark against Existing Codes
+================================
+
+Please see this
+`gist <https://gist.github.com/manodeep/cffd9a5d77510e43ccf0>`__ for
+some benchmarks with current codes. If you have a pair-counter that you would like to compare, please add in a corresponding function and update the timings. 
+
 Installation
 ============
 
@@ -226,13 +233,6 @@ use the Python interface. Here are a few examples:
         print("{0:10.4f} {1:10.4f} {2:12.6f} {3:8d}"
               .format(wp[0], wp[1], wp[3], wp[4]))
                                                         
-
-Benchmark against Existing Codes
-================================
-
-Please see this
-`gist <https://gist.github.com/manodeep/cffd9a5d77510e43ccf0>`__ for
-some benchmarks with current codes.
 
 Common Code options for both Mocks and Cosmological Boxes
 =========================================================
