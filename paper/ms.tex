@@ -20,7 +20,8 @@
 \newcommand{\hMpc}{\ensuremath{{h^{-1}Mpc}\xspace}}
 \newcommand{\hkpc}{\ensuremath{{h^{-1}kpc}\xspace}}
 \newcommand{\emcee}{\texttt emcee}
-\newcommand{\rmax}{\ensuremath{{r_{max}}}\xspace}
+\newcommand{\rmax}{\ensuremath{{{\mathcal{R}}_{max}}}\xspace}
+\newcommand{\rmaxcubed}{\ensuremath{{\mathcal{R}^{3}_{max}}}\xspace}
 \newcommand{\xir}{\ensuremath{{DD(r)}}\xspace}
 \newcommand{\xiofr}{\ensuremath{{\xi(r)}}\xspace}
 \newcommand{\wprp}{\ensuremath{{w_p(r_p)}}\xspace}
@@ -29,6 +30,8 @@
 \newcommand{\ddrppi}{\ensuremath{{DD(r_p,\pi)}}\xspace}
 \newcommand{\wtheta}{\ensuremath{{DD(\theta)}}\xspace}
 \newcommand{\todo}[1]{\marginpar{TODO}{\color{red}#1}}
+\newcommand{\avx}{\texttt AVX}
+\newcommand{\sse}{\texttt SSE}
 
 
 \lstset{
@@ -72,7 +75,7 @@ modern CPUs, such tuning involves proper utilization of the cache hierarchy {\em
 vectorization with Single Instruction Multiple Data (SIMD) capable wide vector registers. 
 In this paper, I present {\tt Corrfunc} --  a suite of OpenMP parallelized, clustering
 codes that exploit current CPU micro-architecture with hand-written Advanced
-Vector Extensions (AVX) and  Streaming SIMD Extensions (SSE) intrinsics. 
+Vector Extensions (\avx) and  Streaming SIMD Extensions (\sse) intrinsics. 
 Given a 3-D distribution of points in a cartesian system (i.e.,
 generated from cosmological simulations), {\tt Corrfunc} can compute spatial
 3-D correlation functions \xir, \xiofr, \xirppi; 2-point 
@@ -124,7 +127,7 @@ cores on the socket and can be 10 MB to 40 MB.
 
 \section{PACKAGE SUMMARY}
 {\tt Corrfunc} is written primarily in {\tt C} and comes with convenient
-{\tt python} wrappers for every clustering statistic. The fundamental design
+{\tt python} wrappers for typical clustering statistics. The fundamental design
 principles for {\tt Corrfunc} are the following:
 \begin{enumerate}
   \item Correct -- {\tt Corrfunc} has a base set of correct outputs for every statistic
@@ -146,14 +149,25 @@ API call (e.g., via {\tt python}), linking with the static libraries) or as
 a command-line executable. 
 
 \section{Methods}
-We need to compute pairwise distances to get the correlation function. A naive implementation of a correlation function would compute {\em all possible} 
+\subsection{Complexity of the Code}
+We need to compute pairwise~\citep{} distances to get the correlation function. A naive implementation of a correlation function would compute {\em all possible} 
 pairwise separations with a complexity $\mathcal{O}(N^2)$. However, for almost all correlation functions, we are only interested in separations less than 
 a certain \rmax, where \rmax is much smaller than the domain of the point distribution itself. We can then immediately see a way to prune pairs that can not
 {\em possibly} be within \rmax. If we impose a 3-d grid, with cell-size \rmax, then two points separated by more than one cell size (\rmax) in any one 
 dimension can not be within \rmax of each other. Thus, given one point which is the target galaxy and a grid with cell-size \rmax, 
-immediately allows us to prune {\em all} of the points that are not within 1 cell offset in each dimension. However, even with this pruning, the actual 
+immediately allows us to prune {\em all} of the points that are not within 1 cell offset along each dimension. However, even with this pruning, the actual 
 implementation of the algorithm matters. For instance, a linked-list in each cell performs $\sim 60\times$ worse than the algorithm described here.\footnote{The 
-usual linked-list is very cache-unfriendly. Each dereference requires a read from a new region of memory and an almost guaranteed cache miss. } 
+usual linked-list is very cache-unfriendly. Each dereference requires a read
+from a new region of memory and an almost guaranteed cache miss. } 
+We can now compute the theoretical complexity of the proposed algorithm. Let
+$\mathcal{L}$ be the side-length of the cube over which $\mathcal{N}$ points are distributed, then
+each cell contains $r_{\mathrm max}^3\times \mathcal{N/V}$ particles. To compute the
+correlation function, we have to loop over each point, and then {\em all} of
+the points in the neighboring cells. This results in a complexity of 
+$\mathcal{O(N{\dfrac{\rmax}/L}^3}$. A typical \rmax is $\sim 10-20\% \times
+\mathcal{L}$, therefore ordering the particles in cells of size \rmax should
+result in a speedup of $(\rmax/\mathcal{L})^3 \sim 125-1000$ compared to the
+brute-force algorithm. 
 
 \subsection{Partitioning the Particles based on \rmax}
 Fig.~\ref{fig:grid} shows a schematic 2-D grid that corresponds to our partitioning scheme.
@@ -265,6 +279,23 @@ up to $\sim$ 10 threads.}
 \label{table:openmp}
 \end{table}
 
+\subsection{Speedup from SIMD code}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[clip=true,scale=0.7]{wp_speedup_AVX}%
+\caption{Speedup from AVX}
+\label{fig:speedup_avx}
+\end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[clip=true,scale=0.7]{wp_speedup_SSE_4_2}
+\caption{Speedup from AVX}
+\label{fig:speedup_sse}
+\end{figure}
+
+
+
 
 \section{Conclusions}
 I have presented a suite of three fast correlation function codes that take advantage of the underlying hardware. The reasons why the codes 
@@ -276,7 +307,6 @@ same 3-D cell are stored in a contiguous array.
 \item With the AVX instruction set, modern CPU's can process 8 floats/4 doubles simultaneously. The codes contain hand-written AVX intrinsics that offer a 
 factor of few speedup compared to the compiler generated scalar code. 
 \end{itemize}
-
 \citet{foreman-mackey_etal_13}
 
 \section*{Acknowledgements}
@@ -289,3 +319,8 @@ factor of few speedup compared to the compiler generated scalar code.
 
 
 
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
