@@ -24,6 +24,7 @@
 \newcommand{\corrfunc}{{\tt Corrfunc}\xspace}
 \newcommand{\rmax}{\ensuremath{{{\mathcal{R}}_{max}}}\xspace}
 \newcommand{\rmaxcubed}{\ensuremath{{\mathcal{R}^{3}_{max}}}\xspace}
+\newcommand{\rsep}{\ensuremath{{{\mathcal{R}}_{sep}}}\xspace}
 \newcommand{\lbox}{\ensuremath{\mathcal{L}}\xspace}
 \newcommand{\npart}{\ensuremath{\mathcal{N}}\xspace}
 \newcommand{\xir}{\ensuremath{{DD(r)}}\xspace}
@@ -174,11 +175,17 @@ result in a speedup of $(\rmax/\lbox)^3 \sim 125-1000$ compared to the
 brute-force algorithm. Since every possible pair within \rmax has to be
 examined, the algorithm deteriorates to $\mathcal{O(N}^2)$ for \rmax comparable
 to \lbox. Space partitioning tree based approaches are far more suitable for
-cases where \rmax is $\gtrsim \lbox/3$~\citep[e.g.,][]{mlpack2013,
+cases where \rmax is $\gtrsim 0.5\times\lbox$~\citep[e.g.,][]{mlpack2013,
   feng_kdcount}. 
 
 \subsection{Partitioning the Particles based on \rmax}
-Fig.~\ref{fig:grid} shows a schematic 2-D grid that corresponds to our partitioning scheme.
+Fig.~\ref{fig:grid} shows a schematic 2-D grid for the partitioning scheme. The
+red circles represents the reference Poisson distributed points while the blue filled circle
+shows the query point. The grid is constructed in the exact same way for both
+datasets such that the 2-D (the index is in 3-D for the actual code)  index for the query point is identical to that of
+the reference dataset. Once the central cell is determined, {\em any} reference
+point that satisfies the distance inequality $\rsep < \rmax$, {\em must} lie
+within the shaded 9 cells (corresponds to 27 in 3-D). 
 \begin{figure}[htbp]
 \centering
 \includegraphics[clip=true]{tikz_grid}
