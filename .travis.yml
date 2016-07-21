@@ -29,19 +29,19 @@ matrix:
 
   include:
     #### osx with clang doesn't use openmp -> so they are the slowest. Run them first
-    - os: osx
-      osx_image: xcode8
-      compiler: gcc
-      env: COMPILER=gcc-4.9 FAMILY=gcc V='4.9' PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 
-      before_install:
-        # - brew update
-        # - brew tap homebrew/versions && brew reinstall gcc49 --without-multilib
-        - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
-        - source activate test
-        - conda install -q --yes -c asmeurer gsl
+    # - os: osx
+    #   osx_image: xcode8
+    #   compiler: gcc
+    #   env: COMPILER=gcc-4.9 FAMILY=gcc V='4.9' PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 
+    #   before_install:
+    #     # - brew update
+    #     # - brew tap homebrew/versions && brew reinstall gcc49 --without-multilib
+    #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+    #     - bash miniconda.sh -b -p $HOME/miniconda
+    #     - export PATH="$HOME/miniconda/bin:$PATH"
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+    #     - source activate test
+    #     - conda install -q --yes -c asmeurer gsl
 
     # - os: osx
     #   osx_image: beta-xcode6.2
