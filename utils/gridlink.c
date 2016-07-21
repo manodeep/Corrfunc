@@ -464,7 +464,7 @@ struct cellarray_index * gridlink_index(const int64_t np,
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);\
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t,cell_index,i,j)}
 
-    SGLIB_ARRAY_QUICK_SORT(int64_t, cell_index, np, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+    SGLIB_ARRAY_HEAP_SORT(int64_t, cell_index, np, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
 
     int64_t start_cell = cell_index[0];
@@ -500,19 +500,9 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                       const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff, 
                       const int autocorr, const int periodic)
 {
-    /* Now figure out the neighbouring cells*/
-    //First create a giant list of cells opened
-    bool *opened=NULL;
-    if(autocorr == 1) {
-        opened = my_malloc(sizeof(bool), totncells * totncells);
-        for(int64_t i=0;i < totncells * totncells; i++) {
-            opened[i] = false;
-        }
-    }
-
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
     const int64_t ny_ngb = 2*ybin_refine_factor + 1;
-    const int64_t nz_ngb = (autocorr == 0) ? 2*zbin_refine_factor + 1: zbin_refine_factor+1;
+    const int64_t nz_ngb = 2*zbin_refine_factor + 1;
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
     for(int64_t icell=0;icell<totncells;icell++) {
@@ -551,7 +541,7 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                 const int iiiy = (periodic == 1) ? periodic_iy:non_periodic_iy;
                 if(iiiy < 0 || iiiy >= nmesh_y) continue;
                 const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
-                const int start_iz = (autocorr == 0) ? -zbin_refine_factor:0;
+                const int start_iz = -zbin_refine_factor;
                 for(int64_t iiz=start_iz;iiz<=zbin_refine_factor;iiz++){
                     const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
                     const int non_periodic_iz = iz + iiz;
@@ -565,16 +555,9 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                     //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
                     //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
                     //kernels in that case!
-                    if(autocorr == 1 && icell2 == icell) {
+                    if(autocorr == 1 && icell2 >= icell) {
                         continue;
                     }
-                    const int64_t index1 = icell2 * totncells + icell;
-                    const int64_t index2 = icell * totncells + icell2;
-                    
-                    if(autocorr == 1 && opened[index1] == true) {
-                        continue;
-                    }
-
                     const int64_t ngb_index = first->num_ngb;
                     XASSERT(ngb_index < max_ngb_cells,"ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
                     first->ngb_cells[ngb_index] = &(lattice2[icell2]);
@@ -587,19 +570,10 @@ void assign_ngb_cells(struct cellarray_index *lattice1, struct cellarray_index *
                         first->zwrap[ngb_index] = off_zwrap;
                     } 
                     first->num_ngb++;
-
-                    if(autocorr == 1) {
-                        opened[index1] = true;
-                        opened[index2] = true;
-                    }
                 }
             }
         }
 
     }
-    if(autocorr == 1) {
-        free(opened);
-    }
-    
 }    
 
