@@ -15,7 +15,7 @@ OBJS1  := $(SRC1:.c=.o)
 all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
 
 $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@
+	$(CC) $(OBJS1) $(GSL_LINK) $(CLINK) -o $@
 
 countspheres.o: countspheres.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
@@ -59,12 +59,7 @@ celan: clean
 
 .PHONY: clean clena celan install lib tests distclean
 
-tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
-	$(MAKE) -C ../tests	vpf
 
-../tests/tests_periodic:
-	$(MAKE) -C ../tests
-
-../tests/tests_nonperiodic:
-	$(MAKE) -C ../tests
+tests: 
+	$(MAKE) -C ../tests vpf
 

@@ -14,7 +14,7 @@ INCL :=	../../include/countpairs.h ../../include/countpairs_rp_pi.h ../../includ
 all: $(target) $(SRC1) $(INCL) $(C_LIBRARIES) ../../theory.options ../../common.mk Makefile uncompress
 
 $(target): Makefile ../../theory.options ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
-	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) -o $@
+	$(CC) $(OBJS1) $(C_LIBRARIES) $(GSL_LINK) $(CLINK) -o $@
 
 ../../include/countpairs.h ../../lib/libcountpairs.a: ../../theory.options ../../common.mk Makefile 
 	$(MAKE) -C ../xi_of_r lib
