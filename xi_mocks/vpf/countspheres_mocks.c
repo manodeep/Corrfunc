@@ -88,30 +88,25 @@ int count_neighbors(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const 
 }
 
 
-void free_results_countspheres_mocks(results_countspheres_mocks **results)
+void free_results_countspheres_mocks(results_countspheres_mocks *results)
 {
     if(results == NULL)
         return;
-    if(*results == NULL)
-        return;
 
-    results_countspheres_mocks *tmp = *results;
-    matrix_free((void **) tmp->pN, tmp->nbin);
-    free(tmp);
-    tmp = NULL;
+    matrix_free((void **) results->pN, results->nbin);
 }
 
 
 
 
 
-results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DOUBLE *zgal,
-                                                const int64_t Nran, DOUBLE *xran, DOUBLE *yran, DOUBLE *zran,
-                                                const int threshold_neighbors,
-                                                const DOUBLE rmax, const int nbin, const int nc,
-                                                const int num_pN,
-                                                const char *centers_file,
-                                                const int cosmology)
+results_countspheres_mocks countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DOUBLE *zgal,
+                                              const int64_t Nran, DOUBLE *xran, DOUBLE *yran, DOUBLE *zran,
+                                              const int threshold_neighbors,
+                                              const DOUBLE rmax, const int nbin, const int nc,
+                                              const int num_pN,
+                                              const char *centers_file,
+                                              const int cosmology)
 
 {
     /*---Gridlink-variables----------------*/
@@ -482,16 +477,16 @@ results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal
         free(randoms_lattice);
     }
     //prepare the results
-    results_countspheres_mocks *results = my_malloc(sizeof(*results),1);
-    results->rmax = rmax;
-    results->nbin = nbin;
-    results->nc   = nc;
-    results->num_pN = num_pN;
-    results->pN = (DOUBLE **) matrix_malloc(sizeof(DOUBLE), nbin, num_pN);
+    results_countspheres_mocks results;
+    results.rmax = rmax;
+    results.nbin = nbin;
+    results.nc   = nc;
+    results.num_pN = num_pN;
+    results.pN = (DOUBLE **) matrix_malloc(sizeof(DOUBLE), nbin, num_pN);
     const DOUBLE inv_nc = ((DOUBLE) 1.0)/(DOUBLE) isucceed;//actual number of spheres placed
     for(int i=0;i<num_pN;i++) {
         for(int ibin=0;ibin<nbin;ibin++) {
-            (results->pN)[ibin][i] = pN[ibin][i] * inv_nc;
+            (results.pN)[ibin][i] = pN[ibin][i] * inv_nc;
         }
     }
     matrix_free((void **) pN, nbin);

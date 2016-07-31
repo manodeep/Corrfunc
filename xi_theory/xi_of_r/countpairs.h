@@ -18,24 +18,24 @@ extern "C" {
 #include <inttypes.h> //for uint64_t
 
 
-    //define the results structure
-    typedef struct{
-        uint64_t *npairs;
-        DOUBLE *rupp;
-        DOUBLE *rpavg;
-        int nbin;
-    } results_countpairs;
+//define the results structure
+typedef struct{
+    uint64_t *npairs;
+    DOUBLE *rupp;
+    DOUBLE *rpavg;
+    int nbin;
+} results_countpairs;
 
-    results_countpairs * countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
-                                    const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
+results_countpairs countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
+                              const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                    const int numthreads,
+                              const int numthreads,
 #endif
-                                    const int autocorr,
-                                    const char *binfile) __attribute__((warn_unused_result));
+                              const int autocorr,
+                              const char *binfile) __attribute__((warn_unused_result));
+    
 
-
-    void free_results(results_countpairs **results);
+void free_results(results_countpairs *results);
 
 #ifdef __cplusplus
 }

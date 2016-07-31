@@ -41,20 +41,14 @@
 #endif
 
 
-void free_results_countpairs_theta(results_countpairs_theta **results)
+void free_results_countpairs_theta(results_countpairs_theta *results)
 {
     if(results == NULL)
         return;
-    if(*results == NULL)
-        return;
 
-    results_countpairs_theta *tmp = *results;
-
-    free(tmp->theta_upp);
-    free(tmp->npairs);
-    free(tmp->theta_avg);
-    free(tmp);
-    tmp = NULL;
+    free(results->theta_upp);
+    free(results->npairs);
+    free(results->theta_avg);
 }
 
 
@@ -93,13 +87,13 @@ void check_ra_dec(const int64_t N, DOUBLE *phi, DOUBLE *theta)
 }
 
 
-results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
-                                                  const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
+results_countpairs_theta countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
+                                                const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                  const int numthreads,
+                                                const int numthreads,
 #endif
-                                                  const int autocorr,
-                                                  const char *binfile)
+                                                const int autocorr,
+                                                const char *binfile)
 {
 
 #if defined(LINK_IN_RA) && !defined(LINK_IN_DEC)
@@ -676,19 +670,19 @@ results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi
 
     //prepare results
     //Pack in the results
-    results_countpairs_theta *results = my_malloc(sizeof(*results), 1);
-    results->nbin = nthetabin;
-    results->npairs = my_malloc(sizeof(uint64_t), nthetabin);
-    results->theta_upp   = my_malloc(sizeof(DOUBLE)  , nthetabin);
-    results->theta_avg  = my_malloc(sizeof(DOUBLE)  , nthetabin);
+    results_countpairs_theta results;
+    results.nbin = nthetabin;
+    results.npairs = my_malloc(sizeof(uint64_t), nthetabin);
+    results.theta_upp   = my_malloc(sizeof(DOUBLE)  , nthetabin);
+    results.theta_avg  = my_malloc(sizeof(DOUBLE)  , nthetabin);
 
     for(int i=0;i<nthetabin;i++) {
-        results->npairs[i] = npairs[i];
-        results->theta_upp[i] = theta_upp[i];
+        results.npairs[i] = npairs[i];
+        results.theta_upp[i] = theta_upp[i];
 #ifdef OUTPUT_THETAAVG
-        results->theta_avg[i] = thetaavg[i];
+        results.theta_avg[i] = thetaavg[i];
 #else
-        results->theta_avg[i] = 0.0;
+        results.theta_avg[i] = 0.0;
 #endif
     }
     free(theta_upp);

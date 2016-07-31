@@ -15,29 +15,29 @@ extern "C" {
 #include "function_precision.h" //for definition of DOUBLE
 #include <inttypes.h> //for uint64_t
 
-    //define the results structure
-    typedef struct{
-        uint64_t *npairs;
-        DOUBLE *rupp;
-        DOUBLE *rpavg;
-        DOUBLE pimax;
-        int nbin;
-        int npibin;
-    } results_countpairs_mocks;
-
-    results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *theta1, DOUBLE *phi1, DOUBLE *czD1,
-                                                const int64_t ND2, DOUBLE *theta2, DOUBLE *phi2, DOUBLE *czD2,
+//define the results structure
+typedef struct{
+    uint64_t *npairs;
+    DOUBLE *rupp;
+    DOUBLE *rpavg;
+    DOUBLE pimax;
+    int nbin;
+    int npibin;
+} results_countpairs_mocks;
+    
+results_countpairs_mocks countpairs_mocks(const int64_t ND1, DOUBLE *theta1, DOUBLE *phi1, DOUBLE *czD1,
+                                          const int64_t ND2, DOUBLE *theta2, DOUBLE *phi2, DOUBLE *czD2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                const int numthreads,
+                                          const int numthreads,
 #endif
-                                                const int autocorr,
-                                                const char *binfile,
-                                                const DOUBLE pimax,
-                                                const int cosmology) __attribute__((warn_unused_result));
+                                          const int autocorr,
+                                          const char *binfile,
+                                          const DOUBLE pimax,
+                                          const int cosmology) __attribute__((warn_unused_result));
 
-    void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz);
-
-    void free_results_mocks(results_countpairs_mocks **results);
+void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz);
+    
+void free_results_mocks(results_countpairs_mocks *results);
 
 #ifdef __cplusplus
 }

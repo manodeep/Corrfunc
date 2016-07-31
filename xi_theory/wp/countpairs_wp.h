@@ -26,7 +26,7 @@ extern "C" {
         int nbin;
     } results_countpairs_wp;
 
-    results_countpairs_wp *countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
+    results_countpairs_wp countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
                                          const double boxsize,
 #if defined(USE_OMP) && defined(_OPENMP)
                                          const int numthreads,
@@ -35,7 +35,7 @@ extern "C" {
                                          const double pimax) __attribute__((warn_unused_result));
 
 
-    void free_results_wp(results_countpairs_wp **results);
+    void free_results_wp(results_countpairs_wp *results);
 
 #ifdef __cplusplus
 }

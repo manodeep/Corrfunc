@@ -37,34 +37,27 @@
 #warning "wp is only valid for PERIODIC boundary conditions. Ignoring the Makefile (non)-definition of PERIODIC"
 #endif
 
-void free_results_wp(results_countpairs_wp **results)
+void free_results_wp(results_countpairs_wp *results)
 {
     if(results == NULL)
         return;
 
-    if(*results == NULL)
-        return;
-
-    results_countpairs_wp *tmp = *results;
-    free(tmp->npairs);
-    free(tmp->rupp);
-    free(tmp->wp);
-    free(tmp->rpavg);
-    free(tmp);
-    tmp = NULL;
+    free(results->npairs);
+    free(results->rupp);
+    free(results->wp);
+    free(results->rpavg);
 }
 
 
 
-results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
-                                     const double boxsize,
+results_countpairs_wp countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
+                                    const double boxsize,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                     const int numthreads,
+                                    const int numthreads,
 #endif
-                                     const char *binfile,
-                                     const double pimax)
+                                    const char *binfile,
+                                    const double pimax)
 {
-
     int bin_refine_factor=2,zbin_refine_factor=1;
     int nmesh_x, nmesh_y, nmesh_z;
 
@@ -289,13 +282,13 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     free_cellarray_index(lattice, totncells, free_wraps);
 
     //Pack in the results
-    results_countpairs_wp *results = my_malloc(sizeof(*results), 1);
-    results->nbin  = nrpbins;
-    results->pimax = pimax;
-    results->npairs = my_malloc(sizeof(uint64_t), nrpbins);
-    results->wp = my_malloc(sizeof(DOUBLE), nrpbins);
-    results->rupp   = my_malloc(sizeof(DOUBLE), nrpbins);
-    results->rpavg  = my_malloc(sizeof(DOUBLE), nrpbins);
+    results_countpairs_wp results;
+    results.nbin  = nrpbins;
+    results.pimax = pimax;
+    results.npairs = my_malloc(sizeof(uint64_t), nrpbins);
+    results.wp = my_malloc(sizeof(DOUBLE), nrpbins);
+    results.rupp   = my_malloc(sizeof(DOUBLE), nrpbins);
+    results.rpavg  = my_malloc(sizeof(DOUBLE), nrpbins);
 
 
     const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
@@ -305,19 +298,19 @@ results_countpairs_wp *countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUB
     DOUBLE twice_pimax = 2.0*pimax;
 
     for(int i=0;i<nrpbins;i++) {
-        results->npairs[i] = npair[i];
-        results->rupp[i] = rupp[i];
+        results.npairs[i] = npair[i];
+        results.rupp[i] = rupp[i];
 #ifdef OUTPUT_RPAVG
-        results->rpavg[i] = rpavg[i];
+        results.rpavg[i] = rpavg[i];
 #else
-        results->rpavg[i] = 0.0;
+        results.rpavg[i] = 0.0;
 #endif
-        const DOUBLE weight0 = (DOUBLE) results->npairs[i];
+        const DOUBLE weight0 = (DOUBLE) results.npairs[i];
         /* compute xi, dividing summed weight by that expected for a random set */
-        const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]-rlow*rlow)*twice_pimax;
+        const DOUBLE vol=M_PI*(results.rupp[i]*results.rupp[i]-rlow*rlow)*twice_pimax;
         const DOUBLE weightrandom = prefac_density_DD*vol;
-        results->wp[i] = (weight0/weightrandom-1)*twice_pimax;
-        rlow=results->rupp[i];
+        results.wp[i] = (weight0/weightrandom-1)*twice_pimax;
+        rlow=results.rupp[i];
     }
     free(rupp);
     return results;
