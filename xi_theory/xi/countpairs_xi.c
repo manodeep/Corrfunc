@@ -33,30 +33,24 @@
 #endif
 
 
-void free_results_xi(results_countpairs_xi **results)
+void free_results_xi(results_countpairs_xi *results)
 {
     if(results == NULL)
         return;
-    if(*results == NULL)
-        return;
 
-    results_countpairs_xi *tmp = *results;
-
-    free(tmp->rupp);
-    free(tmp->xi);
-    free(tmp->npairs);
-    free(tmp->rpavg);
-    free(tmp);
-    tmp = NULL;
+    free(results->rupp);
+    free(results->xi);
+    free(results->npairs);
+    free(results->rpavg);
 }
 
 
-results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
-                                     const double boxsize,
+results_countpairs_xi countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
+                                    const double boxsize,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                     const int numthreads,
+                                    const int numthreads,
 #endif
-                                     const char *binfile)
+                                    const char *binfile)
 {
     //How many bins to subdivide rmax into -> affects runtime on O(20-30%) levels.
     //Check with your typical use-case and set appropriately. Values of 1,2 and 3 are
@@ -285,12 +279,12 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
 #endif
 
     //Pack in the results
-    results_countpairs_xi *results = my_malloc(sizeof(*results), 1);
-    results->nbin = nbins;
-    results->npairs = my_malloc(sizeof(uint64_t), nbins);
-    results->xi     = my_malloc(sizeof(DOUBLE)  , nbins);
-    results->rupp   = my_malloc(sizeof(DOUBLE)  , nbins);
-    results->rpavg  = my_malloc(sizeof(DOUBLE)  , nbins);
+    results_countpairs_xi results;
+    results.nbin = nbins;
+    results.npairs = my_malloc(sizeof(uint64_t), nbins);
+    results.xi     = my_malloc(sizeof(DOUBLE)  , nbins);
+    results.rupp   = my_malloc(sizeof(DOUBLE)  , nbins);
+    results.rpavg  = my_malloc(sizeof(DOUBLE)  , nbins);
 
     const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
     const DOUBLE density=0.5*avgweight2*ND/(boxsize*boxsize*boxsize);//0.5 because pairs are not double-counted
@@ -299,21 +293,21 @@ results_countpairs_xi *countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUB
     DOUBLE rlow=0.0 ;
     //The first bin contains junk
     for(int i=0;i<nbins;i++) {
-        results->npairs[i] = npairs[i];
-        results->rupp[i]   = rupp[i];
+        results.npairs[i] = npairs[i];
+        results.rupp[i]   = rupp[i];
 #ifdef OUTPUT_RPAVG
-        results->rpavg[i] = rpavg[i];
+        results.rpavg[i] = rpavg[i];
 #else
-        results->rpavg[i] = 0.0;
+        results.rpavg[i] = 0.0;
 #endif
 
-        const DOUBLE weight0 = (DOUBLE) results->npairs[i];
+        const DOUBLE weight0 = (DOUBLE) results.npairs[i];
         const DOUBLE vol=4.0/3.0*M_PI*(rupp[i]*rupp[i]*rupp[i]-rlow*rlow*rlow);
         /* compute xi, dividing summed weight by that expected for a random set */
         const DOUBLE weightrandom = prefac_density*vol;
         assert(weightrandom > 0 && "Random weight is <= 0.0 - that is impossible");
-        results->xi[i] = (weight0/weightrandom-1.0);
-        rlow=results->rupp[i];
+        results.xi[i] = (weight0/weightrandom-1.0);
+        rlow=results.rupp[i];
     }
 
     const int free_wraps = 1;

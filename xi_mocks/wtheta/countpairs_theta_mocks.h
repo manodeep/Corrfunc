@@ -25,7 +25,7 @@ extern "C" {
     } results_countpairs_theta;
 
 
-    results_countpairs_theta * countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
+    results_countpairs_theta countpairs_theta_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
                                                       const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                       const int numthreads,
@@ -33,16 +33,16 @@ extern "C" {
                                                       const int autocorr,
                                                       const char *binfile) __attribute__((warn_unused_result));
 
-    results_countpairs_theta * countpairs_theta_brute_force(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
-                                                            const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
+    results_countpairs_theta countpairs_theta_brute_force(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1,
+                                                          const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                            const int numthreads,
+                                                          const int numthreads,
 #endif
-                                                            const int autocorr,
-                                                            const char *binfile) __attribute__((warn_unused_result));
-
-
-    void free_results_countpairs_theta(results_countpairs_theta **results);
+                                                          const int autocorr,
+                                                          const char *binfile) __attribute__((warn_unused_result));
+    
+    
+    void free_results_countpairs_theta(results_countpairs_theta *results);
     void check_ra_dec(const int64_t N, DOUBLE *phi, DOUBLE *theta);
 
 #ifdef __cplusplus

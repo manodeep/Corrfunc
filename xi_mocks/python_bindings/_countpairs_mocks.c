@@ -547,15 +547,15 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
 
-    results_countpairs_mocks *results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
-                                                          ND2,phiD2,thetaD2,czD2,
+    results_countpairs_mocks results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
+                                                         ND2,phiD2,thetaD2,czD2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                          nthreads,
+                                                         nthreads,
 #endif
-                                                          autocorr,
-                                                          binfile,
-                                                          pimax,
-                                                          cosmology);
+                                                         autocorr,
+                                                         binfile,
+                                                         pimax,
+                                                         cosmology);
 
     NPY_END_THREADS;
     
@@ -565,11 +565,11 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
 
 #if 0
     /* Output pairs*/
-    for(int i=1;i<results->nbin;i++) {
-        const double logrp = LOG10(results->rupp[i]);
+    for(int i=1;i<results.nbin;i++) {
+        const double logrp = LOG10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             const int index = i*(npibin+1) + j;
-            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
         }
     }
 #endif
@@ -577,23 +577,23 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
 
     /* Build the output list */
     PyObject *ret = PyList_New(0);//create an empty list
-    DOUBLE rlow=results->rupp[0];
-    const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
+    DOUBLE rlow=results.rupp[0];
+    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
 
-    for(int i=1;i<results->nbin;i++) {
-        for(int j=0;j<results->npibin;j++) {
-            const int bin_index = i*(results->npibin + 1) + j;
+    for(int i=1;i<results.nbin;i++) {
+        for(int j=0;j<results.npibin;j++) {
+            const int bin_index = i*(results.npibin + 1) + j;
             PyObject *item = NULL;
-            const DOUBLE rpavg = results->rpavg[bin_index];
+            const DOUBLE rpavg = results.rpavg[bin_index];
 #ifdef DOUBLE_PREC
-            item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[bin_index]);
+            item = Py_BuildValue("(ddddk)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index]);
 #else
-            item = Py_BuildValue("(ffffk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[bin_index]);
+            item = Py_BuildValue("(ffffk)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index]);
 #endif
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
-        rlow=results->rupp[i];
+        rlow=results.rupp[i];
     }
     free_results_mocks(&results);
     return ret;
@@ -675,13 +675,13 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
 
-    results_countpairs_theta *results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
-                                                               ND2,phiD2,thetaD2,
+    results_countpairs_theta results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
+                                                              ND2,phiD2,thetaD2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                               nthreads,
+                                                              nthreads,
 #endif
-                                                               autocorr,
-                                                               binfile) ;
+                                                              autocorr,
+                                                              binfile) ;
 
     NPY_END_THREADS;
     
@@ -691,28 +691,28 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
 
 #if 0
     /*---Output-Pairs-------------------------------------*/
-    DOUBLE theta_low = results->theta_upp[0];
-    for(int i=1;i<results->nbin;i++) {
-        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->theta_avg[i],theta_low,results->theta_upp[i]);
-        theta_low=results->theta_upp[i];
+    DOUBLE theta_low = results.theta_upp[0];
+    for(int i=1;i<results.nbin;i++) {
+        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i]);
+        theta_low=results.theta_upp[i];
     }
 #endif
 
     /* Build the output list */
     PyObject *ret = PyList_New(0);
-    DOUBLE rlow=results->theta_upp[0];
-    for(int i=1;i<results->nbin;i++) {
+    DOUBLE rlow=results.theta_upp[0];
+    for(int i=1;i<results.nbin;i++) {
         PyObject *item = NULL;
-        const DOUBLE theta_avg = results->theta_avg[i];
+        const DOUBLE theta_avg = results.theta_avg[i];
 #ifdef DOUBLE_PREC
-        item = Py_BuildValue("(dddk)", rlow,results->theta_upp[i],theta_avg,results->npairs[i]);
+        item = Py_BuildValue("(dddk)", rlow,results.theta_upp[i],theta_avg,results.npairs[i]);
 #else
-        item = Py_BuildValue("(fffk)", rlow,results->theta_upp[i],theta_avg,results->npairs[i]);
+        item = Py_BuildValue("(fffk)", rlow,results.theta_upp[i],theta_avg,results.npairs[i]);
 #endif//DOUBLE_PREC
 
         PyList_Append(ret, item);
         Py_XDECREF(item);
-        rlow=results->theta_upp[i];
+        rlow=results.theta_upp[i];
     }
     free_results_countpairs_theta(&results);
     return ret;
@@ -807,13 +807,13 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
     
-    results_countspheres_mocks *results = countspheres_mocks(ND1, phiD1,thetaD1, czD1,
-                                                             ND2, phiD2,thetaD2, czD2,
-                                                             threshold_neighbors,
-                                                             rmax, nbin, num_spheres,
-                                                             num_pN,
-                                                             centers_file,
-                                                             cosmology);
+    results_countspheres_mocks results = countspheres_mocks(ND1, phiD1,thetaD1, czD1,
+                                                            ND2, phiD2,thetaD2, czD2,
+                                                            threshold_neighbors,
+                                                            rmax, nbin, num_spheres,
+                                                            num_pN,
+                                                            centers_file,
+                                                            cosmology);
 
     NPY_END_THREADS;
 
@@ -824,11 +824,11 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
 #if 0
     // Output the results
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-    for(int ibin=0;ibin<results->nbin;ibin++) {
+    for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
         fprintf(stdout,"%10.2"DOUBLE_FORMAT" ", r);
         for(int i=0;i<num_pN;i++) {
-            fprintf(stdout," %10.4e", (results->pN)[ibin][i]);
+            fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
         }
         fprintf(stdout,"\n");
     }
@@ -837,7 +837,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     /* Build the output list (of lists, since num_pN is determined at runtime) */
     PyObject *ret = PyList_New(0);
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-    for(int ibin=0;ibin<results->nbin;ibin++) {
+    for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
         PyObject *item = PyList_New(0);
         PyObject *this_val = Py_BuildValue("d",r);
@@ -845,9 +845,9 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
         Py_XDECREF(this_val);
         for(int i=0;i<num_pN;i++) {
 #ifdef DOUBLE_PREC
-            this_val = Py_BuildValue("d",(results->pN)[ibin][i]);
+            this_val = Py_BuildValue("d",(results.pN)[ibin][i]);
 #else
-            this_val = Py_BuildValue("d",(results->pN)[ibin][i]);
+            this_val = Py_BuildValue("d",(results.pN)[ibin][i]);
 #endif
             PyList_Append(item, this_val);
             Py_XDECREF(this_val);
