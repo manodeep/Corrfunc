@@ -108,13 +108,13 @@ int main(int argc, char **argv)
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs_theta *results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
-                                                               ND2,phiD2,thetaD2,
+    results_countpairs_theta results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
+                                                              ND2,phiD2,thetaD2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                               nthreads,
+                                                              nthreads,
 #endif
-                                                               autocorr,
-                                                               binfile) ;
+                                                              autocorr,
+                                                              binfile) ;
 
     gettimeofday(&t1,NULL);
     pair_time = ADD_DIFF_TIME(t0,t1);
@@ -124,10 +124,10 @@ int main(int argc, char **argv)
     }
 
     /*---Output-Pairs-------------------------------------*/
-    DOUBLE theta_low = results->theta_upp[0];
-    for(int i=1;i<results->nbin;i++) {
-        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->theta_avg[i],theta_low,results->theta_upp[i]);
-        theta_low=results->theta_upp[i];
+    DOUBLE theta_low = results.theta_upp[0];
+    for(int i=1;i<results.nbin;i++) {
+        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i]);
+        theta_low=results.theta_upp[i];
     }
 
     free_results_countpairs_theta(&results);
