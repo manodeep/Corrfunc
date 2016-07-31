@@ -146,14 +146,14 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,x1,y1,z1,
-                                                         ND2,x2,y2,z2,
+    results_countpairs_rp_pi results = countpairs_rp_pi(ND1,x1,y1,z1,
+                                                        ND2,x2,y2,z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                         nthreads,
+                                                        nthreads,
 #endif
-                                                         autocorr,
-                                                         binfile,
-                                                         pimax);
+                                                        autocorr,
+                                                        binfile,
+                                                        pimax);
 
 
 
@@ -164,13 +164,13 @@ int main(int argc, char *argv[])
         free(x2);free(y2);free(z2);
     }
 
-    const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
-    const int npibin = results->npibin;
-    for(int i=1;i<results->nbin;i++) {
-        const double logrp = LOG10(results->rupp[i]);
+    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+    const int npibin = results.npibin;
+    for(int i=1;i<results.nbin;i++) {
+        const double logrp = LOG10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
-            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
         }
     }
 

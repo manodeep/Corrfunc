@@ -133,20 +133,20 @@ int main(int argc, char **argv)
                 "../xi_of_r/DD",file,fileformat,file,fileformat,binfile);
 #endif
 
-        results_countpairs *results = countpairs(ND1,x1,y1,z1,
-                                                 ND2,x2,y2,z2,
+        results_countpairs results = countpairs(ND1,x1,y1,z1,
+                                                ND2,x2,y2,z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                 nthreads,
+                                                nthreads,
 #endif
-                                                 autocorr,
-                                                 binfile);
+                                                autocorr,
+                                                binfile);
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
-        DOUBLE rlow=results->rupp[0];
-        for(int i=1;i<results->nbin;i++) {
-            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]);
-            rlow=results->rupp[i];
+        DOUBLE rlow=results.rupp[0];
+        for(int i=1;i<results.nbin;i++) {
+            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+            rlow=results.rupp[i];
         }
 #endif
         fprintf(stderr,ANSI_COLOR_GREEN "Done 3-d auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
                 "../xi_rp_pi/DDrppi",file,fileformat,file,fileformat,binfile,pimax);
 #endif
 
-        results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,x1,y1,z1,
+        results_countpairs_rp_pi results = countpairs_rp_pi(ND1,x1,y1,z1,
                                                              ND2,x2,y2,z2,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                              nthreads,
@@ -180,13 +180,13 @@ int main(int argc, char **argv)
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
-        const int npibin = results->npibin;
-        const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
-        for(int i=1;i<results->nbin;i++) {
-            const double logrp = LOG10(results->rupp[i]);
+        const int npibin = results.npibin;
+        const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+        for(int i=1;i<results.nbin;i++) {
+            const double logrp = LOG10(results.rupp[i]);
             for(int j=0;j<npibin;j++) {
                 int index = i*(npibin+1) + j;
-                fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+                fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
             }
         }
 #endif
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent wp calculation would be:\n `%s %lf %s %s %s %lf'" ANSI_COLOR_RESET "\n",
                 "../wp/wp",boxsize,file,fileformat,binfile,pimax);
 #endif
-        results_countpairs_wp *results = countpairs_wp(ND1,x1,y1,z1,
+        results_countpairs_wp results = countpairs_wp(ND1,x1,y1,z1,
                                                        boxsize,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                        nthreads,
@@ -219,10 +219,10 @@ int main(int argc, char **argv)
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
-        DOUBLE rlow=results->rupp[0];
-        for(int i=1;i<results->nbin;++i) {
-            fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->wp[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
-            rlow=results->rupp[i];
+        DOUBLE rlow=results.rupp[0];
+        for(int i=1;i<results.nbin;++i) {
+            fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.wp[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
+            rlow=results.rupp[i];
         }
 #endif
 
@@ -243,7 +243,7 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent xi calculation would be:\n `%s %lf %s %s %s'" ANSI_COLOR_RESET "\n",
                 "../xi/xi",boxsize,file,fileformat,binfile);
 #endif
-        results_countpairs_xi *results = countpairs_xi(ND1,x1,y1,z1,
+        results_countpairs_xi results = countpairs_xi(ND1,x1,y1,z1,
                                                        boxsize,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                        nthreads,
@@ -253,10 +253,10 @@ int main(int argc, char **argv)
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
-        DOUBLE rlow=results->rupp[0];
-        for(int i=1;i<results->nbin;++i) {
-            fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->xi[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
-            rlow=results->rupp[i];
+        DOUBLE rlow=results.rupp[0];
+        for(int i=1;i<results.nbin;++i) {
+            fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
+            rlow=results.rupp[i];
         }
 #endif
 
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent vpf calculation would be:\n `%s %lf %d %d %d %s %s %ld'" ANSI_COLOR_RESET "\n",
                 "../vpf/vpf",rmax,nbin,nc,num_pN,file,fileformat,seed);
 
-        results_countspheres *results = countspheres(ND1, x1, y1, z1,
+        results_countspheres results = countspheres(ND1, x1, y1, z1,
                                                      rmax, nbin, nc,
                                                      num_pN,
                                                      seed);
@@ -291,11 +291,11 @@ int main(int argc, char **argv)
 #if 0
         //Output the results
         const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-        for(int ibin=0;ibin<results->nbin;ibin++) {
+        for(int ibin=0;ibin<results.nbin;ibin++) {
             const double r=(ibin+1)*rstep;
             fprintf(stdout,"%"DOUBLE_FORMAT" ", r);
             for(int i=0;i<num_pN;i++) {
-                fprintf(stdout," %10.4e", (results->pN)[ibin][i]);
+                fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
             }
             fprintf(stdout,"\n");
         }

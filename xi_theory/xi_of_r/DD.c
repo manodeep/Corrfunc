@@ -118,13 +118,13 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs *results = countpairs(ND1,x1,y1,z1,
-                                             ND2,x2,y2,z2,
+    results_countpairs results = countpairs(ND1,x1,y1,z1,
+                                            ND2,x2,y2,z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                             nthreads,
+                                            nthreads,
 #endif
-                                             autocorr,
-                                             binfile);
+                                            autocorr,
+                                            binfile);
 
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
@@ -133,10 +133,10 @@ int main(int argc, char *argv[])
         free(x2);free(y2);free(z2);
     }
 
-    DOUBLE rlow=results->rupp[0];
-    for(int i=1;i<results->nbin;i++) {
-        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]);
-        rlow=results->rupp[i];
+    DOUBLE rlow=results.rupp[0];
+    for(int i=1;i<results.nbin;i++) {
+        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+        rlow=results.rupp[i];
     }
 
     //free the memory in the results structx
