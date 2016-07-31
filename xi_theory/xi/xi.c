@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs_xi *results = countpairs_xi(ND1, x1, y1, z1,
+    results_countpairs_xi results = countpairs_xi(ND1, x1, y1, z1,
                                                    boxsize,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                    nthreads,
@@ -130,10 +130,10 @@ int main(int argc, char *argv[])
     /* Note: we discard the first bin, to mimic the fact that close pairs
      * are disregarded in SDSS data.
      */
-    DOUBLE rlow=results->rupp[0];
-    for(int i=1;i<results->nbin;++i) {
-        fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results->xi[i],results->rpavg[i],rlow,results->rupp[i],results->npairs[i]);
-        rlow=results->rupp[i];
+    DOUBLE rlow=results.rupp[0];
+    for(int i=1;i<results.nbin;++i) {
+        fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
+        rlow=results.rupp[i];
     }
 
     //free the memory in the results struct

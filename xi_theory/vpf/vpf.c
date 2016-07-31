@@ -100,18 +100,18 @@ int main(int argc, char *argv[])
     np = read_positions(file,fileformat, sizeof(DOUBLE), 3, &x, &y, &z);
     gettimeofday(&t1,NULL);
 
-    results_countspheres *results = countspheres(np, x, y, z,
-                                                 rmax, nbin, nc,
-                                                 num_pN,
-                                                 seed);
+    results_countspheres results = countspheres(np, x, y, z,
+                                                rmax, nbin, nc,
+                                                num_pN,
+                                                seed);
 
     //Output the results
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-    for(int ibin=0;ibin<results->nbin;ibin++) {
+    for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
         fprintf(stdout,"%"DOUBLE_FORMAT" ", r);
         for(int i=0;i<num_pN;i++) {
-            fprintf(stdout," %10.4e", (results->pN)[ibin][i]);
+            fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
         }
         fprintf(stdout,"\n");
     }

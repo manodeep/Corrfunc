@@ -150,22 +150,22 @@ int main(int argc, char *argv[])
         Nran = nc;// HACK: set Nran to number of spheres requested. Code will not execute loop otherwise
     }
 
-    results_countspheres_mocks *results = countspheres_mocks(Ngal, ra, dec, cz,
-                                                             Nran, xran, yran, zran,
-                                                             threshold_neighbors,
-                                                             rmax, nbin, nc,
-                                                             num_pN,
-                                                             centers_file,
-                                                             cosmology);
+    results_countspheres_mocks results = countspheres_mocks(Ngal, ra, dec, cz,
+                                                            Nran, xran, yran, zran,
+                                                            threshold_neighbors,
+                                                            rmax, nbin, nc,
+                                                            num_pN,
+                                                            centers_file,
+                                                            cosmology);
 
 
     //Output the results
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-    for(int ibin=0;ibin<results->nbin;ibin++) {
+    for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
         fprintf(stdout,"%10.2"DOUBLE_FORMAT" ", r);
         for(int i=0;i<num_pN;i++) {
-            fprintf(stdout," %10.4e", (results->pN)[ibin][i]);
+            fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
         }
         fprintf(stdout,"\n");
     }

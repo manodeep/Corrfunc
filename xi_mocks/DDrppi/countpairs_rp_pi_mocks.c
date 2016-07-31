@@ -33,21 +33,14 @@
 #endif
 
 
-void free_results_mocks(results_countpairs_mocks **results)
+void free_results_mocks(results_countpairs_mocks *results)
 {
     if(results==NULL)
         return;
 
-    if(*results==NULL)
-        return;
-
-    results_countpairs_mocks *tmp = *results;
-
-    free(tmp->npairs);
-    free(tmp->rupp);
-    free(tmp->rpavg);
-    free(tmp);
-    tmp = NULL;
+    free(results->npairs);
+    free(results->rupp);
+    free(results->rpavg);
 }
 
 
@@ -104,15 +97,15 @@ void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz)
 }
 
 
-results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1, DOUBLE *czD1,
-                                            const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2, DOUBLE *czD2,
+results_countpairs_mocks countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOUBLE *theta1, DOUBLE *czD1,
+                                          const int64_t ND2, DOUBLE *phi2, DOUBLE *theta2, DOUBLE *czD2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                            const int numthreads,
+                                          const int numthreads,
 #endif
-                                            const int autocorr,
-                                            const char *binfile,
-                                            const DOUBLE pimax,
-                                            const int cosmology)
+                                          const int autocorr,
+                                          const char *binfile,
+                                          const DOUBLE pimax,
+                                          const int cosmology)
 {
     /* DOUBLE logrpmax,logrpmin,dlogrp,inv_dlogrp; */
     DOUBLE dpi,inv_dpi;
@@ -812,24 +805,24 @@ results_countpairs_mocks * countpairs_mocks(const int64_t ND1, DOUBLE *phi1, DOU
     if(autocorr==0) free(d2);
 
     //Pack in the results
-    results_countpairs_mocks *results = my_malloc(sizeof(*results), 1);
-    results->nbin   = nrpbin;
-    results->npibin = npibin;
-    results->pimax  = pimax;
-    results->npairs = my_malloc(sizeof(uint64_t), totnbins);
-    results->rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
-    results->rpavg  = my_malloc(sizeof(DOUBLE)  , totnbins);
+    results_countpairs_mocks results;
+    results.nbin   = nrpbin;
+    results.npibin = npibin;
+    results.pimax  = pimax;
+    results.npairs = my_malloc(sizeof(uint64_t), totnbins);
+    results.rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
+    results.rpavg  = my_malloc(sizeof(DOUBLE)  , totnbins);
 
     for(int i=0;i<nrpbin;i++) {
-        results->rupp[i] = rupp[i];
+        results.rupp[i] = rupp[i];
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
             assert(index < totnbins && "index must be in range");
-            results->npairs[index] = npairs[index];
+            results.npairs[index] = npairs[index];
 #ifdef OUTPUT_RPAVG
-            results->rpavg[index] = rpavg[index];
+            results.rpavg[index] = rpavg[index];
 #else
-            results->rpavg[index] = 0.0;
+            results.rpavg[index] = 0.0;
 #endif
         }
     }

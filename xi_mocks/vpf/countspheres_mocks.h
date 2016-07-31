@@ -17,29 +17,29 @@ extern "C" {
 #include <inttypes.h> //for uint64_t
 
 
-    //define the results structure
-    typedef struct{
-        DOUBLE **pN;
-        DOUBLE rmax;
-        int nbin;
-        int nc;
-        int num_pN;
-    } results_countspheres_mocks;
+//define the results structure
+typedef struct{
+    DOUBLE **pN;
+    DOUBLE rmax;
+    int nbin;
+    int nc;
+    int num_pN;
+} results_countspheres_mocks;
 
 
-    int count_neighbors(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const DOUBLE smin,const DOUBLE inv_rcube,const DOUBLE rmax,
-                        const int ngrid,const cellarray *lattice, const int nthreshold, const int bin_refine_factor) __attribute__((warn_unused_result));
+int count_neighbors(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const DOUBLE smin,const DOUBLE inv_rcube,const DOUBLE rmax,
+                    const int ngrid,const cellarray *lattice, const int nthreshold, const int bin_refine_factor) __attribute__((warn_unused_result));
 
-    results_countspheres_mocks * countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DOUBLE *zgal,
-                                                    const int64_t Nran, DOUBLE *xran, DOUBLE *yran, DOUBLE *zran,
-                                                    const int threshold_neighbors,
-                                                    const DOUBLE rmax, const int nbin, const int nc,
-                                                    const int num_pN,
-                                                    const char *centers_file,
-                                                    const int cosmology)  __attribute__((warn_unused_result));
+results_countspheres_mocks countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DOUBLE *zgal,
+                                              const int64_t Nran, DOUBLE *xran, DOUBLE *yran, DOUBLE *zran,
+                                              const int threshold_neighbors,
+                                              const DOUBLE rmax, const int nbin, const int nc,
+                                              const int num_pN,
+                                              const char *centers_file,
+                                              const int cosmology)  __attribute__((warn_unused_result));
+    
 
-
-    void free_results_countspheres_mocks(results_countspheres_mocks **results);
+void free_results_countspheres_mocks(results_countspheres_mocks *results);
 
 #ifdef __cplusplus
 }

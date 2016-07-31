@@ -536,13 +536,13 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
 
-    results_countpairs *results = countpairs(ND1,X1,Y1,Z1,
-                                             ND2,X2,Y2,Z2,
+    results_countpairs results = countpairs(ND1,X1,Y1,Z1,
+                                            ND2,X2,Y2,Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                             nthreads,
+                                            nthreads,
 #endif
-                                             autocorr,
-                                             binfile);
+                                            autocorr,
+                                            binfile);
     NPY_END_THREADS;
 
     /* Clean up. */
@@ -551,19 +551,19 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
 
     /* Build the output list */
     PyObject *ret = PyList_New(0);
-    DOUBLE rlow=results->rupp[0];
-    for(int i=1;i<results->nbin;i++) {
+    DOUBLE rlow=results.rupp[0];
+    for(int i=1;i<results.nbin;i++) {
         PyObject *item = NULL;
-        const DOUBLE rpavg = results->rpavg[i];
+        const DOUBLE rpavg = results.rpavg[i];
 
 #ifdef DOUBLE_PREC
-        item = Py_BuildValue("(dddk)", rlow,results->rupp[i],rpavg,results->npairs[i]);
+        item = Py_BuildValue("(dddk)", rlow,results.rupp[i],rpavg,results.npairs[i]);
 #else
-        item = Py_BuildValue("(fffk)", rlow,results->rupp[i],rpavg,results->npairs[i]);
+        item = Py_BuildValue("(fffk)", rlow,results.rupp[i],rpavg,results.npairs[i]);
 #endif
         PyList_Append(ret, item);
         Py_XDECREF(item);
-        rlow=results->rupp[i];
+        rlow=results.rupp[i];
     }
 
     free_results(&results);
@@ -650,7 +650,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
     
-    results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,X1,Y1,Z1,
+    results_countpairs_rp_pi results = countpairs_rp_pi(ND1,X1,Y1,Z1,
                                                          ND2,X2,Y2,Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                          nthreads,
@@ -667,23 +667,23 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 
     /* Build the output list */
     PyObject *ret = PyList_New(0);//create an empty list
-    DOUBLE rlow=results->rupp[0];
-    const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
+    DOUBLE rlow=results.rupp[0];
+    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
 
-    for(int i=1;i<results->nbin;i++) {
-        for(int j=0;j<results->npibin;j++) {
-            const int bin_index = i*(results->npibin + 1) + j;
+    for(int i=1;i<results.nbin;i++) {
+        for(int j=0;j<results.npibin;j++) {
+            const int bin_index = i*(results.npibin + 1) + j;
             PyObject *item = NULL;
-            const DOUBLE rpavg = results->rpavg[bin_index];
+            const DOUBLE rpavg = results.rpavg[bin_index];
 #ifdef DOUBLE_PREC
-            item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[bin_index]);
+            item = Py_BuildValue("(ddddk)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index]);
 #else
-            item = Py_BuildValue("(ffffk)", rlow,results->rupp[i],rpavg,(j+1)*dpi,results->npairs[bin_index]);
+            item = Py_BuildValue("(ffffk)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index]);
 #endif
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
-        rlow=results->rupp[i];
+        rlow=results.rupp[i];
     }
     free_results_rp_pi(&results);
     return ret;
@@ -744,42 +744,42 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
 
-    results_countpairs_wp *results = countpairs_wp(ND1,X1,Y1,Z1,
-                                                   boxsize,
+    results_countpairs_wp results = countpairs_wp(ND1,X1,Y1,Z1,
+                                                  boxsize,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                   nthreads,
+                                                  nthreads,
 #endif
-                                                   binfile,
-                                                   pimax);
-
+                                                  binfile,
+                                                  pimax);
+    
     NPY_END_THREADS;
     
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
     
 #if 0
-    for(int i=1;i<results->nbin;i++) {
-        const DOUBLE rpavg = results->rpavg[i];
-        fprintf(stderr,"%lf %lf %lf %lf %"PRIu64"\n",results->rupp[i-1],results->rupp[i],rpavg,results->wp[i],results->npairs[i]);
+    for(int i=1;i<results.nbin;i++) {
+        const DOUBLE rpavg = results.rpavg[i];
+        fprintf(stderr,"%lf %lf %lf %lf %"PRIu64"\n",results.rupp[i-1],results.rupp[i],rpavg,results.wp[i],results.npairs[i]);
     }
 #endif
 
     /* Build the output list */
     PyObject *ret = PyList_New(0);
-    DOUBLE rlow=results->rupp[0];
-    for(int i=1;i<results->nbin;i++) {
+    DOUBLE rlow=results.rupp[0];
+    for(int i=1;i<results.nbin;i++) {
         PyObject *item = NULL;
-        const DOUBLE rpavg = results->rpavg[i];
+        const DOUBLE rpavg = results.rpavg[i];
 
 #ifdef DOUBLE_PREC
-        item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,results->wp[i],results->npairs[i]);
+        item = Py_BuildValue("(ddddk)", rlow,results.rupp[i],rpavg,results.wp[i],results.npairs[i]);
 #else
-        item = Py_BuildValue("(ffffk)", rlow,results->rupp[i],rpavg,results->wp[i],results->npairs[i]);
+        item = Py_BuildValue("(ffffk)", rlow,results.rupp[i],rpavg,results.wp[i],results.npairs[i]);
 #endif//DOUBLE_PREC
 
         PyList_Append(ret, item);
         Py_XDECREF(item);
-        rlow=results->rupp[i];
+        rlow=results.rupp[i];
     }
     free_results_wp(&results);
     return ret;
@@ -841,40 +841,40 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args)
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
 
-    results_countpairs_xi *results = countpairs_xi(ND1,X1,Y1,Z1,
-                                                   boxsize,
+    results_countpairs_xi results = countpairs_xi(ND1,X1,Y1,Z1,
+                                                  boxsize,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                   nthreads,
+                                                  nthreads,
 #endif
-                                                   binfile);
+                                                  binfile);
     NPY_END_THREADS;
 
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
 
 #if 0
-    for(int i=1;i<results->nbin;i++) {
-        const DOUBLE rpavg = results->rpavg[i];
-        fprintf(stderr,"%lf %lf %lf %lf %"PRIu64"\n",results->rupp[i-1],results->rupp[i],rpavg,results->xi[i],results->npairs[i]);
+    for(int i=1;i<results.nbin;i++) {
+        const DOUBLE rpavg = results.rpavg[i];
+        fprintf(stderr,"%lf %lf %lf %lf %"PRIu64"\n",results.rupp[i-1],results.rupp[i],rpavg,results.xi[i],results.npairs[i]);
     }
 #endif
 
     /* Build the output list */
     PyObject *ret = PyList_New(0);
-    DOUBLE rlow=results->rupp[0];
-    for(int i=1;i<results->nbin;i++) {
+    DOUBLE rlow=results.rupp[0];
+    for(int i=1;i<results.nbin;i++) {
         PyObject *item = NULL;
-        const DOUBLE rpavg = results->rpavg[i];
+        const DOUBLE rpavg = results.rpavg[i];
 
 #ifdef DOUBLE_PREC
-        item = Py_BuildValue("(ddddk)", rlow,results->rupp[i],rpavg,results->xi[i],results->npairs[i]);
+        item = Py_BuildValue("(ddddk)", rlow,results.rupp[i],rpavg,results.xi[i],results.npairs[i]);
 #else
-        item = Py_BuildValue("(ffffk)", rlow,results->rupp[i],rpavg,results->xi[i],results->npairs[i]);
+        item = Py_BuildValue("(ffffk)", rlow,results.rupp[i],rpavg,results.xi[i],results.npairs[i]);
 #endif//DOUBLE_PREC
 
         PyList_Append(ret, item);
         Py_XDECREF(item);
-        rlow=results->rupp[i];
+        rlow=results.rupp[i];
     }
     free_results_xi(&results);
     return ret;
@@ -933,10 +933,10 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args)
     DOUBLE *Z1 = (DOUBLE *)PyArray_DATA((PyArrayObject *) z1_array);
 
     /* Do the VPF calculation */
-    results_countspheres *results = countspheres(ND1, X1, Y1, Z1,
-                                                 rmax, nbin, nc,
-                                                 num_pN,
-                                                 seed);
+    results_countspheres results = countspheres(ND1, X1, Y1, Z1,
+                                                rmax, nbin, nc,
+                                                num_pN,
+                                                seed);
 
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
@@ -944,7 +944,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args)
     /* Build the output list (of lists, since num_pN is determined at runtime) */
     PyObject *ret = PyList_New(0);
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-    for(int ibin=0;ibin<results->nbin;ibin++) {
+    for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
         PyObject *item = PyList_New(0);
         PyObject *this_val = Py_BuildValue("d",r);
@@ -952,9 +952,9 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args)
         Py_XDECREF(this_val);
         for(int i=0;i<num_pN;i++) {
 #ifdef DOUBLE_PREC
-            this_val = Py_BuildValue("d",(results->pN)[ibin][i]);
+            this_val = Py_BuildValue("d",(results.pN)[ibin][i]);
 #else
-            this_val = Py_BuildValue("d",(results->pN)[ibin][i]);
+            this_val = Py_BuildValue("d",(results.pN)[ibin][i]);
 #endif
             PyList_Append(item, this_val);
             Py_XDECREF(this_val);

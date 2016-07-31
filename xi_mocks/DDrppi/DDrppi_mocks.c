@@ -137,15 +137,15 @@ int main(int argc, char *argv[])
 
 
     /*---Count-pairs--------------------------------------*/
-    results_countpairs_mocks *results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
-                                                          ND2,phiD2,thetaD2,czD2,
+    results_countpairs_mocks results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
+                                                         ND2,phiD2,thetaD2,czD2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                          nthreads,
+                                                         nthreads,
 #endif
-                                                          autocorr,
-                                                          binfile,
-                                                          pimax,
-                                                          cosmology);
+                                                         autocorr,
+                                                         binfile,
+                                                         pimax,
+                                                         cosmology);
 
     free(phiD1);free(thetaD1);free(czD1);
     if(autocorr == 0) {
@@ -153,13 +153,13 @@ int main(int argc, char *argv[])
     }
 
 
-    const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
-    const int npibin = results->npibin;
-    for(int i=1;i<results->nbin;i++) {
-        const double logrp = LOG10(results->rupp[i]);
+    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+    const int npibin = results.npibin;
+    for(int i=1;i<results.nbin;i++) {
+        const double logrp = LOG10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             const int index = i*(npibin+1) + j;
-            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
         }
     }
 

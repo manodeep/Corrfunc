@@ -78,20 +78,20 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     int autocorr = (X1==X2) ? 1:0;
 
     //Do the straight-up DD counts
-    results_countpairs *results = countpairs(ND1,X1,Y1,Z1,
-                                             ND2,X2,Y2,Z2,
+    results_countpairs results = countpairs(ND1,X1,Y1,Z1,
+                                            ND2,X2,Y2,Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                             nthreads,
+                                            nthreads,
 #endif
-                                             autocorr,
-                                             binfile);
-    DOUBLE rlow=results->rupp[0];
+                                            autocorr,
+                                            binfile);
+    DOUBLE rlow=results.rupp[0];
     FILE *fp=NULL;
 
     fp=my_fopen(tmpoutputfile,"w");
-    for(int i=1;i<results->nbin;i++) {
-        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->rpavg[i],rlow,results->rupp[i]);
-        rlow=results->rupp[i];
+    for(int i=1;i<results.nbin;i++) {
+        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+        rlow=results.rupp[i];
     }
     fclose(fp);
 
@@ -107,23 +107,23 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
 
-    results_countpairs_rp_pi *results = countpairs_rp_pi(ND1,X1,Y1,Z1,
-                                                         ND2,X2,Y2,Z2,
+    results_countpairs_rp_pi results = countpairs_rp_pi(ND1,X1,Y1,Z1,
+                                                        ND2,X2,Y2,Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                                         nthreads,
+                                                        nthreads,
 #endif
-                                                         autocorr,
-                                                         binfile,
-                                                         pimax);
+                                                        autocorr,
+                                                        binfile,
+                                                        pimax);
 
-    const int npibin = results->npibin;
-    const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
+    const int npibin = results.npibin;
+    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
     FILE *fp=my_fopen(tmpoutputfile,"w");
-    for(int i=1;i<results->nbin;i++) {
-        const double logrp = LOG10(results->rupp[i]);
+    for(int i=1;i<results.nbin;i++) {
+        const double logrp = LOG10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
-            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
         }
     }
     fclose(fp);

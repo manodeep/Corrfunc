@@ -27,32 +27,25 @@
 #endif
 
 
-void free_results_rp_pi(results_countpairs_rp_pi **results)
+void free_results_rp_pi(results_countpairs_rp_pi *results)
 {
     if(results==NULL)
         return;
 
-    if(*results==NULL)
-        return;
-
-    results_countpairs_rp_pi *tmp = *results;
-
-    free(tmp->npairs);
-    free(tmp->rupp);
-    free(tmp->rpavg);
-    free(tmp);
-    tmp = NULL;
+    free(results->npairs);
+    free(results->rupp);
+    free(results->rpavg);
 }
 
 
-results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
-                                            const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE *Z2,
+results_countpairs_rp_pi countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
+                                          const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE *Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                            const int numthreads,
+                                          const int numthreads,
 #endif
-                                            const int autocorr,
-                                            const char *binfile,
-                                            const DOUBLE pimax)
+                                          const int autocorr,
+                                          const char *binfile,
+                                          const DOUBLE pimax)
 {
     int bin_refine_factor=2;
     int zbin_refine_factor=1;
@@ -354,24 +347,24 @@ results_countpairs_rp_pi * countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBL
 
 
     //Pack in the results
-    results_countpairs_rp_pi *results = my_malloc(sizeof(*results), 1);
-    results->nbin   = nrpbin;
-    results->npibin = npibin;
-    results->pimax  = pimax;
-    results->npairs = my_malloc(sizeof(uint64_t), totnbins);
-    results->rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
-    results->rpavg  = my_malloc(sizeof(DOUBLE)  , totnbins);
+    results_countpairs_rp_pi results;
+    results.nbin   = nrpbin;
+    results.npibin = npibin;
+    results.pimax  = pimax;
+    results.npairs = my_malloc(sizeof(uint64_t), totnbins);
+    results.rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
+    results.rpavg  = my_malloc(sizeof(DOUBLE)  , totnbins);
 
     for(int i=0;i<nrpbin;i++) {
-        results->rupp[i] = rupp[i];
+        results.rupp[i] = rupp[i];
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
             assert(index < totnbins && "index must be within range");
-            results->npairs[index] = npairs[index];
+            results.npairs[index] = npairs[index];
 #ifdef OUTPUT_RPAVG
-            results->rpavg[index] = rpavg[index];
+            results.rpavg[index] = rpavg[index];
 #else
-            results->rpavg[index] = 0.0;
+            results.rpavg[index] = 0.0;
 #endif
         }
     }

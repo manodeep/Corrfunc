@@ -26,25 +26,20 @@
 #endif
 
 
-void free_results_countspheres(results_countspheres **results)
+void free_results_countspheres(results_countspheres *results)
 {
     if(results == NULL)
         return;
-    if(*results == NULL)
-        return;
 
-    results_countspheres *tmp = *results;
-    matrix_free((void **) tmp->pN, tmp->nbin);
-    free(tmp);
-    tmp = NULL;
+    matrix_free((void **) results->pN, results->nbin);
 }
 
 
 
-results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X, const DOUBLE * restrict Y, const DOUBLE * restrict Z,
-                                    const double rmax, const int nbin, const int nc,
-                                    const int num_pN,
-                                    unsigned long seed)
+results_countspheres countspheres(const int64_t np, const DOUBLE * restrict X, const DOUBLE * restrict Y, const DOUBLE * restrict Z,
+                                  const double rmax, const int nbin, const int nc,
+                                  const int num_pN,
+                                  unsigned long seed)
 
 {
     //Input validation
@@ -312,16 +307,16 @@ results_countspheres * countspheres(const int64_t np, const DOUBLE * restrict X,
 #endif    
 
     //prepare the results
-    results_countspheres *results = my_malloc(sizeof(*results),1);
-    results->rmax = rmax;
-    results->nbin = nbin;
-    results->nc   = nc;
-    results->num_pN = num_pN;
-    results->pN = (DOUBLE **) matrix_malloc(sizeof(DOUBLE), nbin, num_pN);
+    results_countspheres results;
+    results.rmax = rmax;
+    results.nbin = nbin;
+    results.nc   = nc;
+    results.num_pN = num_pN;
+    results.pN = (DOUBLE **) matrix_malloc(sizeof(DOUBLE), nbin, num_pN);
     const DOUBLE inv_nc = ((DOUBLE) 1.0)/(DOUBLE) nc;
     for(int i=0;i<num_pN;i++) {
         for(int ibin=0;ibin<nbin;ibin++) {
-            (results->pN)[ibin][i] = pN[ibin][i] * inv_nc;
+            (results.pN)[ibin][i] = pN[ibin][i] * inv_nc;
         }
     }
     matrix_free((void **) pN, nbin);

@@ -27,31 +27,25 @@
 #include <omp.h>
 #endif
 
-void free_results(results_countpairs **results)
+void free_results(results_countpairs *results)
 {
     if(results == NULL)
         return;
-    if(*results == NULL)
-        return;
 
-    results_countpairs *tmp = *results;
-
-    free(tmp->rupp);
-    free(tmp->npairs);
-    free(tmp->rpavg);
-    free(tmp);
-    tmp = NULL;
+    free(results->rupp);
+    free(results->npairs);
+    free(results->rpavg);
 }
 
 
 
-results_countpairs * countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
-                                const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
+results_countpairs countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
+                              const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
 #if defined(USE_OMP) && defined(_OPENMP)
-                                const int numthreads,
+                              const int numthreads,
 #endif
-                                const int autocorr,
-                                const char *binfile)
+                              const int autocorr,
+                              const char *binfile)
 {
 
     int bin_refine_factor=1;
@@ -380,19 +374,19 @@ results_countpairs * countpairs(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBL
 #endif
 
     //Pack in the results
-    results_countpairs *results = my_malloc(sizeof(*results), 1);
-    results->nbin = nrpbin;
-    results->npairs = my_malloc(sizeof(uint64_t), nrpbin);
-    results->rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
-    results->rpavg  = my_malloc(sizeof(DOUBLE)  , nrpbin);
+    results_countpairs results;
+    results.nbin = nrpbin;
+    results.npairs = my_malloc(sizeof(uint64_t), nrpbin);
+    results.rupp   = my_malloc(sizeof(DOUBLE)  , nrpbin);
+    results.rpavg  = my_malloc(sizeof(DOUBLE)  , nrpbin);
 
     for(int i=0;i<nrpbin;i++) {
-        results->npairs[i] = npairs[i];
-        results->rupp[i] = rupp[i];
+        results.npairs[i] = npairs[i];
+        results.rupp[i] = rupp[i];
 #ifdef OUTPUT_RPAVG
-        results->rpavg[i] = rpavg[i];
+        results.rpavg[i] = rpavg[i];
 #else
-        results->rpavg[i] = 0.0;
+        results.rpavg[i] = 0.0;
 #endif
     }
     int free_wraps = periodic == 1 ? 1:0;
