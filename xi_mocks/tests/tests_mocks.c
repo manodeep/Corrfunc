@@ -89,7 +89,7 @@ int test_DDrppi_mocks(const char *correct_outputfile)
     int autocorr = (RA1==RA2) ? 1:0;
 
     //Do DD(rp,pi) counts
-    results_countpairs_mocks *results  = countpairs_mocks(ND1,RA1,DEC1,CZ1,
+    results_countpairs_mocks results  = countpairs_mocks(ND1,RA1,DEC1,CZ1,
                                                           ND2,RA2,DEC2,CZ2,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                           nthreads,
@@ -100,13 +100,13 @@ int test_DDrppi_mocks(const char *correct_outputfile)
                                                           cosmology_flag);
 
     FILE *fp=my_fopen(tmpoutputfile,"w");
-    const DOUBLE dpi = pimax/(DOUBLE)results->npibin ;
-    const int npibin = results->npibin;
-    for(int i=1;i<results->nbin;i++) {
-        const double logrp = LOG10(results->rupp[i]);
+    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+    const int npibin = results.npibin;
+    for(int i=1;i<results.nbin;i++) {
+        const double logrp = LOG10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
-            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results->npairs[index],results->rpavg[index],logrp,(j+1)*dpi);
+            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
         }
     }
     fclose(fp);
@@ -123,7 +123,7 @@ int test_wtheta_mocks(const char *correct_outputfile)
 {
     int autocorr = (RA1==RA2) ? 1:0;
 
-    results_countpairs_theta *results = countpairs_theta_mocks(ND1,RA1,DEC1,
+    results_countpairs_theta results = countpairs_theta_mocks(ND1,RA1,DEC1,
                                                                ND2,RA2,DEC2,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                                nthreads,
@@ -133,10 +133,10 @@ int test_wtheta_mocks(const char *correct_outputfile)
 
     /*---Output-Pairs-------------------------------------*/
     FILE *fp=my_fopen(tmpoutputfile,"w");
-    DOUBLE theta_low = results->theta_upp[0];
-    for(int i=1;i<results->nbin;i++) {
-        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results->npairs[i],results->theta_avg[i],theta_low,results->theta_upp[i]);
-        theta_low=results->theta_upp[i];
+    DOUBLE theta_low = results.theta_upp[0];
+    for(int i=1;i<results.nbin;i++) {
+        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i]);
+        theta_low=results.theta_upp[i];
     }
     fclose(fp);
 
@@ -160,7 +160,7 @@ int test_vpf_mocks(const char *correct_outputfile)
     const int threshold_neighbors=1;
     const char centers_file[]="../tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt";
 
-    results_countspheres_mocks *results = countspheres_mocks(ND1, RA1, DEC1, CZ1,
+    results_countspheres_mocks results = countspheres_mocks(ND1, RA1, DEC1, CZ1,
                                                              Nran, xran, yran, zran,
                                                              threshold_neighbors,
                                                              rmax, nbin, nc,
@@ -173,11 +173,11 @@ int test_vpf_mocks(const char *correct_outputfile)
     //Output the results
     FILE *fp=my_fopen(tmpoutputfile,"w");
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-    for(int ibin=0;ibin<results->nbin;ibin++) {
+    for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
         fprintf(fp,"%10.2"DOUBLE_FORMAT" ", r);
         for(int i=0;i<num_pN;i++) {
-            fprintf(fp," %10.4e", (results->pN)[ibin][i]);
+            fprintf(fp," %10.4e", (results.pN)[ibin][i]);
         }
         fprintf(fp,"\n");
     }
