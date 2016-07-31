@@ -38,12 +38,13 @@ PyMODINIT_FUNC init_countpairs_mocks(void);
 
 #endif
 
-
 #ifdef DOUBLE_PREC
-#define ELEMENT_SIZE NPY_DOUBLE
+#define ELEMENT_TYPE NPY_DOUBLE
 #else
-#define ELEMENT_SIZE NPY_FLOAT
+#define ELEMENT_TYPE NPY_FLOAT
 #endif
+
+#define ELEMENT_DESCR    (PyArray_DescrFromType(ELEMENT_TYPE))
 
 /* #ifndef PIMAX_UNICODE */
 #define PI_UNICODE    "\u03C0"
@@ -71,10 +72,10 @@ static char error_out_docstring[]          =  "Error-handler for the module.";
 static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *args);
 static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *args);
 static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *args);
-static PyObject *countpairs_mocks_error_out(PyObject *module);
+static PyObject *countpairs_mocks_error_out(PyObject *module, const char *msg);
 
 static PyMethodDef module_methods[] = {
-    {"countpairs_mocks_error_out"   ,(PyCFunction) countpairs_mocks_error_out        ,METH_NOARGS, error_out_docstring},
+    {"countpairs_mocks_error_out"   ,(PyCFunction) countpairs_mocks_error_out        ,METH_VARARGS, error_out_docstring},
     {"countpairs_rp_pi_mocks"       ,(PyCFunction) countpairs_countpairs_rp_pi_mocks ,METH_VARARGS,
      "countpairs_rp_pi_mocks(autocorr, cosmology, nthreads, "PIMAX_UNICODE", binfile, RA1, DEC1, CZ1, RA2, DEC2, CZ2)\n"
      "\n"
@@ -331,16 +332,19 @@ static PyMethodDef module_methods[] = {
 };
 
 
-static PyObject *countpairs_mocks_error_out(PyObject *module) {
-    (void) module;//to avoid unused warning
+static PyObject *countpairs_mocks_error_out(PyObject *module, const char *msg)
+{
+#if PY_MAJOR_VERSION < 3
+    (void) module;//to avoid unused warning with python2
+#endif
+    
     struct module_state *st = GETSTATE(module);
-    PyErr_SetString(st->error, "ERROR: (generic) something bad happened");
-    return NULL;
+    PyErr_SetString(st->error, msg);
+    Py_RETURN_NONE;
 }
 
 
 #if PY_MAJOR_VERSION >= 3
-
 static int _countpairs_mocks_traverse(PyObject *m, visitproc visit, void *arg) {
     Py_VISIT(GETSTATE(m)->error);
     return 0;
@@ -400,53 +404,136 @@ PyObject *PyInit__countpairs_mocks(void)
 
 }
 
+static int64_t check_dims_and_datatype(PyObject *module, const PyArrayObject *x1_obj, const PyArrayObject *y1_obj, const PyArrayObject *z1_obj)
+{
+    char msg[1024];
+
+    /* All the arrays should be 1-D*/
+    const int nxdims = PyArray_NDIM(x1_obj);
+    const int nydims = PyArray_NDIM(y1_obj);
+    const int nzdims = PyArray_NDIM(z1_obj);
+
+    if(nxdims != 1 || nydims != 1 || nzdims != 1) {
+        snprintf(msg, 1024, "ERROR: Expected 1-D numpy arrays.\nFound (nxdims, nydims, nzdims) = (%d, %d, %d) instead",
+                 nxdims, nydims, nzdims);
+        countpairs_mocks_error_out(module, msg);
+        return EXIT_FAILURE;
+    }
+
+    /* All the arrays should be floating point (only float32 and float64 are allowed) */
+    const int x_type = PyArray_TYPE(x1_obj);
+    const int y_type = PyArray_TYPE(y1_obj);
+    const int z_type = PyArray_TYPE(z1_obj);
+    if( ! ((x_type == NPY_FLOAT || x_type == NPY_DOUBLE) &&
+           (y_type == NPY_FLOAT || y_type == NPY_DOUBLE) &&
+           (z_type == NPY_FLOAT || z_type == NPY_DOUBLE))
+        ) {
+        PyArray_Descr *x_descr = PyArray_DescrFromType(x_type);
+        PyArray_Descr *y_descr = PyArray_DescrFromType(y_type);
+        PyArray_Descr *z_descr = PyArray_DescrFromType(z_type);
+        if(x_descr == NULL || y_descr == NULL || z_descr == NULL) {
+            /* Generating the dtype descriptor failed somehow. At least provide some information */
+            snprintf(msg, 1024, "TypeError: Expected 3 floating point arrays (allowed types = %d or %d). Instead found type-nums (%d, %d, %d)\n",
+                     NPY_FLOAT, NPY_DOUBLE, x_type, y_type, z_type);
+        } else {
+            snprintf(msg, 1024, "TypeError: Expected 3 floating point arrays (allowed types = %d or %d). Instead found type-nums (%d, %d, %d) "
+                     "with type-names = (%s, %s, %s)\n",
+                     NPY_FLOAT, NPY_DOUBLE, x_type, y_type, z_type, x_descr->typeobj->tp_name, y_descr->typeobj->tp_name, z_descr->typeobj->tp_name);
+        }
+        Py_XDECREF(x_descr);Py_XDECREF(y_descr);Py_XDECREF(z_descr);
+        countpairs_mocks_error_out(module, msg);
+        return EXIT_FAILURE;
+    }
+
+    /* Check if the number of elements in the 3 Python arrays are identical */
+    const int64_t nx1 = (int64_t)PyArray_DIM(x1_obj, 0);
+    const int64_t ny1 = (int64_t)PyArray_DIM(y1_obj, 0);
+    const int64_t nz1 = (int64_t)PyArray_DIM(z1_obj, 0);
+
+    if(nx1 == ny1 && ny1 == nz1) {
+        return nx1;
+    }
+    snprintf(msg, 1024, "ERROR: Expected arrays to have the same number of elements in all 3-dimensions.\nFound (nx, ny, nz) = (%"PRId64", %"PRId64", %"PRId64") instead",
+             nx1, ny1, nz1);
+    countpairs_mocks_error_out(module, msg);
+    return EXIT_FAILURE;
+}
+
 
 
 static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *args)
 {
-    (void) self;//to suppress the unused variable warning. Terrible hack
+    //Error-handling is global in python2 -> stored in struct module_state _struct declared at the top of this file
+#if PY_MAJOR_VERSION < 3
+    (void) self;
+    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+#else
+    //In python3, self is simply the module object that was returned earlier by init
+    PyObject *module = self;
+#endif    
 
     //x1->ra (phi), y1-> declination (theta1), z1->cz (cz1)
     //x2->ra (ph2), y2-> declination (theta2), z2->cz (cz2)
-    PyObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
+    PyArrayObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
     int autocorr=0;
     int nthreads=4;
     int cosmology=1;
     double pimax;
     char *binfile;
 
-    if (!PyArg_ParseTuple(args, "iiidsOOOOOO",&autocorr,&cosmology,&nthreads,&pimax,&binfile,&x1_obj,&y1_obj,&z1_obj,&x2_obj,&y2_obj,&z2_obj))
-        return NULL;
+    if ( ! PyArg_ParseTuple(args, "iiidsO!O!O!O!O!O!",&autocorr,&cosmology,&nthreads,&pimax,&binfile,
+                            &PyArray_Type,&x1_obj,
+                            &PyArray_Type,&y1_obj,
+                            &PyArray_Type,&z1_obj,
+                            &PyArray_Type,&x2_obj,
+                            &PyArray_Type,&y2_obj,
+                            &PyArray_Type,&z2_obj)
+         ) {
+        Py_RETURN_NONE;
+    }
+
+    /* We have numpy arrays and all the required inputs*/
+    /* How many data points are there? And are they all of floating point type */
+    const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj);
+    if(ND1 == 0) {
+        //Error has already been set -> simply return 
+        Py_RETURN_NONE;
+    }
+
+    const int64_t ND2 = check_dims_and_datatype(module, x2_obj, y2_obj, z2_obj);
+    if(ND2 == 0) {
+        //Error has already been set -> simply return 
+        Py_RETURN_NONE;
+    }
 
     /* Interpret the input objects as numpy arrays. */
-    PyObject *x1_array = PyArray_FROM_OTF(x1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *y1_array = PyArray_FROM_OTF(y1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *z1_array = PyArray_FROM_OTF(z1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-
-    if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
+    const int requirements = NPY_ARRAY_IN_ARRAY | NPY_ARRAY_FORCECAST;
+    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL;
+    x1_array = PyArray_FromArray(x1_obj, ELEMENT_DESCR, requirements);
+    y1_array = PyArray_FromArray(y1_obj, ELEMENT_DESCR, requirements);
+    z1_array = PyArray_FromArray(z1_obj, ELEMENT_DESCR, requirements);
+    
+    /* NULL initialization is necessary since we might be calling XDECREF*/
+    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL;
+    x2_array = PyArray_FromArray(x2_obj, ELEMENT_DESCR, requirements);
+    y2_array = PyArray_FromArray(y2_obj, ELEMENT_DESCR, requirements);
+    z2_array = PyArray_FromArray(z2_obj, ELEMENT_DESCR, requirements);
+    
+    if (x1_array == NULL || y1_array == NULL || z1_array == NULL ||
+        x2_array == NULL || y2_array == NULL || z2_array == NULL) {
         Py_XDECREF(x1_array);
         Py_XDECREF(y1_array);
         Py_XDECREF(z1_array);
-        return NULL;
-    }
 
-
-    /* Interpret the input objects as numpy arrays. */
-    PyObject *x2_array = PyArray_FROM_OTF(x2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *y2_array = PyArray_FROM_OTF(y2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *z2_array = PyArray_FROM_OTF(z2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-
-    if (x2_array == NULL || y2_array == NULL || z2_array == NULL) {
         Py_XDECREF(x2_array);
         Py_XDECREF(y2_array);
         Py_XDECREF(z2_array);
-        return NULL;
+        char msg[1024];
+        snprintf(msg, 1024, "TypeError: In %s: Could not convert to array of correct floating point type (need arrays of %s). Are you passing numpy arrays?",
+                 __FUNCTION__, sizeof(DOUBLE) == 4 ? "floats":"doubles");
+        countpairs_mocks_error_out(module, msg);
+        Py_RETURN_NONE;
     }
-
-
-    /* How many data points are there? */
-    const int64_t ND1 = (int64_t)PyArray_DIM((const PyArrayObject *) x1_array, 0);
-    const int64_t ND2 = (int64_t)PyArray_DIM((const PyArrayObject *) x2_array, 0);
 
     /* Get pointers to the data as C-types. */
     DOUBLE *phiD1   = (DOUBLE *)PyArray_DATA((PyArrayObject *) x1_array);
@@ -457,6 +544,8 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     DOUBLE *thetaD2 = (DOUBLE *)PyArray_DATA((PyArrayObject *) y2_array);
     DOUBLE *czD2    = (DOUBLE *)PyArray_DATA((PyArrayObject *) z2_array);
 
+    NPY_BEGIN_THREADS_DEF;
+    NPY_BEGIN_THREADS;
 
     results_countpairs_mocks *results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
                                                           ND2,phiD2,thetaD2,czD2,
@@ -468,6 +557,8 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                                           pimax,
                                                           cosmology);
 
+    NPY_END_THREADS;
+    
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
     Py_DECREF(x2_array);Py_DECREF(y2_array);Py_DECREF(z2_array);
@@ -510,40 +601,69 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
 
 static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *args)
 {
-    (void) self;//to suppress the unused variable warning. Terrible hack
-    PyObject *x1_obj, *y1_obj, *x2_obj,*y2_obj;
+    //Error-handling is global in python2 -> stored in struct module_state _struct declared at the top of this file
+#if PY_MAJOR_VERSION < 3
+    (void) self;
+    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+#else
+    //In python3, self is simply the module object that was returned earlier by init
+    PyObject *module = self;
+#endif    
+
+    PyArrayObject *x1_obj, *y1_obj, *x2_obj,*y2_obj;
     int nthreads=4;
     char *binfile;
     int autocorr=0;
     int cosmology=1;
 
-    if (!PyArg_ParseTuple(args, "iiisOOOO",&autocorr,&cosmology,&nthreads,&binfile,&x1_obj,&y1_obj,&x2_obj,&y2_obj))
-        return NULL;
+    if ( ! PyArg_ParseTuple(args, "iiisO!O!O!O!",&autocorr,&cosmology,&nthreads,&binfile,
+                            &PyArray_Type,&x1_obj,
+                            &PyArray_Type,&y1_obj,
+                            &PyArray_Type,&x2_obj,
+                            &PyArray_Type,&y2_obj)
+         ) {
+        Py_RETURN_NONE;
+    }
+
+
+    /* We have numpy arrays and all the required inputs*/
+    /* How many data points are there? And are they all of floating point type */
+
+    //Yes, the last field is repeated -> I am too lazy to write a new function with only two arrays as inputs
+    const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, x1_obj); 
+    if(ND1 == 0) {
+        //Error has already been set -> simply return 
+        Py_RETURN_NONE;
+    }
+
+    const int64_t ND2 = check_dims_and_datatype(module, x2_obj, y2_obj, x2_obj);
+    if(ND2 == 0) {
+        //Error has already been set -> simply return 
+        Py_RETURN_NONE;
+    }
 
     /* Interpret the input objects as numpy arrays. */
-    PyObject *x1_array = PyArray_FROM_OTF(x1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *y1_array = PyArray_FROM_OTF(y1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
+    const int requirements = NPY_ARRAY_IN_ARRAY | NPY_ARRAY_FORCECAST;
+    PyObject *x1_array = NULL, *y1_array = NULL;
+    x1_array = PyArray_FromArray(x1_obj, ELEMENT_DESCR, requirements);
+    y1_array = PyArray_FromArray(y1_obj, ELEMENT_DESCR, requirements);
+    
+    /* NULL initialization is necessary since we might be calling XDECREF*/
+    PyObject *x2_array = NULL, *y2_array = NULL;
+    x2_array = PyArray_FromArray(x2_obj, ELEMENT_DESCR, requirements);
+    y2_array = PyArray_FromArray(y2_obj, ELEMENT_DESCR, requirements);
 
     if (x1_array == NULL || y1_array == NULL) {
         Py_XDECREF(x1_array);
         Py_XDECREF(y1_array);
-        return NULL;
-    }
-
-    /* Interpret the input objects as numpy arrays. */
-    PyObject *x2_array = PyArray_FROM_OTF(x2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *y2_array = PyArray_FROM_OTF(y2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-
-    if (x2_array == NULL || y2_array == NULL) {
         Py_XDECREF(x2_array);
         Py_XDECREF(y2_array);
-        return NULL;
+        char msg[1024];
+        snprintf(msg, 1024, "TypeError: In %s: Could not convert to array of correct floating point type (need arrays of %s). Are you passing numpy arrays?",
+                 __FUNCTION__, sizeof(DOUBLE) == 4 ? "floats":"doubles");
+        countpairs_mocks_error_out(module, msg);
+        Py_RETURN_NONE;
     }
-
-
-    /* How many data points are there? */
-    const int64_t ND1 = (int64_t)PyArray_DIM((const PyArrayObject *) x1_array, 0);
-    const int64_t ND2 = (int64_t)PyArray_DIM((const PyArrayObject *) x2_array, 0);
 
     /* Get pointers to the data as C-types. */
     DOUBLE *phiD1   = (DOUBLE *)PyArray_DATA((PyArrayObject *) x1_array);
@@ -552,6 +672,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     DOUBLE *phiD2   = (DOUBLE *)PyArray_DATA((PyArrayObject *) x2_array);
     DOUBLE *thetaD2 = (DOUBLE *)PyArray_DATA((PyArrayObject *) y2_array);
 
+    NPY_BEGIN_THREADS_DEF;
+    NPY_BEGIN_THREADS;
 
     results_countpairs_theta *results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
                                                                ND2,phiD2,thetaD2,
@@ -561,7 +683,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                                                autocorr,
                                                                binfile) ;
 
-
+    NPY_END_THREADS;
+    
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);
     Py_DECREF(x2_array);Py_DECREF(y2_array);
@@ -599,49 +722,78 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
 
 static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *args)
 {
-    (void) self;//to suppress the unused variable warning. Terrible hack
+    //Error-handling is global in python2 -> stored in struct module_state _struct declared at the top of this file
+#if PY_MAJOR_VERSION < 3
+    (void) self;
+    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+#else
+    //In python3, self is simply the module object that was returned earlier by init
+    PyObject *module = self;
+#endif    
 
     //x1->ra (phi), y1-> declination (theta1), z1->cz (cz1)
     //x2->ra (ph2), y2-> declination (theta2), z2->cz (cz2)
-    PyObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
+    PyArrayObject *x1_obj, *y1_obj, *z1_obj, *x2_obj,*y2_obj,*z2_obj;
     int cosmology=1;
     double rmax;
     int nbin,num_spheres, num_pN;
     char *centers_file;
     int threshold_neighbors;
 
-    if (!PyArg_ParseTuple(args, "diiiisiOOOOOO",&rmax,&nbin,&num_spheres,&num_pN,&threshold_neighbors,&centers_file,&cosmology,&x1_obj,&y1_obj,&z1_obj,&x2_obj,&y2_obj,&z2_obj))
-        return NULL;
+    if( ! PyArg_ParseTuple(args, "diiiisiO!O!O!O!O!O!",&rmax,&nbin,&num_spheres,&num_pN,&threshold_neighbors,&centers_file,&cosmology,
+                           &PyArray_Type,&x1_obj,
+                           &PyArray_Type,&y1_obj,
+                           &PyArray_Type,&z1_obj,
+                           &PyArray_Type,&x2_obj,
+                           &PyArray_Type,&y2_obj,
+                           &PyArray_Type,&z2_obj)
+        ) {
+        Py_RETURN_NONE;
+    }
+
+
+    /* We have numpy arrays and all the required inputs*/
+    /* How many data points are there? And are they all of floating point type */
+    const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj);
+    if(ND1 == 0) {
+        //Error has already been set -> simply return 
+        Py_RETURN_NONE;
+    }
+
+    const int64_t ND2 = check_dims_and_datatype(module, x2_obj, y2_obj, z2_obj);
+    if(ND2 == 0) {
+        //Error has already been set -> simply return 
+        Py_RETURN_NONE;
+    }
 
     /* Interpret the input objects as numpy arrays. */
-    PyObject *x1_array = PyArray_FROM_OTF(x1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *y1_array = PyArray_FROM_OTF(y1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *z1_array = PyArray_FROM_OTF(z1_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-
-    if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
+    const int requirements = NPY_ARRAY_IN_ARRAY | NPY_ARRAY_FORCECAST;
+    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL;
+    x1_array = PyArray_FromArray(x1_obj, ELEMENT_DESCR, requirements);
+    y1_array = PyArray_FromArray(y1_obj, ELEMENT_DESCR, requirements);
+    z1_array = PyArray_FromArray(z1_obj, ELEMENT_DESCR, requirements);
+    
+    /* NULL initialization is necessary since we might be calling XDECREF*/
+    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL;
+    x2_array = PyArray_FromArray(x2_obj, ELEMENT_DESCR, requirements);
+    y2_array = PyArray_FromArray(y2_obj, ELEMENT_DESCR, requirements);
+    z2_array = PyArray_FromArray(z2_obj, ELEMENT_DESCR, requirements);
+    
+    if (x1_array == NULL || y1_array == NULL || z1_array == NULL ||
+        x2_array == NULL || y2_array == NULL || z2_array == NULL) {
         Py_XDECREF(x1_array);
         Py_XDECREF(y1_array);
         Py_XDECREF(z1_array);
-        return NULL;
-    }
 
-
-    /* Interpret the input objects as numpy arrays. */
-    PyObject *x2_array = PyArray_FROM_OTF(x2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *y2_array = PyArray_FROM_OTF(y2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-    PyObject *z2_array = PyArray_FROM_OTF(z2_obj, ELEMENT_SIZE, NPY_ARRAY_IN_ARRAY);
-
-    if (x2_array == NULL || y2_array == NULL || z2_array == NULL) {
         Py_XDECREF(x2_array);
         Py_XDECREF(y2_array);
         Py_XDECREF(z2_array);
-        return NULL;
+        char msg[1024];
+        snprintf(msg, 1024, "TypeError: In %s: Could not convert to array of correct floating point type (need arrays of %s). Are you passing numpy arrays?",
+                 __FUNCTION__, sizeof(DOUBLE) == 4 ? "floats":"doubles");
+        countpairs_mocks_error_out(module, msg);
+        Py_RETURN_NONE;
     }
-
-
-    /* How many data points are there? */
-    const int64_t ND1 = (int64_t)PyArray_DIM((const PyArrayObject *) x1_array, 0);
-    const int64_t ND2 = (int64_t)PyArray_DIM((const PyArrayObject *) x2_array, 0);
 
     /* Get pointers to the data as C-types. */
     DOUBLE *phiD1   = (DOUBLE *)PyArray_DATA((PyArrayObject *) x1_array);
@@ -652,6 +804,9 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     DOUBLE *thetaD2 = (DOUBLE *)PyArray_DATA((PyArrayObject *) y2_array);
     DOUBLE *czD2    = (DOUBLE *)PyArray_DATA((PyArrayObject *) z2_array);
 
+    NPY_BEGIN_THREADS_DEF;
+    NPY_BEGIN_THREADS;
+    
     results_countspheres_mocks *results = countspheres_mocks(ND1, phiD1,thetaD1, czD1,
                                                              ND2, phiD2,thetaD2, czD2,
                                                              threshold_neighbors,
@@ -659,6 +814,13 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
                                                              num_pN,
                                                              centers_file,
                                                              cosmology);
+
+    NPY_END_THREADS;
+
+    /* Clean up. */
+    Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
+    Py_DECREF(x2_array);Py_DECREF(y2_array);Py_DECREF(z2_array);
+    
 #if 0
     // Output the results
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
@@ -671,11 +833,6 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
         fprintf(stdout,"\n");
     }
 #endif
-
-    /* Clean up. */
-    Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
-    Py_DECREF(x2_array);Py_DECREF(y2_array);Py_DECREF(z2_array);
-
 
     /* Build the output list (of lists, since num_pN is determined at runtime) */
     PyObject *ret = PyList_New(0);
@@ -699,7 +856,6 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
         Py_XDECREF(item);
     }
     free_results_countspheres_mocks(&results);
-
 
     return ret;
 }
