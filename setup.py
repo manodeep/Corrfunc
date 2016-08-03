@@ -72,7 +72,10 @@ def get_dict_from_buffer(buf, keys=['DISTNAME', 'MAJOR',
     '''.format('|'.join(keys)), re.VERBOSE)
     
     matches = regex.findall(buf)
-    pairs = {k: [] for k in keys}
+    pairs = dict()
+    for k in keys:
+        pairs[k] = []
+
     for match in matches:
         key, val = match.split('=', 1)
         # remove colon and leading/trailing whitespace
