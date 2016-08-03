@@ -20,7 +20,7 @@ try:
 except ImportError:
     pd = None
 
-from Corrfunc import rd
+from Corrfunc import read_text_file
 from Corrfunc._countpairs_mocks import countpairs_rp_pi_mocks as rp_pi_mocks
 from Corrfunc._countpairs_mocks import countpairs_theta_mocks as theta_mocks
 from Corrfunc._countpairs_mocks import countspheres_vpf_mocks as vpf_mocks
@@ -40,7 +40,7 @@ def main():
     include_file = path.join(path.dirname(path.abspath(__file__)),
                              "../include/", "countpairs_rp_pi_mocks.h")
     try:
-        includes = rd(include_file)
+        includes = read_text_file(include_file)
     except (IOError, OSError) as e:
         print("ERROR: Could not find file {0} error = {1}.\n \
         Please compile the `Corrfunc' library directly before \

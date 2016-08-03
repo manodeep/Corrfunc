@@ -3,29 +3,26 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.utils import bytes_to_native_str
-import sys
-import os.path as path
+import os
 
-__all__ = ['rd', 'read_catalog']
+__all__ = ['read_text_file', 'read_catalog']
 
-if sys.version_info[0] >= 3:
-    def rd(filename):
-        """
-        Reads a file under python3 assuming an UTF-8 encoding.
-        """
-        with open(filename, encoding="utf-8") as f:
+
+def read_text_file(filename, encoding="utf-8"):
+    """
+    Reads a file under python3 with encoding (default UTF-8).
+    Also works under python2, without encoding.
+    Uses the EAFP (https://docs.python.org/2/glossary.html#term-eafp)
+    principle.
+    """
+    try:
+        with open(filename, 'r', encoding) as f:
+            r = f.read()
+    except TypeError:
+        with open(filename, 'r') as f:
             r = f.read()
 
-        return r
-else:
-    def rd(filename):
-        """
-        Reads a file under python2.
-        """
-        with open(filename) as f:
-            r = f.read()
-
-        return r
+    return r
 
 
 def read_catalog(filebase=None):
@@ -142,23 +139,23 @@ def read_catalog(filebase=None):
             return x, y, z
 
     if filebase is None:
-        filename = path.join(path.dirname(path.abspath(__file__)),
-                             "../xi_theory/tests/data/", "gals_Mr19")
+        filename = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "../xi_theory/tests/data/", "gals_Mr19")
         # Figure out the datatype, use the header file in the include directory
         # because that is most likely correct (common.mk might have been
         # modified but not recompiled)
-        include_file = path.join(path.dirname(path.abspath(__file__)),
-                                 "../include/", "countpairs.h")
-        includes = rd(include_file)
+        include_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "../include/", "countpairs.h")
+        includes = read_text_file(include_file)
         vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes,
                                 re.I).group(1)
         allowed_types = {"float": np.float32, "double": np.float}
         if vector_type not in list(allowed_types.keys()):
-            print("Error: Unknown precision={0} found in header file {1}. \
+            msg = "Error: Unknown precision={0} found in header file {1}. \
             Allowed types are `{2}'".format(vector_type,
                                             include_file,
-                                            allowed_types))
-            sys.exit()
+                                            allowed_types)
+            raise AssertionError(msg)
 
         dtype = allowed_types[vector_type]
         allowed_exts = {'.ff': read_fastfood,
@@ -168,7 +165,7 @@ def read_catalog(filebase=None):
                         }
 
         for e in allowed_exts:
-            if path.exists(filename + e):
+            if os.path.exists(filename + e):
                 f = allowed_exts[e]
                 x, y, z = f(filename + e, dtype)
                 return x, y, z
@@ -177,8 +174,8 @@ def read_catalog(filebase=None):
         = {1}".format(filename, allowed_exts.keys()))
     else:
         # Likely an user-supplied value
-        if path.exists(filebase):
-            extension = path.splitext(filebase)[1]
+        if os.path.exists(filebase):
+            extension = os.path.splitext(filebase)[1]
             f = read_fastfood if '.ff' in extension else read_ascii
 
             # default return is double
