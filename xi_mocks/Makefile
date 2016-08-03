@@ -1,4 +1,4 @@
-include ../common.mk
+include ../mocks.options ../common.mk
 
 targets:= dirs DDrppi wtheta vpf examples
 ifneq ($(COMPILE_PYTHON_EXT), 0)

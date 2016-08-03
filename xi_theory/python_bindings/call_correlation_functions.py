@@ -21,18 +21,22 @@ import time
 
 # Import from current directory first,
 import _countpairs
-if sys.version_info[0] >= 3:
-    def rd(filename):
-        with open(filename, encoding="utf-8") as f:
-            r = f.read()
 
-        return r
-else:
-    def rd(filename):
-        with open(filename) as f:
-            r = f.read()
 
-        return r
+def read_text_file(filename, encoding="utf-8"):
+    """
+    Reads a file under python3 with encoding (default UTF-8).
+    Also works under python2, without encoding.
+    Uses the EAFP (https://docs.python.org/2/glossary.html#term-eafp)
+    principle.
+    """
+    try:
+        with open(filename, 'r', encoding) as f:
+            r = f.read()
+    except TypeError:
+        with open(filename, 'r') as f:
+            r = f.read()
+    return r
 
 
 def read_catalog(filebase=None):
@@ -156,7 +160,7 @@ def read_catalog(filebase=None):
         # modified but not recompiled)
         include_file = path.join(path.dirname(path.abspath(__file__)),
                                  "../../include/", "countpairs.h")
-        includes = rd(include_file)
+        includes = read_text_file(include_file)
         vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes,
                                 re.I).group(1)
         allowed_types = {"float": np.float32, "double": np.float}
