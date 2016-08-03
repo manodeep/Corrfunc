@@ -7,10 +7,29 @@ CFLAGS:=
 #### Add any compiler specific link flags you want
 CLINK:=
 
+## Set the python command (supply the full path to python you want to
+## use, if different from directly calling `python` on the shell,
+## as can be the case if python is set via an alias)
+PYTHON:=python
+
+## If you leave this empty, it will be filled out
+## as /path/to/PYTHON/python-config  (python2)
+## or /path/to/PYTHON/python3-config (python3)
+## where PYTHON is defined in the previous line.
+PYTHON_CONFIG_EXE:=
+
+## Important note -> if you directly call /some/path/to/python
+## then the previous two variables will be updated to point
+## to the sys.executable as defined within the python session
+## Might lead to some un-necessary recompilation but is guaranteed
+## to work.
+
+
+
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=1
-MINOR:=1
+MINOR:=2
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
@@ -29,22 +48,6 @@ endif
 
 ## Only set everything if the command is not "make clean"
 ifeq ($(DO_CHECKS), 1)
-  ## First check make version. Versions of make older than 3.80 will crash
-  ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
-    ## Order-only attributes were added to make version 3.80
-    $(warning $(ccmagenta)Please upgrade $(ccblue)make$(ccreset))
-    ifeq ($(UNAME), Darwin)
-      $(info $(ccmagenta)on Mac+homebrew, use $(ccgreen)"brew outdated xctool || brew upgrade xctool"$(ccreset))
-      $(info $(ccmagenta)Otherwise, install $(ccblue)XCode command-line tools$(ccmagenta) directly: $(ccgreen)"xcode-select --install"$(ccreset))
-      $(info $(ccmagenta)This link: $(ccgreen)"http://railsapps.github.io/xcode-command-line-tools.html"$(ccmagenta) has some more details$(ccreset))
-    else
-      $(info $(ccmagenta)On Linux: Try some variant of $(ccgreen)"sudo apt-get update && sudo apt-get upgrade"(ccreset))
-    endif
-    $(error $(ccmagenta)Project requires make >= 3.80 to compile.$(ccreset))
-  endif
-  #end of checks for make. 
-
-
   UNAME := $(shell uname)
   ## Colored text output
   ## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
@@ -53,12 +56,30 @@ ifeq ($(DO_CHECKS), 1)
   ifeq ($(UNAME), Darwin)
     ECHO_COMMAND := echo
   endif
-  ccreset :=$(shell $(ECHO_COMMAND) "\033[0;0m")
   ccred:=$(shell $(ECHO_COMMAND) "\033[0;31m")
   ccmagenta:=$(shell $(ECHO_COMMAND) "\033[0;35m")
   ccgreen:=$(shell $(ECHO_COMMAND) "\033[0;32m")
   ccblue:=$(shell $(ECHO_COMMAND) "\033[0;34m")
+  ccreset:=$(shell $(ECHO_COMMAND) "\033[0;0m")
+  boldfont:=$(shell $(ECHO_COMMAND) "\033[1m")
   ## end of colored text output
+
+  ## First check make version. Versions of make older than 3.80 will crash
+  ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
+    ## Order-only attributes were added to make version 3.80
+    $(warning $(ccmagenta)Please upgrade $(ccblue)make$(ccreset))
+    ifeq ($(UNAME), Darwin)
+      $(info on Mac+homebrew, use $(ccmagenta)"brew outdated xctool || brew upgrade xctool"$(ccreset))
+      $(info Otherwise, install XCode command-line tools$ directly: $(ccmagenta)"xcode-select --install"$(ccreset))
+      $(info This link: $(ccmagenta)"http://railsapps.github.io/xcode-command-line-tools.html"$(ccreset) has some more details)
+    else
+      $(info On Linux: Try some variant of $(ccmagenta)"sudo apt-get update && sudo apt-get upgrade"$(ccreset))
+    endif
+    $(error $(ccred)Project requires make >= 3.80 to compile.$(ccreset))
+  endif
+  #end of checks for make. 
+
+
 
 
   ## Make clang the default compiler on Mac
@@ -120,8 +141,8 @@ ifeq ($(DO_CHECKS), 1)
   ifeq ($(UNAME), Darwin)
     ifneq ($(CC_IS_CLANG), 1)
       export CLANG_COMPILER_WARNING_PRINTED ?= 0
-	    ifeq ($(CLANG_COMPILER_WARNING_PRINTED), 0)
-        $(warning $(ccmagenta)Looks like clang (on Mac) is not set as the compiler. If you run into errors like $(ccred)"no such instruction: `vxorpd %xmm1, %xmm1,%xmm1'"$(ccmagenta), then please use clang as the compiler (directly invoke $(ccgreen)make$(ccmagenta), NOT $(ccred)make CC=gcc$(ccmagenta)) $(ccreset))
+      ifeq ($(CLANG_COMPILER_WARNING_PRINTED), 0)
+        $(warning Looks like $(ccmagenta)clang$(ccreset) (on Mac) is not set as the compiler. If you run into errors like $(ccred)"no such instruction: `vxorpd %xmm1, %xmm1,%xmm1'"$(ccreset), then please use $(ccmagenta)clang$(ccreset) as the compiler (directly invoke $(ccmagenta)"make"$(ccmagenta), NOT $(ccred)"make CC=gcc"$(ccreset)))
         export CLANG_COMPILER_WARNING_PRINTED := 1
       endif
     endif
@@ -166,7 +187,7 @@ ifeq ($(DO_CHECKS), 1)
 
   ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
     ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-      $(warning $(ccmagenta) Makefile option FAST_DIVIDE will not do anything unless USE_AVX is set $(ccreset))
+      $(warning Makefile option $(ccblue)"FAST_DIVIDE"$(ccreset) will not do anything unless $(ccblue)USE_AVX$(ccreset) is set)
     endif
   endif
   ## done with check for conflicting options
@@ -190,7 +211,7 @@ ifeq ($(DO_CHECKS), 1)
     ## Someday I am going to fix that by linking with MKL 
     ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
       ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
-        $(warning $(ccmagenta) WARNING: OUTPUT_THETAAVG with AVX capabilties is slow with gcc/clang (disables AVX essentially) with gcc/clang. Try to use icc if available $(ccreset))
+        $(warning WARNING: $(ccblue)"OUTPUT_THETAAVG"$(ccreset) with AVX capabilties is slow with gcc/clang (disables AVX essentially) with gcc/clang. Try to use $(ccblue)"icc"$(ccreset) if available)
       endif
 	  endif
 
@@ -254,14 +275,14 @@ ifeq ($(DO_CHECKS), 1)
         ifeq ($(CLANG_OMP_AVAIL),true)
           ifeq ($(APPLE_CLANG),0)
             ifeq ($(UNAME), Darwin)
-              $(info $(ccmagenta)Enabling OpenMP with clang.$(ccreset))
-              CLANG_LD_ERROR := "dyld: Library not loaded: @rpath/libLLVM.dylib\nReferenced from: /opt/local/libexec/llvm-3.8/lib/libLTO.dylib\nReason: image not found\n"
               export CLANG_LD_WARNING_PRINTED ?= 0
               ifeq ($(CLANG_LD_WARNING_PRINTED), 0)
+                $(info $(ccmagenta)Enabling OpenMP with clang.$(ccreset))
+                CLANG_LD_ERROR := "dyld: Library not loaded: @rpath/libLLVM.dylib\nReferenced from: /opt/local/libexec/llvm-3.8/lib/libLTO.dylib\nReason: image not found\n"
                 ifeq ($(CLANG_IS_38), true)
-                  $(warning With $(ccgreen)clang-3.8$(ccreset), You might see this $(ccred)$(CLANG_LD_ERROR)$(ccmagenta) error with the final linking step.$(ccreset))
-                  $(info $(ccmagenta)Use the following to fix the issue $(ccgreen) "sudo install_name_tool -change @executable_path/../lib/libLTO.dylib @rpath/../lib/libLTO.dylib /opt/local/libexec/ld64/ld-latest"$(ccreset))
-                  $(info $(ccmagenta)You can see the bug report here $(ccgreen)"https://trac.macports.org/ticket/50853"$(ccreset))
+                  $(warning With $(ccblue)"clang-3.8"$(ccreset), You might see this $(ccred)$(CLANG_LD_ERROR)$(ccreset) error with the final linking step.)
+                  $(info Use this command to fix the issue $(ccmagenta) "sudo install_name_tool -change @executable_path/../lib/libLTO.dylib @rpath/../lib/libLTO.dylib /opt/local/libexec/ld64/ld-latest"$(ccreset))
+                  $(info You can see the bug report here $(ccmagenta)"https://trac.macports.org/ticket/50853"$(ccreset))
                   export CLANG_LD_WARNING_PRINTED := 1
                 endif #clang-3.8
               endif #clang warning printed
@@ -272,10 +293,10 @@ ifeq ($(DO_CHECKS), 1)
           # be visible if the entire codebase is being compiled. 
           # export WARNING_PRINTED ?= 0
 	        # ifeq ($(WARNING_PRINTED), 0)
-          $(warning $(ccmagenta) $$CC = ${CC} does not support OpenMP - please use gcc/icc for compiling with openmp. Removing USE_OMP from compile options. $(ccreset))
+          $(warning $(ccmagenta) $$CC = ${CC} does not support OpenMP - please use gcc/icc for compiling with openmp. Removing $(ccblue)"USE_OMP"$(ccmagenta) from compile options. $(ccreset))
           infovar := "OPT:=$$(filter-out -DUSE_OMP,$$(OPT))"
-          $(info $(ccmagenta)If you are sure your version of clang ($(ccblue) must be >= 3.7, NOT Apple clang $(ccmagenta)) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
-          $(info $(ccmagenta)You might have to add in the include path (path to omp.h) to CFLAGS and the runtime library path to CLINK at the top of $(ccgreen)"common.mk"$(ccreset))
+          $(info If you are sure your version of $(ccblue)"clang"$(ccreset) ($(ccblue) must be >= 3.7, NOT Apple clang$(ccreset)) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
+          $(info You might have to add in the include path (path to $(ccblue)"omp.h"$(ccreset)) to $(ccblue)"CFLAGS"$(ccreset) and the runtime library path to $(ccblue)"CLINK"$(ccreset) at the top of $(ccgreen)"common.mk"$(ccreset))
 
           # comment out the following line if your version of clang definitely supports OpenMP
           OPT:=$(filter-out -DUSE_OMP,$(OPT))
@@ -301,7 +322,7 @@ ifeq ($(DO_CHECKS), 1)
   export PYTHON_CHECKED ?= 0
   ifeq ($(PYTHON_CHECKED), 0)
     export COMPILE_PYTHON_EXT := 1
-    export PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
+    export PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell $(PYTHON) --version 2>&1)))
     export PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
     export PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
 
@@ -310,7 +331,7 @@ ifeq ($(DO_CHECKS), 1)
     PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
 
     ## Check numpy version
-    export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell python -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
+    export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
     export NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
     export NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
 
@@ -318,7 +339,7 @@ ifeq ($(DO_CHECKS), 1)
     NUMPY_VERSION_PATCH := $(word 3,${NUMPY_VERSION_FULL})
 
     ### Check for minimum python + numpy versions. In theory, I should also check
-	  ### that *any* python and numpy are available but that seems too much effort
+    ### that *any* python and numpy are available but that seems too much effort
     MIN_PYTHON_MAJOR := 2
     MIN_PYTHON_MINOR := 6
 
@@ -330,7 +351,7 @@ ifeq ($(DO_CHECKS), 1)
 
     ifneq ($(PYTHON_AVAIL),true)
       $(warning $(ccmagenta) Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR) $(ccreset))
-	    COMPILE_PYTHON_EXT := 0
+      COMPILE_PYTHON_EXT := 0
     endif
 
     ifneq ($(NUMPY_AVAIL),true)
@@ -338,37 +359,50 @@ ifeq ($(DO_CHECKS), 1)
       COMPILE_PYTHON_EXT := 0
     endif
 
-    ifeq ($(PYTHON_VERSION_MAJOR), 2)
-      PYTHON_CONFIG_EXE:=python-config
-    else
-	    PYTHON_CONFIG_EXE:=python3-config
-    endif
-    export PYTHON_CFLAGS := $(shell $(PYTHON_CONFIG_EXE) --includes) $(shell python -c "from __future__ import print_function; import numpy; print('-isystem' + numpy.__path__[0] + '/core/include/numpy/')")
-    export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
-    export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
-    export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
-    export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
-
-    ### Check if conda is being used on OSX - then we need to fix python link libraries
-    export FIX_PYTHON_LINK := 0
-    ifeq ($(UNAME), Darwin)
-      PATH_TO_PYTHON := $(shell which python)
-      ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
-	      FIX_PYTHON_LINK := 1
+    ifneq ($(COMPILE_PYTHON_EXT), 0)
+      ifndef PYTHON_CONFIG_EXE
+        ifeq ($(PYTHON_VERSION_MAJOR), 2)
+          PYTHON_CONFIG_EXE:=python-config
+        else
+          PYTHON_CONFIG_EXE:=python3-config
+        endif
+        ifneq ($(PYTHON), python)
+          PYTHON_CONFIG_EXE:=$(dir $(PYTHON))$(PYTHON_CONFIG_EXE)
+          $(warning $(ccblue)"PYTHON"$(ccreset) is set to $(ccblue)$(PYTHON)$(ccreset); using $(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset) as $(ccblue)python-config$(ccreset). If this is not correct, please also set $(ccblue)"PYTHON_CONFIG_EXE"$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset))
+        endif
       endif
-      PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
-      PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
-      PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-      PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(MAJOR).$(MINOR) -Wl,-current_version,$(VERSION)
-      PYTHON_LINK += -headerpad_max_install_names
+      PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
+      ifndef PYTHON_CONFIG_INCL
+        $(error $(ccred)python-config$(ccreset) ($(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset)) not found. Please set $(ccgreen)PYTHON_CONFIG_EXE$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset) before installing $(DISTNAME).$(VERSION) $(ccreset))
+      endif
 
-      ### Another check for stack-size. travis ci chokes on this with gcc
-      # comma := ,
-      # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
-      # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
-      # PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
-    endif #Darwin checks
-    export PYTHON_CHECKED:=1
+      export PYTHON_CFLAGS := $(PYTHON_CONFIG_INCL) $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print('-isystem ' + numpy.__path__[0] + '/core/include/numpy/')")
+      export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
+      export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
+      export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+      export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
+
+      ### Check if conda is being used on OSX - then we need to fix python link libraries
+      export FIX_PYTHON_LINK := 0
+      ifeq ($(UNAME), Darwin)
+        PATH_TO_PYTHON := $(shell which python)
+        ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
+	  FIX_PYTHON_LINK := 1
+        endif
+        PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
+        PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
+        PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
+        PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(MAJOR).$(MINOR) -Wl,-current_version,$(VERSION)
+        PYTHON_LINK += -headerpad_max_install_names
+
+        ### Another check for stack-size. travis ci chokes on this with gcc
+        # comma := ,
+        # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+        # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+        # PYTHON_LINK := $(filter-out -stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
+      endif #Darwin checks
+      export PYTHON_CHECKED:=1
+    endif # compile python extensions
   endif
   ### Done with python checks
 
@@ -401,4 +435,30 @@ ifeq ($(DO_CHECKS), 1)
     BLAS_INCLUDE:=
     BLAS_LINK:=
   endif
+
+  ## Everything is checked and ready. Print out the variables.
+  export MAKEFILE_VARS_PRINTED ?= 0
+  ifeq ($(MAKEFILE_VARS_PRINTED), 0)
+    MAKEFILE_VARS := CC OPT CFLAGS CLINK PYTHON
+    # I want the equal sign in the info print out later to be aligned
+    # However, the variables themselves can be longer than the tab character
+    # Therefore, I am going to split the variables into "small" and "long"
+    # sets of variables. Ugly, but works. I get the aligned print at the end.
+    BIG_MAKEFILE_VARS := GSL_CFLAGS GSL_LINK PYTHON_CFLAGS PYTHON_LINK
+    ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
+      MAKEFILE_VARS += BLAS_INCLUDE BLAS_LINK
+    endif
+    tabvar:= $(shell $(ECHO_COMMAND) "\t")
+    $(info )
+    $(info $(ccmagenta)$(boldfont)-------COMPILE SETTINGS------------$(ccreset))
+    $(foreach var, $(MAKEFILE_VARS), $(info $(tabvar) $(boldfont)$(var)$(ccreset)$(tabvar)$(tabvar) = ["$(ccblue)$(boldfont)${${var}}$(ccreset)"]))
+    # this line is identical to the previous except for one less tab character. 
+    $(foreach var, $(BIG_MAKEFILE_VARS), $(info $(tabvar) $(boldfont)$(var)$(ccreset)$(tabvar) = ["$(ccblue)$(boldfont)${${var}}$(ccreset)"]))
+    $(info $(ccmagenta)$(boldfont)-------END OF COMPILE SETTINGS------------$(ccreset))
+    $(info )
+    $(info )
+    export MAKEFILE_VARS_PRINTED := 1
+    ##$(info $$var is [${var}])
+  endif
+
 endif ## make clean is not under effect (the if condition starts all the way at the top with variable DO_CHECKS)
