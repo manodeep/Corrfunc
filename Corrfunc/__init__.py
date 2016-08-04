@@ -4,6 +4,7 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 import sys
+import os
 
 __all__ = ["_countpairs", "_countpairs_mocks", "utils"]
 
@@ -49,3 +50,49 @@ def write_text_file(filename, contents, encoding="utf-8"):
             f.write(contents)
 
 
+def which(program, mode=os.F_OK | os.X_OK, path=None):
+    """
+    Mimics the Unix utility which.
+    For python3.3+, shutil.which provides all of the required functionality.
+    An implementation is provided in case shutil.which does
+    not exist.
+    
+    :param program: (required) string
+           Name of program (can be fully-qualified path as well)
+    :param mode: (optional) integer flag bits
+           Permissions to check for in the executable
+           Default: os.F_OK (file exists) | os.X_OK (executable file)
+    :param path: (optional) string
+           A custom path list to check against. Implementation taken from
+           shutil.py.
+
+    Returns:
+           A fully qualified path to program as resolved by path or
+           user environment.
+           Returns None when program can not be resolved.
+    """
+    try:
+        from shutil import which as shwhich
+        return shwhich(program, mode, path)
+    except ImportError:
+        def is_exe(fpath):
+            return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+        
+        fpath, fname = os.path.split(program)
+        if fpath:
+            if is_exe(program):
+                return program
+        else:
+            if path is None:
+                path = os.environ.get("PATH", os.defpath)
+            if not path:
+                return None
+            
+            path = path.split(os.pathsep)
+            for pathdir in path:
+                pathdir = pathdir.strip('"')
+                exe_file = os.path.join(pathdir, program)
+                if is_exe(exe_file):
+                    return exe_file
+                
+        return None
