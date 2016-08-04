@@ -377,6 +377,7 @@ ifeq ($(DO_CHECKS), 1)
       ifndef PYTHON_CONFIG_INCL
         $(error $(ccred)python-config$(ccreset) ($(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset)) not found. Please set $(ccgreen)PYTHON_CONFIG_EXE$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset) before installing $(DISTNAME).$(VERSION) $(ccreset))
       endif
+      PYTHON_CONFIG_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_CONFIG_INCL))
 
       export PYTHON_CFLAGS := $(PYTHON_CONFIG_INCL) $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print('-isystem ' + numpy.__path__[0] + '/core/include/numpy/')")
       export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
