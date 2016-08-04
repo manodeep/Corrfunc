@@ -4,8 +4,7 @@
 from __future__ import print_function
 
 import os
-import os.path as path
-from os.path import join as pjoin
+from os.path import join as pjoin, dirname, abspath, commonprefix
 import sys
 from sys import version_info
 import re
@@ -13,11 +12,26 @@ import subprocess
     
 # partial import
 import Corrfunc
-from Corrfunc import read_text_file, write_text_file
+from Corrfunc import read_text_file, write_text_file, which
 
 # Make sure we are running on posix (Linux, Unix, MAC OSX)
 if os.name != 'posix':
     sys.exit("Sorry, Windows is not supported")
+
+base_url = "https://github.com/manodeep/Corrfunc"
+projectname = 'Corrfunc'
+
+# global variables
+version = ''
+compiler = ''
+
+# numpy 1.7 supports python 2.4-2.5; python 3.1-3.3.
+try:
+    from setuptools import setup, Extension
+    from setuptools.command.build_ext import build_ext
+except ImportError:
+    from distutils.core import setup, Extension
+    from distutils.command.build_ext import build_ext
 
 
 def strip_line(line, sep=os.linesep):
@@ -39,7 +53,7 @@ def run_command(command, **kwargs):
     if status:
         msg = "command = {0} failed with stdout = {1} stderr = {2} "\
               "status {3:d}\n".format(command, stdout, stderr, status)
-        raise Exception(msg)
+        raise RuntimeError(msg)
     return stdout, stderr
 
 
@@ -53,6 +67,15 @@ def get_dict_from_buffer(buf, keys=['DISTNAME', 'MAJOR',
     """
     Parses a string buffer for key-val pairs for the supplied keys.
 
+    Returns: Python dictionary with all the keys (all keys in buffer
+             if None is passed for keys) with the values being a list
+             corresponding to each key.
+    
+    Note: Return dict will contain all keys supplied (if not None).
+          If any key was not found in the buffer, then the value for
+          that key will be [] such that dict[key] does not produce
+          a KeyError.
+
     Slightly modified from:
     "http://stackoverflow.com/questions/5323703/regex-how-to-"\
     "match-sequence-of-key-value-pairs-at-end-of-string
@@ -60,99 +83,63 @@ def get_dict_from_buffer(buf, keys=['DISTNAME', 'MAJOR',
     """
     
     import re
-    keys = [k.strip() for k in keys]
-    regex = re.compile(r'''
-    \n                 # all key-value pairs are on separate lines
-    \s*                # there might be some leading spaces
-    (                  # start group to return
-    (?:{0}\s*)         # placeholder for tags to detect '\S+' == all
-    \s*:*=\s*          # optional spaces, optional colon, = , optional spaces
-    .*                 # the value
-    )                  # end group to return
-    '''.format('|'.join(keys)), re.VERBOSE)
-    
-    matches = regex.findall(buf)
-    pairs = dict()
-    for k in keys:
-        pairs[k] = []
 
+    pairs = dict()
+    if keys is None:
+        keys = "\S+"
+        regex = re.compile(r'''
+        \n            # all key-value pairs are on separate lines
+        \s*           # there might be some leading spaces
+        (             # start group to return
+        (?:{0}\s*)    # placeholder for tags to detect '\S+' == all
+        \s*:*=\s*     # optional spaces, optional colon, = , optional spaces
+        .*            # the value
+        )             # end group to return
+        '''.format(keys), re.VERBOSE)
+        validate = False
+    else:
+        keys = [k.strip() for k in keys]
+        regex = re.compile(r'''
+        \n            # all key-value pairs are on separate lines
+        \s*           # there might be some leading spaces
+        (             # start group to return
+        (?:{0}\s*)    # placeholder for tags to detect '\S+' == all
+        \s*:*=\s*     # optional spaces, optional colon, = , optional spaces
+        .*            # the value
+        )             # end group to return
+        '''.format('|'.join(keys)), re.VERBOSE)
+        validate = True
+        for k in keys:
+            pairs[k] = []
+
+    matches = regex.findall(buf)
     for match in matches:
         key, val = match.split('=', 1)
-        # remove colon and leading/trailing whitespace
+        
+        # remove colon and leading/trailing whitespace from key
         key = (strip_line(key, ':')).strip()
-        # remove newline and leading/trailing whitespace
+
+        # remove newline and leading/trailing whitespace from value
         val = (strip_line(val)).strip()
-        if key not in keys:
-            msg = "regex produced incorrect match. regex pattern = {0}"\
-                  "claims key = [{1}] while original set of search keys = {2}"\
-                  .format(regex.pattern, key, '|'.join(keys))
-            raise RuntimeError(msg)
+        if validate and key not in keys:
+            msg = "regex produced incorrect match. regex pattern = {0} "\
+                  "claims key = [{1}] while original set of search keys "\
+                  "= {2}".format(regex.pattern, key, '|'.join(keys))
+            raise AssertionError(msg)
         pairs.setdefault(key, []).append(val)
-            
+        
     return pairs
 
-    
-base_url = "https://github.com/manodeep/Corrfunc"
-common_mk_file = pjoin(path.dirname(path.abspath(__file__)),
-                       "common.mk")
-common = read_text_file(common_mk_file)
-common_dict = get_dict_from_buffer(common)
-name = common_dict['DISTNAME'][0]
-major = common_dict['MAJOR'][0]
-minor = common_dict['MINOR'][0]
-patch = common_dict['PATCHLEVEL'][0]
-if name is None or major is None or minor is None or patch is None:
-    msg = "ERROR: Did not find at least one of the keys "\
-          "(DISTNAME, MAJOR, MINOR, PATCHLEVEL) in 'common.mk'.\n"\
-          "Checks can not run - aborting installation. "\
-          "name = {1} major = {2} minor = {3} patch = {4}\n\n"\
-          "You can fix this by re-issuing git clone {0}".\
-          format(base_url, name, major, minor, patch)
-    raise AssertionError(msg)
 
-version = "{0}.{1}.{2}".format(major, minor, patch)
+def replace_first_key_in_makefile(buf, key, replacement, outfile=None):
+    '''
+    Replaces first line in 'buf' matching 'key' with 'replacement'.
+    Optionally, writes out this new buffer into 'outfile'.
 
-# Check that version matches
-if Corrfunc.__version__ != version:
-    msg = "ERROR: Version mis-match. Python version found = {0} \
-    while C version claims {1}".format(Corrfunc.__version__, version)
-    sys.exit(msg)
+    Returns: Buffer after replacement has been done
+    '''
 
-# Since arbitrary python can be used even within the Makefile
-# make sure that the current python executable is the same as the
-# one specified in common.mk. Easiest way is to replace
-make_python = common_dict['PYTHON'][0]
-if make_python is None:
-    msg = "PYTHON is not defined in 'common.mk'. Please "\
-          "edit 'common.mk' and define PYTHON (typically "\
-          "just python) "
-    sys.exit(msg)
-
-this_python = sys.executable
-python_script = "'from __future__ import print_function; "\
-                "import sys; print(sys.executable)'"
-get_full_python, full_python_errors = run_command(
-    make_python + " -c " + python_script,
-    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-if get_full_python is None:
-    msg = "Could not determine which python is resolved in the Makefile "\
-          "Parsed PYTHON=[${0}] in Makefile which could not be resolved "\
-          "through the shell. Please report your python setup and file an "\
-          "installation issue at {1}.".format(make_python, base_url)
-    sys.exit(msg)
-
-
-get_full_python = strip_line(get_full_python, os.linesep)
-if get_full_python == this_python:
-    print("Great. Current python is the same as the python in the Makefile")
-else:
-    msg = "Looks like python specified in Makefile = {0} is different "\
-          "from the invoked python instance = {1}.\nReplacing PYTHON "\
-          "in 'common.mk' and recompiling *all* files".format(
-              get_full_python, this_python)
-    print(msg)
-    key = "PYTHON"
-    python_regexp = re.compile(r'''
+    regexp = re.compile(r'''
     \n\s*           # there might be some leading spaces
     (               # start group to return
     (?:{0}\s*)      # placeholder for tags to detect '\S+' == all
@@ -160,35 +147,166 @@ else:
     .*              # the value
     )               # end group to return
     '''.format(key), re.VERBOSE)
-    replacement = '\n{0}:={1}'.format(key, this_python)
-    common = python_regexp.sub(replacement, common, count=1)
-    write_text_file(common_mk_file, common)
+    matches = regexp.findall(buf)
+    if matches is None:
+        msg = "Could not find key = {0} in the provided buffer. "\
+              "Pattern used = {1}".format(key, regexp.pattern)
+        raise ValueError(msg)
+
+    # Only replace the first occurence
+    newbuf = regexp.sub(replacement, buf, count=1)
+    if outfile is not None:
+        write_text_file(outfile, newbuf)
+
+    return newbuf
 
 
-min_py_major = int(common_dict['MIN_PYTHON_MAJOR'][0])
-min_py_minor = int(common_dict['MIN_PYTHON_MINOR'][0])
-min_np_major = int(common_dict['MIN_NUMPY_MAJOR'][0])
-min_np_minor = int(common_dict['MIN_NUMPY_MINOR'][0])
+def requirements_check():
+    common_mk_file = pjoin(dirname(abspath(__file__)),
+                           "common.mk")
+    common = read_text_file(common_mk_file)
+    common_dict = get_dict_from_buffer(common)
+    name = common_dict['DISTNAME'][0]
+    major = common_dict['MAJOR'][0]
+    minor = common_dict['MINOR'][0]
+    patch = common_dict['PATCHLEVEL'][0]
+    if name is None or major is None or minor is None or patch is None:
+        msg = "ERROR: Did not find at least one of the keys "\
+              "(DISTNAME, MAJOR, MINOR, PATCHLEVEL) in 'common.mk'.\n"\
+              "Checks can not run - aborting installation. "\
+              "projectname = {1} major = {2} minor = {3} patch = {4}\n\n"\
+              "You can fix this by re-issuing git clone {0}".\
+              format(base_url, projectname, major, minor, patch)
+        raise AssertionError(msg)
 
-# Enforce minimum python version
-if version_info[0] < min_py_major or \
-   (version_info[0] == min_py_major and version_info[1] < min_py_minor):
-    raise RuntimeError('Sorry. Found python {0}.{1} but minimum required \
-    python version is {2}.{3}'.format(version_info[0],
-                                      version_info[1],
-                                      min_py_major, min_py_minor))
-# numpy 1.7 supports python 2.4-2.5; python 3.1-3.3.
-try:
-    from setuptools import setup, Extension
-    from setuptools.command.build_ext import build_ext
-except ImportError:
-    from distutils.core import setup, Extension
-    from distutils.command.build_ext import build_ext
+    if projectname != name:
+        msg = 'Mis-match between C project name and python project name'\
+              'C claims project = {0} while python has {1}'.\
+              format(name, projectname)
+        raise AssertionError(msg)
+        
+    global version
+    version = "{0}.{1}.{2}".format(major, minor, patch)
+    # Check that version matches
+    if Corrfunc.__version__ != version:
+        msg = "ERROR: Version mis-match. Python version found = {0} \
+        while C version claims {1}".format(Corrfunc.__version__, version)
+        raise AssertionError(msg)
 
-if sys.argv[-1] == "publish":
-    os.system("python setup.py sdist upload")
-    sys.exit()
+    # Since arbitrary python can be used even within the Makefile
+    # make sure that the current python executable is the same as the
+    # one specified in common.mk. Easiest way is to replace
+    make_python = common_dict['PYTHON'][0]
+    if make_python is None:
+        msg = "PYTHON is not defined in 'common.mk'. Please "\
+            "edit 'common.mk' and define PYTHON (typically "\
+            "just python) "
+        raise AssertionError(msg)
 
+    this_python = sys.executable
+    python_script = "'from __future__ import print_function; "\
+                    "import sys; print(sys.executable)'"
+    get_full_python, full_python_errors = run_command(
+        make_python + " -c " + python_script,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if get_full_python is None:
+        msg = "Could not determine which python is resolved in the Makefile "\
+              "Parsed PYTHON=[${0}] in Makefile which could not be resolved "\
+              "through the shell. Please report your python setup and file "\
+              "an installation issue at {1}.".format(make_python, base_url)
+        raise RuntimeError(msg)
+        
+    get_full_python = strip_line(get_full_python, os.linesep)
+    if get_full_python != this_python:
+        msg = "Looks like python specified in Makefile = {0} is different "\
+              "from the invoked python instance = {1}.\nReplacing PYTHON "\
+              "in 'common.mk' and recompiling *all* files".format(
+                  get_full_python, this_python)
+        print(msg)
+        key = "PYTHON"
+        replacement = '\n{0}:={1}'.format(key, this_python)
+        common = replace_first_key_in_makefile(common, key, replacement,
+                                               common_mk_file)
+
+    # Okay common.mk has now been updated to use current python
+    # for building the extensions as required
+    min_py_major = int(common_dict['MIN_PYTHON_MAJOR'][0])
+    min_py_minor = int(common_dict['MIN_PYTHON_MINOR'][0])
+    
+    # Enforce minimum python version
+    if version_info[0] < min_py_major or \
+       (version_info[0] == min_py_major and version_info[1] < min_py_minor):
+        msg = "Sorry. Found python {0}.{1} but minimum required "\
+              "python version is {2}.{3}".format(version_info[0],
+                                                 version_info[1],
+                                                 min_py_major,
+                                                 min_py_minor)
+        raise AssertionError(msg)
+
+    # Check if CC is in argv:
+    CC = "CC"
+    for iarg, arg in enumerate(sys.argv):
+        if CC in arg:
+            if '=' in arg:
+                key, value = arg.strip().split('=')
+            else:
+                # Space-separated or no spaces and equal
+                key = arg.strip()
+                check_arg = iarg+1
+
+                if key != CC:
+                    msg = "Something strange has happened. Expected to find "\
+                          "a custom compiler from the command-line but \n"\
+                          "found command-line argument '{0}' (that matches "\
+                          "pattern ['CC=/path/to/compiler']). Parsing "\
+                          "produced CC={1}".format(arg, key)
+                    raise ValueError(msg)
+                
+                # Is there an "=" sign or did the user
+                # simply pass `CC /path/to/compiler`
+                if check_arg < len(sys.argv):
+                    if sys.argv[check_arg] == '=':
+                        # skip '=' sign
+                        del sys.argv[check_arg]
+
+                # should be parsing the compiler value now
+                if not check_arg < len(sys.argv):
+                    msg = "Found compiler key = CC but could not locate "\
+                          "compiler value (either as `CC=/path/to/CC` "\
+                          "or as `CC /path/to/CC`"
+                    raise ValueError(msg)
+
+                value = sys.argv[check_arg].strip()
+                del sys.argv[check_arg]
+
+            if key != CC or value == '':
+                msg = "Something strange has happened. Expected to find a "\
+                      "custom compiler from the command-line but found \n"\
+                      "command-line argument '{0}' (that matches pattern "\
+                      "['CC=/path/to/compiler']). Parsing produced CC={1} "\
+                      "and $CC={2}".format(arg, key, value)
+
+                raise ValueError(msg)
+
+            # check if value is a valid compiler
+            full_compiler = which(value)
+            if full_compiler is None:
+                msg = "Found compiler = '{0}' on the command-line but '{0}' "\
+                      "can not be resolved from the shell.\n"\
+                      "Please specify CC=/path/to/compiler in the "\
+                      "python setup.py call.".format(value)
+                raise ValueError(msg)
+            
+            replacement = '\n{0}:={1}'.format(CC, value)
+            replace_first_key_in_makefile(common, CC,
+                                          replacement, common_mk_file)
+            del sys.argv[iarg]
+            global compiler
+            compiler = value
+            break
+
+    return common_dict
+    
 
 class BuildExtSubclass(build_ext):
     def build_extensions(self):
@@ -198,25 +316,33 @@ class BuildExtSubclass(build_ext):
 
             # Blatantly copied from the Android distutils setup.py
             # But then modified to make it python3 compatible!
-            if sources is None:
+            if sources is None or not isinstance(sources, list):
                 msg = "in 'ext_modules' option (extension {0}),"\
-                      "sources must be present and must be "\
-                      "a list of source filename".format(ext.name)
-                raise Exception(msg)
+                      "sources={1} must be present and must be "\
+                      "a list of source filename".\
+                      format(ext.name, sources)
+                raise AssertionError(msg)
 
             if len(sources) == 1:
-                ext_dir = path.dirname(sources[0])
+                ext_dir = dirname(sources[0])
             else:
-                # not debugged - likely to be wrong
-                ext_dir = path.commonprefix(sources)
+                # not debugged - could be wrong
+                # (where sources from multiple directories
+                # are specified simultaneously)
+                ext_dir = commonprefix(sources)
 
-            command = "cd {0} && make ".format(ext_dir)
+            # global variable compiler is set if passed in
+            # command-line
+            extra_string = ''
+            if compiler != '':
+                extra_string = 'CC={0}'.format(compiler)
+            command = "cd {0} && make {1}".format(ext_dir, extra_string)
             run_command(command)
             
             import shutil
             import errno
             try:
-                os.makedirs(path.dirname(self.get_ext_fullpath(ext.name)))
+                os.makedirs(dirname(self.get_ext_fullpath(ext.name)))
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
                     raise
@@ -225,7 +351,7 @@ class BuildExtSubclass(build_ext):
             #                                 version)
             full_build_name = '{0}.{1}'.format(
                 self.get_ext_fullpath(ext.name), version)
-
+            
             full_name = '{0}.so'.format(pjoin(ext_dir, ext.name))
             full_build_name = '{0}'.format(self.get_ext_fullpath(ext.name))
             pkg_sourcedir = '{0}'.format(pjoin(ext_dir, '../../Corrfunc'))
@@ -244,9 +370,10 @@ class BuildExtSubclass(build_ext):
 def generate_extensions(python_dirs):
     extensions = []
     for pdir in python_dirs:
-        mk = read_text_file(pjoin(path.dirname(path.abspath(__file__)),
+        mk = read_text_file(pjoin(dirname(abspath(__file__)),
                                   pdir, "Makefile"))
-        makefile_dict = get_dict_from_buffer(mk, ['PROJECT', 'SOURCES'])
+        makefile_dict = get_dict_from_buffer(mk, ['PROJECT',
+                                                  'SOURCES'])
         project = makefile_dict['PROJECT'][0].strip()
         src_files = makefile_dict['SOURCES']
         if project is None or src_files is None:
@@ -277,11 +404,30 @@ def recursive_glob(rootdir='.', patterns=['*']):
             if fnmatch.fnmatch(filename, p)]
 
 
+def install_required():
+    install_args = ['build', 'build_ext', 'build_clib',
+                    'install', 'bdist']
+    
+    for arg in install_args:
+        if arg in sys.argv:
+            return True
+        
+    return False
+
+
 # Taken from numpy setup.py
 def setup_packages():
+    '''
+    Custom setup for Corrfunc package.
+
+    Optional: Set compiler via 'CC=/path/to/compiler' or
+              'CC /path/to/compiler' or 'CC = /path/to/compiler'
+              All the CC options are removed from sys.argv after
+              being parsed.
+    '''
 
     # protect the user in case they run python setup.py not from root directory
-    src_path = path.dirname(path.abspath(sys.argv[0]))
+    src_path = dirname(abspath(sys.argv[0]))
     old_path = os.getcwd()
     os.chdir(src_path)
     sys.path.insert(0, src_path)
@@ -291,11 +437,22 @@ def setup_packages():
                    "xi_mocks/python_bindings"]
     extensions = generate_extensions(python_dirs)
 
-    # only run this if not creating source dist
-    if "sdist" not in sys.argv:
-        command = "make install"
-        run_command(command)
+    # check requirement for extensions and set the compiler if specified
+    # in command-line
+    common_dict = requirements_check()
 
+    # Some command options require headers/libs to be generated
+    # so that the following dirs_patters supplies them.
+    if install_required():
+        # global variable compiler is set if passed in
+        # command-line
+        extra_string = ''
+        if compiler != '':
+            extra_string = 'CC={0}'.format(compiler)
+            
+        command = "make install {0}".format(extra_string)
+        run_command(command)
+        
     # find all the data-files required.
     # Now the lib + associated header files have been generated
     # and put in lib/ and include/
@@ -318,7 +475,9 @@ def setup_packages():
     # change them to be relative to package dir rather than root
     data_files = ["../{0}".format(d) for d in data_files]
     long_description = read_text_file('README.rst')
-
+    min_np_major = int(common_dict['MIN_NUMPY_MAJOR'][0])
+    min_np_minor = int(common_dict['MIN_NUMPY_MINOR'][0])
+    
     # All book-keeping is done.
     # base_url = "https://github.com/manodeep/Corrfunc"
     classifiers = ['Development Status :: 4 - Beta',
@@ -336,7 +495,7 @@ def setup_packages():
                    'Programming Language :: Python :: 3.4',
                    'Programming Language :: Python :: 3.5']
     metadata = dict(
-        name=name,
+        name=projectname,
         version=version,
         author='Manodeep Sinha',
         author_email='manodeep@gmail.com',
@@ -344,7 +503,7 @@ def setup_packages():
         maintainer_email='manodeep@gmail.com',
         url=base_url,
         download_url='{0}/archive/{1}-{2}.tar.gz'.format(
-            base_url, name, version),
+            base_url, projectname, version),
         description='Blazing fast correlation functions on the CPU',
         long_description=long_description,
         classifiers=classifiers,
@@ -353,8 +512,8 @@ def setup_packages():
         platforms=["Linux", "Mac OSX", "Unix"],
         keywords=['correlation functions', 'simulations',
                   'surveys', 'galaxies'],
-        packages=[name],
-        ext_package=name,
+        packages=[projectname],
+        ext_package=projectname,
         ext_modules=extensions,
         package_data={'': data_files},
         include_package_data=True,
