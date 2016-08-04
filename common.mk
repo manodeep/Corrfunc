@@ -439,7 +439,7 @@ ifeq ($(DO_CHECKS), 1)
   ## Everything is checked and ready. Print out the variables.
   export MAKEFILE_VARS_PRINTED ?= 0
   ifeq ($(MAKEFILE_VARS_PRINTED), 0)
-    MAKEFILE_VARS := CC OPT CFLAGS CLINK PYTHON
+    MAKEFILE_VARS := MAKE CC OPT CFLAGS CLINK PYTHON
     # I want the equal sign in the info print out later to be aligned
     # However, the variables themselves can be longer than the tab character
     # Therefore, I am going to split the variables into "small" and "long"
