@@ -16,11 +16,6 @@ extern "C" {
 #include "function_precision.h"
 #include <inttypes.h>
 
-#if defined(USE_AVX) && defined(__AVX__)
-#include "avx_calls.h"
-#endif
-
-    
     void wp_driver(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
                    DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
                    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
