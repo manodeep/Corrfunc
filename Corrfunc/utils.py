@@ -75,8 +75,8 @@ def read_catalog(filebase=None):
         return x, y, z
 
     def read_fastfood(filename, return_dtype=None, need_header=None):
-        if return_dtype is None:
-            msg = "Return data-type must be set and a valid numpy data-type"
+        if return_dtype is None or return_dtype not in [np.float32, np.float]:
+            msg = "Return data-type must be set and a valid numpy float"
             raise ValueError(msg)
 
         import struct
