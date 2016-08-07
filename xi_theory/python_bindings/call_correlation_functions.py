@@ -214,6 +214,19 @@ def main():
     autocorr = 1
     numbins_to_print = 5
 
+    print("\nRunning 2-D correlation function DD(rp,pi)")
+    results_DDrppi = _countpairs.countpairs_rp_pi(autocorr, nthreads, pimax,
+                                                  binfile, x, y, z, x, y, z)
+    print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
+          .format(numbins_to_print))
+    print("#      rmin        rmax       rpavg     pi_upper     npairs")
+    print("###########################################################")
+    for ibin in range(numbins_to_print):
+        items = results_DDrppi[ibin]
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
+              .format(items[0], items[1], items[2], items[3], items[4]))
+    print("-----------------------------------------------------------")
+
     print("Running 3-D correlation function DD(r)")
     results_DD = _countpairs.countpairs(autocorr, nthreads, binfile, x, y, z,
                                         x, y, z)
@@ -227,18 +240,6 @@ def main():
               .format(items[0], items[1], items[2], items[3]))
     print("------------------------------------------------")
 
-    print("\nRunning 2-D correlation function DD(rp,pi)")
-    results_DDrppi = _countpairs.countpairs_rp_pi(autocorr, nthreads, pimax,
-                                                  binfile, x, y, z, x, y, z)
-    print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
-          .format(numbins_to_print))
-    print("#      rmin        rmax       rpavg     pi_upper     npairs")
-    print("###########################################################")
-    for ibin in range(numbins_to_print):
-        items = results_DDrppi[ibin]
-        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
-              .format(items[0], items[1], items[2], items[3], items[4]))
-    print("-----------------------------------------------------------")
 
     print("\nRunning 2-D projected correlation function wp(rp)")
     results_wp = _countpairs.countpairs_wp(boxsize, pimax, nthreads,

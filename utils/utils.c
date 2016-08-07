@@ -249,7 +249,41 @@ char * int2bin(int a, char *buffer, int buf_size)
 */
 
 
+char * get_time_string(struct timeval t0,struct timeval t1)
+{
+  const size_t MAXLINESIZE = 1024;
+  char *time_string = my_malloc(sizeof(char), MAXLINESIZE);
+  double timediff = difftime(t1.tv_sec,t0.tv_sec);
+  double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
+  char units[4][10]  = {"days", "hrs" , "mins", "secs"};
+  int which = 0;
 
+  double timeleft = timediff;
+  double time_to_print;
+  
+  if(timediff < ratios[2]) {
+    my_snprintf(time_string, MAXLINESIZE,"%6.3lf secs",1e-6*(t1.tv_usec-t0.tv_usec) + timediff);
+  }  else {
+    size_t curr_index = 0;
+    while (which < 4) {
+      time_to_print = floor(timeleft/ratios[which]);
+      if (time_to_print > 1) {
+        timeleft -= (time_to_print*ratios[which]);
+        char tmp[MAXLINESIZE];
+        my_snprintf(tmp, MAXLINESIZE, "%5d %s",(int)time_to_print,units[which]);
+        const size_t len = strlen(tmp);
+        const size_t required_len = curr_index + len + 1;
+        XASSERT(MAXLINESIZE >= required_len, "buffer overflow will occur: string has space for %zu bytes while concatenating requires at least %zu bytes\n",
+                MAXLINESIZE, required_len);
+        strcpy(time_string + curr_index, tmp);
+        curr_index += len;
+      }
+      which++;
+    }
+  }
+
+  return time_string;
+}
 
 void print_time(struct timeval t0,struct timeval t1,const char *s)
 {

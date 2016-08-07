@@ -58,6 +58,7 @@
      //general utilities
      extern char *int2bin(int a, char *buffer, int buf_size) ;
      extern int my_snprintf(char *buffer,int len,const char *format, ...) __attribute__((format(printf,3,4)));
+     extern char * get_time_string(struct timeval t0,struct timeval t1);
      extern void print_time(struct timeval t0,struct timeval t1,const char *s);
      extern int64_t getnumlines(const char *fname,const char comment);
      extern int is_big_endian(void);

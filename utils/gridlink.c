@@ -463,8 +463,13 @@ struct cellarray_index * gridlink_index(const int64_t np,
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);                   \
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);\
         SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t,cell_index,i,j)}
+#define MY_MULTI_COMPARATOR(a, i, j) (cell_index[i] > cell_index[j] ? 1: (cell_index[i] < cell_index[j] ? -1:  SGLIB_SAFE_NUMERIC_COMPARATOR(z[i], z[j])))
 
-    SGLIB_ARRAY_HEAP_SORT(int64_t, cell_index, np, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+    SGLIB_ARRAY_QUICK_SORT_MULTICOMP(int64_t, cell_index, np, MY_MULTI_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+
+    /* SGLIB_ARRAY_QUICK_SORT(int64_t, cell_index, np, SGLIB_SAFE_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER); */
+
+#undef MY_MULTI_COMPARATOR    
 #undef MULTIPLE_ARRAY_EXCHANGER
 
     int64_t start_cell = cell_index[0];

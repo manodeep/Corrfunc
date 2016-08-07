@@ -13,7 +13,6 @@
 #include "countpairs_rp_pi.h" //function proto-type
 #include "gridlink.h"//function proto-type for gridlink
 #include "cellarray.h" //definition of struct cellarray
-#include "sglib.h"//sorting
 #include "utils.h" //all of the utilities
 
 #ifndef SILENT
@@ -118,45 +117,6 @@ results_countpairs_rp_pi countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE 
 
     //Generate the unique set of neighbouring cells to count over. 
     assign_ngb_cells(lattice1, lattice2, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff, autocorr, periodic);
-
-
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
-            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);               \
-            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) }
-
-#if defined(USE_OMP) && defined(_OPENMP)
-    omp_set_num_threads(numthreads);
-#pragma omp parallel for schedule(dynamic)
-#endif
-    for(int64_t icell=0;icell<totncells;icell++) {
-        const cellarray_index *first=&(lattice1[icell]);
-        if(first->nelements > 0) {
-          const int64_t start = first->start;
-          DOUBLE *x = X1 + start;
-          DOUBLE *y = Y1 + start;
-          DOUBLE *z = Z1 + start;
-          
-          SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
-        }
-
-    }
-    if(autocorr == 0) {
-#if defined(USE_OMP) && defined(_OPENMP)
-#pragma omp parallel for schedule(dynamic)
-#endif
-        for(int64_t icell=0;icell<totncells;icell++) {
-            const cellarray_index *first=&(lattice2[icell]);
-            if(first->nelements > 0) {
-                const int64_t start = first->start;
-                DOUBLE *x = X2 + start;
-                DOUBLE *y = Y2 + start;
-                DOUBLE *z = Z2 + start;
-                
-                SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
-            }
-#undef MULTIPLE_ARRAY_EXCHANGER
-        }
-    }
 
     DOUBLE rupp_sqr[nrpbin];
     const int64_t totnbins = (npibin+1)*(nrpbin+1);
