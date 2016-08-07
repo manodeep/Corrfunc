@@ -22,8 +22,6 @@
 #include "progressbar.h" //for the progressbar
 #endif
 
-#include "sglib.h"
-
 #if defined(USE_OMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
@@ -84,28 +82,6 @@ results_countpairs_xi countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUBL
     const int autocorr = 1;
     const int periodic = 1;
     assign_ngb_cells(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, bin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, autocorr, periodic);
-
-#if defined(USE_OMP) && defined(_OPENMP)
-    omp_set_num_threads(numthreads);
-#pragma omp parallel for schedule(dynamic)
-#endif
-    for(int64_t icell=0;icell<totncells;icell++) {
-        const cellarray_index *first=&(lattice[icell]);
-        if(first->nelements > 0) {
-          const int64_t start = first->start;
-          DOUBLE *x = X + start;
-          DOUBLE *y = Y + start;
-          DOUBLE *z = Z + start;
-          
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
-            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);               \
-            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j) }
-          
-          SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
-#undef MULTIPLE_ARRAY_EXCHANGER
-        }
-    }
-
 
 #if !(defined(USE_OMP) && defined(_OPENMP))
     uint64_t npairs[nbins];
