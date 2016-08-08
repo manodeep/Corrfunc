@@ -10,14 +10,15 @@ else
 $(warning $(ccmagenta) Skipping python tests since python or numpy is unavailable $(ccreset))
 endif
 
-SRC1   := test_periodic.c ../../utils/utils.c ../../utils/progressbar.c 
+SRC1   := test_periodic.c ../../utils/utils.c ../../utils/progressbar.c ../../utils/cpu_features.c 
 OBJS1  := $(SRC1:.c=.o)
 INCL   := ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c \
 	../xi_of_r/countpairs.c ../xi_of_r/countpairs_driver.c ../xi_of_r/countpairs_kernels.c \
         ../xi_rp_pi/countpairs_rp_pi.c ../xi_rp_pi/countpairs_rp_pi_driver.c ../xi_rp_pi/countpairs_rp_pi_kernels.c \
         ../wp/countpairs_wp.c ../wp/wp_driver.c ../wp/wp_kernels.c \
 	../vpf/countspheres.c \
-        ../xi/countpairs_xi.c ../xi/xi_driver.c ../xi/xi_kernels.c
+        ../xi/countpairs_xi.c ../xi/xi_driver.c ../xi/xi_kernels.c \
+        ../../utils/utils.h ../../utils/cpu_features.h ../../utils/progressbar.h ../../utils/cpu_features.h 
 
 SRC2   := test_nonperiodic.c ../../utils/utils.c ../../utils/progressbar.c 
 OBJS2  := $(SRC2:.c=.o)
