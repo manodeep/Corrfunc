@@ -60,7 +60,10 @@ int countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DO
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
-
+#if !(defined(USE_OMP) && defined(_OPENMP))
+    (void) numthreads;
+#endif    
+    
     int bin_refine_factor=2,zbin_refine_factor=1;
     int nmesh_x, nmesh_y, nmesh_z;
     
@@ -125,6 +128,7 @@ int countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DO
 #endif// USE_OMP
 
 
+    int abort_status = EXIT_SUCCESS;
     int interrupted=0;
     int64_t numdone=0;
     if(options->verbose) {
@@ -133,7 +137,7 @@ int countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DO
 
     
 #if defined(USE_OMP) && defined(_OPENMP)
-#pragma omp parallel shared(numdone)
+#pragma omp parallel shared(numdone, abort_status)
     {
         const int tid = omp_get_thread_num();
         uint64_t npair[nrpbins];
@@ -152,86 +156,98 @@ int countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DO
 #endif//USE_OMP
         for(int index1=0;index1<totncells;index1++) {
 
-
-            if(options->verbose) {
-#if defined(USE_OMP) && defined(_OPENMP)
-                if (omp_get_thread_num() == 0)
+#if defined(USE_OMP) && defined(_OPENMP)            
+#pragma omp flush (abort_status)
 #endif
-                    my_progressbar(numdone,&interrupted);
+            if(abort_status == EXIT_SUCCESS) {
                 
-                
+                if(options->verbose) {
+#if defined(USE_OMP) && defined(_OPENMP)
+                    if (omp_get_thread_num() == 0)
+#endif
+                        my_progressbar(numdone,&interrupted);
+                    
+                    
 #if defined(USE_OMP) && defined(_OPENMP)
 #pragma omp atomic
 #endif
-                numdone++;
-            }
-
-            
-            /* First do the same-cell calculations */
-            const cellarray_index *first  = &(lattice[index1]);
-            if(first->nelements == 0) {
-                continue;
-            }
-
-            int same_cell = 1;
-            DOUBLE *x1 = X + first->start;
-            DOUBLE *y1 = Y + first->start;
-            DOUBLE *z1 = Z + first->start;
-            const int64_t N1 = first->nelements;
-            int status;
-            if(options->need_avg_sep) {
-                status = wp_driver(x1, y1, z1, N1,
-                                   x1, y1, z1, N1, same_cell,
-                                   sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                   ZERO, ZERO, ZERO
-                                   ,rpavg
-                                   ,options
-                                   ,npair);
-            } else {
-                status = wp_driver(x1, y1, z1, N1,
-                                   x1, y1, z1, N1, same_cell,
-                                   sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                   ZERO, ZERO, ZERO
-                                   ,NULL
-                                   ,options
-                                   ,npair);
-            }
-            if(status != EXIT_SUCCESS) {
-                exit(status);
-            }
+                    numdone++;
+                }
                 
-            for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
-                cellarray_index *second = first->ngb_cells[ngb];
-                DOUBLE *x2 = X + second->start;
-                DOUBLE *y2 = Y + second->start;
-                DOUBLE *z2 = Z + second->start;
-                const int64_t N2 = second->nelements;
-                const DOUBLE off_xwrap = first->xwrap[ngb];
-                const DOUBLE off_ywrap = first->ywrap[ngb];
-                const DOUBLE off_zwrap = first->zwrap[ngb];
-                same_cell = 0;
+                
+                /* First do the same-cell calculations */
+                const cellarray_index *first  = &(lattice[index1]);
+                if(first->nelements == 0) {
+                    continue;
+                }
+                
+                int same_cell = 1;
+                DOUBLE *x1 = X + first->start;
+                DOUBLE *y1 = Y + first->start;
+                DOUBLE *z1 = Z + first->start;
+                const int64_t N1 = first->nelements;
+                int status;
                 if(options->need_avg_sep) {
                     status = wp_driver(x1, y1, z1, N1,
-                                       x2, y2, z2, N2, same_cell,
+                                       x1, y1, z1, N1, same_cell,
                                        sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                       off_xwrap, off_ywrap, off_zwrap
+                                       ZERO, ZERO, ZERO
                                        ,rpavg
                                        ,options
                                        ,npair);
                 } else {
                     status = wp_driver(x1, y1, z1, N1,
-                                       x2, y2, z2, N2, same_cell,
+                                       x1, y1, z1, N1, same_cell,
                                        sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                       off_xwrap, off_ywrap, off_zwrap
+                                       ZERO, ZERO, ZERO
                                        ,NULL
                                        ,options
                                        ,npair);
                 }
                 if(status != EXIT_SUCCESS) {
-                    exit(status);
+                    /* This actually causes a race condition under OpenMP - but mostly 
+                       I care that an error occurred - rather than the exact value of 
+                       the error status */
+                    abort_status = status;
                 }
-            }//ngb loop
+                
+                for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
+                    cellarray_index *second = first->ngb_cells[ngb];
+                    DOUBLE *x2 = X + second->start;
+                    DOUBLE *y2 = Y + second->start;
+                    DOUBLE *z2 = Z + second->start;
+                    const int64_t N2 = second->nelements;
+                    const DOUBLE off_xwrap = first->xwrap[ngb];
+                    const DOUBLE off_ywrap = first->ywrap[ngb];
+                    const DOUBLE off_zwrap = first->zwrap[ngb];
+                    same_cell = 0;
+                    if(options->need_avg_sep) {
+                        status = wp_driver(x1, y1, z1, N1,
+                                           x2, y2, z2, N2, same_cell,
+                                           sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
+                                           off_xwrap, off_ywrap, off_zwrap
+                                           ,rpavg
+                                           ,options
+                                           ,npair);
+                    } else {
+                        status = wp_driver(x1, y1, z1, N1,
+                                           x2, y2, z2, N2, same_cell,
+                                           sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
+                                           off_xwrap, off_ywrap, off_zwrap
+                                           ,NULL
+                                           ,options
+                                           ,npair);
+                    }
+                    if(status != EXIT_SUCCESS) {
+                        /* This actually causes a race condition under OpenMP - but mostly 
+                           I care that an error occurred - rather than the exact value of 
+                           the error status */
+                        abort_status = status;
+                    }
+                }//ngb loop
+            }//error occurred somewhere in the called functions: abort_status is set
         }//index1 loop
+
 #if defined(USE_OMP) && defined(_OPENMP)
         for(int j=0;j<nrpbins;j++) {
             all_npairs[tid][j] = npair[j];
@@ -242,11 +258,15 @@ int countpairs_wp(const int64_t ND, DOUBLE * restrict X, DOUBLE * restrict Y, DO
     }//omp parallel
 #endif
 
+    if(abort_status != EXIT_SUCCESS) {
+        return abort_status;
+    }
+    
     if(options->verbose) {
         finish_myprogressbar(&interrupted);
     }
-
-
+    
+    
 #if defined(USE_OMP) && defined(_OPENMP)
     uint64_t npair[nrpbins];
     DOUBLE rpavg[nrpbins];

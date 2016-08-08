@@ -211,12 +211,6 @@ void Printhelp(void)
     fprintf(stderr,"Precision = float\n");
 #endif
 
-#if defined(USE_AVX) && defined(__AVX__)
-    fprintf(stderr,"Use AVX = True\n");
-#else
-    fprintf(stderr,"Use AVX = False\n");
-#endif
-
 #if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"Use OMP = True\n");
 #else

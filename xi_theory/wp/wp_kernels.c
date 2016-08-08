@@ -14,7 +14,7 @@
 
 #include "function_precision.h"
 
-#if defined(USE_AVX) && defined(__AVX__)
+#ifdef __AVX__
 #include "avx_calls.h"
 
 static inline int wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
@@ -214,7 +214,7 @@ static inline int wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const in
 
 
 
-#if defined (__SSE4_2__)
+#ifdef __SSE4_2__
 #include "sse_calls.h"
 
 static inline int wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
