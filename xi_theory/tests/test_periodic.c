@@ -76,6 +76,8 @@ DOUBLE pimax=40.0;
 double boxsize=420.0;
 #if defined(USE_OMP) && defined(_OPENMP)
 const int nthreads=4;
+#else
+const int nthreads=1;
 #endif
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
