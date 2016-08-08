@@ -693,7 +693,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 {
 #if PY_MAJOR_VERSION < 3
     (void) self;//to suppress the unused variable warning. Terrible hack
-    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+    PyObject *module = NULL;//need not be used -> setting to NULL so any attempts to dereference will result in a crash. 
 #else
     //In python3, self is simply the module object that was returned earlier by init
     PyObject *module = self;
