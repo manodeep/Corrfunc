@@ -10,40 +10,48 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 #include <stdint.h>
-#include <inttypes.h>
 
-#include "defs.h"
-#include "utils.h"
 #include "function_precision.h"
-
 
 #if defined(USE_AVX) && defined(__AVX__)
 #include "avx_calls.h"
 
-static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                     DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
-                                     const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
-                                     const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-#ifdef OUTPUT_RPAVG
-                                     ,DOUBLE *src_rpavg
-#endif                         
-                                     ,uint64_t *src_npairs)
+static inline int wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                    DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
+                                    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                    ,DOUBLE *src_rpavg
+                                    ,uint64_t *src_npairs)
 {
-    uint64_t *npairs = my_calloc(sizeof(*npairs), nbin);
+    uint64_t *npairs = calloc(sizeof(*npairs), nbin);
+    if(npairs == NULL) {
+        perror(NULL);
+        return EXIT_FAILURE;
+    }
     AVX_FLOATS m_rupp_sqr[nbin];
     for(int i=0;i<nbin;i++) {
         m_rupp_sqr[i] = AVX_SET_FLOAT(rupp_sqr[i]);
     }
-#ifdef OUTPUT_RPAVG
+    const int32_t need_rpavg = src_rpavg != NULL;
+
+    /* variables required for rpavg */
+    union int8 {
+        AVX_INTS m_ibin;
+        int ibin[AVX_NVEC];
+    };
+    union float8{
+        AVX_FLOATS m_Dperp;
+        DOUBLE Dperp[AVX_NVEC];
+    };
     AVX_FLOATS m_kbin[nbin];
     DOUBLE rpavg[nbin];
-    for(int i=0;i<nbin;i++) {
-        m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
-        rpavg[i] = ZERO;
+    if(need_rpavg) {
+        for(int i=0;i<nbin;i++) {
+            m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
+            rpavg[i] = ZERO;
+        }
     }
-#endif//RPAVG + AVX
 
     
     for(int64_t i=0;i<N0;i++) {
@@ -68,27 +76,14 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
 
-#if __INTEL_COMPILER            
-#pragma unroll(2)
-#endif        
         for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
             const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
             const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
             const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(zpos);
             
-#ifdef OUTPUT_RPAVG
-            union int8 {
-                AVX_INTS m_ibin;
-                int ibin[AVX_NVEC];
-            };
             union int8 union_rpbin;
-            
-            union float8{
-                AVX_FLOATS m_Dperp;
-                DOUBLE Dperp[AVX_NVEC];
-            };
             union float8 union_mDperp;
-#endif
+
             const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
             const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
             const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
@@ -139,11 +134,11 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                 //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
                 r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
             }
-            
-#ifdef OUTPUT_RPAVG
-            union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
+
             AVX_FLOATS m_rpbin = AVX_SET_FLOAT(ZERO);
-#endif
+            if(need_rpavg) {
+                union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
+            }
             
             //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
             for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -151,9 +146,10 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                 const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
                 const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
                 npairs[kbin] += AVX_BIT_COUNT_INT(test2);
-#ifdef OUTPUT_RPAVG
-                m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
-#endif
+                if(need_rpavg) {
+                    m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+                }
+
                 m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
                 const int test3 = AVX_TEST_COMPARISON(m_mask_left);
                 if(test3 == 0) {
@@ -161,18 +157,18 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                 }
             }
             
-#ifdef OUTPUT_RPAVG
-            union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
-            //protect the unroll pragma in case compiler is not icc.
+            if(need_rpavg) {
+                union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
+                //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
 #pragma unroll(AVX_NVEC)
 #endif
-            for(int jj=0;jj<AVX_NVEC;jj++) {
-                const int kbin = union_rpbin.ibin[jj];
-                const DOUBLE r = union_mDperp.Dperp[jj];
-                rpavg[kbin] += r;
-            }
-#endif//OUTPUT_RPAVG
+                for(int jj=0;jj<AVX_NVEC;jj++) {
+                    const int kbin = union_rpbin.ibin[jj];
+                    const DOUBLE r = union_mDperp.Dperp[jj];
+                    rpavg[kbin] += r;
+                }
+            } //OUTPUT_RPAVG
 
         }//end of j-loop
         
@@ -191,17 +187,13 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                 continue;
             }
             
-#ifdef OUTPUT_RPAVG
-            const DOUBLE r = SQRT(r2);
-#endif
-
-            
+            const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 if(r2 >= rupp_sqr[kbin-1]) {
                     npairs[kbin]++;
-#ifdef OUTPUT_RPAVG
-                    rpavg[kbin] += r;
-#endif
+                    if(need_rpavg) {
+                        rpavg[kbin] += r;
+                    }
                     break;
                 }
             }
@@ -210,12 +202,13 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
 
     for(int i=0;i<nbin;i++) {
         src_npairs[i] += npairs[i];
-#ifdef OUTPUT_RPAVG
-        src_rpavg[i]  += rpavg[i];
-#endif        
+        if(need_rpavg) {
+            src_rpavg[i]  += rpavg[i];
+        }
     }
     free(npairs);
-    
+
+    return EXIT_SUCCESS;
 }
 #endif //__AVX__
 
@@ -224,34 +217,41 @@ static inline void wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
 #if defined (__SSE4_2__)
 #include "sse_calls.h"
 
-static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                     DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
-                                     const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
-                                     const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-#ifdef OUTPUT_RPAVG
-                                     ,DOUBLE *src_rpavg
-#endif                         
-                                     ,uint64_t *src_npairs)
+static inline int wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                    DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
+                                    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
+                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                    ,DOUBLE *src_rpavg
+                                    ,uint64_t *src_npairs)
 {
     SSE_FLOATS m_rupp_sqr[nbin];
     for(int i=0;i<nbin;i++) {
         m_rupp_sqr[i] = SSE_SET_FLOAT(rupp_sqr[i]);
     }
-#ifdef OUTPUT_RPAVG
-    SSE_FLOATS m_kbin[nbin];
-    for(int i=0;i<nbin;i++) {
-        m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
-    }
-#endif//RPAVG + SSE
+    const int32_t need_rpavg = src_rpavg != NULL;
+    union int4{
+        SSE_INTS m_ibin;
+        int ibin[SSE_NVEC];
+    };
+    union float4{
+        SSE_FLOATS m_Dperp;
+        DOUBLE Dperp[SSE_NVEC];
+    };
     
-    uint64_t *npairs = my_calloc(sizeof(*npairs), nbin);
-#ifdef OUTPUT_RPAVG
+    SSE_FLOATS m_kbin[nbin];
     DOUBLE rpavg[nbin];
-    for(int i=0;i<nbin;i++) {
-        rpavg[i] = ZERO;
+    if(need_rpavg) {
+        for(int i=0;i<nbin;i++) {
+            m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
+            rpavg[i] = ZERO;
+        }
     }
-#endif
-
+    
+    uint64_t *npairs = calloc(sizeof(*npairs), nbin);
+    if(npairs == NULL) {
+        perror(NULL);
+        return EXIT_FAILURE;
+    }
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -275,19 +275,9 @@ static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
         DOUBLE *localy1 = y1 + j;
 
 		for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
-#ifdef OUTPUT_RPAVG
-            union int4{
-                SSE_INTS m_ibin;
-                int ibin[SSE_NVEC];
-            };
             union int4 union_rpbin;
-            
-            union float4{
-                SSE_FLOATS m_Dperp;
-                DOUBLE Dperp[SSE_NVEC];
-            };
             union float4 union_mDperp;
-#endif
+
             const SSE_FLOATS m_xpos = SSE_SET_FLOAT(xpos);
             const SSE_FLOATS m_ypos = SSE_SET_FLOAT(ypos);
             const SSE_FLOATS m_zpos = SSE_SET_FLOAT(zpos);
@@ -328,40 +318,39 @@ static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
 				r2 = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
             }
                 
-#ifdef OUTPUT_RPAVG
-            union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
             SSE_FLOATS m_rpbin = SSE_SET_FLOAT(ZERO);
-#endif
-
+            if(need_rpavg) {
+                union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
+            }
+            
 			for(int kbin=nbin-1;kbin>=1;kbin--) {
 				SSE_FLOATS m1 = SSE_COMPARE_FLOATS_GE(r2,m_rupp_sqr[kbin-1]);
 				SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m1,m_mask_left);
 				m_mask_left = SSE_COMPARE_FLOATS_LT(r2,m_rupp_sqr[kbin-1]);
 				int test2  = SSE_TEST_COMPARISON(m_bin_mask);
 				npairs[kbin] += SSE_BIT_COUNT_INT(test2);
-#ifdef OUTPUT_RPAVG
-                m_rpbin = SSE_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
-#endif
+                if(need_rpavg) {
+                    m_rpbin = SSE_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+                }
 				int test3 = SSE_TEST_COMPARISON(m_mask_left);
 				if(test3 == 0) {
 					break;
 				}
 			}
 
-#ifdef OUTPUT_RPAVG
-            union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
-            //protect the unroll pragma in case compiler is not icc.
+            if(need_rpavg) {
+                union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
+                //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
 #pragma unroll(SSE_NVEC)
 #endif
-            for(int jj=0;jj<SSE_NVEC;jj++) {
-                const int kbin = union_rpbin.ibin[jj];
-                const DOUBLE r = union_mDperp.Dperp[jj];
-                rpavg[kbin] += r;
-            }
-#endif//OUTPUT_RPAVG
-            
-		}			
+                for(int jj=0;jj<SSE_NVEC;jj++) {
+                    const int kbin = union_rpbin.ibin[jj];
+                    const DOUBLE r = union_mDperp.Dperp[jj];
+                    rpavg[kbin] += r;
+                }
+            } //rpavg
+		}//j loop over N1, increments of SSE_NVEC			
 
 		for(;j<N1;j++) {
 			const DOUBLE dx = *localx1++ - xpos;
@@ -371,15 +360,13 @@ static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
             
 			const DOUBLE r2 = dx*dx + dy*dy;
 			if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
-#ifdef OUTPUT_RPAVG
-            const DOUBLE r = SQRT(r2);
-#endif            
+            const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
 			for(int kbin=nbin-1;kbin>=1;kbin--){
 				if(r2 >= rupp_sqr[kbin-1]) {
 					npairs[kbin]++;
-#ifdef OUTPUT_RPAVG
-                    rpavg[kbin] += r;
-#endif                    
+                    if(need_rpavg) {
+                        rpavg[kbin] += r;
+                    }
 					break;
 				}
 			}//searching for kbin loop
@@ -388,12 +375,13 @@ static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
 
 	for(int i=0;i<nbin;i++) {
 		src_npairs[i] += npairs[i];
-#ifdef OUTPUT_RPAVG
-        src_rpavg[i] += rpavg[i];
-#endif        
-        
+        if(need_rpavg) {
+            src_rpavg[i] += rpavg[i];
+        }
 	}
 	free(npairs);
+
+    return EXIT_SUCCESS;
 }
 
 #endif //__SSE4_2__
@@ -401,13 +389,11 @@ static inline void wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
 
 
 //Fallback code that should always compile
-static inline void wp_fallback(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+static inline int wp_fallback(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
                                DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
                                const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
                                const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-#ifdef OUTPUT_RPAVG
                                ,DOUBLE *src_rpavg
-#endif                         
                                ,uint64_t *src_npairs)
 {
 
@@ -416,12 +402,13 @@ static inline void wp_fallback(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t
     for(int i=0;i<nbin;i++) {
         npairs[i]=0;
     }
-#ifdef OUTPUT_RPAVG
+    const int32_t need_rpavg = src_rpavg != NULL;
     DOUBLE rpavg[nbin];
-    for(int i=0;i<nbin;i++) {
-        rpavg[i]=0;
+    if(need_rpavg) {
+        for(int i=0;i<nbin;i++) {
+            rpavg[i]=0;
+        }
     }
-#endif//OUTPUT_RPAVG
 
     /* naive implementation that is guaranteed to compile */
     for(int64_t i=0;i<N0;i++) {
@@ -454,15 +441,14 @@ static inline void wp_fallback(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t
 
             const DOUBLE r2 = dx*dx + dy*dy;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
-#ifdef OUTPUT_RPAVG
-            const DOUBLE r = SQRT(r2);
-#endif
+            const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
+
             for(int kbin=nbin-1;kbin>=1;kbin--){
                 if(r2 >= rupp_sqr[kbin-1]) {
                     npairs[kbin]++;
-#ifdef OUTPUT_RPAVG
-                    rpavg[kbin] += r;
-#endif                    
+                    if(need_rpavg) {
+                        rpavg[kbin] += r;
+                    }
                     break;
                 }
             }//searching for kbin loop                                                               
@@ -471,9 +457,11 @@ static inline void wp_fallback(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t
 
     for(int i=0;i<nbin;i++) {
         src_npairs[i] += npairs[i];
-#ifdef OUTPUT_RPAVG
-        src_rpavg[i] += rpavg[i];
-#endif        
+        if(need_rpavg) {
+            src_rpavg[i] += rpavg[i];
+        }
     }
+
+    return EXIT_SUCCESS;
     /*----------------- FALLBACK CODE --------------------*/
 }

@@ -369,19 +369,19 @@ cellarray_nvec * gridlink_nvec(const int64_t np,
 #include "sglib.h"
 
 struct cellarray_index * gridlink_index(const int64_t np,
-                                 DOUBLE *x, DOUBLE *y, DOUBLE *z,
-                                 const DOUBLE xmin, const DOUBLE xmax,
-                                 const DOUBLE ymin, const DOUBLE ymax,
-                                 const DOUBLE zmin, const DOUBLE zmax,
-                                 const DOUBLE max_x_size,
-                                 const DOUBLE max_y_size,
-                                 const DOUBLE max_z_size,
-                                 const int xbin_refine_factor,
-                                 const int ybin_refine_factor,
-                                 const int zbin_refine_factor,
-                                 int *nlattice_x,
-                                 int *nlattice_y,
-                                 int *nlattice_z)
+                                        DOUBLE *x, DOUBLE *y, DOUBLE *z,
+                                        const DOUBLE xmin, const DOUBLE xmax,
+                                        const DOUBLE ymin, const DOUBLE ymax,
+                                        const DOUBLE zmin, const DOUBLE zmax,
+                                        const DOUBLE max_x_size,
+                                        const DOUBLE max_y_size,
+                                        const DOUBLE max_z_size,
+                                        const int xbin_refine_factor,
+                                        const int ybin_refine_factor,
+                                        const int zbin_refine_factor,
+                                        int *nlattice_x,
+                                        int *nlattice_y,
+                                        int *nlattice_z)
 {
 
     int nmesh_x,nmesh_y,nmesh_z;

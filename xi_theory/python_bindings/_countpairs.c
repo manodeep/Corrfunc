@@ -744,16 +744,24 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
 
-    results_countpairs_wp results = countpairs_wp(ND1,X1,Y1,Z1,
-                                                  boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                  nthreads,
-#endif
-                                                  binfile,
-                                                  pimax);
+    
+    results_countpairs_wp results;
+    struct config_options options;
+    options.need_avg_sep = 1;
+    options.float_type = sizeof(DOUBLE);
+    int status = countpairs_wp(ND1,X1,Y1,Z1,
+                               boxsize,
+                               nthreads,
+                               binfile,
+                               pimax,
+                               &results,
+                               &options);
     
     NPY_END_THREADS;
-    
+    if(status != EXIT_SUCCESS) {
+        Py_RETURN_NONE;
+    }
+
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
     

@@ -148,13 +148,20 @@ int test_periodic_DDrppi(const char *correct_outputfile)
 
 int test_wp(const char *correct_outputfile)
 {
-    results_countpairs_wp results = countpairs_wp(ND1,X1,Y1,Z1,
-                                                   boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                   nthreads,
-#endif
-                                                   binfile,
-                                                   pimax);
+    results_countpairs_wp results;
+    struct config_options options;
+    options.need_avg_sep = 1;
+    options.float_type = sizeof(DOUBLE);
+    int status = countpairs_wp(ND1,X1,Y1,Z1,
+                               boxsize,
+                               nthreads,
+                               binfile,
+                               pimax,
+                               &results,
+                               &options);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
     DOUBLE rlow=results.rupp[0];
     FILE *fp=my_fopen(tmpoutputfile,"w");
     for(int i=1;i<results.nbin;++i) {

@@ -13,9 +13,10 @@
 extern "C" {
 #endif
 
+#include "defs.h"
 #include "function_precision.h"
 #include <inttypes.h>
-
+    
     //define the results structure
     typedef struct{
         uint64_t *npairs;
@@ -25,15 +26,14 @@ extern "C" {
         DOUBLE pimax;
         int nbin;
     } results_countpairs_wp;
-
-    results_countpairs_wp countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
-                                         const double boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                         const int numthreads,
-#endif
-                                         const char *binfile,
-                                         const double pimax) __attribute__((warn_unused_result));
-
+    
+    int countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
+                      const double boxsize,
+                      const int numthreads,
+                      const char *binfile,
+                      const double pimax,
+                      results_countpairs_wp *result,
+                      const struct config_options *options) __attribute__((warn_unused_result));
 
     void free_results_wp(results_countpairs_wp *results);
 

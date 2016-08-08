@@ -209,14 +209,22 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent wp calculation would be:\n `%s %lf %s %s %s %lf'" ANSI_COLOR_RESET "\n",
                 "../wp/wp",boxsize,file,fileformat,binfile,pimax);
 #endif
-        results_countpairs_wp results = countpairs_wp(ND1,x1,y1,z1,
-                                                       boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                       nthreads,
-#endif
-                                                       binfile,
-                                                       pimax);
+        results_countpairs_wp results;
+        struct config_options options;
+        options.need_avg_sep = 1;
+        options.float_type = sizeof(DOUBLE);
+        int status = countpairs_wp(ND1,x1,y1,z1,
+                                   boxsize,
+                                   nthreads,
+                                   binfile,
+                                   pimax,
+                                   &results,
+                                   &options);
         gettimeofday(&t1,NULL);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+        
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
         DOUBLE rlow=results.rupp[0];

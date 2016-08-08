@@ -27,11 +27,10 @@
 
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
+
 #include "countpairs_wp.h" //function proto-type for countpairs
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
-
-
 
 void Printhelp(void);
 
@@ -97,6 +96,8 @@ int main(int argc, char *argv[])
 #if defined(USE_OMP) && defined(_OPENMP)
     nthreads=atoi(argv[6]);
     assert(nthreads >= 1 && "Number of threads must be at least 1");
+#else
+    const int nthreads = 1;
 #endif
 
     fprintf(stderr,"Running `%s' with the parameters \n",argv[0]);
@@ -126,13 +127,26 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs_wp results = countpairs_wp(ND1, x1, y1, z1,
-                                                  boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                  nthreads,
-#endif
-                                                  binfile,
-                                                  pimax);
+    struct config_options options;
+    memset(&options, 0, sizeof(options));
+    options.float_type = sizeof(DOUBLE);
+    options.verbose = 1;
+#ifdef OUTPUT_RPAVG    
+    options.need_avg_sep = 1;
+#else
+    options.need_avg_sep = 0;
+#endif    
+    results_countpairs_wp results;
+    int status = countpairs_wp(ND1, x1, y1, z1,
+                               boxsize,
+                               nthreads,
+                               binfile,
+                               pimax,
+                               &results,
+                               &options);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
     
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
