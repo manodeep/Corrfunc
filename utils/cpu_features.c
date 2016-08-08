@@ -1,5 +1,11 @@
-/* cpuid for x86 systems 
-   Adapted from Agner Fog's vectorclass http://agner.org/
+/* File: cpu_features.c */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+
+  Adapted from Agner Fog's vectorclass: http://agner.org/
 */
 
 #include "cpu_features.h"
