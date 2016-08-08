@@ -67,12 +67,13 @@ int main(int argc, char **argv)
     double boxsize;
     struct timeval t0,t1;
     DOUBLE pimax;
-
+    int nthreads=1;//default to single thread
+    
 #if !(defined(USE_OMP) && defined(_OPENMP))
     const char argnames[][30]={"file","format","binfile","boxsize","pimax"};
 #else
-    int nthreads=4;//default to 4 threads
     const char argnames[][30]={"file","format","binfile","boxsize","pimax","Nthreads"};
+    nthreads = 4;
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
 
@@ -81,7 +82,7 @@ int main(int argc, char **argv)
         if(argc < (nargs + 1) ) {
             //Not enough options were supplied
             Printhelp();
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         } else {
             //Correct number of options - let's parse them.
             my_snprintf(file,MAXLEN, "%s",argv[1]);
@@ -121,41 +122,6 @@ int main(int argc, char **argv)
     DOUBLE *y2 = y1;
     DOUBLE *z2 = z1;
     int64_t ND2 = ND1;
-
-    //Do the straight-up DD counts
-    {
-        gettimeofday(&t0,NULL);
-#if defined(USE_OMP) && defined(_OPENMP)
-        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
-                "../xi_of_r/DD",file,fileformat,file,fileformat,binfile,nthreads);
-#else
-        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s'" ANSI_COLOR_RESET "\n",
-                "../xi_of_r/DD",file,fileformat,file,fileformat,binfile);
-#endif
-
-        results_countpairs results = countpairs(ND1,x1,y1,z1,
-                                                ND2,x2,y2,z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                nthreads,
-#endif
-                                                autocorr,
-                                                binfile);
-        gettimeofday(&t1,NULL);
-        double pair_time = ADD_DIFF_TIME(t0,t1);
-#if 0
-        DOUBLE rlow=results.rupp[0];
-        for(int i=1;i<results.nbin;i++) {
-            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
-            rlow=results.rupp[i];
-        }
-#endif
-        fprintf(stderr,ANSI_COLOR_GREEN "Done 3-d auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);
-        //The results structure contains the pair-counts
-
-
-        //free the result structure
-        free_results(&results);
-    }
 
     //Do the DD(rp, pi) counts
     {
@@ -198,6 +164,40 @@ int main(int argc, char **argv)
     }
 
 
+    //Do the straight-up DD counts
+    {
+        gettimeofday(&t0,NULL);
+#if defined(USE_OMP) && defined(_OPENMP)
+        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
+                "../xi_of_r/DD",file,fileformat,file,fileformat,binfile,nthreads);
+#else
+        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s'" ANSI_COLOR_RESET "\n",
+                "../xi_of_r/DD",file,fileformat,file,fileformat,binfile);
+#endif
+
+        results_countpairs results = countpairs(ND1,x1,y1,z1,
+                                                ND2,x2,y2,z2,
+#if defined(USE_OMP) && defined(_OPENMP)
+                                                nthreads,
+#endif
+                                                autocorr,
+                                                binfile);
+        gettimeofday(&t1,NULL);
+        double pair_time = ADD_DIFF_TIME(t0,t1);
+#if 0
+        DOUBLE rlow=results.rupp[0];
+        for(int i=1;i<results.nbin;i++) {
+            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+            rlow=results.rupp[i];
+        }
+#endif
+        fprintf(stderr,ANSI_COLOR_GREEN "Done 3-d auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);
+        //The results structure contains the pair-counts
+
+
+        //free the result structure
+        free_results(&results);
+    }
 
     //Do the wp counts
     {
@@ -212,6 +212,7 @@ int main(int argc, char **argv)
         results_countpairs_wp results;
         struct config_options options;
         options.need_avg_sep = 1;
+        options.verbose = 1;
         options.float_type = sizeof(DOUBLE);
         int status = countpairs_wp(ND1,x1,y1,z1,
                                    boxsize,
