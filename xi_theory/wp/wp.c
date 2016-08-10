@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
 
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
+    const int nthreads = 1;
     const char argnames[][30]={"boxsize","file","format","binfile","pimax"};
 #else
     int nthreads=2;
@@ -95,9 +96,10 @@ int main(int argc, char *argv[])
 
 #if defined(USE_OMP) && defined(_OPENMP)
     nthreads=atoi(argv[6]);
-    assert(nthreads >= 1 && "Number of threads must be at least 1");
-#else
-    const int nthreads = 1;
+    if( nthreads < 1 ) {
+      fprintf(stder,"Number of threads = %d must be >=1 \n", nthreads);
+      return EXIT_FAILURE;
+    }
 #endif
 
     fprintf(stderr,"Running `%s' with the parameters \n",argv[0]);
@@ -144,13 +146,13 @@ int main(int argc, char *argv[])
                                pimax,
                                &results,
                                &options);
+    free(x1);free(y1);free(z1);
     if(status != EXIT_SUCCESS) {
         return status;
     }
     
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
-    free(x1);free(y1);free(z1);
 
     //Output the results
     /* Note: we discard the first bin, to mimic the fact that close pairs
