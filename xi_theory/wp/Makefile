@@ -1,34 +1,51 @@
 include ../../theory.options ../../common.mk
 
-target := wp
-SRC1   := wp.c countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c \
-          ../../io/io.c ../../io/ftread.c \
-          ../../utils/utils.c ../../utils/gridlink_impl_float.c ../../utils/gridlink_impl_double.c \
-          ../../utils/progressbar.c ../../utils/cpu_features.c
+
+INSTALL_HEADERS_DIR := ../../include
+INSTALL_LIB_DIR := ../../lib
+INSTALL_BIN_DIR := ../../bin
+UTILS_DIR := ../../utils
+IO_DIR := ../../io
+
+TARGET := wp
+TARGETSRC := wp.c countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c \
+          $(IO_DIR)/io.c $(IO_DIR)/ftread.c \
+          $(UTILS_DIR)/utils.c $(UTILS_DIR)/gridlink_impl_float.c $(UTILS_DIR)/gridlink_impl_double.c \
+          $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
+
+LIBRARY := libcountpairs_wp.a 
+LIBSRC := countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c \
+         $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
+         $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
+LIBRARY_HEADER := countpairs_wp.h 
+
 INCL   := wp_kernels_double.c wp_kernels_float.c countpairs_wp.h countpairs_wp_impl_float.h countpairs_wp_impl_double.h \
-          ../../io/ftread.h ../../io/io.h ../../utils/utils.h \
-          ../../utils/gridlink_impl_float.h ../../utils/gridlink_impl_double.h \
-          ../../utils/function_precision.h ../../utils/cellarray_double.h ../../utils/cellarray_float.h ../../utils/avx_calls.h \
-          ../../utils/defs.h ../../utils/sglib.h ../../utils/progressbar.h ../../utils/cpu_features.h
-OBJS1  := $(SRC1:.c=.o)
+          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h \
+          $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h \
+          $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/avx_calls.h \
+          $(UTILS_DIR)/defs.h $(UTILS_DIR)/sglib.h $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h
 
-all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+LIBOBJS :=$(LIBSRC:.c=.o)
 
-$(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(OBJS1) $(CLINK) -o $@
+all: $(TARGET) $(TARGETSRC) $(INCL) ../../theory.options ../../common.mk Makefile 
+
+$(TARGET): $(TARGETOBJS) $(INCL) ../../theory.options ../../common.mk Makefile 
+	$(CC) $(TARGETOBJS) $(CLINK) -o $@
 
 %_float.c: %.c.src Makefile
-	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
 	sed -e "s/DOUBLE/float/g" $< >> $@
+
 %_float.h: %.h.src Makefile
-	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
 	sed -e "s/DOUBLE/float/g"  $< >> $@
 
 %_double.c: %.c.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $< */" > $@
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 %_double.h: %.h.src Makefile
-	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
 %_double.o: %_double.c $(INCL) ../../theory.options ../../common.mk Makefile
@@ -40,42 +57,39 @@ $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 countpairs_wp.o: countpairs_wp.c countpairs_wp.h countpairs_wp_impl_double.h countpairs_wp_impl_float.h ../../theory.options ../../common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-$(target).o: $(target).c ../../theory.options ../../common.mk Makefile $(INCL)
+$(TARGET).o: $(TARGET).c ../../theory.options ../../common.mk Makefile $(INCL)
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 %.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 
-OBJS2 := countpairs_wp.o countpairs_wp_impl_double.o countpairs_wp_impl_float.o \
-         ../../utils/gridlink_impl_double.o ../../utils/gridlink_impl_float.o \
-         ../../utils/utils.o ../../utils/progressbar.o ../../utils/cpu_features.o
 libs: lib
-lib: ../../lib/libcountpairs_wp.a | ../../lib ../../include
+lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 
-libcountpairs_wp.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS2)
+$(LIBRARY): $(LIBOBJS) $(INCL) ../../theory.options ../../common.mk Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+	ar rcs $@ $(LIBOBJS)
 
-../../lib/libcountpairs_wp.a: libcountpairs_wp.a
+$(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY)
 	cp -p $< $@
-	cp -p countpairs_wp.h > ../../include/countpairs_wp.h
+	cp -p $(LIBRARY_HEADER) $(INSTALL_HEADERS_DIR)/
 
 .PHONY: clean clena celan install lib tests distclean all
 
-../../lib ../../bin ../../include:
+$(INSTALL_LIB_DIR) $(INSTALL_BIN_DIR) $(INSTALL_HEADERS_DIR):
 	mkdir -p $@
 
-install: ../../bin/$(target) | ../../bin
+install: $(INSTALL_BIN_DIR)/$(TARGET) | $(INSTALL_BIN_DIR)
 
-../../bin/$(target): $(target)
+$(INSTALL_BIN_DIR)/$(TARGET): $(TARGET)
 	cp -p $< $@
 
-distclean: clean | ../../lib ../../include ../../bin
-	$(RM) ../../lib/libcountpairs_wp.a ../../include/countpairs_wp.h
-	cd ../../bin && $(RM) $(target)
+distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
+	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADER)
+	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a *_float.[ch] *_double.[ch]
+	$(RM) $(TARGET) $(TARGETOBJS) $(LIBOBJS) $(LIBRARY) *_float.[ch] *_double.[ch]
 
 clena: clean
 
