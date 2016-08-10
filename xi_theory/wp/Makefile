@@ -17,14 +17,14 @@ all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile
 $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
 	$(CC) $(OBJS1) $(CLINK) -o $@
 
-%_float.c: %.c.src %_float.h Makefile
+%_float.c: %.c.src Makefile
 	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
 	sed -e "s/DOUBLE/float/g" $< >> $@
 %_float.h: %.h.src Makefile
 	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
 	sed -e "s/DOUBLE/float/g"  $< >> $@
 
-%_double.c: %.c.src %_double.h Makefile
+%_double.c: %.c.src Makefile
 	@$(ECHO_COMMAND) "/* This file is auto-generated from $< */" > $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 %_double.h: %.h.src Makefile
@@ -36,14 +36,6 @@ $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile
 
 %_float.o: %_float.c %_float.h $(INCL)
 	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-wp_kernels_double.c: wp_kernels.c.src Makefile
-	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
-	sed -e "s/DOUBLE/double/g"  $< >> $@
-
-wp_kernels_float.c: wp_kernels.c.src Makefile
-	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
-	sed -e "s/DOUBLE/float/g"  $< >> $@
 
 countpairs_wp.o: countpairs_wp.c countpairs_wp.h countpairs_wp_impl_double.h countpairs_wp_impl_float.h ../../theory.options ../../common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
