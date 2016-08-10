@@ -51,6 +51,7 @@ PyMODINIT_FUNC init_countpairs(void);
 #endif
 
 #define ELEMENT_DESCR    (PyArray_DescrFromType(ELEMENT_TYPE))
+#define NOTYPE_DESCR     (PyArray_DescrFromType(NPY_NOTYPE))
 
 /* #ifndef PIMAX_UNICODE */
 #define PI_UNICODE    "\u03C0"
@@ -388,7 +389,7 @@ PyMODINIT_FUNC init_countpairs(void)
 }
 
     
-static int64_t check_dims_and_datatype(PyObject *module, const PyArrayObject *x1_obj, const PyArrayObject *y1_obj, const PyArrayObject *z1_obj)
+static int64_t check_dims_and_datatype(PyObject *module, const PyArrayObject *x1_obj, const PyArrayObject *y1_obj, const PyArrayObject *z1_obj, size_t *element_size)
 {
     char msg[1024];
 
@@ -401,7 +402,7 @@ static int64_t check_dims_and_datatype(PyObject *module, const PyArrayObject *x1
         snprintf(msg, 1024, "ERROR: Expected 1-D numpy arrays.\nFound (nxdims, nydims, nzdims) = (%d, %d, %d) instead",
                  nxdims, nydims, nzdims);
         countpairs_error_out(module, msg);
-        return EXIT_FAILURE;
+        return -1;
     }
 
     /* All the arrays should be floating point (only float32 and float64 are allowed) */
@@ -426,21 +427,48 @@ static int64_t check_dims_and_datatype(PyObject *module, const PyArrayObject *x1
         }
         Py_XDECREF(x_descr);Py_XDECREF(y_descr);Py_XDECREF(z_descr);
         countpairs_error_out(module, msg);
-        return EXIT_FAILURE;
+        return -1;
     }
 
+    if( x_type != y_type || y_type != z_type) {
+        PyArray_Descr *x_descr = PyArray_DescrFromType(x_type);
+        PyArray_Descr *y_descr = PyArray_DescrFromType(y_type);
+        PyArray_Descr *z_descr = PyArray_DescrFromType(z_type);
+        if(x_descr == NULL || y_descr == NULL || z_descr == NULL) {
+          /* Generating the dtype descriptor failed somehow. At least provide some information */
+          snprintf(msg, 1024, "TypeError: Expected *ALL* 3 floating point arrays to be the same type (allowed types = %d or %d). Instead found type-nums (%d, %d, %d)\n",
+                   NPY_FLOAT, NPY_DOUBLE, x_type, y_type, z_type);
+        } else {
+          snprintf(msg, 1024, "TypeError: Expected *ALL* 3 floating point arrays to be the same type (allowed types = %d or %d). Instead found type-nums (%d, %d, %d)\n",
+                   "with type-names = (%s, %s, %s)\n",
+                   NPY_FLOAT, NPY_DOUBLE, x_type, y_type, z_type, x_descr->typeobj->tp_name, y_descr->typeobj->tp_name, z_descr->typeobj->tp_name);
+        }
+        Py_XDECREF(x_descr);Py_XDECREF(y_descr);Py_XDECREF(z_descr);
+        countpairs_error_out(module, msg);
+        return -1;
+    }
+    
     /* Check if the number of elements in the 3 Python arrays are identical */
-    const int64_t nx1 = (int64_t)PyArray_DIM(x1_obj, 0);
-    const int64_t ny1 = (int64_t)PyArray_DIM(y1_obj, 0);
-    const int64_t nz1 = (int64_t)PyArray_DIM(z1_obj, 0);
+    const int64_t nx1 = (int64_t)PyArray_SIZE(x1_obj);
+    const int64_t ny1 = (int64_t)PyArray_SIZE(y1_obj);
+    const int64_t nz1 = (int64_t)PyArray_SIZE(z1_obj);
 
-    if(nx1 == ny1 && ny1 == nz1) {
-        return nx1;
+    if(nx1 != ny1 || ny1 != nz1) {
+      snprintf(msg, 1024, "ERROR: Expected arrays to have the same number of elements in all 3-dimensions.\nFound (nx, ny, nz) = (%"PRId64", %"PRId64", %"PRId64") instead",
+               nx1, ny1, nz1);
+      countpairs_error_out(module, msg);
+      return -1;
     }
-    snprintf(msg, 1024, "ERROR: Expected arrays to have the same number of elements in all 3-dimensions.\nFound (nx, ny, nz) = (%"PRId64", %"PRId64", %"PRId64") instead",
-             nx1, ny1, nz1);
-    countpairs_error_out(module, msg);
-    return EXIT_FAILURE;
+
+
+    /* Return the size of each element of the data object */
+    if(x_type == NPY_FLOAT) {
+      *element_size = sizeof(float);
+    } else {
+      *element_size = sizeof(double);
+    }
+    
+    return nx1;
 }
 
 
@@ -479,13 +507,13 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args)
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj);
-    if(ND1 == 0) {
+    if(ND1 == -1) {
         //Error has already been set -> simply return 
         Py_RETURN_NONE;
     }
 
     const int64_t ND2 = check_dims_and_datatype(module, x2_obj, y2_obj, z2_obj);
-    if(ND2 == 0) {
+    if(ND2 == -1) {
         //Error has already been set -> simply return 
         Py_RETURN_NONE;
     }
@@ -600,13 +628,13 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args)
 
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj);
-    if(ND1 == 0) {
+    if(ND1 == -1) {
         //Error has already been set -> simply return 
         Py_RETURN_NONE;
     }
 
     const int64_t ND2 = check_dims_and_datatype(module, x2_obj, y2_obj, z2_obj);
-    if(ND2 == 0) {
+    if(ND2 == -1) {
         //Error has already been set -> simply return 
         Py_RETURN_NONE;
     }
@@ -700,8 +728,9 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
 #endif    
     PyArrayObject *x1_obj=NULL, *y1_obj=NULL, *z1_obj=NULL;
     double boxsize,pimax;
-    int nthreads=4;
+    int nthreads=1;
     char *binfile;
+    size_t element_size;
     
     if( ! PyArg_ParseTuple(args, "ddisO!O!O!",&boxsize,&pimax,&nthreads,&binfile,
                            &PyArray_Type,&x1_obj,
@@ -712,17 +741,17 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
     }
     
     /* How many data points are there? And are they all of floating point type */
-    const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj);
-    if(ND1 == 0) {
+    const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, &element_size);
+    if(ND1 == -1) {
         //Error has already been set -> simply return 
         Py_RETURN_NONE;
     }
     
     /* Interpret the input objects as numpy arrays. */
-    const int requirements = NPY_ARRAY_IN_ARRAY | NPY_ARRAY_FORCECAST |  NPY_ARRAY_WRITEABLE;
-    PyObject *x1_array = PyArray_FromArray(x1_obj, ELEMENT_DESCR, requirements);
-    PyObject *y1_array = PyArray_FromArray(y1_obj, ELEMENT_DESCR, requirements);
-    PyObject *z1_array = PyArray_FromArray(z1_obj, ELEMENT_DESCR, requirements);
+    const int requirements = NPY_ARRAY_IN_ARRAY;
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
     
     if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
         Py_XDECREF(x1_array);
@@ -731,15 +760,16 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
         char msg[1024];
         snprintf(msg, 1024, "TypeError: In %s: Could not convert to array of correct floating point type (need arrays of %s). Are you passing numpy arrays?",
                  __FUNCTION__, sizeof(DOUBLE) == 4 ? "floats":"doubles");
+        perror(NULL);
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
 
 
     /* Get pointers to the data as C-types. */
-    DOUBLE *X1 = (DOUBLE *)PyArray_DATA((PyArrayObject *) x1_array);
-    DOUBLE *Y1 = (DOUBLE *)PyArray_DATA((PyArrayObject *) y1_array);
-    DOUBLE *Z1 = (DOUBLE *)PyArray_DATA((PyArrayObject *) z1_array);
+    void *X1 = PyArray_DATA(x1_array);
+    void *Y1 = PyArray_DATA(y1_array);
+    void *Z1 = PyArray_DATA(z1_array);
 
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
@@ -748,7 +778,8 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
     results_countpairs_wp results;
     struct config_options options;
     options.need_avg_sep = 1;
-    options.float_type = sizeof(DOUBLE);
+    options.periodic = 1;
+    options.float_type = element_size;
     int status = countpairs_wp(ND1,X1,Y1,Z1,
                                boxsize,
                                nthreads,
@@ -758,12 +789,14 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
                                &options);
     
     NPY_END_THREADS;
+
+    /* Clean up. */
+    Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
+
     if(status != EXIT_SUCCESS) {
         Py_RETURN_NONE;
     }
 
-    /* Clean up. */
-    Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
     
 #if 0
     for(int i=1;i<results.nbin;i++) {
@@ -778,13 +811,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args)
     for(int i=1;i<results.nbin;i++) {
         PyObject *item = NULL;
         const DOUBLE rpavg = results.rpavg[i];
-
-#ifdef DOUBLE_PREC
         item = Py_BuildValue("(ddddk)", rlow,results.rupp[i],rpavg,results.wp[i],results.npairs[i]);
-#else
-        item = Py_BuildValue("(ffffk)", rlow,results.rupp[i],rpavg,results.wp[i],results.npairs[i]);
-#endif//DOUBLE_PREC
-
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.rupp[i];
@@ -819,7 +846,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args)
 
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj);
-    if(ND1 == 0) {
+    if(ND1 == -1) {
         //Error has already been set -> simply return 
         Py_RETURN_NONE;
     }
@@ -913,7 +940,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args)
     
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj);
-    if(ND1 == 0) {
+    if(ND1 == -1) {
         //Error has already been set -> simply return 
         Py_RETURN_NONE;
     }
