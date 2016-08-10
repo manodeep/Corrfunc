@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 #if defined(USE_OMP) && defined(_OPENMP)
     nthreads=atoi(argv[6]);
     if( nthreads < 1 ) {
-      fprintf(stder,"Number of threads = %d must be >=1 \n", nthreads);
+      fprintf(stderr,"Number of threads = %d must be >=1 \n", nthreads);
       return EXIT_FAILURE;
     }
 #endif
