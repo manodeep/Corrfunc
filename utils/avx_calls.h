@@ -16,8 +16,7 @@
 extern "C" {
 #endif
 
-
-#include "function_precision.h"
+#include "function_precision.h" 
 
 #define PREFETCH(mem)        asm ("prefetcht0 %0"::"m"(mem))
 
@@ -36,10 +35,11 @@ extern "C" {
 
 #ifndef DOUBLE_PREC
 
+#define DOUBLE                           float  
 #define AVX_NVEC                         8    
 #define AVX_INTS                         __m256i
 #define AVX_FLOATS                       __m256
-
+  
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_ps(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_ps(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_ps(X,Y)
@@ -93,9 +93,12 @@ extern "C" {
 #define AVX_STREAMING_STORE_INTS(X,Y)     _mm256_stream_si256(X,Y)
 
 #else //DOUBLE PRECISION CALCULATIONS
+  
+#define DOUBLE                           double
 #define AVX_NVEC                         4    
 #define AVX_INTS                         __m128i
 #define AVX_FLOATS                       __m256d
+
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_pd(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_pd(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_pd(X,Y)
@@ -145,36 +148,36 @@ extern "C" {
 #define AVX_STREAMING_STORE_FLOATS(X,Y)   _mm256_stream_pd(X,Y)
 #define AVX_STREAMING_STORE_INTS(X,Y)     _mm_stream_si128(X,Y)
 
-#endif
-
+#endif //DOUBLE_PREC
 
 #ifndef  __INTEL_COMPILER
-    static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X)
-    {
-        union cos{
-            AVX_FLOATS m;
-            DOUBLE x[AVX_NVEC];
-        };
-        union cos union_costheta;
-        union cos union_returnvalue;
-        union_costheta.m = X;
-        const DOUBLE minus_one = (DOUBLE) -1.0;
-        const DOUBLE one = (DOUBLE) 1.0;
-        const DOUBLE zero = (DOUBLE) 0.0;
-
-        for(int ii=0;ii<AVX_NVEC;ii++) {
-            const DOUBLE costheta = union_costheta.x[ii];
-            if(costheta < minus_one) {
-                union_returnvalue.x[ii] = M_PI;
-            } else if (costheta > one) {
-                union_returnvalue.x[ii] = zero;
-            } else {
-                union_returnvalue.x[ii] = ACOS(costheta);
-            }
-        }
-        return union_returnvalue.m;
+  static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X)
+  {
+    union cos{
+      AVX_FLOATS m;
+      DOUBLE x[AVX_NVEC];
+    };
+    union cos union_costheta;
+    union cos union_returnvalue;
+    union_costheta.m = X;
+    const DOUBLE minus_one = (DOUBLE) -1.0;
+    const DOUBLE one = (DOUBLE) 1.0;
+    const DOUBLE zero = (DOUBLE) 0.0;
+    
+    for(int ii=0;ii<AVX_NVEC;ii++) {
+      const DOUBLE costheta = union_costheta.x[ii];
+      if(costheta < minus_one) {
+        union_returnvalue.x[ii] = M_PI;
+      } else if (costheta > one) {
+        union_returnvalue.x[ii] = zero;
+      } else {
+        union_returnvalue.x[ii] = ACOS(costheta);
+      }
     }
+    return union_returnvalue.m;
+  }
 #endif
+
 
 #ifdef __cplusplus
 }

@@ -12,8 +12,20 @@ from os.path import join as pjoin, abspath, dirname
 import time
 
 
-def benchmark_theory_threads_all(min_threads=1, max_threads=2):
+def benchmark_theory_threads_all(min_threads=1, max_threads=16,
+                                 keys = ['DDrppi', 'DD', 'wp', 'xi']):
 
+    allkeys =  ['DDrppi', 'DD', 'wp', 'xi']
+    if keys is None:
+        keys = allkeys
+    else:
+        for k in keys:
+            if k not in allkeys:
+                msg = "Valid routines to benchmark are: {0}\nFound routine"\
+                    " = {1}".format(allkeys, k)
+                raise ValueError(msg)
+
+    print("Benchmarking routines = {0}".format(keys))
     x, y, z = read_catalog()
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
                     "../xi_theory/tests/", "bins")
@@ -23,49 +35,53 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=2):
     dtype = np.dtype([('name', 'S16'),
                       ('nthreads', np.int),
                       ('runtime', np.float)])
-    keys = ['DDrppi', 'DD', 'wp', 'xi']
+
     totN = (max_threads - min_threads + 1) * len(keys)
     all_runtimes = np.empty(totN, dtype=dtype)
     index = 0L
     for nthreads in xrange(min_threads, max_threads + 1):
 
-        t0 = time.time()
-        _ = DDrppi(autocorr, nthreads, pimax, binfile, x, y, z, x, y, z)
-        t1 = time.time()
-        all_runtimes['name'][index] = 'DDrppi'
-        all_runtimes['nthreads'][index] = nthreads
-        all_runtimes['runtime'][index] = t1 - t0
-        index += 1
+        if 'DDrppi' in keys:
+            t0 = time.time()
+            _ = DDrppi(autocorr, nthreads, pimax, binfile, x, y, z, x, y, z)
+            t1 = time.time()
+            all_runtimes['name'][index] = 'DDrppi'
+            all_runtimes['nthreads'][index] = nthreads
+            all_runtimes['runtime'][index] = t1 - t0
+            index += 1
 
-        t0 = time.time()
-        _ = DD(autocorr, nthreads, binfile, x, y, z, x, y, z)
-        t1 = time.time()
-        all_runtimes['name'][index] = 'DD'
-        all_runtimes['nthreads'][index] = nthreads
-        all_runtimes['runtime'][index] = t1 - t0
-        index += 1
-        
-        t0 = time.time()
-        _ = wp(boxsize, pimax, nthreads, binfile, x, y, z)
-        t1 = time.time()
-        all_runtimes['name'][index] = 'wp'
-        all_runtimes['nthreads'][index] = nthreads
-        all_runtimes['runtime'][index] = t1 - t0
-        index += 1
+        if 'DD' in keys:
+            t0 = time.time()
+            _ = DD(autocorr, nthreads, binfile, x, y, z, x, y, z)
+            t1 = time.time()
+            all_runtimes['name'][index] = 'DD'
+            all_runtimes['nthreads'][index] = nthreads
+            all_runtimes['runtime'][index] = t1 - t0
+            index += 1
 
-        t0 = time.time()
-        _ = xi(boxsize, nthreads, binfile, x, y, z)
-        t1 = time.time()
-        all_runtimes['name'][index] = 'xi'
-        all_runtimes['nthreads'][index] = nthreads
-        all_runtimes['runtime'][index] = t1 - t0
-        index += 1
+        if 'wp' in keys:
+            t0 = time.time()
+            _ = wp(boxsize, pimax, nthreads, binfile, x, y, z)
+            t1 = time.time()
+            all_runtimes['name'][index] = 'wp'
+            all_runtimes['nthreads'][index] = nthreads
+            all_runtimes['runtime'][index] = t1 - t0
+            index += 1
+
+        if 'xi' in keys:
+            t0 = time.time()
+            _ = xi(boxsize, nthreads, binfile, x, y, z)
+            t1 = time.time()
+            all_runtimes['name'][index] = 'xi'
+            all_runtimes['nthreads'][index] = nthreads
+            all_runtimes['runtime'][index] = t1 - t0
+            index += 1
 
     print("index = {0} totN = {1}".format(index, totN))
     return keys, all_runtimes
         
 
-keys, all_runtimes = benchmark_theory_threads_all()
+keys, all_runtimes = benchmark_theory_threads_all(keys=['wp'])
 print("all_runtimes = {0}".format(all_runtimes))
 nthreads = set(nthreads for nthreads in all_runtimes['nthreads'])
 print("keys = {0}".format(keys))
@@ -76,7 +92,7 @@ if min(nthreads) > 1:
     raise ValueError(msg)
 
 serial_run = all_runtimes[all_runtimes['nthreads'] == 1]
-with open('nthreads_scaling.txt', 'w') as f:
+with open('nthreads_scaling_wp.txt', 'w') as f:
     print("##############################################################",
           file=f)
     print("#   Nthreads      ", end="", file=f)

@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     sscanf(argv[2],"%d",&nbin);
     sscanf(argv[3],"%d",&nc);
     sscanf(argv[4],"%d",&num_pN);
-    sscanf(argv[5],"%"DOUBLE_FORMAT,&volume);
+    sscanf(argv[5],"%"REAL_FORMAT,&volume);
     galaxy_file=argv[6];
     galaxy_file_format=argv[7];
     random_file=argv[8];
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
-        fprintf(stdout,"%10.2"DOUBLE_FORMAT" ", r);
+        fprintf(stdout,"%10.2"REAL_FORMAT" ", r);
         for(int i=0;i<num_pN;i++) {
             fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
         }
