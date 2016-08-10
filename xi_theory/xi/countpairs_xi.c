@@ -71,17 +71,17 @@ results_countpairs_xi countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUBL
     const DOUBLE ymin = 0.0, ymax=boxsize;
     const DOUBLE zmin = 0.0, zmax=boxsize;
 
-    cellarray_index *lattice = gridlink_index(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+    cellarray_index_particles *lattice = gridlink_index_particles(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
         fprintf(stderr,"%s> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n",__FUNCTION__);
         bin_refine_factor *=2;
         free(lattice);
-        lattice = gridlink_index(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+        lattice = gridlink_index_particles(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
     const int autocorr = 1;
     const int periodic = 1;
-    assign_ngb_cells(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, bin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, autocorr, periodic);
+    assign_ngb_cells_index_particles(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, bin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, autocorr, periodic);
 
 #if !(defined(USE_OMP) && defined(_OPENMP))
     uint64_t npairs[nbins];
@@ -158,14 +158,14 @@ results_countpairs_xi countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUBL
 #endif//SILENT
 
             /* First do the same-cell calculations */
-            const cellarray_index *first  = &(lattice[index1]);
+            const cellarray_index_particles *first  = &(lattice[index1]);
             if(first->nelements == 0) {
                 continue;
             } 
 
-            DOUBLE *x1 = X + first->start;
-            DOUBLE *y1 = Y + first->start;
-            DOUBLE *z1 = Z + first->start;
+            DOUBLE *x1 = first->x;
+            DOUBLE *y1 = first->y;
+            DOUBLE *z1 = first->z;
             const int64_t N1 = first->nelements;
             int same_cell = 1;
             xi_driver(x1, y1, z1, N1,
@@ -178,13 +178,13 @@ results_countpairs_xi countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUBL
                       ,npairs);
             
             for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
-                const cellarray_index *second = first->ngb_cells[ngb];
+                const cellarray_index_particles *second = first->ngb_cells[ngb];
                 if(second->nelements == 0) {
                     continue;
                 }
-                DOUBLE *x2 = X + second->start;
-                DOUBLE *y2 = Y + second->start;
-                DOUBLE *z2 = Z + second->start;
+                DOUBLE *x2 = second->x;
+                DOUBLE *y2 = second->y;
+                DOUBLE *z2 = second->z;
                 const int64_t N2 = second->nelements;
                 const DOUBLE off_xwrap = first->xwrap[ngb];
                 const DOUBLE off_ywrap = first->ywrap[ngb];
@@ -286,8 +286,7 @@ results_countpairs_xi countpairs_xi(const int64_t ND, DOUBLE * restrict X, DOUBL
         rlow=results.rupp[i];
     }
 
-    const int free_wraps = 1;
-    free_cellarray_index(lattice, totncells, free_wraps);
+    free_cellarray_index_particles(lattice, totncells);
     free(rupp);
 
 

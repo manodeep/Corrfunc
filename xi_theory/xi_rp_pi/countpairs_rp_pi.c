@@ -94,19 +94,19 @@ results_countpairs_rp_pi countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE 
 
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_index *lattice1 = gridlink_index(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax,pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+    cellarray_index_particles *lattice1 = gridlink_index_particles(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax,pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
         fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
         free(lattice1);
-        lattice1 = gridlink_index(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
+        lattice1 = gridlink_index_particles(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z);
     }
 
     
-    cellarray_index *lattice2 = NULL;
+    cellarray_index_particles *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_index(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
+        lattice2 = gridlink_index_particles(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z);
         assert(nmesh_x == ngrid2_x && "Both lattices have the same number of X bins");
         assert(nmesh_y == ngrid2_y && "Both lattices have the same number of Y bins");
         assert(nmesh_z == ngrid2_z && "Both lattices have the same number of Z bins");
@@ -116,7 +116,7 @@ results_countpairs_rp_pi countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE 
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
     //Generate the unique set of neighbouring cells to count over. 
-    assign_ngb_cells(lattice1, lattice2, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff, autocorr, periodic);
+    assign_ngb_cells_index_particles(lattice1, lattice2, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff, autocorr, periodic);
 
     DOUBLE rupp_sqr[nrpbin];
     const int64_t totnbins = (npibin+1)*(nrpbin+1);
@@ -188,13 +188,13 @@ results_countpairs_rp_pi countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE 
 
 
             /* Calculate over all ngb cells */
-            const cellarray_index *first  = &(lattice1[index1]);
+            const cellarray_index_particles *first  = &(lattice1[index1]);
             if(first->nelements == 0) {
                 continue;
             }
-            DOUBLE *x1 = X1 + first->start;
-            DOUBLE *y1 = Y1 + first->start;
-            DOUBLE *z1 = Z1 + first->start;
+            DOUBLE *x1 = first->x;
+            DOUBLE *y1 = first->y;
+            DOUBLE *z1 = first->z;
             const int64_t N1 = first->nelements;
             if(autocorr == 1) {
                 int same_cell = 1;
@@ -213,14 +213,14 @@ results_countpairs_rp_pi countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE 
 
             }
             for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
-                const cellarray_index *second = first->ngb_cells[ngb];
+                const cellarray_index_particles *second = first->ngb_cells[ngb];
                 if(second->nelements == 0) {
                     continue;
                 }
                 const int same_cell = 0;
-                DOUBLE *x2 = X2 + second->start;
-                DOUBLE *y2 = Y2 + second->start;
-                DOUBLE *z2 = Z2 + second->start;
+                DOUBLE *x2 = second->x;
+                DOUBLE *y2 = second->y;
+                DOUBLE *z2 = second->z;
 #ifdef PERIODIC
                 const DOUBLE off_xwrap = first->xwrap[ngb];
                 const DOUBLE off_ywrap = first->ywrap[ngb];
@@ -330,10 +330,9 @@ results_countpairs_rp_pi countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE 
     }
 
     free(rupp);
-    const int free_wraps = periodic == 1 ? 1:0;
-    free_cellarray_index(lattice1,totncells, free_wraps);
+    free_cellarray_index_particles(lattice1,totncells);
     if(autocorr == 0) {
-        free(lattice2);
+      free_cellarray_index_particles(lattice2,totncells);
     }
     
 #if defined(USE_OMP) && defined(_OPENMP)
