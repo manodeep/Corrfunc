@@ -289,7 +289,7 @@ results_countspheres_mocks countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, 
             const int MAXBUFSIZE=10000;
             char buffer[MAXBUFSIZE];
             assert( fgets(buffer,MAXBUFSIZE,fpcen) != NULL && "ERROR: Could not read-in centers co-ordinates");
-            int nitems = sscanf(buffer,"%"DOUBLE_FORMAT" %"DOUBLE_FORMAT" %"DOUBLE_FORMAT" %lf",&xcen,&ycen,&zcen,&rr);
+            int nitems = sscanf(buffer,"%"REAL_FORMAT" %"REAL_FORMAT" %"REAL_FORMAT" %lf",&xcen,&ycen,&zcen,&rr);
             if(nitems != 4) {
                 fprintf(stderr,"ERROR: nitems = %d xcen = %lf ycen = %lf zcen %lf rr = %lf\n",
                         nitems,xcen,ycen,zcen,rr);

@@ -1,10 +1,15 @@
 include ../../theory.options ../../common.mk
 
 target := wp
-SRC1   := wp.c countpairs_wp.c wp_driver.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c ../../utils/progressbar.c ../../utils/cpu_features.c 
-INCL   := countpairs_wp.h wp_driver.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
-	../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-	../../utils/defs.h ../../utils/sglib.h ../../utils/progressbar.h ../../utils/cpu_features.h wp_kernels.c
+SRC1   := wp.c countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c \
+          ../../io/io.c ../../io/ftread.c \
+          ../../utils/utils.c ../../utils/gridlink_impl_float.c ../../utils/gridlink_impl_double.c \
+          ../../utils/progressbar.c ../../utils/cpu_features.c
+INCL   := wp_kernels_double.c wp_kernels_float.c countpairs_wp.h countpairs_wp_impl_float.h countpairs_wp_impl_double.h \
+          ../../io/ftread.h ../../io/io.h ../../utils/utils.h \
+          ../../utils/gridlink_impl_float.h ../../utils/gridlink_impl_double.h \
+          ../../utils/function_precision.h ../../utils/cellarray_double.h ../../utils/cellarray_float.h ../../utils/avx_calls.h \
+          ../../utils/defs.h ../../utils/sglib.h ../../utils/progressbar.h ../../utils/cpu_features.h
 OBJS1  := $(SRC1:.c=.o)
 
 all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
@@ -12,10 +17,47 @@ all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile
 $(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
 	$(CC) $(OBJS1) $(CLINK) -o $@
 
-%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
+%_float.c: %.c.src %_float.h Makefile
+	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
+	sed -e "s/DOUBLE/float/g" $< >> $@
+%_float.h: %.h.src Makefile
+	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
+	sed -e "s/DOUBLE/float/g"  $< >> $@
+
+%_double.c: %.c.src %_double.h Makefile
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $< */" > $@
+	sed -e "s/DOUBLE/double/g"  $< >> $@
+%_double.h: %.h.src Makefile
+	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
+	sed -e "s/DOUBLE/double/g"  $< >> $@
+
+%_double.o: %_double.c $(INCL) ../../theory.options ../../common.mk Makefile
+	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+%_float.o: %_float.c %_float.h $(INCL)
+	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+wp_kernels_double.c: wp_kernels.c.src Makefile
+	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
+	sed -e "s/DOUBLE/double/g"  $< >> $@
+
+wp_kernels_float.c: wp_kernels.c.src Makefile
+	@$(ECHO_COMMAND) '/* This file is auto-generated from $< */' > $@
+	sed -e "s/DOUBLE/float/g"  $< >> $@
+
+countpairs_wp.o: countpairs_wp.c countpairs_wp.h countpairs_wp_impl_double.h countpairs_wp_impl_float.h ../../theory.options ../../common.mk Makefile
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+$(target).o: $(target).c ../../theory.options ../../common.mk Makefile $(INCL)
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-OBJS2 := countpairs_wp.o wp_driver.o ../../utils/gridlink.o ../../utils/utils.o ../../utils/progressbar.o ../../utils/cpu_features.o
+%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+
+OBJS2 := countpairs_wp.o countpairs_wp_impl_double.o countpairs_wp_impl_float.o \
+         ../../utils/gridlink_impl_double.o ../../utils/gridlink_impl_float.o \
+         ../../utils/utils.o ../../utils/progressbar.o ../../utils/cpu_features.o
 libs: lib
 lib: ../../lib/libcountpairs_wp.a | ../../lib ../../include
 
@@ -24,9 +66,9 @@ libcountpairs_wp.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefi
 
 ../../lib/libcountpairs_wp.a: libcountpairs_wp.a
 	cp -p $< $@
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_wp.h > ../../include/countpairs_wp.h
+	cp -p countpairs_wp.h > ../../include/countpairs_wp.h
 
-.PHONY: clean clena celan install lib tests distclean
+.PHONY: clean clena celan install lib tests distclean all
 
 ../../lib ../../bin ../../include:
 	mkdir -p $@
@@ -41,7 +83,7 @@ distclean: clean | ../../lib ../../include ../../bin
 	cd ../../bin && $(RM) $(target)
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
+	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a *_float.[ch] *_double.[ch]
 
 clena: clean
 

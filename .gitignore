@@ -10,6 +10,8 @@ zz*
 *dSYM*
 .DS_Store
 *.pyc
+*_float.[ch]
+*_double.[ch]
 DD
 build*
 dist*

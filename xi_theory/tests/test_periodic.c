@@ -196,7 +196,7 @@ int test_vpf(const char *correct_outputfile)
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
-        fprintf(fp,"%"DOUBLE_FORMAT" ", r);
+        fprintf(fp,"%"REAL_FORMAT" ", r);
         for(int i=0;i<num_pN;i++) {
             fprintf(fp," %10.4e", (results.pN)[ibin][i]);
         }

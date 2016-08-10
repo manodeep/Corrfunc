@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
     /* Note: we discard the first bin, to mimic the fact that close pairs
      * are disregarded in SDSS data.
      */
-    DOUBLE rlow=results.rupp[0];
+    double rlow=results.rupp[0];
     for(int i=1;i<results.nbin;++i) {
         fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.wp[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
         rlow=results.rupp[i];

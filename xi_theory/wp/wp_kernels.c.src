@@ -1,4 +1,4 @@
-/* File: wp_kernels.c */
+/* File: wp_kernels.c.src */
 /*
   This file is a part of the Corrfunc package
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
@@ -12,17 +12,15 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "function_precision.h"
-
 #ifdef __AVX__
 #include "avx_calls.h"
 
-static inline int wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                    DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
-                                    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
-                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                    ,DOUBLE *src_rpavg
-                                    ,uint64_t *src_npairs)
+static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                           DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
+                                           const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                                           const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                           ,DOUBLE *src_rpavg
+                                           ,uint64_t *src_npairs)
 {
     uint64_t *npairs = calloc(sizeof(*npairs), nbin);
     if(npairs == NULL) {
@@ -217,12 +215,12 @@ static inline int wp_avx_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const in
 #ifdef __SSE4_2__
 #include "sse_calls.h"
 
-static inline int wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                    DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
-                                    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
-                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                    ,DOUBLE *src_rpavg
-                                    ,uint64_t *src_npairs)
+static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                           DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
+                                           const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
+                                           const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                           ,DOUBLE *src_rpavg
+                                           ,uint64_t *src_npairs)
 {
     SSE_FLOATS m_rupp_sqr[nbin];
     for(int i=0;i<nbin;i++) {
@@ -275,16 +273,16 @@ static inline int wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const in
         DOUBLE *localy1 = y1 + j;
 
 		for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
-            union int4 union_rpbin;
-            union float4 union_mDperp;
-
-            const SSE_FLOATS m_xpos = SSE_SET_FLOAT(xpos);
-            const SSE_FLOATS m_ypos = SSE_SET_FLOAT(ypos);
-            const SSE_FLOATS m_zpos = SSE_SET_FLOAT(zpos);
-
-            const SSE_FLOATS m_x1 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
-			const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
-			const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
+      union int4 union_rpbin;
+      union float4 union_mDperp;
+      
+      const SSE_FLOATS m_xpos = SSE_SET_FLOAT(xpos);
+      const SSE_FLOATS m_ypos = SSE_SET_FLOAT(ypos);
+      const SSE_FLOATS m_zpos = SSE_SET_FLOAT(zpos);
+      
+      const SSE_FLOATS m_x1 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
+      const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
+      const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
 
 			localx1 += SSE_NVEC;
 			localy1 += SSE_NVEC;
@@ -386,28 +384,26 @@ static inline int wp_sse_intrinsics(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const in
 
 #endif //__SSE4_2__
 
-
+#include "function_precision.h"
 
 //Fallback code that should always compile
-static inline int wp_fallback(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                               DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
-                               const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
-                               const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                               ,DOUBLE *src_rpavg
-                               ,uint64_t *src_npairs)
+static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                     DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
+                                     const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE rupp_sqr[] , const DOUBLE pimax,
+                                     const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                     ,DOUBLE *src_rpavg
+                                     ,uint64_t *src_npairs)
 {
 
     /*----------------- FALLBACK CODE --------------------*/
     uint64_t npairs[nbin];
-    for(int i=0;i<nbin;i++) {
-        npairs[i]=0;
-    }
-    const int32_t need_rpavg = src_rpavg != NULL;
     DOUBLE rpavg[nbin];
-    if(need_rpavg) {
-        for(int i=0;i<nbin;i++) {
-            rpavg[i]=0;
-        }
+    const int32_t need_rpavg = src_rpavg != NULL;
+    for(int i=0;i<nbin;i++) {
+      npairs[i]=0;
+      if(need_rpavg) {
+        rpavg[i]=0.0;
+      }
     }
 
     /* naive implementation that is guaranteed to compile */

@@ -302,7 +302,7 @@ int main(int argc, char **argv)
         const DOUBLE rstep = rmax/(DOUBLE)nbin ;
         for(int ibin=0;ibin<results.nbin;ibin++) {
             const double r=(ibin+1)*rstep;
-            fprintf(stdout,"%"DOUBLE_FORMAT" ", r);
+            fprintf(stdout,"%"REAL_FORMAT" ", r);
             for(int i=0;i<num_pN;i++) {
                 fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
             }

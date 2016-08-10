@@ -47,7 +47,33 @@
      } while (0)
 #endif
 
-     
+#ifdef NDEBUG
+#define XPRINT(EXP, ...)                                do{} while(0)
+#else
+#define XPRINT(EXP, ...)                                               \
+     do { if (!(EXP)) {                                                 \
+             fprintf(stderr,"Error in file: %s\tfunc: %s\tline: %d with expression `"#EXP"'\n", __FILE__, __FUNCTION__, __LINE__); \
+             fprintf(stderr,__VA_ARGS__);                               \
+             fprintf(stderr,ANSI_COLOR_BLUE "Hopefully, input validation. Otherwise, bug in code: please email Manodeep Sinha <manodeep@gmail.com>"ANSI_COLOR_RESET"\n"); \
+         }                                                              \
+     } while (0)
+#endif
+
+
+#ifdef NDEBUG
+#define XRETURN(EXP, VAL, ...)                                do{} while(0)
+#else
+#define XRETURN(EXP, VAL, ...)                                           \
+     do { if (!(EXP)) {                                                 \
+             fprintf(stderr,"Error in file: %s\tfunc: %s\tline: %d with expression `"#EXP"'\n", __FILE__, __FUNCTION__, __LINE__); \
+             fprintf(stderr,__VA_ARGS__);                               \
+             fprintf(stderr,ANSI_COLOR_BLUE "Hopefully, input validation. Otherwise, bug in code: please email Manodeep Sinha <manodeep@gmail.com>"ANSI_COLOR_RESET"\n"); \
+             return VAL;                                                \
+         }                                                              \
+     } while (0)
+#endif
+   
+   
      //routines for file i/o
      extern FILE * my_fopen(const char *fname,const char *mode);
      extern FILE * my_fopen_carefully(const char *fname,void (*header)(FILE *));

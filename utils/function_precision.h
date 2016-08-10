@@ -8,7 +8,6 @@
 
 #pragma once
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,19 +45,20 @@ extern "C" {
 
 #else
 
-#define REGISTER_WIDTH 64    
+#define REGISTER_WIDTH 64
 #define NVECF 2
-#define NVECD 1    
+#define NVECD 1
 
 #endif//SSE
-
 #endif//AVX
-    
+
+
+  
 #ifdef DOUBLE_PREC
 #define DOUBLE double
-#define DOUBLE_FORMAT "lf"
-#define ZERO   0.0
+#define REAL_FORMAT "lf"
 #define NVEC   NVECD
+#define ZERO   0.0
 #define SQRT   sqrt
 #define LOG    log
 #define LOG10  log10
@@ -72,9 +72,9 @@ extern "C" {
 #define ABS    fabs
 #else
 #define DOUBLE float
-#define DOUBLE_FORMAT "f"
-#define ZERO   0.0f
+#define REAL_FORMAT "f"
 #define NVEC   NVECF
+#define ZERO   0.0f
 #define SQRT   sqrtf
 #define LOG    logf
 #define LOG10  log10f

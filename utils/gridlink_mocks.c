@@ -62,7 +62,7 @@ cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czm
 {
     int nmesh,max_n;
     const DOUBLE czdiff = (czmax-czmin);
-    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"DOUBLE_FORMAT"\n", czdiff);
+    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"REAL_FORMAT"\n", czdiff);
     const DOUBLE inv_czdiff=1.0/czdiff;
 
     /* Instead of directly assigning to int nmesh via
@@ -206,9 +206,9 @@ cellarray_mocks **gridlink2D(const int64_t np,
     struct timeval t0,t1;
     gettimeofday(&t0,NULL);
 #endif
-    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"DOUBLE_FORMAT"\n", czdiff);
-    XASSERT(pimax > 0.0, "Minimum los separation = %"DOUBLE_FORMAT" must be non-zero\n", pimax);
-    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"DOUBLE_FORMAT" must be non-zero\n", dec_diff);
+    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"REAL_FORMAT"\n", czdiff);
+    XASSERT(pimax > 0.0, "Minimum los separation = %"REAL_FORMAT" must be non-zero\n", pimax);
+    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"REAL_FORMAT" must be non-zero\n", dec_diff);
     XASSERT(MEMORY_INCREASE_FAC >= 1.0, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
 
     //Written this way to work around INT overflows
@@ -228,7 +228,7 @@ cellarray_mocks **gridlink2D(const int64_t np,
         const int min_iz = (i - zbin_refine_factor) < 0  ? 0:i-zbin_refine_factor;
         const DOUBLE dmin = czmin + 0.5*(min_iz+i)*cz_binsize;//Really I am taking the average of the left edges for the cz bins corresponding to i (= czmin + i*cz_binsize) and min_iz (= czmin + min_iz*cz_binsize).
         const DOUBLE dec_cell = ASIN(rpmax/(2*dmin))*2.0*INV_PI_OVER_180;
-        XASSERT(dec_cell > 0.0, "Declination binsize=%"DOUBLE_FORMAT" in cz bin = %d must be positive\n", dec_cell, i);
+        XASSERT(dec_cell > 0.0, "Declination binsize=%"REAL_FORMAT" in cz bin = %d must be positive\n", dec_cell, i);
         const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
         const int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
         if(nmesh_dec > max_nmesh_dec) max_nmesh_dec = nmesh_dec;
@@ -265,7 +265,7 @@ cellarray_mocks **gridlink2D(const int64_t np,
         if (iz >= nmesh_cz) iz--;
         XASSERT(iz >= 0 && iz < nmesh_cz, "iz (cz bin index) = %d must be within [0,%d)\n", iz, nmesh_cz);
         XASSERT(dec[i] >= dec_min && dec[i] <= dec_max,
-                "dec[%d] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                "dec[%d] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
                 i, dec[i], dec_min, dec_max);
         int idec = (int)(ngrid_dec[iz]*(dec[i]-dec_min)*inv_dec_diff);
         if(idec >= ngrid_dec[iz]) idec--;
@@ -345,8 +345,8 @@ cellarray * gridlink1D_theta(const int64_t np,
     gettimeofday(&t0,NULL);
 #endif
 
-    XASSERT(thetamax > 0.0, "Minimum angular separation = %"DOUBLE_FORMAT" must be positive\n", thetamax);
-    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"DOUBLE_FORMAT" must be non-zero\n", dec_diff);
+    XASSERT(thetamax > 0.0, "Minimum angular separation = %"REAL_FORMAT" must be positive\n", thetamax);
+    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"REAL_FORMAT" must be non-zero\n", dec_diff);
     XASSERT(MEMORY_INCREASE_FAC >= 1.0, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
     
     /* Find the max. number of declination cells that can be */
@@ -464,10 +464,10 @@ cellarray_mocks *** gridlink3D(const int64_t np,
     gettimeofday(&t0,NULL);
 #endif
 
-    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"DOUBLE_FORMAT"\n", czdiff);
-    XASSERT(pimax > 0.0, "Minimum los separation = %"DOUBLE_FORMAT" must be non-zero\n", pimax);
-    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"DOUBLE_FORMAT" must be non-zero\n", dec_diff);
-    XASSERT(phi_diff > 0.0, "All of the points can not be at the same RA. RA difference = %"DOUBLE_FORMAT" must be non-zero\n", phi_diff);
+    XASSERT(czdiff > 0.0, "There needs to be some width in cz for the data. Current width = %"REAL_FORMAT"\n", czdiff);
+    XASSERT(pimax > 0.0, "Minimum los separation = %"REAL_FORMAT" must be non-zero\n", pimax);
+    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"REAL_FORMAT" must be non-zero\n", dec_diff);
+    XASSERT(phi_diff > 0.0, "All of the points can not be at the same RA. RA difference = %"REAL_FORMAT" must be non-zero\n", phi_diff);
     XASSERT(MEMORY_INCREASE_FAC >= 1.0, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
 
 
@@ -489,7 +489,7 @@ cellarray_mocks *** gridlink3D(const int64_t np,
         const int min_iz = iz-zbin_refine_factor < 0 ? 0:iz-zbin_refine_factor;
         const DOUBLE dmin = czmin + 0.5*(min_iz+iz)*cz_binsize;
         const DOUBLE dec_cell =  ASIN(rpmax/(2*dmin))*2.0*INV_PI_OVER_180;// \sigma = 2*arcsin(C/2) -> 2*arcsin( (rpmax/d2min) /2)
-        XASSERT(dec_cell > 0.0, "Declination binsize=%"DOUBLE_FORMAT" in cz bin = %d must be positive\n", dec_cell, iz);
+        XASSERT(dec_cell > 0.0, "Declination binsize=%"REAL_FORMAT" in cz bin = %d must be positive\n", dec_cell, iz);
         dec_binsizes[iz] = dec_cell;
         const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
         const int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
@@ -537,7 +537,7 @@ cellarray_mocks *** gridlink3D(const int64_t np,
                     phi_cell = 120.0;
                 }
             }
-            XASSERT(phi_cell > 0.0, "RA binsize=%"DOUBLE_FORMAT" in [cz,dec] bin = (%d,%d) must be positive\n", phi_cell, iz, idec);
+            XASSERT(phi_cell > 0.0, "RA binsize=%"REAL_FORMAT" in [cz,dec] bin = (%d,%d) must be positive\n", phi_cell, iz, idec);
 
             phi_cell = phi_cell > 120.0 ? 120.0:phi_cell;
             /* fprintf(stderr,"iz = %4d idec = %4d dec_cell = %6.3lf dec_binsize=%6.2lf this_dec = %6.2lf phi_cell = %7.2lf \n",iz,idec,dec_cell,dec_binsize,dec_min + idec*dec_binsize,phi_cell); */
@@ -667,9 +667,9 @@ cellarray ** gridlink2D_theta(const int64_t np,
     const DOUBLE phi_diff = phi_max - phi_min;
     int *ngrid_ra=NULL;
 
-    XASSERT(thetamax > 0.0, "Minimum angular separation = %"DOUBLE_FORMAT" must be positive\n", thetamax);
-    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"DOUBLE_FORMAT" must be non-zero\n", dec_diff);
-    XASSERT(phi_diff > 0.0, "All of the points can not be at the same RA. RA difference = %"DOUBLE_FORMAT" must be non-zero\n", phi_diff);
+    XASSERT(thetamax > 0.0, "Minimum angular separation = %"REAL_FORMAT" must be positive\n", thetamax);
+    XASSERT(dec_diff > 0.0, "All of the points can not be at the same declination. Declination difference = %"REAL_FORMAT" must be non-zero\n", dec_diff);
+    XASSERT(phi_diff > 0.0, "All of the points can not be at the same RA. RA difference = %"REAL_FORMAT" must be non-zero\n", phi_diff);
     XASSERT(MEMORY_INCREASE_FAC >= 1.0, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
 
     const DOUBLE inv_dec_diff = 1.0/dec_diff;
@@ -719,7 +719,7 @@ cellarray ** gridlink2D_theta(const int64_t np,
                 phi_cell = max_phi_cell;
             }
         }
-        XASSERT(phi_cell > 0.0, "RA binsize=%"DOUBLE_FORMAT" in declination bin = %d must be positive\n", phi_cell, idec);
+        XASSERT(phi_cell > 0.0, "RA binsize=%"REAL_FORMAT" in declination bin = %d must be positive\n", phi_cell, idec);
         phi_cell = phi_cell > max_phi_cell ? max_phi_cell:phi_cell;
         const DOUBLE this_nmesh_ra = phi_diff*phibin_refine_factor/phi_cell;
         int nmesh_ra = this_nmesh_ra > NLATMAX ? this_nmesh_ra:(int) this_nmesh_ra;
@@ -914,13 +914,13 @@ cellarray * gridlink(const int64_t np,
             fprintf(stderr,"ix = %d iy = %d iz = %d\n",ix,iy,iz);
         }
         XASSERT(x[i] >= xmin && x[i] <= xmax,
-                "x[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                "x[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
                 i, x[i], xmin, xmax);
         XASSERT(y[i] >= ymin && y[i] <= ymax,
-                "y[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                "y[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
                 i, y[i], ymin, ymax);
         XASSERT(z[i] >= zmin && z[i] <= zmax,
-                "z[%"PRId64"] = %"DOUBLE_FORMAT" must be within [%"DOUBLE_FORMAT",%"DOUBLE_FORMAT"]\n",
+                "z[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
                 i, z[i], zmin, zmax);
 
         XASSERT(ix >= 0 && ix < nmesh_x, "ix=%d must be within [0,%d)\n", ix, nmesh_x);

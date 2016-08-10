@@ -14,20 +14,19 @@ extern "C" {
 #endif
 
 #include "defs.h"
-#include "function_precision.h"
-#include <inttypes.h>
+#include <stdint.h>
     
     //define the results structure
     typedef struct{
         uint64_t *npairs;
-        DOUBLE *wp;
-        DOUBLE *rupp;
-        DOUBLE *rpavg;
-        DOUBLE pimax;
+        double *wp;
+        double *rupp;
+        double *rpavg;
+        double pimax;
         int nbin;
     } results_countpairs_wp;
     
-    int countpairs_wp(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
+    int countpairs_wp(const int64_t ND1, void * restrict X1, void * restrict Y1, void * restrict Z1,
                       const double boxsize,
                       const int numthreads,
                       const char *binfile,
