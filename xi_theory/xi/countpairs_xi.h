@@ -12,29 +12,27 @@
 extern "C" {
 #endif
 
-#include "function_precision.h" //for definition of DOUBLE
-#include <inttypes.h> //for uint64_t
+#include "defs.h" //for struct config_options
+#include <stdint.h> //for uint64_t
 
 
 //define the results structure
-typedef struct{
-    uint64_t *npairs;
-    DOUBLE *xi;
-    DOUBLE *rupp;
-    DOUBLE *rpavg;
-    int nbin;
-} results_countpairs_xi;
+    typedef struct{
+        uint64_t *npairs;
+        double *xi;
+        double *rupp;
+        double *ravg;
+        int nbin;
+    } results_countpairs_xi;
 
-results_countpairs_xi countpairs_xi(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
-                                    const double boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                    const int numthreads,
-#endif
-                                    const char *binfile) __attribute__((warn_unused_result));
+    extern void free_results_xi(results_countpairs_xi *results);
+    extern int countpairs_xi(const int64_t ND1, void * restrict X1, void * restrict Y1, void * restrict Z1,
+                             const double boxsize,
+                             const int numthreads,
+                             const char *binfile,
+                             results_countpairs_xi *results,
+                             const struct config_options *in_options);
     
-
-void free_results_xi(results_countpairs_xi *results);
-
 #ifdef __cplusplus
 }
 #endif

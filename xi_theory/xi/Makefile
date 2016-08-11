@@ -1,60 +1,92 @@
-include ../../theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
 
-target := xi 
-SRC1   := xi.c countpairs_xi.c xi_driver.c ../../utils/gridlink.c ../../utils/utils.c ../../io/ftread.c ../../io/io.c 
-INCL   := countpairs_xi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
-		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h xi_driver.h ../../utils/sglib.h xi_kernels.c 
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
-ifeq ($(OUTPUT_PGBAR), 1)
-SRC1 += ../../utils/progressbar.c
-INCL += ../../utils/progressbar.h 
-endif
-OBJS1  := $(SRC1:.c=.o)
+LIBRARY := libcountpairs_xi.a
+LIBRARY_HEADERS := countpairs_xi.h 
+LIBSRC := countpairs_xi.c countpairs_xi_impl_double.c countpairs_xi_impl_float.c  \
+          $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
+          $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
 
-all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
+TARGET := xi
+TARGETSRC := $(TARGET).c $(IO_DIR)/ftread.c $(IO_DIR)/io.c $(LIBSRC)
 
-$(target): $(OBJS1) $(INCL) ../../common.mk ../../theory.options Makefile 
-	$(CC) $(OBJS1) $(CLINK) -o $@
+INCL   := xi_kernels_float.c xi_kernels_double.c xi_kernels.c.src countpairs_xi.h \
+          countpairs_xi_impl_float.h countpairs_xi_impl_double.h countpairs_xi_impl.h.src countpairs_xi_impl.c.src \
+          $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
+          $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray.h.src \
+          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
+	  $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/defs.h $(UTILS_DIR)/sglib.h $(UTILS_DIR)/progressbar.h
 
-%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+LIBOBJS := $(LIBSRC:.c=.o)
+
+all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+
+$(TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options Makefile 
+	$(CC) $(TARGETOBJS) $(CLINK) -o $@
+
+%_float.c: %.c.src Makefile
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
+	sed -e "s/DOUBLE/float/g" $< >> $@
+
+%_float.h: %.h.src Makefile
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
+	sed -e "s/DOUBLE/float/g"  $< >> $@
+
+%_double.c: %.c.src Makefile
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
+	sed -e "s/DOUBLE/double/g"  $< >> $@
+%_double.h: %.h.src Makefile
+	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
+	sed -e "s/DOUBLE/double/g"  $< >> $@
+
+%_double.o: %_double.c %_double.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+%_float.o: %_float.c %_float.h $(INCL)
+	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+countpairs_xi.o: countpairs_xi.c countpairs_xi.h countpairs_xi_impl_double.h countpairs_xi_impl_float.h $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+$(TARGET).o: $(TARGET).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(INCL)
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-SRC2  := countpairs_xi.c xi_driver.c ../../utils/gridlink.c ../../utils/utils.c
-ifeq ($(OUTPUT_PGBAR), 1)
-SRC2 += ../../utils/progressbar.c
-endif
-OBJS2 := $(SRC2:.c=.o)
+%.o: %.c %.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 libs: lib
-lib:  ../../lib/libcountpairs_xi.a | ../../lib ../../include 
+lib:  $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) 
 
-libcountpairs_xi.a: $(OBJS2) $(INCL) ../../common.mk ../../theory.options Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS2)
+$(LIBRARY): $(LIBOBJS) $(INCL) $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+	ar rcs $@ $(LIBOBJS)
 
-../../lib/libcountpairs_xi.a: libcountpairs_xi.a
+$(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY)
 	cp -p $< $@
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_xi.h > ../../include/countpairs_xi.h 
+	cp -p $(LIBRARY_HEADERS) $(INSTALL_HEADERS_DIR)/
 
 .PHONY: clean clena celan install lib tests distclean
 
-../../lib ../../bin ../../include:
+$(INSTALL_LIB_DIR) $(INSTALL_BIN_DIR) $(INSTALL_HEADERS_DIR):
 	mkdir -p $@
 
-install: ../../bin/$(target) | ../../bin
+install: $(INSTALL_BIN_DIR)/$(TARGET) | $(INSTALL_BIN_DIR)
 
-../../bin/$(target): $(target)
+$(INSTALL_BIN_DIR)/$(TARGET): $(TARGET)
 	cp -p $< $@
 
-distclean: clean | ../../lib ../../include ../../bin
-	$(RM) ../../lib/libcountpairs_xi.a ../../include/countpairs_xi.h
-	cd ../../bin && $(RM) $(target)
+distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
+	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
+	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_xi.a
+	$(RM) $(TARGET) $(TARGETOBJS) $(LIBOBJS) $(LIBRARY) *_float.[ch] *_double.[ch] $(UTILS_DIR)/*_double.[ch] $(UTILS_DIR)/*_float.[ch]
 
 clena: clean
 celan: clean
