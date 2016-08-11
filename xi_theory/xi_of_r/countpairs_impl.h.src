@@ -17,23 +17,22 @@ extern "C" {
 #include <stdint.h>
 
 #include "countpairs.h"  /* For definition of results_countpairs */
-
-  typedef int (*countpairs_func_ptr_DOUBLE)(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                            DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell
-                                            ,const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rpmax
-                                            ,const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                            ,DOUBLE *src_rpavg
-                                            ,uint64_t *src_npairs);
+    
+    typedef int (*countpairs_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
+                                              const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int same_cell,
+                                              const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rpmax,
+                                              const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                              DOUBLE *src_rpavg, uint64_t *src_npairs);
   
-  countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
-
-  int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
-                        const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
-                        const int numthreads,
-                        const int autocorr,
-                        const char *binfile,
-                        results_countpairs *results,
-                        const struct config_options *options) __attribute__((warn_unused_result));
+    extern countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
+    
+    extern int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
+                          const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
+                          const int numthreads,
+                          const int autocorr,
+                          const char *binfile,
+                          results_countpairs *results,
+                          const struct config_options *options);
 
 #ifdef __cplusplus
 }

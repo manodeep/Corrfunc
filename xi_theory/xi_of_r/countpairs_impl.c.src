@@ -37,16 +37,16 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
 
   //the fastest available code will always be at index 0.
   if(initialized == 0) {
-    /* Array of function pointers */
-    countpairs_func_ptr_DOUBLE allfunctions[] = {
+      /* Array of function pointers */
+      countpairs_func_ptr_DOUBLE allfunctions[] = {
 #ifdef __AVX__
-      countpairs_avx_intrinsics_DOUBLE,
+          countpairs_avx_intrinsics_DOUBLE,
 #endif			 
 #ifdef __SSE4_2__
-      countpairs_sse_intrinsics_DOUBLE,
+          countpairs_sse_intrinsics_DOUBLE,
 #endif
-      countpairs_fallback_DOUBLE
-    };
+          countpairs_fallback_DOUBLE
+      };
 
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
@@ -268,13 +268,12 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
 #pragma omp for  schedule(dynamic) nowait
 #endif//openmp
       for(int64_t index1=0;index1<totncells;index1++) {
-          
-        /* If the silent option is enabled, avoid outputting anything unnecessary*/
+
 #if defined(_OPENMP)
 #pragma omp flush (abort_status)
 #endif
         if(abort_status == EXIT_SUCCESS) { //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
-            
+            /* If the verbose option is not enabled, avoid outputting anything unnecessary*/            
           if(options->verbose) {
 #if defined(_OPENMP)
             if (omp_get_thread_num() == 0)
@@ -297,31 +296,22 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
           DOUBLE *y1 = first->y;
           DOUBLE *z1 = first->z;
           const int64_t N1 = first->nelements;
-          int status;
           if(autocorr == 1) {
-            int same_cell = 1;
-            if(options->need_avg_sep) {
-              status = countpairs_function_DOUBLE(x1, y1, z1, N1,
-                                                  x1, y1, z1, N1,
-                                                  same_cell
-                                                  ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
-                                                  ,ZERO, ZERO, ZERO
-                                                  ,rpavg
-                                                  ,npairs);
-            } else {
-              status = countpairs_function_DOUBLE(x1, y1, z1, N1,
-                                                  x1, y1, z1, N1,
-                                                  same_cell
-                                                  ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
-                                                  ,ZERO, ZERO, ZERO
-                                                  ,NULL
-                                                  ,npairs);
-            }
-            /* This actually causes a race condition under OpenMP - but mostly
-               I care that an error occurred - rather than the exact value of
-               the error status */
-            abort_status = abort_status | status;
-                
+              int same_cell = 1;
+              DOUBLE *this_rpavg = NULL;
+              if(options->need_avg_sep) {
+                  this_rpavg = rpavg;
+              }
+              const int status = countpairs_function_DOUBLE(N1, x1, y1, z1,
+                                                            N1, x1, y1, z1,
+                                                            same_cell,
+                                                            sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
+                                                            ZERO, ZERO, ZERO,
+                                                            this_rpavg, npairs);
+              /* This actually causes a race condition under OpenMP - but mostly
+                 I care that an error occurred - rather than the exact value of
+                 the error status */
+              abort_status |= status;
           }
 
           /* struct timeval t0,t1; */
@@ -344,28 +334,21 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
               off_zwrap = first->zwrap[ngb];
             }
             const int64_t N2 = second->nelements;
-
+            DOUBLE *this_rpavg = NULL;
             if(options->need_avg_sep) {
-              status = countpairs_function_DOUBLE(x1, y1, z1, N1,
-                                                  x2, y2, z2, N2,
-                                                  same_cell
-                                                  ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
-                                                  ,off_xwrap, off_ywrap, off_zwrap
-                                                  ,rpavg
-                                                  ,npairs);
-            } else {
-              status = countpairs_function_DOUBLE(x1, y1, z1, N1,
-                                                  x2, y2, z2, N2,
-                                                  same_cell
-                                                  ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
-                                                  ,off_xwrap, off_ywrap, off_zwrap
-                                                  ,NULL
-                                                  ,npairs);
+                this_rpavg = rpavg;
             }
+            const int status = countpairs_function_DOUBLE(N1, x1, y1, z1,
+                                                          N2, x2, y2, z2,
+                                                          same_cell
+                                                          ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
+                                                          ,off_xwrap, off_ywrap, off_zwrap
+                                                          ,this_rpavg
+                                                          ,npairs);
             /* This actually causes a race condition under OpenMP - but mostly
                I care that an error occurred - rather than the exact value of
                the error status */
-            abort_status = abort_status | status;
+            abort_status |= status;
           }//loop over ngb cells
           /* gettimeofday(&t1, NULL); */
           /* fprintf(stderr,"%7"PRId64" %4"PRId64" %6"PRId64" %14.6lf %10"PRId64"\n",index1, first->num_ngb, first->nelements, ADD_DIFF_TIME(t0,t1), ngb_part); */
@@ -458,6 +441,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     for(int i=0;i<nrpbin;i++) {
       results->npairs[i] = npairs[i];
       results->rupp[i] = rupp[i];
+      results->rpavg[i] = 0.0;
       if(options->need_avg_sep) {
         results->rpavg[i] = rpavg[i];
       }
