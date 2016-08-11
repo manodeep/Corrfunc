@@ -126,8 +126,11 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     double rpmin,rpmax;
     int nrpbins;
     setup_bins(binfile,&rpmin,&rpmax,&nrpbins,&rupp);
-    assert(rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && "[rpmin, rpmax] are valid inputs");
-    assert(nrpbins > 0 && "Number of rp bins is valid");
+    if( ! (rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && nrpbin > 0)) {
+        fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
+                rpmin, rpmax, nrpbin);
+        return EXIT_FAILURE;
+    }
 
     const DOUBLE xmin = 0.0, xmax=boxsize;
     const DOUBLE ymin = 0.0, ymax=boxsize;
@@ -389,6 +392,10 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         /* compute xi, dividing summed weight by that expected for a random set */
         const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]-rlow*rlow)*twice_pimax;
         const DOUBLE weightrandom = prefac_density_DD*vol;
+        if(weightrandom <= 0.0) {
+            fprintf(stderr,"Weight for randoms = %lf must be positive. \n", weightrandom);
+            return EXIT_FAILURE;
+        }
         results->wp[i] = (weight0/weightrandom-1)*twice_pimax;
         rlow=results->rupp[i];
     }

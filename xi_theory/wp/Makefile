@@ -1,16 +1,11 @@
-include ../../theory.options ../../common.mk
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
 
-INSTALL_HEADERS_DIR := ../../include
-INSTALL_LIB_DIR := ../../lib
-INSTALL_BIN_DIR := ../../bin
-UTILS_DIR := ../../utils
-IO_DIR := ../../io
-
-TARGET := wp
-TARGETSRC := wp.c countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c \
-          $(IO_DIR)/io.c $(IO_DIR)/ftread.c \
-          $(UTILS_DIR)/utils.c $(UTILS_DIR)/gridlink_impl_float.c $(UTILS_DIR)/gridlink_impl_double.c \
-          $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 LIBRARY := libcountpairs_wp.a 
 LIBSRC := countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c \
@@ -18,18 +13,22 @@ LIBSRC := countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c
          $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
 LIBRARY_HEADERS := countpairs_wp.h countpairs_wp_impl_double.h countpairs_wp_impl_float.h $(UTILS_DIR)/defs.h
 
-INCL   := wp_kernels_double.c wp_kernels_float.c countpairs_wp.h countpairs_wp_impl_float.h countpairs_wp_impl_double.h \
-          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h \
-          $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h \
-          $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/avx_calls.h \
-          $(UTILS_DIR)/defs.h $(UTILS_DIR)/sglib.h $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h
+TARGET := wp
+TARGETSRC := wp.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(LIBSRC)
+
+INCL   := wp_kernels_double.c wp_kernels_float.c wp_kernels.c.src countpairs_wp.h \
+          countpairs_wp_impl_float.h countpairs_wp_impl_double.h countpairs_wp_impl.h.src \
+          $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
+          $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray.h.src \
+          $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
+          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/sglib.h $(UTILS_DIR)/progressbar.h 
 
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS :=$(LIBSRC:.c=.o)
 
-all: $(TARGET) $(TARGETSRC) $(INCL) ../../theory.options ../../common.mk Makefile 
+all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-$(TARGET): $(TARGETOBJS) $(INCL) ../../theory.options ../../common.mk Makefile 
+$(TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 	$(CC) $(TARGETOBJS) $(CLINK) -o $@
 
 %_float.c: %.c.src Makefile
@@ -47,26 +46,26 @@ $(TARGET): $(TARGETOBJS) $(INCL) ../../theory.options ../../common.mk Makefile
 	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
-%_double.o: %_double.c $(INCL) ../../theory.options ../../common.mk Makefile
+%_double.o: %_double.c %_double.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 %_float.o: %_float.c %_float.h $(INCL)
 	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-countpairs_wp.o: countpairs_wp.c countpairs_wp.h countpairs_wp_impl_double.h countpairs_wp_impl_float.h ../../theory.options ../../common.mk Makefile
+countpairs_wp.o: countpairs_wp.c countpairs_wp.h countpairs_wp_impl_double.h countpairs_wp_impl_float.h $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-$(TARGET).o: $(TARGET).c ../../theory.options ../../common.mk Makefile $(INCL)
+$(TARGET).o: $(TARGET).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(INCL)
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
+%.o: %.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 
 libs: lib
 lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 
-$(LIBRARY): $(LIBOBJS) $(INCL) ../../theory.options ../../common.mk Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+$(LIBRARY): $(LIBOBJS) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 	ar rcs $@ $(LIBOBJS)
 
 $(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY)
@@ -88,7 +87,7 @@ distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
 	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 clean:
-	$(RM) $(TARGET) $(TARGETOBJS) $(LIBOBJS) $(LIBRARY) *_float.[ch] *_double.[ch]
+	$(RM) $(TARGET) $(TARGETOBJS) $(LIBOBJS) $(LIBRARY) *_float.[ch] *_double.[ch] $(UTILS_DIR)/*_float.[ch] $(UTILS_DIR)/*_double.[ch]
 
 clena: clean
 
