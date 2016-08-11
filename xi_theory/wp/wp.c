@@ -135,8 +135,6 @@ int main(int argc, char *argv[])
     options.verbose = 1;
 #ifdef OUTPUT_RPAVG    
     options.need_avg_sep = 1;
-#else
-    options.need_avg_sep = 0;
 #endif    
     results_countpairs_wp results;
     int status = countpairs_wp(ND1, x1, y1, z1,

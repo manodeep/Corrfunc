@@ -125,13 +125,9 @@ int main(int argc, char *argv[])
     options.verbose = 1;
 #ifdef OUTPUT_RPAVG    
     options.need_avg_sep = 1;
-#else
-    options.need_avg_sep = 0;
 #endif
 #ifdef PERIODIC
     options.periodic = 1;
-#else
-    options.periodic = 0;
 #endif    
     
     results_countpairs results;
