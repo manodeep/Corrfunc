@@ -1,32 +1,34 @@
-include ../../theory.options ../../common.mk
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
 
-INSTALL_HEADERS_DIR := ../../include
-INSTALL_LIB_DIR := ../../lib
-INSTALL_BIN_DIR := ../../bin
-UTILS_DIR := ../../utils
-IO_DIR := ../../io
-
-TARGET := DD
-TARGETSRC := DD.c countpairs.c countpairs_impl_float.c countpairs_impl_double.c \
-             $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
-             $(UTILS_DIR)/utils.c $(IO_DIR)/ftread.c $(IO_DIR)/io.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
-INCL   := countpairs_kernels_float.c countpairs_kernels_double.c countpairs.h countpairs_impl_double.h countpairs_impl_float.h \
-          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h \
-		      $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/avx_calls.h \
-		      $(UTILS_DIR)/defs.h $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h
-
-TARGETOBJS  := $(TARGETSRC:.c=.o)
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 LIBRARY := libcountpairs.a
-LIBSRC   := countpairs.c countpairs_impl_double.c countpairs_impl_float.c \
+LIBSRC  := countpairs.c countpairs_impl_double.c countpairs_impl_float.c \
          $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
          $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
-LIBRARY_HEADER := countpairs.h
-LIBOBJS  = $(LIBSRC:.c=.o)
+LIBRARY_HEADERS := countpairs.h countpairs_impl_double.h countpairs_impl_float.h $(UTILS_DIR)/defs.h
 
-all: $(TARGET) $(TARGETSRC) $(INCL) ../../theory.options ../../common.mk Makefile 
+TARGET := DD
+TARGETSRC := DD.c $(IO_DIR)/ftread.c $(IO_DIR)/io.c $(LIBSRC)
+INCL   := countpairs_kernels_float.c countpairs_kernels_double.c countpairs_kernels.c.src countpairs_impl.c.src countpairs_impl.h.src \
+          countpairs.h countpairs_impl_double.h countpairs_impl_float.h \
+          $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
+          $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray.h.src \
+	  $(UTILS_DIR)/function_precision.h  $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
+	  $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
+          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/progressbar.h 
 
-$(TARGET): $(TARGETOBJS) $(INCL) ../../theory.options ../../common.mk Makefile 
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+LIBOBJS  := $(LIBSRC:.c=.o)
+
+all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+
+$(TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 	$(CC) $(TARGETOBJS) $(CLINK) -o $@
 
 %_float.c: %.c.src Makefile
@@ -43,30 +45,30 @@ $(TARGET): $(TARGETOBJS) $(INCL) ../../theory.options ../../common.mk Makefile
 	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
-%_double.o: %_double.c $(INCL) ../../theory.options ../../common.mk Makefile
+%_double.o: %_double.c %_double.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 %_float.o: %_float.c %_float.h $(INCL)
 	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-$(TARGET).o: $(TARGET).c ../../theory.options ../../common.mk Makefile
+$(TARGET).o: $(TARGET).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-countpairs.o: countpairs.c countpairs.h countpairs_impl_double.h countpairs_impl_float.h ../../theory.options ../../common.mk Makefile
+countpairs.o: countpairs.c countpairs.h countpairs_impl_double.h countpairs_impl_float.h $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-%.o: %.c %.h $(INCL) ../../theory.options ../../common.mk Makefile
+%.o: %.c %.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 libs: lib
 lib:  $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR)
 
-$(LIBRARY): $(LIBOBJS) $(INCL) ../../theory.options ../../common.mk Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+$(LIBRARY): $(LIBOBJS) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 	ar rcs $@ $(LIBOBJS)
 
 $(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY)
 	cp -p $< $@
-	cp -p $(LIBRARY_HEADER) $(INSTALL_HEADERS_DIR)/
+	cp -p $(LIBRARY_HEADERS) $(INSTALL_HEADERS_DIR)/
 
 .PHONY: clean clena celan install lib tests distclean all
 
@@ -79,11 +81,11 @@ $(INSTALL_BIN_DIR)/$(TARGET): $(TARGET)
 	cp -p $< $@
 
 distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
-	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADER)
+	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 clean:
-	$(RM) $(TARGET) $(TARGETOBJS) $(LIBOBJS) $(LIBRARY)  *_float.[ch] *_double.[ch]
+	$(RM) $(TARGET) $(TARGETOBJS) $(LIBOBJS) $(LIBRARY)  *_float.[ch] *_double.[ch] $(UTILS_DIR)/*_double.[ch] $(UTILS_DIR)/*_float.[ch]
 
 clena: clean
 celan: clean
