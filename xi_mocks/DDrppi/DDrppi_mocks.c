@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     binfile=argv[5];
 
     pimax=40.0;
-    sscanf(argv[6],"%"DOUBLE_FORMAT,&pimax) ;
+    sscanf(argv[6],"%"REAL_FORMAT,&pimax) ;
     cosmology = atoi(argv[7]);
 
 #if defined(USE_OMP) && defined(_OPENMP)

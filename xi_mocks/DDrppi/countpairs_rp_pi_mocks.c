@@ -79,7 +79,7 @@ void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz)
             fprintf(stderr,"countpairs_mocks> Out of range values found for dec. Expected dec to be in the range [-90.0,90.0]. Found dec values in [0,180] -- fixing that\n");
         }
         if(fix_cz == 1)  {
-            fprintf(stderr,"countpairs_mocks> Out of range values found for cz. Expected input to be `cz' but found `z' instead. max_cz (found in input) = %"DOUBLE_FORMAT" threshold = %"DOUBLE_FORMAT"\n",max_cz,max_cz_threshold);
+            fprintf(stderr,"countpairs_mocks> Out of range values found for cz. Expected input to be `cz' but found `z' instead. max_cz (found in input) = %"REAL_FORMAT" threshold = %"REAL_FORMAT"\n",max_cz,max_cz_threshold);
         }
 
         for(int64_t i=0;i<N;i++) {
