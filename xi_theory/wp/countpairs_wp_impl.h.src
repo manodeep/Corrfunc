@@ -25,9 +25,9 @@ extern "C" {
                                     ,DOUBLE *src_rpavg
                                     ,uint64_t *src_npairs);
 
-  wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
+  extern wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
 
-  int countpairs_wp_DOUBLE(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
+  extern int countpairs_wp_DOUBLE(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
                            const double boxsize,
                            const int numthreads,
                            const char *binfile,
