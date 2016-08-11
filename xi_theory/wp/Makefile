@@ -1,6 +1,5 @@
 include ../../theory.options ../../common.mk
 
-
 INSTALL_HEADERS_DIR := ../../include
 INSTALL_LIB_DIR := ../../lib
 INSTALL_BIN_DIR := ../../bin
@@ -17,7 +16,7 @@ LIBRARY := libcountpairs_wp.a
 LIBSRC := countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c \
          $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
          $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
-LIBRARY_HEADER := countpairs_wp.h 
+LIBRARY_HEADERS := countpairs_wp.h countpairs_wp_impl_double.h countpairs_wp_impl_float.h $(UTILS_DIR)/defs.h
 
 INCL   := wp_kernels_double.c wp_kernels_float.c countpairs_wp.h countpairs_wp_impl_float.h countpairs_wp_impl_double.h \
           $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h \
@@ -72,7 +71,7 @@ $(LIBRARY): $(LIBOBJS) $(INCL) ../../theory.options ../../common.mk Makefile | $
 
 $(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY)
 	cp -p $< $@
-	cp -p $(LIBRARY_HEADER) $(INSTALL_HEADERS_DIR)/
+	cp -p $(LIBRARY_HEADERS) $(INSTALL_HEADERS_DIR)/
 
 .PHONY: clean clena celan install lib tests distclean all
 
@@ -85,7 +84,7 @@ $(INSTALL_BIN_DIR)/$(TARGET): $(TARGET)
 	cp -p $< $@
 
 distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
-	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADER)
+	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 clean:
