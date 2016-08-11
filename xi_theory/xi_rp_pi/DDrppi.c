@@ -53,12 +53,11 @@ int main(int argc, char *argv[])
     DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
     DOUBLE *x2=NULL,*y2=NULL,*z2=NULL;//will point to x1/y1/z1 in case of auto-corr
 
-
+    int nthreads=1;
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
     const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax"};
 #else
-    int nthreads=2;
     const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","Nthreads"};
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
@@ -100,9 +99,12 @@ int main(int argc, char *argv[])
 #endif
 
 
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     nthreads=atoi(argv[7]);
-    assert(nthreads >= 1 && "Number of threads must be at least 1");
+    if(nthreads < 1 ) {
+        fprintf(stderr, "Nthreads = %d must be at least 1. Exiting...\n", nthreads);
+        return EXIT_FAILURE;
+    }
 #endif
 
 
@@ -146,23 +148,39 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs_rp_pi results = countpairs_rp_pi(ND1,x1,y1,z1,
-                                                        ND2,x2,y2,z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                        nthreads,
-#endif
-                                                        autocorr,
-                                                        binfile,
-                                                        pimax);
+    results_countpairs_rp_pi results;
+    struct config_options options;
+    memset(&options, 0, sizeof(struct config_options));
+    options.verbose = 1;
+    options.float_type = sizeof(DOUBLE);
+#ifdef PERIODIC
+    options.periodic = 1;
+#endif    
+    
+#ifdef OUTPUT_RPAVG
+    options.need_avg_sep = 1;
+#endif    
+    
+    int status = countpairs_rp_pi(ND1,x1,y1,z1,
+                                  ND2,x2,y2,z2,
+                                  nthreads,
+                                  autocorr,
+                                  binfile,
+                                  pimax,
+                                  &results,
+                                  &options);
 
-
-
-    gettimeofday(&t1,NULL);
-    double pair_time = ADD_DIFF_TIME(t0,t1);
     free(x1);free(y1);free(z1);
     if(autocorr == 0) {
         free(x2);free(y2);free(z2);
     }
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+
+    gettimeofday(&t1,NULL);
+    double pair_time = ADD_DIFF_TIME(t0,t1);
 
     const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
     const int npibin = results.npibin;
