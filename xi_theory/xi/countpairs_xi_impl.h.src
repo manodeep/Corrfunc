@@ -1,0 +1,37 @@
+/* File: countpairs_xi_impl.h.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdint.h> //for uint64_t
+
+#include "countpairs_xi.h" //definition of struct results_countpairs_xi (and config_options from defs.h included)
+
+    typedef int (*xi_func_ptr_DOUBLE)(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
+                                      const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                                      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                      ,DOUBLE *src_rpavg
+                                      ,uint64_t *src_npairs);
+
+    extern xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
+
+    extern int countpairs_xi_DOUBLE(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
+                                    const double boxsize,
+                                    const int numthreads,
+                                    const char *binfile,
+                                    results_countpairs_xi *results,     
+                                    const struct config_options *in_options);
+
+#ifdef __cplusplus
+}
+#endif
