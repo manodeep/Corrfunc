@@ -13,7 +13,7 @@ LIBRARY := libcountpairs_rp_pi.a
 LIBSRC  := countpairs_rp_pi.c countpairs_rp_pi_impl_double.c countpairs_rp_pi_impl_float.c \
          $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
          $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
-LIBRARY_HEADERS := countpairs_rp_pi.h countpairs_rp_pi_impl_double.h countpairs_rp_pi_impl_float.h $(UTILS_DIR)/defs.h
+LIBRARY_HEADERS := countpairs_rp_pi.h
 
 TARGETSRC := DDrppi.c $(IO_DIR)/ftread.c $(IO_DIR)/io.c $(LIBSRC)
 WPRPSRC := wprp.c $(UTILS_DIR)/utils.c
@@ -60,29 +60,29 @@ $(TARGET).o: $(TARGET).c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.m
 %_float.o: %_float.c %_float.h $(INCL)
 	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-countpairs_rp_pi.o: countpairs_rp_pi.c countpairs_rp_pi.h countpairs_rp_pi_impl_double.h countpairs_rp_pi_impl_float.h $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
 %.o: %.c %.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 libs: lib
-lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR)
+lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 
 $(LIBRARY): $(LIBOBJS) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 	ar rcs $@ $(LIBOBJS)
 
-$(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY)
+$(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY) $(INSTALL_HEADERS_DIR)/defs.h | $(INSTALL_LIB_DIR)
 	cp -p $< $@
 	cp -p $(LIBRARY_HEADERS) $(INSTALL_HEADERS_DIR)/
+
+$(INSTALL_HEADERS_DIR)/%.h: $(UTILS_DIR)/%.h | $(INSTALL_HEADERS_DIR)
+	cp -p $< $(INSTALL_HEADERS_DIR)/
 
 $(INSTALL_LIB_DIR) $(INSTALL_BIN_DIR) $(INSTALL_HEADERS_DIR):
 	mkdir -p $@
 
-install: $(INSTALL_BIN_DIR)/DDrppi $(INSTALL_BIN_DIR)/wprp | $(INSTALL_BIN_DIR)
-
 $(INSTALL_BIN_DIR)/%: % | $(INSTALL_BIN_DIR)
 	cp -p $< $(INSTALL_BIN_DIR)/
+
+install: $(INSTALL_BIN_DIR)/DDrppi $(INSTALL_BIN_DIR)/wprp | $(INSTALL_BIN_DIR)
 
 .PHONY: clean clena celan install lib tests distclean
 
@@ -94,7 +94,7 @@ celan: celan
 
 distclean:clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
 	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY)
-	cd $(LIBRARY_HEADERS) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
 	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGETS)
 
 tests: 
