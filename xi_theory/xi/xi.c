@@ -117,8 +117,14 @@ int main(int argc, char *argv[])
     gettimeofday(&t0,NULL);
     results_countpairs_xi results;
     struct config_options options;
+    memset(&options, 0, sizeof(struct config_options));
     options.verbose=1;
     options.float_type = sizeof(DOUBLE);
+    options.periodic=1;
+#ifdef OUTPUT_RPAVG
+    options.need_avg_sep = 1;
+#endif    
+    
     int status = countpairs_xi(ND1, x1, y1, z1,
                                boxsize,
                                nthreads,
