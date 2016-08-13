@@ -1,10 +1,31 @@
-include ../../theory.options ../../common.mk
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
+
+THEORY_DIR := $(ROOT_DIR)/xi_theory
+DD_DIR := $(THEORY_DIR)/xi_of_r
+DDrppi_DIR := $(THEORY_DIR)/xi_rp_pi
+WP_DIR := $(THEORY_DIR)/wp
+XI_DIR := $(THEORY_DIR)/xi
+VPF_DIR := $(THEORY_DIR)/vpf
+
+DD_LIB := countpairs
+DDrppi_LIB := countpairs_rp_pi
+WP_LIB := countpairs_wp
+XI_LIB := countpairs_xi
+VPF_LIB := countspheres
+
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 PROJECT := _countpairs
 LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
-SOURCES := _countpairs.c 
+SOURCES := $(PROJECT).c 
 OBJECTS := $(SOURCES:.c=.o)
-C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a
+C_LIBRARY := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
+             $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
 PHONY_FIX_PY_LINK := 
 
 ifeq ($(FIX_PYTHON_LINK), 1)
@@ -19,14 +40,14 @@ endif
 
 
 
-all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../theory.options ../../common.mk Makefile | ../../lib
+all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(ROOT_DIR)/lib
 
-$(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
+$(LIBRARY): $(SOURCES) $(OBJECTS) $(C_LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARY) $(OBJECTS) | $(ROOT_DIR)/lib
 	$(CC) $(OBJECTS) $(C_LIBRARY) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 	$(RM) $(PROJECT).so
 	ln -s $(LIBRARY) $(PROJECT).so
 
-sharedlib: $(LIBRARY) | ../../lib
+sharedlib: $(LIBRARY) | $(ROOT_DIR)/lib
 	@{ \
 		CURRENT_PYTHON_LIB=`otool -L $(LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
 		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
@@ -37,43 +58,31 @@ sharedlib: $(LIBRARY) | ../../lib
 	}
 
 
-../../lib:
-	mkdir -p ../../lib
+$(ROOT_DIR)/lib:
+	mkdir -p $(ROOT_DIR)/lib
 
-../../lib/libcountpairs.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi_of_r lib
+$(C_LIBRARY):
+	$(MAKE) -C ../ libs
 
-../../lib/libcountpairs_rp_pi.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi_rp_pi lib
+%.o: %.c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARY)
+	$(CC) $(OPT) $(CFLAGS) -I$(ROOT_DIR)/include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
-../../lib/libcountpairs_wp.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../wp lib
+install: $(PHONY_FIX_PY_LINK) $(ROOT_DIR)/lib/$(LIBRARY) | $(ROOT_DIR)/lib
 
-../../lib/libcountpairs_xi.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi lib
-
-../../lib/libcountspheres.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../vpf lib
-
-%.o: %.c ../../theory.options ../../common.mk Makefile $(C_LIBRARY)
-	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
-
-install: $(PHONY_FIX_PY_LINK) ../../lib/$(LIBRARY) | ../../lib
-
-../../lib/$(LIBRARY): $(LIBRARY)
-	cp -p $(LIBRARY) ../../lib/
-	$(RM) ../../lib/$(PROJECT).so
-	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
+$(ROOT_DIR)/lib/$(LIBRARY): $(LIBRARY)
+	cp -p $(LIBRARY) $(ROOT_DIR)/lib/
+	$(RM) $(ROOT_DIR)/lib/$(PROJECT).so
+	ln -s $(LIBRARY) $(ROOT_DIR)/lib/$(PROJECT).so
 
 
-tests: $(PHONY_FIX_PY_LINK) $(LIBRARY) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
+tests: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARY) $(OBJECTS) | $(ROOT_DIR)/lib
 	python call_correlation_functions.py
 
-distclean: clean | ../../lib
-	$(RM) ../../lib/$(LIBRARY)
-	$(RM) ../../lib/$(PROJECT).so
+distclean: clean | $(ROOT_DIR)/lib
+	$(RM) $(ROOT_DIR)/lib/$(LIBRARY)
+	$(RM) $(ROOT_DIR)/lib/$(PROJECT).so
 
-.PHONY: clean celna clena celan install distclean sharedlib
+.PHONY: clean celna clena celan install distclean sharedlib 
 
 clean:
 	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so

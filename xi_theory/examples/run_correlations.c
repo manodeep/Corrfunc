@@ -123,6 +123,11 @@ int main(int argc, char **argv)
     DOUBLE *z2 = z1;
     int64_t ND2 = ND1;
 
+    struct config_options options;
+    options.verbose = 1;
+    options.periodic = 1;
+    options.float_type = sizeof(DOUBLE);
+    
     //Do the DD(rp, pi) counts
     {
         gettimeofday(&t0,NULL);
@@ -134,15 +139,19 @@ int main(int argc, char **argv)
                 "../xi_rp_pi/DDrppi",file,fileformat,file,fileformat,binfile,pimax);
 #endif
 
-        results_countpairs_rp_pi results = countpairs_rp_pi(ND1,x1,y1,z1,
-                                                             ND2,x2,y2,z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                             nthreads,
-#endif
-                                                             autocorr,
-                                                             binfile,
-                                                             pimax);
-
+        results_countpairs_rp_pi results;
+        int status = countpairs_rp_pi(ND1,x1,y1,z1,
+                                      ND2,x2,y2,z2,
+                                      nthreads,
+                                      autocorr,
+                                      binfile,
+                                      pimax,
+                                      &results,
+                                      &options);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+        
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
@@ -174,14 +183,19 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s'" ANSI_COLOR_RESET "\n",
                 "../xi_of_r/DD",file,fileformat,file,fileformat,binfile);
 #endif
+        
+        results_countpairs results;
+        int status = countpairs(ND1,x1,y1,z1,
+                                ND2,x2,y2,z2,
+                                nthreads,
+                                autocorr,
+                                binfile,
+                                &results,
+                                &options);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
 
-        results_countpairs results = countpairs(ND1,x1,y1,z1,
-                                                ND2,x2,y2,z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                nthreads,
-#endif
-                                                autocorr,
-                                                binfile);
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
@@ -210,7 +224,6 @@ int main(int argc, char **argv)
                 "../wp/wp",boxsize,file,fileformat,binfile,pimax);
 #endif
         results_countpairs_wp results;
-        struct config_options options;
         options.need_avg_sep = 1;
         options.verbose = 1;
         options.float_type = sizeof(DOUBLE);
@@ -252,13 +265,16 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent xi calculation would be:\n `%s %lf %s %s %s'" ANSI_COLOR_RESET "\n",
                 "../xi/xi",boxsize,file,fileformat,binfile);
 #endif
-        results_countpairs_xi results = countpairs_xi(ND1,x1,y1,z1,
-                                                       boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                       nthreads,
-#endif
-                                                       binfile);
-
+        results_countpairs_xi results;
+        int status = countpairs_xi(ND1,x1,y1,z1,
+                                   boxsize,
+                                   nthreads,
+                                   binfile,
+                                   &results,
+                                   &options);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
@@ -288,12 +304,17 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent vpf calculation would be:\n `%s %lf %d %d %d %s %s %ld'" ANSI_COLOR_RESET "\n",
                 "../vpf/vpf",rmax,nbin,nc,num_pN,file,fileformat,seed);
 
-        results_countspheres results = countspheres(ND1, x1, y1, z1,
-                                                     rmax, nbin, nc,
-                                                     num_pN,
-                                                     seed);
-
-
+        results_countspheres results;
+        int status = countspheres(ND1, x1, y1, z1,
+                                  rmax, nbin, nc,
+                                  num_pN,
+                                  seed,
+                                  &results,
+                                  &options);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+        
         gettimeofday(&t1,NULL);
         double sphere_time = ADD_DIFF_TIME(t0,t1);
 

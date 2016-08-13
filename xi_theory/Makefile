@@ -1,6 +1,6 @@
 include ../theory.options ../common.mk
 
-targets:=dirs DD DDrppi wp xi vpf examples 
+targets:=dirs DD DDrppi wp xi vpf examples
 
 ifneq ($(COMPILE_PYTHON_EXT), 0)
   PYTHON_DIR := python_bindings
@@ -11,9 +11,8 @@ endif
 
 all: $(targets) $(PYTHON_DIR) logbins
 
-OBJS1= logbins.o ../utils/utils.o 
-logbins: $(OBJS1)  | dirs 
-	$(CC) $(OBJS1) $(CLINK) -o $@
+logbins: logbins.c | dirs 
+	$(CC) $(CFLAGS) $< $(CLINK) -o $@
 
 %.o: %.c Makefile ../common.mk ../theory.options
 	$(CC) $(CFLAGS) -c $< -o $@ 
@@ -67,7 +66,8 @@ realclean:
 	$(MAKE) -C tests clean
 
 clean:
-	$(RM) logbins $(OBJS1) 
+	$(RM) logbins
+	$(RM) -R *.dSYM
 	$(MAKE) -C xi_of_r clean
 	$(MAKE) -C xi_rp_pi clean
 	$(MAKE) -C wp clean

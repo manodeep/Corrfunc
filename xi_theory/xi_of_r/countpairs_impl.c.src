@@ -102,14 +102,15 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
                       const int autocorr,
                       const char *binfile,
                       results_countpairs *results,
-                      const struct config_options *options)
+                      const struct config_options *input_options)
 {
 
-  if(options->float_type != sizeof(DOUBLE)) {
-    fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
-            __FUNCTION__, sizeof(DOUBLE), options->float_type);
-    return EXIT_FAILURE;
-  }
+
+#if defined(_OPENMP)
+    omp_set_num_threads(numthreads);
+#else
+    (void) numthreads;
+#endif    
   
   int bin_refine_factor=1;
   if(autocorr==1) {
@@ -131,6 +132,15 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
   }
 #endif
 
+
+  struct config_options options = *input_options;
+  options.sort_on_z = 1;
+  if(options.float_type != sizeof(DOUBLE)) {
+    fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
+            __FUNCTION__, sizeof(DOUBLE), options.float_type);
+    return EXIT_FAILURE;
+  }
+  
   /***********************
    *initializing the  bins
    ************************/
@@ -151,16 +161,16 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
   get_max_min_DOUBLE(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
 
   if(autocorr==0) {
-    if(options->verbose) {
+    if(options.verbose) {
       fprintf(stderr,"ND1 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
     }
     get_max_min_DOUBLE(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
-    if(options->verbose) {
+    if(options.verbose) {
       fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);
     }
   }
 
-  if(options->verbose) {
+  if(options.verbose) {
     fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
     fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
     fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
@@ -168,7 +178,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
 
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, &options);
   if(lattice1 == NULL) {
     return EXIT_FAILURE;
   }
@@ -176,7 +186,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
         bin_refine_factor *=2;
         free(lattice1);
-        lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+        lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, &options);
         if(lattice1 == NULL) {
           return EXIT_FAILURE;
         }
@@ -185,7 +195,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     cellarray_index_particles_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
+        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z, &options);
         if(lattice2 == NULL) {
           return EXIT_FAILURE;
         }
@@ -199,19 +209,19 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
-    const DOUBLE xdiff = (xmax-xmin);
-    const DOUBLE ydiff = (ymax-ymin);
-    const DOUBLE zdiff = (zmax-zmin);
+    const DOUBLE xdiff = options.boxsize > 0 ? options.boxsize:(xmax-xmin);
+    const DOUBLE ydiff = options.boxsize > 0 ? options.boxsize:(ymax-ymin);
+    const DOUBLE zdiff = options.boxsize > 0 ? options.boxsize:(zmax-zmin);
     const DOUBLE pimax = (DOUBLE) rpmax;
     
     //Generate the unique set of neighbouring cells to count over. 
     assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
                                             bin_refine_factor, bin_refine_factor, bin_refine_factor,
                                             nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff,
-                                            autocorr, options->periodic);
+                                            autocorr, options.periodic);
 
     /* runtime dispatch - get the function pointer */
-    countpairs_func_ptr_DOUBLE countpairs_function_DOUBLE = countpairs_driver_DOUBLE(options);
+    countpairs_func_ptr_DOUBLE countpairs_function_DOUBLE = countpairs_driver_DOUBLE(&options);
     if(countpairs_function_DOUBLE == NULL) {
       return EXIT_FAILURE;
     }
@@ -221,7 +231,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     omp_set_num_threads(numthreads);
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbin);
     DOUBLE **all_rpavg = NULL;
-    if(options->need_avg_sep) {
+    if(options.need_avg_sep) {
       all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nrpbin);
     }
 #else
@@ -229,7 +239,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     DOUBLE rpavg[nrpbin];
     for(int i=0; i < nrpbin;i++) {
       npairs[i] = 0;
-      if(options->need_avg_sep) {
+      if(options.need_avg_sep) {
         rpavg = (DOUBLE) 0.0;
       }
     }
@@ -246,7 +256,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     int abort_status = EXIT_SUCCESS;
     int interrupted=0;
     int64_t numdone=0;
-    if(options->verbose) {
+    if(options.verbose) {
       init_my_progressbar(totncells,&interrupted);
     }
 
@@ -259,7 +269,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
       DOUBLE rpavg[nrpbin];//thread-level, stored on stack
       for(int i=0;i<nrpbin;i++) {
         npairs[i] = 0;
-        if(options->need_avg_sep) {
+        if(options.need_avg_sep) {
           rpavg[i] = 0.0;
         }
       }
@@ -274,7 +284,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
 #endif
         if(abort_status == EXIT_SUCCESS) { //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
             /* If the verbose option is not enabled, avoid outputting anything unnecessary*/            
-          if(options->verbose) {
+          if(options.verbose) {
 #if defined(_OPENMP)
             if (omp_get_thread_num() == 0)
 #endif
@@ -299,7 +309,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
           if(autocorr == 1) {
               int same_cell = 1;
               DOUBLE *this_rpavg = NULL;
-              if(options->need_avg_sep) {
+              if(options.need_avg_sep) {
                   this_rpavg = rpavg;
               }
               const int status = countpairs_function_DOUBLE(N1, x1, y1, z1,
@@ -328,14 +338,14 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
             DOUBLE *y2 = second->y;
             DOUBLE *z2 = second->z;
             DOUBLE off_xwrap = 0.0, off_ywrap = 0.0, off_zwrap = 0.0;
-            if(options->periodic) {
+            if(options.periodic) {
               off_xwrap = first->xwrap[ngb];
               off_ywrap = first->ywrap[ngb];
               off_zwrap = first->zwrap[ngb];
             }
             const int64_t N2 = second->nelements;
             DOUBLE *this_rpavg = NULL;
-            if(options->need_avg_sep) {
+            if(options.need_avg_sep) {
                 this_rpavg = rpavg;
             }
             const int status = countpairs_function_DOUBLE(N1, x1, y1, z1,
@@ -357,14 +367,14 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
 #if defined(_OPENMP)
       for(int j=0;j<nrpbin;j++) {
         all_npairs[tid][j] = npairs[j];
-        if(options->need_avg_sep) {
+        if(options.need_avg_sep) {
           all_rpavg[tid][j] = rpavg[j];
         }
       }
     }//close the omp parallel region
 #endif
 
-    if(options->verbose) {
+    if(options.verbose) {
       finish_myprogressbar(&interrupted);
     }
     free_cellarray_index_particles_DOUBLE(lattice1, totncells);
@@ -377,7 +387,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
       free(rupp);
 #if defined(_OPENMP)
       matrix_free((void **) all_npairs, numthreads);
-      if(options->need_avg_sep) {
+      if(options.need_avg_sep) {
         matrix_free((void **) all_rpavg, numthreads);
       }
 #endif
@@ -389,7 +399,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     DOUBLE rpavg[nrpbin];
     for(int i=0;i<nrpbin;i++) {
       npairs[i] = 0;
-      if(options->need_avg_sep) {
+      if(options.need_avg_sep) {
         rpavg[i] = 0.0;
       }
     }
@@ -397,13 +407,13 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     for(int i=0;i<numthreads;i++) {
       for(int j=0;j<nrpbin;j++) {
         npairs[j] += all_npairs[i][j];
-        if(options->need_avg_sep) {
+        if(options.need_avg_sep) {
           rpavg[j] += all_rpavg[i][j];
         }
       }
     }
     matrix_free((void **) all_npairs, numthreads);
-    if(options->need_avg_sep) {
+    if(options.need_avg_sep) {
       matrix_free((void **) all_rpavg, numthreads);
     }
 #endif
@@ -417,14 +427,14 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
       
       for(int i=0;i<nrpbin;i++) {
         npairs[i] *= int_fac;
-        if(options->need_avg_sep) {
+        if(options.need_avg_sep) {
           rpavg[i] *= dbl_fac;
         }
       }
     }
     
 
-    if(options->need_avg_sep) {
+    if(options.need_avg_sep) {
       for(int i=0;i<nrpbin;i++) {
         if(npairs[i] > 0) {
           rpavg[i] /= (DOUBLE) npairs[i] ;
@@ -442,7 +452,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
       results->npairs[i] = npairs[i];
       results->rupp[i] = rupp[i];
       results->rpavg[i] = 0.0;
-      if(options->need_avg_sep) {
+      if(options.need_avg_sep) {
         results->rpavg[i] = rpavg[i];
       }
     }

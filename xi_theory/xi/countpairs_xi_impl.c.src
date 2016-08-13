@@ -105,11 +105,15 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                          const struct config_options *input_options)
 {
 
-#if !defined(_OPENMP)
+#if defined(_OPENMP)
+    omp_set_num_threads(numthreads);
+#else    
     (void) numthreads;
 #endif
     struct config_options options = *input_options;
     options.periodic = 1;
+    options.autocorr = 1;
+    options.sort_on_z = 1;
     if(options.float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
                 __FUNCTION__, sizeof(DOUBLE), options.float_type);
@@ -154,9 +158,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         }
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-    const int autocorr = 1;
-    const int periodic = 1;
-    assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, bin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, autocorr, periodic);
+    assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, bin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options.autocorr, options.periodic);
 
     /* runtime dispatch - get the function pointer */
     xi_func_ptr_DOUBLE xi_function_DOUBLE = xi_driver_DOUBLE(&options);
@@ -166,7 +168,6 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 
     
 #if defined(_OPENMP)
-    omp_set_num_threads(numthreads);
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nbins);
     DOUBLE **all_ravg = NULL;
     if(options.need_avg_sep) {
@@ -361,14 +362,13 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     //and the ravg array contain the *SUM* of separations
     //Let's divide out ravg by npairs to actually get
     //the mean ravg
-
-#ifdef OUTPUT_RPAVG
-    for(int i=0;i<nbins;i++) {
-        if(npairs[i] > 0) {
-            ravg[i] /= (DOUBLE) npairs[i] ;
+    if(options.need_avg_sep) {
+        for(int i=0;i<nbins;i++) {
+            if(npairs[i] > 0) {
+                ravg[i] /= (DOUBLE) npairs[i] ;
+            }
         }
     }
-#endif
 
     //Pack in the results
     results->nbin = nbins;

@@ -6,8 +6,13 @@
   directory at https://github.com/manodeep/Corrfunc/
 */
 
-#include "io.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stddef.h>
 
+#include "io.h"
+#include "utils.h"
 
 #ifndef MEMORY_INCREASE_FAC
 #define MEMORY_INCREASE_FAC 1.1

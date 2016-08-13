@@ -105,11 +105,16 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                          const struct config_options *input_options)
 {
 
-#if !defined(_OPENMP)
+#if defined(_OPENMP)
+    omp_set_num_threads(numthreads);
+#else
     (void) numthreads;
 #endif    
+
     struct config_options options = *input_options;
     options.periodic = 1;
+    options.sort_on_z = 1;
+    options.autocorr = 1;
     if(options.float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
                 __FUNCTION__, sizeof(DOUBLE), options.float_type);
@@ -162,9 +167,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         }
     }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
-    const int periodic = 1;
-    const int autocorr = 1;
-    assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, autocorr, periodic);
+    assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options.autocorr, options.periodic);//options.autocorr == 1 and options.periodic == 1
 
     /* runtime dispatch - get the function pointer */
     wp_func_ptr_DOUBLE wp_function_DOUBLE = wp_driver_DOUBLE(&options);
@@ -173,8 +176,6 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     }
     
 #if defined(_OPENMP)
-    //openmp specific constructs
-    omp_set_num_threads(numthreads);
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbins);
     DOUBLE **all_rpavg = NULL;
     if(options.need_avg_sep) {

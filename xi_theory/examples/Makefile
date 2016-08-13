@@ -1,43 +1,61 @@
-include ../../theory.options ../../common.mk
+ROOT_DIR := ../..
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
+INCLUDE_DIR := $(ROOT_DIR)/include
+LIB_DIR := $(ROOT_DIR)/lib
+DATA_DIR := ../tests/data
 
-target := run_correlations
+THEORY_DIR := $(ROOT_DIR)/xi_theory
+DD_DIR := $(THEORY_DIR)/xi_of_r
+DDrppi_DIR := $(THEORY_DIR)/xi_rp_pi
+WP_DIR := $(THEORY_DIR)/wp
+XI_DIR := $(THEORY_DIR)/xi
+VPF_DIR := $(THEORY_DIR)/vpf
 
-SRC1   := run_correlations.c ../../io/ftread.c ../../io/io.c  ../../utils/utils.c ../../utils/progressbar.c 
-OBJS1  := $(SRC1:.c=.o)
-C_LIBRARIES := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a 
+DD_LIB := countpairs
+DDrppi_LIB := countpairs_rp_pi
+WP_LIB := countpairs_wp
+XI_LIB := countpairs_xi
+VPF_LIB := countspheres
 
-INCL :=	../../include/countpairs.h ../../include/countpairs_rp_pi.h ../../include/countpairs_wp.h ../../include/countpairs_xi.h ../../include/countspheres.h \
-		../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
-		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h ../../utils/progressbar.h 
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
-all: $(target) $(SRC1) $(INCL) $(C_LIBRARIES) ../../theory.options ../../common.mk Makefile uncompress
+TARGET := run_correlations
+TARGETSRC   := run_correlations.c $(IO_DIR)/ftread.c $(IO_DIR)/io.c  $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c 
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+C_LIBRARY := $(LIB_DIR)/lib$(DD_LIB).a $(LIB_DIR)/lib$(DDrppi_LIB).a $(LIB_DIR)/lib$(WP_LIB).a \
+             $(LIB_DIR)/lib$(XI_LIB).a $(LIB_DIR)/lib$(VPF_LIB).a
 
-$(target): Makefile ../../theory.options ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
-	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) -o $@
+INCL :=	$(INCLUDE_DIR)/$(DD_LIB).h $(INCLUDE_DIR)/$(DDrppi_LIB).h $(INCLUDE_DIR)/$(WP_LIB).h $(INCLUDE_DIR)/$(XI_LIB).h $(INCLUDE_DIR)/$(VPF_LIB).h \
+	$(UTILS_DIR)/defs.h 
 
-../../include/countpairs.h ../../lib/libcountpairs.a: ../../theory.options ../../common.mk Makefile 
-	$(MAKE) -C ../xi_of_r lib
+all: $(TARGET) $(TARGETSRC) $(INCL) $(C_LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile uncompress
 
-../../include/countpairs_rp_pi.h ../../lib/libcountpairs_rp_pi.a: ../../theory.options ../../common.mk Makefile
-	$(MAKE) -C ../xi_rp_pi lib
+$(TARGET): Makefile $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk $(INCL) $(C_LIBRARY) $(TARGETOBJS) 
+	$(CC) $(TARGETOBJS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) -o $@
 
-../../include/countpairs_wp.h ../../lib/libcountpairs_wp.a: ../../theory.options ../../common.mk Makefile
-	$(MAKE) -C ../wp lib
+$(INCLUDE_DIR)/$(DD_LIB).h $(LIB_DIR)/lib$(DD_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+	$(MAKE) -C $(DD_DIR) lib
 
-../../include/countpairs_xi.h ../../lib/libcountpairs_xi.a: ../../theory.options ../../common.mk Makefile
-	$(MAKE) -C ../xi lib
+$(INCLUDE_DIR)/$(DDrppi_LIB).h $(LIB_DIR)/lib$(DDrppi_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(MAKE) -C $(DDrppi_DIR) lib
 
-../../include/countspheres.h ../../lib/libcountspheres.a: ../../theory.options ../../common.mk Makefile
-	$(MAKE) -C ../vpf lib
+$(INCLUDE_DIR)/$(WP_LIB).h $(LIB_DIR)/lib$(WP_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(MAKE) -C $(WP_DIR) lib
 
-%.o: %.c ../../theory.options ../../common.mk Makefile
-	$(CC) $(CFLAGS) -I../../include $(OPT) $(INCLUDE) -c $< -o $@
+$(INCLUDE_DIR)/$(XI_LIB).h $(LIB_DIR)/lib$(XI_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(MAKE) -C $(XI_DIR) lib
 
-uncompress: | ../tests/data
+$(INCLUDE_DIR)/$(VPF_LIB).h $(LIB_DIR)/lib$(VPF_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(MAKE) -C $(VPF_DIR) lib
+
+%.o: %.c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) $(OPT) $(INCLUDE) -c $< -o $@
+
+uncompress: | $(DATA_DIR)
 	@{\
 		oldpwd=$$(pwd); \
-		cd ../tests/data ; \
+		cd $(DATA_DIR) ; \
 		for f in $$(ls -f *.gz 2>/dev/null) ; do \
 			gunzip $$f ; \
 		done ;\
@@ -49,7 +67,7 @@ uncompress: | ../tests/data
 clena: clean
 celan: clean
 clean:
-	$(RM) $(target) $(OBJS1) 
+	$(RM) $(TARGET) $(TARGETOBJS) 
 
 
 
