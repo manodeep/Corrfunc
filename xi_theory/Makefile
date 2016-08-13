@@ -1,6 +1,6 @@
 include ../theory.options ../common.mk
 
-targets:=dirs DD DDrppi wp xi vpf examples
+targets:=dirs DD DDrppi wp xi vpf examples 
 
 ifneq ($(COMPILE_PYTHON_EXT), 0)
   PYTHON_DIR := python_bindings
