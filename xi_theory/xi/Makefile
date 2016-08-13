@@ -31,6 +31,15 @@ all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/commo
 $(TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options Makefile 
 	$(CC) $(TARGETOBJS) $(CLINK) -o $@
 
+$(UTILS_DIR)/%.o: $(ROOT_DIR)/common.mk Makefile $(UTILS_DIR)/%.c
+	$(MAKE) -C $(UTILS_DIR)
+
+$(UTILS_DIR)/%.h: $(ROOT_DIR)/common.mk Makefile $(UTILS_DIR)/%.h.src
+	$(MAKE) -C $(UTILS_DIR)
+
+$(IO_DIR)/%.h: $(ROOT_DIR)/common.mk Makefile $(IO_DIR)/%.h.src
+	$(MAKE) -C $(IO_DIR)
+
 %_float.c: %.c.src Makefile
 	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
 	sed -e "s/DOUBLE/float/g" $< >> $@

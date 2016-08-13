@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
 
-    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+    const double dpi = pimax/(double)results.npibin ;
     const int npibin = results.npibin;
     for(int i=1;i<results.nbin;i++) {
         const double logrp = LOG10(results.rupp[i]);

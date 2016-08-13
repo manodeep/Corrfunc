@@ -16,43 +16,15 @@
 #define MAXLEN 500
 #endif
 
-#ifndef PERIODIC
-#define PERIODIC
-#endif
-
-#ifndef DOUBLE_PREC
-#define DOUBLE_PREC
-#endif
-
-#ifndef OUTPUT_RPAVG
-#define OUTPUT_RPAVG
-#endif
-
-#ifndef SILENT
-#define SILENT
-#endif
-
-#include "function_precision.h"
-#include "io.h"
 #include "defs.h"
+#include "io.h"
 #include "utils.h"
 
-//Including the C files directly
-#include "gridlink.c"
-#include "io.c"
-#include "ftread.c"
-#include "../xi_of_r/countpairs.c"
-#include "../xi_of_r/countpairs_driver.c"
-
-#include "../xi_rp_pi/countpairs_rp_pi.c"
-#include "../xi_rp_pi/countpairs_rp_pi_driver.c"
-
-#include "../wp/countpairs_wp.c"
-#include "../wp/wp_driver.c"
-
-#include "../vpf/countspheres.c"
-#include "../xi/countpairs_xi.c"
-#include "../xi/xi_driver.c"
+#include "../xi_of_r/countpairs.h"
+#include "../xi_rp_pi/countpairs_rp_pi.h"
+#include "../wp/countpairs_wp.h"
+#include "../xi/countpairs_xi.h"
+#include "../vpf/countspheres.h"
 
 char tmpoutputfile[]="./test_periodic_output.txt";
 
@@ -66,15 +38,15 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 //Global variables
 int ND1;
-DOUBLE *X1=NULL,*Y1=NULL,*Z1=NULL;
+double *X1=NULL,*Y1=NULL,*Z1=NULL;
 
 int ND2;
-DOUBLE *X2=NULL,*Y2=NULL,*Z2=NULL;
+double *X2=NULL,*Y2=NULL,*Z2=NULL;
 
 char binfile[]="bins";
-DOUBLE pimax=40.0;
+double pimax=40.0;
 double boxsize=420.0;
-#if defined(USE_OMP) && defined(_OPENMP)
+#ifdef _OPENMP
 const int nthreads=4;
 #else
 const int nthreads=1;
@@ -82,28 +54,32 @@ const int nthreads=1;
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
+const struct config_options options = {.need_avg_sep=1, .verbose=1, .periodic=1, .float_type=sizeof(double)};
 //end of global variables
-
 
 int test_periodic_DD(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
 
     //Do the straight-up DD counts
-    results_countpairs results = countpairs(ND1,X1,Y1,Z1,
-                                             ND2,X2,Y2,Z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                             nthreads,
-#endif
-                                             autocorr,
-                                             binfile);
+    results_countpairs results;
+    int status = countpairs(ND1,X1,Y1,Z1,
+                            ND2,X2,Y2,Z2,
+                            nthreads,
+                            autocorr,
+                            binfile,
+                            &results,
+                            &options);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
-    DOUBLE rlow=results.rupp[0];
+    double rlow=results.rupp[0];
     FILE *fp=NULL;
     fp=my_fopen(tmpoutputfile,"w");
     for(int i=1;i<results.nbin;i++) {
         fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
-        rlow=results.rupp[i];
+        rlow = results.rupp[i];
     }
     fclose(fp);
 
@@ -119,20 +95,25 @@ int test_periodic_DDrppi(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
 
-    results_countpairs_rp_pi results = countpairs_rp_pi(ND1,X1,Y1,Z1,
-                                                         ND2,X2,Y2,Z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                         nthreads,
-#endif
-                                                         autocorr,
-                                                         binfile,
-                                                         pimax);
+    results_countpairs_rp_pi results;
+    int status = countpairs_rp_pi(ND1,X1,Y1,Z1,
+                                  ND2,X2,Y2,Z2,
+                                  nthreads,
+                                  autocorr,
+                                  binfile,
+                                  pimax,
+                                  &results,
+                                  &options);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     const int npibin = results.npibin;
-    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+    const double dpi = pimax/(double)results.npibin ;
     FILE *fp=my_fopen(tmpoutputfile,"w");
     for(int i=1;i<results.nbin;i++) {
-        const double logrp = LOG10(results.rupp[i]);
+        const double logrp = log10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
             fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
@@ -151,9 +132,6 @@ int test_periodic_DDrppi(const char *correct_outputfile)
 int test_wp(const char *correct_outputfile)
 {
     results_countpairs_wp results;
-    struct config_options options;
-    options.need_avg_sep = 1;
-    options.float_type = sizeof(DOUBLE);
     int status = countpairs_wp(ND1,X1,Y1,Z1,
                                boxsize,
                                nthreads,
@@ -164,7 +142,7 @@ int test_wp(const char *correct_outputfile)
     if(status != EXIT_SUCCESS) {
         return status;
     }
-    DOUBLE rlow=results.rupp[0];
+    double rlow=results.rupp[0];
     FILE *fp=my_fopen(tmpoutputfile,"w");
     for(int i=1;i<results.nbin;++i) {
         fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.wp[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
@@ -187,16 +165,23 @@ int test_vpf(const char *correct_outputfile)
     const int nc = 10000;
     const int num_pN=6;
     const unsigned long seed=-1234;
-    results_countspheres results = countspheres(ND1, X1, Y1, Z1,
-                                                 rmax, nbin, nc,
-                                                 num_pN,
-                                                 seed);
+    results_countspheres results;
+    int status = countspheres(ND1, X1, Y1, Z1,
+                              rmax, nbin, nc,
+                              num_pN,
+                              seed,
+                              &results,
+                              &options);
+
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     FILE *fp=my_fopen(tmpoutputfile,"w");
-    const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+    const double rstep = rmax/(double)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
-        fprintf(fp,"%"REAL_FORMAT" ", r);
+        fprintf(fp,"%lf ", r);
         for(int i=0;i<num_pN;i++) {
             fprintf(fp," %10.4e", (results.pN)[ibin][i]);
         }
@@ -215,16 +200,21 @@ int test_vpf(const char *correct_outputfile)
 int test_xi(const char *correct_outputfile)
 {
 
-    results_countpairs_xi results = countpairs_xi(ND1,X1,Y1,Z1,
-                                                   boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                   nthreads,
-#endif
-                                                   binfile);
-    DOUBLE rlow=results.rupp[0];
+    results_countpairs_xi results;
+    int status = countpairs_xi(ND1,X1,Y1,Z1,
+                               boxsize,
+                               nthreads,
+                               binfile,
+                               &results,
+                               &options);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    double rlow=results.rupp[0];
     FILE *fp=my_fopen(tmpoutputfile,"w");
     for(int i=1;i<results.nbin;++i) {
-        fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
+        fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.ravg[i],rlow,results.rupp[i],results.npairs[i]);
         rlow=results.rupp[i];
     }
     fclose(fp);
@@ -258,7 +248,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
             Y2 = NULL;
             Z2 = NULL;
         }
-        ND1 = read_positions(firstfilename,firstformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
+        ND1 = read_positions(firstfilename,firstformat, sizeof(double), 3, &X1, &Y1, &Z1);
         strncpy(current_file1,firstfilename,MAXLEN);
     }
 
@@ -284,7 +274,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
         if(free_X2 == 1) {
             free(X2);free(Y2);free(Z2);
         }
-        ND2 = read_positions(secondfilename,secondformat, sizeof(DOUBLE), 3, &X2, &Y2, &Z2);
+        ND2 = read_positions(secondfilename,secondformat, sizeof(double), 3, &X2, &Y2, &Z2);
         strncpy(current_file2,secondfilename,MAXLEN);
     }
 }
@@ -299,7 +289,7 @@ int main(int argc, char **argv)
     gettimeofday(&tstart,NULL);
 
     //set the globals
-    ND1 = read_positions(file,fileformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
+    ND1 = read_positions(file,fileformat, sizeof(double), 3, &X1, &Y1, &Z1);
     ND2 = ND1;
     X2 = X1;
     Y2 = Y1;
@@ -323,7 +313,7 @@ int main(int argc, char **argv)
     const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
                                            "../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
     const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
-    const DOUBLE allpimax[]             = {40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
+    const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
 
     int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp,test_vpf,test_xi};
     const int numfunctions=5;//5 functions total

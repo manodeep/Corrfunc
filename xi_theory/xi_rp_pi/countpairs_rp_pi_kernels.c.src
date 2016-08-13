@@ -494,7 +494,7 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
             const DOUBLE dz = FABS((*localz1++ - zpos));
-            if(dz >= pimax) continue;
+            if(dz >= pimax) break;
             
             const DOUBLE r2 = dx*dx + dy*dy ;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;

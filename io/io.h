@@ -9,16 +9,13 @@
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h>
 #include <stdarg.h>
-#include <string.h>
-#include <stddef.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "function_precision.h"
 #include "ftread.h"
 #include "utils.h"
 

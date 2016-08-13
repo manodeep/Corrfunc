@@ -12,27 +12,29 @@
 extern "C" {
 #endif
 
-#include "function_precision.h" //for definition of DOUBLE
-#include <inttypes.h> //for uint64_t
+#include "defs.h" //struct config_options
+#include <stdint.h> //for uint64_t
 
 
 //define the results structure
 typedef struct{
-    DOUBLE **pN;
-    DOUBLE rmax;
+    double **pN;
+    double rmax;
     int nbin;
     int nc;
     int num_pN;
 } results_countspheres;
 
 
-results_countspheres countspheres(const int64_t np, const DOUBLE * restrict X, const DOUBLE * restrict Y, const DOUBLE * restrict Z,
-                                  const double rmax, const int nbin, const int nc,
-                                  const int num_pN,
-                                  unsigned long seed) __attribute__((warn_unused_result));
+    extern int countspheres(const int64_t np, void * restrict X, void * restrict Y, void * restrict Z,
+                            const double rmax, const int nbin, const int nc,
+                            const int num_pN,
+                            unsigned long seed,
+                            results_countspheres *results,
+                            const struct config_options *options);
     
-void free_results_countspheres(results_countspheres *results);
-
+    extern void free_results_countspheres(results_countspheres *results);
+    
 #ifdef __cplusplus
 }
 #endif

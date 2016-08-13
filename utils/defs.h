@@ -15,7 +15,7 @@
 #define ALIGNMENT                32
 
 typedef enum {
-    AVX,
+    AVX=0,
     SSE,
     FALLBACK
 } isa;//name for instruction sets
@@ -26,11 +26,27 @@ struct config_options
     int verbose; /* Outputs progressbar and times */
 
     int instruction_set; /* select instruction set to run on */
-    int periodic; /* count in periodic mode? flag ignored for wp/xi */
     int need_avg_sep; /* <rp> or <\theta> is required */
+    int autocorr;
+    
+    /* Options for theory*/
+    int periodic; /* count in periodic mode? flag ignored for wp/xi */
+    int sort_on_z;/* option to sort particles based on their Z co-ordinate in gridlink*/
+    double boxsize;
 
     /* Options for mocks */
-
+    //cosmology struct. Intentionally left anoynoymous, so I can
+    //directly access the fields.
+    struct{
+        double OMEGA_M;
+        double OMEGA_B;
+        double OMEGA_L;
+        double HUBBLE;
+        double LITTLE_H;
+        double SIGMA_8;
+        double NS;
+    };
+    
     /* the link_in_* variables control how the 3-D cell structure is created */
     int link_in_cz;/* Not implemented but present to enable brute-force calculation*/
     int link_ra; /* relevant for DDrppi_mocks and DDtheta_mocks.*/

@@ -16,37 +16,13 @@
 #define MAXLEN 500
 #endif
 
-#ifdef PERIODIC
-#undef PERIODIC
-#endif
-
-#ifndef DOUBLE_PREC
-#define DOUBLE_PREC
-#endif
-
-#ifndef OUTPUT_RPAVG
-#define OUTPUT_RPAVG
-#endif
-
-#ifndef SILENT
-#define SILENT
-#endif
-
-#include "function_precision.h"
-#include "io.h"
 #include "defs.h"
 #include "utils.h"
+#include "io.h"
+#include "ftread.h"
 
-
-//Including the C files directly
-#include "gridlink.c"
-#include "io.c"
-#include "ftread.c"
-#include "../xi_of_r/countpairs.c"
-#include "../xi_of_r/countpairs_driver.c"
-
-#include "../xi_rp_pi/countpairs_rp_pi.c"
-#include "../xi_rp_pi/countpairs_rp_pi_driver.c"
+#include "../xi_of_r/countpairs.h"
+#include "../xi_rp_pi/countpairs_rp_pi.h"
 
 char tmpoutputfile[]="./test_nonperiodic_output.txt";
 
@@ -56,20 +32,22 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 //Global variables
 int ND1;
-DOUBLE *X1=NULL,*Y1=NULL,*Z1=NULL;
+double *X1=NULL,*Y1=NULL,*Z1=NULL;
 
 int ND2;
-DOUBLE *X2=NULL,*Y2=NULL,*Z2=NULL;
+double *X2=NULL,*Y2=NULL,*Z2=NULL;
 
 char binfile[]="bins";
-DOUBLE pimax=40.0;
+double pimax=40.0;
 double boxsize=420.0;
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
 const int nthreads=4;
+#else
+const int nthreads=1;
 #endif
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
-
+struct config_options options = {.need_avg_sep=1, .verbose=1, .periodic=0, .float_type=sizeof(double)};
 //end of global variables
 
 
@@ -78,14 +56,19 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     int autocorr = (X1==X2) ? 1:0;
 
     //Do the straight-up DD counts
-    results_countpairs results = countpairs(ND1,X1,Y1,Z1,
-                                            ND2,X2,Y2,Z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                            nthreads,
-#endif
-                                            autocorr,
-                                            binfile);
-    DOUBLE rlow=results.rupp[0];
+    results_countpairs results;
+    int status = countpairs(ND1,X1,Y1,Z1,
+                            ND2,X2,Y2,Z2,
+                            nthreads,
+                            autocorr,
+                            binfile,
+                            &results,
+                            &options);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    double rlow=results.rupp[0];
     FILE *fp=NULL;
 
     fp=my_fopen(tmpoutputfile,"w");
@@ -107,20 +90,24 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
 
-    results_countpairs_rp_pi results = countpairs_rp_pi(ND1,X1,Y1,Z1,
-                                                        ND2,X2,Y2,Z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                        nthreads,
-#endif
-                                                        autocorr,
-                                                        binfile,
-                                                        pimax);
+    results_countpairs_rp_pi results;
+    int status = countpairs_rp_pi(ND1,X1,Y1,Z1,
+                                  ND2,X2,Y2,Z2,
+                                  nthreads,
+                                  autocorr,
+                                  binfile,
+                                  pimax,
+                                  &results,
+                                  &options);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     const int npibin = results.npibin;
-    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+    const double dpi = pimax/(double)results.npibin ;
     FILE *fp=my_fopen(tmpoutputfile,"w");
     for(int i=1;i<results.nbin;i++) {
-        const double logrp = LOG10(results.rupp[i]);
+        const double logrp = log10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
             fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
@@ -157,7 +144,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
             Y2 = NULL;
             Z2 = NULL;
         }
-        ND1 = read_positions(firstfilename,firstformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
+        ND1 = read_positions(firstfilename,firstformat, sizeof(double), 3, &X1, &Y1, &Z1);
         strncpy(current_file1,firstfilename,MAXLEN);
     }
 
@@ -183,7 +170,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
         if(free_X2 == 1) {
             free(X2);free(Y2);free(Z2);
         }
-        ND2 = read_positions(secondfilename,secondformat, sizeof(DOUBLE), 3, &X2, &Y2, &Z2);
+        ND2 = read_positions(secondfilename,secondformat, sizeof(double), 3, &X2, &Y2, &Z2);
         strncpy(current_file2,secondfilename,MAXLEN);
     }
 }
@@ -202,7 +189,7 @@ int main(int argc, char **argv)
     gettimeofday(&tstart,NULL);
 
     //set the globals
-    ND1 = read_positions(file,fileformat, sizeof(DOUBLE), 3, &X1, &Y1, &Z1);
+    ND1 = read_positions(file,fileformat, sizeof(double), 3, &X1, &Y1, &Z1);
     ND2 = ND1;
     X2 = X1;
     Y2 = Y1;
@@ -223,7 +210,7 @@ int main(int argc, char **argv)
     const char firstfiletype[][MAXLEN] = {"f","f","f"};
     const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/random_Zspace.ff"};
     const char secondfiletype[][MAXLEN] = {"f","f","f"};
-    const DOUBLE allpimax[]             = {40.0,40.0,80.0};
+    const double allpimax[]             = {40.0,40.0,80.0};
 
     int (*allfunctions[]) (const char *) = {test_nonperiodic_DD,test_nonperiodic_DDrppi};
     const int numfunctions=2;//2 functions total
