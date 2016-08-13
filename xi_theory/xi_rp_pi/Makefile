@@ -97,6 +97,7 @@ install: $(INSTALL_BIN_DIR)/DDrppi $(INSTALL_BIN_DIR)/wprp | $(INSTALL_BIN_DIR)
 
 clean:
 	$(RM) $(TARGETS) $(LIBOBJS) $(WPRPOBJS) $(LIBRARY) *_double.[ch] *_float.[ch] $(UTILS_DIR)/*_double.[ch] $(UTILS_DIR)/*_float.[ch]
+	$(RM) -R *.dSYM
 
 clena: clean
 celan: celan
