@@ -32,6 +32,12 @@ realclena:realclean
 realclean:
 	$(MAKE) -C xi_theory distclean
 	$(MAKE) -C xi_mocks distclean
+	@{\
+		if [ 0 -eq $$(ls -1 lib/lib*.a 2>/dev/null | wc -l) ]; then \
+			echo "No static libs in lib/. Removing defs.h " ;\
+			rm -f include/defs.h;\
+		fi;\
+	}
 
 clean:
 	$(MAKE) -C xi_theory clean

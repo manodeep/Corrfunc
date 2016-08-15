@@ -42,9 +42,8 @@ distclean:realclean
 distclena:realclean
 realclena:realclean
 
-realclean:
+realclean: 
 	$(RM) $(ROOT_DIR)/bin/logbins
-	$(MAKE) clean
 	$(MAKE) -C xi_of_r distclean
 	$(MAKE) -C xi_rp_pi distclean
 	$(MAKE) -C wp distclean
@@ -65,9 +64,6 @@ clean:
 	$(MAKE) -C python_bindings clean
 	$(MAKE) -C tests clean
 
-clena: clean
-celan: clean
-celna: clean
 install: $(ROOT_DIR)/bin/logbins examples $(TARGETS) $(PYTHON_EXT_DIR) 
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
