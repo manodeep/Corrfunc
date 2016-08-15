@@ -48,7 +48,6 @@ $(IO_DIR)/%.o: $(IO_DIR)/%.c $(ROOT_DIR)/common.mk Makefile
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
 %.o: %.c $(INCL) $(ROOT_DIR)/common.mk Makefile
-	@echo running default make rule
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 $(LIBRARY): $(LIBOBJS) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
