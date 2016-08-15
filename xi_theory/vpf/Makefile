@@ -56,7 +56,7 @@ $(GSL_TARGET).o: $(GSL_TARGET).c $(ROOT_DIR)/common.mk Makefile $(INCL)
 install: $(INSTALL_BIN_DIR)/$(GSL_TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
 
 clean:
-	$(RM) $(TARGETOBJS) $(GSL_TARGET) vpf_kernels_float.[ch] vpf_kernels_float_double.[ch
+	$(RM) $(TARGETOBJS) $(GSL_TARGET) vpf_kernels_float.[ch] vpf_kernels_double.[ch] countspheres_impl_double.[ch] countspheres_impl_float.[ch]
 	$(MAKE) -C $(UTILS_DIR) clean
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
