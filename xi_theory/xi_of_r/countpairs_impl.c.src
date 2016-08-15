@@ -12,6 +12,7 @@
 
 
 #include "countpairs_impl_DOUBLE.h" //function proto-type
+#include "countpairs_kernels_DOUBLE.c"
 
 #include "defs.h"
 #include "utils.h" //all of the utilities
@@ -25,7 +26,7 @@
 #include <omp.h>
 #endif
 
-#include "countpairs_kernels_DOUBLE.c"
+
 
 
 countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options *options)

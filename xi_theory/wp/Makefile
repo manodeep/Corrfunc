@@ -26,12 +26,15 @@ INCL   := wp_kernels_double.c wp_kernels_float.c wp_kernels.c.src countpairs_wp.
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
 
-all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+all: $(TARGET) $(TARGETOBJS) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 libs: lib
-lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+lib: $(LIBRARY) 
+install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) wp_kernels_float.[ch] wp_kernels_float_double.[ch] 
 	$(MAKE) -C $(UTILS_DIR) clean
+	$(MAKE) -C $(IO_DIR) clean
+
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)

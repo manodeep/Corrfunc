@@ -35,19 +35,19 @@ $(TARGET): Makefile $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk $(INCL) $(C
 	$(CC) $(TARGETOBJS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) -o $@
 
 $(INCLUDE_DIR)/$(DD_LIB).h $(LIB_DIR)/lib$(DD_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
-	$(MAKE) -C $(DD_DIR) lib
+	$(MAKE) -C $(DD_DIR) install
 
 $(INCLUDE_DIR)/$(DDrppi_LIB).h $(LIB_DIR)/lib$(DDrppi_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(DDrppi_DIR) lib
+	$(MAKE) -C $(DDrppi_DIR) install
 
 $(INCLUDE_DIR)/$(WP_LIB).h $(LIB_DIR)/lib$(WP_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(WP_DIR) lib
+	$(MAKE) -C $(WP_DIR) install
 
 $(INCLUDE_DIR)/$(XI_LIB).h $(LIB_DIR)/lib$(XI_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(XI_DIR) lib
+	$(MAKE) -C $(XI_DIR) install
 
 $(INCLUDE_DIR)/$(VPF_LIB).h $(LIB_DIR)/lib$(VPF_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(VPF_DIR) lib
+	$(MAKE) -C $(VPF_DIR) install
 
 %.o: %.c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) $(OPT) $(INCLUDE) -c $< -o $@

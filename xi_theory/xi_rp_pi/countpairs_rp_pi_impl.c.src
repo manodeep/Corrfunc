@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include "countpairs_rp_pi_impl_DOUBLE.h" //function proto-type
+#include "countpairs_rp_pi_kernels_DOUBLE.c"
 
 #include "defs.h"
 #include "utils.h" //all of the utilities
@@ -24,8 +25,6 @@
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
-
-#include "countpairs_rp_pi_kernels_DOUBLE.c"
 
 
 countpairs_rp_pi_func_ptr_DOUBLE countpairs_rp_pi_driver_DOUBLE(const struct config_options *options)

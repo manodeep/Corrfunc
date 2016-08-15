@@ -40,12 +40,8 @@ tests: ../tests/tests_periodic ../tests/tests_nonperiodic
 ../tests/tests_nonperiodic:
 	$(MAKE) -C ../tests
 
-countspheres_impl_float.o: countspheres_impl_float.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
-
-countspheres_impl_double.o: countspheres_impl_double.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
-
+countspheres_%.o: countspheres_%.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
 
 $(GSL_TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options Makefile 
 	$(CC) $(TARGETOBJS) $(CLINK) $(GSL_LINK) -o $@
