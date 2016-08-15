@@ -20,31 +20,31 @@ $(IO_DIR)/%.o: $(IO_DIR)/%.c $(ROOT_DIR)/common.mk Makefile
 	$(MAKE) -C $(IO_DIR)
 
 %_float.c: %.c.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	@$(ECHO_COMMAND) "#ifdef DOUBLE_PREC" >> $@
-	@$(ECHO_COMMAND) "#undef DOUBLE_PREC" >> $@
-	@$(ECHO_COMMAND) "#endif" >> $@
+	@echo "/* This file is auto-generated from $(notdir $<) */" > $@
+	@echo "#ifdef DOUBLE_PREC" >> $@
+	@echo "#undef DOUBLE_PREC" >> $@
+	@echo "#endif" >> $@
 	sed -e "s/DOUBLE/float/g" $< >> $@
 
 %_float.h: %.h.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	@$(ECHO_COMMAND) "#ifdef DOUBLE_PREC" >> $@
-	@$(ECHO_COMMAND) "#undef DOUBLE_PREC" >> $@
-	@$(ECHO_COMMAND) "#endif" >> $@
+	@echo "/* This file is auto-generated from $(notdir $<) */" > $@
+	@echo "#ifdef DOUBLE_PREC" >> $@
+	@echo "#undef DOUBLE_PREC" >> $@
+	@echo "#endif" >> $@
 	sed -e "s/DOUBLE/float/g"  $< >> $@
 
 %_double.c: %.c.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	@$(ECHO_COMMAND) "#ifndef DOUBLE_PREC" >> $@
-	@$(ECHO_COMMAND) "#define DOUBLE_PREC" >> $@
-	@$(ECHO_COMMAND) "#endif" >> $@
+	@echo "/* This file is auto-generated from $(notdir $<) */" > $@
+	@echo "#ifndef DOUBLE_PREC" >> $@
+	@echo "#define DOUBLE_PREC" >> $@
+	@echo "#endif" >> $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
 %_double.h: %.h.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	@$(ECHO_COMMAND) "#ifndef DOUBLE_PREC" >> $@
-	@$(ECHO_COMMAND) "#define DOUBLE_PREC" >> $@
-	@$(ECHO_COMMAND) "#endif" >> $@
+	@echo "/* This file is auto-generated from $(notdir $<) */" > $@
+	@echo "#ifndef DOUBLE_PREC" >> $@
+	@echo "#define DOUBLE_PREC" >> $@
+	@echo "#endif" >> $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
 %.o: %.c $(INCL) $(ROOT_DIR)/common.mk Makefile
