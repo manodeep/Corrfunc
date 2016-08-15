@@ -46,13 +46,13 @@ int main(int argc, char *argv[])
     int64_t ND1=0;
     DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
 
+    int nthreads=1;
 
     /*---Corrfunc-variables----------------*/
-#if !(defined(USE_OMP) && defined(_OPENMP))
-    const char argnames[][30]={"boxsize","file","format","binfile"};
-#else
-    int nthreads=2;
+#if defined(_OPENMP)
     const char argnames[][30]={"boxsize","file","format","binfile","Nthreads"};
+#else
+    const char argnames[][30]={"boxsize","file","format","binfile"};
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
 
