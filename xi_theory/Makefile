@@ -1,21 +1,16 @@
 ROOT_DIR:=..
 
-include $(ROOT_DIR)/theory.options
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 PYTHON_EXT_DIR:=python_bindings
-TARGETS:=dirs DD DDrppi wp xi vpf examples $(PYTHON_EXT_DIR)
+TARGETS:=DD DDrppi wp xi vpf examples $(PYTHON_EXT_DIR)
 
 all: $(TARGETS) $(PYTHON_EXT_DIR) logbins
 
-logbins: logbins.c | dirs 
+logbins: logbins.c 
 	$(CC) $(CFLAGS) $< $(CLINK) -o $@
 
-dirs:  | $(ROOT_DIR)/lib $(ROOT_DIR)/bin $(ROOT_DIR)/include
-
-# $(ROOT_DIR)/lib $(ROOT_DIR)/bin $(ROOT_DIR)/include:
-# 	mkdir -p $@
-
-.PHONY: clean celna clena celan $(targets) libs install tests distclean realclean distclena realclena
+.PHONY: $(TARGETS) libs install tests distclean realclean distclena realclena clean celna 
 
 DD:
 	$(MAKE) -C xi_of_r
@@ -73,7 +68,7 @@ clean:
 clena: clean
 celan: clean
 celna: clean
-install: $(ROOT_DIR)/bin/logbins examples $(TARGETS) $(PYTHON_EXT_DIR) | dirs
+install: $(ROOT_DIR)/bin/logbins examples $(TARGETS) $(PYTHON_EXT_DIR) 
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
@@ -86,7 +81,7 @@ $(ROOT_DIR)/bin/logbins: logbins
 
 lib: libs
 
-libs: | dirs
+libs: 
 	$(MAKE) -C xi_of_r lib
 	$(MAKE) -C xi_rp_pi lib
 	$(MAKE) -C wp lib
@@ -97,4 +92,4 @@ test: tests
 tests:  
 	$(MAKE) -C tests
 
-include $(ROOT_DIR)/common.mk
+include $(ROOT_DIR)/rules.mk

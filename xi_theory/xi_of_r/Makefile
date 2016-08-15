@@ -21,16 +21,17 @@ INCL   := countpairs_kernels_float.c countpairs_kernels_double.c countpairs_kern
           countpairs.h countpairs_impl_double.h countpairs_impl_float.h \
           $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
           $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray.h.src \
-	  $(UTILS_DIR)/function_precision.h  $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
-	  $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
+	        $(UTILS_DIR)/function_precision.h  $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
+	        $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
           $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/progressbar.h 
 
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
 
-all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+all: $(TARGET) $(LIBOBJS) $(TARGETOBJS) $(LIBRARY) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 libs: lib
-lib:  $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+lib:  $(LIBRARY)
+install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
 
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) countpairs_kernels_float.[ch] countpairs_kernels_float_double.[ch

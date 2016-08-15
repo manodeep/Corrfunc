@@ -14,6 +14,7 @@
 #include <inttypes.h>
 
 #include "countpairs_wp_impl_DOUBLE.h" //function proto-type
+#include "wp_kernels_DOUBLE.c"
 
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
@@ -25,9 +26,6 @@
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
-
-#include "wp_kernels_DOUBLE.c"
-
 
 wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options)
 {

@@ -14,6 +14,7 @@
 #include <inttypes.h>
 
 #include "countpairs_xi_impl_DOUBLE.h" //function proto-type
+#include "xi_kernels_DOUBLE.c"
 
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
@@ -25,9 +26,6 @@
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
-
-#include "xi_kernels_DOUBLE.c"
-
 
 xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
 {
