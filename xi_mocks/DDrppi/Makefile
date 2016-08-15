@@ -1,76 +1,61 @@
-include ../../mocks.options ../../common.mk
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
 
-targets := DDrppi_mocks wprp_mocks
-SRC1   := DDrppi_mocks.c  countpairs_rp_pi_mocks.c ../../utils/gridlink_mocks.c \
-          ../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c \
-			    ../../utils/utils.c ../../io/io.c ../../io/ftread.c
-INCL   := countpairs_rp_pi_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h  ../../utils/gridlink_mocks.h ../../utils/cellarray_mocks.h \
-				../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h  \
-				../../utils/utils.h	../../utils/function_precision.h ../../utils/avx_calls.h ../../utils/defs.h
+include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
-ifeq ($(OUTPUT_PGBAR), 1)
-SRC1 += ../../utils/progressbar.c
-INCL += ../../utils/progressbar.h 
-endif
+LIBNAME := countpairs_rp_pi_mocks
+LIBRARY := lib$(LIBNAME).a
+LIBSRC  := countpairs_rp_pi_mocks.c $(UTILS_DIR)/gridlink_mocks.c $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c \
+	   $(UTILS_DIR)/set_cosmo_dist.c $(UTILS_DIR)/cosmology_params.c
+LIBRARY_HEADERS := $(LIBNAME).h
 
+GSL_TARGET   := DDrppi_mocks
+TARGETS  := $(GSL_TARGET) wprp_mocks
+TARGETSRC:= $(GSL_TARGET).c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(LIBSRC)
+INCL     := countpairs_rp_pi_mocks.h \
+            $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(IO_DIR)/io.h  \
+            $(UTILS_DIR)/gridlink_mocks.h $(UTILS_DIR)/cellarray_mocks.h \
+	    $(UTILS_DIR)/set_cosmo_dist.h $(UTILS_DIR)/cosmology_params.h  $(UTILS_DIR)/progressbar.h \
+	    $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/defs.h
 
-OBJS1=$(SRC1:.c=.o) 
+TARGETOBJS:=$(TARGETSRC:.c=.o)
+LIBOBJS:=$(LIBSRC:.c=.o) 
 
-all: $(targets) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
+all: $(TARGETS) $(TARGETSRC) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
 
-DDrppi_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@ 
+$(GSL_TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) $(TARGETOBJS) $(CLINK) $(GSL_LINK) -o $@ 
 
-countpairs_rp_pi_mocks.o: countpairs_rp_pi_mocks.c ../../mocks.options ../../common.mk Makefile
+$(GSL_TARGET).o: $(GSL_TARGET).c $(ROOT_DIR)/common.mk Makefile $(INCL)
+	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+countpairs_rp_pi_mocks.o: countpairs_rp_pi_mocks.c $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
 
-SRC2=wprp_mocks.c ../../utils/utils.c
-OBJS2=$(SRC2:.c=.o)
-wprp_mocks: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OBJS2) $(CLINK) -o $@ 
+wprp_mocks: wprp_mocks.c $(UTILS_DIR)/utils.c 
+	$(CC) $(CFLAGS) $(INCLUDE) $^ $(CLINK) -o $@ 
 
-%.o: %.c $(INCL) ../../mocks.options ../../common.mk Makefile
+$(UTILS_DIR)/gridlink_mocks.o:$(UTILS_DIR)/gridlink_mocks.c $(ROOT_DIR)/common.mk $(ROOT_DIR)/mocks.options Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-
-../../utils/set_cosmo_dist.o:../../utils/set_cosmo_dist.c ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
-
 libs: lib
-lib: libcountpairs_rp_pi_mocks.a | ../../lib
+lib: $(LIBRARY) $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR)
 
-OBJS3 :=countpairs_rp_pi_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o \
-			../../utils/set_cosmo_dist.o ../../utils/cosmology_params.o 
-
-libcountpairs_rp_pi_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS3)
-	cp -p $@ ../../lib/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_rp_pi_mocks.h > ../../include/countpairs_rp_pi_mocks.h
-
-../../lib ../../bin ../../include:
-	mkdir -p $@
-
-install: ../../bin/DDrppi_mocks ../../bin/wprp_mocks | ../../bin
-
-../../bin/%_mocks: %_mocks
-	cp -p $< $@
-
-.PHONY: clean clena celan distclean realclean install tests
+install: $(INSTALL_BIN_DIR)/DDrppi_mocks $(INSTALL_BIN_DIR)/wprp_mocks $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR)
 
 tests: 
 	$(MAKE) -C ../tests DDrppi
 
 clean:
-	$(RM) $(targets) $(OBJS1) $(OBJS2)  libcountpairs_rp_pi_mocks.a
+	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY)
 
-clena: clean
-celan: clean
+distclean:clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
+	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGETS)
 
-distclean:clean | ../../lib ../../include ../../bin
-	$(RM) ../../lib/libcountpairs_rp_pi_mocks.a ../../include/countpairs_rp_pi_mocks.h
-	cd ../../bin && $(RM) $(targets)
-
-realclean: distclean
-distclena: distclean
-realclena: distclean
-
+include $(ROOT_DIR)/rules.mk

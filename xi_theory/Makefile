@@ -1,26 +1,19 @@
-include ../theory.options ../common.mk
+ROOT_DIR:=..
 
-targets:=dirs DD DDrppi wp xi vpf examples 
+include $(ROOT_DIR)/theory.options
 
-ifneq ($(COMPILE_PYTHON_EXT), 0)
-  PYTHON_DIR := python_bindings
-else
-  PYTHON_DIR := 
-  $(warning $(ccmagenta) Not compiling C extensions for theory. Either python or numpy not available $(ccreset))
-endif
+PYTHON_EXT_DIR:=python_bindings
+TARGETS:=dirs DD DDrppi wp xi vpf examples $(PYTHON_EXT_DIR)
 
-all: $(targets) $(PYTHON_DIR) logbins
+all: $(TARGETS) $(PYTHON_EXT_DIR) logbins
 
 logbins: logbins.c | dirs 
 	$(CC) $(CFLAGS) $< $(CLINK) -o $@
 
-%.o: %.c Makefile ../common.mk ../theory.options
-	$(CC) $(CFLAGS) -c $< -o $@ 
+dirs:  | $(ROOT_DIR)/lib $(ROOT_DIR)/bin $(ROOT_DIR)/include
 
-dirs:  | ../lib ../bin ../include
-
-../lib ../bin ../include:
-	mkdir -p $@
+# $(ROOT_DIR)/lib $(ROOT_DIR)/bin $(ROOT_DIR)/include:
+# 	mkdir -p $@
 
 .PHONY: clean celna clena celan $(targets) libs install tests distclean realclean distclena realclena
 
@@ -55,7 +48,7 @@ distclena:realclean
 realclena:realclean
 
 realclean:
-	$(RM) ../bin/logbins
+	$(RM) $(ROOT_DIR)/bin/logbins
 	$(MAKE) clean
 	$(MAKE) -C xi_of_r distclean
 	$(MAKE) -C xi_rp_pi distclean
@@ -80,7 +73,7 @@ clean:
 clena: clean
 celan: clean
 celna: clean
-install: ../bin/logbins examples $(targets) $(PYTHON_DIR) | dirs
+install: $(ROOT_DIR)/bin/logbins examples $(TARGETS) $(PYTHON_EXT_DIR) | dirs
 	$(MAKE) -C xi_of_r install
 	$(MAKE) -C xi_rp_pi install
 	$(MAKE) -C wp install
@@ -88,8 +81,8 @@ install: ../bin/logbins examples $(targets) $(PYTHON_DIR) | dirs
 	$(MAKE) -C vpf install
 	$(MAKE) -C python_bindings install
 
-../bin/logbins: logbins
-	cp -p logbins ../bin
+$(ROOT_DIR)/bin/logbins: logbins
+	cp -p logbins $(ROOT_DIR)/bin
 
 lib: libs
 
@@ -104,3 +97,4 @@ test: tests
 tests:  
 	$(MAKE) -C tests
 
+include $(ROOT_DIR)/common.mk

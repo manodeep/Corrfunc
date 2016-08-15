@@ -20,9 +20,9 @@ VPF_LIB := countspheres
 
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
-targets := test_periodic test_nonperiodic
+TARGETS := test_periodic test_nonperiodic
 ifneq ($(COMPILE_PYTHON_EXT), 0)
-targets += python_lib
+TARGETS += python_lib
 else
 $(warning $(ccmagenta) Skipping python tests since python or numpy is unavailable $(ccreset))
 endif
@@ -38,7 +38,7 @@ INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h \
 SRC2   := test_nonperiodic.c $(UTILS_DIR)/utils.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c
 OBJS2  := $(SRC2:.c=.o)
 
-all: tests $(targets) $(INCL) uncompress $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+all: tests $(TARGETS) $(INCL) uncompress $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 
 test_periodic: $(OBJS1) $(C_LIBRARY) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 	$(CC) $(OBJS1) $(C_LIBRARY) $(GSL_LINK) $(CLINK) -o $@
@@ -49,9 +49,6 @@ test_nonperiodic: $(OBJS2) $(C_LIBRARY) $(INCL) $(ROOT_DIR)/theory.options $(ROO
 %.o: %.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-$(C_LIBRARY):
-	$(MAKE) -C ../ libs
-
 python_lib: tests $(OBJS1) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(ROOT_DIR)/lib
 	@echo 
 	@echo "All THEORY tests are done. Now checking that the C extensions work."
@@ -61,9 +58,6 @@ python_lib: tests $(OBJS1) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common
 tests: test_periodic test_nonperiodic
 	./test_nonperiodic
 	./test_periodic
-
-$(ROOT_DIR)/lib:
-	mkdir -p $@
 
 uncompress: | data
 	@{\
@@ -90,13 +84,7 @@ vpf: test_periodic
 xi: test_periodic
 	./test_periodic 4
 
-.PHONY: clean clena celan install tests uncompress
-
 clean:
 	$(RM) $(targets) $(OBJS1) $(OBJS2)
-
-clena: clean
-
-celan: clean
 
 
