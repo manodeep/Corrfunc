@@ -1,72 +1,58 @@
-include ../../mocks.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+ROOT_DIR:=../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR:=$(ROOT_DIR)/utils
+IO_DIR:=$(ROOT_DIR)/io
 
-target := vpf_mocks 
-SRC1   := vpf_mocks.c countspheres_mocks.c ../../utils/gridlink_mocks.c ../../utils/utils.c \
-				../../io/ftread.c ../../io/io.c ../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c 
-INCL   := countspheres_mocks.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
-				../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-				../../utils/defs.h ../../utils/set_cosmo_dist.h ../../utils/cosmology_params.h
+include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk 
 
-ifeq ($(OUTPUT_PGBAR), 1)
-  SRC1 += ../../utils/progressbar.c
-  INCL += ../../utils/progressbar.h 
-endif
+LIBNAME:=countspheres_mocks
+LIBRARY:=lib$(LIBNAME).a
+LIBSRC:=countspheres_mocks.c $(UTILS_DIR)/gridlink_mocks.c $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c \
+	$(UTILS_DIR)/set_cosmo_dist.c $(UTILS_DIR)/cosmology_params.c 
+LIBRARY_HEADERS := $(LIBNAME).h
 
-OBJS1  := $(SRC1:.c=.o)
+GSL_TARGET := vpf_mocks
+TARGETSRC := $(GSL_TARGET).c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(LIBSRC)
+INCL   := countspheres_mocks.h $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_mocks.h \
+	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_mocks.h $(UTILS_DIR)/avx_calls.h \
+	$(UTILS_DIR)/defs.h $(UTILS_DIR)/set_cosmo_dist.h $(UTILS_DIR)/cosmology_params.h $(UTILS_DIR)/progressbar.h
 
-all: $(target) $(SRC1) $(INCL) Makefile ../../mocks.options ../../common.mk
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+LIBOBJS :=$(LIBSRC:.c=.o)
 
-$(target): $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile 
-	$(CC) $(OBJS1) $(CLINK) $(GSL_LINK) -o $@
+all: $(GSL_TARGET) $(TARGETSRC) $(INCL) Makefile $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
-%.o: %.c $(INCL) ../../mocks.options ../../common.mk Makefile
+$(GSL_TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
+	$(CC) $(TARGETOBJS) $(CLINK) $(GSL_LINK) -o $@
+
+$(GSL_TARGET).o: $(GSL_TARGET).c $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+$(LIBNAME).o:$(LIBNAME).c $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
+
+$(UTILS_DIR)/gridlink_mocks.o:$(UTILS_DIR)/gridlink_mocks.c $(ROOT_DIR)/common.mk $(ROOT_DIR)/mocks.options Makefile
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-countspheres_mocks.o: countspheres_mocks.c $(INCL) ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
-
-../../utils/set_cosmo_dist.o:../../utils/set_cosmo_dist.c ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
-
 libs: lib
-lib:  libcountspheres_mocks.a | ../../lib ../../include
+lib: $(LIBRARY)
 
-SRC2   = countspheres_mocks.c ../../utils/gridlink_mocks.c ../../utils/utils.c ../../utils/progressbar.c \
-				../../utils/set_cosmo_dist.c ../../utils/cosmology_params.c
+install: $(INSTALL_BIN_DIR)/$(GSL_TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR) $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 
-OBJS2  = $(SRC2:.c=.o)
-libcountspheres_mocks.a: $(OBJS2) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS2)
-	cp -p $@ ../../lib/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countspheres_mocks.h > ../../include/countspheres_mocks.h 
-
-.PHONY: clean clena celan install lib tests distclean
-
-../../lib ../../bin ../../include:
-	mkdir -p $@
-
-install: ../../bin/$(target) | ../../bin
-
-../../bin/$(target): $(target)
-	cp -p $< $@
-
-distclean: clean | ../../include ../../bin ../../lib
-	$(RM) ../../bin/$(target)
-	$(RM) ../../include/countspheres_mocks.h
-	$(RM) ../../lib/libcountspheres_mocks.a
+distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
+	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY)
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_BIN_DIR) && $(RM) $(GSL_TARGET)
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountspheres_mocks.a
-
-clena: clean
-celan: clean
-
+	$(RM) $(GSL_TARGET) $(TARGETOBJS) $(LIBRARY)
+	$(MAKE) -C $(UTILS_DIR) clean
+	$(MAKE) -C $(IO_DIR) clean
 
 tests: 
-	$(MAKE) -C ../tests	vpf
+	$(MAKE) -C ../tests vpf
 
 
-
+include $(ROOT_DIR)/rules.mk

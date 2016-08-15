@@ -119,10 +119,10 @@ results_countspheres_mocks countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, 
     init_cosmology(cosmology);
 
     //Input validation
-    assert(rmax > 0.0  && "rmax has to be positive");
-    assert(nbin >=1    && "Number of bins has to be at least 1");
-    assert(nc >=1      && "Number of spheres has to be at least 1");
-    assert(num_pN >= 1 && "Number of pN's requested must be at least 1");
+    XASSERT(rmax > 0.0, "rmax=%lf has to be positive", rmax);
+    XASSERT(nbin >=1,"Number of bins=%d has to be at least 1", nbin);
+    XASSERT(nc >=1,"Number of spheres=%d has to be at least 1", nc);
+    XASSERT(num_pN >= 1, "Number of pN's=%d requested must be at least 1", num_pN);
 
     int need_randoms=0;
     int64_t num_centers_in_file=0;
@@ -316,16 +316,16 @@ results_countspheres_mocks countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, 
             assert(iy >= 0 && iy < ngrid && "y-position is inside limits");
             assert(iz >= 0 && iz < ngrid && "z-position is inside limits");
 
-            const int min_ix = ix - bin_refine_factor < 0 ?             0:ix - bin_refine_factor;
-            const int max_ix = ix + bin_refine_factor > ngrid-1 ? ngrid-1:ix + bin_refine_factor;
+            const int min_ix = (ix - bin_refine_factor) < 0 ?             0:ix - bin_refine_factor;
+            const int max_ix = (ix + bin_refine_factor) > ngrid-1 ? ngrid-1:ix + bin_refine_factor;
             for(int iix=min_ix;iix<=max_ix;iix++) {
                 const DOUBLE newxpos = xcen;
 #if defined(USE_AVX) && defined(__AVX__)
                 const AVX_FLOATS m_newxpos = AVX_SET_FLOAT(newxpos);
 #endif
 
-                const int min_iy = iy - bin_refine_factor < 0 ?             0:iy - bin_refine_factor;
-                const int max_iy = iy + bin_refine_factor > ngrid-1 ? ngrid-1:iy + bin_refine_factor;
+                const int min_iy = (iy - bin_refine_factor) < 0 ?             0:iy - bin_refine_factor;
+                const int max_iy = (iy + bin_refine_factor) > ngrid-1 ? ngrid-1:iy + bin_refine_factor;
 
                 for(int iiy=min_iy;iiy<=max_iy;iiy++) {
                     const DOUBLE newypos = ycen;
@@ -333,8 +333,8 @@ results_countspheres_mocks countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, 
                     const AVX_FLOATS m_newypos = AVX_SET_FLOAT(newypos);
 #endif
 
-                    const int min_iz = iz - bin_refine_factor < 0 ?             0:iz - bin_refine_factor;
-                    const int max_iz = iz + bin_refine_factor > ngrid-1 ? ngrid-1:iz + bin_refine_factor;
+                    const int min_iz = (iz - bin_refine_factor) < 0 ?             0:iz - bin_refine_factor;
+                    const int max_iz = (iz + bin_refine_factor) > ngrid-1 ? ngrid-1:iz + bin_refine_factor;
 
                     for(int iiz=min_iz;iiz<=max_iz;iiz++) {
                         const DOUBLE newzpos = zcen;

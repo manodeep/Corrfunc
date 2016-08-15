@@ -6,14 +6,9 @@ SRC   := ftread.c io.c
 OBJS  := $(SRC:.c=.o)
 INCL  := ftread.h io.h 
 
-all: $(OBJS) $(INCL) Makefile 
+all: $(OBJS) $(INCL) $(SRC) Makefile 
 
 %.o: %.c $(INCL) Makefile $(ROOT_DIR)/common.mk 
 	$(CC) $(CFLAGS) -I$(UTILS_DIR) -c $< -o $@
 clean:
 	$(RM) $(OBJS)
-
-clena: clean
-celan: celan
-
-

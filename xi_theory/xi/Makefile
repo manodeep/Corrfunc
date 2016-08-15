@@ -7,8 +7,9 @@ IO_DIR := $(ROOT_DIR)/io
 
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
-LIBRARY := libcountpairs_xi.a
-LIBRARY_HEADERS := countpairs_xi.h
+LIBNAME:= countpairs_xi
+LIBRARY := lib$(LIBNAME).a
+LIBRARY_HEADERS := $(LIBNAME).h
 LIBSRC := countpairs_xi.c countpairs_xi_impl_double.c countpairs_xi_impl_float.c  \
           $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
           $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
@@ -28,84 +29,18 @@ LIBOBJS := $(LIBSRC:.c=.o)
 
 all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-$(TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options Makefile 
-	$(CC) $(TARGETOBJS) $(CLINK) -o $@
-
-$(UTILS_DIR)/%.o: $(ROOT_DIR)/common.mk Makefile $(UTILS_DIR)/%.c
-	$(MAKE) -C $(UTILS_DIR)
-
-$(UTILS_DIR)/%.h: $(ROOT_DIR)/common.mk Makefile $(UTILS_DIR)/%.h.src
-	$(MAKE) -C $(UTILS_DIR)
-
-$(IO_DIR)/%.h: $(ROOT_DIR)/common.mk Makefile $(IO_DIR)/%.h.src
-	$(MAKE) -C $(IO_DIR)
-
-%_float.c: %.c.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	sed -e "s/DOUBLE/float/g" $< >> $@
-
-%_float.h: %.h.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	sed -e "s/DOUBLE/float/g"  $< >> $@
-
-%_double.c: %.c.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	sed -e "s/DOUBLE/double/g"  $< >> $@
-%_double.h: %.h.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	sed -e "s/DOUBLE/double/g"  $< >> $@
-
-%_double.o: %_double.c %_double.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-%_float.o: %_float.c %_float.h $(INCL)
-	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-$(TARGET).o: $(TARGET).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(INCL)
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-%.o: %.c %.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-
 libs: lib
 lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
-
-$(LIBRARY): $(LIBOBJS) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
-	ar rcs $@ $(LIBOBJS)
-
-$(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY) $(INSTALL_HEADERS_DIR)/defs.h | $(INSTALL_LIB_DIR)
-	cp -p $< $@
-	cp -p $(LIBRARY_HEADERS) $(INSTALL_HEADERS_DIR)/
-
-$(INSTALL_HEADERS_DIR)/%.h: $(UTILS_DIR)/%.h | $(INSTALL_HEADERS_DIR)
-	cp -p $< $(INSTALL_HEADERS_DIR)/
-
-$(INSTALL_LIB_DIR) $(INSTALL_BIN_DIR) $(INSTALL_HEADERS_DIR):
-	mkdir -p $@
-
-.PHONY: clean clena celan install lib tests distclean
-
-install: $(INSTALL_BIN_DIR)/$(TARGET) | $(INSTALL_BIN_DIR)
-
-$(INSTALL_BIN_DIR)/$(TARGET): $(TARGET)
-	cp -p $< $@
-$(INSTALL_BIN_DIR)/%: % | $(INSTALL_BIN_DIR)
-	cp -p $< $(INSTALL_BIN_DIR)/
-
-distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
-	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY)
-	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
-	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
-
 clean:
-	$(RM) $(TARGET) $(TARGETOBJS) $(LIBOBJS) $(LIBRARY) *_float.[ch] *_double.[ch] $(UTILS_DIR)/*_double.[ch] $(UTILS_DIR)/*_float.[ch]
-
-clena: clean
-celan: clean
+	$(RM) $(TARGETOBJS) $(TARGET) $(WPRPOBJS) xi_kernels_float.[ch] xi_kernels_float_double.[ch]
+	$(MAKE) -C $(UTILS_DIR) clean
+distclean:clean
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
 
 tests: tests_periodic 
 
 tests_periodic: 
 	$(MAKE) -C ../tests xi
 
+include $(ROOT_DIR)/rules.mk

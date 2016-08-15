@@ -14,8 +14,8 @@ LIBSRC := countspheres.c countspheres_impl_double.c countspheres_impl_float.c \
           $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c \
           $(UTILS_DIR)/cpu_features.c 
 
-TARGET := vpf
-TARGETSRC := $(TARGET).c $(IO_DIR)/ftread.c $(IO_DIR)/io.c $(LIBSRC)
+GSL_TARGET := vpf
+TARGETSRC := $(GSL_TARGET).c $(IO_DIR)/ftread.c $(IO_DIR)/io.c $(LIBSRC)
 INCL   := vpf_kernels_float.c vpf_kernels_double.c vpf_kernels.c.src countspheres.h \
           countspheres_impl_float.h countspheres_impl_double.h countspheres_impl.h.src countspheres_impl.c.src \
           $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
@@ -27,82 +27,9 @@ INCL   := vpf_kernels_float.c vpf_kernels_double.c vpf_kernels.c.src countsphere
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
 
-all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
-
-$(TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
-	$(CC) $(TARGETOBJS) $(CLINK) $(GSL_LINK) -o $@
-
-$(TARGET).o: $(TARGET).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(INCL)
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-$(UTILS_DIR)/%.o: $(ROOT_DIR)/common.mk Makefile $(UTILS_DIR)/%.c
-	$(MAKE) -C $(UTILS_DIR)
-
-$(UTILS_DIR)/%.h: $(ROOT_DIR)/common.mk Makefile $(UTILS_DIR)/%.h.src
-	$(MAKE) -C $(UTILS_DIR)
-
-$(IO_DIR)/%.h: $(ROOT_DIR)/common.mk Makefile $(IO_DIR)/%.h.src
-	$(MAKE) -C $(IO_DIR)
-
-%_float.c: %.c.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	sed -e "s/DOUBLE/float/g" $< >> $@
-
-%_float.h: %.h.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	sed -e "s/DOUBLE/float/g"  $< >> $@
-
-%_double.c: %.c.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	sed -e "s/DOUBLE/double/g"  $< >> $@
-%_double.h: %.h.src Makefile
-	@$(ECHO_COMMAND) "/* This file is auto-generated from $(notdir $<) */" > $@
-	sed -e "s/DOUBLE/double/g"  $< >> $@
-
-%_double.o: %_double.c %_double.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
-
-%_float.o: %_float.c %_float.h $(INCL)
-	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
-
-%.o: %.c %.h $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
-
+all: $(GSL_TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 libs: lib
 lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
-
-$(LIBRARY): $(LIBOBJS) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
-	ar rcs $@ $(LIBOBJS)
-
-$(INSTALL_LIB_DIR)/$(LIBRARY): $(LIBRARY) $(INSTALL_HEADERS_DIR)/defs.h | $(INSTALL_LIB_DIR)
-	cp -p $< $@
-	cp -p $(LIBRARY_HEADERS) $(INSTALL_HEADERS_DIR)/
-
-$(INSTALL_HEADERS_DIR)/%.h: $(UTILS_DIR)/%.h | $(INSTALL_HEADERS_DIR)
-	cp -p $< $(INSTALL_HEADERS_DIR)/
-
-$(INSTALL_LIB_DIR) $(INSTALL_BIN_DIR) $(INSTALL_HEADERS_DIR):
-	mkdir -p $@
-
-install: $(INSTALL_BIN_DIR)/$(TARGET) | $(INSTALL_BIN_DIR)
-
-$(INSTALL_BIN_DIR)/$(TARGET): $(TARGET)
-	cp -p $< $@
-$(INSTALL_BIN_DIR)/%: % | $(INSTALL_BIN_DIR)
-	cp -p $< $(INSTALL_BIN_DIR)/
-
-distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
-	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY)
-	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
-	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
-
-clean:
-	$(RM) $(TARGET) $(TARGETOBJS) $(LIBOBJS) $(LIBRARY) $(UTILS_DIR)/*_float.[ch] $(UTILS_DIR)/*_double.[ch] *_float.[ch] *_double.[ch]
-
-clena: clean
-celan: clean
-
-.PHONY: clean clena celan install lib tests distclean
 
 tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
 	$(MAKE) -C ../tests vpf
@@ -113,3 +40,26 @@ tests: ../tests/tests_periodic ../tests/tests_nonperiodic
 ../tests/tests_nonperiodic:
 	$(MAKE) -C ../tests
 
+countspheres_impl_float.o: countspheres_impl_float.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
+
+countspheres_impl_double.o: countspheres_impl_double.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
+
+
+$(GSL_TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options Makefile 
+	$(CC) $(TARGETOBJS) $(CLINK) $(GSL_LINK) -o $@
+
+$(GSL_TARGET).o: $(GSL_TARGET).c $(ROOT_DIR)/common.mk Makefile $(INCL)
+	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+install: $(INSTALL_BIN_DIR)/$(GSL_TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
+
+clean:
+	$(RM) $(TARGETOBJS) $(GSL_TARGET) vpf_kernels_float.[ch] vpf_kernels_float_double.[ch
+	$(MAKE) -C $(UTILS_DIR) clean
+distclean:clean
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
+
+include $(ROOT_DIR)/rules.mk
