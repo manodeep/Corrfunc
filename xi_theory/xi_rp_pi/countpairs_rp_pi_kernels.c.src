@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "function_precision.h"
 
@@ -27,7 +27,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
   const int64_t totnbins = (npibin+1)*(nbin+1);
   uint64_t *npairs = calloc(sizeof(*npairs), totnbins);
   if (npairs == NULL) {
-      fprintf(stderr,"ERROR: In %s> Could not allocate memory for npairs array with size = %llu bytes\n", __FUNCTION__, sizeof(*npairs)*totnbins);
+      fprintf(stderr,"ERROR: In %s> Could not allocate memory for npairs array with size = %"PRIu64" bytes\n", __FUNCTION__, sizeof(*npairs)*totnbins);
       return EXIT_FAILURE;
   }
   AVX_FLOATS m_rupp_sqr[nbin];
@@ -243,7 +243,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
   const int64_t totnbins = (npibin+1) * (nbin+1);
   uint64_t *npairs = calloc(sizeof(*npairs), totnbins);
   if(npairs == NULL) {
-      fprintf(stderr,"ERROR: In %s> Could not allocate memory for npairs array with size = %llu bytes\n", __FUNCTION__, sizeof(*npairs)*totnbins);
+      fprintf(stderr,"ERROR: In %s> Could not allocate memory for npairs array with size = %"PRIu64" bytes\n", __FUNCTION__, sizeof(*npairs)*totnbins);
       return EXIT_FAILURE;
   }
   SSE_FLOATS m_rupp_sqr[nbin];
@@ -452,7 +452,7 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
     const int64_t totnbins = (npibin+1)*(nbin+1);
     uint64_t *npairs = calloc(sizeof(*npairs), totnbins);
     if(npairs == NULL) {
-        fprintf(stderr,"ERROR: In %s> Could not allocate memory for npairs array with size = %llu bytes\n", __FUNCTION__, sizeof(*npairs)*totnbins);
+        fprintf(stderr,"ERROR: In %s> Could not allocate memory for npairs array with size = %"PRIu64" bytes\n", __FUNCTION__, sizeof(*npairs)*totnbins);
         return EXIT_FAILURE;
     }
 
