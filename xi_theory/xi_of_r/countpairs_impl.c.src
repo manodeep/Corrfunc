@@ -240,7 +240,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     for(int i=0; i < nrpbin;i++) {
       npairs[i] = 0;
       if(options.need_avg_sep) {
-        rpavg = (DOUBLE) 0.0;
+          rpavg[i] = (DOUBLE) 0.0;
       }
     }
 #endif
