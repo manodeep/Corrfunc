@@ -12,32 +12,31 @@
 extern "C" {
 #endif
 
-#include "function_precision.h" //for definition of DOUBLE
-#include <inttypes.h> //for uint64_t
 
-//define the results structure
-typedef struct{
-    uint64_t *npairs;
-    DOUBLE *rupp;
-    DOUBLE *rpavg;
-    DOUBLE pimax;
-    int nbin;
-    int npibin;
-} results_countpairs_mocks;
-    
-results_countpairs_mocks countpairs_mocks(const int64_t ND1, DOUBLE *theta1, DOUBLE *phi1, DOUBLE *czD1,
-                                          const int64_t ND2, DOUBLE *theta2, DOUBLE *phi2, DOUBLE *czD2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                          const int numthreads,
-#endif
-                                          const int autocorr,
-                                          const char *binfile,
-                                          const DOUBLE pimax,
-                                          const int cosmology) __attribute__((warn_unused_result));
+#include "defs.h"
+#include <stdint.h> //for uint64_t
 
-void check_ra_dec_cz(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz);
+    //define the results structure
+    typedef struct{
+        uint64_t *npairs;
+        double *rupp;
+        double *rpavg;
+        double pimax;
+        int nbin;
+        int npibin;
+    } results_countpairs_mocks;
     
-void free_results_mocks(results_countpairs_mocks *results);
+    int countpairs_mocks(const int64_t ND1, void *theta1, void *phi1, void *czD1,
+                         const int64_t ND2, void *theta2, void *phi2, void *czD2,
+                         const int numthreads,
+                         const int autocorr,
+                         const char *binfile,
+                         const double pimax,
+                         const int cosmology,
+                         results_countpairs_mocks *results,
+                         const struct config_options *input_options);
+
+    void free_results_mocks(results_countpairs_mocks *results);
 
 #ifdef __cplusplus
 }

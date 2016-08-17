@@ -47,6 +47,12 @@ $(IO_DIR)/%.o: $(IO_DIR)/%.c $(ROOT_DIR)/common.mk Makefile
 	@echo "#endif" >> $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
+%_double.o: %_double.c %.c.src Makefile
+	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
+
+%_float.o: %_float.c %.c.src Makefile
+	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
+
 %.o: %.c $(INCL) $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
