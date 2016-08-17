@@ -33,6 +33,8 @@ all: $(TARGETS) $(TARGETSRC) $(WPRPSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/c
 wprp: $(WPRPSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(WPRPSRC) $(CLINK)
 
+countpairs_rp_pi_impl_%.o:countpairs_rp_pi_impl_%.c countpairs_rp_pi_kernels_%.c
+
 libs: lib
 lib:  $(LIBRARY)
 install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
@@ -40,6 +42,8 @@ install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEA
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) countpairs_rp_pi_kernels_float.[ch] countpairs_rp_pi_kernels_float_double.[ch]
 	$(MAKE) -C $(UTILS_DIR) clean
+	$(MAKE) -C $(IO_DIR) clean
+
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)

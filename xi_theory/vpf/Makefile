@@ -40,7 +40,7 @@ tests: ../tests/tests_periodic ../tests/tests_nonperiodic
 ../tests/tests_nonperiodic:
 	$(MAKE) -C ../tests
 
-countspheres_%.o: countspheres_%.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+countspheres_%.o: countspheres_%.c vpf_kernels_%.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
 
 $(GSL_TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options Makefile 
@@ -52,8 +52,10 @@ $(GSL_TARGET).o: $(GSL_TARGET).c $(ROOT_DIR)/common.mk Makefile $(INCL)
 install: $(INSTALL_BIN_DIR)/$(GSL_TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
 
 clean:
-	$(RM) $(TARGETOBJS) $(GSL_TARGET) vpf_kernels_float.[ch] vpf_kernels_double.[ch] countspheres_impl_double.[ch] countspheres_impl_float.[ch]
+	$(RM) $(TARGETOBJS) $(LIBRARY) $(GSL_TARGET) vpf_kernels_float.[ch] vpf_kernels_double.[ch] countspheres_impl_double.[ch] countspheres_impl_float.[ch]
 	$(MAKE) -C $(UTILS_DIR) clean
+	$(MAKE) -C $(IO_DIR) clean
+
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)

@@ -27,6 +27,9 @@ TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
 
 all: $(TARGET) $(TARGETOBJS) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+
+countpairs_wp_impl_%.o:countpairs_wp_impl_%.c countpairs_wp_kernels_%.c
+
 libs: lib
 lib: $(LIBRARY) 
 install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)

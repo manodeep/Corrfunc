@@ -33,9 +33,13 @@ libs: lib
 lib:  $(LIBRARY)
 install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
 
+countpairs_impl_%.o:countpairs_impl_%.c countpairs_kernels_%.c
+
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) countpairs_kernels_float.[ch] countpairs_kernels_float_double.[ch
 	$(MAKE) -C $(UTILS_DIR) clean
+	$(MAKE) -C $(IO_DIR) clean
+
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
