@@ -18,6 +18,7 @@ extern "C" {
     typedef int (*countpairs_theta_mocks_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                                                           const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
                                                           const int same_cell,
+                                                          const int order,
                                                           const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
                                                           const DOUBLE *costheta_upp, 
                                                           DOUBLE *src_rpavg,

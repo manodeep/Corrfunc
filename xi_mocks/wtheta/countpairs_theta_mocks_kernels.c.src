@@ -13,6 +13,7 @@
 
 #include "defs.h"
 #include "function_precision.h"
+#include "fast_acos.h"
 
 #if defined(__AVX__)
 #include "avx_calls.h"
@@ -20,6 +21,7 @@
 static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                                                                 const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
                                                                 const int same_cell, 
+                                                                const int order,
                                                                 const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
                                                                 const DOUBLE *costheta_upp, 
                                                                 DOUBLE *src_rpavg,
@@ -107,7 +109,7 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
           if(need_rpavg) {
               //first do the acos to get the actual angles
               const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
-              const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta);
+              const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta, order);
               union_mDperp.m_Dperp = AVX_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
               m_thetabin = AVX_SET_FLOAT((DOUBLE) 0.0);
           }
@@ -154,7 +156,11 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
           }
           DOUBLE theta;
           if(need_rpavg) {
-              theta =  INV_PI_OVER_180*ACOS(costheta) ;
+              if(order) {
+                  theta =  INV_PI_OVER_180*ACOS(costheta) ;
+              } else {
+                  theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
+              }
           }
           
           for(int ibin=nthetabin-1;ibin>=1;ibin--) {
@@ -186,7 +192,8 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
 
 static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                                                                 const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
-                                                                const int same_cell, 
+                                                                const int same_cell,
+                                                                const int order,
                                                                 const DOUBLE costhetamax, const DOUBLE costhetamin,  const int nthetabin,
                                                                 const DOUBLE *costheta_upp, 
                                                                 DOUBLE *src_rpavg,
@@ -271,7 +278,7 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
           if(need_rpavg) {
               //first do the acos to get the actual angles
               const SSE_FLOATS m_inv_pi_over_180 = SSE_SET_FLOAT(INV_PI_OVER_180);
-              const SSE_FLOATS m_theta = SSE_ARC_COSINE(m_costheta);
+              const SSE_FLOATS m_theta = SSE_ARC_COSINE(m_costheta, order);
               union_mDperp.m_Dperp = SSE_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
               m_thetabin = SSE_SET_FLOAT((DOUBLE) 0.0);
           }
@@ -318,7 +325,11 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
           }
           DOUBLE theta;
           if(need_rpavg) {
-              theta =  INV_PI_OVER_180*ACOS(costheta) ;
+              if(order) {
+                  theta =  INV_PI_OVER_180*ACOS(costheta) ;
+              } else {
+                  theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
+              }
           }
           
           for(int ibin=nthetabin-1;ibin>=1;ibin--) {
@@ -347,6 +358,7 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
 static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                                                          const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
                                                          const int same_cell,
+                                                         const int order,
                                                          const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
                                                          const DOUBLE *costheta_upp, 
                                                          DOUBLE *src_rpavg,
@@ -396,7 +408,11 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
           }
           DOUBLE theta;
           if(need_rpavg) {
-              theta =  INV_PI_OVER_180*ACOS(costheta) ;
+              if(order) {
+                  theta =  INV_PI_OVER_180*ACOS(costheta);
+              } else {
+                  theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
+              }
           }
           
           for(int ibin=nthetabin-1;ibin>=1;ibin--) {

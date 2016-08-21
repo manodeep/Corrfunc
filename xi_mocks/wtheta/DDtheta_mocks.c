@@ -129,6 +129,11 @@ int main(int argc, char **argv)
     options.link_in_dec = 1;
     options.link_in_ra = 1;
 #endif
+
+#ifdef FAST_ACOS
+    options.fast_acos=1;
+#endif    
+    
     
     int status = countpairs_theta_mocks(ND1,phiD1,thetaD1,
                                         ND2,phiD2,thetaD2,
