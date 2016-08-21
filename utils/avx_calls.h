@@ -73,12 +73,12 @@ extern "C" {
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_ps(FALSEVALUE,TRUEVALUE,MASK)
 #define AVX_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_ps(dest, mask, source)
 
-    //Trig
+//Trig
 #ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X)                 _mm256_acos_ps(X)
 #else
     //Other compilers do not have the vectorized arc-cosine
-#define AVX_ARC_COSINE(X)                  inv_cosine(X)
+#define AVX_ARC_COSINE(X)                  inv_cosine_avx(X)
 #endif
 
     //Max
@@ -130,11 +130,11 @@ extern "C" {
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_pd(FALSEVALUE,TRUEVALUE,MASK)
 #define AVX_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_pd(dest, mask, source)
 
-    //Trig
+//Trig
 #ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X)                 _mm256_acos_pd(X)
 #else
-#define AVX_ARC_COSINE(X)                  inv_cosine(X)
+#define AVX_ARC_COSINE(X)                  inv_cosine_avx(X)
 #endif
 
     //Max
@@ -151,11 +151,11 @@ extern "C" {
 #endif //DOUBLE_PREC
 
 #ifndef  __INTEL_COMPILER
-  static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X)
-  {
+static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X)
+{
     union cos{
-      AVX_FLOATS m;
-      DOUBLE x[AVX_NVEC];
+        AVX_FLOATS m;
+        DOUBLE x[AVX_NVEC];
     };
     union cos union_costheta;
     union cos union_returnvalue;

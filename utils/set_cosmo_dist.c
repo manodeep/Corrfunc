@@ -12,7 +12,7 @@
    a given cosmological model.
 */
 
-
+#include <gsl/gsl_integration.h>
 #include "set_cosmo_dist.h"
 #include "cosmology_params.h"
 

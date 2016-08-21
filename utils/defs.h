@@ -48,11 +48,13 @@ struct config_options
     };
     
     /* the link_in_* variables control how the 3-D cell structure is created */
-    int link_in_cz;/* Not implemented but present to enable brute-force calculation*/
-    int link_ra; /* relevant for DDrppi_mocks and DDtheta_mocks.*/
-    int link_in_dec;/* */
+    int link_in_dec;/* relevant for DDthteta_mocks */
+    int link_in_ra; /* relevant for DDtheta_mocks.*/
 
-    /* Replaces the divide in DDrppi_mocks by a reciprocal and a Newton-Raphson step*/
+    /* Replaces the divide in DDrppi_mocks in AVX mode by a reciprocal and a Newton-Raphson step. */
     int fast_divide;
+
+    /* Fast arccos for wtheta (effective only when OUTPUT_THETAAVG is enabled) */
+    int fast_acos;
 };
 

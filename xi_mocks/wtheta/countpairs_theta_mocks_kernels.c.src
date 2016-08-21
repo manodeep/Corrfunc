@@ -1,0 +1,422 @@
+/* File: countpairs_theta_mocks_kernels.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <inttypes.h>
+
+#include "defs.h"
+#include "function_precision.h"
+
+#if defined(__AVX__)
+#include "avx_calls.h"
+
+static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
+                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
+                                                                const int same_cell, 
+                                                                const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
+                                                                const DOUBLE *costheta_upp, 
+                                                                DOUBLE *src_rpavg,
+                                                                uint64_t *src_npairs)
+{
+    if(N0 == 0 || N1 == 0) {
+        return EXIT_SUCCESS;
+    }
+    const int32_t need_rpavg = src_rpavg != NULL;
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin];
+    AVX_FLOATS m_kbin[nthetabin];
+    AVX_FLOATS m_costheta_upp[nthetabin] ;
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        m_costheta_upp[i] = AVX_SET_FLOAT(costheta_upp[i]);
+        if(need_rpavg) {
+            thetaavg[i] = ZERO;
+            m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
+        }
+    }
+
+
+    for(int64_t i=0;i<N0;i++) {
+      const DOUBLE xpos = *x0++;
+      const DOUBLE ypos = *y0++;
+      const DOUBLE zpos = *z0++;
+      
+      const AVX_FLOATS m_x1 = AVX_SET_FLOAT(xpos);
+      const AVX_FLOATS m_y1 = AVX_SET_FLOAT(ypos);
+      const AVX_FLOATS m_z1 = AVX_SET_FLOAT(zpos);
+
+      int64_t j = (same_cell == 1) ? (i+1):0;
+      if(same_cell == 0) {
+          DOUBLE *localz1 = z1;
+          while(j < N1) {
+              const DOUBLE dz = *localz1++ - zpos;
+              if(dz > -costhetamin) {
+                  break;
+              }
+              j++;
+          }
+      }
+      
+      DOUBLE *localx1 = x1 + j;
+      DOUBLE *localy1 = y1 + j;
+      DOUBLE *localz1 = z1 + j;
+      
+      for(;j<=(N1-AVX_NVEC);j+=AVX_NVEC){
+          union int8 {
+              AVX_INTS m_ibin;
+              int ibin[NVEC];
+          };
+          union int8 union_rpbin;
+          
+          union float8{
+              AVX_FLOATS m_Dperp;
+              DOUBLE Dperp[NVEC];
+          };
+          union float8 union_mDperp;
+
+          const AVX_FLOATS m_costhetamax=AVX_SET_FLOAT(costhetamax);
+          const AVX_FLOATS m_costhetamin = AVX_SET_FLOAT(costhetamin);
+              
+          const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
+          const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
+          const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
+
+          localx1 += AVX_NVEC;
+          localy1 += AVX_NVEC;
+          localz1 += AVX_NVEC;
+
+          const AVX_FLOATS m_tmp1 = AVX_MULTIPLY_FLOATS(m_x2,m_x1);
+          const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_y2,m_y1);
+          const AVX_FLOATS m_tmp3 = AVX_MULTIPLY_FLOATS(m_z2,m_z1);
+          const AVX_FLOATS m_costheta = AVX_ADD_FLOATS(m_tmp1,AVX_ADD_FLOATS(m_tmp2,m_tmp3));
+          
+          AVX_FLOATS m_mask_left = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_costheta,m_costhetamax,_CMP_GT_OS),
+                                                   AVX_COMPARE_FLOATS(m_costheta,m_costhetamin,_CMP_LE_OS));
+          if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+              continue;
+          }
+          
+          AVX_FLOATS m_thetabin;
+          if(need_rpavg) {
+              //first do the acos to get the actual angles
+              const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
+              const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta);
+              union_mDperp.m_Dperp = AVX_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
+              m_thetabin = AVX_SET_FLOAT((DOUBLE) 0.0);
+          }
+          
+          
+          for(int kbin=nthetabin-1;kbin>=1;kbin--) {
+              const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OS);
+              const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+              const int test = AVX_TEST_COMPARISON(m_bin_mask);
+              if(need_rpavg) {
+                  m_thetabin = AVX_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
+              }
+              
+              npairs[kbin] += AVX_BIT_COUNT_INT(test);
+              m_mask_left = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_GT_OS);
+              if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+                  break;
+              }
+          }
+          
+          if(need_rpavg) {
+              union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_thetabin);
+#if  __INTEL_COMPILER
+#pragma unroll(AVX_NVEC)
+#endif
+              for(int jj=0;jj<AVX_NVEC;jj++) {
+                  const int kbin = union_rpbin.ibin[jj];
+                  const DOUBLE theta = union_mDperp.Dperp[jj];
+                  thetaavg[kbin] += theta;
+              }
+          }
+      }//AVX_NVEC loop
+
+      //Take care of the remainder
+      for(;j<N1;j++) {
+          const DOUBLE dx1_dx2 = xpos * (*localx1);
+          const DOUBLE dy1_dy2 = ypos * (*localy1);
+          const DOUBLE dz1_dz2 = zpos * (*localz1);
+          localx1++;localy1++;localz1++;
+          
+          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
+          if(costheta > costhetamin || costheta <= costhetamax) {
+              continue;
+          }
+          DOUBLE theta;
+          if(need_rpavg) {
+              theta =  INV_PI_OVER_180*ACOS(costheta) ;
+          }
+          
+          for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+              if(costheta <= costheta_upp[ibin-1]) {
+                  npairs[ibin]++;
+                  if(need_rpavg) {
+                      thetaavg[ibin] += theta;
+                  }
+                  break;
+              }
+          }
+      }//end of remainder loop
+    }//i loop
+    
+    for(int i=0;i<nthetabin;i++) {
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i] += thetaavg[i];
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+#endif //AVX
+
+
+#if defined(__SSE4_2__)
+#include "sse_calls.h"
+
+static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
+                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
+                                                                const int same_cell, 
+                                                                const DOUBLE costhetamax, const DOUBLE costhetamin,  const int nthetabin,
+                                                                const DOUBLE *costheta_upp, 
+                                                                DOUBLE *src_rpavg,
+                                                                uint64_t *src_npairs)
+{
+    if(N0 == 0 || N1 == 0) {
+        return EXIT_SUCCESS;
+    }
+    const int32_t need_rpavg = src_rpavg != NULL;
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin];
+    SSE_FLOATS m_costheta_upp[nthetabin] ;
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        m_costheta_upp[i] = SSE_SET_FLOAT(costheta_upp[i]);
+    }
+
+    SSE_FLOATS m_kbin[nthetabin];
+    if(need_rpavg) {
+        for(int i=0;i<nthetabin;i++) {
+            thetaavg[i] = ZERO;
+            m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
+        }
+    }
+    
+    for(int64_t i=0;i<N0;i++) {
+      const DOUBLE xpos = *x0++;
+      const DOUBLE ypos = *y0++;
+      const DOUBLE zpos = *z0++;
+      
+      const SSE_FLOATS m_x1 = SSE_SET_FLOAT(xpos);
+      const SSE_FLOATS m_y1 = SSE_SET_FLOAT(ypos);
+      const SSE_FLOATS m_z1 = SSE_SET_FLOAT(zpos);
+      
+      int64_t j = (same_cell == 1) ? (i+1):0;
+      if(same_cell == 0) {
+          DOUBLE *localz1 = z1;
+          while(j < N1) {
+              const DOUBLE dz = *localz1++ - zpos;
+              if(dz > -costhetamin) break;
+              j++;
+          }
+      }
+
+      DOUBLE *localx1 = x1 + j;
+      DOUBLE *localy1 = y1 + j;
+      DOUBLE *localz1 = z1 + j;
+      
+      for(;j<=(N1-SSE_NVEC);j+=SSE_NVEC){
+          union int4 {
+              SSE_INTS m_ibin;
+              int ibin[NVEC];
+          };
+          union int4 union_rpbin;
+          
+          union float4{
+              SSE_FLOATS m_Dperp;
+              DOUBLE Dperp[NVEC];
+          };
+          union float4 union_mDperp;
+
+          const SSE_FLOATS m_costhetamax=SSE_SET_FLOAT(costhetamax);
+          const SSE_FLOATS m_costhetamin=SSE_SET_FLOAT(costhetamin);
+          
+          const SSE_FLOATS m_x2 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
+          const SSE_FLOATS m_y2 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
+          const SSE_FLOATS m_z2 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
+          
+          localx1 += SSE_NVEC;localy1 += SSE_NVEC;localz1 += SSE_NVEC;
+          
+          const SSE_FLOATS m_tmp1 = SSE_MULTIPLY_FLOATS(m_x2,m_x1);
+          const SSE_FLOATS m_tmp2 = SSE_MULTIPLY_FLOATS(m_y2,m_y1);
+          const SSE_FLOATS m_tmp3 = SSE_MULTIPLY_FLOATS(m_z2,m_z1);
+          const SSE_FLOATS m_costheta = SSE_ADD_FLOATS(m_tmp1,SSE_ADD_FLOATS(m_tmp2,m_tmp3));
+          SSE_FLOATS m_mask_left = SSE_BITWISE_AND(SSE_COMPARE_FLOATS_GT(m_costheta,m_costhetamax),
+                                                   SSE_COMPARE_FLOATS_LE(m_costheta,m_costhetamin));
+          if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
+              continue;
+          }
+          
+          SSE_FLOATS m_thetabin;
+          if(need_rpavg) {
+              //first do the acos to get the actual angles
+              const SSE_FLOATS m_inv_pi_over_180 = SSE_SET_FLOAT(INV_PI_OVER_180);
+              const SSE_FLOATS m_theta = SSE_ARC_COSINE(m_costheta);
+              union_mDperp.m_Dperp = SSE_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
+              m_thetabin = SSE_SET_FLOAT((DOUBLE) 0.0);
+          }
+          
+          
+          for(int kbin=nthetabin-1;kbin>=1;kbin--) {
+              const SSE_FLOATS m1 = SSE_COMPARE_FLOATS_LE(m_costheta,m_costheta_upp[kbin-1]);
+              const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m1,m_mask_left);
+              const int test = SSE_TEST_COMPARISON(m_bin_mask);
+              if(need_rpavg) {
+                  m_thetabin = SSE_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
+              }
+              
+              npairs[kbin] += SSE_BIT_COUNT_INT(test);
+              m_mask_left = SSE_COMPARE_FLOATS_GT(m_costheta,m_costheta_upp[kbin-1]);
+              if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
+                  break;
+              }
+          }
+          
+          if(need_rpavg) {
+              union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_thetabin);
+#if  __INTEL_COMPILER
+#pragma unroll(SSE_NVEC)
+#endif
+              for(int jj=0;jj<SSE_NVEC;jj++) {
+                  const int kbin = union_rpbin.ibin[jj];
+                  const DOUBLE theta = union_mDperp.Dperp[jj];
+                  thetaavg[kbin] += theta;
+              }
+          }
+      }//SSE_NVEC loop
+        
+      //Take care of the remainder
+      for(;j<N1;j++) {
+          const DOUBLE dx1_dx2 = xpos * (*localx1);
+          const DOUBLE dy1_dy2 = ypos * (*localy1);
+          const DOUBLE dz1_dz2 = zpos * (*localz1);
+          localx1++;localy1++;localz1++;
+          
+          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
+          if(costheta > costhetamin || costheta <= costhetamax) {
+              continue;
+          }
+          DOUBLE theta;
+          if(need_rpavg) {
+              theta =  INV_PI_OVER_180*ACOS(costheta) ;
+          }
+          
+          for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+              if(costheta <= costheta_upp[ibin-1]) {
+                  npairs[ibin]++;
+                  if(need_rpavg) {
+                      thetaavg[ibin] += theta;
+                  }
+                  break;
+              }
+          }
+      }//end of remainder loop
+    }//i loop
+    
+    for(int i=0;i<nthetabin;i++) {
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i] += thetaavg[i];
+        }
+    }
+    return EXIT_SUCCESS;
+}
+#endif //SSE4.2
+
+
+static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
+                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
+                                                         const int same_cell,
+                                                         const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
+                                                         const DOUBLE *costheta_upp, 
+                                                         DOUBLE *src_rpavg,
+                                                         uint64_t *src_npairs)
+{
+    if(N0 == 0 || N1 == 0) {
+        return EXIT_SUCCESS;
+    }
+    const int32_t need_rpavg = src_rpavg != NULL;
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin];
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        if(need_rpavg) {
+            thetaavg[i] = ZERO;
+        }
+    }
+    
+    for(int64_t i=0;i<N0;i++) {
+      const DOUBLE xpos = *x0++;
+      const DOUBLE ypos = *y0++;
+      const DOUBLE zpos = *z0++;
+
+      int64_t j = (same_cell == 1) ? (i+1):0;
+      if(same_cell == 0) {
+          DOUBLE *localz1 = z1;
+          while(j < N1) {
+              const DOUBLE dz = *localz1++ - zpos;
+              if(dz > -costhetamin) break;
+              j++;
+          }
+      }
+
+      DOUBLE *localx1 = x1 + j;
+      DOUBLE *localy1 = y1 + j;
+      DOUBLE *localz1 = z1 + j;
+      
+      for(;j<N1;j++) {
+          const DOUBLE dx1_dx2 = xpos * (*localx1);
+          const DOUBLE dy1_dy2 = ypos * (*localy1);
+          const DOUBLE dz1_dz2 = zpos * (*localz1);
+          localx1++;localy1++;localz1++;
+
+          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
+          if(costheta > costhetamin || costheta <= costhetamax) {
+              continue;
+          }
+          DOUBLE theta;
+          if(need_rpavg) {
+              theta =  INV_PI_OVER_180*ACOS(costheta) ;
+          }
+          
+          for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+              if(costheta <= costheta_upp[ibin-1]) {
+                  npairs[ibin]++;
+                  if(need_rpavg) {
+                      thetaavg[ibin] += theta;
+                  }
+                  break;
+              }
+          }//ibin loop
+      }//end of j-loop
+    }//i loop
+
+    for(int i=0;i<nthetabin;i++) {
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i] += thetaavg[i];
+        }
+    }
+    return EXIT_SUCCESS;
+}
+

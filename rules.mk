@@ -1,10 +1,10 @@
 TARGETOBJS := $(TARGETSRC:.c=.o)
 LIBOBJS :=$(LIBSRC:.c=.o)
 
-$(TARGET): $(TARGETOBJS) $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options Makefile 
+$(TARGET): $(TARGETOBJS) $(ROOT_DIR)/common.mk 
 	$(CC) $(TARGETOBJS) $(CLINK) -o $@
 
-$(TARGET).o: $(TARGET).c $(ROOT_DIR)/common.mk Makefile $(INCL)
+$(TARGET).o: $(TARGET).c $(ROOT_DIR)/common.mk Makefile $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/mocks.options 
 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 $(UTILS_DIR)/%.o: $(ROOT_DIR)/common.mk Makefile $(UTILS_DIR)/%.c
