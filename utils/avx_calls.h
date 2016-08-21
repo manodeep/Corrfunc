@@ -75,10 +75,10 @@ extern "C" {
 
 //Trig
 #ifdef  __INTEL_COMPILER
-#define AVX_ARC_COSINE(X)                 _mm256_acos_ps(X)
+#define AVX_ARC_COSINE(X, order)                 _mm256_acos_ps(X)
 #else
     //Other compilers do not have the vectorized arc-cosine
-#define AVX_ARC_COSINE(X)                  inv_cosine_avx(X)
+#define AVX_ARC_COSINE(X, order)                  inv_cosine_avx(X, order)
 #endif
 
     //Max
@@ -132,9 +132,9 @@ extern "C" {
 
 //Trig
 #ifdef  __INTEL_COMPILER
-#define AVX_ARC_COSINE(X)                 _mm256_acos_pd(X)
+#define AVX_ARC_COSINE(X, order)                 _mm256_acos_pd(X)
 #else
-#define AVX_ARC_COSINE(X)                  inv_cosine_avx(X)
+#define AVX_ARC_COSINE(X, order)                  inv_cosine_avx(X, order)
 #endif
 
     //Max
@@ -151,7 +151,9 @@ extern "C" {
 #endif //DOUBLE_PREC
 
 #ifndef  __INTEL_COMPILER
-static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X)
+#include "fast_acos.h"
+    
+static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
 {
     union cos{
         AVX_FLOATS m;
@@ -162,20 +164,30 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X)
     union_costheta.m = X;
     const DOUBLE minus_one = (DOUBLE) -1.0;
     const DOUBLE one = (DOUBLE) 1.0;
-    const DOUBLE zero = (DOUBLE) 0.0;
-    
+
+    //Force everything to be in range [0,1]
     for(int ii=0;ii<AVX_NVEC;ii++) {
-      const DOUBLE costheta = union_costheta.x[ii];
-      if(costheta < minus_one) {
-        union_returnvalue.x[ii] = M_PI;
-      } else if (costheta > one) {
-        union_returnvalue.x[ii] = zero;
-      } else {
-        union_returnvalue.x[ii] = ACOS(costheta);
-      }
+        const DOUBLE costheta = union_costheta.x[ii];
+        union_costheta.x[ii] = costheta <= minus_one ? minus_one:costheta;
+        union_costheta.x[ii] = costheta >= one ? one:costheta;
+    }
+    
+    if(order == 0) {
+        for(int ii=0;ii<AVX_NVEC;ii++) {
+            const DOUBLE costheta = union_costheta.x[ii];
+            union_returnvalue.x[ii] = ACOS(costheta);
+        }
+    } else {
+        //fast acos
+        /*Taken from associated C++ code in http://www.geometrictools.com/GTEngine/Include/Mathematics/GteACosEstimate.h*/
+        for(int ii=0;ii<AVX_NVEC;ii++) {
+            union_returnvalue.x[ii] = FAST_ACOS(union_costheta.x[ii]);
+        }
     }
     return union_returnvalue.m;
   }
+
+
 #endif
 
 
