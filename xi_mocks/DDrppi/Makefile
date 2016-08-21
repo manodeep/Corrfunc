@@ -9,8 +9,8 @@ include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
 LIBNAME := countpairs_rp_pi_mocks
 LIBRARY := lib$(LIBNAME).a
-LIBSRC  := countpairs_rp_pi_mocks.c $(UTILS_DIR)/gridlink_mocks_impl_float.c $(UTILS_DIR)/gridlink_mocks_impl_double.c \
-           countpairs_rp_pi_mocks_impl_double.c countpairs_rp_pi_mocks_impl_float.c \
+LIBSRC  := countpairs_rp_pi_mocks.c countpairs_rp_pi_mocks_impl_double.c countpairs_rp_pi_mocks_impl_float.c \
+           $(UTILS_DIR)/gridlink_mocks_impl_float.c $(UTILS_DIR)/gridlink_mocks_impl_double.c \
            $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c \
 	   $(UTILS_DIR)/set_cosmo_dist.c $(UTILS_DIR)/cosmology_params.c
 LIBRARY_HEADERS := $(LIBNAME).h

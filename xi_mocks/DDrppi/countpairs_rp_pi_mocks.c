@@ -7,7 +7,6 @@
 */
 
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
 
 #include "countpairs_rp_pi_mocks.h" //function proto-type for API
