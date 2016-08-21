@@ -106,7 +106,9 @@
 
      extern void run_system_call(const char *execstring);
 
-     extern void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
+     extern void setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
+     extern void setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
+     extern void setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float **rupp);
 
      extern int test_all_files_present(const int nfiles, ...);
      //end function declarations

@@ -28,7 +28,8 @@
 /* #define _GNU_SOURCE  */
 
 
-void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)
+
+void setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)
 {
     //set up the bins according to the binned data file
     //the form of the data file should be <rlow  rhigh ....>
@@ -47,6 +48,88 @@ void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **
     while(1) {
         if(fgets(buf,MAXBUFSIZE,fp)!=NULL) {
             nread=sscanf(buf,"%lf %lf",&low,&hi);
+            if(nread==nitems) {
+
+                if(index==1) {
+                    *rmin=low;
+                    (*rupp)[0]=low;
+                }
+
+                (*rupp)[index] = hi;
+                index++;
+            }
+        } else {
+            break;
+        }
+    }
+    *rmax = (*rupp)[index-1];
+    fclose(fp);
+
+    (*rupp)[*nbin]=*rmax ;
+    (*rupp)[*nbin-1]=*rmax ;
+}
+
+
+
+void setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)
+{
+    //set up the bins according to the binned data file
+    //the form of the data file should be <rlow  rhigh ....>
+    const int MAXBUFSIZE=1000;
+    char buf[MAXBUFSIZE];
+    FILE *fp=NULL;
+    double low,hi;
+    const char comment='#';
+    const int nitems=2;
+    int nread=0;
+    *nbin = ((int) getnumlines(fname,comment))+1;
+    *rupp = my_calloc(sizeof(double),*nbin+1);
+
+    fp = my_fopen(fname,"r");
+    int index=1;
+    while(1) {
+        if(fgets(buf,MAXBUFSIZE,fp)!=NULL) {
+            nread=sscanf(buf,"%lf %lf",&low,&hi);
+            if(nread==nitems) {
+
+                if(index==1) {
+                    *rmin=low;
+                    (*rupp)[0]=low;
+                }
+
+                (*rupp)[index] = hi;
+                index++;
+            }
+        } else {
+            break;
+        }
+    }
+    *rmax = (*rupp)[index-1];
+    fclose(fp);
+
+    (*rupp)[*nbin]=*rmax ;
+    (*rupp)[*nbin-1]=*rmax ;
+}
+
+void setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float **rupp)
+{
+    //set up the bins according to the binned data file
+    //the form of the data file should be <rlow  rhigh ....>
+    const int MAXBUFSIZE=1000;
+    char buf[MAXBUFSIZE];
+    FILE *fp=NULL;
+    float low,hi;
+    const char comment='#';
+    const int nitems=2;
+    int nread=0;
+    *nbin = ((int) getnumlines(fname,comment))+1;
+    *rupp = my_calloc(sizeof(float),*nbin+1);
+
+    fp = my_fopen(fname,"r");
+    int index=1;
+    while(1) {
+        if(fgets(buf,MAXBUFSIZE,fp)!=NULL) {
+            nread=sscanf(buf,"%f %f",&low,&hi);
             if(nread==nitems) {
 
                 if(index==1) {

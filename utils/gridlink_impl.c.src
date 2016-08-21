@@ -134,13 +134,13 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
                                    int *nlattice_z,
                                    const struct config_options *options)
 {
-    int nmesh_x,nmesh_y,nmesh_z;
+    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
 
     struct timeval t0;
     if(options->verbose) {
       gettimeofday(&t0,NULL);
     }
-    DOUBLE xbinsize, ybinsize, zbinsize;
+    DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
     const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
     const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
     const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
@@ -262,14 +262,14 @@ cellarray_nvec_DOUBLE * gridlink_nvec_DOUBLE(const int64_t np,
                                              int *nlattice_z,
                                              const struct config_options *options)
 {
-    int nmesh_x,nmesh_y,nmesh_z;
+    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
 
     struct timeval t0;
     if(options->verbose) {
       gettimeofday(&t0,NULL);
     }
 
-    DOUBLE xbinsize, ybinsize, zbinsize;
+    DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
     const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
     const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
     const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
@@ -404,14 +404,14 @@ cellarray_index_DOUBLE * gridlink_index_DOUBLE(const int64_t np,
                                                int *nlattice_z,
                                                const struct config_options *options)
 {
-    int nmesh_x,nmesh_y,nmesh_z;
+    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
 
     struct timeval t0;
     if(options->verbose){
       gettimeofday(&t0,NULL);
     }
 
-    DOUBLE xbinsize, ybinsize, zbinsize;
+    DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
     const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
     const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
     const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
@@ -585,8 +585,8 @@ int assign_ngb_cells_index_DOUBLE(struct cellarray_index_DOUBLE *lattice1, struc
           //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
           //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
           //kernels in that case!
-          if(autocorr == 1 && icell2 >= icell) {
-            continue;
+          if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements == 0) {
+              continue;
           }
           const int64_t ngb_index = first->num_ngb;
           XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE, "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
@@ -626,14 +626,14 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
                                                                    const struct config_options *options)
 {
 
-    int nmesh_x,nmesh_y,nmesh_z;
+    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
     
     struct timeval t0;
     if(options->verbose) {
       gettimeofday(&t0,NULL);
     }
 
-    DOUBLE xbinsize, ybinsize, zbinsize;
+    DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
     const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
     const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
     const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
@@ -828,9 +828,9 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
             //For cases where we are not double-counting (i.e., wp and xi), the same-cell
             //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
             //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
-            //kernels in that case!
-            if(autocorr == 1 && icell2 >= icell) {
-              continue;
+            //kernels in that case! Also, if the second cell has no particles, then just skip it
+            if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements == 0) {
+                continue;
             }
             const int64_t ngb_index = first->num_ngb;
             XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,

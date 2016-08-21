@@ -1,0 +1,705 @@
+/* File: countpairs_theta_mocks_impl.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#include "countpairs_theta_mocks_impl_DOUBLE.h"
+#include "countpairs_theta_mocks_kernels_DOUBLE.c"
+#include "cellarray_mocks_DOUBLE.h"
+#include "gridlink_mocks_impl_DOUBLE.h"
+
+#include "defs.h"
+#include "utils.h"
+#include "cosmology_params.h"
+#include "set_cosmo_dist.h"
+#include "cpu_features.h"
+#include "progressbar.h"
+
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
+int check_ra_dec_DOUBLE(const int64_t N, DOUBLE *ra, DOUBLE *theta)
+{
+    if(N==0) {
+        return EXIT_SUCCESS;
+    }
+    if(ra == NULL || theta == NULL) {
+        fprintf(stderr,"Input arrays can not be NULL. Have RA = %p DEC = %p\n", ra, theta);
+        return EXIT_FAILURE;
+    }
+
+    int fix_ra  = 0;
+    int fix_dec = 0;
+    //Check input dec + ra
+    for(int64_t i=0;i<N;i++) {
+        if(ra[i] < 0.0) {
+            fix_ra = 1;
+        }
+        XRETURN(theta[i] <= 180.0, EXIT_FAILURE, "Declination should not be more than 180. Did you swap ra and dec?");
+        if(theta[i] > 90.0) {
+            fix_dec = 1;
+        }
+    }
+
+    if(fix_ra == 1 || fix_dec == 1) {
+        if(fix_ra == 1) {
+            fprintf(stderr,ANSI_COLOR_YELLOW "DDtheta> Out of range values found for ra. Expected ra to be in the range [0.0,360.0]. Found ra values in [-180,180] -- fixing that" ANSI_COLOR_RESET "\n");
+        }
+        if(fix_dec == 1) {
+            fprintf(stderr,ANSI_COLOR_YELLOW "DDtheta> Out of range values found for dec. Expected dec to be in the range [-90.0,90.0]. Found dec values in [0,180] -- fixing that" ANSI_COLOR_RESET "\n");
+        }
+
+        for(int64_t i=0;i<N;i++) {
+            if(fix_ra == 1) {
+                ra[i] += 180.0;
+            }
+            if(fix_dec == 1) {
+                theta[i] -= 90.0;
+            }
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+
+countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(const struct config_options *options)
+{
+  static int initialized = 0;
+  static countpairs_theta_mocks_func_ptr_DOUBLE function = NULL;
+
+  if(initialized == 1) return function;
+
+  //the fastest available code will always be at index 0.
+  if(initialized == 0) {
+    /* Array of function pointers */
+      countpairs_theta_mocks_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX__
+          countpairs_theta_mocks_avx_instrinsics_DOUBLE,
+#endif			 
+#ifdef __SSE4_2__
+          countpairs_theta_mocks_sse_instrinsics_DOUBLE,
+#endif
+          countpairs_theta_mocks_fallback_DOUBLE
+    };
+
+    const int num_functions = sizeof(allfunctions)/sizeof(void *);
+    const int fallback_offset = num_functions - 1;
+#if defined(__AVX__) || defined __SSE4_2__
+    /* Since highest_isa is only used in cases where SSE4.2 or AVX is defined,
+       without this protection, there will be an unnecessary function call
+       and an unused variable compiler warning. */
+    const int highest_isa = instrset_detect();
+#endif    
+    int curr_offset = 0;
+    
+    /* Now check if AVX is supported by the CPU */
+    int avx_offset = fallback_offset;
+#ifdef __AVX__
+    avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif        
+    
+    /* Is the SSE function supported at runtime and enabled at compile-time?*/
+    int sse_offset = fallback_offset;
+#ifdef __SSE4_2__
+    sse_offset = highest_isa >= 6 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+    if( curr_offset != fallback_offset) {
+      fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
+              curr_offset, fallback_offset);
+      return NULL;
+    } 
+    
+    int function_dispatch=0;
+    /* Check that cpu supports feature */
+    if(options->instruction_set != 0) {
+      switch(options->instruction_set) {
+      case(AVX):
+        function_dispatch=avx_offset;break;
+      case(SSE):function_dispatch=sse_offset;break;
+      default:function_dispatch=fallback_offset;break;
+      }
+    }
+    if(function_dispatch >= num_functions) {
+      fprintf(stderr,"In %s> ERROR: Could not resolve the correct function.\n Function index = %d must lie between [0, %d)\n",
+              __FUNCTION__, function_dispatch, num_functions);
+      return NULL;
+    }
+    if(function_dispatch == fallback_offset) {
+        fprintf(stderr,"RETURNING FALLBACK FUNCTION\n");
+    }
+    function = allfunctions[function_dispatch];
+    initialized = 1;
+  }
+
+  return function;
+}
+
+static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
+                                                            const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
+                                                            const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
+                                                            const DOUBLE *theta_upp,
+                                                            const DOUBLE *costheta_upp, 
+                                                            results_countpairs_theta *results,
+                                                            struct config_options *options)
+                                                            
+{
+    if(N0 == 0 || N1 == 0) {
+        return EXIT_SUCCESS;
+    }
+    fprintf(stderr,"Running brute force algorithm\n");
+    const int32_t need_thetaavg = options->need_avg_sep;
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin];
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        if(need_thetaavg) {
+            thetaavg[i] = ZERO;
+        }
+    }
+
+    /* runtime dispatch - get the function pointer */
+    countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_function_DOUBLE = countpairs_theta_mocks_driver_DOUBLE(options);
+    if(countpairs_theta_mocks_function_DOUBLE == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    const int block_size = 128;
+    int interrupted=0,same_cell=0;
+    init_my_progressbar(N0, &interrupted);
+    for(int64_t i=0;i<N0;i+=block_size) {
+        my_progressbar(i, &interrupted);
+        const int64_t block_size1 = (N0-i) > block_size ? block_size:(N0-i);
+        for(int64_t j=0;j<N1;j+=block_size) {
+            const int64_t block_size2 = (N1-j) > block_size ? block_size:(N1-j);
+            DOUBLE *this_thetaavg = need_thetaavg ? thetaavg:NULL;
+            int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i],
+                                                                block_size2, &x1[j], &y1[j], &z1[j],
+                                                                same_cell,
+                                                                costhetamax, costhetamin, nthetabin,
+                                                                costheta_upp,
+                                                                this_thetaavg,
+                                                                npairs);
+            if(status != EXIT_SUCCESS) {
+                return status;
+            }
+        }
+    }
+    finish_myprogressbar(&interrupted);
+
+    if(options->need_avg_sep) {
+        for(int i=1;i<nthetabin;i++) {
+            if(npairs[i] > 0) {
+                thetaavg[i] /= (DOUBLE) npairs[i];
+            }
+        }
+    }
+    
+    //prepare results
+    //Pack in the results
+    results->nbin = nthetabin;
+    results->npairs = my_malloc(sizeof(*(results->npairs)), nthetabin);
+    results->theta_upp = my_malloc(sizeof(*(results->theta_upp))  , nthetabin);
+    results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
+
+    for(int i=0;i<nthetabin;i++) {
+        results->npairs[i] = npairs[i];
+        results->theta_upp[i] = theta_upp[i];
+        results->theta_avg[i] = ZERO;
+        if(options->need_avg_sep) {
+            results->theta_avg[i] = thetaavg[i];
+        }
+    }
+    
+    return EXIT_SUCCESS;
+}
+
+
+int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
+                                  const int64_t ND2, DOUBLE *ra2, DOUBLE *dec2,
+                                  const int numthreads,
+                                  const int autocorr,
+                                  const char *binfile,
+                                  results_countpairs_theta *results,
+                                  const struct config_options *input_options)
+{
+    if(ND1 == 0 || ND2 == 0) {
+        fprintf(stderr,"Warning: Received 0 particles in at least one of the arrays. len(array1) = %"PRId64" len(array2) = %"PRId64"\n",
+                ND1, ND2);
+        //Protect the user. If results has a non-NULL pointer value
+        //then make the malloc'ed arrays NULL, free(results->npairs)
+        //can be called. Also, a good sign that value is not initialized
+        if(results != NULL) {
+            results->npairs = NULL;
+            results->theta_avg = NULL;
+            results->theta_upp = NULL;
+        }
+        return EXIT_SUCCESS;
+    }
+
+    if(input_options->float_type != sizeof(DOUBLE)) {
+        fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
+                __FUNCTION__, sizeof(DOUBLE), input_options->float_type);
+        return EXIT_FAILURE;
+    }
+
+    struct config_options options = *input_options;
+    options.sort_on_z = 1;
+    options.autocorr=autocorr;
+    
+    //check the ra-dec inputs (with braces to restrict scope of int status)
+    {
+        int status = check_ra_dec_DOUBLE(ND1, ra1, dec1);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
+
+    if(autocorr==0) {
+        int status = check_ra_dec_DOUBLE(ND2, ra2, dec2);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
+
+#if defined(_OPENMP)    
+    omp_set_num_threads(numthreads);
+#else
+    (void) numthreads;
+#endif
+
+    int ra_refine_factor = 2;
+    int dec_refine_factor = 2;
+
+#if defined(_OPENMP)
+    if((options.link_in_ra == 0) && (dec_refine_factor < numthreads)) {
+        dec_refine_factor=numthreads;
+    }
+#endif
+    
+    
+    DOUBLE *theta_upp;
+    int nthetabin;
+    DOUBLE thetamin,thetamax;
+    setup_bins_DOUBLE(binfile,&thetamin,&thetamax,&nthetabin,&theta_upp);
+    if( ! (thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax < 180.0 && nthetabin > 0) ) {
+        fprintf(stderr,"Error: Could not setup with theta bins correctly. (thetamin = %lf, thetamax = %lf, with nbins = %d). Expected non-zero rmin/rmax with thetamax > "
+                "thetamin and nbins >=1 \n",thetamin, thetamax, nthetabin);
+        return EXIT_FAILURE;
+    }
+
+    DOUBLE costheta_upp[nthetabin];
+    for(int i=0;i<nthetabin;i++) {
+        costheta_upp[i] = COSD(theta_upp[i]);
+    }
+    const DOUBLE costhetamin=costheta_upp[0];
+    const DOUBLE costhetamax=costheta_upp[nthetabin-1];
+
+    DOUBLE *X1,*Y1,*Z1;
+    X1 = my_malloc(sizeof(*X1),ND1);
+    Y1 = my_malloc(sizeof(*Y1),ND1);
+    Z1 = my_malloc(sizeof(*Z1),ND1);
+
+    for(int i=0;i<ND1;i++) {
+        X1[i] = COSD(dec1[i])*COSD(ra1[i]) ;
+        Y1[i] = COSD(dec1[i])*SIND(ra1[i]) ;
+        Z1[i] = SIND(dec1[i]);
+    }
+
+    DOUBLE *X2=X1,*Y2=Y1,*Z2=Z1;
+    if(autocorr==0) {
+        X2=my_malloc(sizeof(*X2),ND2);
+        Y2=my_malloc(sizeof(*Y2),ND2);
+        Z2=my_malloc(sizeof(*Z2),ND2);
+        for(int64_t i=0;i<ND2;i++) {
+            X2[i] = COSD(dec2[i])*COSD(ra2[i]) ;
+            Y2[i] = COSD(dec2[i])*SIND(ra2[i]) ;
+            Z2[i] = SIND(dec2[i]);
+        }
+    }
+
+    if(options.link_in_dec==0) {
+        //this is equivalent to brute force calculating on the entire dataset
+        int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
+                                                               ND2, X2, Y2, Z2,
+                                                               costhetamax, costhetamin, nthetabin,
+                                                               theta_upp,
+                                                               costheta_upp, 
+                                                               results,
+                                                               &options);
+        free(X1);free(Y1);free(Z1);
+        if(autocorr == 0) {
+            free(X2);free(Y2);free(Z2);
+        }
+        free(theta_upp);
+        return status;
+    }
+
+
+    
+    //Create the lattices
+    DOUBLE ra_min=0.0,dec_min=1e10;
+    DOUBLE ra_max=360.0,dec_max=-1e10;
+    get_max_min_ra_dec_DOUBLE(ND1, ra1, dec1, &ra_min, &dec_min, &ra_max, &dec_max);
+
+    if(autocorr==0) {
+        get_max_min_ra_dec_DOUBLE(ND2, ra2, dec2, &ra_min, &dec_min, &ra_max, &dec_max);
+    }
+
+    /*---Create 3-D lattice--------------------------------------*/
+    cellarray_mocks_index_wtheta_DOUBLE *lattice1,*lattice2;
+    int nmesh_dec=0, max_nmesh_ra=0;
+    int64_t totncells;
+    if(options.link_in_ra) {
+        int *nmesh_grid_ra=NULL;
+        lattice1 = gridlink_mocks_theta_ra_dec_DOUBLE(ND1, ra1, dec1, X1, Y1, Z1,
+                                                      ra_min, ra_max,
+                                                      dec_min, dec_max,
+                                                      NLATMAX, NLATMAX,
+                                                      ra_refine_factor,
+                                                      dec_refine_factor,
+                                                      thetamax,
+                                                      &totncells,
+                                                      &nmesh_dec,
+                                                      &max_nmesh_ra,
+                                                      &nmesh_grid_ra,
+                                                      &options);
+        if(lattice1 == NULL) {
+            return EXIT_FAILURE;
+        }
+        lattice2 = lattice1;
+        if(autocorr==0) {
+            int64_t totncells2;
+            int nmesh_dec2, max_nmesh_ra2;
+            int *nmesh_grid_ra2=NULL;
+            lattice1 = gridlink_mocks_theta_ra_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
+                                                          ra_min, ra_max,
+                                                          dec_min, dec_max,
+                                                          NLATMAX, NLATMAX,
+                                                          ra_refine_factor,
+                                                          dec_refine_factor,
+                                                          thetamax,
+                                                          &totncells2,
+                                                          &nmesh_dec2,
+                                                          &max_nmesh_ra2,
+                                                          &nmesh_grid_ra2,
+                                                          &options);
+
+            if(lattice2 == NULL) {
+                free(theta_upp);
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+                return EXIT_FAILURE;
+            }
+            if( ! (totncells == totncells2 && nmesh_dec == nmesh_dec2 && max_nmesh_ra == max_nmesh_ra2) ){
+                fprintf(stderr,"ERROR: The two sets of 3-D lattices do not have identical bins. First has dims (%d, %d) while second has (%d, %d)\n",
+                        nmesh_dec, max_nmesh_ra, nmesh_dec2, max_nmesh_ra2);
+                return EXIT_FAILURE;
+            }
+            /* Check that each bin in declination has the exact same number of bins in RA for both lattices */
+            for(int i=0;i<nmesh_dec;i++) {
+                XRETURN(nmesh_grid_ra[i] == nmesh_grid_ra2[i], EXIT_FAILURE,"For declination bin = %d, the two lattices do not have idential number of RA bins"
+                        "First has RA bins = %d while the second has RA bins = %d\n", i, nmesh_grid_ra[i],nmesh_grid_ra2[i]);
+            }
+            
+            /* Okay the two lattices have exactly the same underlying structure */
+            free(nmesh_grid_ra2);//don't need this anymore.
+        }
+        const DOUBLE ra_diff = ra_max - ra_min;
+        /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
+        int status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells,
+                                                                 ra_refine_factor, dec_refine_factor,
+                                                                 nmesh_dec, max_nmesh_ra,
+                                                                 ra_min, ra_diff,
+                                                                 nmesh_grid_ra,
+                                                                 autocorr);
+        
+        free(nmesh_grid_ra);//don't need this anymore either
+        if(status != EXIT_SUCCESS) {
+            /* Cleanup memory here if aborting */
+            free(theta_upp);
+            free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+            if(autocorr==0) {
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
+            }
+            return status;
+        }
+    } else {
+
+        /* Only link in declination */
+        lattice1 = gridlink_mocks_theta_dec_DOUBLE(ND1,ra1,dec1,X1,Y1,Z1,
+                                                   dec_min, dec_max,
+                                                   NLATMAX,
+                                                   dec_refine_factor,
+                                                   thetamax,
+                                                   &totncells,
+                                                   &options);
+
+
+        /* Do the same for lattice2 */
+        lattice2 = lattice1;
+        if(autocorr == 0) {
+            int64_t totncells_2=0;
+            lattice2 = gridlink_mocks_theta_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
+                                                       dec_min, dec_max,
+                                                       NLATMAX,
+                                                       dec_refine_factor,
+                                                       thetamax,
+                                                       &totncells_2,
+                                                       &options);
+            if(lattice2 == NULL) {
+                
+                return EXIT_FAILURE;
+            }
+            if( totncells != totncells_2) {
+                fprintf(stderr,"ERROR: In %s> The two sets of 3-D lattices do not have identical bins. First has dims (%"PRId64") while second has (%"PRId64")\n",
+                        __FUNCTION__,totncells, totncells_2);
+                return EXIT_FAILURE;
+            }
+        }
+        int status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1, lattice2, totncells, dec_refine_factor, autocorr);
+        if(status != EXIT_SUCCESS) {
+            /* Cleanup memory here if aborting */
+            free(theta_upp);
+            free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+            if(autocorr==0) {
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
+            }
+            return status;
+        }
+    }//end of linking only in dec
+
+
+    //the lattices have already been made and contain the
+    //XYZ arrays. 
+    free(X1);free(Y1);free(Z1);
+    if(autocorr == 0) {
+        free(X2);free(Y2);free(Z2);
+    }
+
+
+    /* runtime dispatch - get the function pointer */
+    countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_function_DOUBLE = countpairs_theta_mocks_driver_DOUBLE(&options);
+    if(countpairs_theta_mocks_function_DOUBLE == NULL) {
+        return EXIT_FAILURE;
+    }
+
+
+    
+#if defined(_OPENMP)
+    uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nthetabin);
+    DOUBLE **all_thetaavg = NULL;
+    if(options.need_avg_sep) {
+        all_thetaavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nthetabin);
+    }
+#else
+    uint64_t npairs[nthetabin];
+    for(int i=0;i<nthetabin;i++) npairs[i]=0;
+    DOUBLE thetaavg[nthetabin];
+    if(options.need_avg_sep) {
+        for(int i=0;i<nthetabin;i++) thetaavg[i] = ZERO;
+    }
+#endif
+
+    int interrupted=0, numdone=0,abort_status=EXIT_SUCCESS;
+    if(options.verbose) {
+        init_my_progressbar(totncells,&interrupted);
+    }
+
+    
+#if defined(_OPENMP)
+#pragma omp parallel shared(numdone, abort_status)
+    {
+        int tid = omp_get_thread_num();
+        uint64_t npairs[nthetabin];
+        DOUBLE thetaavg[nthetabin];
+        for(int i=0;i<nthetabin;i++) {
+            npairs[i] = 0;
+            if(options.need_avg_sep) {
+                thetaavg[i] = ZERO;
+            }
+        }
+
+#pragma omp for  schedule(dynamic)
+#endif
+
+        /*---Loop-over-Data1-particles--------------------*/    
+        for(int index1=0;index1<totncells;index1++) {
+
+#if defined(_OPENMP)
+#pragma omp flush (abort_status)
+#endif
+            if(abort_status == EXIT_SUCCESS) { //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
+                
+                /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
+                if(options.verbose) {
+#if defined(_OPENMP)
+                    if (omp_get_thread_num() == 0)
+#endif
+                        my_progressbar(numdone,&interrupted);
+                    
+                    
+#if defined(_OPENMP)
+#pragma omp atomic
+#endif
+                    numdone++;
+                }
+                
+                const cellarray_mocks_index_wtheta_DOUBLE *first  = &(lattice1[index1]);
+                const int64_t N1 = first->nelements;
+                if(N1 == 0) {
+                    continue;
+                }
+                DOUBLE *x1 = first->x;
+                DOUBLE *y1 = first->y;
+                DOUBLE *z1 = first->z;
+
+                if(autocorr == 1) {
+                    int same_cell = 1;
+                    DOUBLE *this_thetaavg = NULL;
+                    if(options.need_avg_sep) {
+                        this_thetaavg = thetaavg;
+                    }
+                    const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1,
+                                                                              N1, x1, y1, z1,
+                                                                              same_cell, 
+                                                                              costhetamax, costhetamin, nthetabin,
+                                                                              costheta_upp,
+                                                                              this_thetaavg, npairs);
+
+                    /* This actually causes a race condition under OpenMP - but mostly
+                       I care that an error occurred - rather than the exact value of
+                       the error status */
+                    abort_status |= status;
+                }
+                
+                for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
+                    const cellarray_mocks_index_wtheta_DOUBLE *second = first->ngb_cells[ngb];
+                    const int64_t N2 = second->nelements;
+                    if(N2 == 0) {
+                        continue;
+                    }
+                    DOUBLE *x2 = second->x;
+                    DOUBLE *y2 = second->y;
+                    DOUBLE *z2 = second->z;
+                    int same_cell=0;
+                    DOUBLE *this_thetaavg = NULL;
+                    if(options.need_avg_sep) {
+                        this_thetaavg = thetaavg;
+                    }
+                    const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1,
+                                                                              N2, x2, y2, z2,
+                                                                              same_cell,
+                                                                              costhetamax, costhetamin, nthetabin,
+                                                                              costheta_upp,
+                                                                              this_thetaavg, npairs);
+                    /* This actually causes a race condition under OpenMP - but mostly
+                       I care that an error occurred - rather than the exact value of
+                       the error status */
+                    abort_status |= status;
+                }//loop over ngb cells
+            }//checking for abort status
+        }//loop over index1
+
+#if defined(_OPENMP)
+        for(int j=0;j<nthetabin;j++) {
+            all_npairs[tid][j] = npairs[j];
+            if(options.need_avg_sep) {
+                all_thetaavg[tid][j] = thetaavg[j];
+            }
+        }
+    }//close the omp parallel region
+#endif
+
+    free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+    if(autocorr == 0) {
+        free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
+    }
+
+    if(abort_status != EXIT_SUCCESS) {
+        /* Cleanup memory here if aborting */
+        free(theta_upp);
+#if defined(_OPENMP)
+        matrix_free((void **) all_npairs, numthreads);
+        if(options.need_avg_sep) {
+            matrix_free((void **) all_thetaavg, numthreads);
+        }
+#endif
+        return EXIT_FAILURE;
+    }
+
+    if(options.verbose) {
+        finish_myprogressbar(&interrupted);
+    }
+
+
+#if defined(_OPENMP)
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin];
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        if(options.need_avg_sep) {
+            thetaavg[i] = ZERO;
+        }
+    }
+    for(int i=0;i<numthreads;i++) {
+        for(int j=0;j<nthetabin;j++) {
+            npairs[j] += all_npairs[i][j];
+            if(options.need_avg_sep) {
+                thetaavg[j] += all_thetaavg[i][j];
+            }
+        }
+    }
+    matrix_free((void **) all_npairs, numthreads);
+    if(options.need_avg_sep) {
+        matrix_free((void **) all_thetaavg, numthreads);
+    }
+#endif//USE_OMP
+
+    //The code does not double count for autocorrelations
+    //which means the npairs and rpavg values need to be doubled;
+    if(autocorr == 1) {
+        const uint64_t int_fac = 2;
+        const DOUBLE dbl_fac = (DOUBLE) 2.0;
+        for(int i=0;i<nthetabin;i++) {
+            npairs[i] *= int_fac;
+            if(options.need_avg_sep) {
+                thetaavg[i] *= dbl_fac;
+            }
+        }
+    }
+
+    if(options.need_avg_sep) {
+        for(int i=1;i<nthetabin;i++) {
+            if(npairs[i] > 0) {
+                thetaavg[i] /= (DOUBLE) npairs[i];
+            }
+        }
+    }
+
+    //prepare results
+    //Pack in the results
+    results->nbin = nthetabin;
+    results->npairs = my_malloc(sizeof(*(results->npairs)), nthetabin);
+    results->theta_upp = my_malloc(sizeof(*(results->theta_upp))  , nthetabin);
+    results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
+
+    for(int i=0;i<nthetabin;i++) {
+        results->npairs[i] = npairs[i];
+        results->theta_upp[i] = theta_upp[i];
+        results->theta_avg[i] = ZERO;
+        if(options.need_avg_sep) {
+            results->theta_avg[i] = thetaavg[i];
+        }
+    }
+    free(theta_upp);
+
+    return EXIT_SUCCESS;
+}

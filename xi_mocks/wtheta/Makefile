@@ -9,17 +9,23 @@ include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
 LIBNAME:=countpairs_theta_mocks
 LIBRARY := lib$(LIBNAME).a
-LIBSRC  := countpairs_theta_mocks.c $(UTILS_DIR)/gridlink_mocks.c $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c 
+LIBSRC  := countpairs_theta_mocks.c countpairs_theta_mocks_impl_float.c countpairs_theta_mocks_impl_double.c \
+           $(UTILS_DIR)/gridlink_mocks_impl_float.c $(UTILS_DIR)/gridlink_mocks_impl_double.c \
+           $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c 
 LIBRARY_HEADERS := $(LIBNAME).h
 
 
 TARGET := DDtheta_mocks
 TARGETS := $(TARGET) wtheta
 TARGETSRC := $(LIBSRC) $(TARGET).c $(IO_DIR)/io.c $(IO_DIR)/ftread.c
-INCL     := $(LIBNAME).h $(UTILS_DIR)/defs.h \
-            $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(IO_DIR)/io.h  \
-            $(UTILS_DIR)/gridlink_mocks.h $(UTILS_DIR)/cellarray_mocks.h \
-            $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/avx_calls.h
+INCL     := $(LIBNAME).h countpairs_theta_mocks_kernels_float.c countpairs_theta_mocks_kernels_double.c countpairs_theta_mocks_kernels.c.src \
+            countpairs_theta_mocks_impl.c.src countpairs_theta_mocks_impl.h.src countpairs_theta_mocks_impl_double.h countpairs_theta_mocks_impl_float.h \
+            $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(IO_DIR)/io.h  countpairs_theta_mocks_impl_double.c countpairs_theta_mocks_impl_float.c \
+            $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/gridlink_mocks_impl_float.h $(UTILS_DIR)/gridlink_mocks_impl.h.src \
+            $(UTILS_DIR)/gridlink_mocks_impl_double.c $(UTILS_DIR)/gridlink_mocks_impl_float.c $(UTILS_DIR)/gridlink_mocks_impl.c.src \
+            $(UTILS_DIR)/cellarray_mocks_float.h $(UTILS_DIR)/cellarray_mocks_double.h $(UTILS_DIR)/cellarray_mocks.h.src \
+	    $(UTILS_DIR)/set_cosmo_dist.h $(UTILS_DIR)/cosmology_params.h  $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h \
+	    $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/defs.h
 
 TARGETOBJS:=$(TARGETSRC:.c=.o)
 LIBOBJS:=$(LIBSRC:.c=.o) 
@@ -29,11 +35,9 @@ all: $(TARGETS) $(SRC1) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk 
 wtheta: wtheta.c $(UTILS_DIR)/utils.c 
 	$(CC) $(CFLAGS) $(INCLUDE) $^ $(CLINK) -o $@ 
 
-countpairs_theta_mocks.o: countpairs_theta_mocks.c $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-$(UTILS_DIR)/gridlink_mocks.o:$(UTILS_DIR)/gridlink_mocks.c $(ROOT_DIR)/common.mk $(ROOT_DIR)/mocks.options Makefile
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
+countpairs_theta_mocks_impl_%.o: countpairs_theta_mocks_impl_%.c countpairs_theta_mocks_kernels_%.c $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(INCL)
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+countpairs_theta_mocks_kernels_%.c:countpairs_theta_mocks_kernels.c.src
 
 libs:lib
 lib: $(LIBRARY) | $(INSTALL_LIB_DIR)
@@ -44,7 +48,8 @@ tests:
 	$(MAKE) -C ../tests wtheta
 
 clean:
-	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY)
+	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY) countpairs_theta_mocks_kernels_float.c countpairs_theta_mocks_kernels_double.c countpairs_theta_mocks_impl_double.[ch] countpairs_theta_mocks_impl_float.[ch]
+	$(RM) -R *.dSYM
 	$(MAKE) -C $(UTILS_DIR) clean
 	$(MAKE) -C $(IO_DIR) clean
 

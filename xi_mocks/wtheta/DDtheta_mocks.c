@@ -24,12 +24,12 @@ int main(int argc, char **argv)
     char *file1=NULL,*file2=NULL;
     char *fileformat1=NULL,*fileformat2=NULL;
     char *binfile=NULL;
-
-#if !(defined(USE_OMP) && defined(_OPENMP))
-    const char argnames[][30]={"file1","format1","file2","format2","binfile"};
-#else
-    int nthreads;
+    int nthreads=1;
+    
+#if defined(_OPENMP)
     const char argnames[][30]={"file1","format1","file2","format2","binfile","Nthreads"};
+#else
+    const char argnames[][30]={"file1","format1","file2","format2","binfile"};
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
     struct timeval tstart,t0,t1;
@@ -67,7 +67,10 @@ int main(int argc, char **argv)
     binfile=argv[5];
 #if defined(USE_OMP) && defined(_OPENMP)
     nthreads=atoi(argv[6]);
-    assert(nthreads >= 1 && "Number of threads must be at least 1");
+    if(nthreads < 1) {
+        fprintf(stderr,"Warning: Nthreads = %d should be >=1. Setting nthreads to 1.\n", nthreads);
+        nthreads = 1;
+    }
 #endif
 
     int autocorr=0;
@@ -108,13 +111,32 @@ int main(int argc, char **argv)
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs_theta results = countpairs_theta_mocks(ND1,phiD1,thetaD1,
-                                                              ND2,phiD2,thetaD2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                              nthreads,
+    results_countpairs_theta results;
+    struct config_options options;
+    memset(&options, 0, sizeof(struct config_options));
+#ifndef SILENT
+    options.verbose = 1;
+#endif    
+    options.float_type = sizeof(DOUBLE);
+#ifdef OUTPUT_THETAAVG
+    options.need_avg_sep = 1;
 #endif
-                                                              autocorr,
-                                                              binfile) ;
+#ifdef LINK_IN_DEC
+    options.link_in_dec = 1;
+#endif
+    
+#ifdef LINK_IN_RA
+    options.link_in_dec = 1;
+    options.link_in_ra = 1;
+#endif
+    
+    int status = countpairs_theta_mocks(ND1,phiD1,thetaD1,
+                                        ND2,phiD2,thetaD2,
+                                        nthreads,
+                                        autocorr,
+                                        binfile,
+                                        &results,
+                                        &options);
 
     gettimeofday(&t1,NULL);
     pair_time = ADD_DIFF_TIME(t0,t1);
@@ -122,7 +144,10 @@ int main(int argc, char **argv)
     if(autocorr==0) {
         free(thetaD2);free(phiD2);
     }
-
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+    
     /*---Output-Pairs-------------------------------------*/
     DOUBLE theta_low = results.theta_upp[0];
     for(int i=1;i<results.nbin;i++) {
@@ -163,18 +188,6 @@ void Printhelp(void)
 #endif
     fprintf(stderr,"========================================================================================\n") ;
     fprintf(stderr,"\n\tCompile options: \n");
-#ifdef LINK_IN_DEC
-    fprintf(stderr,"LINK_IN_DEC = True\n");
-#else
-    fprintf(stderr,"LINK_IN_DEC = False\n");
-#endif
-
-#ifdef LINK_IN_RA
-    fprintf(stderr,"LINK_IN_RA = True\n");
-#else
-    fprintf(stderr,"LINK_IN_RA = False\n");
-#endif
-
 #ifdef OUTPUT_THETAAVG
     fprintf(stderr,"Output THETAAVG = True\n");
 #else
