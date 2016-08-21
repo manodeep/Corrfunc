@@ -37,9 +37,9 @@ vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options)
 #ifdef __AVX__
       vpf_avx_intrinsics_DOUBLE,
 #endif			 
-/* #ifdef __SSE4_2__ */
-/*       vpf_sse_intrinsics_DOUBLE, */
-/* #endif */
+#ifdef __SSE4_2__
+      vpf_sse_intrinsics_DOUBLE,
+#endif
       vpf_fallback_DOUBLE
     };
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
@@ -56,11 +56,11 @@ vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options)
 #endif        
     
     /* Is the SSE function supported at runtime and enabled at compile-time?*/
-/*     int sse_offset = fallback_offset; */
-/* #ifdef __SSE4_2__ */
-/*     sse_offset = highest_isa >= 6 ? curr_offset:fallback_offset; */
-/*     curr_offset++; */
-/* #endif */
+    int sse_offset = fallback_offset;
+#ifdef __SSE4_2__
+    sse_offset = highest_isa >= 6 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
     if( curr_offset != fallback_offset) {
       fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
               curr_offset, fallback_offset);
