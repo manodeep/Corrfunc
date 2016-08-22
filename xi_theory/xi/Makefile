@@ -34,7 +34,7 @@ countpairs_xi_impl_%.o:countpairs_xi_impl_%.c countpairs_xi_kernels_%.c
 libs: lib
 lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 clean:
-	$(RM) $(LIBRARY) $(TARGETOBJS) $(TARGET) xi_kernels_float.[ch] xi_kernels_float_double.[ch] countpairs_xi_impl_float.[ch] countpairs_xi_impl_double.[ch]
+	$(RM) $(LIBRARY) $(TARGETOBJS) $(TARGET) xi_kernels_float.c xi_kernels_double.c countpairs_xi_impl_float.[ch] countpairs_xi_impl_double.[ch]
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
