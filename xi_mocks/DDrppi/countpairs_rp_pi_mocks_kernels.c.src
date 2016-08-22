@@ -501,9 +501,9 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
         union_finalbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_binproduct);
         
 #if  __INTEL_COMPILER
-#pragma unroll(NVEC)
+#pragma unroll(SSE_NVEC)
 #endif
-        for(int jj=0;jj<NVEC;jj++) {
+        for(int jj=0;jj<SSE_NVEC;jj++) {
             const int ibin=union_finalbin.ibin[jj];
             
             npairs[ibin]++;
