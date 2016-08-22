@@ -1,0 +1,47 @@
+/* File: cellarray_mocks.h.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#pragma once
+
+#include <stdio.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define NLATMAX   100      /* maximum grid dimension in RA-DEC-CZ plane */
+
+    /* Used for DDrppi_mocks */
+    typedef struct cellarray_mocks_index_particles_DOUBLE cellarray_mocks_index_particles_DOUBLE;
+    struct cellarray_mocks_index_particles_DOUBLE{
+        int64_t nelements;
+        int64_t num_ngb;
+        DOUBLE *x;
+        DOUBLE *y;
+        DOUBLE *z;
+        DOUBLE *cz;//co-moving distance
+        cellarray_mocks_index_particles_DOUBLE **ngb_cells;
+    };
+
+    /* Used for wtheta */
+    typedef struct cellarray_mocks_index_wtheta_DOUBLE cellarray_mocks_index_wtheta_DOUBLE;
+    struct cellarray_mocks_index_wtheta_DOUBLE{
+        int64_t nelements;
+        int64_t num_ngb;
+        DOUBLE *x;
+        DOUBLE *y;
+        DOUBLE *z;
+        DOUBLE ra_max;
+        DOUBLE ra_min;
+        cellarray_mocks_index_wtheta_DOUBLE **ngb_cells;
+    };
+
+#ifdef __cplusplus
+}
+#endif
