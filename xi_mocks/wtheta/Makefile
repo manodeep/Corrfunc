@@ -50,8 +50,6 @@ tests:
 clean:
 	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY) countpairs_theta_mocks_kernels_float.c countpairs_theta_mocks_kernels_double.c countpairs_theta_mocks_impl_double.[ch] countpairs_theta_mocks_impl_float.[ch]
 	$(RM) -R *.dSYM
-	$(MAKE) -C $(UTILS_DIR) clean
-	$(MAKE) -C $(IO_DIR) clean
 
 distclean:clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)

@@ -41,8 +41,6 @@ install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEA
 
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) countpairs_rp_pi_kernels_float.[ch] countpairs_rp_pi_kernels_float_double.[ch]
-	$(MAKE) -C $(UTILS_DIR) clean
-	$(MAKE) -C $(IO_DIR) clean
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)

@@ -15,8 +15,8 @@ LIBSRC:=countspheres_mocks.c countspheres_mocks_impl_float.c countspheres_mocks_
 	$(UTILS_DIR)/set_cosmo_dist.c $(UTILS_DIR)/cosmology_params.c 
 LIBRARY_HEADERS := $(LIBNAME).h
 
-GSL_TARGET := vpf_mocks
-TARGETSRC := $(GSL_TARGET).c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(LIBSRC)
+TARGET := vpf_mocks
+TARGETSRC := $(TARGET).c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(LIBSRC)
 INCL   := $(LIBNAME).h vpf_mocks_kernels.c.src countspheres_mocks_impl.c.src countspheres_mocks_impl.h.src \
         countspheres_mocks_impl_float.h countspheres_mocks_impl_double.h \
         vpf_mocks_kernels_float.c vpf_mocks_kernels_double.c \
@@ -29,29 +29,24 @@ INCL   := $(LIBNAME).h vpf_mocks_kernels.c.src countspheres_mocks_impl.c.src cou
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS :=$(LIBSRC:.c=.o)
 
-all: $(GSL_TARGET) $(TARGETSRC) $(INCL) Makefile $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+EXTRA_INCL:=$(GSL_CFLAGS)
+EXTRA_LINK:=$(GSL_LINK)
 
-$(GSL_TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
-	$(CC) $(TARGETOBJS) $(CLINK) $(GSL_LINK) -o $@
-
-$(GSL_TARGET).o: $(GSL_TARGET).c $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+all: $(TARGET) $(TARGETSRC) $(INCL) Makefile $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
 libs: lib
 lib: $(LIBRARY)
 
-install: $(INSTALL_BIN_DIR)/$(GSL_TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR) $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR) $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 
 distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
 	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY)
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
-	cd $(INSTALL_BIN_DIR) && $(RM) $(GSL_TARGET)
+	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 clean:
-	$(RM) $(GSL_TARGET) $(TARGETOBJS) $(LIBRARY) countspheres_mocks_impl_float.[ch] countspheres_mocks_impl_double.[ch] vpf_mocks_kernels_float.c vpf_mocks_kernels_double.c 
+	$(RM) $(TARGET) $(TARGETOBJS) $(LIBRARY) countspheres_mocks_impl_float.[ch] countspheres_mocks_impl_double.[ch] vpf_mocks_kernels_float.c vpf_mocks_kernels_double.c 
 	$(RM) -R vpf_mocks.dSYM
-	$(MAKE) -C $(UTILS_DIR) clean
-	$(MAKE) -C $(IO_DIR) clean
 
 tests: 
 	$(MAKE) -C ../tests vpf

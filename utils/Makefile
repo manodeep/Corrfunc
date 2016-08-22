@@ -7,6 +7,7 @@ INCL  := avx_calls.h sse_calls.h defs.h defs.h function_precision.h cosmology_pa
          cellarray_float.h cellarray_double.h cellarray.h.src \
          cellarray_mocks_float.h cellarray_mocks_double.h cellarray_mocks.h.src \
          gridlink_impl_float.c gridlink_impl_double.c \
+         gridlink_mocks_impl_float.c gridlink_mocks_impl_double.c \
          gridlink_impl_double.h gridlink_impl_float.h gridlink_impl.c.src gridlink_impl.h.src \
          gridlink_mocks_impl_float.h gridlink_mocks_impl_double.h gridlink_mocks_impl.h.src gridlink_mocks_impl.c.src \
          progressbar.h set_cosmo_dist.h set_cosmology.h sglib.h utils.h 

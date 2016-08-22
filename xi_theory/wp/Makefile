@@ -35,8 +35,6 @@ lib: $(LIBRARY)
 install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) wp_kernels_float.[ch] wp_kernels_float_double.[ch] 
-	$(MAKE) -C $(UTILS_DIR) clean
-	$(MAKE) -C $(IO_DIR) clean
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)

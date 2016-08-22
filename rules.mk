@@ -4,10 +4,10 @@ LIBOBJS :=$(LIBSRC:.c=.o)
 .SUFFIXES:
 
 $(TARGET): $(TARGETOBJS) $(ROOT_DIR)/common.mk 
-	$(CC) $(TARGETOBJS) $(CLINK) -o $@
+	$(CC) $(TARGETOBJS) $(C_LIBRARIES) $(CLINK) $(EXTRA_LINK) -o $@
 
 $(TARGET).o: $(TARGET).c $(ROOT_DIR)/common.mk Makefile $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/mocks.options 
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
+	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
 $(UTILS_DIR)/%.o: $(ROOT_DIR)/common.mk Makefile $(UTILS_DIR)/%.c
 	$(MAKE) -C $(UTILS_DIR)
@@ -50,16 +50,17 @@ $(IO_DIR)/%.o: $(IO_DIR)/%.c $(ROOT_DIR)/common.mk Makefile
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
 %_double.o: %_double.c %.c.src Makefile
-	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
+	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
 %_float.o: %_float.c %.c.src Makefile
-	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(GSL_CFLAGS) -c $< -o $@
+	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
 %.o: %.c $(INCL) $(ROOT_DIR)/common.mk Makefile
-	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
 $(LIBRARY): $(LIBOBJS) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 	ar rcs $@ $(LIBOBJS)
+
 
 $(INSTALL_LIB_DIR)/%.a: %.a $(UTILS_DIR)/defs.h | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 	cp -p $(LIBRARY) $(INSTALL_LIB_DIR)/
