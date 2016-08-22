@@ -29,7 +29,7 @@ PYTHON_CONFIG_EXE:=
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=1
-MINOR:=2
+MINOR:=9
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 
