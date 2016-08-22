@@ -44,20 +44,21 @@ $(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Make
 tests: sharedlib $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(OBJECTS) | $(ROOT_DIR)/lib
 	python call_correlation_functions.py
 
-$(DD_DIR)/lib$(DD_LIB).a $(DD_DIR)/$(DD_LIB).h:
+$(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/$(DD_LIB).h
 	$(MAKE) -C $(DD_DIR) libs
 
-$(DDrppi_DIR)/lib$(DDrppi_LIB).a $(DDrppi_DIR)/$(DDrppi_LIB).a:
+$(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(DDrppi_DIR)/$(DDrppi_LIB).h
 	$(MAKE) -C $(DDrppi_DIR) libs
 
-$(WP_DIR)/lib$(WP_LIB).a $(WP_DIR)/$(WP_LIB).a:
+$(WP_DIR)/lib$(WP_LIB).a: $(WP_DIR)/$(WP_LIB).h
 	$(MAKE) -C $(WP_DIR) libs
 
-$(XI_DIR)/lib$(XI_LIB).a $(XI_DIR)/$(XI_LIB).a:
+$(XI_DIR)/lib$(XI_LIB).a: $(XI_DIR)/$(XI_LIB).h
 	$(MAKE) -C $(XI_DIR) libs
 
-$(VPF_DIR)/lib$(VPF_LIB).a $(VPF_DIR)/$(VPF_LIB).a:
+$(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/$(VPF_LIB).h
 	$(MAKE) -C $(VPF_DIR) libs
+
 
 install: sharedlib $(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY) 
 

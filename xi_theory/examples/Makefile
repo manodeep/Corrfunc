@@ -23,34 +23,40 @@ include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 TARGET := run_correlations
 TARGETSRC   := run_correlations.c $(IO_DIR)/ftread.c $(IO_DIR)/io.c  $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c 
 TARGETOBJS  := $(TARGETSRC:.c=.o)
-C_LIBRARY := $(LIB_DIR)/lib$(DD_LIB).a $(LIB_DIR)/lib$(DDrppi_LIB).a $(LIB_DIR)/lib$(WP_LIB).a \
-             $(LIB_DIR)/lib$(XI_LIB).a $(LIB_DIR)/lib$(VPF_LIB).a
+C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
+             $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
 
-INCL :=	$(INCLUDE_DIR)/$(DD_LIB).h $(INCLUDE_DIR)/$(DDrppi_LIB).h $(INCLUDE_DIR)/$(WP_LIB).h $(INCLUDE_DIR)/$(XI_LIB).h $(INCLUDE_DIR)/$(VPF_LIB).h \
-	$(UTILS_DIR)/defs.h 
+INCL :=	$(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
+        $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h \
+        $(UTILS_DIR)/defs.h 
+
+EXTRA_INCL:= -I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(VPF_DIR) $(GSL_CFLAGS)
+EXTRA_LINK:= $(GSL_LINK)
 
 all: $(TARGET) $(TARGETSRC) $(INCL) $(C_LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile uncompress
 
-$(TARGET): Makefile $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk $(INCL) $(C_LIBRARY) $(TARGETOBJS) 
-	$(CC) $(TARGETOBJS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) -o $@
+# $(TARGET): Makefile $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk $(INCL) $(C_LIBRARY) $(TARGETOBJS) 
+# 	$(CC) $(TARGETOBJS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) -o $@
 
-$(INCLUDE_DIR)/$(DD_LIB).h $(LIB_DIR)/lib$(DD_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
-	$(MAKE) -C $(DD_DIR) install
+# %.o: %.c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+# 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) $(OPT) $(INCLUDE) -c $< -o $@
 
-$(INCLUDE_DIR)/$(DDrppi_LIB).h $(LIB_DIR)/lib$(DDrppi_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(DDrppi_DIR) install
+$(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/$(DD_LIB).h
+	$(MAKE) -C $(DD_DIR) libs
 
-$(INCLUDE_DIR)/$(WP_LIB).h $(LIB_DIR)/lib$(WP_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(WP_DIR) install
+$(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(DDrppi_DIR)/$(DDrppi_LIB).h
+	$(MAKE) -C $(DDrppi_DIR) libs
 
-$(INCLUDE_DIR)/$(XI_LIB).h $(LIB_DIR)/lib$(XI_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(XI_DIR) install
+$(WP_DIR)/lib$(WP_LIB).a: $(WP_DIR)/$(WP_LIB).h
+	$(MAKE) -C $(WP_DIR) libs
 
-$(INCLUDE_DIR)/$(VPF_LIB).h $(LIB_DIR)/lib$(VPF_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(VPF_DIR) install
+$(XI_DIR)/lib$(XI_LIB).a: $(XI_DIR)/$(XI_LIB).h
+	$(MAKE) -C $(XI_DIR) libs
 
-%.o: %.c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) $(OPT) $(INCLUDE) -c $< -o $@
+$(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/$(VPF_LIB).h
+	$(MAKE) -C $(VPF_DIR) libs
+
+$(TARGET): $(C_LIBRARIES) $(TARGETOBJS)
 
 uncompress: | $(DATA_DIR)
 	@{\
@@ -70,5 +76,5 @@ clean:
 	$(RM) $(TARGET) $(TARGETOBJS) 
 
 
-
+include $(ROOT_DIR)/rules.mk
 

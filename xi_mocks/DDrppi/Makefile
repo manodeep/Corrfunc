@@ -15,9 +15,9 @@ LIBSRC  := countpairs_rp_pi_mocks.c countpairs_rp_pi_mocks_impl_double.c countpa
 	   $(UTILS_DIR)/set_cosmo_dist.c $(UTILS_DIR)/cosmology_params.c
 LIBRARY_HEADERS := $(LIBNAME).h
 
-GSL_TARGET   := DDrppi_mocks
-TARGETS  := $(GSL_TARGET) wprp_mocks
-TARGETSRC:= $(GSL_TARGET).c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(LIBSRC)
+TARGET   := DDrppi_mocks
+TARGETS  := $(TARGET) wprp_mocks
+TARGETSRC:= $(TARGET).c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(LIBSRC)
 INCL     := countpairs_rp_pi_mocks_kernels_float.c countpairs_rp_pi_mocks_kernels_double.c countpairs_rp_pi_mocks_kernels.c.src \
             countpairs_rp_pi_mocks_impl.c.src countpairs_rp_pi_mocks_impl.h.src countpairs_rp_pi_mocks_impl_double.h countpairs_rp_pi_mocks_impl_float.h \
             countpairs_rp_pi_mocks.h \
@@ -32,14 +32,10 @@ LIBOBJS:=$(LIBSRC:.c=.o)
 
 all: $(TARGETS) $(TARGETSRC) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
 
-$(GSL_TARGET): $(TARGETOBJS) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
-	$(CC) $(TARGETOBJS) $(CLINK) $(GSL_LINK) -o $@ 
+EXTRA_INCL:=$(GSL_CFLAGS)
+EXTRA_LINK:=$(GSL_LINK)
 
-$(GSL_TARGET).o: $(GSL_TARGET).c $(ROOT_DIR)/common.mk Makefile $(INCL)
-	$(CC) $(OPT) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-countpairs_rp_pi_mocks_impl_%.o:countpairs_rp_pi_mocks_impl_%.c countpairs_rp_pi_mocks_kernels_%.c $(INCL) $(ROOT_DIR)/common.mk $(ROOT_DIR)/mocks.options Makefile
-	$(CC) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+countpairs_rp_pi_mocks_impl_%.o:countpairs_rp_pi_mocks_impl_%.c countpairs_rp_pi_mocks_kernels_%.c 
 
 wprp_mocks: wprp_mocks.c $(UTILS_DIR)/utils.c 
 	$(CC) $(CFLAGS) $(INCLUDE) $^ $(CLINK) -o $@ 
@@ -55,7 +51,6 @@ tests:
 clean:
 	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY) countpairs_rp_pi_mocks_impl_float.[ch] countpairs_rp_pi_mocks_impl_double.[ch] countpairs_rp_pi_mocks_kernels_double.c countpairs_rp_pi_mocks_kernels_float.c 
 	$(RM) -R *.dSYM
-	$(MAKE) -C $(UTILS_DIR) clean
 
 distclean:clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)

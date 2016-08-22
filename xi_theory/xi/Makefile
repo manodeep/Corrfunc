@@ -35,8 +35,6 @@ libs: lib
 lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 clean:
 	$(RM) $(LIBRARY) $(TARGETOBJS) $(TARGET) xi_kernels_float.[ch] xi_kernels_float_double.[ch] countpairs_xi_impl_float.[ch] countpairs_xi_impl_double.[ch]
-	$(MAKE) -C $(UTILS_DIR) clean
-	$(MAKE) -C $(IO_DIR) clean
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)

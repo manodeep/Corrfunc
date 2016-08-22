@@ -5,13 +5,13 @@ LIB_DIR := $(ROOT_DIR)/lib
 DATA_DIR := ../tests/data
 
 MOCKS_DIR := $(ROOT_DIR)/xi_mocks
-DDrppi_DIR := $(MOCKS_DIR)/DDrppi
+DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi
 WTHETA_DIR := $(MOCKS_DIR)/wtheta
-VPF_DIR := $(MOCKS_DIR)/vpf
+VPF_mocks_DIR := $(MOCKS_DIR)/vpf
 
-DDrppi_LIB := countpairs_rp_pi_mocks
+DDrppi_mocks_LIB := countpairs_rp_pi_mocks
 WTHETA_LIB := countpairs_theta_mocks
-VPF_LIB := countspheres_mocks
+VPF_mocks_LIB := countspheres_mocks
 
 include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
@@ -19,13 +19,13 @@ PROJECT := _countpairs_mocks
 PYTHON_LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 SOURCES := $(PROJECT).c
 OBJECTS := $(SOURCES:.c=.o)
-C_LIBRARIES := $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WTHETA_DIR)/lib$(WTHETA_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
-INCL :=	$(DDrppi_DIR_DIR)/$(DDrppi_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h $(VPF_DIR)/$(VPF_LIB).h \
+C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(WTHETA_DIR)/lib$(WTHETA_LIB).a $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a
+INCL :=	$(DDrppi_mocks_DIR_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h \
         $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
         $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_mocks.h \
 	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_mocks.h \
         $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cosmology_params.h 
-LIB_INCLUDE:=-I$(DDrppi_DIR) -I$(WTHETA_DIR) -I$(VPF_DIR)
+LIB_INCLUDE:=-I$(DDrppi_mocks_DIR) -I$(WTHETA_DIR) -I$(VPF_mocks_DIR)
 
 
 ifeq ($(UNAME), Darwin)
@@ -56,6 +56,16 @@ $(LIB_DIR)/$(PROJECT).so:$(LIB_DIR)/$(PYTHON_LIBRARY)
 $(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
 	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 
+$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+	$(MAKE) -C $(DDrppi_mocks_DIR) libs
+
+$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(WTHETA_DIR)/$(WTHETA_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+	$(MAKE) -C $(WTHETA_DIR) libs
+
+$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+	$(MAKE) -C $(VPF_mocks_DIR) libs
+
+
 sharedlib: $(PROJECT).so | $(LIB_DIR)
 ifeq ($(FIX_PYTHON_LINK), 1)
 	@{ \
@@ -69,16 +79,6 @@ ifeq ($(FIX_PYTHON_LINK), 1)
 endif
 
 install: sharedlib $(LIB_DIR)/$(PYTHON_LIBRARY) 
-
-$(DDrppi_DIR)/$(DDrppi_LIB).h $(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(DDrppi_DIR) libs
-
-$(WTHETA_DIR)/$(WTHETA_LIB).h $(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(WTHETA_DIR) libs
-
-$(VPF_DIR)/$(VPF_LIB).h $(VPF_DIR)/lib$(VPF_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
-	$(MAKE) -C $(VPF_DIR) libs
-
 
 .PHONY: sharedlib
 

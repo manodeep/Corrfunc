@@ -23,7 +23,7 @@ tests:
 	$(MAKE) -C xi_theory tests
 	$(MAKE) -C xi_mocks tests
 
-.PHONY: clean celna clena celan xi_theory xi_mocks install distclean realclean
+.PHONY: clean celna clena celan xi_theory xi_mocks install distclean realclean libs lib
 
 distclean:realclean
 distclena:realclean
@@ -38,6 +38,8 @@ realclean:|dirs
 			rm -f include/defs.h;\
 		fi;\
 	}
+	$(MAKE) -C utils clean
+	$(MAKE) -C io clean
 
 clean:
 	$(MAKE) -C xi_theory clean
