@@ -29,7 +29,7 @@ distclean:realclean
 distclena:realclean
 realclena:realclean
 
-realclean:
+realclean:|dirs
 	$(MAKE) -C xi_theory distclean
 	$(MAKE) -C xi_mocks distclean
 	@{\
