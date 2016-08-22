@@ -113,7 +113,7 @@ matrix:
     #     - source activate test
         
     - os: linux
-      dist: trusty
+      dist: precise
       sudo: required
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=2.6 NUMPY_VERSION=1.7
@@ -125,7 +125,7 @@ matrix:
         - source activate test
 
     - os: linux
-      dist: trusty
+      dist: precise
       sudo: required
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=2.7
@@ -137,7 +137,7 @@ matrix:
         - source activate test
         
     - os: linux
-      dist: trusty
+      dist: precise
       sudo: required
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=3.3 
@@ -149,7 +149,7 @@ matrix:
         - source activate test
 
     - os: linux
-      dist: trusty
+      dist: precise
       sudo: required
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=3.5
