@@ -1,6 +1,8 @@
 TARGETOBJS := $(TARGETSRC:.c=.o)
 LIBOBJS :=$(LIBSRC:.c=.o)
 
+.SUFFIXES:
+
 $(TARGET): $(TARGETOBJS) $(ROOT_DIR)/common.mk 
 	$(CC) $(TARGETOBJS) $(CLINK) -o $@
 
@@ -61,7 +63,7 @@ $(LIBRARY): $(LIBOBJS) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/theory.options $(RO
 
 $(INSTALL_LIB_DIR)/%.a: %.a $(UTILS_DIR)/defs.h | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
 	cp -p $(LIBRARY) $(INSTALL_LIB_DIR)/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" $(LIBRARY_HEADERS) > $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
+	cp -p $(LIBRARY_HEADERS) $(INSTALL_HEADERS_DIR)/
 	cp -p $(UTILS_DIR)/defs.h $(INSTALL_HEADERS_DIR)/
 
 $(INSTALL_BIN_DIR)/%: %

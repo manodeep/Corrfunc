@@ -79,9 +79,6 @@ ifeq ($(DO_CHECKS), 1)
   endif
   #end of checks for make. 
 
-
-
-
   ## Make clang the default compiler on Mac
   ## But first check for clang-omp, use that if available
   ifeq ($(UNAME), Darwin)
@@ -191,13 +188,6 @@ ifeq ($(DO_CHECKS), 1)
     endif
   endif
   ## done with check for conflicting options
-
-  ## Set the vector type appropriately -> sed will use this to generate the header files correctly
-  ifneq (DOUBLE_PREC,$(findstring DOUBLE_PREC,$(OPT)))
-    VECTOR_TYPE:=float
-  else
-    VECTOR_TYPE:=double
-  endif
 
   ifeq (icc,$(findstring icc,$(CC)))
     CFLAGS += -xhost -opt-prefetch -opt-prefetch-distance=16 #-vec-report6
