@@ -16,7 +16,6 @@
 
 #include "defs.h"
 #include "utils.h"
-#include "cosmology_params.h"
 #include "set_cosmo_dist.h"
 #include "cpu_features.h"
 #include "progressbar.h"
@@ -155,6 +154,7 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
+    /* Always print a message saying "brute-force" is running*/
     fprintf(stderr,"Running brute force algorithm\n");
     const int32_t need_thetaavg = options->need_avg_sep;
     uint64_t npairs[nthetabin];
@@ -174,9 +174,13 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
 
     const int block_size = 128;
     int interrupted=0,same_cell=0;
-    init_my_progressbar(N0, &interrupted);
+    if(options->verbose) {
+        init_my_progressbar(N0, &interrupted);
+    }
     for(int64_t i=0;i<N0;i+=block_size) {
-        my_progressbar(i, &interrupted);
+        if(options->verbose) {
+            my_progressbar(i, &interrupted);
+        }
         const int64_t block_size1 = (N0-i) > block_size ? block_size:(N0-i);
         for(int64_t j=0;j<N1;j+=block_size) {
             const int64_t block_size2 = (N1-j) > block_size ? block_size:(N1-j);
@@ -194,7 +198,9 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
             }
         }
     }
-    finish_myprogressbar(&interrupted);
+    if(options->verbose) {
+        finish_myprogressbar(&interrupted);
+    }
 
     if(options->need_avg_sep) {
         for(int i=1;i<nthetabin;i++) {
@@ -327,7 +333,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
     }
 
-    if(options.link_in_dec==0) {
+    if(options.link_in_dec==0 && options.link_in_ra==0) {
         //this is equivalent to brute force calculating on the entire dataset
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,

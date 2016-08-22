@@ -60,7 +60,6 @@ def read_catalog(filebase=None):
     supply the full filename.
     """
 
-    import re
     import numpy as np
 
     def read_ascii(filename, return_dtype=None):
