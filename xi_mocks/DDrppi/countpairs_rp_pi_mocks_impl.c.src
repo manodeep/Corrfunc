@@ -206,7 +206,6 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     (void) numthreads;
 #endif
 
-    DOUBLE dpi,inv_dpi;
     int bin_refine_factor=2;
     int zbin_refine_factor=2;
     const int npibin = (int) pimax;
@@ -292,10 +291,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     }
     DOUBLE sqr_rpmin = rpmin*rpmin;
     DOUBLE sqr_rpmax = rpmax*rpmax;
-    /* DOUBLE sqr_pimax = pimax*pimax; */
 
-    dpi = pimax/(DOUBLE)npibin ;
-    inv_dpi = 1.0/dpi;
     DOUBLE rupp_sqr[nrpbin];
     rupp_sqr[0] = sqr_rpmin;
     for(int i=0;i<nrpbin;i++) {
