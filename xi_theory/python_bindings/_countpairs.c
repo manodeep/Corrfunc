@@ -44,13 +44,6 @@ PyMODINIT_FUNC init_countpairs(void);
 #endif
 
 
-/* #ifdef DOUBLE_PREC */
-/* #define ELEMENT_TYPE NPY_DOUBLE */
-/* #else */
-/* #define ELEMENT_TYPE NPY_FLOAT */
-/* #endif */
-
-#define ELEMENT_DESCR    (PyArray_DescrFromType(ELEMENT_TYPE))
 #define NOTYPE_DESCR     (PyArray_DescrFromType(NPY_NOTYPE))
 
 /* #ifndef PIMAX_UNICODE */
@@ -709,8 +702,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
          ) {
         Py_RETURN_NONE;
     }
-
-
+    options.autocorr=autocorr;
 
     size_t element_size;
     /* How many data points are there? And are they all of floating point type */
@@ -790,10 +782,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
     
-    options.need_avg_sep = 1;
-    options.periodic = 1;
     options.float_type = element_size;
-
     results_countpairs_rp_pi results;
     int status = countpairs_rp_pi(ND1,X1,Y1,Z1,
                                   ND2,X2,Y2,Z2,
@@ -853,6 +842,8 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     options.verbose = 0;
     options.instruction_set = AVX;
     options.need_avg_sep = 0;
+    options.periodic=1;
+
     static char *kwlist[] = {
         "boxsize",
         "pimax",
@@ -879,6 +870,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         ){
         Py_RETURN_NONE;
     }
+    options.boxsize=boxsize;
     
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, &element_size);
@@ -917,8 +909,6 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
 
     
     results_countpairs_wp results;
-    options.need_avg_sep = 1;
-    options.periodic = 1;
     options.float_type = element_size;
     int status = countpairs_wp(ND1,X1,Y1,Z1,
                                boxsize,
@@ -992,8 +982,8 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
     options.verbose = 0;
+    options.periodic=1;
     options.instruction_set = AVX; //from enum
-    options.need_avg_sep = 0;
     if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|iii", kwlist,
                                       &boxsize,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,

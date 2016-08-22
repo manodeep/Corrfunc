@@ -24,8 +24,8 @@ INCL     := $(LIBNAME).h countpairs_theta_mocks_kernels_float.c countpairs_theta
             $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/gridlink_mocks_impl_float.h $(UTILS_DIR)/gridlink_mocks_impl.h.src \
             $(UTILS_DIR)/gridlink_mocks_impl_double.c $(UTILS_DIR)/gridlink_mocks_impl_float.c $(UTILS_DIR)/gridlink_mocks_impl.c.src \
             $(UTILS_DIR)/cellarray_mocks_float.h $(UTILS_DIR)/cellarray_mocks_double.h $(UTILS_DIR)/cellarray_mocks.h.src \
-	    $(UTILS_DIR)/set_cosmo_dist.h $(UTILS_DIR)/cosmology_params.h  $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h \
-	    $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/defs.h
+	    $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h  $(UTILS_DIR)/avx_calls.h  $(UTILS_DIR)/sse_calls.h \
+	    $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/defs.h
 
 TARGETOBJS:=$(TARGETSRC:.c=.o)
 LIBOBJS:=$(LIBSRC:.c=.o) 
@@ -40,7 +40,7 @@ countpairs_theta_mocks_impl_%.o: countpairs_theta_mocks_impl_%.c countpairs_thet
 countpairs_theta_mocks_kernels_%.c:countpairs_theta_mocks_kernels.c.src
 
 libs:lib
-lib: $(LIBRARY) | $(INSTALL_LIB_DIR)
+lib: $(LIBRARY)
 
 install: $(INSTALL_BIN_DIR)/DDtheta_mocks $(INSTALL_BIN_DIR)/wtheta $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR) $(INSTALL_LIB_DIR)
 

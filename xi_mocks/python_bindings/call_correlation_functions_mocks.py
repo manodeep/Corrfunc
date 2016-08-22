@@ -8,12 +8,10 @@ Requires: numpy
 
 """
 from __future__ import print_function
-import os.path as path
-import sys
-import re
-import numpy as np
+from os.path import dirname, abspath, join as pjoin
 import time
-
+import sys
+import numpy as np
 
 # Import from current directory first,
 # and then from the package.
@@ -46,37 +44,26 @@ def read_text_file(filename, encoding="utf-8"):
     
 def main():
     tstart = time.time()
-    file = path.join(path.dirname(path.abspath(__file__)),
+    filename = pjoin(dirname(abspath(__file__)),
                      "../tests/data/", "Mr19_mock_northonly.rdcz.dat")
-    # Figure out the datatype, use the header file in the include directory
-    # because that is most likely correct (common.mk might have been modified
-    # but not recompiled)
-    include_file = path.join(path.dirname(path.abspath(__file__)),
-                             "../../include/", "countpairs_rp_pi_mocks.h")
-    includes = read_text_file(include_file)
-    vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes, re.I).group(1)
-    allowed_types = {"float": np.float32, "double": np.float}
-    if vector_type not in list(allowed_types.keys()):
-        print("Error: Unknown precision={0} found in header file {1}. \
-        Allowed types are `{2}'"
-              .format(vector_type, include_file, allowed_types))
-        sys.exit()
-
-    dtype = allowed_types[vector_type]
+    # Double-precision calculations
+    # (if you want single-prec, just change the following line
+    # to dtype = np.float32)
+    dtype = np.float
 
     # Check if pandas is available - much faster to read in the
     # data through pandas
     t0 = time.time()
     print("Reading in the data...")
     if pd is not None:
-        df = pd.read_csv(file, header=None, engine="c",
+        df = pd.read_csv(filename, header=None, engine="c",
                          dtype={"x": dtype, "y": dtype, "z": dtype},
                          delim_whitespace=True)
         ra = np.asarray(df[0], dtype=dtype)
         dec = np.asarray(df[1], dtype=dtype)
         cz = np.asarray(df[2], dtype=dtype)
     else:
-        ra, dec, cz = np.genfromtxt(file, dtype=dtype, unpack=True)
+        ra, dec, cz = np.genfromtxt(filename, dtype=dtype, unpack=True)
 
     t1 = time.time()
     print("RA min  = {0} max = {1}".format(np.min(ra), np.max(ra)))
@@ -88,8 +75,8 @@ def main():
 
     nthreads = 4
     pimax = 40.0
-    binfile = path.join(path.dirname(path.abspath(__file__)),
-                        "../tests/", "bins")
+    binfile = pjoin(dirname(abspath(__file__)),
+                    "../tests/", "bins")
     autocorr = 1
     numbins_to_print = 5
     cosmology = 1
@@ -97,7 +84,8 @@ def main():
     print("\nRunning 2-D correlation function xi(rp,pi)")
     results_DDrppi = rp_pi_mocks(autocorr, cosmology, nthreads,
                                  pimax, binfile,
-                                 ra, dec, cz, ra, dec, cz)
+                                 ra, dec, cz, ra, dec, cz,
+                                 output_rpavg=1, verbose=1)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg     pi_upper     npairs")
@@ -109,11 +97,13 @@ def main():
 
     print("-----------------------------------------------------------")
 
-    binfile = path.join(path.dirname(path.abspath(__file__)),
-                        "../tests/", "angular_bins")
+    binfile = pjoin(dirname(abspath(__file__)),
+                    "../tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")
-    results_wtheta = theta_mocks(autocorr, cosmology, nthreads, binfile,
-                                 ra, dec, ra, dec)
+    results_wtheta = theta_mocks(autocorr, nthreads, binfile,
+                                 ra, dec, ra, dec,
+                                 output_thetaavg=1, fast_acos=1,
+                                 verbose=1)
     print("\n#         ******  wtheta: first {0} bins  *******        "
           .format(numbins_to_print))
     print("#      thetamin        thetamax       thetaavg      npairs")
@@ -132,12 +122,13 @@ def main():
     num_spheres = 10000
     num_pN = 6
     threshold_neighbors = 1  # does not matter since we have the centers
-    centers_file = path.join(path.dirname(path.abspath(__file__)),
-                             "../tests/data/",
-                             "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
+    centers_file = pjoin(dirname(abspath(__file__)),
+                         "../tests/data/",
+                         "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
     results_vpf = vpf_mocks(rmax, nbin, num_spheres, num_pN,
                             threshold_neighbors, centers_file, cosmology,
-                            ra, dec, cz, ra, dec, cz)
+                            ra, dec, cz, ra, dec, cz, verbose=1)
+
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))
     print('#       r    ', end="")

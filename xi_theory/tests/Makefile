@@ -29,7 +29,7 @@ endif
 
 SRC1   := test_periodic.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(UTILS_DIR)/utils.c
 OBJS1  := $(SRC1:.c=.o)
-C_LIBRARY := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
+C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
              $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
 INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h \
           $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
@@ -40,14 +40,30 @@ OBJS2  := $(SRC2:.c=.o)
 
 all: tests $(TARGETS) $(INCL) uncompress $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 
-test_periodic: $(OBJS1) $(C_LIBRARY) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
-	$(CC) $(OBJS1) $(C_LIBRARY) $(GSL_LINK) $(CLINK) -o $@
+test_periodic: $(OBJS1) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+	$(CC) $(OBJS1) $(C_LIBRARIES) $(GSL_LINK) $(CLINK) -o $@
 
-test_nonperiodic: $(OBJS2) $(C_LIBRARY) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
-	$(CC) $(OBJS2) $(C_LIBRARY) $(CLINK) -o $@
+test_nonperiodic: $(OBJS2) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+	$(CC) $(OBJS2) $(C_LIBRARIES) $(CLINK) -o $@
 
 %.o: %.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+
+$(DD_DIR)/lib$(DD_LIB).a $(DD_DIR)/$(DD_LIB).h:
+	$(MAKE) -C $(DD_DIR) libs
+
+$(DDrppi_DIR)/lib$(DDrppi_LIB).a $(DDrppi_DIR)/$(DDrppi_LIB).a:
+	$(MAKE) -C $(DDrppi_DIR) libs
+
+$(WP_DIR)/lib$(WP_LIB).a $(WP_DIR)/$(WP_LIB).a:
+	$(MAKE) -C $(WP_DIR) libs
+
+$(XI_DIR)/lib$(XI_LIB).a $(XI_DIR)/$(XI_LIB).a:
+	$(MAKE) -C $(XI_DIR) libs
+
+$(VPF_DIR)/lib$(VPF_LIB).a $(VPF_DIR)/$(VPF_LIB).a:
+	$(MAKE) -C $(VPF_DIR) libs
 
 python_lib: tests $(OBJS1) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(ROOT_DIR)/lib
 	@echo 
@@ -86,5 +102,6 @@ xi: test_periodic
 
 clean:
 	$(RM) $(targets) $(OBJS1) $(OBJS2)
+	$(RM) -R *.dSYM
 
 

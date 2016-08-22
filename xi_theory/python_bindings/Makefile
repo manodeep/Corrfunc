@@ -24,23 +24,40 @@ PROJECT := _countpairs
 SOURCES := $(PROJECT).c 
 OBJECTS := $(SOURCES:.c=.o)
 PYTHON_LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
-C_LIBRARY := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
+C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
              $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
-INCL := $(INSTALL_HEADERS_DIR)/$(DD_LIB).h $(INSTALL_HEADERS_DIR)/$(DDrppi_LIB).h $(INSTALL_HEADERS_DIR)/$(WP_LIB).h \
-        $(INSTALL_HEADERS_DIR)/$(XI_DIR).h $(INSTALL_HEADERS_DIR)/$(VPF_LIB).h 
+INCL := $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
+        $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h 
+LIB_INCLUDE:=-I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(VPF_DIR)
 
-all: sharedlib $(SOURCES) $(C_LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+
+all: sharedlib $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
 
 $(PROJECT).so: $(PYTHON_LIBRARY)
 	$(RM) $(PROJECT).so
 	ln -s $(PYTHON_LIBRARY) $(PROJECT).so
 
-$(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARY)
-	$(CC) $(OPT) $(CFLAGS) -I$(ROOT_DIR)/include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
+$(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(INCL)
+	$(CC) $(CFLAGS) $(LIB_INCLUDE) $(PYTHON_CFLAGS) $(INCLUDE) $< -c -o $@
 
-tests: sharedlib $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARY) $(OBJECTS) | $(ROOT_DIR)/lib
+tests: sharedlib $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(OBJECTS) | $(ROOT_DIR)/lib
 	python call_correlation_functions.py
+
+$(DD_DIR)/lib$(DD_LIB).a $(DD_DIR)/$(DD_LIB).h:
+	$(MAKE) -C $(DD_DIR) libs
+
+$(DDrppi_DIR)/lib$(DDrppi_LIB).a $(DDrppi_DIR)/$(DDrppi_LIB).a:
+	$(MAKE) -C $(DDrppi_DIR) libs
+
+$(WP_DIR)/lib$(WP_LIB).a $(WP_DIR)/$(WP_LIB).a:
+	$(MAKE) -C $(WP_DIR) libs
+
+$(XI_DIR)/lib$(XI_LIB).a $(XI_DIR)/$(XI_LIB).a:
+	$(MAKE) -C $(XI_DIR) libs
+
+$(VPF_DIR)/lib$(VPF_LIB).a $(VPF_DIR)/$(VPF_LIB).a:
+	$(MAKE) -C $(VPF_DIR) libs
 
 install: sharedlib $(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY) 
 
@@ -63,8 +80,8 @@ $(INSTALL_LIB_DIR)/$(PROJECT).so:$(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY)
 	$(RM) $(INSTALL_LIB_DIR)/$(PROJECT).so
 	cd $(INSTALL_LIB_DIR) && ln -s $(PYTHON_LIBRARY) $(PROJECT).so
 
-$(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
+$(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 clean:
 	$(RM) $(OBJECTS) $(PYTHON_LIBRARY) $(PROJECT).so
 distclean:clean

@@ -44,11 +44,8 @@ countpairs_rp_pi_mocks_impl_%.o:countpairs_rp_pi_mocks_impl_%.c countpairs_rp_pi
 wprp_mocks: wprp_mocks.c $(UTILS_DIR)/utils.c 
 	$(CC) $(CFLAGS) $(INCLUDE) $^ $(CLINK) -o $@ 
 
-# $(UTILS_DIR)/gridlink_mocks.o:$(UTILS_DIR)/gridlink_mocks.c $(ROOT_DIR)/common.mk $(ROOT_DIR)/mocks.options Makefile
-# 	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
 libs: lib
-lib: $(LIBRARY) $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR)
+lib: $(LIBRARY) 
 
 install: $(INSTALL_BIN_DIR)/DDrppi_mocks $(INSTALL_BIN_DIR)/wprp_mocks $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR)
 

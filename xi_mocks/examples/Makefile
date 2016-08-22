@@ -23,8 +23,8 @@ TARGETOBJS  := $(TARGETSRC:.c=.o)
 C_LIBRARIES := $(LIB_DIR)/lib$(DDrppi_LIB).a $(LIB_DIR)/lib$(WTHETA_LIB).a $(LIB_DIR)/lib$(VPF_LIB).a
 INCL :=	$(INCLUDE_DIR)/$(DDrppi_LIB).h $(INCLUDE_DIR)/$(WTHETA_LIB).h $(INCLUDE_DIR)/$(VPF_LIB).h \
         $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
-        $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_mocks.h \
-	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_mocks.h \
+        $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/gridlink_mocks_impl_float.h \
+	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_mocks_double.h $(UTILS_DIR)/cellarray_mocks_float.h \
         $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cosmology_params.h 
 
 all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES)
