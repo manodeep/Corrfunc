@@ -36,7 +36,7 @@ install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
 countpairs_impl_%.o:countpairs_impl_%.c countpairs_kernels_%.c
 
 clean:
-	$(RM) $(TARGETOBJS) $(TARGET) countpairs_kernels_float.[ch] countpairs_kernels_float_double.[ch
+	$(RM) $(TARGETOBJS) $(TARGET) $(LIBRARY) countpairs_kernels_float.c countpairs_kernels_double.c countpairs_impl_double.[ch] countpairs_impl_float.[ch]
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
