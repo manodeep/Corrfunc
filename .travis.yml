@@ -162,7 +162,7 @@ matrix:
         
 
 install:
-  - make CC=$COMPILER
+  - make -r CC=$COMPILER
   - make install CC=$COMPILER
   - python setup.py install
         
