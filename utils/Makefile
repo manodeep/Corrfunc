@@ -14,8 +14,11 @@ INCL  := avx_calls.h sse_calls.h defs.h defs.h function_precision.h cosmology_pa
 
 all: $(TARGETOBJS) Makefile $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options $(ROOT_DIR)/mocks.options
 
-set_cosmo_dist.o: set_cosmo_dist.c $(INCL) $(ROOT_DIR)/mocks.options 
+set_cosmo_dist.o: set_cosmo_dist.c $(ROOT_DIR)/mocks.options 
 	$(CC) $(CFLAGS) $(GSL_CFLAGS) -c $< -o $@
+
+gridlink_impl_%.o:gridlink_impl_%.c gridlink_impl_%.h cellarray_%.h
+gridlink_mocks_impl_%.o:gridlink_mocks_impl_%.c gridlink_mocks_impl_%.h cellarray_mocks_%.h
 
 clean:
 	$(RM) $(TARGETOBJS) cellarray_float.h cellarray_double.h gridlink_impl_float.[ch] gridlink_impl_double.[ch] cellarray_mocks_float.h cellarray_mocks_double.h gridlink_mocks_impl_float.c gridlink_mocks_impl_double.c

@@ -26,15 +26,18 @@ INCL   := wp_kernels_double.c wp_kernels_float.c wp_kernels.c.src countpairs_wp.
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
 
-all: $(TARGET) $(TARGETOBJS) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+all: $(TARGET) $(TARGETOBJS) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-countpairs_wp_impl_%.o:countpairs_wp_impl_%.c countpairs_wp_kernels_%.c
+countpairs_wp_impl_float.o:countpairs_wp_impl_float.c countpairs_wp_impl_float.h wp_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h
+countpairs_wp_impl_double.o:countpairs_wp_impl_double.c countpairs_wp_impl_double.h wp_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h
+countpairs_wp.o:countpairs_wp.c countpairs_wp_impl_double.h countpairs_wp_impl_float.h
 
 libs: lib
 lib: $(LIBRARY) 
-install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
+install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) $(LIBRARY) wp_kernels_float.c wp_kernels_double.c countpairs_wp_impl_double.[ch] countpairs_wp_impl_float.[ch]
+	$(RM) -R *.dSYM
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
