@@ -35,12 +35,6 @@ EXTRA_LINK:= $(GSL_LINK)
 
 all: $(TARGET) $(TARGETSRC) $(INCL) $(C_LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile uncompress
 
-# $(TARGET): Makefile $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk $(INCL) $(C_LIBRARY) $(TARGETOBJS) 
-# 	$(CC) $(TARGETOBJS) $(C_LIBRARY) $(CLINK) $(GSL_LINK) -o $@
-
-# %.o: %.c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
-# 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) $(OPT) $(INCLUDE) -c $< -o $@
-
 $(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/$(DD_LIB).h
 	$(MAKE) -C $(DD_DIR) libs
 
@@ -73,8 +67,8 @@ uncompress: | $(DATA_DIR)
 clena: clean
 celan: clean
 clean:
-	$(RM) $(TARGET) $(TARGETOBJS) 
-
+	$(RM) $(TARGET) $(TARGETOBJS)
+	$(RM) -R *.dSYM
 
 include $(ROOT_DIR)/rules.mk
 

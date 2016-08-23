@@ -27,9 +27,16 @@ INCL   := vpf_kernels_float.c vpf_kernels_double.c vpf_kernels.c.src countsphere
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
 
-all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+EXTRA_INCL:=$(GSL_CFLAGS)
+EXTRA_LINK:=$(GSL_LINK)
+
+all: $(TARGET) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 libs: lib
-lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+lib: $(LIBRARY) 
+
+countspheres_impl_float.o:countspheres_impl_float.c countspheres_impl_float.h vpf_kernels_float.c $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/gridlink_impl_float.h
+countspheres_impl_double.o:countspheres_impl_double.c countspheres_impl_double.h vpf_kernels_double.c $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/gridlink_impl_double.h
+countspheres.o:countspheres.c countspheres_impl_float.h countspheres_impl_double.h
 
 tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
 	$(MAKE) -C ../tests vpf
@@ -40,13 +47,11 @@ tests: ../tests/tests_periodic ../tests/tests_nonperiodic
 ../tests/tests_nonperiodic:
 	$(MAKE) -C ../tests
 
-EXTRA_INCL:=$(GSL_CFLAGS)
-EXTRA_LINK:=$(GSL_LINK)
-
-install: $(INSTALL_BIN_DIR)/$(GSL_TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY)
+install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
 clean:
-	$(RM) $(TARGETOBJS) $(LIBRARY) $(GSL_TARGET) vpf_kernels_float.c vpf_kernels_double.c countspheres_impl_double.[ch] countspheres_impl_float.[ch]
+	$(RM) $(TARGETOBJS) $(LIBRARY) $(TARGET) vpf_kernels_float.c vpf_kernels_double.c countspheres_impl_double.[ch] countspheres_impl_float.[ch]
+	$(RM) -R *.dSYM
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)

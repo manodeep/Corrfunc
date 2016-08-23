@@ -27,14 +27,19 @@ INCL   := xi_kernels_float.c xi_kernels_double.c xi_kernels.c.src countpairs_xi.
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
 
-all: $(TARGET) $(TARGETSRC) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+all: $(TARGET) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-countpairs_xi_impl_%.o:countpairs_xi_impl_%.c countpairs_xi_kernels_%.c
+countpairs_xi_impl_float.o:countpairs_xi_impl_float.c xi_kernels_float.c countpairs_xi_impl_float.h $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h
+countpairs_xi_impl_double.o:countpairs_xi_impl_double.c xi_kernels_double.c countpairs_xi_impl_double.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h
+countpairs_xi.o:countpairs_xi.c countpairs_xi_impl_double.h countpairs_xi_impl_float.h
 
 libs: lib
-lib: $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+lib: $(LIBRARY)
+install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
+
 clean:
 	$(RM) $(LIBRARY) $(TARGETOBJS) $(TARGET) xi_kernels_float.c xi_kernels_double.c countpairs_xi_impl_float.[ch] countpairs_xi_impl_double.[ch]
+	$(RM) -R *.dSYM
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)

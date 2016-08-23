@@ -33,14 +33,17 @@ all: $(TARGETS) $(TARGETSRC) $(WPRPSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/c
 wprp: $(WPRPSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(WPRPSRC) $(CLINK)
 
-countpairs_rp_pi_impl_%.o:countpairs_rp_pi_impl_%.c countpairs_rp_pi_kernels_%.c
+countpairs_rp_pi_impl_double.o:countpairs_rp_pi_impl_double.c countpairs_rp_pi_impl_double.h countpairs_rp_pi_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h
+countpairs_rp_pi_impl_float.o:countpairs_rp_pi_impl_float.c countpairs_rp_pi_impl_float.h countpairs_rp_pi_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h
+countpairs_rp_pi.o:countpairs_rp_pi.c countpairs_rp_pi_impl_double.h countpairs_rp_pi_impl_float.h
 
 libs: lib
 lib:  $(LIBRARY)
-install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS) | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS) 
 
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) $(LIBRARY) countpairs_rp_pi_kernels_float.c countpairs_rp_pi_kernels_double.c countpairs_rp_pi_impl_double.[ch] countpairs_rp_pi_impl_float.[ch]
+	$(RM) -R *.dSYM
 
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)

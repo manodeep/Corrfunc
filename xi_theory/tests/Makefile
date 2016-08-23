@@ -49,19 +49,19 @@ test_nonperiodic: $(OBJS2) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(R
 %.o: %.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(GSL_CFLAGS) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-$(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/$(DD_LIB).h
+$(DD_DIR)/lib$(DD_LIB).a: 
 	$(MAKE) -C $(DD_DIR) libs
 
-$(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(DDrppi_DIR)/$(DDrppi_LIB).h
+$(DDrppi_DIR)/lib$(DDrppi_LIB).a: 
 	$(MAKE) -C $(DDrppi_DIR) libs
 
-$(WP_DIR)/lib$(WP_LIB).a: $(WP_DIR)/$(WP_LIB).h
+$(WP_DIR)/lib$(WP_LIB).a: 
 	$(MAKE) -C $(WP_DIR) libs
 
-$(XI_DIR)/lib$(XI_LIB).a: $(XI_DIR)/$(XI_LIB).h
+$(XI_DIR)/lib$(XI_LIB).a: 
 	$(MAKE) -C $(XI_DIR) libs
 
-$(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/$(VPF_LIB).h
+$(VPF_DIR)/lib$(VPF_LIB).a: 
 	$(MAKE) -C $(VPF_DIR) libs
 
 python_lib: tests $(OBJS1) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(ROOT_DIR)/lib
