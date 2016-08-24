@@ -64,6 +64,7 @@ int main(int argc, char **argv)
 
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose=1;
     options.periodic=0;
     options.need_avg_sep=1;

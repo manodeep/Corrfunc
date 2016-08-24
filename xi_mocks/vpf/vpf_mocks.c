@@ -154,6 +154,7 @@ int main(int argc, char *argv[])
     results_countspheres_mocks results;
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
 #ifndef SILENT
     options.verbose=1;
 #endif

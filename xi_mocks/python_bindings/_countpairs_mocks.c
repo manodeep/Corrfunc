@@ -574,6 +574,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
 
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose = 0;
     options.instruction_set = AVX;
     options.periodic = 0;
@@ -775,6 +776,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     int autocorr=0;
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose=0;
     options.instruction_set=AVX;
     options.link_in_dec=1;
@@ -957,6 +959,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     int threshold_neighbors;
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose=0;
     options.instruction_set=AVX;
     static char *kwlist[] = {
