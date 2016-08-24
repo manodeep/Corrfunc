@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "countpairs_theta_mocks.h" //function proto-type for API
 #include "countpairs_theta_mocks_impl_double.h"//actual implementations for double
@@ -36,6 +37,11 @@ int countpairs_theta_mocks(const int64_t ND1, void *phi1, void *theta1,
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
         fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
                 __FUNCTION__, options->float_type);
+        return EXIT_FAILURE;
+    }
+
+    if( strncmp(options->version, STR(VERSION), sizeof(options->version)/sizeof(char)-1) != 0) {
+        fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;
     }
     

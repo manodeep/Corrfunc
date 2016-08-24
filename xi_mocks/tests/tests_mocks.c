@@ -58,7 +58,7 @@ const int nthreads=1;
 const int cosmology_flag=1;
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .fast_divide=0, .fast_acos=0};
+struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .fast_divide=0, .fast_acos=0, .version=STR(VERSION)};
 //end of global variables
 
 int test_DDrppi_mocks(const char *correct_outputfile)
