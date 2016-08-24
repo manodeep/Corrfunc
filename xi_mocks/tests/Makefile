@@ -40,15 +40,14 @@ all: tests $(TARGETS) $(INCL) uncompress $(ROOT_DIR)/mocks.options $(ROOT_DIR)/c
 
 $(TARGET):$(C_LIBRARIES)
 
-$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: 
 	$(MAKE) -C $(DDrppi_mocks_DIR) libs
 
-$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(WTHETA_DIR)/$(WTHETA_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+$(WTHETA_DIR)/lib$(WTHETA_LIB).a: 
 	$(MAKE) -C $(WTHETA_DIR) libs
 
-$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: 
 	$(MAKE) -C $(VPF_mocks_DIR) libs
-
 
 python_lib: tests $(TARGETOBJS) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile | $(ROOT_DIR)/lib
 	@echo 

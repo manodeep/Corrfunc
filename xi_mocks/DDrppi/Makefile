@@ -30,12 +30,15 @@ INCL     := countpairs_rp_pi_mocks_kernels_float.c countpairs_rp_pi_mocks_kernel
 TARGETOBJS:=$(TARGETSRC:.c=.o)
 LIBOBJS:=$(LIBSRC:.c=.o) 
 
-all: $(TARGETS) $(TARGETSRC) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+all: $(TARGETS) $(TARGETSRC) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
 
 EXTRA_INCL:=$(GSL_CFLAGS)
 EXTRA_LINK:=$(GSL_LINK)
 
-countpairs_rp_pi_mocks_impl_%.o:countpairs_rp_pi_mocks_impl_%.c countpairs_rp_pi_mocks_kernels_%.c 
+countpairs_rp_pi_mocks_impl_double.o:countpairs_rp_pi_mocks_impl_double.c countpairs_rp_pi_mocks_impl_double.h countpairs_rp_pi_mocks_kernels_double.c $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/cellarray_mocks_double.h
+countpairs_rp_pi_mocks_impl_float.o:countpairs_rp_pi_mocks_impl_float.c countpairs_rp_pi_mocks_impl_float.h countpairs_rp_pi_mocks_kernels_float.c $(UTILS_DIR)/gridlink_mocks_impl_float.h $(UTILS_DIR)/cellarray_mocks_float.h
+countpairs_rp_pi_mocks.o:countpairs_rp_pi_mocks.c countpairs_rp_pi_mocks_impl_double.h countpairs_rp_pi_mocks_impl_float.h
+
 
 wprp_mocks: wprp_mocks.c $(UTILS_DIR)/utils.c 
 	$(CC) $(CFLAGS) $(INCLUDE) $^ $(CLINK) -o $@ 
@@ -43,7 +46,7 @@ wprp_mocks: wprp_mocks.c $(UTILS_DIR)/utils.c
 libs: lib
 lib: $(LIBRARY) 
 
-install: $(INSTALL_BIN_DIR)/DDrppi_mocks $(INSTALL_BIN_DIR)/wprp_mocks $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR)
+install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_BIN_DIR)/wprp_mocks $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
 tests: 
 	$(MAKE) -C ../tests DDrppi
