@@ -28,8 +28,8 @@ LIBOBJS := $(LIBSRC:.c=.o)
 
 all: $(TARGET) $(TARGETOBJS) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-countpairs_wp_impl_float.o:countpairs_wp_impl_float.c countpairs_wp_impl_float.h wp_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h
-countpairs_wp_impl_double.o:countpairs_wp_impl_double.c countpairs_wp_impl_double.h wp_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h
+countpairs_wp_impl_float.o:countpairs_wp_impl_float.c countpairs_wp_impl_float.h wp_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h  $(UTILS_DIR)/cellarray_float.h
+countpairs_wp_impl_double.o:countpairs_wp_impl_double.c countpairs_wp_impl_double.h wp_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
 countpairs_wp.o:countpairs_wp.c countpairs_wp_impl_double.h countpairs_wp_impl_float.h
 
 libs: lib

@@ -17,11 +17,6 @@ all: $(TARGETOBJS) Makefile $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options $(R
 set_cosmo_dist.o: set_cosmo_dist.c $(ROOT_DIR)/mocks.options 
 	$(CC) $(CFLAGS) $(GSL_CFLAGS) -c $< -o $@
 
-gridlink_impl_float.o:gridlink_impl_float.c gridlink_impl_float.h cellarray_float.h
-gridlink_impl_double.o:gridlink_impl_double.c gridlink_impl_double.h cellarray_double.h
-gridlink_mocks_impl_float.o:gridlink_mocks_impl_float.c gridlink_mocks_impl_float.h cellarray_mocks_float.h
-gridlink_mocks_impl_double.o:gridlink_mocks_impl_double.c gridlink_mocks_impl_double.h cellarray_mocks_double.h
-
 clean:
 	$(RM) $(TARGETOBJS) cellarray_float.h cellarray_double.h gridlink_impl_float.[ch] gridlink_impl_double.[ch] cellarray_mocks_float.h cellarray_mocks_double.h gridlink_mocks_impl_float.c gridlink_mocks_impl_double.c
 
