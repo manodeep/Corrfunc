@@ -30,19 +30,22 @@ INCL     := $(LIBNAME).h countpairs_theta_mocks_kernels_float.c countpairs_theta
 TARGETOBJS:=$(TARGETSRC:.c=.o)
 LIBOBJS:=$(LIBSRC:.c=.o) 
 
-all: $(TARGETS) $(SRC1) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+TARGET2:=wtheta
+SRC2:=$(TARGET2).c
 
-wtheta: wtheta.c $(UTILS_DIR)/utils.c 
+all: $(TARGETS) $(TARGETSRC) $(SRC2) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+
+wtheta: $(SRC2) $(UTILS_DIR)/utils.c 
 	$(CC) $(CFLAGS) $(INCLUDE) $^ $(CLINK) -o $@ 
 
-countpairs_theta_mocks_impl_%.o: countpairs_theta_mocks_impl_%.c countpairs_theta_mocks_kernels_%.c $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(INCL)
-	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
-countpairs_theta_mocks_kernels_%.c:countpairs_theta_mocks_kernels.c.src
+countpairs_theta_mocks_impl_double.o: countpairs_theta_mocks_impl_double.c countpairs_theta_mocks_impl_double.h countpairs_theta_mocks_kernels_double.c $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/cellarray_mocks_double.h
+countpairs_theta_mocks_impl_float.o: countpairs_theta_mocks_impl_float.c countpairs_theta_mocks_impl_float.h countpairs_theta_mocks_kernels_float.c $(UTILS_DIR)/gridlink_mocks_impl_float.h $(UTILS_DIR)/cellarray_mocks_float.h
+countpairs_theta_mocks.o:countpairs_theta_mocks.c countpairs_theta_mocks_impl_float.h countpairs_theta_mocks_impl_double.h
 
 libs:lib
 lib: $(LIBRARY)
 
-install: $(INSTALL_BIN_DIR)/DDtheta_mocks $(INSTALL_BIN_DIR)/wtheta $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR) $(INSTALL_LIB_DIR)
+install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_BIN_DIR)/wtheta $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
 tests:
 	$(MAKE) -C ../tests wtheta

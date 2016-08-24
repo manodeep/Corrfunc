@@ -32,12 +32,16 @@ LIBOBJS :=$(LIBSRC:.c=.o)
 EXTRA_INCL:=$(GSL_CFLAGS)
 EXTRA_LINK:=$(GSL_LINK)
 
-all: $(TARGET) $(TARGETSRC) $(INCL) Makefile $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+all: $(TARGET) $(TARGETSRC) Makefile $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+
+countspheres_mocks_impl_float.o:countspheres_mocks_impl_float.c countspheres_mocks_impl_float.h vpf_mocks_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h
+countspheres_mocks_impl_double.o:countspheres_mocks_impl_double.c countspheres_mocks_impl_double.h vpf_mocks_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h
+countspheres_mocks.o: countspheres_mocks.c countspheres_mocks_impl_float.h countspheres_mocks_impl_double.h
 
 libs: lib
 lib: $(LIBRARY)
 
-install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) | $(INSTALL_BIN_DIR) $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR)
+install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
 distclean: clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
 	$(RM) $(INSTALL_LIB_DIR)/$(LIBRARY)

@@ -34,7 +34,7 @@ else
   LINKER_FLAGS := -Wl,-soname=$(PROJECT).$(MAJOR)
 endif
 
-all: sharedlib $(LIBRARY) $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile | $(LIB_DIR)
+all: sharedlib $(LIBRARY) $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
 
 $(PROJECT).so: $(PYTHON_LIBRARY)
 	$(RM) $(PROJECT).so
@@ -56,13 +56,13 @@ $(LIB_DIR)/$(PROJECT).so:$(LIB_DIR)/$(PYTHON_LIBRARY)
 $(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
 	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 
-$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: 
 	$(MAKE) -C $(DDrppi_mocks_DIR) libs
 
-$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(WTHETA_DIR)/$(WTHETA_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+$(WTHETA_DIR)/lib$(WTHETA_LIB).a: 
 	$(MAKE) -C $(WTHETA_DIR) libs
 
-$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
+$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: 
 	$(MAKE) -C $(VPF_mocks_DIR) libs
 
 

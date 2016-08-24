@@ -41,6 +41,8 @@ realclean:
 	$(MAKE) -C wtheta distclean
 	$(MAKE) -C vpf distclean
 	$(MAKE) -C python_bindings distclean
+	$(MAKE) -C ../utils clean
+	$(MAKE) -C ../io clean
 
 clean:
 	$(MAKE) -C DDrppi clean
@@ -60,7 +62,7 @@ install: examples | dirs
 	$(MAKE) -C vpf install
 	$(MAKE) -C python_bindings install
 
-libs: | dirs
+libs:  | dirs
 	$(MAKE) -C DDrppi lib
 	$(MAKE) -C wtheta lib
 	$(MAKE) -C vpf lib
