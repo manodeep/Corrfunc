@@ -47,7 +47,7 @@ const int nthreads=1;
 #endif
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=0, .float_type=sizeof(double)};
+struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=0, .float_type=sizeof(double), .version=STR(VERSION)};
 //end of global variables
 
 

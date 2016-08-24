@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "countpairs_wp.h" //function proto-type for API
 #include "countpairs_wp_impl_double.h"//actual implementations for double
@@ -39,6 +40,11 @@ int countpairs_wp(const int64_t ND, void * restrict X, void * restrict Y, void *
         return EXIT_FAILURE;
     }
     
+    if( strncmp(options->version, STR(VERSION), sizeof(options->version)/sizeof(char)-1 ) != 0) {
+        fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
+        return EXIT_FAILURE;
+    }
+
     if(options->float_type == sizeof(float)) {
       return countpairs_wp_float(ND, (float * restrict) X, (float * restrict) Y, (float * restrict) Z,
                                  boxsize,

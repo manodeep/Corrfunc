@@ -10,6 +10,9 @@
 
 #include <Python.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
 /* Now, include the numpy header*/
 #include <arrayobject.h>
@@ -22,7 +25,6 @@
 
 //for the vpf
 #include "countspheres.h"
-
 
 struct module_state {
     PyObject *error;
@@ -483,6 +485,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
 
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose = 0;
     options.instruction_set = AVX;
     options.periodic = 1;
@@ -662,6 +665,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     char *binfile;
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose = 0;
     options.instruction_set = AVX;
     options.periodic = 1;
@@ -839,6 +843,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
 
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose = 0;
     options.instruction_set = AVX;
     options.need_avg_sep = 0;
@@ -981,6 +986,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
 
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose = 0;
     options.periodic=1;
     options.instruction_set = AVX; //from enum
@@ -1101,6 +1107,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
 
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose = 0;
     options.periodic = 1;
     options.instruction_set = AVX; //from enum

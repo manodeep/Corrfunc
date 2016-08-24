@@ -7,7 +7,9 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "utils.h" //for matrix_free
 #include "countspheres.h" //API Header
@@ -41,6 +43,11 @@ int countspheres(const int64_t np, void * restrict X, void * restrict Y, void * 
         return EXIT_FAILURE;
     }
     
+    if( strncmp(options->version, STR(VERSION), sizeof(options->version)/sizeof(char)-1) != 0) {
+        fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
+        return EXIT_FAILURE;
+    }
+
     if(options->float_type == sizeof(float)) {
         return countspheres_float(np,  (float * restrict) X,  (float * restrict) Y, (float * restrict) Z,
                                   rmax, nbin, nc,

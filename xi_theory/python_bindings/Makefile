@@ -2,8 +2,6 @@ ROOT_DIR := ../..
 INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
 INSTALL_LIB_DIR := $(ROOT_DIR)/lib
 INSTALL_BIN_DIR := $(ROOT_DIR)/bin
-UTILS_DIR := $(ROOT_DIR)/utils
-IO_DIR := $(ROOT_DIR)/io
 
 THEORY_DIR := $(ROOT_DIR)/xi_theory
 DD_DIR := $(THEORY_DIR)/xi_of_r

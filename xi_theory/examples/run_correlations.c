@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     options.verbose = 1;
     options.periodic = 1;
     options.float_type = sizeof(DOUBLE);
-    
+    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     //Do the DD(rp, pi) counts
     {
         gettimeofday(&t0,NULL);

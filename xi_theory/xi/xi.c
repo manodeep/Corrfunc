@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
     results_countpairs_xi results;
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
+    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
     options.verbose=1;
     options.float_type = sizeof(DOUBLE);
     options.periodic=1;
