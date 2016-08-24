@@ -73,6 +73,7 @@ cellarray_mocks *gridlink1D(const int64_t np,const DOUBLE czmin,const DOUBLE czm
     */
     const DOUBLE this_nmesh = zbin_refine_factor*czdiff/pimax ;
     nmesh = this_nmesh > NLATMAX ? NLATMAX:(int) this_nmesh;
+    nmesh = nmesh < 1 ? 1:nmesh;
     *ngrid=nmesh ;
     const int64_t totncells = nmesh;
 
@@ -214,7 +215,7 @@ cellarray_mocks **gridlink2D(const int64_t np,
     //Written this way to work around INT overflows
     const DOUBLE this_nmesh = zbin_refine_factor*czdiff/pimax ;
     nmesh_cz = this_nmesh > NLATMAX ? NLATMAX:(int) this_nmesh;
-
+    nmesh_cz = nmesh_cz < 1 ? 1:nmesh_cz;
     *ngrid_cz=nmesh_cz ;
     const DOUBLE cz_binsize = czdiff/nmesh_cz;
     const DOUBLE inv_cz_binsize = 1.0/cz_binsize;
@@ -230,7 +231,8 @@ cellarray_mocks **gridlink2D(const int64_t np,
         const DOUBLE dec_cell = ASIN(rpmax/(2*dmin))*2.0*INV_PI_OVER_180;
         XASSERT(dec_cell > 0.0, "Declination binsize=%"DOUBLE_FORMAT" in cz bin = %d must be positive\n", dec_cell, i);
         const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
-        const int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
+        int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
+        nmesh_dec = nmesh_dec < 1 ? 1:nmesh_dec;
         if(nmesh_dec > max_nmesh_dec) max_nmesh_dec = nmesh_dec;
         ngrid_dec[i]=nmesh_dec ;
     }
@@ -351,8 +353,8 @@ cellarray * gridlink1D_theta(const int64_t np,
     
     /* Find the max. number of declination cells that can be */
     const DOUBLE this_ngrid_dec = dec_diff*rbin_refine_factor/thetamax;
-    const int ngrid_dec = this_ngrid_dec > NLATMAX ? NLATMAX:(int) this_ngrid_dec;
-
+    int ngrid_dec = this_ngrid_dec > NLATMAX ? NLATMAX:(int) this_ngrid_dec;
+    ngrid_dec = ngrid_dec < 1 ? 1:ngrid_dec;
     *ngrid_declination=ngrid_dec;
 
     expected_n=(int)( (np/(DOUBLE) (ngrid_dec)) *MEMORY_INCREASE_FAC);
@@ -473,6 +475,7 @@ cellarray_mocks *** gridlink3D(const int64_t np,
 
     const DOUBLE this_nmesh = zbin_refine_factor*czdiff/pimax ;
     nmesh_cz = this_nmesh > NLATMAX ? NLATMAX:(int) this_nmesh;
+    nmesh_cz = nmesh_cz < 1 ? 1:nmesh_cz;
     *ngrid_cz=nmesh_cz ;
 
     const DOUBLE cz_binsize = czdiff/nmesh_cz;
@@ -492,8 +495,10 @@ cellarray_mocks *** gridlink3D(const int64_t np,
         XASSERT(dec_cell > 0.0, "Declination binsize=%"DOUBLE_FORMAT" in cz bin = %d must be positive\n", dec_cell, iz);
         dec_binsizes[iz] = dec_cell;
         const DOUBLE this_nmesh_dec = dec_diff*rbin_refine_factor/dec_cell;
-        const int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
+        int nmesh_dec = this_nmesh_dec > NLATMAX ? NLATMAX:(int) this_nmesh_dec;
+        nmesh_dec = nmesh_dec < 1 ? 1:nmesh_dec;
         if(nmesh_dec > max_nmesh_dec) max_nmesh_dec = nmesh_dec;
+        
         ngrid_dec[iz]=nmesh_dec ;
     }
 
@@ -682,7 +687,8 @@ cellarray ** gridlink2D_theta(const int64_t np,
 #endif
 
     const DOUBLE this_ngrid_dec = dec_diff*rbin_refine_factor/thetamax;
-    const int ngrid_dec = this_ngrid_dec > NLATMAX ? NLATMAX:(int) this_ngrid_dec;
+    int ngrid_dec = this_ngrid_dec > NLATMAX ? NLATMAX:(int) this_ngrid_dec;
+    ngrid_dec = ngrid_dec < 1 ? 1:ngrid_dec;
     *ngrid_declination=ngrid_dec;
 
     DOUBLE dec_binsize=dec_diff/ngrid_dec;
@@ -829,6 +835,7 @@ double get_binsize(const double xmin,const double xmax, const double rmax, const
 #endif
 
     if (nmesh>max_ncells)  nmesh=max_ncells;
+    nmesh = nmesh < 1 ? 1:nmesh;
     double xbinsize = xdiff/nmesh;
     *nlattice = nmesh;
     return xbinsize;
