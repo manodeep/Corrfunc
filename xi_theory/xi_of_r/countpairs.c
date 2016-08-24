@@ -8,8 +8,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "countpairs.h" //function proto-type for API
 #include "countpairs_impl_double.h"//actual implementations for double
@@ -42,6 +42,11 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
     return EXIT_FAILURE;
   }
 
+  if( strncmp(options->version, STR(VERSION), sizeof(options->version)/sizeof(char)-1) != 0) {
+      fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
+      return EXIT_FAILURE;
+  }
+  
   if(options->float_type == sizeof(float)) {
     return countpairs_float(ND1, (float * restrict) X1, (float * restrict) Y1, (float * restrict) Z1,
                             ND2, (float * restrict) X2, (float * restrict) Y2, (float * restrict) Z2,
