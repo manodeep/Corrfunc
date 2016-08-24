@@ -1,6 +1,16 @@
 TARGETOBJS := $(TARGETSRC:.c=.o)
 LIBOBJS :=$(LIBSRC:.c=.o)
 
+gridlink_impl_double.o:gridlink_impl_double.c gridlink_impl_double.h
+gridlink_impl_float.o:gridlink_impl_float.c gridlink_impl_float.h 
+gridlink_mocks_impl_double.o:gridlink_mocks_impl_double.c gridlink_mocks_impl_double.h
+gridlink_mocks_impl_float.o:gridlink_mocks_impl_float.c gridlink_mocks_impl_float.h 
+gridlink_impl_double.h:cellarray_double.h
+gridlink_impl_float.h:cellarray_float.h
+gridlink_mocks_impl_double.h:cellarray_mocks_double.h
+gridlink_mocks_impl_float.h:cellarray_mocks_float.h
+
+
 .SUFFIXES:
 
 $(TARGET): $(TARGETOBJS) $(ROOT_DIR)/common.mk 
@@ -37,10 +47,10 @@ $(TARGET).o: $(TARGET).c $(ROOT_DIR)/common.mk Makefile $(ROOT_DIR)/theory.optio
 	@echo "#endif" >> $@
 	sed -e "s/DOUBLE/double/g"  $< >> $@
 
-%_double.o: %_double.c %.c.src Makefile
+%_double.o: %_double.c
 	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
-%_float.o: %_float.c %.c.src Makefile
+%_float.o: %_float.c 
 	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
 %.o: %.c $(ROOT_DIR)/common.mk Makefile

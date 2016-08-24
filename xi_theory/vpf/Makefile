@@ -34,8 +34,8 @@ all: $(TARGET) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Mak
 libs: lib
 lib: $(LIBRARY) 
 
-countspheres_impl_float.o:countspheres_impl_float.c countspheres_impl_float.h vpf_kernels_float.c $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/gridlink_impl_float.h
-countspheres_impl_double.o:countspheres_impl_double.c countspheres_impl_double.h vpf_kernels_double.c $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/gridlink_impl_double.h
+countspheres_impl_float.o:countspheres_impl_float.c countspheres_impl_float.h vpf_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h  $(UTILS_DIR)/cellarray_float.h
+countspheres_impl_double.o:countspheres_impl_double.c countspheres_impl_double.h vpf_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
 countspheres.o:countspheres.c countspheres_impl_float.h countspheres_impl_double.h
 
 tests: ../tests/tests_periodic ../tests/tests_nonperiodic 

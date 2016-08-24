@@ -29,8 +29,8 @@ LIBOBJS := $(LIBSRC:.c=.o)
 
 all: $(TARGET) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-countpairs_xi_impl_float.o:countpairs_xi_impl_float.c xi_kernels_float.c countpairs_xi_impl_float.h $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h
-countpairs_xi_impl_double.o:countpairs_xi_impl_double.c xi_kernels_double.c countpairs_xi_impl_double.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h
+countpairs_xi_impl_float.o:countpairs_xi_impl_float.c xi_kernels_float.c countpairs_xi_impl_float.h $(UTILS_DIR)/gridlink_impl_float.h  $(UTILS_DIR)/cellarray_float.h
+countpairs_xi_impl_double.o:countpairs_xi_impl_double.c xi_kernels_double.c countpairs_xi_impl_double.h $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
 countpairs_xi.o:countpairs_xi.c countpairs_xi_impl_double.h countpairs_xi_impl_float.h
 
 libs: lib
