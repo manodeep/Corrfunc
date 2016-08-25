@@ -354,6 +354,8 @@ PyMODINIT_FUNC init_countpairs(void)
 #endif
 {
 
+    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    
 
 #if PY_MAJOR_VERSION >= 3
     PyObject *module = PyModule_Create(&moduledef);

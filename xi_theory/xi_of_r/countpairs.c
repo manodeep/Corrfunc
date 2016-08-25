@@ -36,33 +36,36 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
                results_countpairs *results,
                const struct config_options *options)
 {
-  if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
-    fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
+    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    
+    
+    if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
+        fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
             __FUNCTION__, options->float_type);
-    return EXIT_FAILURE;
-  }
-
-  if( strncmp(options->version, STR(VERSION), sizeof(options->version)/sizeof(char)-1) != 0) {
-      fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
-      return EXIT_FAILURE;
-  }
+        return EXIT_FAILURE;
+    }
+    
+    if( strncmp(options->version, STR(VERSION), sizeof(options->version)/sizeof(char)-1) != 0) {
+        fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
+        return EXIT_FAILURE;
+    }
   
-  if(options->float_type == sizeof(float)) {
-    return countpairs_float(ND1, (float * restrict) X1, (float * restrict) Y1, (float * restrict) Z1,
-                            ND2, (float * restrict) X2, (float * restrict) Y2, (float * restrict) Z2,
-                            numthreads,
-                            autocorr,
-                            binfile,
-                            results,
-                            options);
+    if(options->float_type == sizeof(float)) {
+        return countpairs_float(ND1, (float * restrict) X1, (float * restrict) Y1, (float * restrict) Z1,
+                                ND2, (float * restrict) X2, (float * restrict) Y2, (float * restrict) Z2,
+                                numthreads,
+                                autocorr,
+                                binfile,
+                                results,
+                                options);
   } else {
-    return countpairs_double(ND1, (double * restrict) X1, (double * restrict) Y1, (double * restrict) Z1,
-                             ND2, (double * restrict) X2, (double * restrict) Y2, (double * restrict) Z2,
-                             numthreads,
-                             autocorr,
-                             binfile,
-                             results,
-                             options);
-  }
-  
+        return countpairs_double(ND1, (double * restrict) X1, (double * restrict) Y1, (double * restrict) Z1,
+                                 ND2, (double * restrict) X2, (double * restrict) Y2, (double * restrict) Z2,
+                                 numthreads,
+                                 autocorr,
+                                 binfile,
+                                 results,
+                                 options);
+    }
+    
 }

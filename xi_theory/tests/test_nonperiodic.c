@@ -182,6 +182,8 @@ int main(int argc, char **argv)
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
 
+    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    
 #ifdef PERIODIC
 #error PERIODIC must not be defined for running non-periodic tests
 #endif

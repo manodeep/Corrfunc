@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <stdbool.h>
 
 #define ADD_DIFF_TIME(t0,t1)     fabs((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
 #define ALIGNMENT                32
@@ -31,19 +32,19 @@ typedef enum {
     NUM_ISA 
 } isa;//name for instruction sets -> corresponds to the return from instrset_detect in cpu_features.c
 
+
+#define OPTIONS_HEADER_SIZE     (1024)
 struct config_options
 {
-    char version[32];/* fill in the version number */
-    size_t float_type; /* floating point type -> vectorized supports double/float; fallback can support long double*/
-    int verbose; /* Outputs progressbar and times */
+    /* The fields should appear here in decreasing order of 
+       alignment requirements. Generally speaking, alignment
+       is at least the sizeof the variable type. double has
+       8 byte alignment, int has 4 bytes, char has 1 byte etc...
+       (size_t could be 4 or 8 bytes depending on compilation 
+       mode)
+     */
 
-    int instruction_set; /* select instruction set to run on */
-    int need_avg_sep; /* <rp> or <\theta> is required */
-    int autocorr;
-    
-    /* Options for theory*/
-    int periodic; /* count in periodic mode? flag ignored for wp/xi */
-    int sort_on_z;/* option to sort particles based on their Z co-ordinate in gridlink*/
+    /* Theory option for periodic boundaries */
     double boxsize;
 
     /* Options for mocks */
@@ -58,18 +59,43 @@ struct config_options
         double SIGMA_8;
         double NS;
     };
+
+    size_t float_type; /* floating point type -> vectorized supports double/float; fallback can support long double*/
+    int instruction_set; /* select instruction set to run on */
+
+    char version[32];/* fill in the version number */
+
+    bool verbose; /* Outputs progressbar and times */
+    bool need_avg_sep; /* <rp> or <\theta> is required */
+    bool autocorr;
+    
+    /* Options for theory*/
+    bool periodic; /* count in periodic mode? flag ignored for wp/xi */
+    bool sort_on_z;/* option to sort particles based on their Z co-ordinate in gridlink*/
+
+    /* For DDrppi_mocks and vpf, flag to indicate cz is already co-moving distance */
+    bool is_comoving_dist;
     
     /* the link_in_* variables control how the 3-D cell structure is created */
-    int link_in_dec;/* relevant for DDthteta_mocks */
-    int link_in_ra; /* relevant for DDtheta_mocks.*/
+    bool link_in_dec;/* relevant for DDthteta_mocks */
+    bool link_in_ra; /* relevant for DDtheta_mocks.*/
 
     /* Replaces the divide in DDrppi_mocks in AVX mode by a reciprocal and a Newton-Raphson step. */
-    int fast_divide;
+    bool fast_divide;
 
     /* Fast arccos for wtheta (effective only when OUTPUT_THETAAVG is enabled) */
-    int fast_acos;
+    bool fast_acos;
 
-    /* Reserving to maintain ABI compatibility for the future */
-    int reserved[32];
+    /* Reserving to maboolain ABI compatibility for the future */
+    /* Note that the math here assumes no padding bytes, that's because of the 
+       order in which the fields are declared (largest to smallest alignments)  */
+    uint8_t reserved[OPTIONS_HEADER_SIZE - 32*sizeof(char) - sizeof(size_t) - 8*sizeof(double) - sizeof(int) - 11*sizeof(bool)];
 };
 
+/* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
+   which is in turn taken from the linux kernel */
+/* #define BUILD_BUG_OR_ZERO(e) (sizeof(struct{ int:-!!(e);})) //gives me unused value warning */
+/* #define ENSURE_STRUCT_SIZE(e, size)  BUILD_BUG_OR_ZERO(sizeof(e) != size) */
+
+#define BUILD_BUG_OR_ZERO(cond) typedef char assertion_on_mystruct[( !!(cond) )*2-1 ] 
+#define ENSURE_STRUCT_SIZE(e, size)  BUILD_BUG_OR_ZERO(sizeof(e) == size)
