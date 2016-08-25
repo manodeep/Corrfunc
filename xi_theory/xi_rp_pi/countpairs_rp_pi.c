@@ -34,6 +34,9 @@ int countpairs_rp_pi(const int64_t ND1, void *X1, void *Y1, void *Z1,
                      results_countpairs_rp_pi *results,
                      const struct config_options *options)
 {
+
+    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
         fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
                 __FUNCTION__, options->float_type);
