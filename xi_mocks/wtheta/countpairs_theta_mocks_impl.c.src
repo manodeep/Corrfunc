@@ -16,7 +16,6 @@
 
 #include "defs.h"
 #include "utils.h"
-#include "set_cosmo_dist.h"
 #include "cpu_features.h"
 #include "progressbar.h"
 
