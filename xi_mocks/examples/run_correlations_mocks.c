@@ -62,6 +62,8 @@ int main(int argc, char **argv)
     int cosmology=1;
     int nthreads=1;
 
+    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    
     struct config_options options;
     memset(&options, 0, sizeof(struct config_options));
     my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
