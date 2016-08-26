@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #define ADD_DIFF_TIME(t0,t1)     fabs((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
@@ -94,8 +95,12 @@ struct config_options
 
 /* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
    which is in turn taken from the linux kernel */
-/* #define BUILD_BUG_OR_ZERO(e) (sizeof(struct{ int:-!!(e);})) //gives me unused value warning */
+/* #define BUILD_BUG_OR_ZERO(e) (sizeof(struct{ int:-!!(e);})) */
 /* #define ENSURE_STRUCT_SIZE(e, size)  BUILD_BUG_OR_ZERO(sizeof(e) != size) */
-
+/* However, the previous one gives me an unused-value warning and I do not want 
+   to turn that compiler warning off. Therefore, this version, which results in 
+   an unused local typedef warning is used. I turn off the corresponding warning 
+   in common.mk (-Wno-unused-local-typedefs) via CFLAGS
+*/
 #define BUILD_BUG_OR_ZERO(cond) typedef char assertion_on_mystruct[( !!(cond) )*2-1 ] 
 #define ENSURE_STRUCT_SIZE(e, size)  BUILD_BUG_OR_ZERO(sizeof(e) == size)
