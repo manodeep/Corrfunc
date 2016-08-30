@@ -15,7 +15,8 @@ extern "C" {
 #include "defs.h" //for definition of struct config_options
 #include "countspheres_mocks.h"//for definition of struct results_countspheres_mocks 
     
-
+    extern void interrupt_handler_vpf_mocks_DOUBLE(int signo);
+    
     typedef int (*vpf_mocks_func_ptr_DOUBLE)(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
                                              const DOUBLE xc, const DOUBLE yc, const DOUBLE zc,
                                              const DOUBLE rmax, const int nbin, 

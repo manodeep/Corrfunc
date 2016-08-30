@@ -13,6 +13,8 @@ extern "C" {
 #endif
 
 #include "countspheres.h" //for definition of DOUBLE
+
+    extern void interrupt_handler_vpf_DOUBLE(int signo);
     
     typedef int (*vpf_func_ptr_DOUBLE)(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
                                        const DOUBLE xc, const DOUBLE yc, const DOUBLE zc,

@@ -18,6 +18,8 @@ extern "C" {
 
 #include "countpairs_rp_pi.h"//for struct results_countpairs_rp_pi
 
+    extern void interrupt_handler_countpairs_rp_pi_DOUBLE(int signo);
+    
     typedef int (*countpairs_rp_pi_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
                                                     const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int same_cell,
                                                     const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
