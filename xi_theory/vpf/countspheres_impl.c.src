@@ -10,6 +10,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <signal.h>
+#include <unistd.h>
 #include <gsl/gsl_rng.h>
 
 #include "countspheres_impl_DOUBLE.h" //function proto-type
@@ -141,6 +143,10 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
     gsl_rng_set(rng, seed);
 
     int **pN = (int **) matrix_calloc(sizeof(**pN), nbin, num_pN);
+    if(pN == NULL) {
+        gsl_rng_free(rng);
+        return EXIT_FAILURE;
+    }
     //Find the min/max of the data
     DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
     xmin=1e10;ymin=1e10;zmin=1e10;
