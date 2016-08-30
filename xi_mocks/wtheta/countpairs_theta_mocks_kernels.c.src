@@ -30,6 +30,11 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
+
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+
     const int32_t need_rpavg = src_rpavg != NULL;
     uint64_t npairs[nthetabin];
     DOUBLE thetaavg[nthetabin];
@@ -43,7 +48,6 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
             m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
         }
     }
-
 
     for(int64_t i=0;i<N0;i++) {
       const DOUBLE xpos = *x0++;
@@ -202,6 +206,11 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
+
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+
     const int32_t need_rpavg = src_rpavg != NULL;
     uint64_t npairs[nthetabin];
     DOUBLE thetaavg[nthetabin];
@@ -367,6 +376,11 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
+
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+
     const int32_t need_rpavg = src_rpavg != NULL;
     uint64_t npairs[nthetabin];
     DOUBLE thetaavg[nthetabin];

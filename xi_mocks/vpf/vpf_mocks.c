@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
         }
         return EXIT_FAILURE;
     }
-    sscanf(argv[1],"%lf",&rmax);
+    sscanf(argv[1],"%"REAL_FORMAT"",&rmax);
     sscanf(argv[2],"%d",&nbin);
     sscanf(argv[3],"%d",&nc);
     sscanf(argv[4],"%d",&num_pN);
@@ -152,15 +152,8 @@ int main(int argc, char *argv[])
     }
 
     results_countspheres_mocks results;
-    struct config_options options;
-    memset(&options, 0, sizeof(struct config_options));
-    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
-#ifndef SILENT
-    options.verbose=1;
-#endif
-    options.periodic=0;
+    struct config_options options = get_config_options();
     options.float_type=sizeof(DOUBLE);
-    
     int status = countspheres_mocks(Ngal, ra, dec, cz,
                                     Nran, xran, yran, zran,
                                     threshold_neighbors,

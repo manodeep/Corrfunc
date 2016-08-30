@@ -574,9 +574,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     //x2->ra (ph2), y2-> declination (theta2), z2->cz (cz2)
     PyArrayObject *x1_obj=NULL, *y1_obj=NULL, *z1_obj=NULL, *x2_obj=NULL,*y2_obj=NULL,*z2_obj=NULL;
 
-    struct config_options options;
-    memset(&options, 0, sizeof(struct config_options));
-    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
+    struct config_options options = get_config_options();
     options.verbose = 0;
     options.instruction_set = AVX;
     options.periodic = 0;
@@ -776,9 +774,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     int nthreads=1;
     char *binfile;
     int autocorr=0;
-    struct config_options options;
-    memset(&options, 0, sizeof(struct config_options));
-    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
+    struct config_options options = get_config_options();
     options.verbose=0;
     options.instruction_set=AVX;
     options.link_in_dec=1;
@@ -959,9 +955,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     int nbin,num_spheres, num_pN;
     char *centers_file;
     int threshold_neighbors;
-    struct config_options options;
-    memset(&options, 0, sizeof(struct config_options));
-    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
+    struct config_options options = get_config_options();
     options.verbose=0;
     options.instruction_set=AVX;
     static char *kwlist[] = {

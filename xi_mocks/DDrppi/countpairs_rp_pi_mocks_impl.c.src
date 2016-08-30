@@ -1,4 +1,4 @@
-/* File: countpairs_rp_pi_mocks.c */
+/* File: countpairs_rp_pi_mocks_impl.c.src */
 /*
   This file is a part of the Corrfunc package
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
@@ -181,7 +181,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     options.sort_on_z = 1;
     
     //Check inputs
-    if(ND1 == 0) {
+    if(ND1 == 0 || (autocorr == 0 && ND2 == 0)) {
         return EXIT_SUCCESS;
     }
 
@@ -191,9 +191,6 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         return status1;
     }
     if(autocorr==0) {
-        if(ND2 == 0) {
-            return EXIT_SUCCESS;
-        }
         int status2 = check_ra_dec_cz_DOUBLE(ND2, ra2, dec2, czD2);
         if(status2 != EXIT_SUCCESS) {
             return status2;
@@ -211,7 +208,13 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     const int npibin = (int) pimax;
 
     //Try to initialize cosmology - code will exit if comoslogy is not implemented.
-    init_cosmology(cosmology);
+    //Putting in a different scope so I can call the variable status
+    {
+        int status = init_cosmology(cosmology);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
 
     /***********************
      *initializing the  bins
@@ -268,6 +271,10 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     DOUBLE *X1 = my_malloc(sizeof(*X1), ND1);
     DOUBLE *Y1 = my_malloc(sizeof(*Y1), ND1);
     DOUBLE *Z1 = my_malloc(sizeof(*Z1), ND1);
+    if(X1 == NULL || Y1 == NULL || Z1 == NULL) {
+        free(X1);free(Y1);free(Z1);
+        return EXIT_FAILURE;
+    }
     for(int64_t i=0;i<ND1;i++) {
         X1[i] = D1[i]*COSD(dec1[i])*COSD(ra1[i]);
         Y1[i] = D1[i]*COSD(dec1[i])*SIND(ra1[i]);
@@ -361,12 +368,29 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     } else {
         lattice2 = lattice1;
     }
-    const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-    assign_ngb_cells_mocks_index_particles_DOUBLE(lattice1, lattice2, totncells,
-                                                  bin_refine_factor, bin_refine_factor, zbin_refine_factor,
-                                                  nmesh_x, nmesh_y, nmesh_z,
-                                                  autocorr);
+    free(X1);free(Y1);free(Z1);
+    if(autocorr == 0) {
+        free(X2);free(Y2);free(Z2);
+    }
 
+
+    
+    
+    const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
+    {
+        int status = assign_ngb_cells_mocks_index_particles_DOUBLE(lattice1, lattice2, totncells,
+                                                                   bin_refine_factor, bin_refine_factor, zbin_refine_factor,
+                                                                   nmesh_x, nmesh_y, nmesh_z,
+                                                                   autocorr);
+        if(status != EXIT_SUCCESS) {
+            free_cellarray_mocks_index_particles_DOUBLE(lattice1, totncells);
+            if(autocorr == 0) {
+                free_cellarray_mocks_index_particles_DOUBLE(lattice2, totncells);
+            }
+            free(rupp);
+            return EXIT_FAILURE;
+        }
+    }
     /*---Gridlink-variables----------------*/
     const int totnbins = (nrpbin+1)*(npibin+1);
 #if defined(_OPENMP)
@@ -407,7 +431,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         for(int i=0;i<totnbins;i++) npairs[i] = 0;
         DOUBLE rpavg[totnbins];
         if(options.need_avg_sep) {
-            for(int i=0;i<totnbins;i++) rpavg[i] = 0.0;
+            for(int i=0;i<totnbins;i++) rpavg[i] = ZERO;
         }
 
 #pragma omp for  schedule(dynamic)
@@ -447,10 +471,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
 
                 if(autocorr == 1) {
                     int same_cell = 1;
-                    DOUBLE *this_rpavg = NULL;
-                    if(options.need_avg_sep) {
-                        this_rpavg = rpavg;
-                    }
+                    DOUBLE *this_rpavg = options.need_avg_sep ? &(rpavg[0]):NULL;
                     const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1,
                                                                               N1, x1, y1, z1, d1,
                                                                               same_cell,
@@ -474,10 +495,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                     DOUBLE *z2 = second->z;
                     DOUBLE *d2 = second->cz;
                     const int64_t N2 = second->nelements;
-                    DOUBLE *this_rpavg = NULL;
-                    if(options.need_avg_sep) {
-                        this_rpavg = rpavg;
-                    }
+                    DOUBLE *this_rpavg = options.need_avg_sep ? &(rpavg[0]):NULL;
                     const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1,
                                                                               N2, x2, y2, z2, d2,
                                                                               same_cell,
@@ -523,6 +541,11 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
 #endif
         return EXIT_FAILURE;
     }
+
+    if(options.verbose) {
+        finish_myprogressbar(&interrupted);
+    }
+        
 
     
 #if defined(_OPENMP)
@@ -576,13 +599,20 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     results->npairs = my_malloc(sizeof(*(results->npairs)), totnbins);
     results->rupp   = my_malloc(sizeof(*(results->rupp))  , nrpbin);
     results->rpavg  = my_malloc(sizeof(*(results->rpavg)) , totnbins);
-
+    if(results->npairs == NULL || results->rupp == NULL || results->rpavg == NULL) {
+        free_results_mocks(results);
+        free(rupp);
+        return EXIT_FAILURE;
+    }
+    
     for(int i=0;i<nrpbin;i++) {
         results->rupp[i] = rupp[i];
         for(int j=0;j<npibin;j++) {
             const int index = i*(npibin+1) + j;
             if( index >= totnbins ) {
                 fprintf(stderr, "ERROR: In %s> index = %d must be in range [0, %d)\n", __FUNCTION__, index, totnbins);
+                free_results_mocks(results);
+                free(rupp);
                 return EXIT_FAILURE;
             }
             results->npairs[index] = npairs[index];

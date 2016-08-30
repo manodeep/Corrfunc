@@ -182,21 +182,27 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
         }
         const int64_t block_size1 = (N0-i) > block_size ? block_size:(N0-i);
         for(int64_t j=0;j<N1;j+=block_size) {
-            const int64_t block_size2 = (N1-j) > block_size ? block_size:(N1-j);
-            DOUBLE *this_thetaavg = need_thetaavg ? thetaavg:NULL;
-            int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i],
-                                                                block_size2, &x1[j], &y1[j], &z1[j],
-                                                                same_cell,
-                                                                options->fast_acos,
-                                                                costhetamax, costhetamin, nthetabin,
-                                                                costheta_upp,
-                                                                this_thetaavg,
-                                                                npairs);
-            if(status != EXIT_SUCCESS) {
-                return status;
+            if(interrupt_status_wtheta_mocks_DOUBLE == EXIT_SUCCESS) {
+                const int64_t block_size2 = (N1-j) > block_size ? block_size:(N1-j);
+                DOUBLE *this_thetaavg = need_thetaavg ? thetaavg:NULL;
+                int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i],
+                                                                    block_size2, &x1[j], &y1[j], &z1[j],
+                                                                    same_cell,
+                                                                    options->fast_acos,
+                                                                    costhetamax, costhetamin, nthetabin,
+                                                                    costheta_upp,
+                                                                    this_thetaavg,
+                                                                    npairs);
+                if(status != EXIT_SUCCESS) {
+                    return status;
+                }
             }
         }
     }
+    if(interrupt_status_wtheta_mocks_DOUBLE != EXIT_SUCCESS){
+        return EXIT_FAILURE;
+    }
+    
     if(options->verbose) {
         finish_myprogressbar(&interrupted);
     }
@@ -260,7 +266,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     struct config_options options = *input_options;
     options.sort_on_z = 1;
     options.autocorr=autocorr;
-    
+
     //check the ra-dec inputs (with braces to restrict scope of int status)
     {
         int status = check_ra_dec_DOUBLE(ND1, ra1, dec1);
@@ -284,6 +290,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
     int ra_refine_factor = 2;
     int dec_refine_factor = 2;
+
 
 #if defined(_OPENMP)
     if((options.link_in_ra == 0) && (dec_refine_factor < numthreads)) {
@@ -361,7 +368,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     }
 
     /*---Create 3-D lattice--------------------------------------*/
-    cellarray_mocks_index_wtheta_DOUBLE *lattice1,*lattice2;
+    cellarray_mocks_index_wtheta_DOUBLE *lattice1=NULL,*lattice2=NULL;
     int nmesh_dec=0, max_nmesh_ra=0;
     int64_t totncells;
     if(options.link_in_ra) {
@@ -378,67 +385,79 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                       &max_nmesh_ra,
                                                       &nmesh_grid_ra,
                                                       &options);
-        if(lattice1 == NULL) {
-            return EXIT_FAILURE;
+        int status = lattice1 == NULL ? EXIT_FAILURE: EXIT_SUCCESS;
+        if(lattice1 != NULL) {
+            lattice2 = lattice1;
+            if(autocorr==0) {
+                int64_t totncells2;
+                int nmesh_dec2, max_nmesh_ra2;
+                int *nmesh_grid_ra2=NULL;
+                lattice2 = gridlink_mocks_theta_ra_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
+                                                              ra_min, ra_max,
+                                                              dec_min, dec_max,
+                                                              NLATMAX, NLATMAX,
+                                                              ra_refine_factor,
+                                                              dec_refine_factor,
+                                                              thetamax,
+                                                              &totncells2,
+                                                              &nmesh_dec2,
+                                                              &max_nmesh_ra2,
+                                                              &nmesh_grid_ra2,
+                                                              &options);
+                
+                if(lattice2 == NULL) {
+                    status = EXIT_FAILURE;
+                } else {
+                    if( ! (totncells == totncells2 && nmesh_dec == nmesh_dec2 && max_nmesh_ra == max_nmesh_ra2) ){
+                        fprintf(stderr,"ERROR: The two sets of 3-D lattices do not have identical bins. First has dims (%d, %d) while second has (%d, %d)\n",
+                                nmesh_dec, max_nmesh_ra, nmesh_dec2, max_nmesh_ra2);
+                        status = EXIT_FAILURE;
+                    } else {
+                        /* Check that each bin in declination has the exact same number of bins in RA for both lattices */
+                        for(int i=0;i<nmesh_dec;i++) {
+                            if( nmesh_grid_ra[i] != nmesh_grid_ra2[i]) {
+                                fprintf(stderr,"For declination bin = %d, the two lattices do not have identical number of RA bins"
+                                        "First has RA bins = %d while the second has RA bins = %d\n", i, nmesh_grid_ra[i],nmesh_grid_ra2[i]);
+                                status = EXIT_FAILURE;
+                                break;
+                            }
+                        }
+                        if(status == EXIT_SUCCESS) {
+                            /* Okay the two lattices have exactly the same underlying structure */
+                            free(nmesh_grid_ra2);//don't need this anymore.
+                        }
+                    }//check for the grid structure
+                }//lattice2 == NULL else part
+            }//autocorr == 0
+        } else { //lattice1 != NULL
+            //lattice1 is NULL -> brute force
+            free(nmesh_grid_ra);
         }
-        lattice2 = lattice1;
-        if(autocorr==0) {
-            int64_t totncells2;
-            int nmesh_dec2, max_nmesh_ra2;
-            int *nmesh_grid_ra2=NULL;
-            lattice1 = gridlink_mocks_theta_ra_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
-                                                          ra_min, ra_max,
-                                                          dec_min, dec_max,
-                                                          NLATMAX, NLATMAX,
-                                                          ra_refine_factor,
-                                                          dec_refine_factor,
-                                                          thetamax,
-                                                          &totncells2,
-                                                          &nmesh_dec2,
-                                                          &max_nmesh_ra2,
-                                                          &nmesh_grid_ra2,
-                                                          &options);
 
-            if(lattice2 == NULL) {
-                free(theta_upp);
-                free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
-                return EXIT_FAILURE;
-            }
-            if( ! (totncells == totncells2 && nmesh_dec == nmesh_dec2 && max_nmesh_ra == max_nmesh_ra2) ){
-                fprintf(stderr,"ERROR: The two sets of 3-D lattices do not have identical bins. First has dims (%d, %d) while second has (%d, %d)\n",
-                        nmesh_dec, max_nmesh_ra, nmesh_dec2, max_nmesh_ra2);
-                return EXIT_FAILURE;
-            }
-            /* Check that each bin in declination has the exact same number of bins in RA for both lattices */
-            for(int i=0;i<nmesh_dec;i++) {
-                XRETURN(nmesh_grid_ra[i] == nmesh_grid_ra2[i], EXIT_FAILURE,"For declination bin = %d, the two lattices do not have idential number of RA bins"
-                        "First has RA bins = %d while the second has RA bins = %d\n", i, nmesh_grid_ra[i],nmesh_grid_ra2[i]);
-            }
-            
-            /* Okay the two lattices have exactly the same underlying structure */
-            free(nmesh_grid_ra2);//don't need this anymore.
-        }
-        const DOUBLE ra_diff = ra_max - ra_min;
-        /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
-        int status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells,
+        /* lattice1 and lattice2 should have been assigned. Might be NULL though */
+        if(status == EXIT_SUCCESS) { 
+            const DOUBLE ra_diff = ra_max - ra_min;
+            /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
+            status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells,
                                                                  ra_refine_factor, dec_refine_factor,
                                                                  nmesh_dec, max_nmesh_ra,
                                                                  ra_min, ra_diff,
                                                                  nmesh_grid_ra,
                                                                  autocorr);
+            if(status == EXIT_SUCCESS) {
+                free(nmesh_grid_ra);//don't need this anymore either
+            }
+        }
         
-        free(nmesh_grid_ra);//don't need this anymore either
         if(status != EXIT_SUCCESS) {
-            /* Cleanup memory here if aborting */
-            free(theta_upp);
+            /* Cleanup memory here if switching to brute force */
             free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
-            if(autocorr==0) {
+            if(autocorr == 0) {
                 free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
             }
-            return status;
+            lattice1 = NULL; lattice2 = NULL;
         }
     } else {
-
         /* Only link in declination */
         lattice1 = gridlink_mocks_theta_dec_DOUBLE(ND1,ra1,dec1,X1,Y1,Z1,
                                                    dec_min, dec_max,
@@ -447,42 +466,75 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                    thetamax,
                                                    &totncells,
                                                    &options);
-
-
-        /* Do the same for lattice2 */
-        lattice2 = lattice1;
-        if(autocorr == 0) {
-            int64_t totncells_2=0;
-            lattice2 = gridlink_mocks_theta_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
-                                                       dec_min, dec_max,
-                                                       NLATMAX,
-                                                       dec_refine_factor,
-                                                       thetamax,
-                                                       &totncells_2,
-                                                       &options);
-            if(lattice2 == NULL) {
-                
-                return EXIT_FAILURE;
-            }
-            if( totncells != totncells_2) {
-                fprintf(stderr,"ERROR: In %s> The two sets of 3-D lattices do not have identical bins. First has dims (%"PRId64") while second has (%"PRId64")\n",
-                        __FUNCTION__,totncells, totncells_2);
-                return EXIT_FAILURE;
-            }
+        int status = lattice1 == NULL ? EXIT_FAILURE: EXIT_SUCCESS;
+        if(lattice1 != NULL) {
+            /* Do the same for lattice2 */
+            lattice2 = lattice1;
+            if(autocorr == 0) {
+                int64_t totncells_2=0;
+                lattice2 = gridlink_mocks_theta_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
+                                                           dec_min, dec_max,
+                                                           NLATMAX,
+                                                           dec_refine_factor,
+                                                           thetamax,
+                                                           &totncells_2,
+                                                           &options);
+                if(lattice2 != NULL) {
+                    if( totncells != totncells_2) {
+                        fprintf(stderr,"ERROR: In %s> The two sets of 3-D lattices do not have identical bins. First has dims (%"PRId64") while second has (%"PRId64")\n",
+                                __FUNCTION__,totncells, totncells_2);
+                        status = EXIT_FAILURE;
+                    } 
+                } else {
+                    //lattice2 is NULL
+                    status = EXIT_FAILURE;
+                }
+            }//autocorr == 0
+        }//lattice1 != NULL
+        
+        if(status == EXIT_SUCCESS) {
+            //The lattice structures are identical -> try to assign ngb cells
+            status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1, lattice2, totncells, dec_refine_factor, autocorr);
         }
-        int status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1, lattice2, totncells, dec_refine_factor, autocorr);
+            
         if(status != EXIT_SUCCESS) {
             /* Cleanup memory here if aborting */
-            free(theta_upp);
             free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
-            if(autocorr==0) {
+            if(autocorr == 0) {
                 free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
             }
-            return status;
-        }
+            lattice1 = NULL; lattice2 = NULL;
+        }//cleaning up on failure
     }//end of linking only in dec
 
 
+    /* Check if the lattices could not be constructed. 
+       Probably out of memory -> Run a brute force */
+    if(lattice1 == NULL || lattice2 == NULL) {
+        fprintf(stderr,"In %s> Could not construct the 3-D lattice structure. Defaulting to brute-force\n",__FUNCTION__);
+        //this is equivalent to brute force calculating on the entire dataset
+        int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
+                                                               ND2, X2, Y2, Z2,
+                                                               costhetamax, costhetamin, nthetabin,
+                                                               theta_upp,
+                                                               costheta_upp, 
+                                                               results,
+                                                               &options);
+        free(X1);free(Y1);free(Z1);
+        if(autocorr == 0) {
+            free(X2);free(Y2);free(Z2);
+        }
+        free(theta_upp);
+        return status;
+    }
+
+    if(autocorr == 1 && lattice2 != lattice1) {
+        fprintf(stderr,"In %s> ERROR: Bug in code. Autocorr is set but the two lattices point to different memory locations\n"
+                "lattice1 = %p lattice2 = %p. Please file an issue at the repo (github.com/manodeep/Corrfunc)\n",
+                __FUNCTION__,lattice1, lattice2);
+        return EXIT_FAILURE;
+    }
+    
     //the lattices have already been made and contain the
     //XYZ arrays. 
     free(X1);free(Y1);free(Z1);
@@ -494,9 +546,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     /* runtime dispatch - get the function pointer */
     countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_function_DOUBLE = countpairs_theta_mocks_driver_DOUBLE(&options);
     if(countpairs_theta_mocks_function_DOUBLE == NULL) {
+        free(theta_upp);
+        free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+        if(autocorr==0) {
+            free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
+        }
         return EXIT_FAILURE;
     }
-
 
     
 #if defined(_OPENMP)
@@ -698,7 +754,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     results->npairs = my_malloc(sizeof(*(results->npairs)), nthetabin);
     results->theta_upp = my_malloc(sizeof(*(results->theta_upp))  , nthetabin);
     results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
-
+    if(results->npairs == NULL || results->theta_upp == NULL || results->theta_avg == NULL) {
+        free_results_countpairs_theta(results);
+        free(theta_upp);
+        return EXIT_FAILURE;
+    }
+    
     for(int i=0;i<nthetabin;i++) {
         results->npairs[i] = npairs[i];
         results->theta_upp[i] = theta_upp[i];
@@ -708,6 +769,5 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
     }
     free(theta_upp);
-
     return EXIT_SUCCESS;
 }

@@ -5,7 +5,7 @@ INSTALL_BIN_DIR := $(ROOT_DIR)/bin
 UTILS_DIR:=$(ROOT_DIR)/utils
 IO_DIR:=$(ROOT_DIR)/io
 
-include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk 
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk 
 
 LIBNAME:=countspheres_mocks
 LIBRARY:=lib$(LIBNAME).a
@@ -32,7 +32,7 @@ LIBOBJS :=$(LIBSRC:.c=.o)
 EXTRA_INCL:=$(GSL_CFLAGS)
 EXTRA_LINK:=$(GSL_LINK)
 
-all: $(TARGET) $(TARGETSRC) Makefile $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+all: $(TARGET) $(TARGETSRC) Makefile $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 countspheres_mocks_impl_float.o:countspheres_mocks_impl_float.c countspheres_mocks_impl_float.h vpf_mocks_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h
 countspheres_mocks_impl_double.o:countspheres_mocks_impl_double.c countspheres_mocks_impl_double.h vpf_mocks_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h

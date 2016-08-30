@@ -64,6 +64,9 @@ int main(int argc, char *argv[])
     fpD1R2=my_fopen(argv[7],"r") ;
     fpD2R1=my_fopen(argv[8],"r") ;
     fpR1R2=my_fopen(argv[9],"r") ;
+    if(fpD1D2 == NULL || fpD1R2 == NULL || fpD2R1 == NULL || fpR1R2 == NULL) {
+        return EXIT_FAILURE;
+    }
     pimax=40. ;
     if(argc>10) sscanf(argv[10],"%lf",&pimax) ;
 

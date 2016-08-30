@@ -6,6 +6,7 @@ UTILS_DIR := $(ROOT_DIR)/utils
 IO_DIR := $(ROOT_DIR)/io
 
 include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+OPT:=$(filter-out -DOUTPUT_RPAVG,$(OPT))
 
 LIBNAME:=countpairs_theta_mocks
 LIBRARY := lib$(LIBNAME).a

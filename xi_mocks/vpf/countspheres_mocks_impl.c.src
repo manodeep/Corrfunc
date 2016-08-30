@@ -473,6 +473,10 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
     results->nc   = nc;
     results->num_pN = num_pN;
     results->pN = (double **) matrix_malloc(sizeof(double), nbin, num_pN);
+    if(results->pN == NULL) {
+        matrix_free((void **) pN, nbin);
+        return EXIT_FAILURE;
+    }
     const DOUBLE inv_nc = ((DOUBLE) 1.0)/(DOUBLE) isucceed;//actual number of spheres placed
     for(int i=0;i<num_pN;i++) {
         for(int ibin=0;ibin<nbin;ibin++) {
