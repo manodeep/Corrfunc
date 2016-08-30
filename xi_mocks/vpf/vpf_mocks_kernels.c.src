@@ -20,6 +20,14 @@ static inline int vpf_mocks_avx_intrinsics_DOUBLE(const int64_t np, DOUBLE *X, D
                                                   const DOUBLE rmax, const int nbin,
                                                   uint64_t *src_counts)
 {
+    if(np == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_counts == NULL) {
+        return EXIT_FAILURE;
+    }
+    
     uint64_t counts[nbin];
     for(int i=0;i<nbin;i++) {
         counts[i] = 0;
@@ -108,6 +116,15 @@ static inline int vpf_mocks_sse_intrinsics_DOUBLE(const int64_t np,  DOUBLE * re
                                                   const DOUBLE rmax, const int nbin,
                                                   uint64_t *src_counts)
 {
+
+    if(np == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_counts == NULL) {
+        return EXIT_FAILURE;
+    }
+
     uint64_t counts[nbin];
     for(int i=0;i<nbin;i++) {
         counts[i] = 0;
@@ -192,6 +209,15 @@ static inline int vpf_mocks_fallback_DOUBLE(const int64_t np, DOUBLE *X, DOUBLE 
                                             const DOUBLE rmax, const int nbin,
                                             uint64_t *src_counts)
 {
+
+    if(np == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_counts == NULL) {
+        return EXIT_FAILURE;
+    }
+
     uint64_t counts[nbin];
     for(int i=0;i<nbin;i++) {
         counts[i]=0;

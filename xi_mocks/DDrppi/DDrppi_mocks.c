@@ -138,15 +138,8 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     results_countpairs_mocks results;
-    struct config_options options;
-    memset(&options, 0, sizeof(struct config_options));
-    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
-    options.verbose = 1;
-    options.float_type = sizeof(DOUBLE);
-#ifdef OUTPUT_RPAVG
-    options.need_avg_sep = 1;
-#endif    
-
+    struct config_options options = get_config_options();
+    options.float_type = sizeof(DOUBLE);//not really required, but I am always paranoid
     int status = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
                                   ND2,phiD2,thetaD2,czD2,
                                   nthreads,

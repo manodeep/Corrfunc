@@ -82,6 +82,10 @@ int test_DDrppi_mocks(const char *correct_outputfile)
     }
 
     FILE *fp=my_fopen(tmpoutputfile,"w");
+    if(fp == NULL) {
+        free_results_mocks(&results);
+        return EXIT_FAILURE;
+    }
     const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
     const int npibin = results.npibin;
     for(int i=1;i<results.nbin;i++) {
@@ -122,6 +126,10 @@ int test_wtheta_mocks(const char *correct_outputfile)
     
     /*---Output-Pairs-------------------------------------*/
     FILE *fp=my_fopen(tmpoutputfile,"w");
+    if(fp == NULL) {
+        free_results_countpairs_theta(&results);
+        return EXIT_FAILURE;
+    }
     DOUBLE theta_low = results.theta_upp[0];
     for(int i=1;i<results.nbin;i++) {
         fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i]);
@@ -165,6 +173,10 @@ int test_vpf_mocks(const char *correct_outputfile)
 
     //Output the results
     FILE *fp=my_fopen(tmpoutputfile,"w");
+    if(fp == NULL) {
+        free_results_countspheres_mocks(&results);
+        return EXIT_FAILURE;
+    }
     const double rstep = rmax/(double)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
@@ -179,7 +191,7 @@ int test_vpf_mocks(const char *correct_outputfile)
     char execstring[MAXLEN];
     my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
-    assert(ret == EXIT_SUCCESS);
+
     //free the result structure
     free_results_countspheres_mocks(&results);
     return ret;
@@ -195,7 +207,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 
     //Check to see if data has to be read for RA1/DEC1/CZ1
-    if (strncmp(current_file1,firstfilename,strlen(current_file1)) != 0) {
+    if (strcmp(current_file1,firstfilename) != 0) {
         /* fprintf(stderr,"Freeing the first data-set and replacing with data from file `%s'\n",firstfilename); */
         //replace the data-set
         if(RA1 != NULL) {
@@ -248,11 +260,10 @@ int main(int argc, char **argv)
     char file[]="../tests/data/Mr19_mock_northonly.rdcz.dat";
     char fileformat[]="a";
 
-#ifdef PERIODIC
-#error PERIODIC must not be defined for running non-periodic tests
-#endif
-
-    init_cosmology(cosmology_flag);
+    int status = init_cosmology(cosmology_flag);
+    if(status != EXIT_SUCCESS) {
+        return EXIT_FAILURE;
+    }
     gettimeofday(&tstart,NULL);
 
     //set the globals.
@@ -266,14 +277,13 @@ int main(int argc, char **argv)
     strncpy(current_file2,file,MAXLEN);
 
     int failed=0;
-    int status;
 
     const char alltests_names[][MAXLEN] = {"Mr19 mocks DDrppi (DD)","Mr19 mocks wtheta (DD)","Mr19 mocks vpf (data)","Mr19 mocks DDrppi (DR)", "Mr19 mocks wtheta (DR)","Mr19 mocks vpf (randoms)"};
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
     const int function_pointer_index[] = {0,1,2,0,1,2};//0->DDrppi, 1->wtheta, 2->vpf
     assert(sizeof(function_pointer_index)/sizeof(int) == ntests && "Number of tests should equal the number of functions");
 
-    const char correct_outoutfiles[][MAXLEN] = {"../tests/Mr19_mock.DD", /* Test 0 Mr19 DD */
+    const char correct_outputfiles[][MAXLEN] = {"../tests/Mr19_mock.DD", /* Test 0 Mr19 DD */
                                                 "../tests/Mr19_mock_wtheta.DD", /* Test 1 Mr19 wtheta DD*/
                                                 "../tests/Mr19_mock_vpf", /* Test 2 Mr19 mocks vpf */
                                                 "../tests/Mr19_mock.DR", /* Test 3 Mr19 DR */
@@ -312,11 +322,10 @@ int main(int argc, char **argv)
                 skipped++;
                 continue;
             }
-
             read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
             pimax=allpimax[i];
             gettimeofday(&t0,NULL);
-            status = (*allfunctions[function_index])(correct_outoutfiles[i]);
+            status = (*allfunctions[function_index])(correct_outputfiles[i]);
             gettimeofday(&t1,NULL);
             double pair_time=ADD_DIFF_TIME(t0,t1);
             total_tests++;
@@ -324,13 +333,14 @@ int main(int argc, char **argv)
                 fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-                run_system_call(execstring);
+                run_system_call(execstring);//can ignore the status here
+                
             } else {
                 fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                 failed++;
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
-                run_system_call(execstring);
+                run_system_call(execstring);//can ignore the status here
 
             }
         }
@@ -353,20 +363,20 @@ int main(int argc, char **argv)
                 read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
                 pimax=allpimax[this_test_num];
                 gettimeofday(&t0,NULL);
-                status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
+                status = (*allfunctions[function_index])(correct_outputfiles[this_test_num]);
                 gettimeofday(&t1,NULL);
                 double pair_time = ADD_DIFF_TIME(t0,t1);
                 if(status==EXIT_SUCCESS) {
                     fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-                    run_system_call(execstring);
+                    run_system_call(execstring);//ignoring status
                 } else {
                     fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                     failed++;
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
-                    run_system_call(execstring);
+                    run_system_call(execstring);//ignoring status
                 }
             } else {
                 fprintf(stderr,ANSI_COLOR_YELLOW "WARNING: Test = %d is not a valid test index. Valid test indices range between [0,%d] " ANSI_COLOR_RESET "\n",this_test_num,ntests-1);

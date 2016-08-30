@@ -16,7 +16,7 @@ VPF_mocks_LIB := countspheres_mocks
 
 include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
-TARGET := test_mocks
+TARGET := tests_mocks
 TARGETS := $(TARGET)
 ifneq ($(COMPILE_PYTHON_EXT), 0)
   TARGETS += python_lib
@@ -40,13 +40,13 @@ all: tests $(TARGETS) $(INCL) uncompress $(ROOT_DIR)/mocks.options $(ROOT_DIR)/c
 
 $(TARGET):$(C_LIBRARIES)
 
-$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: 
+$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_mocks_DIR) libs
 
-$(WTHETA_DIR)/lib$(WTHETA_LIB).a: 
+$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(WTHETA_DIR) libs
 
-$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: 
+$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(VPF_mocks_DIR) libs
 
 python_lib: tests $(TARGETOBJS) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile | $(ROOT_DIR)/lib
@@ -55,8 +55,8 @@ python_lib: tests $(TARGETOBJS) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/co
 	@echo 
 	$(MAKE) -C ../python_bindings tests
 
-tests: test_mocks
-	./test_mocks
+tests: $(TARGET)
+	./$(TARGET)
 
 uncompress: | data
 	@{\
@@ -66,14 +66,14 @@ uncompress: | data
 		done ;\
 		cd ..; \
 	}
-DDrppi: tests_mocks
-	./tests_mocks 0 3  
+DDrppi: $(TARGET)
+	./$(TARGET) 0 3  
 
 wtheta: tests_mocks
-	./tests_mocks 1 4 
+	./$(TARGET) 1 4 
 
 vpf: tests_mocks
-	./tests_mocks 2 5
+	./$(TARGET) 2 5
 
 clean:
 	$(RM) $(TARGETS) $(TARGETOBJS) 

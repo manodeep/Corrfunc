@@ -10,13 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 #include <stdint.h>
 #include <inttypes.h>
 
 #include "defs.h"
 #include "function_precision.h"
-
 
 #if defined(__AVX__)
 #include "avx_calls.h"
@@ -32,6 +30,10 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
         return EXIT_SUCCESS;
     }
 
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+    
     const int32_t need_rpavg = src_rpavg != NULL;
     const int64_t totnbins = (npibin+1)*(nbin+1);
     const DOUBLE sqr_max_sep = max_sep * max_sep;
@@ -297,13 +299,13 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
     }//remainder jloop
   }//i-loop
   
-	for(int i=0;i<totnbins;i++) {
-		src_npairs[i] += npairs[i];
-        if(need_rpavg) {
-            src_rpavg[i] += rpavg[i];
-        }
-	}
-    return EXIT_SUCCESS;
+  for(int i=0;i<totnbins;i++) {
+      src_npairs[i] += npairs[i];
+      if(need_rpavg) {
+          src_rpavg[i] += rpavg[i];
+      }
+  }
+  return EXIT_SUCCESS;
 }
 #endif //AVX defined and USE_AVX
 
@@ -323,6 +325,10 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+
     const int32_t need_rpavg = src_rpavg != NULL;
     SSE_FLOATS m_rupp_sqr[nbin];
     for(int i=0;i<nbin;i++) {
@@ -581,6 +587,10 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
+    }
+
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
     }
     
     const int32_t need_rpavg = src_rpavg != NULL;

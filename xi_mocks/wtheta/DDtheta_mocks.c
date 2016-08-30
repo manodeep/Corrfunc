@@ -112,30 +112,9 @@ int main(int argc, char **argv)
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
     results_countpairs_theta results;
-    struct config_options options;
-    memset(&options, 0, sizeof(struct config_options));
-    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
-#ifndef SILENT
-    options.verbose = 1;
-#endif    
+    struct config_options options = get_config_options();
     options.float_type = sizeof(DOUBLE);
-#ifdef OUTPUT_THETAAVG
-    options.need_avg_sep = 1;
-#endif
-#ifdef LINK_IN_DEC
-    options.link_in_dec = 1;
-#endif
-    
-#ifdef LINK_IN_RA
-    options.link_in_dec = 1;
-    options.link_in_ra = 1;
-#endif
 
-#ifdef FAST_ACOS
-    options.fast_acos=1;
-#endif    
-    
-    
     int status = countpairs_theta_mocks(ND1,phiD1,thetaD1,
                                         ND2,phiD2,thetaD2,
                                         nthreads,
