@@ -57,6 +57,10 @@ ifeq ($(DO_CHECKS), 1)
   ifeq ($(UNAME), Darwin)
     ECHO_COMMAND := echo
   endif
+  ifeq ($(TRAVIS_OS_NAME), linux)
+    ECHO_COMMAND := echo
+  endif 
+
   ccred:=$(shell $(ECHO_COMMAND) "\033[0;31m")
   ccmagenta:=$(shell $(ECHO_COMMAND) "\033[0;35m")
   ccgreen:=$(shell $(ECHO_COMMAND) "\033[0;32m")
