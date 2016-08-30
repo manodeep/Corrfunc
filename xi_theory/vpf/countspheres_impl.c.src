@@ -109,7 +109,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                         results_countspheres *results,
                         const struct config_options *options)
 {
-
+    
     if(options->float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
@@ -124,8 +124,6 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
     }
     
     struct timeval t0,t1;
-    const gsl_rng_type * T = gsl_rng_mt19937;
-    gsl_rng * rng;
     int bin_refine_factor=1;
 
     /* setup interrupt handler -> mostly useful during the python execution. 
@@ -138,8 +136,8 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         }
     }
 
-    
-    rng = gsl_rng_alloc (T);
+    const gsl_rng_type * T = gsl_rng_mt19937;
+    gsl_rng *rng = gsl_rng_alloc (T);
     gsl_rng_set(rng, seed);
 
     int **pN = (int **) matrix_calloc(sizeof(**pN), nbin, num_pN);
@@ -173,6 +171,10 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
     const DOUBLE xdiff = (xmax-xmin);
     const DOUBLE ydiff = (ymax-ymin);
     const DOUBLE zdiff = (zmax-zmin);
+    const DOUBLE xdiff = options.boxsize > 0 ? options.boxsize:(xmax-xmin);
+    const DOUBLE ydiff = options.boxsize > 0 ? options.boxsize:(ymax-ymin);
+    const DOUBLE zdiff = options.boxsize > 0 ? options.boxsize:(zmax-zmin);
+
     const DOUBLE inv_xdiff = ((DOUBLE) 1.0)/xdiff;
     const DOUBLE inv_ydiff = ((DOUBLE) 1.0)/ydiff;
     const DOUBLE inv_zdiff = ((DOUBLE) 1.0)/zdiff;
