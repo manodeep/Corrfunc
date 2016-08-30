@@ -18,7 +18,7 @@ extern "C" {
 
 #include "countpairs.h"  /* For definition of results_countpairs */
 
-    void interrupt_handler_countpairs_DOUBLE(int signo);
+    extern void interrupt_handler_countpairs_DOUBLE(int signo);
     
     typedef int (*countpairs_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                                               const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int same_cell,

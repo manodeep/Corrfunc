@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
-#include <stdint.h>
 #include <inttypes.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include "countpairs_xi_impl_DOUBLE.h" //function proto-type
 #include "xi_kernels_DOUBLE.c"

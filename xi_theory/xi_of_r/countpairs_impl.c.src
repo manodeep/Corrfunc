@@ -9,7 +9,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-
+#include <signal.h>
+#include <unistd.h>
 
 #include "countpairs_impl_DOUBLE.h" //function proto-type
 #include "countpairs_kernels_DOUBLE.c"
