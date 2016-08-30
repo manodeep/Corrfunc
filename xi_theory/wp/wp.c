@@ -129,14 +129,7 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    struct config_options options;
-    memset(&options, 0, sizeof(options));
-    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
-    options.float_type = sizeof(DOUBLE);
-    options.verbose = 1;
-#ifdef OUTPUT_RPAVG    
-    options.need_avg_sep = 1;
-#endif    
+    struct config_options options = get_config_options();
     results_countpairs_wp results;
     int status = countpairs_wp(ND1, x1, y1, z1,
                                boxsize,

@@ -33,7 +33,6 @@ int main(int argc, char *argv[])
     char *fileformat1=NULL,*fileformat2=NULL;
     char *binfile=NULL;
 
-
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
     const int nthreads=1;
@@ -119,18 +118,8 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    struct config_options options;
-    memset(&options, 0, sizeof(options));
-    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
+    struct config_options options = get_config_options();
     options.float_type = sizeof(DOUBLE);
-    options.verbose = 1;
-#ifdef OUTPUT_RPAVG    
-    options.need_avg_sep = 1;
-#endif
-#ifdef PERIODIC
-    options.periodic = 1;
-#endif    
-    
     results_countpairs results;
     int status = countpairs(ND1,x1,y1,z1,
                             ND2,x2,y2,z2,

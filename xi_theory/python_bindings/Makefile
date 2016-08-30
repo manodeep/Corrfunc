@@ -43,19 +43,19 @@ $(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_D
 	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 
 
-$(DD_DIR)/lib$(DD_LIB).a: 
+$(DD_DIR)/lib$(DD_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DD_DIR) libs
 
-$(DDrppi_DIR)/lib$(DDrppi_LIB).a: 
+$(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_DIR) libs
 
-$(WP_DIR)/lib$(WP_LIB).a: 
+$(WP_DIR)/lib$(WP_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(WP_DIR) libs
 
-$(XI_DIR)/lib$(XI_LIB).a: 
+$(XI_DIR)/lib$(XI_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(XI_DIR) libs
 
-$(VPF_DIR)/lib$(VPF_LIB).a: 
+$(VPF_DIR)/lib$(VPF_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(VPF_DIR) libs
 
 

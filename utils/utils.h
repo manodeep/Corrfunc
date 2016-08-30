@@ -15,7 +15,6 @@
 #include<math.h>
 #include<string.h>
 #include<limits.h>
-#include<assert.h>
 #include<time.h>
 #include<sys/time.h>
 #include<stdarg.h>
@@ -42,7 +41,7 @@
              fprintf(stderr,"Error in file: %s\tfunc: %s\tline: %d with expression `"#EXP"'\n", __FILE__, __FUNCTION__, __LINE__); \
              fprintf(stderr,__VA_ARGS__);                               \
              fprintf(stderr,ANSI_COLOR_BLUE "Hopefully, input validation. Otherwise, bug in code: please email Manodeep Sinha <manodeep@gmail.com>"ANSI_COLOR_RESET"\n"); \
-             exit(EXIT_FAILURE);                                        \
+             return EXIT_FAILURE;                                       \
          }                                                              \
      } while (0)
 #endif
@@ -104,11 +103,11 @@
      void *** volume_calloc(size_t size,int64_t nrow,int64_t ncol,int64_t nframe);
      void volume_free(void ***v,int64_t nrow,int64_t ncol);
 
-     extern void run_system_call(const char *execstring);
+     extern int run_system_call(const char *execstring);
 
-     extern void setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
-     extern void setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
-     extern void setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float **rupp);
+     extern int setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
+     extern int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
+     extern int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float **rupp);
 
      extern int test_all_files_present(const int nfiles, ...);
      //end function declarations

@@ -10,6 +10,6 @@ OPT += -DLINK_IN_RA #link_in_dec must be enabled before link_in_ra
 
 #### Code specs for both data Correlation Functions
 OPT += -DDOUBLE_PREC
-OPT += -DUSE_AVX
-OPT += -DUSE_OMP
+
+
 

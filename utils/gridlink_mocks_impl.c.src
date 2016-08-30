@@ -64,6 +64,7 @@ int get_binsize_data_DOUBLE(const DOUBLE xmin,const DOUBLE xmax,
 {
     const DOUBLE xdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:(xmax-xmin);
     int nmesh=(int)(refine_factor*xdiff/rmax) ;
+    nmesh = nmesh < 1 ? 1:nmesh;
     if(options->periodic == 1) {
         if (nmesh<(2*refine_factor+1))  {
             fprintf(stderr,"%s> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",__FILE__,nmesh) ;
@@ -156,23 +157,32 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
     const DOUBLE cell_volume=xbinsize*ybinsize*zbinsize;
     const DOUBLE box_volume=xdiff*ydiff*zdiff;
     int64_t expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
-    expected_n=expected_n < NVEC ? NVEC:expected_n;
-    while((expected_n % NVEC) != 0){
-        expected_n++;
-    }
+    expected_n=expected_n < 2 ? 2:expected_n;
 
     if(options->verbose) {
       fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
     }
 
     cellarray_mocks_index_particles_DOUBLE *lattice  = (cellarray_mocks_index_particles_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
-    int64_t *nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
+    int64_t *nallocated = (int64_t *) my_malloc(sizeof(*nallocated), totncells);
+    if(lattice == NULL || nallocated == NULL) {
+        free(lattice);free(nallocated);
+        return NULL;
+    }
+
     for (int64_t index=0;index<totncells;index++) {
         const size_t memsize=sizeof(DOUBLE);
         lattice[index].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].cz = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+        if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL ||
+           lattice[index].cz == NULL) {
+            for(int64_t i=index;i>=0;i--) {
+                free(lattice[index].x);free(lattice[index].y);free(lattice[index].z);free(lattice[index].cz);
+                return NULL;
+            }
+        }
         lattice[index].nelements=0;
         lattice[index].ngb_cells = NULL;
         nallocated[index] = expected_n;
@@ -212,14 +222,38 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
             //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
             //This way, we only increase by a very few particles
             // at a time. Smaller memory footprint
-            while(expected_n <= nallocated[index] || ((expected_n % NVEC) != 0))
+            while(expected_n <= nallocated[index])
                 expected_n++;
 
             const size_t memsize=sizeof(DOUBLE);
-            lattice[index].x = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
-            lattice[index].y = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
-            lattice[index].z = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
-            lattice[index].cz = my_realloc(lattice[index].cz ,memsize,expected_n,"lattice.cz");
+            DOUBLE *posx=NULL, *posy=NULL, *posz=NULL, *poscz=NULL;
+            do{
+                posx = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
+                posy = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
+                posz = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
+                poscz = my_realloc(lattice[index].cz ,memsize,expected_n,"lattice.cz");
+                if(posx == NULL || posy == NULL || posz == NULL || poscz == NULL) {
+                    free(posx);free(posy);free(posz);free(poscz);
+                    expected_n--;
+                }
+            } while(expected_n > nallocated[index] && (posx == NULL ||
+                                                       posy == NULL ||
+                                                       posz == NULL ||
+                                                       poscz == NULL));
+
+            if(expected_n == nallocated[index]) {
+                /*realloc failed. free memory and return */
+                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                        __FUNCTION__, np);
+                fprintf(stderr,"posx = %p posy = %p posz = %p poscz = %p\n", posx, posy, posz, poscz);
+                free_cellarray_mocks_index_particles_DOUBLE(lattice, totncells);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[index].x=posx;
+            lattice[index].y=posy;
+            lattice[index].z=posz;
+            lattice[index].cz=poscz;
             nallocated[index] = expected_n;
         }
         XRETURN(lattice[index].nelements < nallocated[index], NULL, 
@@ -298,6 +332,9 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
     
     first->num_ngb = 0;
     first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+    if(first->ngb_cells == NULL) {
+        return EXIT_FAILURE;
+    }
     
     for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
       const int iiix = ix + iix;
@@ -374,7 +411,8 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
     
     /* Find the max. number of declination cells that can be */
     const DOUBLE this_ngrid_dec = dec_diff*dec_refine_factor/thetamax;
-    const int ngrid_dec = this_ngrid_dec > max_dec_size ? max_dec_size:(int) this_ngrid_dec;
+    int ngrid_dec = this_ngrid_dec > max_dec_size ? max_dec_size:(int) this_ngrid_dec;
+    ngrid_dec = ngrid_dec < 1  ? 1:ngrid_dec;
 
     *totncells = ngrid_dec;
 
@@ -383,14 +421,25 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
 
     /*---Allocate-and-initialize-grid-arrays----------*/
     cellarray_mocks_index_wtheta_DOUBLE *lattice = (cellarray_mocks_index_wtheta_DOUBLE *) my_calloc(sizeof(*lattice),ngrid_dec);
-    totnbytes += sizeof(*lattice)*ngrid_dec;
     int64_t *nallocated = my_malloc(sizeof(*nallocated), ngrid_dec);
+    if(lattice == NULL || nallocated == NULL) {
+        free(lattice);free(nallocated);
+        return NULL;
+    }
+    totnbytes += sizeof(*lattice)*ngrid_dec;
     totnbytes += sizeof(*nallocated)*ngrid_dec;
     for(int j=0;j<ngrid_dec;j++) {
         const size_t memsize = sizeof(DOUBLE);
         lattice[j].x = my_malloc(memsize,expected_n);
         lattice[j].y = my_malloc(memsize,expected_n);
         lattice[j].z = my_malloc(memsize,expected_n);
+        if(lattice[j].x == NULL || lattice[j].y == NULL || lattice[j].z == NULL) {
+            for(int k=j;k>=0;k--) {
+                free(lattice[k].x);free(lattice[k].y);free(lattice[k].z);
+            }
+            free(lattice);
+            return NULL;
+        }
         lattice[j].nelements=0;
         lattice[j].ngb_cells=NULL;
         nallocated[j] = expected_n;
@@ -410,12 +459,32 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
             }
 
             const size_t memsize = sizeof(DOUBLE);
-            lattice[idec].x  = my_realloc(lattice[idec].x, memsize,expected_n,"lattice.x");
-            lattice[idec].y  = my_realloc(lattice[idec].y, memsize,expected_n,"lattice.y");
-            lattice[idec].z  = my_realloc(lattice[idec].z, memsize,expected_n,"lattice.z");
-            totnbytes += 3 * (nallocated[idec]-expected_n) * memsize;
+            DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
+            do {
+                posx = my_realloc(lattice[idec].x,memsize,expected_n,"lattice.x");
+                posy = my_realloc(lattice[idec].y,memsize,expected_n,"lattice.y");
+                posz = my_realloc(lattice[idec].z,memsize,expected_n,"lattice.z");
+                if(posx == NULL || posy == NULL || posz == NULL) {
+                    free(posx);free(posy);free(posz);
+                    expected_n--;
+                }
+            } while(expected_n > nallocated[idec] && (posx == NULL ||
+                                                       posy == NULL ||
+                                                       posz == NULL));
+            
+            if(expected_n == nallocated[idec]) {
+                /*realloc failed. free memory and return */
+                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                        __FUNCTION__, np);
+                fprintf(stderr,"posx = %p posy = %p posz = %p\n", posx, posy, posz);
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice, *totncells);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[idec].x=posx;
+            lattice[idec].y=posy;
+            lattice[idec].z=posz;
             nallocated[idec] = expected_n;
-             
         }
 
         XRETURN(lattice[idec].nelements < nallocated[idec],NULL,
@@ -471,6 +540,9 @@ int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE
         first->num_ngb = 0;
         if(first->nelements == 0) continue;
         first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+        if(first->ngb_cells == NULL) {
+            return EXIT_FAILURE;
+        }
         
         for(int idec=-dec_refine_factor;idec<=dec_refine_factor;idec++) {
             const int64_t icell2 = icell + idec;
@@ -542,7 +614,8 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     }
 
     const DOUBLE this_ngrid_dec = dec_diff*dec_refine_factor/thetamax;
-    const int ngrid_dec = this_ngrid_dec > max_dec_size ? max_dec_size:(int) this_ngrid_dec;
+    int ngrid_dec = this_ngrid_dec > max_dec_size ? max_dec_size:(int) this_ngrid_dec;
+    ngrid_dec = ngrid_dec < 1 ? 1:ngrid_dec;
     *ngrid_declination=ngrid_dec;
 
     DOUBLE dec_binsize=dec_diff/ngrid_dec;
@@ -551,6 +624,9 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
             max_dec_size, 2*ra_refine_factor + 1);
 
     *ngrid_phi = my_malloc(sizeof(**ngrid_phi), ngrid_dec);
+    if(*ngrid_phi == NULL) {
+        return NULL;
+    }
     totnbytes += sizeof(**ngrid_phi)*ngrid_dec;
 
     /* Use a local pointer. Only one level of dereferencing */
@@ -589,8 +665,6 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
             nmesh_ra = 2*ra_refine_factor + 1;
             fprintf(stderr,"%s> Using sub-optimal RA binning to ensure correct functioning of the code\n",__FUNCTION__);
         }
-
-        //nmesh_ra = 2*ra_refine_factor + 1;
         
         if(nmesh_ra > max_nmesh_phi) max_nmesh_phi = nmesh_ra;
         ngrid_ra[idec] = nmesh_ra;
@@ -603,8 +677,12 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     const int64_t totncells = ngrid_dec * (int64_t) max_nmesh_phi;
     *ncells = totncells;
     cellarray_mocks_index_wtheta_DOUBLE *lattice = my_calloc(sizeof(*lattice), totncells);
-    totnbytes += sizeof(*lattice) * totncells;
     int64_t *nallocated = my_malloc(sizeof(*nallocated), totncells);
+    if(lattice == NULL || nallocated == NULL) {
+        free(lattice);free(nallocated);
+        return NULL;
+    }
+    totnbytes += sizeof(*lattice) * totncells;
     totnbytes += sizeof(*nallocated) * totncells;
     
     for(int64_t icell=0;icell<totncells;icell++) {
@@ -624,6 +702,14 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
             lattice[index].x = my_malloc(memsize,expected_n);
             lattice[index].y = my_malloc(memsize,expected_n);
             lattice[index].z = my_malloc(memsize,expected_n);
+            if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL) {
+                /* Since all the x/y/z/ngb_cells are initialized to NULL, 
+                   I can call the helper routine directly */
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice, totncells);
+                free(lattice);
+                free(nallocated);
+                return NULL;
+            }
             lattice[index].nelements=0;
             nallocated[index]=expected_n;
             totnbytes += 3 * memsize * expected_n;
@@ -656,9 +742,32 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
             }
 
             const size_t memsize=sizeof(DOUBLE);
-            lattice[index].x = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
-            lattice[index].y = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
-            lattice[index].z = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
+            DOUBLE *posx=NULL, *posy=NULL, *posz = NULL;
+            do {
+                posx = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
+                posy = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
+                posz = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
+                if(posx == NULL || posy == NULL || posz == NULL) {
+                    free(posx);free(posy);free(posz);
+                    expected_n--;
+                }
+            } while(expected_n > nallocated[index] && (posx == NULL ||
+                                                       posy == NULL ||
+                                                       posz == NULL));
+            
+            if(expected_n == nallocated[index]) {
+                /*realloc failed. free memory and return */
+                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                        __FUNCTION__, np);
+                fprintf(stderr,"posx = %p posy = %p posz = %p\n", posx, posy, posz);
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice, totncells);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[index].x=posx;
+            lattice[index].y=posy;
+            lattice[index].z=posz;
+            nallocated[index] = expected_n;
             totnbytes += 3 * (expected_n - nallocated[index]) * memsize;
             nallocated[index] = expected_n;
         }
@@ -725,6 +834,9 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
             
             first->num_ngb = 0;
             first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+            if(first->ngb_cells == NULL) {
+                return EXIT_FAILURE;
+            }
             
             for(int i=-dec_refine_factor;i<=dec_refine_factor;i++){
                 const int this_dec = idec + i;

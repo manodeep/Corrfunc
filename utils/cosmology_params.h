@@ -7,9 +7,7 @@
 */
 
 #pragma once
-
 #include <stdio.h>
-#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,7 +23,7 @@ extern "C" {
     extern double NS;
     extern int active_cosmology;
 
-    void init_cosmology(const int lasdamas_cosmology);
+    int init_cosmology(const int lasdamas_cosmology)__attribute__((warn_unused_result));
 
 #ifdef __cplusplus
 }

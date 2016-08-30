@@ -36,7 +36,7 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
                results_countpairs *results,
                const struct config_options *options)
 {
-    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+
     
     
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){

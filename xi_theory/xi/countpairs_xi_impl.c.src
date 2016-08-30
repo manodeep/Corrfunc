@@ -156,12 +156,21 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         }
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-    assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, bin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options.autocorr, options.periodic);
 
+    {
+        int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, bin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options.autocorr, options.periodic);
+        if(status != EXIT_SUCCESS) {
+            free_cellarray_index_particles_DOUBLE(lattice, totncells);
+            free(rupp);
+            return status;
+        }
+    }
     /* runtime dispatch - get the function pointer */
     xi_func_ptr_DOUBLE xi_function_DOUBLE = xi_driver_DOUBLE(&options);
     if(xi_function_DOUBLE == NULL) {
-      return EXIT_FAILURE;
+        free_cellarray_index_particles_DOUBLE(lattice, totncells);
+        free(rupp);
+        return EXIT_FAILURE;
     }
 
     
@@ -170,6 +179,15 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     DOUBLE **all_ravg = NULL;
     if(options.need_avg_sep) {
         all_ravg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nbins);
+    }
+    if(all_npairs == NULL || (options.need_avg_sep && all_ravg == NULL)) {
+        free_cellarray_index_particles_DOUBLE(lattice, totncells);
+        matrix_free((void **) all_npairs, numthreads);
+        if(options.need_avg_sep) {
+            matrix_free((void **) all_ravg, numthreads);
+        }
+        free(rupp);
+        return EXIT_FAILURE;
     }
 #else
     uint64_t npairs[nbins];
@@ -263,7 +281,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                 /* This actually causes a race condition under OpenMP - but mostly 
                    I care that an error occurred - rather than the exact value of 
                    the error status */
-                abort_status = abort_status | status;
+                abort_status |= status;
                 
                 for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
                     const cellarray_index_particles_DOUBLE *second = first->ngb_cells[ngb];
@@ -296,7 +314,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                     /* This actually causes a race condition under OpenMP - but mostly 
                        I care that an error occurred - rather than the exact value of 
                        the error status */
-                    abort_status = abort_status | status;
+                    abort_status |= status;
                 }//ngb loop
             }//error occurred somewhere in the called functions: abort_status is set
         }//index1 loop
@@ -326,9 +344,12 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
             matrix_free((void **) all_ravg, numthreads);
         }
 #endif//OpenMP
-      return abort_status;
+      return EXIT_FAILURE;
     }
-    
+
+    if(options.verbose) {
+        finish_myprogressbar(&interrupted);
+    }
 
 #if defined(_OPENMP)
     /* Note that this *NOT* in an OMP parallel region */
@@ -370,10 +391,16 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 
     //Pack in the results
     results->nbin = nbins;
-    results->npairs = my_malloc(sizeof(uint64_t), nbins);
-    results->xi     = my_malloc(sizeof(double)  , nbins);
-    results->rupp   = my_malloc(sizeof(double)  , nbins);
-    results->ravg   = my_malloc(sizeof(double)  , nbins);
+    results->npairs = my_malloc(sizeof(*(results->npairs)), nbins);
+    results->xi     = my_malloc(sizeof(*(results->xi))  , nbins);
+    results->rupp   = my_malloc(sizeof(*(results->rupp))  , nbins);
+    results->ravg   = my_malloc(sizeof(*(results->ravg))  , nbins);
+    if(results->npairs == NULL || results->rupp == NULL ||
+       results->ravg == NULL || results->xi == NULL) {
+        free_results_xi(results);
+        free(rupp);
+        return EXIT_FAILURE;
+    }
 
     const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
     const DOUBLE density=0.5*avgweight2*ND/(boxsize*boxsize*boxsize);//0.5 because pairs are not double-counted

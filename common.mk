@@ -24,6 +24,8 @@ PYTHON_CONFIG_EXE:=
 ## Might lead to some un-necessary recompilation but is guaranteed
 ## to work.
 
+## Set OpenMP for both theory and mocks
+OPT += -DUSE_OMP
 
 
 ### You should NOT edit below this line
@@ -32,7 +34,6 @@ MAJOR:=1
 MINOR:=9
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
-
 DO_CHECKS := 1
 ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
@@ -89,32 +90,33 @@ ifeq ($(DO_CHECKS), 1)
       CC := clang-omp
     endif
   endif
-  # Check if CPU supports AVX -> this trumps everything. For instance, compiler might
-  # support AVX but the cpu might not. Then compilation will work fine but there will
-  # be a runtime crash with "Illegal Instruction"
-  ifeq ($(UNAME), Darwin)
-    # On a MAC, best to use sysctl
-    AVX_AVAIL := $(shell sysctl -n machdep.cpu.features 2>/dev/null | grep -o -i AVX | tr '[:lower:]' '[:upper:]')
-  else
-    # On Linux/Unix, just grep on /proc/cpuinfo
-    # There might be multiple cores, so just take the first line
-    # (Is it possible that someone has one core that has AVX and another that doesnt?)
-    AVX_AVAIL := $(shell grep -o -i AVX /proc/cpuinfo 2>/dev/null | head -n 1 | tr '[:lower:]' '[:upper:]' )
-  endif
-  REMOVE_AVX :=0
-  ifdef AVX_AVAIL
-    ifneq ($(AVX_AVAIL) , AVX)
-      REMOVE_AVX := 1
-    endif
-  else
-    REMOVE_AVX :=1
-  endif
 
-  ifeq ($(REMOVE_AVX), 1)
-    $(warning $(ccmagenta) CPU does not seem support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
-    OPT:=$(filter-out -DUSE_AVX,$(OPT))
-  endif
-  # end of checking if CPU supports AVX      
+  # # Check if CPU supports AVX -> this trumps everything. For instance, compiler might
+  # # support AVX but the cpu might not. Then compilation will work fine but there will
+  # # be a runtime crash with "Illegal Instruction"
+  # ifeq ($(UNAME), Darwin)
+  #   # On a MAC, best to use sysctl
+  #   AVX_AVAIL := $(shell sysctl -n machdep.cpu.features 2>/dev/null | grep -o -i AVX | tr '[:lower:]' '[:upper:]')
+  # else
+  #   # On Linux/Unix, just grep on /proc/cpuinfo
+  #   # There might be multiple cores, so just take the first line
+  #   # (Is it possible that someone has one core that has AVX and another that doesnt?)
+  #   AVX_AVAIL := $(shell grep -o -i AVX /proc/cpuinfo 2>/dev/null | head -n 1 | tr '[:lower:]' '[:upper:]' )
+  # endif
+  # REMOVE_AVX :=0
+  # ifdef AVX_AVAIL
+  #   ifneq ($(AVX_AVAIL) , AVX)
+  #     REMOVE_AVX := 1
+  #   endif
+  # else
+  #   REMOVE_AVX :=1
+  # endif
+
+  # ifeq ($(REMOVE_AVX), 1)
+  #   $(warning $(ccmagenta) CPU does not seem support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
+  #   OPT:=$(filter-out -DUSE_AVX,$(OPT))
+  # endif
+  # # end of checking if CPU supports AVX      
 
 
   # Now check if gcc is set to be the compiler but if clang is really under the hood.
@@ -148,7 +150,7 @@ ifeq ($(DO_CHECKS), 1)
   INCLUDE:=-I../../io -I../../utils
   ### The POSIX_SOURCE flag is required to get the definition of strtok_r
   CFLAGS += -DVERSION=\"${VERSION}\"
-  CFLAGS += -std=c99 -m64 -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
+  CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
   CFLAGS += -Wno-unused-local-typedefs ## to suppress the unused typedef warning for the compile time assert for sizeof(struct config_options)
   GSL_FOUND := $(shell gsl-config --version)
   ifndef GSL_FOUND
@@ -184,11 +186,11 @@ ifeq ($(DO_CHECKS), 1)
     endif
   endif
 
-  ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
-    ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-      $(warning Makefile option $(ccblue)"FAST_DIVIDE"$(ccreset) will not do anything unless $(ccblue)USE_AVX$(ccreset) is set)
-    endif
-  endif
+  # ifeq (FAST_DIVIDE,$(findstring FAST_DIVIDE,$(OPT)))
+  #   ifneq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+  #     $(warning Makefile option $(ccblue)"FAST_DIVIDE"$(ccreset) will not do anything unless $(ccblue)USE_AVX$(ccreset) is set)
+  #   endif
+  # endif
   ## done with check for conflicting options
 
   ifeq (icc,$(findstring icc,$(CC)))
@@ -201,11 +203,11 @@ ifeq ($(DO_CHECKS), 1)
 
     ## Warning that w(theta) with OUTPUT_THETAAVG is very slow without icc
     ## Someday I am going to fix that by linking with MKL 
-    ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-      ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
-        $(warning WARNING: $(ccblue)"OUTPUT_THETAAVG"$(ccreset) with AVX capabilties is slow with gcc/clang (disables AVX essentially) with gcc/clang. Try to use $(ccblue)"icc"$(ccreset) if available)
-      endif
-	  endif
+    # ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+    #   ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
+    #     $(warning WARNING: $(ccblue)"OUTPUT_THETAAVG"$(ccreset) with AVX capabilties is slow with gcc/clang (disables AVX essentially) with gcc/clang. Try to use $(ccblue)"icc"$(ccreset) if available)
+    #   endif
+    # endif
 
     ### GCC is slightly more complicated. CC might be called gcc but it might be clang underneath
     ### compiler specific flags for gcc
@@ -217,10 +219,10 @@ ifeq ($(DO_CHECKS), 1)
         ifeq ($(UNAME), Darwin)
           CFLAGS += -Wa,-q
           export CLANG_ASM_WARNING_PRINTED ?= 0
-	        ifeq ($(CLANG_ASM_WARNING_PRINTED), 0)
+          ifeq ($(CLANG_ASM_WARNING_PRINTED), 0)
             $(warning $(ccmagenta) WARNING: gcc on Mac does not support intrinsics. Attempting to use the clang assembler $(ccreset))
             $(warning $(ccmagenta) If you see the error message $(ccred) "/opt/local/bin/as: assembler (/opt/local/bin/clang) not installed" $(ccmagenta) then try the following fix $(ccreset))
-            $(warning $(ccmagenta) Either install clang ($(ccgreen)for Macports use, "sudo port install clang-3.8"$(ccmagenta)) or remove option $(ccgreen)"USE_AVX"$(ccmagenta) from both the $(ccgreen)"theory.options"$(ccmagenta) and $(ccgreen)"mocks.options"$(ccmagenta) files$(ccreset))
+            $(warning $(ccmagenta) Either install clang ($(ccgreen)for Macports use, "sudo port install clang-3.8"$(ccmagenta)) or add option $(ccgreen)"-mno-avx"$(ccreset) to "CFLAGS" in $(ccmagenta)"common.mk"$(ccreset))
             export CLANG_ASM_WARNING_PRINTED := 1
           endif # warning printed
         endif
@@ -297,10 +299,10 @@ ifeq ($(DO_CHECKS), 1)
       endif # USE_OMP
     endif # CC is clang
 
-    #### common options for gcc and clang
-    ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-      CFLAGS  +=  -mavx
-    endif
+    # #### common options for gcc and clang
+    # ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
+    #   CFLAGS  +=  -mavx
+    # endif
 
     CFLAGS += -funroll-loops
     CFLAGS += -march=native -fno-strict-aliasing

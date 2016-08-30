@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -18,6 +19,8 @@
 
 #define STRINGIFY(x)   #x
 #define STR(x) STRINGIFY(x)
+
+#define API_VERSION          STR("1.9.0")
 
 typedef enum {
     FALLBACK=0, /* No special options */
@@ -61,21 +64,28 @@ struct config_options
         double NS;
     };
 
+    /* Measures the time spent in the C API while accessed from python.
+       Enabled when the flag c_timer is set
+     */
+    double c_api_time;
+    
     size_t float_type; /* floating point type -> vectorized supports double/float; fallback can support long double*/
     int instruction_set; /* select instruction set to run on */
 
     char version[32];/* fill in the version number */
-
     bool verbose; /* Outputs progressbar and times */
+    bool c_api_timer; /* Measures time spent in the C function */
+
+    /* Options valid for both theory and mocks */
     bool need_avg_sep; /* <rp> or <\theta> is required */
-    bool autocorr;
+    bool autocorr;/* Only one dataset is required */
     
     /* Options for theory*/
     bool periodic; /* count in periodic mode? flag ignored for wp/xi */
     bool sort_on_z;/* option to sort particles based on their Z co-ordinate in gridlink*/
 
-    /* For DDrppi_mocks and vpf, flag to indicate cz is already co-moving distance */
-    bool is_comoving_dist;
+    /* For DDrppi_mocks and vpf*/
+    bool is_comoving_dist;/* flag to indicate cz is already co-moving distance */
     
     /* the link_in_* variables control how the 3-D cell structure is created */
     bool link_in_dec;/* relevant for DDthteta_mocks */
@@ -90,7 +100,7 @@ struct config_options
     /* Reserving to maboolain ABI compatibility for the future */
     /* Note that the math here assumes no padding bytes, that's because of the 
        order in which the fields are declared (largest to smallest alignments)  */
-    uint8_t reserved[OPTIONS_HEADER_SIZE - 32*sizeof(char) - sizeof(size_t) - 8*sizeof(double) - sizeof(int) - 11*sizeof(bool)];
+    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - sizeof(int) - 11*sizeof(bool)];
 };
 
 /* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
@@ -102,5 +112,72 @@ struct config_options
    an unused local typedef warning is used. I turn off the corresponding warning 
    in common.mk (-Wno-unused-local-typedefs) via CFLAGS
 */
-#define BUILD_BUG_OR_ZERO(cond) typedef char assertion_on_mystruct[( !!(cond) )*2-1 ] 
-#define ENSURE_STRUCT_SIZE(e, size)  BUILD_BUG_OR_ZERO(sizeof(e) == size)
+#define BUILD_BUG_OR_ZERO(cond, msg) typedef volatile char assertion_on_##msg[( !!(cond) )*2-1 ] 
+#define ENSURE_STRUCT_SIZE(e, size)                 BUILD_BUG_OR_ZERO(sizeof(e) == size, sizeof_struct_config_options)
+
+static inline struct config_options get_config_options(void)
+{
+    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    if(strncmp(API_VERSION, STR(VERSION), 32) != 0) {
+        fprintf(stderr,"Error: Version mismatch between header and Makefile. Header claims version = `%s' while Makefile claims version = `%s'\n"
+                "Library header probably needs to be updated\n", API_VERSION, STR(VERSION));
+        exit(EXIT_FAILURE);
+    }
+    struct config_options options;
+    memset(&options, 0, OPTIONS_HEADER_SIZE);
+    snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", API_VERSION);
+#ifdef DOUBLE_PREC    
+    options.float_type = sizeof(double);
+#else
+    options.float_type = sizeof(float);
+#endif    
+#ifndef SILENT
+    options.verbose = 1;
+#endif
+    
+#ifdef OUTPUT_RPAVG    
+    options.need_avg_sep = 1;
+#endif
+#ifdef PERIODIC
+    options.periodic = 1;
+#endif    
+
+#ifdef __AVX__
+    options.instruction_set = AVX;
+#elif defined(__SSE4_2__)
+    options.instruction_set = SSE42;
+#else
+    options.instruction_set = FALLBACK;
+#endif
+
+    /* Options specific to mocks */
+
+    /* Options for DDrppi_mocks */
+#ifdef FAST_DIVIDE
+    options.fast_divide=1;
+#endif
+
+    
+    /* Options for wtheta*/
+#ifdef OUTPUT_THETAAVG
+    options.need_avg_sep = 1;
+#endif
+
+#ifdef LINK_IN_DEC
+    options.link_in_dec = 1;
+#endif
+#ifdef LINK_IN_RA
+    options.link_in_ra=1;
+    options.link_in_dec=1;
+#endif
+
+#ifdef FAST_ACOS
+    options.fast_acos=1;
+#endif    
+                             
+    return options;
+}
+
+
+
+

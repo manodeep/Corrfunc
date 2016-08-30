@@ -72,6 +72,10 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     FILE *fp=NULL;
 
     fp=my_fopen(tmpoutputfile,"w");
+    if(fp == NULL) {
+        free_results(&results);
+        return EXIT_FAILURE;
+    }
     for(int i=1;i<results.nbin;i++) {
         fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
         rlow=results.rupp[i];
@@ -106,6 +110,10 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
     const int npibin = results.npibin;
     const double dpi = pimax/(double)results.npibin ;
     FILE *fp=my_fopen(tmpoutputfile,"w");
+    if(fp == NULL) {
+        free_results_rp_pi(&results);
+        return EXIT_FAILURE;
+    }
     for(int i=1;i<results.nbin;i++) {
         const double logrp = log10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
@@ -244,13 +252,13 @@ int main(int argc, char **argv)
                 fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-                run_system_call(execstring);
+                run_system_call(execstring);//ignoring status
             } else {
                 fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                 failed++;
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
-                run_system_call(execstring);
+                run_system_call(execstring);//ignoring status
                 fprintf(stderr, ANSI_COLOR_RED "Failed output copied to %s.%d correct output is in %s"ANSI_COLOR_RESET"\n", tmpoutputfile, i, correct_outputfiles[i]);
             }
         }
@@ -279,13 +287,13 @@ int main(int argc, char **argv)
                     fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-                    run_system_call(execstring);
+                    run_system_call(execstring);//ignoring status
                 } else {
                     fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                     failed++;
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
-                    run_system_call(execstring);
+                    run_system_call(execstring);//ignoring status
                     fprintf(stderr, ANSI_COLOR_RED "Failed output copied to %s.%d correct output is in %s"ANSI_COLOR_RESET"\n", tmpoutputfile, this_test_num, correct_outputfiles[this_test_num]);
                 }
             }

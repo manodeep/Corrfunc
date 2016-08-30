@@ -69,13 +69,10 @@ int main(int argc, char **argv)
     DOUBLE pimax;
     int nthreads=1;//default to single thread
 
-    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
-    struct config_options options;
+    struct config_options options = get_config_options();
     options.verbose = 1;
     options.periodic = 1;
     options.float_type = sizeof(DOUBLE);
-    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
-
     
 #if defined(_OPENMP)
     const char argnames[][30]={"file","format","binfile","boxsize","pimax","Nthreads"};

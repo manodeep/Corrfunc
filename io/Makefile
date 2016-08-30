@@ -4,7 +4,7 @@ UTILS_DIR := $(ROOT_DIR)/utils
 include $(ROOT_DIR)/common.mk
 SRC   := ftread.c io.c
 OBJS  := $(SRC:.c=.o)
-INCL  := ftread.h io.h 
+INCL  := ftread.h io.h $(UTILS_DIR)/utils.h
 
 all: $(OBJS) $(INCL) $(SRC) Makefile 
 

@@ -8,16 +8,10 @@
 
 #pragma once
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "ftread.h"
-#include "utils.h"
 
     int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...) __attribute__((warn_unused_result));
 
