@@ -58,6 +58,7 @@ matrix:
     #     - conda install -q --yes -c asmeurer gsl        
 
     - os: osx
+      osx_image: xcode8
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
       before_install:
@@ -67,6 +68,45 @@ matrix:
         - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
         - source activate test
         - conda install -q --yes -c asmeurer gsl
+
+    - os: osx
+      osx_image: xcode7.3
+      compiler: clang
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - source activate test
+        - conda install -q --yes -c asmeurer gsl
+
+
+    - os: osx
+      osx_image: xcode7
+      compiler: clang
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - source activate test
+        - conda install -q --yes -c asmeurer gsl
+
+
+    - os: osx
+      osx_image: xcode6.4
+      compiler: clang
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - source activate test
+        - conda install -q --yes -c asmeurer gsl
+
 
     # - os: osx
     #   compiler: gcc
