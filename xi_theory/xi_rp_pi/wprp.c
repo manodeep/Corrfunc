@@ -93,10 +93,8 @@ int main(int argc, char *argv[])
     while(fscanf(fpD1D2,"%lf %lf %lf %lf%*[^\n]",&D1D2[i],&ravg1[i],&logrp1[i],&pi1[i])!=EOF) {
         /* fprintf(stderr,"%lf %lf %lf %lf\n",D1D2[i],ravg1[i],logrp1[i],pi1[i]); */
         i++ ;
-        if(i > ndat) {
-            fprintf(stderr,"i = %d ndat = %d\n",i,ndat);
-        }
-        assert(i <= ndat);
+        XASSERT(i <= ndat, "Current line parsed = %d must be less than number of data points expected = %d\n"
+                "nrpbin = %d npibin = %d", i, ndat, nrpbin, npibin);
     }
 
     if(i!=ndat) {
@@ -111,7 +109,8 @@ int main(int argc, char *argv[])
 
     while(fscanf(fpD1R2,"%lf%*[^\n]",&D1R2[i])!=EOF) {
         i++ ;
-        assert(i <= ndat);
+        XASSERT(i <= ndat, "Current line parsed = %d must be less than number of data points expected = %d\n"
+                "nrpbin = %d npibin = %d", i, ndat, nrpbin, npibin);
     }
     if(i!=ndat) {
         fprintf(stderr,"wprp> Warning: nrpbin*npibin= %d, but D1R2 file has %d lines\n",ndat,i) ;
@@ -125,7 +124,8 @@ int main(int argc, char *argv[])
     i = 0 ;
     while(fscanf(fpD2R1,"%lf%*[^\n]",&D2R1[i])!=EOF) {
         i++ ;
-        assert(i <=ndat);
+        XASSERT(i <= ndat, "Current line parsed = %d must be less than number of data points expected = %d\n"
+                "nrpbin = %d npibin = %d", i, ndat, nrpbin, npibin);
     }
     if(i!=ndat) {
         fprintf(stderr,"wprp> Warning: nrpbin*npibin= %d, but D2R1 file has %d lines\n",ndat,i) ;
@@ -138,7 +138,8 @@ int main(int argc, char *argv[])
     i = 0 ;
     while(fscanf(fpR1R2,"%lf%*[^\n]",&R1R2[i])!=EOF) {
         i++ ;
-        assert(i<=ndat);
+        XASSERT(i <= ndat, "Current line parsed = %d must be less than number of data points expected = %d\n"
+                "nrpbin = %d npibin = %d", i, ndat, nrpbin, npibin);
     }
     if(i!=ndat) {
         fprintf(stderr,"wprp> Warning: nrpbin*npibin= %d, but R1R2 file has %d lines\n",ndat,i) ;
