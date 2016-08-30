@@ -610,7 +610,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!iii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!iiiiiii", kwlist,
                                        &autocorr,&cosmology,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -661,7 +661,6 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
             Py_RETURN_NONE;
         }
     }
-
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
@@ -806,7 +805,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!iiiiii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!iiiiiii", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -825,7 +824,6 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     }
     options.autocorr=autocorr;
     options.periodic=0;//doesn't matter but noting intent by setting it to 0
-
 
     size_t element_size;
     /* We have numpy arrays and all the required inputs*/
@@ -991,7 +989,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|ii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|iiii", kwlist,
                                        &rmax,&nbin,&num_spheres,&num_pN,&threshold_neighbors,&centers_file,&cosmology,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,

@@ -510,7 +510,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|iO!O!O!idii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|iO!O!O!idiii", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -691,7 +691,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iidsO!O!O!|iO!O!O!idii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iidsO!O!O!|iO!O!O!idiii", kwlist,
                                        &autocorr,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -865,7 +865,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         NULL
     };
     
-    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|iii", kwlist,
+    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|iiii", kwlist,
                                       &boxsize,&pimax,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
@@ -993,7 +993,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     options.periodic=1;
     options.instruction_set = AVX; //from enum
     options.c_api_timer = 0;
-    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|iii", kwlist,
+    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|iiii", kwlist,
                                       &boxsize,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
@@ -1116,7 +1116,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     options.instruction_set = AVX; //from enum
     options.c_api_timer = 0;
     if( ! PyArg_ParseTupleAndKeywords(args, kwargs,
-                                      "diiikO!O!O!|iii", kwlist,
+                                      "diiikO!O!O!|iiii", kwlist,
                                       &rmax,&nbin,&nc,&num_pN,&seed,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
