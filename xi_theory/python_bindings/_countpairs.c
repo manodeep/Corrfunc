@@ -490,6 +490,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     options.instruction_set = AVX;
     options.periodic = 1;
     options.need_avg_sep = 0;
+    options.c_api_timer = 0;
     static char *kwlist[] = {
         "autocorr",
         "nthreads",
@@ -504,6 +505,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "boxsize",
         "output_ravg",
+        "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
@@ -520,6 +522,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
                                        &(options.verbose),
                                        &(options.boxsize),
                                        &(options.need_avg_sep),
+                                       &(options.c_api_timer),
                                        &(options.instruction_set))
 
          ) {
@@ -667,7 +670,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     options.verbose = 0;
     options.instruction_set = AVX;
     options.periodic = 1;
-    
+    options.c_api_timer = 0;
     static char *kwlist[] = {
         "autocorr",
         "nthreads",
@@ -683,6 +686,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "boxsize",
         "output_rpavg",
+        "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
@@ -699,6 +703,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
                                        &(options.verbose),
                                        &(options.boxsize),
                                        &(options.need_avg_sep),
+                                       &(options.c_api_timer),
                                        &(options.instruction_set))
 
          ) {
@@ -844,7 +849,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     options.instruction_set = AVX;
     options.need_avg_sep = 0;
     options.periodic=1;
-
+    options.c_api_timer = 0;
     static char *kwlist[] = {
         "boxsize",
         "pimax",
@@ -855,6 +860,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         "Z",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_rpavg",
+        "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
@@ -866,6 +872,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
                                       &PyArray_Type,&z1_obj,
                                       &(options.verbose),
                                       &(options.need_avg_sep),
+                                      &(options.c_api_timer),
                                       &(options.instruction_set))
         
         ){
@@ -976,6 +983,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         "Z",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_ravg",
+        "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
@@ -984,6 +992,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     options.verbose = 0;
     options.periodic=1;
     options.instruction_set = AVX; //from enum
+    options.c_api_timer = 0;
     if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|iii", kwlist,
                                       &boxsize,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
@@ -991,6 +1000,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
                                       &PyArray_Type,&z1_obj,
                                       &(options.verbose),
                                       &(options.need_avg_sep),
+                                      &(options.c_api_timer),
                                       &(options.instruction_set))
         ) {
         Py_RETURN_NONE;
@@ -1095,6 +1105,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
         "Z",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "periodic",
+        "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
@@ -1103,7 +1114,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     options.verbose = 0;
     options.periodic = 1;
     options.instruction_set = AVX; //from enum
-    
+    options.c_api_timer = 0;
     if( ! PyArg_ParseTupleAndKeywords(args, kwargs,
                                       "diiikO!O!O!|iii", kwlist,
                                       &rmax,&nbin,&nc,&num_pN,&seed,
@@ -1112,6 +1123,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
                                       &PyArray_Type,&z1_obj,
                                       &(options.verbose),
                                       &(options.periodic),
+                                      &(options.c_api_timer),
                                       &(options.instruction_set))
 
         ) {

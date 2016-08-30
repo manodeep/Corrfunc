@@ -575,11 +575,13 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     PyArrayObject *x1_obj=NULL, *y1_obj=NULL, *z1_obj=NULL, *x2_obj=NULL,*y2_obj=NULL,*z2_obj=NULL;
 
     struct config_options options = get_config_options();
+    options.is_comoving_dist = 0;
     options.verbose = 0;
     options.instruction_set = AVX;
     options.periodic = 0;
     options.fast_divide=0;
-    
+    options.c_api_timer = 0;
+
     int autocorr=0;
     int nthreads=4;
     int cosmology=1;
@@ -598,9 +600,11 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         "X2",
         "Y2",
         "Z2",
+        "is_comoving_dist",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_rpavg",
         "fast_divide",
+        "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
@@ -614,9 +618,11 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                        &PyArray_Type,&x2_obj,//optional parameters -> if autocorr == 1, not checked; required if autocorr=0
                                        &PyArray_Type,&y2_obj,
                                        &PyArray_Type,&z2_obj,
+                                       &(options.is_comoving_dist),
                                        &(options.verbose),
                                        &(options.need_avg_sep),
                                        &(options.fast_divide),
+                                       &(options.c_api_timer),
                                        &(options.instruction_set))
 
          ) {
@@ -780,6 +786,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     options.link_in_dec=1;
     options.link_in_ra=1;
     options.fast_acos=0;
+    options.c_api_timer=0;
     static char *kwlist[] = {
         "autocorr",
         "nthreads",
@@ -793,6 +800,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_thetaavg",
         "fast_acos",
+        "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
@@ -809,6 +817,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                        &(options.verbose),
                                        &(options.need_avg_sep),
                                        &(options.fast_acos),
+                                       &(options.c_api_timer),
                                        &(options.instruction_set))
 
          ) {
@@ -956,8 +965,10 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     char *centers_file;
     int threshold_neighbors;
     struct config_options options = get_config_options();
+    options.is_comoving_dist = 0;
     options.verbose=0;
     options.instruction_set=AVX;
+    options.c_api_timer=0;
     static char *kwlist[] = {
         "rmax",
         "nbins",
@@ -972,7 +983,9 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
         "X2",
         "Y2",
         "Z2",
+        "is_comoving_dist",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
+        "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
@@ -986,7 +999,9 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
                                        &PyArray_Type,&x2_obj,//optional parameters -> if autocorr == 1, not checked; required if autocorr=0
                                        &PyArray_Type,&y2_obj,
                                        &PyArray_Type,&z2_obj,
+                                       &(options.is_comoving_dist),
                                        &(options.verbose),
+                                       &(options.c_api_timer),
                                        &(options.instruction_set))
 
          ) {
