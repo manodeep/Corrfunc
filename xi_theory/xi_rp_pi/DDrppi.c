@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 #include <inttypes.h>
 
 #include "defs.h" //for ADD_DIFF_TIME
