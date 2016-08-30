@@ -251,20 +251,30 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     const DOUBLE max_sep = SQRT(sqr_max_sep);
     
     //Change cz into co-moving distance
-    DOUBLE *D1     = my_malloc(sizeof(*D1),ND1);
-    DOUBLE *D2 = NULL;
-    if(autocorr==0) {
-        D2     = my_malloc(sizeof(*D2),ND2);
+    DOUBLE *D1 = NULL, *D2 = NULL;
+    if(options.is_comoving_dist == 0) {
+        D1 = my_malloc(sizeof(*D1),ND1);
+        D2 = autocorr == 0 ? my_malloc(sizeof(*D2),ND2):D1;
     } else {
-        D2 = D1;
+        D1 = czD1;
+        D2 = autocorr == 0 ? czD2:czD1;
     }
 
-    {
+    if(D1 == NULL || D2 == NULL) {
+        free(D1);free(D2);
+        return EXIT_FAILURE;
+    }
+    
+    
+    if(options.is_comoving_dist == 0) {
         //Setup variables to do the cz->comoving distance
-        int Nzdc;
         double *zz=my_calloc(sizeof(*zz),COSMO_DIST_SIZE);
         double *ddc=my_calloc(sizeof(*ddc),COSMO_DIST_SIZE);
-        Nzdc = set_cosmo_dist(MAX_REDSHIFT_FOR_COSMO_DIST, COSMO_DIST_SIZE, zz, ddc, cosmology);
+        int Nzdc = set_cosmo_dist(MAX_REDSHIFT_FOR_COSMO_DIST, COSMO_DIST_SIZE, zz, ddc, cosmology);
+        if(Nzdc < 0) {
+            free(zz);free(ddc);
+            return EXIT_FAILURE;
+        }
 
         gsl_interp *interpolation;
         gsl_interp_accel *accelerator;
@@ -391,6 +401,12 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         free(X2);free(Y2);free(Z2);
     }
 
+    if(options.is_comoving_dist == 0) {
+        free(D1);
+        if(autocorr == 0) {
+            free(D2);
+        }
+    }
 
     
     
