@@ -150,7 +150,7 @@ ifeq ($(DO_CHECKS), 1)
   INCLUDE:=-I../../io -I../../utils
   ### The POSIX_SOURCE flag is required to get the definition of strtok_r
   CFLAGS += -DVERSION=\"${VERSION}\"
-  CFLAGS += -std=gnu99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
+  CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE=200809L -D_GNU_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
   CFLAGS += -Wno-unused-local-typedefs ## to suppress the unused typedef warning for the compile time assert for sizeof(struct config_options)
   GSL_FOUND := $(shell gsl-config --version)
   ifndef GSL_FOUND

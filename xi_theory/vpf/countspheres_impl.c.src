@@ -168,12 +168,9 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
     }
 
-    const DOUBLE xdiff = (xmax-xmin);
-    const DOUBLE ydiff = (ymax-ymin);
-    const DOUBLE zdiff = (zmax-zmin);
-    const DOUBLE xdiff = options.boxsize > 0 ? options.boxsize:(xmax-xmin);
-    const DOUBLE ydiff = options.boxsize > 0 ? options.boxsize:(ymax-ymin);
-    const DOUBLE zdiff = options.boxsize > 0 ? options.boxsize:(zmax-zmin);
+    const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
+    const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
+    const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
 
     const DOUBLE inv_xdiff = ((DOUBLE) 1.0)/xdiff;
     const DOUBLE inv_ydiff = ((DOUBLE) 1.0)/ydiff;
