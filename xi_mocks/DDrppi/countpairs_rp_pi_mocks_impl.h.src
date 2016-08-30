@@ -14,6 +14,8 @@ extern "C" {
 
 #include "countpairs_rp_pi_mocks.h" //for definition of results_countpairs_mocks
 
+    extern void interrupt_handler_countpairs_rp_pi_mocks_DOUBLE(int signo);
+    
     typedef int (*countpairs_mocks_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, 
                                                     const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1,
                                                     const int same_cell, 

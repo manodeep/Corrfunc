@@ -18,22 +18,25 @@ extern "C" {
 
 #include "countpairs_wp.h"  
 
-  typedef int (*wp_func_ptr_DOUBLE)(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                    DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
-                                    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
-                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                    ,DOUBLE *src_rpavg
-                                    ,uint64_t *src_npairs);
+    extern void interrupt_handler_countpairs_wp_DOUBLE(int signo);
 
-  extern wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
 
-  extern int countpairs_wp_DOUBLE(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
-                           const double boxsize,
-                           const int numthreads,
-                           const char *binfile,
-                           const double pimax,
-                           results_countpairs_wp *result,
-                           const struct config_options *options) __attribute__((warn_unused_result));
+    typedef int (*wp_func_ptr_DOUBLE)(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
+                                      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
+                                      const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                                      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
+                                      ,DOUBLE *src_rpavg
+                                      ,uint64_t *src_npairs);
+    
+    extern wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
+    
+    extern int countpairs_wp_DOUBLE(const int64_t ND1, DOUBLE * restrict X1, DOUBLE * restrict Y1, DOUBLE * restrict Z1,
+                                    const double boxsize,
+                                    const int numthreads,
+                                    const char *binfile,
+                                    const double pimax,
+                                    results_countpairs_wp *result,
+                                    const struct config_options *options) __attribute__((warn_unused_result));
   
 #ifdef __cplusplus
 }

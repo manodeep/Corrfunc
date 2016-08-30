@@ -23,6 +23,16 @@
 #include <omp.h>
 #endif
 
+int interrupt_status_wtheta_mocks_DOUBLE=EXIT_SUCCESS;
+
+void interrupt_handler_wtheta_mocks_DOUBLE(int signo)
+{
+    fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
+    interrupt_status_wtheta_mocks_DOUBLE = EXIT_FAILURE;
+}    
+
+
+
 int check_ra_dec_DOUBLE(const int64_t N, DOUBLE *ra, DOUBLE *theta)
 {
     if(N==0) {
@@ -291,6 +301,15 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     int ra_refine_factor = 2;
     int dec_refine_factor = 2;
 
+    /* setup interrupt handler -> mostly useful during the python execution. 
+       Let's Ctrl-C abort the extension  */
+    int interrupt_signals[] = {SIGTERM, SIGINT, SIGHUP};
+    for(size_t i=0;i<sizeof(interrupt_signals)/sizeof(interrupt_signals[0]);i++) {
+        int signo = interrupt_signals[i];
+        if (signal(signo, interrupt_handler_wtheta_mocks_DOUBLE) == SIG_ERR) {
+            fprintf(stderr,"Can not handle signal = %d\n", signo);
+        }
+    }
 
 #if defined(_OPENMP)
     if((options.link_in_ra == 0) && (dec_refine_factor < numthreads)) {
@@ -577,7 +596,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
     
 #if defined(_OPENMP)
-#pragma omp parallel shared(numdone, abort_status)
+#pragma omp parallel shared(numdone, abort_status, interrupt_status_wtheta_mocks_DOUBLE)
     {
         int tid = omp_get_thread_num();
         uint64_t npairs[nthetabin];
@@ -598,7 +617,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 #if defined(_OPENMP)
 #pragma omp flush (abort_status)
 #endif
-            if(abort_status == EXIT_SUCCESS) { //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
+            if(abort_status == EXIT_SUCCESS && interrupt_status_wtheta_mocks_DOUBLE == EXIT_SUCCESS) {
+                //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
                 
                 /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
                 if(options.verbose) {
@@ -687,7 +707,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
     }
 
-    if(abort_status != EXIT_SUCCESS) {
+    if(abort_status != EXIT_SUCCESS || interrupt_status_wtheta_mocks_DOUBLE != EXIT_SUCCESS) {
         /* Cleanup memory here if aborting */
         free(theta_upp);
 #if defined(_OPENMP)
