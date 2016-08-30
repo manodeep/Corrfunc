@@ -10,7 +10,6 @@ gridlink_impl_float.h:cellarray_float.h
 gridlink_mocks_impl_double.h:cellarray_mocks_double.h
 gridlink_mocks_impl_float.h:cellarray_mocks_float.h
 
-
 .SUFFIXES:
 
 $(TARGET): $(TARGETOBJS) $(ROOT_DIR)/common.mk 
@@ -58,7 +57,6 @@ $(TARGET).o: $(TARGET).c $(ROOT_DIR)/common.mk Makefile $(ROOT_DIR)/theory.optio
 
 $(LIBRARY): $(LIBOBJS) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 	ar rcs $@ $(LIBOBJS)
-
 
 $(INSTALL_LIB_DIR)/%.a: %.a | $(INSTALL_LIB_DIR) 
 	cp -p $(LIBRARY) $(INSTALL_LIB_DIR)/

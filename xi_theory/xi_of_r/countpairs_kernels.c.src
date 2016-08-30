@@ -127,11 +127,24 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
         m_mask_left = AVX_BITWISE_AND(m_mask_pimax,m_rp_mask);
                 
+
         //If not, continue with the next iteration of j-loop
-        if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+        const int num_left = AVX_TEST_COMPARISON(m_mask_left);
+        if(num_left == 0) {
           continue;
         }
-                
+
+        /* Check if all the possible pairs are in the last bin. But only run
+           this check if not evaluating same cell pairs or when simply counting 
+           the pairs (no rpavg requested)  */
+        if(same_cell == 0 && need_rpavg == 0) {
+            const AVX_FLOATS m_last_bin = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_rupp_sqr[nbin-1], _CMP_GE_OS));
+            if(AVX_TEST_COMPARISON(m_last_bin) == num_left) { /* all the valid pairs are in the last bin */
+                npairs[nbin-1] += num_left;/* add the total number of pairs to the last bin and continue j-loop*/
+                continue;
+            }
+        }
+
         //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
         r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
       }

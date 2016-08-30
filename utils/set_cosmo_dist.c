@@ -23,7 +23,10 @@
 int set_cosmo_dist(const double zmax,const int max_size,double *zc,double *dc,const int lasdamas_cosmology)
 {
     /* First, initialize cosmology*/
-    init_cosmology(lasdamas_cosmology);
+    int status = init_cosmology(lasdamas_cosmology);
+    if(status != EXIT_SUCCESS) {
+        return -1;
+    }
 
     int i = 0;
     double Omegak;

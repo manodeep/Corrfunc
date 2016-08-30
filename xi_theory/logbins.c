@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
     if(argc<4) {
         fprintf(stderr,"Usage `%s' rmin rmax nbins \n",argv[0]);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     } else {
         /*---Read-arguments-----------------------------------*/
         sscanf(argv[1],"%lf",&xmin) ;
@@ -50,5 +50,6 @@ int main(int argc, char *argv[])
         fprintf(stdout,"%20.12lf %20.12lf\n",pow(10.0,left_edge),pow(10.0,right_edge)) ;
         left_edge=right_edge;
     }
-    exit(EXIT_SUCCESS);
+
+    return EXIT_SUCCESS;
 }

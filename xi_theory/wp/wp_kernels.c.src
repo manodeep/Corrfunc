@@ -123,10 +123,22 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
         m_mask_left = AVX_BITWISE_AND(m_mask_pimax,m_rp_mask);
                 
         //If not, continue with the next iteration of j-loop
-        if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+        const int num_left = AVX_TEST_COMPARISON(m_mask_left);
+        if(num_left == 0) {
           continue;
         }
-                
+
+        /* Check if all the possible pairs are in the last bin. But only run
+           this check if not evaluating same cell pairs or when simply counting 
+           the pairs (no rpavg requested)  */
+        if(same_cell == 0 && need_rpavg == 0) {
+            const AVX_FLOATS m_last_bin = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_rupp_sqr[nbin-1], _CMP_GE_OS));
+            if(AVX_TEST_COMPARISON(m_last_bin) == num_left) { /* all the valid pairs are in the last bin */
+                npairs[nbin-1] += num_left;/* add the total number of pairs to the last bin and continue j-loop*/
+                continue;
+            }
+        }
+        
         //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
         r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
       }
@@ -282,36 +294,50 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
       const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
       const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
 
-			localx1 += SSE_NVEC;
-			localy1 += SSE_NVEC;
-			localz1 += SSE_NVEC;
-
+      localx1 += SSE_NVEC;
+      localy1 += SSE_NVEC;
+      localz1 += SSE_NVEC;
+      
       const SSE_FLOATS m_pimax = SSE_SET_FLOAT(pimax);
-			const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
-			const SSE_FLOATS m_sqr_rpmin = SSE_SET_FLOAT(sqr_rpmin);
-			
-
-			const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(SSE_SUBTRACT_FLOATS(m_x1, m_xpos));
+      const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
+      const SSE_FLOATS m_sqr_rpmin = SSE_SET_FLOAT(sqr_rpmin);
+      
+      
+      const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(SSE_SUBTRACT_FLOATS(m_x1, m_xpos));
       const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(SSE_SUBTRACT_FLOATS(m_y1, m_ypos));
       const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);
             
       SSE_FLOATS r2  = SSE_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
       SSE_FLOATS m_mask_left;
-			{
-        const SSE_FLOATS m_pimax_mask = SSE_COMPARE_FLOATS_LT(m_zdiff,m_pimax);
-        if(SSE_TEST_COMPARISON(m_pimax_mask) == 0) {
-          j = N1;
-          break;
-        }
+      {
+          const SSE_FLOATS m_pimax_mask = SSE_COMPARE_FLOATS_LT(m_zdiff,m_pimax);
+          if(SSE_TEST_COMPARISON(m_pimax_mask) == 0) {
+              j = N1;
+              break;
+          }
                 
-        const SSE_FLOATS m_rpmin_mask = SSE_COMPARE_FLOATS_GE(r2, m_sqr_rpmin);
-        const SSE_FLOATS m_rpmax_mask = SSE_COMPARE_FLOATS_LT(r2,m_sqr_rpmax);
-        const SSE_FLOATS m_rp_mask = SSE_BITWISE_AND(m_rpmin_mask, m_rpmax_mask);
-        m_mask_left = SSE_BITWISE_AND(m_pimax_mask, m_rp_mask);
-				if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
-					continue;
-				}
-				r2 = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
+          const SSE_FLOATS m_rpmin_mask = SSE_COMPARE_FLOATS_GE(r2, m_sqr_rpmin);
+          const SSE_FLOATS m_rpmax_mask = SSE_COMPARE_FLOATS_LT(r2,m_sqr_rpmax);
+          const SSE_FLOATS m_rp_mask = SSE_BITWISE_AND(m_rpmin_mask, m_rpmax_mask);
+          m_mask_left = SSE_BITWISE_AND(m_pimax_mask, m_rp_mask);
+          const int num_left = SSE_TEST_COMPARISON(m_mask_left);
+          if(num_left == 0) {
+            continue;
+          }
+
+          /* Check if all the possible pairs are in the last bin. But only run
+             this check if not evaluating same cell pairs or when simply counting 
+             the pairs (no rpavg requested)  */
+          if(same_cell == 0 && need_rpavg == 0) {
+              const SSE_FLOATS m_last_bin = SSE_BITWISE_AND(m_mask_left, SSE_COMPARE_FLOATS_GE(r2, m_rupp_sqr[nbin-1]));
+              if(SSE_TEST_COMPARISON(m_last_bin) == num_left) { /* all the valid pairs are in the last bin */
+                  npairs[nbin-1] += num_left;/* add the total number of pairs to the last bin and continue j-loop*/
+                  continue;
+              }
+          }
+          
+          
+          r2 = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
       }
                 
       SSE_FLOATS m_rpbin = SSE_SET_FLOAT(ZERO);

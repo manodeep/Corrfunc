@@ -101,15 +101,7 @@ int main(int argc, char *argv[])
     gettimeofday(&t1,NULL);
 
     results_countspheres results;
-    struct config_options options;
-    memset(&options, 0, sizeof(struct config_options));
-    my_snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", STR(VERSION));
-#ifdef PERIODIC
-    options.periodic = 1;
-#endif
-    options.float_type = sizeof(DOUBLE);
-    options.verbose = 0;
-    
+    struct config_options options = get_config_options();
     int status = countspheres(np, x, y, z,
                               rmax, nbin, nc,
                               num_pN,

@@ -215,25 +215,51 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     const DOUBLE zdiff = options.boxsize > 0 ? options.boxsize:(zmax-zmin);
     const DOUBLE pimax = (DOUBLE) rpmax;
     
-    //Generate the unique set of neighbouring cells to count over. 
-    assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
-                                            bin_refine_factor, bin_refine_factor, bin_refine_factor,
-                                            nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff,
-                                            autocorr, options.periodic);
+    //Generate the unique set of neighbouring cells to count over.
+    {
+        int status = assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
+                                                             bin_refine_factor, bin_refine_factor, bin_refine_factor,
+                                                             nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff,
+                                                             autocorr, options.periodic);
+        if(status != EXIT_SUCCESS) {
+            free_cellarray_index_particles_DOUBLE(lattice1, totncells);
+            if(autocorr == 0) {
+                free_cellarray_index_particles_DOUBLE(lattice2, totncells);
+            }
+            free(rupp);
+            return status;
+        }
+    }
 
     /* runtime dispatch - get the function pointer */
     countpairs_func_ptr_DOUBLE countpairs_function_DOUBLE = countpairs_driver_DOUBLE(&options);
     if(countpairs_function_DOUBLE == NULL) {
-      return EXIT_FAILURE;
+        free_cellarray_index_particles_DOUBLE(lattice1, totncells);
+        if(autocorr == 0) {
+            free_cellarray_index_particles_DOUBLE(lattice2, totncells);
+        }
+        free(rupp);
+        return EXIT_FAILURE;
     }
 
     
 #if defined(_OPENMP)
-    omp_set_num_threads(numthreads);
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbin);
     DOUBLE **all_rpavg = NULL;
     if(options.need_avg_sep) {
       all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nrpbin);
+    }
+    if(all_npairs == NULL || (options.need_avg_sep && all_rpavg == NULL)) {
+        free_cellarray_index_particles_DOUBLE(lattice1, totncells);
+        if(autocorr == 0) {
+            free_cellarray_index_particles_DOUBLE(lattice2, totncells);
+        }
+        matrix_free((void **)all_npairs, numthreads);
+        if(options.need_avg_sep) {
+            matrix_free((void **)all_rpavg, numthreads);
+        }
+        free(rupp);
+        return EXIT_FAILURE;
     }
 #else
     uint64_t npairs[nrpbin];
@@ -392,7 +418,11 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
         matrix_free((void **) all_rpavg, numthreads);
       }
 #endif
-      return abort_status;
+      return EXIT_FAILURE;
+    }
+    
+    if(options.verbose) {
+      finish_myprogressbar(&interrupted);
     }
     
 #if defined(_OPENMP)
@@ -448,6 +478,12 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     results->npairs = my_malloc(sizeof(*(results->npairs)), nrpbin);
     results->rupp   = my_malloc(sizeof(*(results->rupp))  , nrpbin);
     results->rpavg  = my_calloc(sizeof(*(results->rpavg))  , nrpbin);
+    if(results->npairs == NULL || results->rupp == NULL ||
+       results->rpavg == NULL) {
+        free_results(results);
+        free(rupp);
+        return EXIT_FAILURE;
+    }
 
     for(int i=0;i<nrpbin;i++) {
       results->npairs[i] = npairs[i];

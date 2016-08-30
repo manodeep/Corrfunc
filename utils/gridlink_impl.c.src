@@ -27,6 +27,7 @@ int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax, const DOUBLE rmax, c
 {
     const DOUBLE xdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:(xmax-xmin);
     int nmesh=(int)(refine_factor*xdiff/rmax) ;
+    nmesh = nmesh < 1 ? 1:nmesh;
     if(options->periodic == 1) {
         if (nmesh<(2*refine_factor+1))  {
             fprintf(stderr,"%s> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",__FILE__,nmesh) ;
@@ -47,30 +48,6 @@ void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
         free(lattice[i].x);
         free(lattice[i].y);
         free(lattice[i].z);
-    }
-    free(lattice);
-}
-
-void free_cellarray_nvec_DOUBLE(cellarray_nvec_DOUBLE *lattice, const int64_t totncells)
-{
-    for(int64_t i=0;i<totncells;i++) {
-        free(lattice[i].pos);
-    }
-    free(lattice);
-}
-
-void free_cellarray_index_DOUBLE(cellarray_index_DOUBLE *lattice, const int64_t totncells)
-{
-    for(int64_t i=0;i<totncells;i++){
-        if(lattice[i].nelements == 0) continue;
-
-        /*May be NULL */
-        free(lattice[i].xwrap);
-        free(lattice[i].ywrap);
-        free(lattice[i].zwrap);
-
-        /* NULL possible*/
-        free(lattice[i].ngb_cells);
     }
     free(lattice);
 }
@@ -157,9 +134,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
     const DOUBLE cell_volume=xbinsize*ybinsize*zbinsize;
     const DOUBLE box_volume=xdiff*ydiff*zdiff;
     int64_t expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
-    expected_n=expected_n < NVEC ? NVEC:expected_n;
-    while((expected_n % NVEC) != 0)
-        expected_n++;
+    expected_n=expected_n < 2 ? 2:expected_n;
 
     if(options->verbose) {
       fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
@@ -167,6 +142,10 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
     
     cellarray_DOUBLE *lattice = (cellarray_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
     int64_t *nallocated = (int64_t *)  my_malloc(sizeof(*nallocated), totncells);
+    if(lattice == NULL || nallocated == NULL) {
+        free(lattice);free(nallocated);
+        return NULL;
+    }
 
     /*
       Allocate memory for each of the fields in cellarray. Since we haven't processed the data yet,
@@ -177,6 +156,14 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
         lattice[index].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+        if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL)  {
+            for(int64_t j=index;j>=0;j--) {
+                free(lattice[j].x);free(lattice[j].y);free(lattice[j].z);
+            }
+            free(nallocated);free(lattice);
+            return NULL;
+        }
+
         lattice[index].nelements=0;
         nallocated[index] = expected_n;
     }
@@ -210,13 +197,35 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
             //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
             //This way, we only increase by a very few particles
             // at a time. Smaller memory footprint
-            while(expected_n <= nallocated[index] || ((expected_n % NVEC) != 0))
+            while(expected_n <= nallocated[index])
                 expected_n++;
 
             const size_t memsize=sizeof(DOUBLE);
-            lattice[index].x = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
-            lattice[index].y = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
-            lattice[index].z = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
+            DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
+            do {
+                posx = my_realloc(lattice[index].x,memsize,expected_n,"lattice.x");
+                posy = my_realloc(lattice[index].y,memsize,expected_n,"lattice.y");
+                posz = my_realloc(lattice[index].z,memsize,expected_n,"lattice.z");
+                if(posx == NULL || posy == NULL || posz == NULL) {
+                    free(posx);free(posy);free(posz);
+                    expected_n--;
+                }
+            } while(expected_n > nallocated[index] && (posx == NULL ||
+                                                       posy == NULL ||
+                                                       posz == NULL));
+            
+            if(expected_n == nallocated[index]) {
+                /*realloc failed. free memory and return */
+                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                        __FUNCTION__, np);
+                fprintf(stderr,"posx = %p posy = %p posz = %p\n", posx, posy, posz);
+                free_cellarray_DOUBLE(lattice, totncells);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[index].x=posx;
+            lattice[index].y=posy;
+            lattice[index].z=posz;
             nallocated[index] = expected_n;
         }
         XRETURN(lattice[index].nelements < nallocated[index], NULL, 
@@ -246,368 +255,10 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
     return lattice;
 }
 
-cellarray_nvec_DOUBLE * gridlink_nvec_DOUBLE(const int64_t np,
-                                             const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
-                                             const DOUBLE xmin, const DOUBLE xmax,
-                                             const DOUBLE ymin, const DOUBLE ymax,
-                                             const DOUBLE zmin, const DOUBLE zmax,
-                                             const DOUBLE max_x_size,
-                                             const DOUBLE max_y_size,
-                                             const DOUBLE max_z_size,
-                                             const int xbin_refine_factor,
-                                             const int ybin_refine_factor,
-                                             const int zbin_refine_factor,
-                                             int *nlattice_x,
-                                             int *nlattice_y,
-                                             int *nlattice_z,
-                                             const struct config_options *options)
-{
-    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-
-    struct timeval t0;
-    if(options->verbose) {
-      gettimeofday(&t0,NULL);
-    }
-
-    DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
-    if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
-      return NULL;
-    }
-
-    const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-
-    const DOUBLE xdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:xmax-xmin;
-    const DOUBLE ydiff = (options->periodic && options->boxsize > 0) ? options->boxsize:ymax-ymin;
-    const DOUBLE zdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:zmax-zmin;
-
-    const DOUBLE cell_volume=xbinsize*ybinsize*zbinsize;
-    const DOUBLE box_volume=xdiff*ydiff*zdiff;
-    int64_t expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
-    expected_n=expected_n < NVEC ? NVEC:expected_n;
-    while((expected_n % NVEC) != 0)
-        expected_n++;
-
-    if(options->verbose) {
-      fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
-    }
-    cellarray_nvec_DOUBLE *lattice = (cellarray_nvec_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
-    int64_t *nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
-
-    /*
-      Allocate memory for each of the fields in cellarray_nvec. Since we haven't processed the data yet,
-      expected_n is a reasonable guess as to the number of points in the cell.
-    */
-    for (int64_t index=0;index<totncells;index++) {
-        const size_t memsize=3*sizeof(DOUBLE);
-        lattice[index].pos = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
-        lattice[index].nelements=0;
-        nallocated[index] = expected_n;
-    }
-
-    const DOUBLE xinv=1.0/xbinsize;
-    const DOUBLE yinv=1.0/ybinsize;
-    const DOUBLE zinv=1.0/zbinsize;
-
-    for (int64_t i=0;i<np;i++)  {
-        int ix=(int)((x[i]-xmin)*xinv) ;
-        int iy=(int)((y[i]-ymin)*yinv) ;
-        int iz=(int)((z[i]-zmin)*zinv) ;
-        if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
-        if (iy>nmesh_y-1)  iy--;
-        if (iz>nmesh_z-1)  iz--;
-        if(! ( ix >= 0 && ix < nmesh_x && iy >=0 && iy < nmesh_y && iz >= 0 && iz < nmesh_z)) {
-            fprintf(stderr,"Problem with i = %"PRId64" x = %lf y = %lf z = %lf \n",i,x[i],y[i],z[i]);
-            fprintf(stderr,"ix = %d iy = %d iz = %d\n",ix,iy,iz);
-        }
-        XRETURN(x[i] >= xmin && x[i] <= xmax, NULL, 
-                "x[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, x[i], xmin, xmax);
-        XRETURN(y[i] >= ymin && y[i] <= ymax, NULL, 
-                "y[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, y[i], ymin, ymax);
-        XRETURN(z[i] >= zmin && z[i] <= zmax, NULL, 
-                "z[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, z[i], zmin, zmax);
-
-        XRETURN(ix >= 0 && ix < nmesh_x, NULL, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
-        XRETURN(iy >= 0 && iy < nmesh_y, NULL, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
-        XRETURN(iz >= 0 && iz < nmesh_z, NULL, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
-
-        int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
-
-        if(lattice[index].nelements == nallocated[index]) {
-            expected_n = nallocated[index]*MEMORY_INCREASE_FAC;
-
-            //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
-            //This way, we only increase by a very few particles
-            // at a time. Smaller memory footprint
-            while(expected_n <= nallocated[index] || ((expected_n % NVEC) != 0))
-                expected_n++;
-
-            const size_t memsize=3*sizeof(DOUBLE);
-            lattice[index].pos = my_realloc(lattice[index].pos ,memsize,expected_n,"lattice.pos");
-            nallocated[index] = expected_n;
-        }
-        XRETURN(lattice[index].nelements < nallocated[index], NULL, 
-                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
-                index, lattice[index].nelements, nallocated[index]);
-
-        const int num_nvec_bunch = lattice[index].nelements/NVEC;
-        const size_t xoffset = num_nvec_bunch * NVEC * 3;
-        const size_t yoffset = xoffset + NVEC;
-        const size_t zoffset = xoffset + 2*NVEC;
-        const int ipos=lattice[index].nelements % NVEC;
-        DOUBLE *xpos = &(lattice[index].pos[xoffset]);
-        DOUBLE *ypos = &(lattice[index].pos[yoffset]);
-        DOUBLE *zpos = &(lattice[index].pos[zoffset]);
-        xpos[ipos] = x[i];
-        ypos[ipos] = y[i];
-        zpos[ipos] = z[i];
-        lattice[index].nelements++;
-    }
-    free(nallocated);
-
-    //You can free the extra memory reserved by the mallocs by looping over totncells and doing a realloc(lattice[index].x,sizeof(DOUBLE),lattice[index].nelements,"lattice.x")
-
-    *nlattice_x=nmesh_x;
-    *nlattice_y=nmesh_y;
-    *nlattice_z=nmesh_z;
-    if(options->verbose) {
-      struct timeval t1;
-      gettimeofday(&t1,NULL);
-      fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
-    }
-
-    return lattice;
-}
 
 
 /* Need SGLIB to simultaneously sort the particles */
 #include "sglib.h"
-
-cellarray_index_DOUBLE * gridlink_index_DOUBLE(const int64_t np,
-                                               DOUBLE *x, DOUBLE *y, DOUBLE *z,
-                                               const DOUBLE xmin, const DOUBLE xmax,
-                                               const DOUBLE ymin, const DOUBLE ymax,
-                                               const DOUBLE zmin, const DOUBLE zmax,
-                                               const DOUBLE max_x_size,
-                                               const DOUBLE max_y_size,
-                                               const DOUBLE max_z_size,
-                                               const int xbin_refine_factor,
-                                               const int ybin_refine_factor,
-                                               const int zbin_refine_factor,
-                                               int *nlattice_x,
-                                               int *nlattice_y,
-                                               int *nlattice_z,
-                                               const struct config_options *options)
-{
-    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-
-    struct timeval t0;
-    if(options->verbose){
-      gettimeofday(&t0,NULL);
-    }
-
-    DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
-    if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
-      return NULL;
-    }
-
-    const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-
-    const DOUBLE xdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:xmax-xmin;
-    const DOUBLE ydiff = (options->periodic && options->boxsize > 0) ? options->boxsize:ymax-ymin;
-    const DOUBLE zdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:zmax-zmin;
-
-    const DOUBLE cell_volume=xbinsize*ybinsize*zbinsize;
-    const DOUBLE box_volume=xdiff*ydiff*zdiff;
-    int64_t expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
-    expected_n=expected_n < NVEC ? NVEC:expected_n;
-    while((expected_n % NVEC) != 0)
-        expected_n++;
-
-    if(options->verbose) {
-      fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
-    }
-
-    cellarray_index_DOUBLE *lattice  = (cellarray_index_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
-    for(int64_t i=0;i<totncells;i++) {
-      lattice[i].start = LONG_MAX;//Hoping to crash the code if I incorrectly try to access this!
-      lattice[i].nelements = 0;
-      lattice[i].xwrap = NULL;
-      lattice[i].ywrap = NULL;
-      lattice[i].zwrap = NULL;
-      lattice[i].ngb_cells = NULL;
-    }
-
-    int64_t *cell_index = my_malloc(sizeof(*cell_index), np);//each particle needs to get a cell index.
-
-    /*
-      Allocate memory for each of the fields in struct cellarray_index. Since we haven't processed the data yet,
-      expected_n is a reasonable guess as to the number of points in the cell.
-    */
-
-    const DOUBLE xinv=1.0/xbinsize;
-    const DOUBLE yinv=1.0/ybinsize;
-    const DOUBLE zinv=1.0/zbinsize;
-    for (int64_t i=0;i<np;i++)  {
-        int ix=(int)((x[i]-xmin)*xinv) ;
-        int iy=(int)((y[i]-ymin)*yinv) ;
-        int iz=(int)((z[i]-zmin)*zinv) ;
-        if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
-        if (iy>nmesh_y-1)  iy--;
-        if (iz>nmesh_z-1)  iz--;
-        XRETURN(x[i] >= xmin && x[i] <= xmax, NULL, 
-                "x[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, x[i], xmin, xmax);
-        XRETURN(y[i] >= ymin && y[i] <= ymax, NULL, 
-                "y[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, y[i], ymin, ymax);
-        XRETURN(z[i] >= zmin && z[i] <= zmax, NULL, 
-                "z[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, z[i], zmin, zmax);
-
-        XRETURN(ix >= 0 && ix < nmesh_x, NULL, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
-        XRETURN(iy >= 0 && iy < nmesh_y, NULL, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
-        XRETURN(iz >= 0 && iz < nmesh_z, NULL, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
-
-        const int64_t index = ix*nmesh_y*nmesh_z + (int64_t) iy*nmesh_z + (int64_t) iz;
-        cell_index[i] = index;
-    }
-
-    /* Now sort the particles based on cell_index (and 'z' if MULTICOMP option is selected)*/
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
-        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);                   \
-        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);\
-        SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t,cell_index,i,j)}
-#define MY_MULTI_COMPARATOR(a, i, j) (cell_index[i] > cell_index[j] ? 1: (cell_index[i] < cell_index[j] ? -1:  SGLIB_SAFE_NUMERIC_COMPARATOR(z[i], z[j])))
-
-    SGLIB_ARRAY_QUICK_SORT_MULTICOMP(int64_t, cell_index, np, MY_MULTI_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
-
-    /* SGLIB_ARRAY_QUICK_SORT(int64_t, cell_index, np, SGLIB_SAFE_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER); */
-
-#undef MY_MULTI_COMPARATOR    
-#undef MULTIPLE_ARRAY_EXCHANGER
-
-    int64_t start_cell = cell_index[0];
-    lattice[start_cell].start=0;
-    lattice[start_cell].nelements=1;
-    for(int64_t i=1;i<np;i++) {
-        const int64_t icell = cell_index[i];
-        if(icell != start_cell) {
-            lattice[icell].start = i;
-            lattice[icell].nelements = 1;
-            start_cell = icell;
-        } else {
-            lattice[icell].nelements++;
-        }
-    }
-    free(cell_index);
-    
-    *nlattice_x=nmesh_x;
-    *nlattice_y=nmesh_y;
-    *nlattice_z=nmesh_z;
-
-    if(options->verbose) {
-      struct timeval t1;
-      gettimeofday(&t1,NULL);
-      fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
-    }
-
-    return lattice;
-}
-
-
-int assign_ngb_cells_index_DOUBLE(struct cellarray_index_DOUBLE *lattice1, struct cellarray_index_DOUBLE *lattice2, const int64_t totncells,
-                                   const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
-                                   const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                   const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff, 
-                                   const int autocorr, const int periodic)
-{
-  const int64_t nx_ngb = 2*xbin_refine_factor + 1;
-  const int64_t ny_ngb = 2*ybin_refine_factor + 1;
-  const int64_t nz_ngb = 2*zbin_refine_factor + 1;
-  const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
-
-  for(int64_t icell=0;icell<totncells;icell++) {
-    struct cellarray_index_DOUBLE *first = &(lattice1[icell]);
-    if(first->nelements == 0) continue;
-    const int iz = icell % nmesh_z;
-    const int ix = icell / (nmesh_y * nmesh_z );
-    const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
-    XRETURN(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz), EXIT_FAILURE, 
-            ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
-            icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
-      
-      
-    first->num_ngb = 0;
-    if(periodic == 1) {
-      first->xwrap = my_malloc(sizeof(*(first->xwrap)), max_ngb_cells);
-      first->ywrap = my_malloc(sizeof(*(first->ywrap)), max_ngb_cells);
-      first->zwrap = my_malloc(sizeof(*(first->zwrap)), max_ngb_cells);
-    } else {
-      first->xwrap = NULL;
-      first->ywrap = NULL;
-      first->zwrap = NULL;
-    }
-    first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
-
-    for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
-      const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;
-      const int non_periodic_ix = ix + iix;
-      const int iiix = (periodic == 1) ? periodic_ix:non_periodic_ix;
-      if(iiix < 0 || iiix >= nmesh_x) continue;
-      const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
-        
-      for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
-        const int periodic_iy = (iy + iiy + nmesh_y) % nmesh_y;
-        const int non_periodic_iy = iy + iiy;
-        const int iiiy = (periodic == 1) ? periodic_iy:non_periodic_iy;
-        if(iiiy < 0 || iiiy >= nmesh_y) continue;
-        const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
-        const int start_iz = -zbin_refine_factor;
-        for(int64_t iiz=start_iz;iiz<=zbin_refine_factor;iiz++){
-          const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
-          const int non_periodic_iz = iz + iiz;
-          const int iiiz = (periodic == 1) ? periodic_iz:non_periodic_iz;
-          if(iiiz < 0 || iiiz >= nmesh_z) continue;
-            
-          const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
-          const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
-            
-          //For cases where we are not double-counting (i.e., wp and xi), the same-cell
-          //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
-          //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
-          //kernels in that case!
-          if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements == 0) {
-              continue;
-          }
-          const int64_t ngb_index = first->num_ngb;
-          XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE, "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
-          first->ngb_cells[ngb_index] = &(lattice2[icell2]);
-            
-          //Note the xwrap/ywraps do not have memory allocated for them in the
-          //non-periodic case. 
-          if(periodic == 1) {
-            first->xwrap[ngb_index] = off_xwrap;
-            first->ywrap[ngb_index] = off_ywrap;
-            first->zwrap[ngb_index] = off_zwrap;
-          } 
-          first->num_ngb++;
-        }
-      }
-    }
-  }
-
-  return EXIT_SUCCESS;
-}    
-
 
 cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t np,
                                                                    const DOUBLE *x, const DOUBLE *y, const DOUBLE *z,
@@ -651,9 +302,7 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
     const DOUBLE cell_volume=xbinsize*ybinsize*zbinsize;
     const DOUBLE box_volume=xdiff*ydiff*zdiff;
     int64_t expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
-    expected_n=expected_n < NVEC ? NVEC:expected_n;
-    while((expected_n % NVEC) != 0)
-        expected_n++;
+    expected_n=expected_n < 2 ? 2:expected_n;
 
     if(options->verbose) {
       fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
@@ -661,11 +310,24 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
 
     cellarray_index_particles_DOUBLE *lattice  = (cellarray_index_particles_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
     int64_t *nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
+    if(lattice == NULL || nallocated == NULL) {
+        free(lattice);free(nallocated);
+        return NULL;
+    }
+    
     for (int64_t index=0;index<totncells;index++) {
         const size_t memsize=sizeof(DOUBLE);
         lattice[index].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+        if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL)  {
+            for(int64_t j=index;j>=0;j--) {
+                free(lattice[j].x);free(lattice[j].y);free(lattice[j].z);
+            }
+            free(nallocated);free(lattice);
+            return NULL;
+        }
+
         lattice[index].nelements=0;
         lattice[index].ngb_cells = NULL;
         lattice[index].xwrap = NULL;
@@ -708,13 +370,35 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
             //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
             //This way, we only increase by a very few particles
             // at a time. Smaller memory footprint
-            while(expected_n <= nallocated[index] || ((expected_n % NVEC) != 0))
+            while(expected_n <= nallocated[index])
                 expected_n++;
 
             const size_t memsize=sizeof(DOUBLE);
-            lattice[index].x = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
-            lattice[index].y = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
-            lattice[index].z = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
+            DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
+            do {
+                posx = my_realloc(lattice[index].x,memsize,expected_n,"lattice.x");
+                posy = my_realloc(lattice[index].y,memsize,expected_n,"lattice.y");
+                posz = my_realloc(lattice[index].z,memsize,expected_n,"lattice.z");
+                if(posx == NULL || posy == NULL || posz == NULL) {
+                    free(posx);free(posy);free(posz);
+                    expected_n--;
+                }
+            } while(expected_n > nallocated[index] && (posx == NULL ||
+                                                       posy == NULL ||
+                                                       posz == NULL));
+            
+            if(expected_n == nallocated[index]) {
+                /*realloc failed. free memory and return */
+                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                        __FUNCTION__, np);
+                fprintf(stderr,"posx = %p posy = %p posz = %p\n", posx, posy, posz);
+                free_cellarray_index_particles_DOUBLE(lattice, totncells);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[index].x=posx;
+            lattice[index].y=posy;
+            lattice[index].z=posz;
             nallocated[index] = expected_n;
         }
         XRETURN(lattice[index].nelements < nallocated[index], NULL, 
@@ -753,7 +437,9 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
 
 
     
-    //You can free the extra memory reserved by the mallocs by looping over totncells and doing a realloc(lattice[index].x,sizeof(DOUBLE),lattice[index].nelements,"lattice.x")
+    //You can free the extra memory reserved by the mallocs by looping over totncells
+    //and doing a realloc(lattice[index].x,sizeof(DOUBLE),lattice[index].nelements,"lattice.x")
+    
     *nlattice_x=nmesh_x;
     *nlattice_y=nmesh_y;
     *nlattice_z=nmesh_z;
@@ -794,13 +480,19 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
     if(periodic == 1) {
       first->xwrap = my_malloc(sizeof(*(first->xwrap)), max_ngb_cells);
       first->ywrap = my_malloc(sizeof(*(first->ywrap)), max_ngb_cells);
-        first->zwrap = my_malloc(sizeof(*(first->zwrap)), max_ngb_cells);
+      first->zwrap = my_malloc(sizeof(*(first->zwrap)), max_ngb_cells);
+      if(first->xwrap == NULL || first->ywrap == NULL || first->zwrap == NULL)  {
+          return EXIT_FAILURE;
+      }
     } else {
-      first->xwrap = NULL;
+        first->xwrap = NULL;
         first->ywrap = NULL;
         first->zwrap = NULL;
     }
     first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+    if(first->ngb_cells == NULL) {
+        return EXIT_FAILURE;
+    }
     
     for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
       const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;

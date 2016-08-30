@@ -165,12 +165,22 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         }
     }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
-    assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options.autocorr, options.periodic);//options.autocorr == 1 and options.periodic == 1
-
+    /* Setup pointers for the neighbouring cells */
+    {
+        int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options.autocorr, options.periodic);//options.autocorr == 1 and options.periodic == 1
+        if(status != EXIT_SUCCESS) {
+            free_cellarray_index_particles_DOUBLE(lattice, totncells);
+            free(rupp);
+            return status;
+        }
+    }
+    
     /* runtime dispatch - get the function pointer */
     wp_func_ptr_DOUBLE wp_function_DOUBLE = wp_driver_DOUBLE(&options);
     if(wp_function_DOUBLE == NULL) {
-      return EXIT_FAILURE;
+        free_cellarray_index_particles_DOUBLE(lattice, totncells);
+        free(rupp);
+        return EXIT_FAILURE;
     }
     
 #if defined(_OPENMP)
@@ -178,6 +188,15 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     DOUBLE **all_rpavg = NULL;
     if(options.need_avg_sep) {
         all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), numthreads, nrpbins);
+    }
+    if(all_npairs == NULL || (options.need_avg_sep && all_rpavg == NULL)) {
+        free_cellarray_index_particles_DOUBLE(lattice, totncells);
+        matrix_free((void **) all_npairs, numthreads);
+        if(options.need_avg_sep) {
+            matrix_free((void **) all_rpavg, numthreads);
+        }
+        free(rupp);
+        return EXIT_FAILURE;
     }
 
 #else//sequential mode follows
@@ -328,7 +347,11 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         matrix_free((void **) all_rpavg, numthreads);
       }
 #endif//OpenMP
-      return abort_status;
+      return EXIT_FAILURE;
+    }
+    
+    if(options.verbose) {
+      finish_myprogressbar(&interrupted);
     }
     
 #if defined(_OPENMP)
@@ -368,10 +391,16 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     //Pack in the results
     results->nbin  = nrpbins;
     results->pimax = pimax;
-    results->npairs = my_malloc(sizeof(uint64_t), nrpbins);
-    results->wp = my_malloc(sizeof(double), nrpbins);
-    results->rupp   = my_malloc(sizeof(double), nrpbins);
-    results->rpavg  = my_malloc(sizeof(double), nrpbins);
+    results->npairs = my_malloc(sizeof(*(results->npairs)), nrpbins);
+    results->wp = my_malloc(sizeof(*(results->wp)), nrpbins);
+    results->rupp   = my_malloc(sizeof(*(results->rupp)), nrpbins);
+    results->rpavg  = my_malloc(sizeof(*(results->rpavg)), nrpbins);
+    if(results->npairs == NULL || results->rupp == NULL ||
+       results->rpavg == NULL || results->wp == NULL) {
+        free_results_wp(results);
+        free(rupp);
+        return EXIT_FAILURE;
+    }
 
     const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
     const DOUBLE density=0.5*avgweight2*ND/(boxsize*boxsize*boxsize);//pairs are not double-counted

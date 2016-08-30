@@ -274,7 +274,7 @@ def main():
     rmax = 10.0
     nbin = 10
     nspheres = 10000
-    num_pN = 3
+    num_pN = 8
     seed = -1
     results_vpf = vpf(rmax=rmax, nbins=nbin, nspheres=nspheres, num_pN=num_pN,
                       seed=seed, X=x, Y=y, Z=z, verbose=True,
