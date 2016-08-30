@@ -230,55 +230,80 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
     }
     if(need_randoms==1) {
         fpcen = my_fopen(centers_file,"w");
+        if(fpcen == NULL) {
+            return EXIT_FAILURE;
+        }
     }
     if(options.verbose) {
         fprintf(stderr,"%s> found %"PRId64" centers (need %d centers) - need randoms = %d\n",__FUNCTION__,num_centers_in_file,nc,need_randoms);
     }
 
-
-    //set up the interpolation for comoving distances
-    double *redshifts,*comoving_distance;
-    redshifts=my_calloc(sizeof(*redshifts),COSMO_DIST_SIZE);
-    comoving_distance=my_calloc(sizeof(*comoving_distance),COSMO_DIST_SIZE);
-    int Nzdc = set_cosmo_dist(MAX_REDSHIFT_FOR_COSMO_DIST, COSMO_DIST_SIZE, redshifts, comoving_distance, cosmology);
+    DOUBLE rcube=0.0;
+    double *redshifts=NULL,*comoving_distance=NULL;
+    gsl_interp *interpolation=NULL;
+    gsl_interp_accel *accelerator=NULL;
     const DOUBLE inv_speed_of_light=1.0/SPEED_OF_LIGHT;
+    if(options.is_comoving_dist == 0) {
+        //set up the interpolation for comoving distances
+        redshifts=my_malloc(sizeof(*redshifts),COSMO_DIST_SIZE);
+        comoving_distance=my_malloc(sizeof(*comoving_distance),COSMO_DIST_SIZE);
+        if(redshifts == NULL || comoving_distance == NULL) {
+            free(comoving_distance);free(redshifts);
+            return EXIT_FAILURE;
+        }
+        
+        int Nzdc = set_cosmo_dist(MAX_REDSHIFT_FOR_COSMO_DIST, COSMO_DIST_SIZE, redshifts, comoving_distance, cosmology);
+        if(Nzdc < 0) {
+            free(comoving_distance);free(redshifts);
+            return EXIT_FAILURE;
+        }
 
-    gsl_interp *interpolation;
-    gsl_interp_accel *accelerator;
-    accelerator =  gsl_interp_accel_alloc();
-    interpolation = gsl_interp_alloc (gsl_interp_linear,Nzdc);
-    gsl_interp_init(interpolation, redshifts, comoving_distance, Nzdc);
-
-    DOUBLE rcube=0.0 ;
-    for(int i=0;i<Ngal;i++) {
+        interpolation = gsl_interp_alloc (gsl_interp_linear,Nzdc);
+        accelerator =  gsl_interp_accel_alloc();
+        gsl_interp_init(interpolation, redshifts, comoving_distance, Nzdc);
+    }
+    
+    for(int64_t i=0;i<Ngal;i++) {
         const DOUBLE new_phi   = xgal[i];
         const DOUBLE new_theta = ygal[i];
         const DOUBLE new_cz    = zgal[i];
-        const DOUBLE dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
+        DOUBLE dc;
+        if(options.is_comoving_dist == 0) {
+            dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
+        } else {
+            dc = new_cz;
+        }
         if(dc>rcube) rcube = dc;
-
+            
         xgal[i] = dc*COSD(new_theta)*COSD(new_phi) ;
         ygal[i] = dc*COSD(new_theta)*SIND(new_phi) ;
         zgal[i] = dc*SIND(new_theta) ;
     }
 
     if (need_randoms == 1) {
-        for(int i=0;i<Nran;i++) {
+        for(int64_t i=0;i<Nran;i++) {
             const DOUBLE new_phi   = xran[i];
             const DOUBLE new_theta = yran[i];
             const DOUBLE new_cz    = zran[i];
-            const DOUBLE dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
-
+            DOUBLE dc;
+            if(options.is_comoving_dist == 0) {
+                dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
+            } else {
+                dc = new_cz;
+            }
+                
             xran[i] = dc*COSD(new_theta)*COSD(new_phi) ;
             yran[i] = dc*COSD(new_theta)*SIND(new_phi) ;
             zran[i] = dc*SIND(new_theta);
         }
     }
-    free(redshifts);free(comoving_distance);
-    gsl_interp_free(interpolation);
-    gsl_interp_accel_free(accelerator);
 
-
+    if(options.is_comoving_dist == 0) {
+        free(redshifts);free(comoving_distance);
+        gsl_interp_free(interpolation);
+        gsl_interp_accel_free(accelerator);
+    }
+    
     /*---Shift-coordinates--------------------------------*/
     if(options.verbose) {
         fprintf(stderr,"%s> maximum distance = %f. ",__FUNCTION__,rcube) ;
