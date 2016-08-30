@@ -84,7 +84,7 @@ def main():
     print("\nRunning 2-D correlation function xi(rp,pi)")
     results_DDrppi = rp_pi_mocks(autocorr, cosmology, nthreads,
                                  pimax, binfile,
-                                 ra, dec, cz, ra, dec, cz,
+                                 ra, dec, cz,
                                  output_rpavg=1, verbose=1)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
