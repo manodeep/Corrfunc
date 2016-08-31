@@ -5,8 +5,69 @@ from __future__ import (absolute_import, division, print_function,
 from future.utils import bytes_to_native_str
 import os
 
-__all__ = ['read_text_file', 'read_catalog']
+__all__ = ['translate_isa_string_to_enum', 'read_text_file', 'read_catalog']
 
+
+def translate_isa_string_to_enum(isa):
+    """
+    Helper function to convert an user-supplied string to the
+    underlying enum in the C-API. The extensions only have specific
+    implementations for AVX, SSE42 and FALLBACK. Any other value,
+    will raise a ValueError.
+    
+    The enum definition contains all the valid instruction sets I know
+    of. Here to facilitate easy extension when a new instruction set has
+    been added in.
+
+    Parameters:
+    ----------
+    isa: string
+       A string containing the desired instruction set. Valid values are
+       ['AVX', 'SSE42', 'FALLBACK', 'FASTEST']
+    
+    Returns:
+    -------
+    instruction_set: integer
+       An integer corresponding to the desired instruction set, as used in the
+       underlying C API. The enum used here should be defined *exactly* the
+       same way as the enum in ``utils/defs.h``.
+
+    """
+    
+    msg = "Input to translate_isa_string_to_enum must be "\
+          "of string type. Found type = {0}".format(type(isa))
+    try:
+        if not isinstance(isa, basestring):
+            raise TypeError(msg)
+    except NameError:
+        if not isinstance(isa, str):
+            raise TypeError(msg)
+    valid_isa = ['FALLBACK', 'AVX', 'SSE42', 'FASTEST']
+    isa_upper = isa.upper()
+    if isa_upper not in valid_isa:
+        msg = "Desired instruction set = {0} is not in the list of valid "\
+              "instruction sets = {1}".format(isa, valid_isa)
+        raise ValueError(msg)
+    
+    enums = {'FASTEST': -1,
+             'FALLBACK': 0,
+             'SSE': 1,
+             'SSE2': 2,
+             'SSE3': 3,
+             'SSSE3': 4,
+             'SSE4': 5,
+             'SSE42': 6,
+             'AVX': 7,
+             'AVX2': 8,
+             'AVX512F': 9
+             }
+    try:
+        return enums[isa_upper]
+    except KeyError:
+        print("Do not know instruction type = {0}".format(isa))
+        print("Valid instructions are {0}".format(enums.keys()))
+        raise
+    
 
 def read_text_file(filename, encoding="utf-8"):
     """

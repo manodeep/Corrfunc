@@ -1,4 +1,5 @@
 ROOT_DIR := ../..
+UTILS_DIR:=$(ROOT_DIR)/utils
 INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
 INSTALL_LIB_DIR := $(ROOT_DIR)/lib
 INSTALL_BIN_DIR := $(ROOT_DIR)/bin
@@ -19,7 +20,7 @@ VPF_LIB := countspheres
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 PROJECT := _countpairs
-SOURCES := $(PROJECT).c 
+SOURCES := $(PROJECT).c
 OBJECTS := $(SOURCES:.c=.o)
 PYTHON_LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \

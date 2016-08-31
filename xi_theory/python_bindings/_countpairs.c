@@ -26,6 +26,9 @@
 //for the vpf
 #include "countspheres.h"
 
+//for the instruction set detection
+#include "cpu_features.h"
+
 struct module_state {
     PyObject *error;
 };
@@ -56,7 +59,7 @@ PyMODINIT_FUNC init_countpairs(void);
 /* #define RP_UNICODE    "r\u209a" */
 /* #endif */
 
-
+static int highest_isa;
 
 //Docstrings for the methods
 static char module_docstring[]             =    "This module provides an interface for calculating clustering statistics using python extensions written in C.\n"
@@ -355,7 +358,6 @@ PyMODINIT_FUNC init_countpairs(void)
 {
 
     ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
-    
 
 #if PY_MAJOR_VERSION >= 3
     PyObject *module = PyModule_Create(&moduledef);
@@ -377,6 +379,7 @@ PyMODINIT_FUNC init_countpairs(void)
     /* Load `numpy` functionality. */
     import_array();
 
+    highest_isa = instrset_detect();
 
 #if PY_MAJOR_VERSION >= 3
     return module;
@@ -528,7 +531,12 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
          ) {
         Py_RETURN_NONE;
     }
-    
+
+    /*This is for the fastest isa */
+    if(options.instruction_set == -1) {
+        options.instruction_set = highest_isa;
+    }
+
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */
     size_t element_size;
@@ -710,6 +718,10 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         Py_RETURN_NONE;
     }
     options.autocorr=autocorr;
+    /*This is for the fastest isa */
+    if(options.instruction_set == -1) {
+        options.instruction_set = highest_isa;
+    }
 
     size_t element_size;
     /* How many data points are there? And are they all of floating point type */
@@ -879,7 +891,12 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         Py_RETURN_NONE;
     }
     options.boxsize=boxsize;
-    
+
+    /*This is for the fastest isa */
+    if(options.instruction_set == -1) {
+        options.instruction_set = highest_isa;
+    }
+
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, &element_size);
     if(ND1 == -1) {
@@ -1006,6 +1023,13 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         Py_RETURN_NONE;
     }
 
+    /*This is for the fastest isa */
+    if(options.instruction_set == -1) {
+        options.instruction_set = highest_isa;
+    }
+        
+
+
     /* How many data points are there? And are they all of floating point type */
     size_t element_size;
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, &element_size);
@@ -1128,6 +1152,10 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
 
         ) {
         Py_RETURN_NONE;
+    }
+    /*This is for the fastest isa */
+    if(options.instruction_set == -1) {
+        options.instruction_set = highest_isa;
     }
     
     /* How many data points are there? And are they all of floating point type */

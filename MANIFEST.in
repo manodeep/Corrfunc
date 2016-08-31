@@ -1,10 +1,10 @@
-include README.rst Makefile .travis.yml common.mk theory.options mocks.options FAQ INSTALL LICENSE
+include README.rst Makefile .travis.yml common.mk rules.mk theory.options mocks.options FAQ INSTALL LICENSE
 include xi_theory/python_bindings/call_correlation_functions.py xi_mocks/python_bindings/call_correlation_functions_mocks.py
 
-recursive-include xi_theory             *.c *.h Makefile
-recursive-include xi_mocks              *.c *.h Makefile
-recursive-include io                    *.c *.h
-recursive-include utils                 *.c *.h
+recursive-include xi_theory             *.c *.h *.c.src *.h.src Makefile
+recursive-include xi_mocks              *.c *.h *.c.src *.h.src Makefile
+recursive-include io                    *.c *.h Makefile
+recursive-include utils                 *.c *.h *.c.src *.h.src Makefile
 
 recursive-include xi_theory/tests       Mr19_* cmass* bins
 recursive-include xi_theory/tests/data  *.ff 
