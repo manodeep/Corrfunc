@@ -6,7 +6,7 @@ from __future__ import (division, print_function, absolute_import,
 import sys
 import os
 
-__all__ = ["_countpairs", "_countpairs_mocks", "utils"]
+__all__ = ["_countpairs", "_countpairs_mocks", "utils", "theory", "mocks"]
 
 # from Corrfunc import * throws: TypeError: Item in ``from list'' not a string
 # following the accepted answer in:

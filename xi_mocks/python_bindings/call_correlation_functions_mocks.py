@@ -10,7 +10,6 @@ Requires: numpy
 from __future__ import print_function
 from os.path import dirname, abspath, join as pjoin
 import time
-import sys
 import numpy as np
 
 # Import from current directory first,

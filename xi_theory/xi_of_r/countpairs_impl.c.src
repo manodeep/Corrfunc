@@ -188,12 +188,6 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     }
   }
 
-  if(options.verbose) {
-    fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
-    fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
-    fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
-  }
-
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
   cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, &options);
@@ -231,6 +225,11 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     const DOUBLE ydiff = options.boxsize > 0 ? options.boxsize:(ymax-ymin);
     const DOUBLE zdiff = options.boxsize > 0 ? options.boxsize:(zmax-zmin);
     const DOUBLE pimax = (DOUBLE) rpmax;
+    if(options.verbose) {
+        fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
+        fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
+        fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+    }
     
     //Generate the unique set of neighbouring cells to count over.
     {

@@ -74,5 +74,5 @@ static inline int64_t xgetbv (int ctr) {
 extern int instrset_detect(void);
 
 #ifdef __cplusplus
- }
+}
 #endif

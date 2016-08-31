@@ -19,6 +19,9 @@
 //for the vpf
 #include "countspheres_mocks.h"
 
+//for the instruction set detection
+#include "cpu_features.h"
+
 struct module_state {
     PyObject *error;
 };
@@ -50,6 +53,8 @@ PyMODINIT_FUNC init_countpairs_mocks(void);
 /* #define RP_UNICODE    "r\u209a" */
 /* #endif */
 
+
+static int highest_isa_mocks;
 
 //Docstrings for the methods
 static char module_docstring[] =    "This module provides an interface for calculating correlation functions on MOCKS (spherical geometry) using C.\n"
@@ -393,6 +398,8 @@ PyObject *PyInit__countpairs_mocks(void)
     /* Load `numpy` functionality. */
     import_array();
 
+    highest_isa_mocks = instrset_detect();
+    
 #if PY_MAJOR_VERSION >= 3
     return module;
 #endif
@@ -629,6 +636,12 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         Py_RETURN_NONE;
     }
 
+    /*This is for the fastest isa */
+    if(options.instruction_set == -1) {
+        options.instruction_set = highest_isa_mocks;
+    }
+
+
     
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */
@@ -824,6 +837,10 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     }
     options.autocorr=autocorr;
     options.periodic=0;//doesn't matter but noting intent by setting it to 0
+    /*This is for the fastest isa */
+    if(options.instruction_set == -1) {
+        options.instruction_set = highest_isa_mocks;
+    }
 
     size_t element_size;
     /* We have numpy arrays and all the required inputs*/
@@ -1005,7 +1022,11 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
          ) {
         Py_RETURN_NONE;
     }
-    
+    /*This is for the fastest isa */
+    if(options.instruction_set == -1) {
+        options.instruction_set = highest_isa_mocks;
+    }
+
     size_t element_size;
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */
