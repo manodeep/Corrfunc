@@ -12,7 +12,10 @@
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
-#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define ADD_DIFF_TIME(t0,t1)     fabs((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
 #define ALIGNMENT                32
@@ -73,34 +76,34 @@ struct config_options
     int instruction_set; /* select instruction set to run on */
 
     char version[32];/* fill in the version number */
-    bool verbose; /* Outputs progressbar and times */
-    bool c_api_timer; /* Measures time spent in the C function */
+    uint8_t verbose; /* Outputs progressbar and times */
+    uint8_t c_api_timer; /* Measures time spent in the C function */
 
     /* Options valid for both theory and mocks */
-    bool need_avg_sep; /* <rp> or <\theta> is required */
-    bool autocorr;/* Only one dataset is required */
+    uint8_t need_avg_sep; /* <rp> or <\theta> is required */
+    uint8_t autocorr;/* Only one dataset is required */
     
     /* Options for theory*/
-    bool periodic; /* count in periodic mode? flag ignored for wp/xi */
-    bool sort_on_z;/* option to sort particles based on their Z co-ordinate in gridlink*/
+    uint8_t periodic; /* count in periodic mode? flag ignored for wp/xi */
+    uint8_t sort_on_z;/* option to sort particles based on their Z co-ordinate in gridlink*/
 
     /* For DDrppi_mocks and vpf*/
-    bool is_comoving_dist;/* flag to indicate cz is already co-moving distance */
+    uint8_t is_comoving_dist;/* flag to indicate cz is already co-moving distance */
     
     /* the link_in_* variables control how the 3-D cell structure is created */
-    bool link_in_dec;/* relevant for DDthteta_mocks */
-    bool link_in_ra; /* relevant for DDtheta_mocks.*/
+    uint8_t link_in_dec;/* relevant for DDthteta_mocks */
+    uint8_t link_in_ra; /* relevant for DDtheta_mocks.*/
 
     /* Replaces the divide in DDrppi_mocks in AVX mode by a reciprocal and a Newton-Raphson step. */
-    bool fast_divide;
+    uint8_t fast_divide;
 
     /* Fast arccos for wtheta (effective only when OUTPUT_THETAAVG is enabled) */
-    bool fast_acos;
+    uint8_t fast_acos;
 
-    /* Reserving to maboolain ABI compatibility for the future */
+    /* Reserving to maintain ABI compatibility for the future */
     /* Note that the math here assumes no padding bytes, that's because of the 
        order in which the fields are declared (largest to smallest alignments)  */
-    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - sizeof(int) - 11*sizeof(bool)];
+    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - sizeof(int) - 11*sizeof(uint8_t)];
 };
 
 /* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
@@ -118,6 +121,7 @@ struct config_options
 static inline struct config_options get_config_options(void)
 {
     ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+
     if(strncmp(API_VERSION, STR(VERSION), 32) != 0) {
         fprintf(stderr,"Error: Version mismatch between header and Makefile. Header claims version = `%s' while Makefile claims version = `%s'\n"
                 "Library header probably needs to be updated\n", API_VERSION, STR(VERSION));
@@ -181,3 +185,6 @@ static inline struct config_options get_config_options(void)
 
 
 
+#ifdef __cplusplus
+}
+#endif

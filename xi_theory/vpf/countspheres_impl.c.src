@@ -107,7 +107,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                         const int num_pN,
                         unsigned long seed,
                         results_countspheres *results,
-                        const struct config_options *options)
+                        struct config_options *options)
 {
     
     if(options->float_type != sizeof(DOUBLE)) {
@@ -123,7 +123,10 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         return EXIT_FAILURE;
     }
     
-    struct timeval t0,t1;
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
     int bin_refine_factor=1;
 
     /* setup interrupt handler -> mostly useful during the python execution. 
@@ -153,24 +156,22 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
 
     //First create the 3-d linklist
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    gettimeofday(&t0,NULL);
     cellarray_DOUBLE *lattice = gridlink_DOUBLE(np, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
-    gettimeofday(&t1,NULL);
     if(lattice == NULL) {
         return EXIT_FAILURE;
     }
     
     int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
-    if(options->verbose) {
-        fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf\n",xmin,xmax);
-        fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf\n",ymin,ymax);
-        fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf\n",zmin,zmax);
-    }
-
     const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
     const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
     const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
+    if(options->verbose && options->periodic) {
+        fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
+        fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
+        fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+    }
+
 
     const DOUBLE inv_xdiff = ((DOUBLE) 1.0)/xdiff;
     const DOUBLE inv_ydiff = ((DOUBLE) 1.0)/ydiff;
@@ -364,6 +365,11 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         }
     }
     matrix_free((void **) pN, nbin);
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
 
     return EXIT_SUCCESS;
 }

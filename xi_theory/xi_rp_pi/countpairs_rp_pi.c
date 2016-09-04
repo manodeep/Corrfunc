@@ -32,7 +32,7 @@ int countpairs_rp_pi(const int64_t ND1, void *X1, void *Y1, void *Z1,
                      const char *binfile,
                      const double pimax,
                      results_countpairs_rp_pi *results,
-                     const struct config_options *options)
+                     struct config_options *options)
 {
 
     ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size

@@ -33,7 +33,7 @@ int countpairs_mocks(const int64_t ND1, void *phi1, void *theta1, void *czD1,
                      const double pimax,
                      const int cosmology,
                      results_countpairs_mocks *results,
-                     const struct config_options *options)
+                     struct config_options *options)
 {
 
     ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size

@@ -32,7 +32,7 @@ int countpairs_wp(const int64_t ND, void * restrict X, void * restrict Y, void *
                   const char *binfile,
                   const double pimax,
                   results_countpairs_wp *results,
-                  const struct config_options *options)
+                  struct config_options *options)
 {
 
     ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size

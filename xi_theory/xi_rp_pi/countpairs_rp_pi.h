@@ -32,7 +32,7 @@ extern "C" {
                                 const char *binfile,
                                 const double pimax,
                                 results_countpairs_rp_pi *results,
-                                const struct config_options *options);
+                                struct config_options *options);
     
     extern void free_results_rp_pi(results_countpairs_rp_pi *results);
 

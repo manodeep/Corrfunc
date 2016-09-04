@@ -31,7 +31,7 @@ typedef struct{
                             const int num_pN,
                             unsigned long seed,
                             results_countspheres *results,
-                            const struct config_options *options);
+                            struct config_options *options);
     
     extern void free_results_countspheres(results_countspheres *results);
     

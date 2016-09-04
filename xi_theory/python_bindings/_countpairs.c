@@ -321,6 +321,7 @@ static PyObject *countpairs_error_out(PyObject *module, const char *msg)
 
     struct module_state *st = GETSTATE(module);
     PyErr_SetString(st->error, msg);
+    PyErr_Print();
     Py_RETURN_NONE;
 }
 
@@ -470,6 +471,25 @@ static int64_t check_dims_and_datatype(PyObject *module, PyArrayObject *x1_obj, 
     return nx1;
 }
 
+static int print_kwlist_into_msg(char *msg, const size_t totsize, size_t len, char *kwlist[], const size_t nitems)
+{
+    for(size_t i=0;i<nitems;i++) {
+        
+        if(len+strlen(kwlist[i]) >= totsize-2) {
+            return EXIT_FAILURE;
+        }
+        
+        memcpy(msg+len, kwlist[i], strlen(kwlist[i]));
+        len += strlen(kwlist[i]);
+        msg[len] = ',';
+        msg[len+1] = ' ';
+        len += 2;
+    }
+    
+    msg[len]='\0';
+    return EXIT_SUCCESS;
+}
+
 
 static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -490,7 +510,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
 
     struct config_options options = get_config_options();
     options.verbose = 0;
-    options.instruction_set = AVX;
+    options.instruction_set = -1;
     options.periodic = 1;
     options.need_avg_sep = 0;
     options.c_api_timer = 0;
@@ -501,10 +521,10 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         "X1",
         "Y1",
         "Z1",
-        "periodic",
         "X2",
         "Y2",
         "Z2",
+        "periodic",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "boxsize",
         "output_ravg",
@@ -513,15 +533,16 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|iO!O!O!idiii", kwlist,
+
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|O!O!O!bbdbbi", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
                                        &PyArray_Type,&z1_obj,
-                                       &(options.periodic),
-                                       &PyArray_Type,&x2_obj,//optional parameters -> if autocorr == 1, not checked; required if autocorr=0
+                                       &PyArray_Type,&x2_obj,
                                        &PyArray_Type,&y2_obj,
                                        &PyArray_Type,&z2_obj,
+                                       &(options.periodic),
                                        &(options.verbose),
                                        &(options.boxsize),
                                        &(options.need_avg_sep),
@@ -529,6 +550,21 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
                                        &(options.instruction_set))
 
          ) {
+        
+        PyObject_Print(kwargs, stdout, 0);
+        fprintf(stdout, "\n");
+
+        char msg[1024];
+        int len=snprintf(msg, 1024,"ArgumentError: In DD> Could not parse the arguments. Input parameters are: \n");
+
+        /* How many keywords do we have? Subtract 1 because of the last NULL */
+        const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
+        int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
+        if(status != EXIT_SUCCESS) {
+            fprintf(stderr,"Error message does not contain all of the keywords\n");
+        }
+        
+        countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
 
@@ -536,7 +572,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     if(options.instruction_set == -1) {
         options.instruction_set = highest_isa;
     }
-
+    
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */
     size_t element_size;
@@ -623,6 +659,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
 
     results_countpairs results;
     options.float_type = element_size;
+    double c_api_time = 0.0;
     int status = countpairs(ND1,X1,Y1,Z1,
                             ND2,X2,Y2,Z2,
                             nthreads,
@@ -630,6 +667,9 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
                             binfile,
                             &results,
                             &options);
+    if(options.c_api_timer) {
+        c_api_time = options.c_api_time;
+    }
     NPY_END_THREADS;
 
     /* Clean up. */
@@ -654,7 +694,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     }
 
     free_results(&results);
-    return ret;
+    return Py_BuildValue("(Od)", ret, c_api_time);
 }
 
 
@@ -676,7 +716,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     char *binfile;
     struct config_options options = get_config_options();
     options.verbose = 0;
-    options.instruction_set = AVX;
+    options.instruction_set = -1;
     options.periodic = 1;
     options.c_api_timer = 0;
     static char *kwlist[] = {
@@ -687,10 +727,10 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         "X1",
         "Y1",
         "Z1",
-        "periodic",
         "X2",
         "Y2",
         "Z2",
+        "periodic",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "boxsize",
         "output_rpavg",
@@ -699,15 +739,15 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iidsO!O!O!|iO!O!O!idiii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iidsO!O!O!|O!O!O!bbdbbi", kwlist,
                                        &autocorr,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
                                        &PyArray_Type,&z1_obj,
-                                       &(options.periodic),
-                                       &PyArray_Type,&x2_obj,//optional parameters -> if autocorr == 1, not checked; required if autocorr=0
+                                       &PyArray_Type,&x2_obj,
                                        &PyArray_Type,&y2_obj,
                                        &PyArray_Type,&z2_obj,
+                                       &(options.periodic),
                                        &(options.verbose),
                                        &(options.boxsize),
                                        &(options.need_avg_sep),
@@ -715,6 +755,20 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
                                        &(options.instruction_set))
 
          ) {
+        PyObject_Print(kwargs, stdout, 0);
+        fprintf(stdout, "\n");
+
+        char msg[1024];
+        int len=snprintf(msg, 1024,"ArgumentError: In DDrppi> Could not parse the arguments. Input parameters are: \n");
+
+        /* How many keywords do we have? Subtract 1 because of the last NULL */
+        const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
+        int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
+        if(status != EXIT_SUCCESS) {
+            fprintf(stderr,"Error message does not contain all of the keywords\n");
+        }
+        
+        countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
     options.autocorr=autocorr;
@@ -803,6 +857,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     
     options.float_type = element_size;
     results_countpairs_rp_pi results;
+    double c_api_time = 0.0;
     int status = countpairs_rp_pi(ND1,X1,Y1,Z1,
                                   ND2,X2,Y2,Z2,
                                   nthreads,
@@ -811,6 +866,9 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
                                   pimax,
                                   &results,
                                   &options);
+    if(options.c_api_timer) {
+        c_api_time = options.c_api_time;
+    }
     NPY_END_THREADS;
     
     /* Clean up. */
@@ -838,7 +896,8 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         rlow=results.rupp[i];
     }
     free_results_rp_pi(&results);
-    return ret;
+    
+    return Py_BuildValue("(Od)", ret, c_api_time);
 }
 
 static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -858,7 +917,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
 
     struct config_options options = get_config_options();
     options.verbose = 0;
-    options.instruction_set = AVX;
+    options.instruction_set = -1;
     options.need_avg_sep = 0;
     options.periodic=1;
     options.c_api_timer = 0;
@@ -877,7 +936,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         NULL
     };
     
-    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|iiii", kwlist,
+    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|bbbi", kwlist,
                                       &boxsize,&pimax,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
@@ -888,6 +947,20 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
                                       &(options.instruction_set))
         
         ){
+        PyObject_Print(kwargs, stdout, 0);
+        fprintf(stdout, "\n");
+
+        char msg[1024];
+        int len=snprintf(msg, 1024,"ArgumentError: In wp> Could not parse the arguments. Input parameters are: \n");
+
+        /* How many keywords do we have? Subtract 1 because of the last NULL */
+        const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
+        int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
+        if(status != EXIT_SUCCESS) {
+            fprintf(stderr,"Error message does not contain all of the keywords\n");
+        }
+        
+        countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
     options.boxsize=boxsize;
@@ -935,6 +1008,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     
     results_countpairs_wp results;
     options.float_type = element_size;
+    double c_api_time = 0.0;
     int status = countpairs_wp(ND1,X1,Y1,Z1,
                                boxsize,
                                nthreads,
@@ -942,7 +1016,9 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
                                pimax,
                                &results,
                                &options);
-    
+    if(options.c_api_timer) {
+        c_api_time = options.c_api_time;
+    }
     NPY_END_THREADS;
 
     /* Clean up. */
@@ -972,7 +1048,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         rlow=results.rupp[i];
     }
     free_results_wp(&results);
-    return ret;
+    return Py_BuildValue("(Od)", ret, c_api_time);
 }
 
 
@@ -1008,9 +1084,9 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     struct config_options options = get_config_options();
     options.verbose = 0;
     options.periodic=1;
-    options.instruction_set = AVX; //from enum
+    options.instruction_set = -1; //from enum
     options.c_api_timer = 0;
-    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|iiii", kwlist,
+    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|bbbi", kwlist,
                                       &boxsize,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
@@ -1020,6 +1096,21 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
                                       &(options.c_api_timer),
                                       &(options.instruction_set))
         ) {
+
+        PyObject_Print(kwargs, stdout, 0);
+        fprintf(stdout, "\n");
+        
+        char msg[1024];
+        int len=snprintf(msg, 1024,"ArgumentError: In xi> Could not parse the arguments. Input parameters are: \n");
+
+        /* How many keywords do we have? Subtract 1 because of the last NULL */
+        const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
+        int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
+        if(status != EXIT_SUCCESS) {
+            fprintf(stderr,"Error message does not contain all of the keywords\n");
+        }
+        
+        countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
 
@@ -1067,12 +1158,16 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     results_countpairs_xi results;
     options.periodic = 1;
     options.float_type = element_size;
+    double c_api_time=0.0;
     int status = countpairs_xi(ND1,X1,Y1,Z1,
                                boxsize,
                                nthreads,
                                binfile,
                                &results,
                                &options);
+    if(options.c_api_timer) {
+        c_api_time = options.c_api_time;
+    }
     NPY_END_THREADS;
 
     /* Clean up. */
@@ -1101,7 +1196,8 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         rlow=results.rupp[i];
     }
     free_results_xi(&results);
-    return ret;
+
+    return Py_BuildValue("(Od)", ret, c_api_time);
 }
 
 static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -1127,8 +1223,9 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
         "X",
         "Y",
         "Z",
-        "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "periodic",
+        "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
+        "boxsize",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
@@ -1137,20 +1234,36 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     struct config_options options = get_config_options();
     options.verbose = 0;
     options.periodic = 1;
-    options.instruction_set = AVX; //from enum
+    options.instruction_set = -1;
     options.c_api_timer = 0;
     if( ! PyArg_ParseTupleAndKeywords(args, kwargs,
-                                      "diiikO!O!O!|iiii", kwlist,
+                                      "diiikO!O!O!|bbdbi", kwlist,
                                       &rmax,&nbin,&nc,&num_pN,&seed,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
                                       &PyArray_Type,&z1_obj,
-                                      &(options.verbose),
                                       &(options.periodic),
+                                      &(options.verbose),
+                                      &(options.boxsize),
                                       &(options.c_api_timer),
                                       &(options.instruction_set))
 
         ) {
+
+        PyObject_Print(kwargs, stdout, 0);
+        fprintf(stdout, "\n");
+        
+        char msg[1024];
+        int len=snprintf(msg, 1024,"ArgumentError: In vpf> Could not parse the arguments. Input parameters are: \n");
+        
+        /* How many keywords do we have? Subtract 1 because of the last NULL */
+        const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
+        int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
+        if(status != EXIT_SUCCESS) {
+            fprintf(stderr,"Error message does not contain all of the keywords\n");
+        }
+        
+        countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
     /*This is for the fastest isa */
@@ -1192,12 +1305,17 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     /* Do the VPF calculation */
     results_countspheres results;
     options.float_type = element_size;
+    double c_api_time=0.0;
     int status = countspheres(ND1, X1, Y1, Z1,
                               rmax, nbin, nc,
                               num_pN,
                               seed,
                               &results,
                               &options);
+
+    if(options.c_api_timer) {
+        c_api_time = options.c_api_time;
+    }
 
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);
@@ -1225,5 +1343,5 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     }
 
     free_results_countspheres(&results);
-    return ret;
+    return Py_BuildValue("(Od)", ret, c_api_time);
 }
