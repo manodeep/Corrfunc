@@ -72,7 +72,31 @@
      } while (0)
 #endif
    
-   
+#define SETUP_INTERRUPT_HANDLERS(handler_name)                          \
+     const int interrupt_signals[] = {SIGTERM, SIGINT, SIGHUP};         \
+     const size_t nsig = sizeof(interrupt_signals)/sizeof(interrupt_signals[0]); \
+     typedef void (* sig_handlers)(int);                                \
+     sig_handlers previous_handlers[nsig];                              \
+     for(size_t i=0;i<nsig;i++) {                                       \
+         int signo = interrupt_signals[i];                              \
+         sig_handlers prev = signal(signo, handler_name);               \
+         if (prev == SIG_ERR) {                                         \
+             fprintf(stderr,"Can not handle signal = %d\n", signo);     \
+         }                                                              \
+         previous_handlers[i] = prev;                                   \
+     }                                                              
+
+#define RESET_INTERRUPT_HANDLERS()              \
+     for(size_t i=0;i<nsig;i++) {                                       \
+         int signo = interrupt_signals[i];                              \
+         sig_handlers prev = previous_handlers[i];                      \
+         if(prev == SIG_IGN || prev == SIG_ERR) continue;               \
+         if(signal(signo, prev) == SIG_ERR) {                           \
+             fprintf(stderr,"Could not reset signal handler to default for signal = %d\n", signo); \
+         }                                                              \
+     }
+     
+    
      //routines for file i/o
      extern FILE * my_fopen(const char *fname,const char *mode);
      extern FILE * my_fopen_carefully(const char *fname,void (*header)(FILE *));
