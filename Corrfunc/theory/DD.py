@@ -191,13 +191,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
 
 if __name__ == '__main__':
     import numpy as np
-    import Corrfunc
     import time
-    from os.path import dirname, abspath, join as pjoin
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
-    
-    binfile = [0.0, 1.0, 2.0, 10.0, 30.0]
+    bins = [0.0, 1.0, 2.0, 10.0, 30.0]
     N = 100000
     boxsize = 420.0
     nthreads = 4
@@ -209,7 +204,7 @@ if __name__ == '__main__':
     Z = np.random.uniform(0, boxsize, N)
 
     t0 = time.time()
-    results, api_time = DD(autocorr, nthreads, binfile,
+    results, api_time = DD(autocorr, nthreads, bins,
                            X, Y, Z,
                            verbose=True,
                            boxsize=boxsize,
