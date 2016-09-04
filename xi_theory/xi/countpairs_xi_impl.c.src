@@ -381,6 +381,30 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 #endif//OpenMP
 
 
+    /* I am only doubling the pair-counts to account for the rmin=0.0 
+       case. Ideally, I would simply add ND/2 pairs but for odd ND, this
+       would result in incorrect output. Easier to simply double all the
+       pairs, and add ND to the first valid rp bin. 
+     */
+    const uint64_t int_fac = 2;
+    const DOUBLE dbl_fac = (DOUBLE) 2.0;
+    
+    for(int i=0;i<nbins;i++) {
+        npairs[i] *= int_fac;
+        if(options->need_avg_sep) {
+            ravg[i] *= dbl_fac;
+        }
+    }
+
+    /* Is the min. requested separation 0.0 ?*/
+    if(rupp[0] == 0.0) {
+        /* Then, add all the self-pairs. This ensures that 
+           a cross-correlation with two identical datasets 
+           produces the same result as the auto-correlation  */
+        npairs[1] += ND; //npairs[1] contains the first valid bin.
+    }
+
+    
     //So the npairs array contains the number of pairs
     //and the ravg array contain the *SUM* of separations
     //Let's divide out ravg by npairs to actually get
@@ -407,7 +431,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     }
 
     const DOUBLE avgweight2 = 1.0, avgweight1 = 1.0;
-    const DOUBLE density=0.5*avgweight2*ND/(boxsize*boxsize*boxsize);//0.5 because pairs are not double-counted
+    const DOUBLE density=avgweight2*ND/(boxsize*boxsize*boxsize);
     const DOUBLE prefac_density=avgweight1*ND*density;
 
     DOUBLE rlow=0.0 ;

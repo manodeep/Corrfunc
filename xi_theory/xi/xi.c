@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
      */
     DOUBLE rlow=results.rupp[0];
     for(int i=1;i<results.nbin;++i) {
-        fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.ravg[i],rlow,results.rupp[i],results.npairs[i]);
+        fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\t%e\n",rlow,results.rupp[i],results.ravg[i],results.npairs[i],results.xi[i]);
         rlow=results.rupp[i];
     }
 
