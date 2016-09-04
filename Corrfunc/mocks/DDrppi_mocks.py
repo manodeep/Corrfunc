@@ -37,8 +37,9 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     ``xi_mocks/DDrppi/wprp_mocks.c`` for computing :math:`wp(r_p)` from
     the pair counts returned.
      
-    Parameters:
+    Parameters
     -----------
+
     autocorr: boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
         then the second set of particle positions are not required.
@@ -54,7 +55,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                  2 -> Planck   cosmology. Om=0.302, Ol=0.698
      
         To setup a new cosmology, add an entry to the function,
-        ``init_cosmology`` in ``ROOT/utils/cosmology_params.c` and re-install
+        ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
         the entire package.
 
     nthreads: integer
@@ -66,7 +67,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         the Z-dimension. Note that only pairs with ``0 <= dz < pimax``
         are counted (no equality).
 
-        Distances along the :math:``\\pi`` direction are binned with unit
+        Distances along the :math:`\\pi` direction are binned with unit
         depth. For instance, if ``pimax=40``, then 40 bins will be created
         along the ``pi`` direction.
 
@@ -77,7 +78,8 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
        contiguous but must be in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``rp`` values that provides the
-       bin-edges. For example, ``np.logspace(0.1, 10.0, 15)`` is a valid
+       bin-edges. For example,
+       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
        input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
 
@@ -169,8 +171,9 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-    Returns:
+    Returns
     --------
+
     results: Numpy structured array
 
        A numpy structured array containing [rmin, rmax, ravg, pimax, npairs]
@@ -184,36 +187,31 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
        (results, api_time). ``api_time`` measures only the time spent within
        the C library and ignores all python overhead.
 
-    Example:
+    Example
     --------
+
     >>> import Corrfunc
     >>> from Corrfunc.mocks import DDrppi_mocks
     >>> import math
     >>> from os.path import dirname, abspath, join as pjoin
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
                         "../xi_theory/tests/", "bins")
-    
     >>> N = 100000
     >>> boxsize = 420.0
     >>> X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
     >>> Y = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
     >>> Z = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    
     >>> CZ = np.sqrt(X*X + Y*Y + Z*Z)
     >>> inv_cz = 1.0/CZ
-
     >>> X *= inv_cz
     >>> Y *= inv_cz
     >>> Z *= inv_cz
-
     >>> DEC = 90.0 - np.arccos(Z)*180.0/math.pi
     >>> RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0
-
     >>> autocorr = 1
     >>> cosmology = 1
     >>> nthreads = 2
     >>> pimax = 40.0
-
     >>> results = DDrppi_mocks(autocorr, cosmology, nthreads,
                                pimax, binfile,
                                RA, DEC, CZ,
@@ -221,8 +219,6 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                                verbose=False,
                                is_comoving_dist=True,
                                output_rpavg=True)
-
-    >>> print("Results = {0}".format(results))
 
     """
     try:

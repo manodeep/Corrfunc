@@ -33,8 +33,9 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     ``xi_mocks/wtheta/wtheta`` for computing :math:`\\omega(\theta)` from
     the pair counts returned.
 
-    Parameters:
+    Parameters
     -----------
+
     autocorr: boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
         then the second set of particle positions are not required.
@@ -49,7 +50,8 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        contiguous but must be in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``rp`` values that provides the
-       bin-edges. For example, ``np.logspace(0.1, 10.0, 15)`` is a valid
+       bin-edges. For example,
+       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
        input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
 
@@ -146,7 +148,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-    Returns:
+    Returns
     --------
 
     results: Numpy structured array
@@ -157,8 +159,8 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        projected correlation function while ``npairs`` contains the number of
        unique pairs in that bin.
 
-    Example:
-    -------
+    Example
+    --------
     
     >>> import numpy as np
     >>> import time
@@ -171,11 +173,9 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     >>> nthreads = 4
     >>> seed = 42
     >>> np.random.seed(seed)
-    
     >>> RA = np.random.uniform(0.0, 2.0*pi, N)*180.0/pi
     >>> cos_theta = np.random.uniform(-1.0, 1.0, N)
     >>> DEC = 90.0 - np.arccos(cos_theta)*180.0/pi
-
     >>> autocorr = 1
     >>> results = DDtheta_mocks(autocorr, nthreads, binfile,
                                 RA, DEC,

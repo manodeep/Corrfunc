@@ -24,7 +24,7 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
     Returns a numpy structured array containing the probability of a
     sphere of radius up to ``rmax`` containing [0, num_pN-1] galaxies.
 
-    Parameters:
+    Parameters
     -----------
     
     rmax: double
@@ -41,7 +41,7 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
     
     num_pN: integer (>= 1)
        Governs how many unique pN's are to returned. If ``num_pN` is set to 1,
-       then only the vpf (p0) is returned. For `num_pN=2`, p0 and p1 are
+       then only the vpf (p0) is returned. For ``num_pN=2``, p0 and p1 are
        returned.
 
        More explicitly, the columns in the results look like the following:
@@ -93,7 +93,7 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-    Returns:
+    Returns
     --------
 
     results: Numpy structured array
@@ -110,8 +110,8 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
        (results, api_time). ``api_time`` measures only the time spent within
        the C library and ignores all python overhead.
 
-    Example:
-    -------
+    Example
+    --------
 
     >>> import numpy as np
     >>> from Corrfunc.theory import vpf
@@ -125,7 +125,6 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-
     >>> results, api_time = vpf(rmax, nbins, nspheres, num_pN, seed,
                                 X, Y, Z,
                                 verbose=True,

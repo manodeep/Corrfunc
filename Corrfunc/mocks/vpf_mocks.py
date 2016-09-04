@@ -27,7 +27,7 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
     Returns a numpy structured array containing the probability of a
     sphere of radius up to ``rmax`` containing [0, num_pN-1] galaxies.
 
-    Parameters:
+    Parameters
     -----------
     
     rmax: double
@@ -165,7 +165,7 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-    Returns:
+    Returns
     --------
 
     results: Numpy structured array
@@ -182,13 +182,12 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
        (results, api_time). ``api_time`` measures only the time spent within
        the C library and ignores all python overhead.
 
-    Example:
-    -------
+    Example
+    --------
 
     >>> import Corrfunc
     >>> import math
     >>> from os.path import dirname, abspath, join as pjoin
-
     >>> rmax = 10.0
     >>> nbins = 10
     >>> numbins_to_print = nbins
@@ -199,7 +198,6 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
     >>> centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
                              "../xi_mocks/tests/data/",
                              "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
-    
     >>> N = 100000
     >>> boxsize = 420.0
     >>> X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
@@ -210,10 +208,8 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
     >>> X *= inv_cz
     >>> Y *= inv_cz
     >>> Z *= inv_cz
-
     >>> DEC = 90.0 - np.arccos(Z)*180.0/math.pi
     >>> RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0
-    
     >>> results = vpf_mocks(rmax, nbins, nspheres, num_pN,
                             threshold_ngb, centers_file, cosmology,
                             RA, DEC, CZ,
