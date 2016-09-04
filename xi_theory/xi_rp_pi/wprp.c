@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     D1D2   = my_calloc(sizeof(*D1D2),ndat);
 
     i = 0 ;
-    while(fscanf(fpD1D2,"%lf %lf %lf %lf%*[^\n]",&D1D2[i],&ravg1[i],&logrp1[i],&pi1[i])!=EOF) {
+    while(fscanf(fpD1D2,"%lf %lf %lf %lf%*[^\n]",&logrp1[i],&pi1[i], &ravg1[i], &D1D2[i])!=EOF) {
         /* fprintf(stderr,"%lf %lf %lf %lf\n",D1D2[i],ravg1[i],logrp1[i],pi1[i]); */
         i++ ;
         XASSERT(i <= ndat, "Current line parsed = %d must be less than number of data points expected = %d\n"
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     D1R2=my_calloc(sizeof(*D1R2),ndat) ;
     i = 0 ;
 
-    while(fscanf(fpD1R2,"%lf%*[^\n]",&D1R2[i])!=EOF) {
+    while(fscanf(fpD1R2,"%*f %*f %*f %lf%*[^\n]",&D1R2[i])!=EOF) {
         i++ ;
         XASSERT(i <= ndat, "Current line parsed = %d must be less than number of data points expected = %d\n"
                 "nrpbin = %d npibin = %d", i, ndat, nrpbin, npibin);
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 
     D2R1=my_calloc(sizeof(*D2R1),ndat);
     i = 0 ;
-    while(fscanf(fpD2R1,"%lf%*[^\n]",&D2R1[i])!=EOF) {
+    while(fscanf(fpD2R1,"%*f %*f %*f %lf%*[^\n]",&D2R1[i])!=EOF) {
         i++ ;
         XASSERT(i <= ndat, "Current line parsed = %d must be less than number of data points expected = %d\n"
                 "nrpbin = %d npibin = %d", i, ndat, nrpbin, npibin);
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     /*---Read-D1R2-file-----------------------------------*/
     R1R2=my_calloc(sizeof(*R1R2),ndat) ;
     i = 0 ;
-    while(fscanf(fpR1R2,"%lf%*[^\n]",&R1R2[i])!=EOF) {
+    while(fscanf(fpR1R2,"%*f %*f %*f %lf%*[^\n]",&R1R2[i])!=EOF) {
         i++ ;
         XASSERT(i <= ndat, "Current line parsed = %d must be less than number of data points expected = %d\n"
                 "nrpbin = %d npibin = %d", i, ndat, nrpbin, npibin);
