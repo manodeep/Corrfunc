@@ -36,15 +36,14 @@ EXTRA_INCL:= $(GSL_CFLAGS) $(LIBRARY_INCL)
 
 $(TARGET):$(C_LIBRARIES)
 
-$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/*.c $(DDrppi_mocks_DIR)/*.c.src $(DDrppi_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_mocks_DIR) libs
 
-$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(WTHETA_DIR)/*.c $(WTHETA_DIR)/*.c.src $(WTHETA_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(WTHETA_DIR) libs
 
-$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/*.c $(VPF_mocks_DIR)/*.c.src $(VPF_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(VPF_mocks_DIR) libs
-
 
 clean:
 	$(RM) $(TARGET) $(TARGETOBJS)

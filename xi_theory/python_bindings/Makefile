@@ -43,20 +43,19 @@ $(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Make
 $(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 
-
-$(DD_DIR)/lib$(DD_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+$(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/*.c $(DD_DIR)/*.c.src $(DD_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DD_DIR) libs
 
-$(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+$(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(DDrppi_DIR)/*.c $(DDrppi_DIR)/*.c.src $(DDrppi_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_DIR) libs
 
-$(WP_DIR)/lib$(WP_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+$(WP_DIR)/lib$(WP_LIB).a: $(WP_DIR)/*.c $(WP_DIR)/*.c.src $(WP_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(WP_DIR) libs
 
-$(XI_DIR)/lib$(XI_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+$(XI_DIR)/lib$(XI_LIB).a: $(XI_DIR)/*.c $(XI_DIR)/*.c.src $(XI_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(XI_DIR) libs
 
-$(VPF_DIR)/lib$(VPF_LIB).a: $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+$(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/*.c $(VPF_DIR)/*.c.src $(VPF_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(VPF_DIR) libs
 
 
