@@ -396,7 +396,9 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     }
 
     /* Is the min. requested separation 0.0 ?*/
-    if(rupp[0] == 0.0) {
+    /* The comparison is '<=' rather than '==' only to silence
+       the compiler  */
+    if(rupp[0] <= 0.0) {
         /* Then, add all the self-pairs. This ensures that 
            a cross-correlation with two identical datasets 
            produces the same result as the auto-correlation  */
