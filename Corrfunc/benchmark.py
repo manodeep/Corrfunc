@@ -32,6 +32,7 @@ except ImportError:
     autojit = None
     
 from Corrfunc.theory import DD
+from Corrfunc.utils import read_catalog
 import time
 
 
@@ -218,9 +219,11 @@ def main():
     #     pairwise_numba = autojit(pairwise_python)
     #     functions_to_test.append(pairwise_numba)
     #     function_names.append("Numba")
-        
+
+    X, Y, Z = read_catalog()
     npts = [100, 500, 1e3, 1e4, 1e5, 5e5]
     npts = [int(i) for i in npts]
+    npts[npts > len(X)] = len(X)
     print("## Npts            ", end="")
     for ifunc in function_names:
         print(" {0:16s}".format(ifunc), end="")
@@ -228,11 +231,12 @@ def main():
     print("")
 
     for n in npts:
-        npts1 = n
-        npts2 = n
-        data1 = np.random.random(npts1*3).reshape(npts1, 3)
-        data2 = np.random.random(npts2*3).reshape(npts2, 3)
-        rbins = np.linspace(0.001, 0.05, 10)
+        X_sample = np.random.choice(X, n)
+        Y_sample = np.random.choice(Y, n)
+        Z_sample = np.random.choice(Z, n)
+        data1 = np.array([X_sample, Y_sample, Z_sample]).reshape(n, 3)
+        data2 = data1
+        rbins = np.logspace(0.1, np.log10(24.0), 10)
 
         period = None
         print("{0:7d}   ".format(n), end="")
