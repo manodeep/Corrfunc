@@ -98,7 +98,6 @@ countpairs_rp_pi_func_ptr_DOUBLE countpairs_rp_pi_driver_DOUBLE(const struct con
       return NULL;
     }
     function = allfunctions[function_dispatch];
-    initialized = 1;
     old_isa = options->instruction_set;
     
     return function;
