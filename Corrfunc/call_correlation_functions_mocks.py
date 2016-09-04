@@ -2,98 +2,56 @@
 # -*- coding: utf-8 -*-
 
 """
-Example python code to call the 2 mocks correlation function
-routines from python. (The codes are written in C)
+Example python code to call the mocks correlation function
+extensions from python. (The codes are written in C)
 
 Author: Manodeep Sinha <manodeep@gmail.com>
 
 Requires: numpy
 
 """
-from __future__ import print_function
-from os import path as path
-import re
-import time
-import numpy as np
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
-
-from Corrfunc import read_text_file
-from Corrfunc._countpairs_mocks import countpairs_rp_pi_mocks as rp_pi_mocks
-from Corrfunc._countpairs_mocks import countpairs_theta_mocks as theta_mocks
-from Corrfunc._countpairs_mocks import countspheres_vpf_mocks as vpf_mocks
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 
 def main():
+    from os.path import dirname, abspath, join as pjoin
+    import numpy as np
+    import time
+    import Corrfunc
+    from Corrfunc.utils import read_catalog
+    from Corrfunc._countpairs_mocks import\
+        countpairs_rp_pi_mocks as rp_pi_mocks_extn,\
+        countpairs_theta_mocks as theta_mocks_extn,\
+        countspheres_vpf_mocks as vpf_mocks_extn
+    
     tstart = time.time()
-    file = path.join(path.dirname(path.abspath(__file__)),
-                     "../xi_mocks/tests/data/",
-                     "Mr19_mock_northonly.rdcz.dat")
+    filename = pjoin(dirname(abspath(Corrfunc.__file__)),
+                     "../xi_mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
 
-    # The following section to figure out data-types seems to be no longer
-    # required.
-    # Figure out the datatype, use the header file in the include directory
-    # because that is most likely correct (common.mk might have been modified
-    # but not recompiled)
-    include_file = path.join(path.dirname(path.abspath(__file__)),
-                             "../include/", "countpairs_rp_pi_mocks.h")
-    try:
-        includes = read_text_file(include_file)
-    except (IOError, OSError) as e:
-        print("ERROR: Could not find file {0} error = {1}.\n \
-        Please compile the `Corrfunc' library directly before \
-        running python setup.py install"
-              .format(include_file, e))
-        raise
-
-    vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes, re.I).group(1)
-    allowed_types = {"float": np.float32, "double": np.float}
-    if vector_type not in list(allowed_types.keys()):
-        msg = "Error: Unknown precision={0} found in header file {1}. \
-        Allowed types are `{2}'"\
-        .format(vector_type, include_file, allowed_types)
-
-        raise TypeError(msg)
-    dtype = allowed_types[vector_type]
-    dtype = np.float32
-    # Check if pandas is available - much faster to read in the
-    # data through pandas
     t0 = time.time()
-    print("Reading in the data...")
-    if pd is not None:
-        df = pd.read_csv(file, header=None, engine="c",
-                         dtype={"x": dtype, "y": dtype, "z": dtype},
-                         delim_whitespace=True)
-        ra = np.asarray(df[0], dtype=dtype)
-        dec = np.asarray(df[1], dtype=dtype)
-        cz = np.asarray(df[2], dtype=dtype)
-    else:
-        ra, dec, cz = np.genfromtxt(file, dtype=dtype, unpack=True)
-
+    ra, dec, cz = read_catalog(filename)
     t1 = time.time()
+    print("RA min  = {0} max = {1}".format(np.min(ra), np.max(ra)))
+    print("DEC min = {0} max = {1}".format(np.min(dec), np.max(dec)))
+    print("cz min  = {0} max = {1}".format(np.min(cz), np.max(cz)))
     print("Done reading the data - time taken = {0:10.1f} seconds"
           .format(t1 - t0))
     print("Beginning Correlation functions calculations")
 
     nthreads = 4
     pimax = 40.0
-    binfile = path.join(path.dirname(path.abspath(__file__)),
-                        "../xi_mocks/tests/", "bins")
+    binfile = pjoin(dirname(abspath(__file__)),
+                    "../xi_mocks/tests/", "bins")
     autocorr = 1
     numbins_to_print = 5
     cosmology = 1
 
-    print("RA min  = {0:10.3f} max = {1:10.3f}".format(np.min(ra), np.max(ra)))
-    print("DEC min = {0:10.3f} max = {1:10.3f}"
-          .format(np.min(dec), np.max(dec)))
-    print("cz min  = {0:10.3f} max = {1:10.3f}".format(np.min(cz), np.max(cz)))
-
     print("\nRunning 2-D correlation function xi(rp,pi)")
-    results_DDrppi = rp_pi_mocks(autocorr, cosmology, nthreads,
-                                 pimax, binfile,
-                                 ra, dec, cz, ra, dec, cz)
+    results_DDrppi, _ = rp_pi_mocks_extn(autocorr, cosmology, nthreads,
+                                         pimax, binfile,
+                                         ra, dec, cz,
+                                         output_rpavg=True, verbose=True)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg     pi_upper     npairs")
@@ -102,13 +60,16 @@ def main():
         items = results_DDrppi[ibin]
         print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
               .format(items[0], items[1], items[2], items[3], items[4]))
+
     print("-----------------------------------------------------------")
 
-    binfile = path.join(path.dirname(path.abspath(__file__)),
-                        "../xi_mocks/tests/", "angular_bins")
+    binfile = pjoin(dirname(abspath(__file__)),
+                    "../xi_mocks/tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")
-    results_wtheta = theta_mocks(autocorr, cosmology, nthreads, binfile,
-                                 ra, dec, ra, dec)
+    results_wtheta, _ = theta_mocks_extn(autocorr, nthreads, binfile,
+                                         ra, dec, ra, dec,
+                                         output_thetaavg=True, fast_acos=True,
+                                         verbose=1)
     print("\n#         ******  wtheta: first {0} bins  *******        "
           .format(numbins_to_print))
     print("#      thetamin        thetamax       thetaavg      npairs")
@@ -127,12 +88,14 @@ def main():
     num_spheres = 10000
     num_pN = 6
     threshold_neighbors = 1  # does not matter since we have the centers
-    centers_file = path.join(path.dirname(path.abspath(__file__)),
-                             "../xi_mocks/tests/data/",
-                             "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
-    results_vpf = vpf_mocks(rmax, nbin, num_spheres, num_pN,
-                            threshold_neighbors, centers_file, cosmology,
-                            ra, dec, cz, ra, dec, cz)
+    centers_file = pjoin(dirname(abspath(__file__)),
+                         "../xi_mocks/tests/data/",
+                         "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
+    results_vpf, _ = vpf_mocks_extn(rmax, nbin, num_spheres, num_pN,
+                                    threshold_neighbors, centers_file,
+                                    cosmology,
+                                    ra, dec, cz, ra, dec, cz, verbose=True)
+    
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))
     print('#       r    ', end="")
@@ -159,7 +122,6 @@ def main():
     tend = time.time()
     print("Done with all the MOCK clustering calculations. Total time \
     taken = {0:0.2f} seconds.".format(tend - tstart))
-
 
 if __name__ == "__main__":
     main()
