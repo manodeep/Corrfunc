@@ -167,6 +167,10 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     }
     /* Always print a message saying "brute-force" is running*/
     fprintf(stderr,"Running brute force algorithm\n");
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
     const int32_t need_thetaavg = options->need_avg_sep;
     uint64_t npairs[nthetabin];
     DOUBLE thetaavg[nthetabin];
@@ -242,6 +246,11 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
             results->theta_avg[i] = thetaavg[i];
         }
     }
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
     
     return EXIT_SUCCESS;
 }
@@ -253,7 +262,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                   const int autocorr,
                                   const char *binfile,
                                   results_countpairs_theta *results,
-                                  const struct config_options *input_options)
+                                  struct config_options *options)
 {
     if(ND1 == 0 || ND2 == 0) {
         fprintf(stderr,"Warning: Received 0 particles in at least one of the arrays. len(array1) = %"PRId64" len(array2) = %"PRId64"\n",
@@ -269,15 +278,18 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         return EXIT_SUCCESS;
     }
 
-    if(input_options->float_type != sizeof(DOUBLE)) {
+    if(options->float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
-                __FUNCTION__, sizeof(DOUBLE), input_options->float_type);
+                __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
 
-    struct config_options options = *input_options;
-    options.sort_on_z = 1;
-    options.autocorr=autocorr;
+    options->sort_on_z = 1;
+    options->autocorr=autocorr;
 
     //check the ra-dec inputs (with braces to restrict scope of int status)
     {
@@ -314,7 +326,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     }
 
 #if defined(_OPENMP)
-    if((options.link_in_ra == 0) && (dec_refine_factor < numthreads)) {
+    if((options->link_in_ra == 0) && (dec_refine_factor < numthreads)) {
         dec_refine_factor=numthreads;
     }
 #endif
@@ -360,7 +372,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
     }
 
-    if(options.link_in_dec==0 && options.link_in_ra==0) {
+    if(options->link_in_dec==0 && options->link_in_ra==0) {
         //this is equivalent to brute force calculating on the entire dataset
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
@@ -368,7 +380,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                                theta_upp,
                                                                costheta_upp, 
                                                                results,
-                                                               &options);
+                                                               options);
         free(X1);free(Y1);free(Z1);
         if(autocorr == 0) {
             free(X2);free(Y2);free(Z2);
@@ -392,7 +404,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     cellarray_mocks_index_wtheta_DOUBLE *lattice1=NULL,*lattice2=NULL;
     int nmesh_dec=0, max_nmesh_ra=0;
     int64_t totncells;
-    if(options.link_in_ra) {
+    if(options->link_in_ra) {
         int *nmesh_grid_ra=NULL;
         lattice1 = gridlink_mocks_theta_ra_dec_DOUBLE(ND1, ra1, dec1, X1, Y1, Z1,
                                                       ra_min, ra_max,
@@ -405,7 +417,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                       &nmesh_dec,
                                                       &max_nmesh_ra,
                                                       &nmesh_grid_ra,
-                                                      &options);
+                                                      options);
         int status = lattice1 == NULL ? EXIT_FAILURE: EXIT_SUCCESS;
         if(lattice1 != NULL) {
             lattice2 = lattice1;
@@ -424,7 +436,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                               &nmesh_dec2,
                                                               &max_nmesh_ra2,
                                                               &nmesh_grid_ra2,
-                                                              &options);
+                                                              options);
                 
                 if(lattice2 == NULL) {
                     status = EXIT_FAILURE;
@@ -472,8 +484,10 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         
         if(status != EXIT_SUCCESS) {
             /* Cleanup memory here if switching to brute force */
-            free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
-            if(autocorr == 0) {
+            if(lattice1 != NULL) {
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+            }
+            if(autocorr == 0 && lattice2 != NULL) {
                 free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
             }
             lattice1 = NULL; lattice2 = NULL;
@@ -486,7 +500,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                    dec_refine_factor,
                                                    thetamax,
                                                    &totncells,
-                                                   &options);
+                                                   options);
         int status = lattice1 == NULL ? EXIT_FAILURE: EXIT_SUCCESS;
         if(lattice1 != NULL) {
             /* Do the same for lattice2 */
@@ -499,7 +513,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                            dec_refine_factor,
                                                            thetamax,
                                                            &totncells_2,
-                                                           &options);
+                                                           options);
                 if(lattice2 != NULL) {
                     if( totncells != totncells_2) {
                         fprintf(stderr,"ERROR: In %s> The two sets of 3-D lattices do not have identical bins. First has dims (%"PRId64") while second has (%"PRId64")\n",
@@ -520,8 +534,10 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             
         if(status != EXIT_SUCCESS) {
             /* Cleanup memory here if aborting */
-            free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
-            if(autocorr == 0) {
+            if(lattice1 != NULL) {
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+            }
+            if(autocorr == 0 && lattice2 != NULL) {
                 free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
             }
             lattice1 = NULL; lattice2 = NULL;
@@ -540,7 +556,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                                theta_upp,
                                                                costheta_upp, 
                                                                results,
-                                                               &options);
+                                                               options);
         free(X1);free(Y1);free(Z1);
         if(autocorr == 0) {
             free(X2);free(Y2);free(Z2);
@@ -565,7 +581,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
 
     /* runtime dispatch - get the function pointer */
-    countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_function_DOUBLE = countpairs_theta_mocks_driver_DOUBLE(&options);
+    countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_function_DOUBLE = countpairs_theta_mocks_driver_DOUBLE(options);
     if(countpairs_theta_mocks_function_DOUBLE == NULL) {
         free(theta_upp);
         free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
@@ -579,20 +595,20 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nthetabin);
     DOUBLE **all_thetaavg = NULL;
-    if(options.need_avg_sep) {
+    if(options->need_avg_sep) {
         all_thetaavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nthetabin);
     }
 #else
     uint64_t npairs[nthetabin];
     for(int i=0;i<nthetabin;i++) npairs[i]=0;
     DOUBLE thetaavg[nthetabin];
-    if(options.need_avg_sep) {
+    if(options->need_avg_sep) {
         for(int i=0;i<nthetabin;i++) thetaavg[i] = ZERO;
     }
 #endif
 
     int interrupted=0, numdone=0,abort_status=EXIT_SUCCESS;
-    if(options.verbose) {
+    if(options->verbose) {
         init_my_progressbar(totncells,&interrupted);
     }
 
@@ -605,7 +621,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         DOUBLE thetaavg[nthetabin];
         for(int i=0;i<nthetabin;i++) {
             npairs[i] = 0;
-            if(options.need_avg_sep) {
+            if(options->need_avg_sep) {
                 thetaavg[i] = ZERO;
             }
         }
@@ -623,7 +639,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
                 
                 /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
-                if(options.verbose) {
+                if(options->verbose) {
 #if defined(_OPENMP)
                     if (omp_get_thread_num() == 0)
 #endif
@@ -648,13 +664,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 if(autocorr == 1) {
                     int same_cell = 1;
                     DOUBLE *this_thetaavg = NULL;
-                    if(options.need_avg_sep) {
+                    if(options->need_avg_sep) {
                         this_thetaavg = thetaavg;
                     }
                     const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1,
                                                                               N1, x1, y1, z1,
                                                                               same_cell,
-                                                                              options.fast_acos,
+                                                                              options->fast_acos,
                                                                               costhetamax, costhetamin, nthetabin,
                                                                               costheta_upp,
                                                                               this_thetaavg, npairs);
@@ -676,13 +692,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                     DOUBLE *z2 = second->z;
                     int same_cell=0;
                     DOUBLE *this_thetaavg = NULL;
-                    if(options.need_avg_sep) {
+                    if(options->need_avg_sep) {
                         this_thetaavg = thetaavg;
                     }
                     const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1,
                                                                               N2, x2, y2, z2,
                                                                               same_cell,
-                                                                              options.fast_acos,
+                                                                              options->fast_acos,
                                                                               costhetamax, costhetamin, nthetabin,
                                                                               costheta_upp,
                                                                               this_thetaavg, npairs);
@@ -697,7 +713,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 #if defined(_OPENMP)
         for(int j=0;j<nthetabin;j++) {
             all_npairs[tid][j] = npairs[j];
-            if(options.need_avg_sep) {
+            if(options->need_avg_sep) {
                 all_thetaavg[tid][j] = thetaavg[j];
             }
         }
@@ -714,14 +730,14 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         free(theta_upp);
 #if defined(_OPENMP)
         matrix_free((void **) all_npairs, numthreads);
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             matrix_free((void **) all_thetaavg, numthreads);
         }
 #endif
         return EXIT_FAILURE;
     }
 
-    if(options.verbose) {
+    if(options->verbose) {
         finish_myprogressbar(&interrupted);
     }
 
@@ -731,20 +747,20 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     DOUBLE thetaavg[nthetabin];
     for(int i=0;i<nthetabin;i++) {
         npairs[i] = 0;
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             thetaavg[i] = ZERO;
         }
     }
     for(int i=0;i<numthreads;i++) {
         for(int j=0;j<nthetabin;j++) {
             npairs[j] += all_npairs[i][j];
-            if(options.need_avg_sep) {
+            if(options->need_avg_sep) {
                 thetaavg[j] += all_thetaavg[i][j];
             }
         }
     }
     matrix_free((void **) all_npairs, numthreads);
-    if(options.need_avg_sep) {
+    if(options->need_avg_sep) {
         matrix_free((void **) all_thetaavg, numthreads);
     }
 #endif//USE_OMP
@@ -756,13 +772,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         const DOUBLE dbl_fac = (DOUBLE) 2.0;
         for(int i=0;i<nthetabin;i++) {
             npairs[i] *= int_fac;
-            if(options.need_avg_sep) {
+            if(options->need_avg_sep) {
                 thetaavg[i] *= dbl_fac;
             }
         }
     }
 
-    if(options.need_avg_sep) {
+    if(options->need_avg_sep) {
         for(int i=1;i<nthetabin;i++) {
             if(npairs[i] > 0) {
                 thetaavg[i] /= (DOUBLE) npairs[i];
@@ -786,10 +802,16 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         results->npairs[i] = npairs[i];
         results->theta_upp[i] = theta_upp[i];
         results->theta_avg[i] = ZERO;
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             results->theta_avg[i] = thetaavg[i];
         }
     }
     free(theta_upp);
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
+    
     return EXIT_SUCCESS;
 }

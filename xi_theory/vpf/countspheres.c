@@ -34,7 +34,7 @@ int countspheres(const int64_t np, void * restrict X, void * restrict Y, void * 
                  const int num_pN,
                  unsigned long seed,
                  results_countspheres *results,
-                 const struct config_options *options)
+                 struct config_options *options)
 {
 
     ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size

@@ -34,7 +34,7 @@ extern "C" {
                           const int autocorr,
                           const char *binfile,
                           results_countpairs *results,
-                          const struct config_options *options);
+                          struct config_options *options);
 
 #ifdef __cplusplus
 }

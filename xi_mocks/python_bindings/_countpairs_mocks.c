@@ -338,6 +338,7 @@ static PyObject *countpairs_mocks_error_out(PyObject *module, const char *msg)
     
     struct module_state *st = GETSTATE(module);
     PyErr_SetString(st->error, msg);
+    PyErr_Print();
     Py_RETURN_NONE;
 }
 
@@ -405,6 +406,26 @@ PyObject *PyInit__countpairs_mocks(void)
 #endif
 
 }
+
+static int print_kwlist_into_msg(char *msg, const size_t totsize, size_t len, char *kwlist[], const size_t nitems)
+{
+    for(size_t i=0;i<nitems;i++) {
+        
+        if(len+strlen(kwlist[i]) >= totsize-2) {
+            return EXIT_FAILURE;
+        }
+        
+        memcpy(msg+len, kwlist[i], strlen(kwlist[i]));
+        len += strlen(kwlist[i]);
+        msg[len] = ',';
+        msg[len+1] = ' ';
+        len += 2;
+    }
+    
+    msg[len]='\0';
+    return EXIT_SUCCESS;
+}
+
 
 static int64_t check_dims_and_datatype(PyObject *module, PyArrayObject *x1_obj, PyArrayObject *y1_obj, PyArrayObject *z1_obj, size_t *element_size)
 {
@@ -584,12 +605,12 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     struct config_options options = get_config_options();
     options.is_comoving_dist = 0;
     options.verbose = 0;
-    options.instruction_set = AVX;
+    options.instruction_set = -1;
     options.periodic = 0;
     options.fast_divide=0;
     options.c_api_timer = 0;
 
-    int autocorr=0;
+    int autocorr=1;
     int nthreads=4;
     int cosmology=1;
     double pimax;
@@ -601,23 +622,22 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         "nthreads",
         "pimax",
         "binfile",
-        "X1",
-        "Y1",
-        "Z1",
-        "X2",
-        "Y2",
-        "Z2",
+        "RA1",
+        "DEC1",
+        "CZ1",
+        "RA2",
+        "DEC2",
+        "CZ2",
         "is_comoving_dist",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_rpavg",
         "fast_divide",
         "c_api_timer",
-        "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
+        "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK (enum) */
         NULL
     };
 
-
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!iiiiiii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!bbbbbi", kwlist,
                                        &autocorr,&cosmology,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -633,6 +653,22 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                        &(options.instruction_set))
 
          ) {
+
+        PyObject_Print(kwargs, stdout, 0);
+        fprintf(stdout, "\n");
+
+        char msg[1024];
+        int len=snprintf(msg, 1024,"ArgumentError: In DDrppi_mocks> Could not parse the arguments. Input parameters are: \n");
+        
+        /* How many keywords do we have? Subtract 1 because of the last NULL */
+        const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
+        int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
+        if(status != EXIT_SUCCESS) {
+            fprintf(stderr,"Error message does not contain all of the keywords\n");
+        }
+        
+        countpairs_mocks_error_out(module,msg);
+        
         Py_RETURN_NONE;
     }
 
@@ -724,6 +760,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     NPY_BEGIN_THREADS;
 
     results_countpairs_mocks results;
+    double c_api_time = 0.0;
     int status = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
                                   ND2,phiD2,thetaD2,czD2,
                                   nthreads,
@@ -733,7 +770,9 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                   cosmology,
                                   &results,
                                   &options);
-
+    if(options.c_api_timer) {
+        c_api_time = options.c_api_time;
+    }
     NPY_END_THREADS;
     
     /* Clean up. */
@@ -774,7 +813,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         rlow=results.rupp[i];
     }
     free_results_mocks(&results);
-    return ret;
+    return Py_BuildValue("(Od)", ret, c_api_time);
 }
 
 static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -794,7 +833,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     int autocorr=0;
     struct config_options options = get_config_options();
     options.verbose=0;
-    options.instruction_set=AVX;
+    options.instruction_set=-1;
     options.link_in_dec=1;
     options.link_in_ra=1;
     options.fast_acos=0;
@@ -818,7 +857,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!iiiiiii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!bbbbbbi", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -833,6 +872,19 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                        &(options.instruction_set))
 
          ) {
+        PyObject_Print(kwargs, stdout, 0);
+        fprintf(stdout, "\n");
+
+        char msg[1024];
+        int len=snprintf(msg, 1024,"ArgumentError: In DDtheta_mocks> Could not parse the arguments. Input parameters are: \n");
+        
+        /* How many keywords do we have? Subtract 1 because of the last NULL */
+        const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
+        int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
+        if(status != EXIT_SUCCESS) {
+            fprintf(stderr,"Error message does not contain all of the keywords\n");
+        }
+        countpairs_mocks_error_out(module,msg);
         Py_RETURN_NONE;
     }
     options.autocorr=autocorr;
@@ -847,7 +899,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype_ra_dec(module, x1_obj, y1_obj, &element_size);
     if(ND1 == -1) {
-        //Error has already been set -> simply return 
+        //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
 
@@ -917,6 +969,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
 
     results_countpairs_theta results;
     options.float_type = element_size;
+    double c_api_time=0.0;
     int status = countpairs_theta_mocks(ND1,phiD1,thetaD1,
                                         ND2,phiD2,thetaD2,
                                         nthreads,
@@ -924,7 +977,11 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                         binfile,
                                         &results,
                                         &options);
+    if(options.c_api_timer) {
+        c_api_time = options.c_api_time;
+    }
     NPY_END_THREADS;
+
     
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);//x1/y1 (representing ra1,dec1) should not be NULL
@@ -955,7 +1012,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         rlow=results.theta_upp[i];
     }
     free_results_countpairs_theta(&results);
-    return ret;
+    return Py_BuildValue("(Od)", ret, c_api_time);
 }
 
 
@@ -982,7 +1039,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     struct config_options options = get_config_options();
     options.is_comoving_dist = 0;
     options.verbose=0;
-    options.instruction_set=AVX;
+    options.instruction_set=-1;
     options.c_api_timer=0;
     static char *kwlist[] = {
         "rmax",
@@ -1006,12 +1063,12 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|iiii", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|bbbi", kwlist,
                                        &rmax,&nbin,&num_spheres,&num_pN,&threshold_neighbors,&centers_file,&cosmology,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
                                        &PyArray_Type,&z1_obj,
-                                       &PyArray_Type,&x2_obj,//optional parameters -> if autocorr == 1, not checked; required if autocorr=0
+                                       &PyArray_Type,&x2_obj,
                                        &PyArray_Type,&y2_obj,
                                        &PyArray_Type,&z2_obj,
                                        &(options.is_comoving_dist),
@@ -1020,6 +1077,21 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
                                        &(options.instruction_set))
 
          ) {
+
+        PyObject_Print(kwargs, stdout, 0);
+        fprintf(stdout, "\n");
+
+        char msg[1024];
+        int len=snprintf(msg, 1024,"ArgumentError: In vpf_mocks> Could not parse the arguments. Input parameters are: \n");
+        
+        /* How many keywords do we have? Subtract 1 because of the last NULL */
+        const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
+        int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
+        if(status != EXIT_SUCCESS) {
+            fprintf(stderr,"Error message does not contain all of the keywords\n");
+        }
+        countpairs_mocks_error_out(module,msg);
+        
         Py_RETURN_NONE;
     }
     /*This is for the fastest isa */
@@ -1097,6 +1169,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     
     results_countspheres_mocks results;
     options.float_type = element_size;
+    double c_api_time = 0.0;
     int status = countspheres_mocks(ND1, phiD1,thetaD1, czD1,
                                     ND2, phiD2,thetaD2, czD2,
                                     threshold_neighbors,
@@ -1106,7 +1179,9 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
                                     cosmology,
                                     &results,
                                     &options);
-    
+    if(options.c_api_timer) {
+        c_api_time = options.c_api_time;
+    }
     NPY_END_THREADS;
 
     /* Clean up. */
@@ -1149,5 +1224,5 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     }
     free_results_countspheres_mocks(&results);
 
-    return ret;
+    return Py_BuildValue("(Od)", ret, c_api_time);
 }

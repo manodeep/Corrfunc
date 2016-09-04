@@ -34,7 +34,7 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
                const int autocorr,
                const char *binfile,
                results_countpairs *results,
-               const struct config_options *options)
+               struct config_options *options)
 {
 
     

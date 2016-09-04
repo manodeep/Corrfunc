@@ -110,24 +110,29 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                          const char *binfile,
                          const double pimax,
                          results_countpairs_wp *results,
-                         const struct config_options *input_options)
+                         struct config_options *options)
 {
+    if(options->float_type != sizeof(DOUBLE)) {
+        fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
+                __FUNCTION__, sizeof(DOUBLE), options->float_type);
+        return EXIT_FAILURE;
+    }
 
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
+
+    
 #if defined(_OPENMP)
     omp_set_num_threads(numthreads);
 #else
     (void) numthreads;
 #endif    
 
-    struct config_options options = *input_options;
-    options.periodic = 1;
-    options.sort_on_z = 1;
-    options.autocorr = 1;
-    if(options.float_type != sizeof(DOUBLE)) {
-        fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
-                __FUNCTION__, sizeof(DOUBLE), options.float_type);
-        return EXIT_FAILURE;
-    }
+    options->periodic = 1;
+    options->sort_on_z = 1;
+    options->autocorr = 1;
     
     int bin_refine_factor=2,zbin_refine_factor=1;
     int nmesh_x, nmesh_y, nmesh_z;
@@ -149,7 +154,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     double rpmin,rpmax;
     int nrpbins;
     setup_bins(binfile,&rpmin,&rpmax,&nrpbins,&rupp);
-    if( ! (rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && nrpbins > 0)) {
+    if( ! (rpmin >=0 && rpmax > 0.0 && rpmin < rpmax && nrpbins > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rpmin, rpmax, nrpbins);
         return EXIT_FAILURE;
@@ -170,7 +175,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 
     //set up the 3-d grid structure. Each element of the structure contains a
     //pointer to the cellarray structure that itself contains all the points
-    cellarray_index_particles_DOUBLE *lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, &options);
+    cellarray_index_particles_DOUBLE *lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
     if(lattice == NULL) {
       return EXIT_FAILURE;
     }
@@ -179,7 +184,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         bin_refine_factor *=2;
         zbin_refine_factor *=2;
         free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-        lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, &options);
+        lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
         if(lattice == NULL) {
           return EXIT_FAILURE;
         }
@@ -187,7 +192,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
     /* Setup pointers for the neighbouring cells */
     {
-        int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options.autocorr, options.periodic);//options.autocorr == 1 and options.periodic == 1
+        int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options->autocorr, options->periodic);//options->autocorr == 1 and options->periodic == 1
         if(status != EXIT_SUCCESS) {
             free_cellarray_index_particles_DOUBLE(lattice, totncells);
             free(rupp);
@@ -196,7 +201,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     }
     
     /* runtime dispatch - get the function pointer */
-    wp_func_ptr_DOUBLE wp_function_DOUBLE = wp_driver_DOUBLE(&options);
+    wp_func_ptr_DOUBLE wp_function_DOUBLE = wp_driver_DOUBLE(options);
     if(wp_function_DOUBLE == NULL) {
         free_cellarray_index_particles_DOUBLE(lattice, totncells);
         free(rupp);
@@ -206,13 +211,13 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbins);
     DOUBLE **all_rpavg = NULL;
-    if(options.need_avg_sep) {
+    if(options->need_avg_sep) {
         all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), numthreads, nrpbins);
     }
-    if(all_npairs == NULL || (options.need_avg_sep && all_rpavg == NULL)) {
+    if(all_npairs == NULL || (options->need_avg_sep && all_rpavg == NULL)) {
         free_cellarray_index_particles_DOUBLE(lattice, totncells);
         matrix_free((void **) all_npairs, numthreads);
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             matrix_free((void **) all_rpavg, numthreads);
         }
         free(rupp);
@@ -220,11 +225,11 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     }
 
 #else//sequential mode follows
-    uint64_t npair[nrpbins];
+    uint64_t npairs[nrpbins];
     DOUBLE rpavg[nrpbins];
     for(int i=0;i<nrpbins;i++) {
-      npair[i]=0;
-      if(options.need_avg_sep) {
+      npairs[i]=0;
+      if(options->need_avg_sep) {
         rpavg[i]=(DOUBLE) 0.0;
       }
     }
@@ -233,7 +238,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     int abort_status = EXIT_SUCCESS;
     int interrupted=0;
     int64_t numdone=0;
-    if(options.verbose) {
+    if(options->verbose) {
         init_my_progressbar(totncells,&interrupted);
     }
 
@@ -242,12 +247,12 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 #pragma omp parallel shared(numdone, abort_status, interrupt_status_wp_DOUBLE)
     {
         const int tid = omp_get_thread_num();
-        uint64_t npair[nrpbins];
+        uint64_t npairs[nrpbins];
         for(int i=0;i<nrpbins;i++) {
-            npair[i]=0;
+            npairs[i]=0;
         }
         DOUBLE rpavg[nrpbins];
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             for(int i=0;i<nrpbins;i++) {
                 rpavg[i]=0.0;
             }
@@ -263,7 +268,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 #endif
             if(abort_status == EXIT_SUCCESS && interrupt_status_wp_DOUBLE == EXIT_SUCCESS) {
                 
-                if(options.verbose) {
+                if(options->verbose) {
 #if defined(_OPENMP)
                     if (omp_get_thread_num() == 0)
 #endif
@@ -288,22 +293,17 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                 DOUBLE *y1 = first->y;
                 DOUBLE *z1 = first->z;
                 const int64_t N1 = first->nelements;
-                int status;
-                if(options.need_avg_sep) {
-                    status = wp_function_DOUBLE(x1, y1, z1, N1,
+                DOUBLE *this_rpavg = NULL;
+                if(options->need_avg_sep) {
+                    this_rpavg = rpavg;
+                }
+
+                int status = wp_function_DOUBLE(x1, y1, z1, N1,
                                                 x1, y1, z1, N1, same_cell,
                                                 sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
                                                 ZERO, ZERO, ZERO
-                                                ,rpavg
-                                                ,npair);
-                } else {
-                  status = wp_function_DOUBLE(x1, y1, z1, N1,
-                                              x1, y1, z1, N1, same_cell,
-                                              sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                              ZERO, ZERO, ZERO
-                                              ,NULL
-                                              ,npair);
-                }
+                                                ,this_rpavg
+                                                ,npairs);
                 /* This actually causes a race condition under OpenMP - but mostly 
                    I care that an error occurred - rather than the exact value of 
                    the error status */
@@ -319,21 +319,12 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                     const DOUBLE off_ywrap = first->ywrap[ngb];
                     const DOUBLE off_zwrap = first->zwrap[ngb];
                     same_cell = 0;
-                    if(options.need_avg_sep) {
-                        status = wp_function_DOUBLE(x1, y1, z1, N1,
-                                                    x2, y2, z2, N2, same_cell,
-                                                    sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                                    off_xwrap, off_ywrap, off_zwrap
-                                                    ,rpavg
-                                                    ,npair);
-                    } else {
-                      status = wp_function_DOUBLE(x1, y1, z1, N1,
-                                                  x2, y2, z2, N2, same_cell,
-                                                  sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                                  off_xwrap, off_ywrap, off_zwrap
-                                                  ,NULL
-                                                  ,npair);
-                    }
+                    status = wp_function_DOUBLE(x1, y1, z1, N1,
+                                                x2, y2, z2, N2, same_cell,
+                                                sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
+                                                off_xwrap, off_ywrap, off_zwrap
+                                                ,this_rpavg
+                                                ,npairs);
                     /* This actually causes a race condition under OpenMP - but mostly 
                        I care that an error occurred - rather than the exact value of 
                        the error status */
@@ -344,8 +335,8 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 
 #if defined(_OPENMP)
         for(int j=0;j<nrpbins;j++) {
-            all_npairs[tid][j] = npair[j];
-            if(options.need_avg_sep) {
+            all_npairs[tid][j] = npairs[j];
+            if(options->need_avg_sep) {
                 all_rpavg[tid][j] = rpavg[j];
             }
         }
@@ -357,46 +348,46 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
       free(rupp);
 #if defined(_OPENMP)      
       matrix_free((void **) all_npairs,numthreads);
-      if(options.need_avg_sep) {
+      if(options->need_avg_sep) {
         matrix_free((void **) all_rpavg, numthreads);
       }
 #endif//OpenMP
       return EXIT_FAILURE;
     }
     
-    if(options.verbose) {
+    if(options->verbose) {
       finish_myprogressbar(&interrupted);
     }
     
 #if defined(_OPENMP)
     /* Note that this *NOT* in an OMP parallel region */
-    uint64_t npair[nrpbins];
+    uint64_t npairs[nrpbins];
     DOUBLE rpavg[nrpbins];
     for(int i=0;i<nrpbins;i++) {
-        npair[i] = 0;
-        if(options.need_avg_sep) {
+        npairs[i] = 0;
+        if(options->need_avg_sep) {
             rpavg[i] = ZERO;
         }
     }
 
     for(int i=0;i<numthreads;i++) {
         for(int j=0;j<nrpbins;j++) {
-            npair[j] += all_npairs[i][j];
-            if(options.need_avg_sep) {
+            npairs[j] += all_npairs[i][j];
+            if(options->need_avg_sep) {
                 rpavg[j] += all_rpavg[i][j];
             }
         }
     }
     matrix_free((void **) all_npairs,numthreads);
-    if(options.need_avg_sep) {
+    if(options->need_avg_sep) {
         matrix_free((void **) all_rpavg, numthreads);
     }
 #endif//OpenMP
 
     if(options.need_avg_sep) {
         for(int i=0;i<nrpbins;i++) {
-            if(npair[i] > 0) {
-                rpavg[i] /= (DOUBLE) npair[i];
+            if(npairs[i] > 0) {
+                rpavg[i] /= (DOUBLE) npairs[i];
             }
         }
     }
@@ -423,9 +414,9 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     DOUBLE twice_pimax = 2.0*pimax;
 
     for(int i=0;i<nrpbins;i++) {
-        results->npairs[i] = npair[i];
+        results->npairs[i] = npairs[i];
         results->rupp[i] = rupp[i];
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             results->rpavg[i] = rpavg[i];
         } else {
             results->rpavg[i] = 0.0;
@@ -433,14 +424,24 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         const DOUBLE weight0 = (DOUBLE) results->npairs[i];
         /* compute xi, dividing summed weight by that expected for a random set */
         const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]-rlow*rlow)*twice_pimax;
-        const DOUBLE weightrandom = prefac_density_DD*vol;
-        if(weightrandom <= 0.0) {
-            fprintf(stderr,"Weight for randoms = %lf must be positive. \n", weightrandom);
-            return EXIT_FAILURE;
+        if(vol > 0.0) {
+            const DOUBLE weightrandom = prefac_density_DD*vol;
+            if(weightrandom <= 0.0) {
+                fprintf(stderr,"Weight for randoms = %lf must be positive. Volume = %lf\n", weightrandom, vol);
+                return EXIT_FAILURE;
+            }
+            results->wp[i] = (weight0/weightrandom-1)*twice_pimax;
+        } else {
+            results->wp[i] = -2.0*twice_pimax;//can not occur ->signals invalid
         }
-        results->wp[i] = (weight0/weightrandom-1)*twice_pimax;
         rlow=results->rupp[i];
     }
     free(rupp);
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
+
     return EXIT_SUCCESS;
 }

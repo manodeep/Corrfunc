@@ -176,7 +176,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
                               const char *centers_file,
                               const int cosmology,
                               results_countspheres_mocks *results,
-                              const struct config_options *input_options)
+                              struct config_options *options)
     
 {
     int ngrid;
@@ -196,9 +196,11 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
             return status;
         }
     }
-
-    struct config_options options = *input_options;
-    options.periodic=0;
+    options->periodic = 0;
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
 
     /* setup interrupt handler -> mostly useful during the python execution. 
        Let's Ctrl-C abort the extension  */
@@ -236,7 +238,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
             return EXIT_FAILURE;
         }
     }
-    if(options.verbose) {
+    if(options->verbose) {
         fprintf(stderr,"%s> found %"PRId64" centers (need %d centers) - need randoms = %d\n",__FUNCTION__,num_centers_in_file,nc,need_randoms);
     }
 
@@ -245,7 +247,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
     gsl_interp *interpolation=NULL;
     gsl_interp_accel *accelerator=NULL;
     const DOUBLE inv_speed_of_light=1.0/SPEED_OF_LIGHT;
-    if(options.is_comoving_dist == 0) {
+    if(options->is_comoving_dist == 0) {
         //set up the interpolation for comoving distances
         redshifts=my_malloc(sizeof(*redshifts),COSMO_DIST_SIZE);
         comoving_distance=my_malloc(sizeof(*comoving_distance),COSMO_DIST_SIZE);
@@ -270,7 +272,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         const DOUBLE new_theta = ygal[i];
         const DOUBLE new_cz    = zgal[i];
         DOUBLE dc;
-        if(options.is_comoving_dist == 0) {
+        if(options->is_comoving_dist == 0) {
             dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
         } else {
             dc = new_cz;
@@ -288,7 +290,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
             const DOUBLE new_theta = yran[i];
             const DOUBLE new_cz    = zran[i];
             DOUBLE dc;
-            if(options.is_comoving_dist == 0) {
+            if(options->is_comoving_dist == 0) {
                 dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
             } else {
                 dc = new_cz;
@@ -300,14 +302,14 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         }
     }
 
-    if(options.is_comoving_dist == 0) {
+    if(options->is_comoving_dist == 0) {
         free(redshifts);free(comoving_distance);
         gsl_interp_free(interpolation);
         gsl_interp_accel_free(accelerator);
     }
     
     /*---Shift-coordinates--------------------------------*/
-    if(options.verbose) {
+    if(options->verbose) {
         fprintf(stderr,"%s> maximum distance = %f. ",__FUNCTION__,rcube) ;
     }
 
@@ -328,7 +330,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
     rcube = 2.0*rcube ;
     const DOUBLE inv_rcube = 1.0/rcube;
 
-    if(options.verbose) {
+    if(options->verbose) {
         fprintf(stderr," Bounding cube size = %f\n",rcube) ;
     }
 
@@ -352,7 +354,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
                                   rmax, rmax, rmax,
                                   bin_refine_factor, bin_refine_factor, bin_refine_factor,
                                   &nmesh_x, &nmesh_y, &nmesh_z,
-                                  &options);
+                                  options);
         XRETURN(nmesh_x == nmesh_y && nmesh_x == nmesh_z, EXIT_FAILURE, "The number of grid cells along each dimension should be identical. "
                 "(nx, ny, nz) = (%d, %d, %d)\n", nmesh_x, nmesh_y, nmesh_z);
         ngrid = nmesh_x;//could have been nmesh_y/nmesh_z -> all three are equal
@@ -367,7 +369,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
                                           rmax, rmax, rmax,
                                           bin_refine_factor, bin_refine_factor, bin_refine_factor,
                                           &nran_x, &nran_y, &nran_z,
-                                          &options);
+                                          options);
         XRETURN(nran_x == nran_y && nran_x == nran_z, EXIT_FAILURE, "The number of (randoms) grid cells along each dimension should be identical. "
                 "(nx, ny, nz) = (%d, %d, %d)\n",nran_x,nran_y,nran_z);
         XRETURN(nran_x == ngrid, EXIT_FAILURE, "The number of grid cells for randoms = %d should be identical to that in the data = %d\n", nran_x, ngrid);
@@ -381,7 +383,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
     /* const DOUBLE rstep = rmax/(DOUBLE)nbin ; */
     /* const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep; */
 
-    vpf_mocks_func_ptr_DOUBLE vpf_mocks_function_DOUBLE = vpf_mocks_driver_DOUBLE(&options);
+    vpf_mocks_func_ptr_DOUBLE vpf_mocks_function_DOUBLE = vpf_mocks_driver_DOUBLE(options);
     if(vpf_mocks_function_DOUBLE == NULL) {
         return EXIT_FAILURE;
     }
@@ -390,13 +392,13 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
     isucceed=0 ;
     int ncenters_written=0;
     int interrupted=0;
-    if(options.verbose) {
+    if(options->verbose) {
         init_my_progressbar(nc, &interrupted);
     }
     
     while(isucceed < nc && itry < Nran && interrupt_status_vpf_mocks_DOUBLE == EXIT_SUCCESS) {
         
-        if(options.verbose){
+        if(options->verbose){
             my_progressbar(isucceed,&interrupted);
         }
 
@@ -509,7 +511,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         return EXIT_FAILURE;
     }
     
-    if(options.verbose) {
+    if(options->verbose) {
         finish_myprogressbar(&interrupted);
         fprintf(stderr,"%s> Placed %d centers out of %d trials.\n",__FUNCTION__,isucceed,itry);
         fprintf(stderr,"%s> num_centers_in_file = %"PRId64" ncenters_written = %d\n",__FUNCTION__,num_centers_in_file,ncenters_written);
@@ -539,6 +541,11 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         }
     }
     matrix_free((void **) pN, nbin);
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
 
     return EXIT_SUCCESS;
 }

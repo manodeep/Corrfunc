@@ -178,17 +178,21 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                             const DOUBLE pimax,
                             const int cosmology,
                             results_countpairs_mocks *results,
-                            const struct config_options *input_options)
+                            struct config_options *options)
 {
 
-    if(input_options->float_type != sizeof(DOUBLE)) {
+    if(options->float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
-                __FUNCTION__, sizeof(DOUBLE), input_options->float_type);
+                __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
 
-    struct config_options options = *input_options;
-    options.sort_on_z = 1;
+    options->sort_on_z = 1;
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
+
     
     //Check inputs
     if(ND1 == 0 || (autocorr == 0 && ND2 == 0)) {
@@ -254,7 +258,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     
     //Change cz into co-moving distance
     DOUBLE *D1 = NULL, *D2 = NULL;
-    if(options.is_comoving_dist == 0) {
+    if(options->is_comoving_dist == 0) {
         D1 = my_malloc(sizeof(*D1),ND1);
         D2 = autocorr == 0 ? my_malloc(sizeof(*D2),ND2):D1;
     } else {
@@ -268,7 +272,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     }
     
     
-    if(options.is_comoving_dist == 0) {
+    if(options->is_comoving_dist == 0) {
         //Setup variables to do the cz->comoving distance
         double *zz=my_calloc(sizeof(*zz),COSMO_DIST_SIZE);
         double *ddc=my_calloc(sizeof(*ddc),COSMO_DIST_SIZE);
@@ -355,7 +359,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                                                                                              max_sep, max_sep, max_sep,
                                                                                              bin_refine_factor, bin_refine_factor, zbin_refine_factor,
                                                                                              &nmesh_x, &nmesh_y, &nmesh_z,
-                                                                                             &options);
+                                                                                             options);
     if(lattice1 == NULL) {
         return EXIT_FAILURE;
     }
@@ -371,7 +375,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                                                          max_sep, max_sep, max_sep, 
                                                          bin_refine_factor, bin_refine_factor, zbin_refine_factor,
                                                          &nmesh_x, &nmesh_y, &nmesh_z,
-                                                         &options);
+                                                         options);
         if(lattice1 == NULL) {
             return EXIT_FAILURE;
         }
@@ -386,7 +390,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                                                          zmin, zmax,
                                                          max_sep, max_sep, max_sep,
                                                          bin_refine_factor, bin_refine_factor, zbin_refine_factor,
-                                                         &ngrid2_x, &ngrid2_y, &ngrid2_z, &options);
+                                                         &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
         if(lattice2 == NULL) {
             return EXIT_FAILURE;
         }
@@ -403,7 +407,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         free(X2);free(Y2);free(Z2);
     }
 
-    if(options.is_comoving_dist == 0) {
+    if(options->is_comoving_dist == 0) {
         free(D1);
         if(autocorr == 0) {
             free(D2);
@@ -432,7 +436,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, totnbins);
     DOUBLE **all_rpavg = NULL;
-    if(options.need_avg_sep){
+    if(options->need_avg_sep){
         all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
     }
 #else //USE_OMP
@@ -441,20 +445,20 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
 
     for(int i=0; i <totnbins;i++) {
         npairs[i] = 0;
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             rpavg[i] = ZERO;
         }
     }
 #endif //USE_OMP
 
     /* runtime dispatch - get the function pointer */
-    countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_function_DOUBLE = countpairs_rp_pi_mocks_driver_DOUBLE(&options);
+    countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_function_DOUBLE = countpairs_rp_pi_mocks_driver_DOUBLE(options);
     if(countpairs_rp_pi_mocks_function_DOUBLE == NULL) {
         return EXIT_FAILURE;
     }
 
     int interrupted=0,numdone=0, abort_status=EXIT_SUCCESS;
-    if(options.verbose) {
+    if(options->verbose) {
         init_my_progressbar(totncells,&interrupted);
     }
 
@@ -466,7 +470,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         uint64_t npairs[totnbins];
         for(int i=0;i<totnbins;i++) npairs[i] = 0;
         DOUBLE rpavg[totnbins];
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             for(int i=0;i<totnbins;i++) rpavg[i] = ZERO;
         }
 
@@ -482,7 +486,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
             if(abort_status == EXIT_SUCCESS && interrupt_status_DDrppi_mocks_DOUBLE == EXIT_SUCCESS) {
                 //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
                 /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
-                if(options.verbose) {
+                if(options->verbose) {
 #if defined(_OPENMP)
                     if (omp_get_thread_num() == 0)
 #endif
@@ -507,7 +511,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
 
                 if(autocorr == 1) {
                     int same_cell = 1;
-                    DOUBLE *this_rpavg = options.need_avg_sep ? &(rpavg[0]):NULL;
+                    DOUBLE *this_rpavg = options->need_avg_sep ? &(rpavg[0]):NULL;
                     const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1,
                                                                               N1, x1, y1, z1, d1,
                                                                               same_cell,
@@ -531,7 +535,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                     DOUBLE *z2 = second->z;
                     DOUBLE *d2 = second->cz;
                     const int64_t N2 = second->nelements;
-                    DOUBLE *this_rpavg = options.need_avg_sep ? &(rpavg[0]):NULL;
+                    DOUBLE *this_rpavg = options->need_avg_sep ? &(rpavg[0]):NULL;
                     const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1,
                                                                               N2, x2, y2, z2, d2,
                                                                               same_cell,
@@ -548,7 +552,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
 #if defined(_OPENMP)
             for(int i=0;i<totnbins;i++) {
                 all_npairs[tid][i] = npairs[i];
-                if(options.need_avg_sep) {
+                if(options->need_avg_sep) {
                     all_rpavg[tid][i] = rpavg[i];
             }
         }
@@ -566,14 +570,14 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         free(rupp);
 #if defined(_OPENMP)
         matrix_free((void **) all_npairs, numthreads);
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             matrix_free((void **) all_rpavg, numthreads);
         }
 #endif
         return EXIT_FAILURE;
     }
 
-    if(options.verbose) {
+    if(options->verbose) {
         finish_myprogressbar(&interrupted);
     }
         
@@ -584,7 +588,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     DOUBLE rpavg[totnbins];
     for(int i=0;i<totnbins;i++) {
         npairs[i] = 0;
-        if(options.need_avg_sep) {
+        if(options->need_avg_sep) {
             rpavg[i] = ZERO;
         }
     }
@@ -592,13 +596,13 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     for(int i=0;i<numthreads;i++) {
         for(int j=0;j<totnbins;j++) {
             npairs[j] += all_npairs[i][j];
-            if(options.need_avg_sep) {
+            if(options->need_avg_sep) {
                 rpavg[j] += all_rpavg[i][j];
             }
         }
     }
     matrix_free((void **) all_npairs, numthreads);
-    if(options.need_avg_sep) {
+    if(options->need_avg_sep) {
         matrix_free((void **) all_rpavg, numthreads);
     }
 #endif //USE_OMP
@@ -610,13 +614,13 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         const DOUBLE dbl_fac = (DOUBLE) 2.0;
         for(int i=0;i<totnbins;i++) {
             npairs[i] *= int_fac;
-            if(options.need_avg_sep) {
+            if(options->need_avg_sep) {
                 rpavg[i] *= dbl_fac;
             }
         }
     }
 
-    if(options.need_avg_sep) {
+    if(options->need_avg_sep) {
         for(int i=0;i<totnbins;i++){
             if(npairs[i] > 0) {
                 rpavg[i] /= ((DOUBLE) npairs[i] );
@@ -648,12 +652,17 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
             }
             results->npairs[index] = npairs[index];
             results->rpavg[index] = 0.0;
-            if(options.need_avg_sep) {
+            if(options->need_avg_sep) {
                 results->rpavg[index] = rpavg[index];
             }
         }
     }
     free(rupp);
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
 
     return EXIT_SUCCESS;
 }

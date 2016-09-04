@@ -30,7 +30,7 @@ extern "C" {
                         const int autocorr,
                         const char *binfile,
                         results_countpairs *results,
-                        const struct config_options *options) __attribute__((warn_unused_result));
+                        struct config_options *options) __attribute__((warn_unused_result));
   
   extern void free_results(results_countpairs *results);
 

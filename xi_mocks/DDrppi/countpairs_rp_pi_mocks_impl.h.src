@@ -34,7 +34,7 @@ extern "C" {
                                        const DOUBLE pimax,
                                        const int cosmology,
                                        results_countpairs_mocks *results,
-                                       const struct config_options *options);
+                                       struct config_options *options);
     
     extern int check_ra_dec_cz_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz);
     

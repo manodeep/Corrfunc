@@ -32,7 +32,7 @@ extern "C" {
                       const char *binfile,
                       const double pimax,
                       results_countpairs_wp *result,
-                      const struct config_options *options) __attribute__((warn_unused_result));
+                      struct config_options *options) __attribute__((warn_unused_result));
 
     void free_results_wp(results_countpairs_wp *results);
 

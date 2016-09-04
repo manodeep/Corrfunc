@@ -37,7 +37,7 @@ extern "C" {
                                        const char *binfile,
                                        const DOUBLE pimax,
                                        results_countpairs_rp_pi *results,
-                                       const struct config_options *options);
+                                       struct config_options *options);
 
 #ifdef __cplusplus
 }

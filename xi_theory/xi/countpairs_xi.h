@@ -31,7 +31,7 @@ extern "C" {
                              const int numthreads,
                              const char *binfile,
                              results_countpairs_xi *results,
-                             const struct config_options *in_options);
+                             struct config_options *in_options);
     
 #ifdef __cplusplus
 }

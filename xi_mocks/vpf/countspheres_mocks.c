@@ -34,7 +34,7 @@ int countspheres_mocks(const int64_t Ngal, void *xgal, void *ygal, void *zgal,
                        const char *centers_file,
                        const int cosmology,
                        results_countspheres_mocks *results,
-                       const struct config_options *options)
+                       struct config_options *options)
 {
 
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
