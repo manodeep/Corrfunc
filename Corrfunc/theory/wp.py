@@ -28,7 +28,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
     added to the first bin => minimum number of pairs in the first bin
     is the total number of particles.
 
-    Parameters:
+    Parameters
     -----------
 
     boxsize: double
@@ -44,13 +44,14 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
        Number of threads to use.
 
     binfile: string or an list/array of floats
-       For string input: filename specifying the ``rp`` bins for ``wp``.
-       The file should contain white-space separated values of (rpmin, rpmax)
-       for each ``rp`` wanted. The bins do not need to be contiguous but must
-       be in increasing order (smallest bins come first).
+       For string input: filename specifying the ``rp`` bins for
+       ``DDrppi_mocks``. The file should contain white-space separated values
+       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
+       contiguous but must be in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``rp`` values that provides the
-       bin-edges. For example, ``np.logspace(0.1, 10.0, 15)`` is a valid
+       bin-edges. For example,
+       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
        input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
        
@@ -92,7 +93,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-    Returns:
+    Returns
     --------
 
     results: Numpy structured array
@@ -107,8 +108,8 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
        (results, api_time). ``api_time`` measures only the time spent within
        the C library and ignores all python overhead.
 
-    Example:
-    -------
+    Example
+    --------
 
     >>> import numpy as np
     >>> from os.path import dirname, abspath, join as pjoin
@@ -116,7 +117,6 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
     >>> from Corrfunc.theory import wp
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
                         "../xi_theory/tests/", "bins")
-
     >>> N = 10000
     >>> boxsize = 420.0
     >>> pimax = 40.0

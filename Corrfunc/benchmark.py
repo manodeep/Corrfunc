@@ -230,6 +230,7 @@ def main():
 
     print("")
 
+    import sys
     for n in npts:
         X_sample = np.random.choice(X, n)
         Y_sample = np.random.choice(Y, n)
@@ -242,8 +243,12 @@ def main():
         print("{0:7d}   ".format(n), end="")
         for ii, func_name in enumerate(function_names):
             t0 = time.time()
+            print("Running function = {0}".format(func_name),
+                  end="", file=sys.stderr)
             results_and_time = functions_to_test[ii](data1, data2, rbins,
                                                      period)
+            print("done", file=sys.stderr)
+
             try:
                 result = np.array([np.long(l[0]) for l in results_and_time])
                 runtime = results_and_time[1]

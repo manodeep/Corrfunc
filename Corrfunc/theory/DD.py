@@ -22,8 +22,9 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     correlation function :math:`\\xi(r)`. See the ``xi_mocks/wtheta/wtheta.c``
     for computing :math:`\\xi(r)` from the pair counts returned.
      
-    Parameters:
+    Parameters
     -----------
+
     autocorr: boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
         then the second set of particle positions are not required.
@@ -33,16 +34,16 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
         enabled during library compilation.
 
     binfile: string or an list/array of floats
-       For string input: filename specifying the ``r`` bins for ``DD``.
-       The file should contain white-space separated values of (rmin, rmax)
-       for each ``r`` wanted. The bins do not need to be contiguous but must
-       be in increasing order (smallest bins come first).
+       For string input: filename specifying the ``rp`` bins for
+       ``DDrppi_mocks``. The file should contain white-space separated values
+       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
+       contiguous but must be in increasing order (smallest bins come first).
 
-       For array-like input: A sequence of ``r`` values that provides the
-       bin-edges. For example, ``np.logspace(0.1, 10.0, 15)`` is a valid
+       For array-like input: A sequence of ``rp`` values that provides the
+       bin-edges. For example,
+       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
        input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
-       array does not need to be sorted. If you pass an array, then the bins
-       will *always* be contiguous.
+       array does not need to be sorted.
 
     X1/Y1/Z1: array-like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
@@ -88,8 +89,9 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-    Returns:
+    Returns
     --------
+
     results: Numpy structured array
 
        A numpy structured array containing [rmin, rmax, ravg, npairs] for each
@@ -102,7 +104,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
        (results, api_time). ``api_time`` measures only the time spent within
        the C library and ignores all python overhead.
 
-    Example:
+    Example
     --------
 
     >>> import numpy as np
