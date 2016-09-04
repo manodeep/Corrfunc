@@ -16,8 +16,8 @@ except ImportError:
     KDTree = None
 
 try:
-    from halotools.mock_observables.pair_counters.double_tree_pairs \
-        import npairs as halotools_npairs
+    from halotools.mock_observables import npairs_3d \
+        as halotools_npairs
 except ImportError:
     halotools_npairs = None
 
@@ -219,7 +219,7 @@ def main():
     #     functions_to_test.append(pairwise_numba)
     #     function_names.append("Numba")
         
-    npts = [100, 500, 1e3, 1e4]
+    npts = [100, 500, 1e3, 1e4, 1e5, 5e5]
     npts = [int(i) for i in npts]
     print("## Npts            ", end="")
     for ifunc in function_names:
