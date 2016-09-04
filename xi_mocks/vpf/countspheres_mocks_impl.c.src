@@ -203,13 +203,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
 
     /* setup interrupt handler -> mostly useful during the python execution. 
        Let's Ctrl-C abort the extension  */
-    int interrupt_signals[] = {SIGTERM, SIGINT, SIGHUP};
-    for(size_t i=0;i<sizeof(interrupt_signals)/sizeof(interrupt_signals[0]);i++) {
-        int signo = interrupt_signals[i];
-        if (signal(signo, interrupt_handler_vpf_mocks_DOUBLE) == SIG_ERR) {
-            fprintf(stderr,"Can not handle signal = %d\n", signo);
-        }
-    }
+    SETUP_INTERRUPT_HANDLERS(interrupt_handler_vpf_mocks_DOUBLE);
     
     int need_randoms=0;
     int64_t num_centers_in_file=0;
@@ -540,6 +534,10 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         }
     }
     matrix_free((void **) pN, nbin);
+
+    /* reset interrupt handlers to default */
+    RESET_INTERRUPT_HANDLERS();
+
     if(options->c_api_timer) {
         struct timeval t1;
         gettimeofday(&t1, NULL);

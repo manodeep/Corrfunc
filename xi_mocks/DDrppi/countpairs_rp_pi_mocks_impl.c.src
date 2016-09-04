@@ -223,13 +223,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
 
     /* setup interrupt handler -> mostly useful during the python execution. 
        Let's Ctrl-C abort the extension  */
-    int interrupt_signals[] = {SIGTERM, SIGINT, SIGHUP};
-    for(size_t i=0;i<sizeof(interrupt_signals)/sizeof(interrupt_signals[0]);i++) {
-        int signo = interrupt_signals[i];
-        if (signal(signo, interrupt_handler_countpairs_rp_pi_mocks_DOUBLE) == SIG_ERR) {
-            fprintf(stderr,"Can not handle signal = %d\n", signo);
-        }
-    }
+    SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_rp_pi_mocks_DOUBLE);
     
     //Try to initialize cosmology - code will exit if comoslogy is not implemented.
     //Putting in a different scope so I can call the variable status
@@ -658,6 +652,10 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         }
     }
     free(rupp);
+
+    /* reset interrupt handlers to default */
+    RESET_INTERRUPT_HANDLERS();
+
     if(options->c_api_timer) {
         struct timeval t1;
         gettimeofday(&t1, NULL);

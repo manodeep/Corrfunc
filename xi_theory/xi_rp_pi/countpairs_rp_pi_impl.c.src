@@ -137,14 +137,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
 
     /* setup interrupt handler -> mostly useful during the python execution. 
        Let's Ctrl-C abort the extension  */
-    int interrupt_signals[] = {SIGTERM, SIGINT, SIGHUP};
-    for(size_t i=0;i<sizeof(interrupt_signals)/sizeof(interrupt_signals[0]);i++) {
-        int signo = interrupt_signals[i];
-        if (signal(signo, interrupt_handler_countpairs_rp_pi_DOUBLE) == SIG_ERR) {
-            fprintf(stderr,"Can not handle signal = %d\n", signo);
-        }
-    }
-
+    SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_rp_pi_DOUBLE);
     
     /***********************
      *initializing the  bins
@@ -509,6 +502,10 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
         }
     }
     free(rupp);
+
+    /* reset interrupt handlers to default */
+    RESET_INTERRUPT_HANDLERS();
+
     if(options->c_api_timer) {
         struct timeval t1;
         gettimeofday(&t1, NULL);
