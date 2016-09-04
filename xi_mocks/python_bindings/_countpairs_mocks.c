@@ -510,6 +510,7 @@ static int64_t check_dims_and_datatype(PyObject *module, PyArrayObject *x1_obj, 
 }
 
 
+
 static int64_t check_dims_and_datatype_ra_dec(PyObject *module, PyArrayObject *x1_obj, PyArrayObject *y1_obj, size_t *element_size)
 {
     char msg[1024];
@@ -925,7 +926,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
             Py_RETURN_NONE;
         }
     }
-
+    
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
     PyObject *x1_array = NULL, *y1_array = NULL;
@@ -951,7 +952,6 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         countpairs_mocks_error_out(module, msg);
         Py_RETURN_NONE;
     }
-
 
     /* Get pointers to the data as C-types. */
     void *phiD1 = NULL, *thetaD1 = NULL;
