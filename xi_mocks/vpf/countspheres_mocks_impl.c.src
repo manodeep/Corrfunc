@@ -40,13 +40,12 @@ int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen
 
 vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *options) 
 {
-  static int initialized = 0;
-  static vpf_mocks_func_ptr_DOUBLE function = NULL;
+    static vpf_mocks_func_ptr_DOUBLE function = NULL;
+    static isa old_isa=-1;
+    if(old_isa == options->instruction_set) {
+        return function;
+    } 
 
-  if(initialized == 1) return function;
-
-  //the fastest available code will always be at index 0.
-  if(initialized == 0) {
     //Seriously this is the declaration for the function pointers...here be dragons.
     vpf_mocks_func_ptr_DOUBLE allfunctions[] = {
 #ifdef __AVX__
@@ -59,8 +58,9 @@ vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *o
     };
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
+#if defined(__AVX__) || defined __SSE4_2__
     const int highest_isa = instrset_detect();
-    
+#endif    
     int curr_offset = 0;
     
     /* Now check if AVX is supported by the CPU */
@@ -88,7 +88,7 @@ vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *o
       switch(options->instruction_set) {
       case(AVX):
         function_dispatch=avx_offset;break;
-      case(SSE):function_dispatch=sse_offset;break;
+      case(SSE42):function_dispatch=sse_offset;break;
       default:function_dispatch=fallback_offset;break;
       }
     }
@@ -99,10 +99,9 @@ vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *o
       return NULL;
     }
     function = allfunctions[function_dispatch];
-    initialized = 1;
-  }
+    old_isa = options->instruction_set;
 
-  return function;
+    return function;
 }
 
 

@@ -81,15 +81,15 @@ int check_ra_dec_DOUBLE(const int64_t N, DOUBLE *ra, DOUBLE *theta)
 
 countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(const struct config_options *options)
 {
-  static int initialized = 0;
-  static countpairs_theta_mocks_func_ptr_DOUBLE function = NULL;
+    static countpairs_theta_mocks_func_ptr_DOUBLE function = NULL;
+    static isa old_isa=-1;
+    if(old_isa == options->instruction_set) {
+        return function;
+    } 
+  
 
-  if(initialized == 1) return function;
-
-  //the fastest available code will always be at index 0.
-  if(initialized == 0) {
     /* Array of function pointers */
-      countpairs_theta_mocks_func_ptr_DOUBLE allfunctions[] = {
+    countpairs_theta_mocks_func_ptr_DOUBLE allfunctions[] = {
 #ifdef __AVX__
           countpairs_theta_mocks_avx_instrinsics_DOUBLE,
 #endif			 
@@ -134,7 +134,7 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
       switch(options->instruction_set) {
       case(AVX):
         function_dispatch=avx_offset;break;
-      case(SSE):function_dispatch=sse_offset;break;
+      case(SSE42):function_dispatch=sse_offset;break;
       default:function_dispatch=fallback_offset;break;
       }
     }
@@ -147,10 +147,9 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
         fprintf(stderr,"RETURNING FALLBACK FUNCTION\n");
     }
     function = allfunctions[function_dispatch];
-    initialized = 1;
-  }
-
-  return function;
+    old_isa = options->instruction_set;
+        
+    return function;
 }
 
 static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
