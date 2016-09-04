@@ -27,10 +27,17 @@ compiler = ''
 
 # numpy 1.7 supports python 2.4-2.5; python 3.1-3.3.
 try:
-    from setuptools import setup, Extension
+    from setuptools import setup, Extension, find_packages
     from setuptools.command.build_ext import build_ext
 except ImportError:
     from distutils.core import setup, Extension
+
+    def find_packages(path='.'):
+        ret = []
+        for root, dirs, files in os.walk(path):
+            if '__init__.py' in files:
+                ret.append(re.sub('^[^A-z0-9_]+', '', root.replace('/', '.')))
+                return ret
     from distutils.command.build_ext import build_ext
 
 
@@ -512,7 +519,8 @@ def setup_packages():
         platforms=["Linux", "Mac OSX", "Unix"],
         keywords=['correlation functions', 'simulations',
                   'surveys', 'galaxies'],
-        packages=[projectname],
+        provides=[projectname],
+        packages=find_packages(),
         ext_package=projectname,
         ext_modules=extensions,
         package_data={'': data_files},
