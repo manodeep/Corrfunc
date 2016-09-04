@@ -203,13 +203,14 @@ def main():
     numbins_to_print = 5
 
     print("Running 3-D correlation function DD(r)")
-    results_DD = DD(autocorr=autocorr,
-                    nthreads=nthreads,
-                    binfile=binfile,
-                    X1=x, Y1=y, Z1=z,
-                    periodic=periodic,
-                    verbose=True,
-                    output_ravg=True)
+    results_DD, _ = DD(autocorr=autocorr,
+                       nthreads=nthreads,
+                       binfile=binfile,
+                       X1=x, Y1=y, Z1=z,
+                       periodic=periodic,
+                       boxsize=boxsize,
+                       verbose=True,
+                       output_ravg=True)
     
     print("\n#      **** DD(r): first {0} bins  *******       "
           .format(numbins_to_print))
@@ -222,15 +223,16 @@ def main():
     print("------------------------------------------------")
 
     print("\nRunning 2-D correlation function DD(rp,pi)")
-    results_DDrppi = DDrppi(autocorr=autocorr,
-                            nthreads=nthreads,
-                            pimax=pimax,
-                            binfile=binfile,
-                            X1=x, Y1=y, Z1=z,
-                            periodic=periodic,
-                            verbose=True,
-                            X2=x, Y2=y, Z2=z,
-                            output_rpavg=True)
+    results_DDrppi, _ = DDrppi(autocorr=autocorr,
+                               nthreads=nthreads,
+                               pimax=pimax,
+                               binfile=binfile,
+                               X1=x, Y1=y, Z1=z,
+                               X2=x, Y2=y, Z2=z,
+                               periodic=periodic,
+                               boxsize=boxsize,
+                               verbose=True,
+                               output_rpavg=True)
     
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
@@ -243,9 +245,9 @@ def main():
     print("-----------------------------------------------------------")
 
     print("\nRunning 2-D projected correlation function wp(rp)")
-    results_wp = wp(boxsize=boxsize, pimax=pimax, nthreads=nthreads,
-                    binfile=binfile, X=x, Y=y, Z=z,
-                    verbose=True, output_rpavg=True)
+    results_wp, _ = wp(boxsize=boxsize, pimax=pimax, nthreads=nthreads,
+                       binfile=binfile, X=x, Y=y, Z=z,
+                       verbose=True, output_rpavg=True)
     print("\n#            ******    wp: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        wp       npairs")
@@ -257,8 +259,8 @@ def main():
     print("-----------------------------------------------------------")
 
     print("\nRunning 3-D auto-correlation function xi(r)")
-    results_xi = xi(boxsize=boxsize, nthreads=nthreads, binfile=binfile,
-                    X=x, Y=y, Z=z, verbose=True, output_ravg=True)
+    results_xi, _ = xi(boxsize=boxsize, nthreads=nthreads, binfile=binfile,
+                       X=x, Y=y, Z=z, verbose=True, output_ravg=True)
     print("\n#            ******    xi: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        xi       npairs")
@@ -276,9 +278,9 @@ def main():
     nspheres = 10000
     num_pN = 8
     seed = -1
-    results_vpf = vpf(rmax=rmax, nbins=nbin, nspheres=nspheres, num_pN=num_pN,
-                      seed=seed, X=x, Y=y, Z=z, verbose=True,
-                      periodic=periodic)
+    results_vpf, _ = vpf(rmax=rmax, nbins=nbin, nspheres=nspheres,
+                         num_pN=num_pN, seed=seed, X=x, Y=y, Z=z, verbose=True,
+                         periodic=periodic)
     
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))

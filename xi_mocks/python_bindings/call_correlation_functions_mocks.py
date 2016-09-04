@@ -81,10 +81,10 @@ def main():
     cosmology = 1
 
     print("\nRunning 2-D correlation function xi(rp,pi)")
-    results_DDrppi = rp_pi_mocks(autocorr, cosmology, nthreads,
-                                 pimax, binfile,
-                                 ra, dec, cz,
-                                 output_rpavg=1, verbose=1)
+    results_DDrppi, _ = rp_pi_mocks(autocorr, cosmology, nthreads,
+                                    pimax, binfile,
+                                    ra, dec, cz,
+                                    output_rpavg=True, verbose=True)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg     pi_upper     npairs")
@@ -99,10 +99,10 @@ def main():
     binfile = pjoin(dirname(abspath(__file__)),
                     "../tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")
-    results_wtheta = theta_mocks(autocorr, nthreads, binfile,
-                                 ra, dec, ra, dec,
-                                 output_thetaavg=1, fast_acos=1,
-                                 verbose=1)
+    results_wtheta, _ = theta_mocks(autocorr, nthreads, binfile,
+                                    ra, dec, ra, dec,
+                                    output_thetaavg=True, fast_acos=True,
+                                    verbose=1)
     print("\n#         ******  wtheta: first {0} bins  *******        "
           .format(numbins_to_print))
     print("#      thetamin        thetamax       thetaavg      npairs")
@@ -124,9 +124,9 @@ def main():
     centers_file = pjoin(dirname(abspath(__file__)),
                          "../tests/data/",
                          "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
-    results_vpf = vpf_mocks(rmax, nbin, num_spheres, num_pN,
-                            threshold_neighbors, centers_file, cosmology,
-                            ra, dec, cz, ra, dec, cz, verbose=1)
+    results_vpf, _ = vpf_mocks(rmax, nbin, num_spheres, num_pN,
+                               threshold_neighbors, centers_file, cosmology,
+                               ra, dec, cz, ra, dec, cz, verbose=True)
 
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))
