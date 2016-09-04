@@ -183,7 +183,20 @@ static inline struct config_options get_config_options(void)
 }
 
 
+#define EXTRA_OPTIONS_HEADER_SIZE     (1024)
+struct extra_options
+{
+    void **weights;//pointer to an array of pointers to store the weight arrays
+    void (*weightfunc)(void);//Treacherous territory, generic weighting function pointer
+    uint8_t num_weights;//number of kinds of weights
+    uint8_t weighting_func_type;//way to type-cast the generic weightfunc into the actual
+                                //function. 
+    
+    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(void **) - sizeof(void *) - 2*sizeof(uint8_t)];
+};
 
+ENSURE_STRUCT_SIZE(struct extra_options, EXTRA_OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    
 
 #ifdef __cplusplus
 }
