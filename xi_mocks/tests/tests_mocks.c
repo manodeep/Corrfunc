@@ -254,8 +254,6 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 int main(int argc, char **argv)
 {
-    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
-    
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/Mr19_mock_northonly.rdcz.dat";
     char fileformat[]="a";
