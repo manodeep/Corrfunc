@@ -8,6 +8,7 @@
 
 #include "progressbar.h"
 #include "utils.h"
+#include <inttypes.h>
 
 #ifndef MAXLEN
 #define MAXLEN 1000

@@ -24,13 +24,14 @@
 #include <math.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
 #include "countspheres.h" //function proto-type for countpairs
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
+#include "macros.h"
 
 void Printhelp(void);
 

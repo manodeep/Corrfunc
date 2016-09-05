@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 #include "defs.h"
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "countpairs.h"  /* For definition of results_countpairs */
 

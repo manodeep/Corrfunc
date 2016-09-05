@@ -19,11 +19,13 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "function_precision.h"
 #include "io.h"
 #include "defs.h"
 #include "utils.h"
+#include "macros.h"
 
 /* Library proto-types + struct definitions in the ../../include directory
    These are the pair-counters

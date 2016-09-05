@@ -22,10 +22,14 @@
   print_time with timeval and gettimeofday
 */
 
+#include<inttypes.h>//defines PRId64 for printing int64_t + includes stdint.h
+#include<math.h>
+#include<string.h>
+#include<limits.h>
+#include<stdarg.h>
+
+#include "macros.h"
 #include "utils.h"
-/* #define __USE_XOPEN2K */
-/* #define _XOPEN_SOURCE_EXTENDED */
-/* #define _GNU_SOURCE  */
 
 
 
