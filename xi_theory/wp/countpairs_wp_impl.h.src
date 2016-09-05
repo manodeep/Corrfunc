@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 #include "defs.h"
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "countpairs_wp.h"  
 

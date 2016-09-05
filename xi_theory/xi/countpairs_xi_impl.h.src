@@ -12,7 +12,8 @@
 extern "C" {
 #endif
 
-#include <stdint.h> //for uint64_t
+#include "defs.h"
+#include <inttypes.h> //for uint64_t
 
 #include "countpairs_xi.h" //definition of struct results_countpairs_xi (and config_options from defs.h included)
 

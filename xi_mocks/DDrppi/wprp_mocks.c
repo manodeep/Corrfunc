@@ -28,10 +28,13 @@
 */
 
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
+#include <math.h>
+#include <inttypes.h>
 
+#include "macros.h"
 #include "utils.h"
+
 void Printhelp(void);
 
 int main(int argc, char *argv[])
