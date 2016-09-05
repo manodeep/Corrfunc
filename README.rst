@@ -164,7 +164,8 @@ Mocks
 Running the codes
 =================
 
-The documentation is lacking currently but I am actively working on it.
+Read the documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
+
 
 Using the command-line interface
 --------------------------------
