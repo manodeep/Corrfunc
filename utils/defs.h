@@ -179,7 +179,11 @@ static inline struct config_options get_config_options(void)
 #ifdef FAST_ACOS
     options.fast_acos=1;
 #endif    
-                             
+
+#ifdef COMOVING_DIST
+    options.is_comoving_dist=1;
+#endif
+    
     return options;
 }
 
