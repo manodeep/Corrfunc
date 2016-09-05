@@ -16,8 +16,7 @@
 extern "C" {
 #endif
 
-
-#include "function_precision.h"
+#include "function_precision.h" 
 
 #define PREFETCH(mem)        asm ("prefetcht0 %0"::"m"(mem))
 
@@ -36,10 +35,11 @@ extern "C" {
 
 #ifndef DOUBLE_PREC
 
+#define DOUBLE                           float  
 #define AVX_NVEC                         8    
 #define AVX_INTS                         __m256i
 #define AVX_FLOATS                       __m256
-
+  
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_ps(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_ps(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_ps(X,Y)
@@ -73,12 +73,12 @@ extern "C" {
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_ps(FALSEVALUE,TRUEVALUE,MASK)
 #define AVX_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_ps(dest, mask, source)
 
-    //Trig
+//Trig
 #ifdef  __INTEL_COMPILER
-#define AVX_ARC_COSINE(X)                 _mm256_acos_ps(X)
+#define AVX_ARC_COSINE(X, order)                 _mm256_acos_ps(X)
 #else
     //Other compilers do not have the vectorized arc-cosine
-#define AVX_ARC_COSINE(X)                  inv_cosine(X)
+#define AVX_ARC_COSINE(X, order)                  inv_cosine_avx(X, order)
 #endif
 
     //Max
@@ -93,9 +93,12 @@ extern "C" {
 #define AVX_STREAMING_STORE_INTS(X,Y)     _mm256_stream_si256(X,Y)
 
 #else //DOUBLE PRECISION CALCULATIONS
+  
+#define DOUBLE                           double
 #define AVX_NVEC                         4    
 #define AVX_INTS                         __m128i
 #define AVX_FLOATS                       __m256d
+
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_pd(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_pd(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_pd(X,Y)
@@ -127,11 +130,11 @@ extern "C" {
 #define AVX_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_pd(FALSEVALUE,TRUEVALUE,MASK)
 #define AVX_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_pd(dest, mask, source)
 
-    //Trig
+//Trig
 #ifdef  __INTEL_COMPILER
-#define AVX_ARC_COSINE(X)                 _mm256_acos_pd(X)
+#define AVX_ARC_COSINE(X, order)                 _mm256_acos_pd(X)
 #else
-#define AVX_ARC_COSINE(X)                  inv_cosine(X)
+#define AVX_ARC_COSINE(X, order)                  inv_cosine_avx(X, order)
 #endif
 
     //Max
@@ -145,36 +148,48 @@ extern "C" {
 #define AVX_STREAMING_STORE_FLOATS(X,Y)   _mm256_stream_pd(X,Y)
 #define AVX_STREAMING_STORE_INTS(X,Y)     _mm_stream_si128(X,Y)
 
-#endif
-
+#endif //DOUBLE_PREC
 
 #ifndef  __INTEL_COMPILER
-    static inline AVX_FLOATS inv_cosine(const AVX_FLOATS X)
-    {
-        union cos{
-            AVX_FLOATS m;
-            DOUBLE x[AVX_NVEC];
-        };
-        union cos union_costheta;
-        union cos union_returnvalue;
-        union_costheta.m = X;
-        const DOUBLE minus_one = (DOUBLE) -1.0;
-        const DOUBLE one = (DOUBLE) 1.0;
-        const DOUBLE zero = (DOUBLE) 0.0;
+#include "fast_acos.h"
+    
+static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
+{
+    union cos{
+        AVX_FLOATS m;
+        DOUBLE x[AVX_NVEC];
+    };
+    union cos union_costheta;
+    union cos union_returnvalue;
+    union_costheta.m = X;
+    const DOUBLE minus_one = (DOUBLE) -1.0;
+    const DOUBLE one = (DOUBLE) 1.0;
 
+    //Force everything to be in range [0,1]
+    for(int ii=0;ii<AVX_NVEC;ii++) {
+        const DOUBLE costheta = union_costheta.x[ii];
+        union_costheta.x[ii] = costheta <= minus_one ? minus_one:costheta;
+        union_costheta.x[ii] = costheta >= one ? one:costheta;
+    }
+    
+    if(order == 0) {
         for(int ii=0;ii<AVX_NVEC;ii++) {
             const DOUBLE costheta = union_costheta.x[ii];
-            if(costheta < minus_one) {
-                union_returnvalue.x[ii] = M_PI;
-            } else if (costheta > one) {
-                union_returnvalue.x[ii] = zero;
-            } else {
-                union_returnvalue.x[ii] = ACOS(costheta);
-            }
+            union_returnvalue.x[ii] = ACOS(costheta);
         }
-        return union_returnvalue.m;
+    } else {
+        //fast acos
+        /*Taken from associated C++ code in http://www.geometrictools.com/GTEngine/Include/Mathematics/GteACosEstimate.h*/
+        for(int ii=0;ii<AVX_NVEC;ii++) {
+            union_returnvalue.x[ii] = FAST_ACOS(union_costheta.x[ii]);
+        }
     }
+    return union_returnvalue.m;
+  }
+
+
 #endif
+
 
 #ifdef __cplusplus
 }

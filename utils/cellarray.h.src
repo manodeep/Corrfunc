@@ -1,0 +1,60 @@
+/* File: cellarray.h.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#pragma once
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define NLATMAX   100      /* maximum grid dimension in X-Y plane */
+
+typedef struct{
+  DOUBLE *x;
+  DOUBLE *y;
+  DOUBLE *z;
+  int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
+} cellarray_DOUBLE;
+  
+typedef struct{
+  DOUBLE *pos;
+  int64_t nelements;
+} cellarray_nvec_DOUBLE;//Here the xyz positions will be stored as pos[x[NVEC],y{NVEC],z[NVEC],x[NVEC]...]. Note amenable to easy sorting -> used by xi_of_r and vpf
+
+
+/* This cellarray will avoid duplicating the particle positions */
+typedef struct cellarray_index_DOUBLE cellarray_index_DOUBLE;  
+struct cellarray_index_DOUBLE{
+  int64_t start;
+  int64_t nelements;
+  int64_t num_ngb;
+  cellarray_index_DOUBLE **ngb_cells;
+  DOUBLE *xwrap;
+  DOUBLE *ywrap;
+  DOUBLE *zwrap;
+};
+
+typedef struct cellarray_index_particles_DOUBLE cellarray_index_particles_DOUBLE;
+struct cellarray_index_particles_DOUBLE{
+  int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
+  int64_t num_ngb;
+  DOUBLE *x;
+  DOUBLE *y;
+  DOUBLE *z;
+  cellarray_index_particles_DOUBLE **ngb_cells;
+  DOUBLE *xwrap;
+  DOUBLE *ywrap;
+  DOUBLE *zwrap;
+};
+
+  
+#ifdef __cplusplus
+}
+#endif

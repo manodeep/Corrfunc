@@ -8,10 +8,6 @@
 
 #pragma once
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <assert.h>
-#include <gsl/gsl_integration.h>
 
 #ifdef __cplusplus
 extern "C" {

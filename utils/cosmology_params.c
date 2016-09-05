@@ -5,7 +5,7 @@
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
 */
-
+#include <stdlib.h>
 #include "cosmology_params.h"
 
 //Declare the variables
@@ -19,7 +19,7 @@ double NS;
 int active_cosmology=-1;
 int cosmology_initialized=0;
 
-void init_cosmology(const int which_cosmology)
+int init_cosmology(const int which_cosmology)
 {
 
     switch(which_cosmology)
@@ -28,7 +28,7 @@ void init_cosmology(const int which_cosmology)
             //LasDamas Cosmology
             OMEGA_M=0.25;
             OMEGA_B=0.04;
-            OMEGA_L=0.75;
+            OMEGA_L=1.0-OMEGA_M;
             LITTLE_H=0.7;
             SIGMA_8=0.8;
             NS=1.0;
@@ -44,11 +44,12 @@ void init_cosmology(const int which_cosmology)
             break;
 
         default:
-            fprintf(stderr,"ERROR: Cosmology=%d not implemented..exiting\n",which_cosmology);
-            exit(EXIT_FAILURE);
+            fprintf(stderr,"ERROR: In %s> Cosmology=%d not implemented\n",__FUNCTION__, which_cosmology);
+            return EXIT_FAILURE;
         }
 
     cosmology_initialized=1;
     HUBBLE=100.0*LITTLE_H;
     active_cosmology=which_cosmology;
+    return EXIT_SUCCESS;
 }

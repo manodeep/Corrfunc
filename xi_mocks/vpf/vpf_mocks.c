@@ -31,9 +31,11 @@
 #include <assert.h>
 
 #include "defs.h"
+#include "function_precision.h"
 #include "utils.h"
 #include "io.h"
 #include "countspheres_mocks.h"
+
 
 void Printhelp(void) ;
 
@@ -75,11 +77,11 @@ int main(int argc, char *argv[])
         }
         return EXIT_FAILURE;
     }
-    sscanf(argv[1],"%lf",&rmax);
+    sscanf(argv[1],"%"REAL_FORMAT"",&rmax);
     sscanf(argv[2],"%d",&nbin);
     sscanf(argv[3],"%d",&nc);
     sscanf(argv[4],"%d",&num_pN);
-    sscanf(argv[5],"%"DOUBLE_FORMAT,&volume);
+    sscanf(argv[5],"%"REAL_FORMAT,&volume);
     galaxy_file=argv[6];
     galaxy_file_format=argv[7];
     random_file=argv[8];
@@ -97,9 +99,9 @@ int main(int argc, char *argv[])
         }
     }
     fprintf(stderr,"\t\t -------------------------------------\n");
-    assert(rmax > 0 && "rmax must be > 0");
-    assert(nbin > 0 && "Number of bins must be > 0");
-    assert(nc > 0 && "Number of spheres must be > 0");
+    XRETURN(rmax > 0, EXIT_FAILURE, "rmax=%lf must be > 0\n",rmax);
+    XRETURN(nbin > 0, EXIT_FAILURE,"Number of bins=%d must be > 0\n",nbin);
+    XRETURN(nc > 0,EXIT_FAILURE,"Number of spheres=%d must be > 0\n",nc);
 
 
     int need_randoms = 1;
@@ -150,30 +152,36 @@ int main(int argc, char *argv[])
         Nran = nc;// HACK: set Nran to number of spheres requested. Code will not execute loop otherwise
     }
 
-    results_countspheres_mocks results = countspheres_mocks(Ngal, ra, dec, cz,
-                                                            Nran, xran, yran, zran,
-                                                            threshold_neighbors,
-                                                            rmax, nbin, nc,
-                                                            num_pN,
-                                                            centers_file,
-                                                            cosmology);
+    results_countspheres_mocks results;
+    struct config_options options = get_config_options();
+    options.float_type=sizeof(DOUBLE);
+    int status = countspheres_mocks(Ngal, ra, dec, cz,
+                                    Nran, xran, yran, zran,
+                                    threshold_neighbors,
+                                    rmax, nbin, nc,
+                                    num_pN,
+                                    centers_file,
+                                    cosmology,
+                                    &results,
+                                    &options);
 
+    free(ra);free(dec);free(cz);
+    if(need_randoms == 1) {
+        free(xran);free(yran);free(zran);
+    }
+    if(status != EXIT_SUCCESS){
+        return status;
+    }
 
     //Output the results
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
-        fprintf(stdout,"%10.2"DOUBLE_FORMAT" ", r);
+        fprintf(stdout,"%10.2"REAL_FORMAT" ", r);
         for(int i=0;i<num_pN;i++) {
             fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
         }
         fprintf(stdout,"\n");
-    }
-
-
-    free(ra);free(dec);free(cz);
-    if(need_randoms == 1) {
-        free(xran);free(yran);free(zran);
     }
     gettimeofday(&t1,NULL);
     fprintf(stderr,"vpf_mocks> Done. Ngal = %"PRId64". Time taken = %6.2lf sec\n",Ngal,ADD_DIFF_TIME(tstart,t1));

@@ -33,9 +33,9 @@ int main(int argc, char *argv[])
     char *fileformat1=NULL,*fileformat2=NULL;
     char *binfile=NULL;
 
-
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
+    const int nthreads=1;
     const char argnames[][30]={"file1","format1","file2","format2","binfile"};
 #else
     int nthreads=2;
@@ -118,24 +118,31 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs results = countpairs(ND1,x1,y1,z1,
-                                            ND2,x2,y2,z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                            nthreads,
-#endif
-                                            autocorr,
-                                            binfile);
-
-    gettimeofday(&t1,NULL);
-    double pair_time = ADD_DIFF_TIME(t0,t1);
+    struct config_options options = get_config_options();
+    options.float_type = sizeof(DOUBLE);
+    results_countpairs results;
+    int status = countpairs(ND1,x1,y1,z1,
+                            ND2,x2,y2,z2,
+                            nthreads,
+                            autocorr,
+                            binfile,
+                            &results,
+                            &options);
+    
     free(x1);free(y1);free(z1);
     if(autocorr == 0) {
         free(x2);free(y2);free(z2);
     }
+    if(status != EXIT_SUCCESS) {
+      return status;
+    }
+    
+    gettimeofday(&t1,NULL);
+    double pair_time = ADD_DIFF_TIME(t0,t1);
 
     DOUBLE rlow=results.rupp[0];
     for(int i=1;i<results.nbin;i++) {
-        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+        fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\n",rlow, results.rupp[i], results.rpavg[i],results.npairs[i]);
         rlow=results.rupp[i];
     }
 

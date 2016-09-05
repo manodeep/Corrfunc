@@ -12,34 +12,30 @@
 extern "C" {
 #endif
 
-#include "function_precision.h" //for definition of DOUBLE
-#include "cellarray_mocks.h"
+#include "defs.h"//for definition of struct config_options
 #include <inttypes.h> //for uint64_t
 
 
-//define the results structure
-typedef struct{
-    DOUBLE **pN;
-    DOUBLE rmax;
-    int nbin;
-    int nc;
-    int num_pN;
-} results_countspheres_mocks;
+    //define the results structure
+    typedef struct{
+        double **pN;
+        double rmax;
+        int nbin;
+        int nc;
+        int num_pN;
+    } results_countspheres_mocks;
 
-
-int count_neighbors(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const DOUBLE smin,const DOUBLE inv_rcube,const DOUBLE rmax,
-                    const int ngrid,const cellarray *lattice, const int nthreshold, const int bin_refine_factor) __attribute__((warn_unused_result));
-
-results_countspheres_mocks countspheres_mocks(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DOUBLE *zgal,
-                                              const int64_t Nran, DOUBLE *xran, DOUBLE *yran, DOUBLE *zran,
-                                              const int threshold_neighbors,
-                                              const DOUBLE rmax, const int nbin, const int nc,
-                                              const int num_pN,
-                                              const char *centers_file,
-                                              const int cosmology)  __attribute__((warn_unused_result));
+    extern int countspheres_mocks(const int64_t Ngal, void *xgal, void *ygal, void *zgal,
+                                  const int64_t Nran, void * restrict xran, void * restrict yran, void * restrict zran,
+                                  const int threshold_neighbors,
+                                  const double rmax, const int nbin, const int nc,
+                                  const int num_pN,
+                                  const char *centers_file,
+                                  const int cosmology,
+                                  results_countspheres_mocks *results,
+                                  struct config_options *options);
     
-
-void free_results_countspheres_mocks(results_countspheres_mocks *results);
+    extern void free_results_countspheres_mocks(results_countspheres_mocks *results);
 
 #ifdef __cplusplus
 }

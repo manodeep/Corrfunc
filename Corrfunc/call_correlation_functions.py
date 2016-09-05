@@ -2,42 +2,52 @@
 # -*- coding: utf-8 -*-
 
 """
-Example python code to call the 3 correlation function
-routines from python. (The codes are written in C)
+Example python code to call the theory correlation function
+extensions from python. (The codes are written in C)
 
 Author: Manodeep Sinha <manodeep@gmail.com>
 
 Requires: numpy
 
 """
-from __future__ import (division, print_function, absolute_import,
+from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import os.path as path
+from os.path import dirname, abspath, join as pjoin
 import time
-from Corrfunc import _countpairs
+
+import Corrfunc
 from Corrfunc.utils import read_catalog
+from Corrfunc._countpairs import\
+    countpairs as DD_extn,\
+    countpairs_rp_pi as DDrppi_extn,\
+    countpairs_wp as wp_extn,\
+    countpairs_xi as xi_extn,\
+    countspheres_vpf as vpf_extn
 
 
 def main():
     tstart = time.time()
     t0 = tstart
     x, y, z = read_catalog()
+    boxsize = 420.0
     t1 = time.time()
     print("Done reading the data - time taken = {0:10.1f} seconds"
           .format(t1 - t0))
-    print("Beginning Correlation functions calculations")
-    boxsize = 420.0
-    nthreads = 4
-    pimax = 40.0
-    binfile = path.join(path.dirname(path.abspath(__file__)),
-                        "../xi_theory/tests/", "bins")
-    autocorr = 1
+
     numbins_to_print = 5
 
+    print("Beginning Theory Correlation functions calculations")
+    nthreads = 4
+    pimax = 40.0
+    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
+                    "../xi_theory/tests/", "bins")
+    autocorr = 1
+    periodic = 1
+
     print("Running 3-D correlation function DD(r)")
-    results_DD = _countpairs.countpairs(autocorr, nthreads, binfile, x, y, z,
-                                        x, y, z)
+    results_DD, _ = DD_extn(autocorr, nthreads, binfile, x, y, z,
+                            verbose=True, periodic=periodic, boxsize=boxsize)
     print("\n#      **** DD(r): first {0} bins  *******       "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg       npairs")
@@ -49,8 +59,10 @@ def main():
     print("------------------------------------------------")
 
     print("\nRunning 2-D correlation function DD(rp,pi)")
-    results_DDrppi = _countpairs.countpairs_rp_pi(autocorr, nthreads, pimax,
-                                                  binfile, x, y, z, x, y, z)
+    results_DDrppi, _ = DDrppi_extn(autocorr, nthreads, pimax,
+                                    binfile, x, y, z,
+                                    verbose=True, periodic=periodic,
+                                    boxsize=boxsize)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg     pi_upper     npairs")
@@ -62,8 +74,8 @@ def main():
     print("-----------------------------------------------------------")
 
     print("\nRunning 2-D projected correlation function wp(rp)")
-    results_wp = _countpairs.countpairs_wp(boxsize, pimax, nthreads,
-                                           binfile, x, y, z)
+    results_wp, _ = wp_extn(boxsize, pimax, nthreads,
+                            binfile, x, y, z, verbose=True)
     print("\n#            ******    wp: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        wp       npairs")
@@ -75,7 +87,9 @@ def main():
     print("-----------------------------------------------------------")
 
     print("\nRunning 3-D auto-correlation function xi(r)")
-    results_xi = _countpairs.countpairs_xi(boxsize, nthreads, binfile, x, y, z)
+    results_xi, _ = xi_extn(boxsize, nthreads, binfile,
+                            x, y, z, verbose=True)
+                            
     print("\n#            ******    xi: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        xi       npairs")
@@ -93,8 +107,9 @@ def main():
     nspheres = 10000
     num_pN = 3
     seed = -1
-    results_vpf = _countpairs.countspheres_vpf(rmax, nbin, nspheres, num_pN,
-                                               seed, x, y, z)
+    results_vpf, _ = vpf_extn(rmax, nbin, nspheres, num_pN,
+                              seed, x, y, z, verbose=True, periodic=periodic,
+                              boxsize=boxsize)
 
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))

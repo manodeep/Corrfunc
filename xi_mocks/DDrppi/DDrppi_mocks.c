@@ -53,13 +53,13 @@ int main(int argc, char *argv[])
     struct timeval t_end,t_start,t0,t1;
     double read_time=0.0;
     gettimeofday(&t_start,NULL);
-
+    int nthreads=1;
+    
     /*---Corrfunc-variables----------------*/
-#if !(defined(USE_OMP) && defined(_OPENMP))
-    const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","cosmology flag"};
-#else
-    int nthreads=2;
+#if defined(_OPENMP)
     const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","cosmology flag","Nthreads"};
+#else
+    const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","cosmology flag"};
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
     int cosmology=1;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     binfile=argv[5];
 
     pimax=40.0;
-    sscanf(argv[6],"%"DOUBLE_FORMAT,&pimax) ;
+    sscanf(argv[6],"%"REAL_FORMAT,&pimax) ;
     cosmology = atoi(argv[7]);
 
 #if defined(USE_OMP) && defined(_OPENMP)
@@ -137,21 +137,27 @@ int main(int argc, char *argv[])
 
 
     /*---Count-pairs--------------------------------------*/
-    results_countpairs_mocks results  = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
-                                                         ND2,phiD2,thetaD2,czD2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                         nthreads,
-#endif
-                                                         autocorr,
-                                                         binfile,
-                                                         pimax,
-                                                         cosmology);
+    results_countpairs_mocks results;
+    struct config_options options = get_config_options();
+    options.float_type = sizeof(DOUBLE);//not really required, but I am always paranoid
+    int status = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
+                                  ND2,phiD2,thetaD2,czD2,
+                                  nthreads,
+                                  autocorr,
+                                  binfile,
+                                  pimax,
+                                  cosmology,
+                                  &results,
+                                  &options);
 
     free(phiD1);free(thetaD1);free(czD1);
     if(autocorr == 0) {
         free(phiD2);free(thetaD2);free(czD2);
     }
 
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
     const int npibin = results.npibin;

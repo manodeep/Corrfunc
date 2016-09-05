@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 #include <inttypes.h>
 
 #include "defs.h" //for ADD_DIFF_TIME
@@ -53,12 +52,11 @@ int main(int argc, char *argv[])
     DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
     DOUBLE *x2=NULL,*y2=NULL,*z2=NULL;//will point to x1/y1/z1 in case of auto-corr
 
-
+    int nthreads=1;
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
     const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax"};
 #else
-    int nthreads=2;
     const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","Nthreads"};
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
@@ -100,9 +98,12 @@ int main(int argc, char *argv[])
 #endif
 
 
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     nthreads=atoi(argv[7]);
-    assert(nthreads >= 1 && "Number of threads must be at least 1");
+    if(nthreads < 1 ) {
+        fprintf(stderr, "Nthreads = %d must be at least 1. Exiting...\n", nthreads);
+        return EXIT_FAILURE;
+    }
 #endif
 
 
@@ -146,6 +147,7 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
+<<<<<<< HEAD
     results_countpairs_rp_pi results = countpairs_rp_pi(ND1,x1,y1,z1,
                                                         ND2,x2,y2,z2,
 #if defined(USE_OMP) && defined(_OPENMP)
@@ -156,21 +158,46 @@ int main(int argc, char *argv[])
                                                         pimax);
 
 
+=======
+    results_countpairs_rp_pi results;
+    struct config_options options = get_config_options();
+    int status = countpairs_rp_pi(ND1,x1,y1,z1,
+                                  ND2,x2,y2,z2,
+                                  nthreads,
+                                  autocorr,
+                                  binfile,
+                                  pimax,
+                                  &results,
+                                  &options);
+>>>>>>> develop
 
-    gettimeofday(&t1,NULL);
-    double pair_time = ADD_DIFF_TIME(t0,t1);
     free(x1);free(y1);free(z1);
     if(autocorr == 0) {
         free(x2);free(y2);free(z2);
     }
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
+
+    gettimeofday(&t1,NULL);
+    double pair_time = ADD_DIFF_TIME(t0,t1);
+
+<<<<<<< HEAD
     const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+=======
+    const double dpi = pimax/(double)results.npibin ;
+>>>>>>> develop
     const int npibin = results.npibin;
     for(int i=1;i<results.nbin;i++) {
         const double logrp = LOG10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
+<<<<<<< HEAD
             fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+=======
+            fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\n",logrp, (j+1)*dpi, results.rpavg[index], results.npairs[index]);
+>>>>>>> develop
         }
     }
 

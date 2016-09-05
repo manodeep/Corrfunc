@@ -1,77 +1,91 @@
-include ../../mocks.options ../../common.mk
+ROOT_DIR := ../..
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
+LIB_DIR := $(ROOT_DIR)/lib
+DATA_DIR := ../tests/data
+
+MOCKS_DIR := $(ROOT_DIR)/xi_mocks
+DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi
+WTHETA_DIR := $(MOCKS_DIR)/wtheta
+VPF_mocks_DIR := $(MOCKS_DIR)/vpf
+
+DDrppi_mocks_LIB := countpairs_rp_pi_mocks
+WTHETA_LIB := countpairs_theta_mocks
+VPF_mocks_LIB := countspheres_mocks
+
+include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
 PROJECT := _countpairs_mocks
-LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
-SOURCES := _countpairs_mocks.c 
+PYTHON_LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
+SOURCES := $(PROJECT).c
 OBJECTS := $(SOURCES:.c=.o)
-C_LIBRARY := ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta_mocks.a ../../lib/libcountspheres_mocks.a 
-PHONY_FIX_PY_LINK := 
+C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(WTHETA_DIR)/lib$(WTHETA_LIB).a $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a
+INCL :=	$(DDrppi_mocks_DIR_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h \
+        $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
+        $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_mocks.h \
+	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_mocks.h \
+        $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cosmology_params.h 
+LIB_INCLUDE:=-I$(DDrppi_mocks_DIR) -I$(WTHETA_DIR) -I$(VPF_mocks_DIR)
 
-ifeq ($(FIX_PYTHON_LINK), 1)
-  PHONY_FIX_PY_LINK = sharedlib
-endif
 
 ifeq ($(UNAME), Darwin)
-  LINKER_FLAGS := -install_name "$(LIBRARY)"
+  LINKER_FLAGS := -install_name "$(PYTHON_LIBRARY)"
 else
   LINKER_FLAGS := -Wl,-soname=$(PROJECT).$(MAJOR)
 endif
 
-all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../mocks.options ../../common.mk Makefile | ../../lib
+all: sharedlib $(LIBRARY) $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
 
-$(LIBRARY): Makefile ../../mocks.options ../../common.mk $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(LINKER_FLAGS) $(CLINK) $(PYTHON_LINK)  $(GSL_LINK) -shared -o $@
+$(PROJECT).so: $(PYTHON_LIBRARY)
 	$(RM) $(PROJECT).so
-	ln -s $(LIBRARY) $(PROJECT).so
+	ln -s $(PYTHON_LIBRARY) $(PROJECT).so
 
-sharedlib: $(LIBRARY) | ../../lib
-	@{ \
-		CURRENT_PYTHON_LIB=`otool -L $(LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
-    PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
-		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
-		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
-		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(LIBRARY); \
-		fi ;\
-	}
+$(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES)
+	$(CC) $(CFLAGS) $(LIB_INCLUDE) $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
-../../lib:
-	mkdir -p ../../lib
-
-../../lib/libcountpairs_rp_pi_mocks.a: ../../mocks.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../DDrppi lib
-
-../../lib/libcountpairs_theta_mocks.a: ../../mocks.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../wtheta lib
-
-../../lib/libcountspheres_mocks.a: ../../mocks.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../vpf lib
-
-
-install: $(PHONY_FIX_PY_LINK) ../../lib/$(LIBRARY) | ../../lib
-
-../../lib/$(LIBRARY): $(LIBRARY)
-	cp -p $(LIBRARY) $@
-	$(RM) ../../lib/$(PROJECT).so 
-	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
-
-tests: $(PHONY_FIX_PY_LINK) $(LIBRARY) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
+tests: sharedlib $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(OBJECTS) | $(ROOT_DIR)/lib
 	python call_correlation_functions_mocks.py
 
-%.o: %.c Makefile ../../common.mk $(C_LIBRARY)
-	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
+$(LIB_DIR)/$(PYTHON_LIBRARY): $(PYTHON_LIBRARY) | $(LIB_DIR)
+	cp -p $(PYTHON_LIBRARY) $(LIB_DIR)/
 
-.PHONY: clean clena celan install sharedlib
+$(LIB_DIR)/$(PROJECT).so:$(LIB_DIR)/$(PYTHON_LIBRARY)
+	$(RM) $(LIB_DIR)/$(PROJECT).so
+	cd $(LIB_DIR) && ln -s $(PYTHON_LIBRARY) $(PROJECT).so
 
-distclean: clean | ../../lib
-	$(RM) ../../lib/$(LIBRARY)
-	$(RM) ../../lib/$(PROJECT).so
+$(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
+	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 
-realclean: distclean
+$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/*.c $(DDrppi_mocks_DIR)/*.c.src $(DDrppi_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(DDrppi_mocks_DIR) libs
+
+$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(WTHETA_DIR)/*.c $(WTHETA_DIR)/*.c.src $(WTHETA_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(WTHETA_DIR) libs
+
+$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/*.c $(VPF_mocks_DIR)/*.c.src $(VPF_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(VPF_mocks_DIR) libs
+
+sharedlib: $(PROJECT).so | $(LIB_DIR)
+ifeq ($(FIX_PYTHON_LINK), 1)
+	@{ \
+		CURRENT_PYTHON_LIB=`otool -L $(PYTHON_LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
+                PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
+		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
+		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
+		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(PYTHON_LIBRARY); \
+		fi ;\
+	}
+endif
+
+install: sharedlib $(LIB_DIR)/$(PYTHON_LIBRARY) 
+
+.PHONY: sharedlib
+
+distclean: clean | $(LIB_DIR)
+	cd $(LIB_DIR) && $(RM) $(PYTHON_LIBRARY)
+	cd $(LIB_DIR) && $(RM) $(PROJECT).so
 
 clean:
-	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so
+	$(RM) $(PYTHON_LIBRARY) $(OBJECTS) $(PROJECT).so
 
-
-celan: clean
-clena: clean
 

@@ -1,0 +1,74 @@
+/* File: gridlink_impl.h.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#pragma once
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "cellarray_DOUBLE.h"
+
+
+  extern int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax,
+                                const DOUBLE rmax,
+                                const int refine_factor,
+                                const int max_ncells,
+                                DOUBLE *xbinsize,
+                                int *nlattice,
+                                const struct config_options *options)  __attribute__((warn_unused_result));
+
+  extern void get_max_min_DOUBLE(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+                                 DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z);
+  
+
+  extern cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
+                                            const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
+                                            const DOUBLE xmin, const DOUBLE xmax,
+                                            const DOUBLE ymin, const DOUBLE ymax,
+                                            const DOUBLE zmin, const DOUBLE zmax,
+                                            const DOUBLE max_x_size,
+                                            const DOUBLE max_y_size,
+                                            const DOUBLE max_z_size,
+                                            const int xbin_refine_factor,
+                                            const int ybin_refine_factor,
+                                            const int zbin_refine_factor,
+                                            int *nlattice_x,
+                                            int *nlattice_y,
+                                            int *nlattice_z,
+                                            const struct config_options *options) __attribute__((warn_unused_result));
+  extern void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells);
+    
+
+  extern cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t np,
+                                                                            const DOUBLE *x, const DOUBLE *y, const DOUBLE *z,
+                                                                            const DOUBLE xmin, const DOUBLE xmax,
+                                                                            const DOUBLE ymin, const DOUBLE ymax,
+                                                                            const DOUBLE zmin, const DOUBLE zmax,
+                                                                            const DOUBLE max_x_size,
+                                                                            const DOUBLE max_y_size,
+                                                                            const DOUBLE max_z_size,
+                                                                            const int xbin_refine_factor,
+                                                                            const int ybin_refine_factor,
+                                                                            const int zbin_refine_factor,
+                                                                            int *nlattice_x,
+                                                                            int *nlattice_y,
+                                                                            int *nlattice_z,
+                                                                            const struct config_options *options) __attribute__((warn_unused_result));
+  extern int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOUBLE *lattice1, struct cellarray_index_particles_DOUBLE *lattice2,
+                                                      const int64_t totncells,
+                                                      const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
+                                                      const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                                                      const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff, 
+                                                      const int double_count, const int periodic);
+  extern void free_cellarray_index_particles_DOUBLE(cellarray_index_particles_DOUBLE *lattice, const int64_t totncells);
+  
+#ifdef __cplusplus
+}
+#endif

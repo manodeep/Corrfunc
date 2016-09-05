@@ -1,66 +1,53 @@
-include ../../theory.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
 
-target := xi 
-SRC1   := xi.c countpairs_xi.c xi_driver.c ../../utils/gridlink.c ../../utils/utils.c ../../io/ftread.c ../../io/io.c 
-INCL   := countpairs_xi.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
-		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h xi_driver.h ../../utils/sglib.h xi_kernels.c 
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
-ifeq ($(OUTPUT_PGBAR), 1)
-SRC1 += ../../utils/progressbar.c
-INCL += ../../utils/progressbar.h 
-endif
-OBJS1  := $(SRC1:.c=.o)
+LIBNAME:= countpairs_xi
+LIBRARY := lib$(LIBNAME).a
+LIBRARY_HEADERS := $(LIBNAME).h
+LIBSRC := countpairs_xi.c countpairs_xi_impl_double.c countpairs_xi_impl_float.c  \
+          $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
+          $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
 
-all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
+TARGET := xi
+TARGETSRC := $(TARGET).c $(IO_DIR)/ftread.c $(IO_DIR)/io.c $(LIBSRC)
 
-$(target): $(OBJS1) $(INCL) ../../common.mk ../../theory.options Makefile 
-	$(CC) $(OBJS1) $(CLINK) -o $@
+INCL   := xi_kernels_float.c xi_kernels_double.c xi_kernels.c.src countpairs_xi.h \
+          countpairs_xi_impl_float.h countpairs_xi_impl_double.h countpairs_xi_impl.h.src countpairs_xi_impl.c.src \
+          $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
+          $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray.h.src \
+          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
+	  $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/defs.h $(UTILS_DIR)/sglib.h $(UTILS_DIR)/progressbar.h
 
-%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+LIBOBJS := $(LIBSRC:.c=.o)
 
-SRC2  := countpairs_xi.c xi_driver.c ../../utils/gridlink.c ../../utils/utils.c
-ifeq ($(OUTPUT_PGBAR), 1)
-SRC2 += ../../utils/progressbar.c
-endif
-OBJS2 := $(SRC2:.c=.o)
+all: $(TARGET) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+
+countpairs_xi_impl_float.o:countpairs_xi_impl_float.c xi_kernels_float.c countpairs_xi_impl_float.h $(UTILS_DIR)/gridlink_impl_float.h  $(UTILS_DIR)/cellarray_float.h
+countpairs_xi_impl_double.o:countpairs_xi_impl_double.c xi_kernels_double.c countpairs_xi_impl_double.h $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
+countpairs_xi.o:countpairs_xi.c countpairs_xi_impl_double.h countpairs_xi_impl_float.h
 
 libs: lib
-lib:  ../../lib/libcountpairs_xi.a | ../../lib ../../include 
-
-libcountpairs_xi.a: $(OBJS2) $(INCL) ../../common.mk ../../theory.options Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS2)
-
-../../lib/libcountpairs_xi.a: libcountpairs_xi.a
-	cp -p $< $@
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_xi.h > ../../include/countpairs_xi.h 
-
-.PHONY: clean clena celan install lib tests distclean
-
-../../lib ../../bin ../../include:
-	mkdir -p $@
-
-install: ../../bin/$(target) | ../../bin
-
-../../bin/$(target): $(target)
-	cp -p $< $@
-
-distclean: clean | ../../lib ../../include ../../bin
-	$(RM) ../../lib/libcountpairs_xi.a ../../include/countpairs_xi.h
-	cd ../../bin && $(RM) $(target)
+lib: $(LIBRARY)
+install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_xi.a
+	$(RM) $(LIBRARY) $(TARGETOBJS) $(TARGET) xi_kernels_float.c xi_kernels_double.c countpairs_xi_impl_float.[ch] countpairs_xi_impl_double.[ch]
+	$(RM) -R *.dSYM
 
-clena: clean
-celan: clean
+distclean:clean
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
 
 tests: tests_periodic 
 
 tests_periodic: 
 	$(MAKE) -C ../tests xi
 
+include $(ROOT_DIR)/rules.mk

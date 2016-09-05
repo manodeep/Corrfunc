@@ -12,15 +12,19 @@ from __future__ import (absolute_import, division, print_function,
 try:
     from future.utils import bytes_to_native_str
 except ImportError:
-    print("\n\tPlease run python setup.py install before using the 'Corrfunc' package\n")
+    print("\n\tPlease run python setup.py install before using "
+          "the 'Corrfunc' package\n")
     raise
 
-import os.path as path
-import sys
+from os.path import dirname, abspath, exists, splitext, join as pjoin
 import time
 
-# Import from current directory first,
 import _countpairs
+from _countpairs import countpairs_rp_pi as DDrppi
+from _countpairs import countpairs as DD
+from _countpairs import countpairs_wp as wp
+from _countpairs import countpairs_xi as xi
+from _countpairs import countspheres_vpf as vpf
 
 
 def read_text_file(filename, encoding="utf-8"):
@@ -56,7 +60,6 @@ def read_catalog(filebase=None):
     supply the full filename.
     """
 
-    import re
     import numpy as np
 
     def read_ascii(filename, return_dtype=None):
@@ -153,25 +156,9 @@ def read_catalog(filebase=None):
             return x, y, z
 
     if filebase is None:
-        filename = path.join(path.dirname(path.abspath(__file__)),
-                             "../tests/data/", "gals_Mr19")
-        # Figure out the datatype, use the header file in the include directory
-        # because that is most likely correct (common.mk might have been
-        # modified but not recompiled)
-        include_file = path.join(path.dirname(path.abspath(__file__)),
-                                 "../../include/", "countpairs.h")
-        includes = read_text_file(include_file)
-        vector_type = re.search(r'(\w+)\s*\*\s*rupp\s*\;', includes,
-                                re.I).group(1)
-        allowed_types = {"float": np.float32, "double": np.float}
-        if vector_type not in list(allowed_types.keys()):
-            print("Error: Unknown precision={0} found in header file {1}. \
-            Allowed types are `{2}'".format(vector_type,
-                                            include_file,
-                                            allowed_types))
-            sys.exit()
-
-        dtype = allowed_types[vector_type]
+        filename = pjoin(dirname(abspath(_countpairs.__file__)),
+                         "../tests/data/", "gals_Mr19")
+        dtype = np.float32
         allowed_exts = {'.ff': read_fastfood,
                         '.txt': read_ascii,
                         '.dat': read_ascii,
@@ -179,7 +166,7 @@ def read_catalog(filebase=None):
                         }
 
         for e in allowed_exts:
-            if path.exists(filename + e):
+            if exists(filename + e):
                 f = allowed_exts[e]
                 x, y, z = f(filename + e, dtype)
                 return x, y, z
@@ -187,8 +174,8 @@ def read_catalog(filebase=None):
         = {1}".format(filename, allowed_exts.keys()))
     else:
         # Likely an user-supplied value
-        if path.exists(filebase):
-            extension = path.splitext(filebase)[1]
+        if exists(filebase):
+            extension = splitext(filebase)[1]
             f = read_fastfood if '.ff' in extension else read_ascii
 
             # default return is double
@@ -209,14 +196,22 @@ def main():
     boxsize = 420.0
     nthreads = 4
     pimax = 40.0
-    binfile = path.join(path.dirname(path.abspath(__file__)),
-                        "../tests/", "bins")
+    binfile = pjoin(dirname(abspath(_countpairs.__file__)),
+                    "../tests/", "bins")
     autocorr = 1
+    periodic = 1
     numbins_to_print = 5
 
     print("Running 3-D correlation function DD(r)")
-    results_DD = _countpairs.countpairs(autocorr, nthreads, binfile, x, y, z,
-                                        x, y, z)
+    results_DD, _ = DD(autocorr=autocorr,
+                       nthreads=nthreads,
+                       binfile=binfile,
+                       X1=x, Y1=y, Z1=z,
+                       periodic=periodic,
+                       boxsize=boxsize,
+                       verbose=True,
+                       output_ravg=True)
+    
     print("\n#      **** DD(r): first {0} bins  *******       "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg       npairs")
@@ -228,8 +223,17 @@ def main():
     print("------------------------------------------------")
 
     print("\nRunning 2-D correlation function DD(rp,pi)")
-    results_DDrppi = _countpairs.countpairs_rp_pi(autocorr, nthreads, pimax,
-                                                  binfile, x, y, z, x, y, z)
+    results_DDrppi, _ = DDrppi(autocorr=autocorr,
+                               nthreads=nthreads,
+                               pimax=pimax,
+                               binfile=binfile,
+                               X1=x, Y1=y, Z1=z,
+                               X2=x, Y2=y, Z2=z,
+                               periodic=periodic,
+                               boxsize=boxsize,
+                               verbose=True,
+                               output_rpavg=True)
+    
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg     pi_upper     npairs")
@@ -241,8 +245,9 @@ def main():
     print("-----------------------------------------------------------")
 
     print("\nRunning 2-D projected correlation function wp(rp)")
-    results_wp = _countpairs.countpairs_wp(boxsize, pimax, nthreads,
-                                           binfile, x, y, z)
+    results_wp, _ = wp(boxsize=boxsize, pimax=pimax, nthreads=nthreads,
+                       binfile=binfile, X=x, Y=y, Z=z,
+                       verbose=True, output_rpavg=True)
     print("\n#            ******    wp: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        wp       npairs")
@@ -254,7 +259,8 @@ def main():
     print("-----------------------------------------------------------")
 
     print("\nRunning 3-D auto-correlation function xi(r)")
-    results_xi = _countpairs.countpairs_xi(boxsize, nthreads, binfile, x, y, z)
+    results_xi, _ = xi(boxsize=boxsize, nthreads=nthreads, binfile=binfile,
+                       X=x, Y=y, Z=z, verbose=True, output_ravg=True)
     print("\n#            ******    xi: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        xi       npairs")
@@ -270,11 +276,12 @@ def main():
     rmax = 10.0
     nbin = 10
     nspheres = 10000
-    num_pN = 3
+    num_pN = 8
     seed = -1
-    results_vpf = _countpairs.countspheres_vpf(rmax, nbin, nspheres, num_pN,
-                                               seed, x, y, z)
-
+    results_vpf, _ = vpf(rmax=rmax, nbins=nbin, nspheres=nspheres,
+                         num_pN=num_pN, seed=seed, X=x, Y=y, Z=z, verbose=True,
+                         periodic=periodic)
+    
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))
     print('#       r    ', end="")

@@ -1,0 +1,891 @@
+/* File: gridlink_mocks.c */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+
+#include "gridlink_mocks_impl_DOUBLE.h"
+
+#include "defs.h"
+#include "sglib.h"
+#include "function_precision.h"
+#include "utils.h"
+
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
+#define MEMORY_INCREASE_FAC   1.1
+
+
+void free_cellarray_mocks_index_particles_DOUBLE(cellarray_mocks_index_particles_DOUBLE *lattice, const int64_t totncells)
+{
+    
+    for(int64_t i=0;i<totncells;i++){
+
+        free(lattice[i].x);
+        free(lattice[i].y);
+        free(lattice[i].z);
+        free(lattice[i].cz);
+
+        /* Might be NULL but free(NULL) is fine*/
+        free(lattice[i].ngb_cells);
+    }
+    free(lattice);
+}
+
+void free_cellarray_mocks_index_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice, const int64_t totncells)
+{
+    
+    for(int64_t i=0;i<totncells;i++){
+        /* Since extra cells might be located (in case of linking in ra + dec),
+           x,y,z might be NULL but free(NULL) is fine*/
+        free(lattice[i].x);
+        free(lattice[i].y);
+        free(lattice[i].z);
+
+        /* Might be NULL but free(NULL) is fine*/
+        free(lattice[i].ngb_cells);
+    }
+    free(lattice);
+}
+
+
+int get_binsize_data_DOUBLE(const DOUBLE xmin,const DOUBLE xmax,
+                            const DOUBLE rmax,
+                            const int refine_factor, const int max_ncells, DOUBLE *xbinsize, int *nlattice,
+                            const struct config_options *options)
+{
+    const DOUBLE xdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:(xmax-xmin);
+    int nmesh=(int)(refine_factor*xdiff/rmax) ;
+    nmesh = nmesh < 1 ? 1:nmesh;
+    if(options->periodic == 1) {
+        if (nmesh<(2*refine_factor+1))  {
+            fprintf(stderr,"%s> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",__FILE__,nmesh) ;
+            fprintf(stderr,"%s> Please reduce Rmax = %"REAL_FORMAT" to be a smaller fraction of the particle distribution region = %"REAL_FORMAT"\n",__FILE__,rmax, xdiff);
+            return EXIT_FAILURE;
+        }
+    }
+
+    if (nmesh>max_ncells)  nmesh=max_ncells;
+    *xbinsize = xdiff/nmesh;
+    *nlattice = nmesh;
+    return EXIT_SUCCESS;
+}
+
+void get_max_min_data_DOUBLE(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
+                             DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z)
+{
+    DOUBLE xmin = *min_x, ymin = *min_y, zmin=*min_z;
+    DOUBLE xmax = *max_x, ymax = *max_y, zmax=*max_z;
+
+    for(int64_t i=0;i<ND1;i++) {
+        if(X1[i] < xmin) xmin=X1[i];
+        if(Y1[i] < ymin) ymin=Y1[i];
+        if(Z1[i] < zmin) zmin=Z1[i];
+
+
+        if(X1[i] > xmax) xmax=X1[i];
+        if(Y1[i] > ymax) ymax=Y1[i];
+        if(Z1[i] > zmax) zmax=Z1[i];
+    }
+    *min_x=xmin;*min_y=ymin;*min_z=zmin;
+    *max_x=xmax;*max_y=ymax;*max_z=zmax;
+}
+
+void get_max_min_ra_dec_DOUBLE(const int64_t ND1, const DOUBLE *RA, const DOUBLE *DEC,
+                               DOUBLE *ra_min, DOUBLE *dec_min, DOUBLE *ra_max, DOUBLE *dec_max)
+{
+    DOUBLE xmin = *ra_min, ymin = *dec_min;
+    DOUBLE xmax = *ra_max, ymax = *dec_max;
+
+    for(int64_t i=0;i<ND1;i++) {
+        if(RA[i]  < xmin) xmin=RA[i];
+        if(DEC[i] < ymin) ymin=DEC[i];
+
+        if(RA[i] > xmax) xmax=RA[i];
+        if(DEC[i] > ymax) ymax=DEC[i];
+    }
+    *ra_min=xmin;*dec_min=ymin;
+    *ra_max=xmax;*dec_max=ymax;
+}
+
+
+cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(const int64_t np,
+                                                                               const DOUBLE *x, const DOUBLE *y, const DOUBLE *z, const DOUBLE *cz, 
+                                                                               const DOUBLE xmin, const DOUBLE xmax,
+                                                                               const DOUBLE ymin, const DOUBLE ymax,
+                                                                               const DOUBLE zmin, const DOUBLE zmax,
+                                                                               const DOUBLE max_x_size,
+                                                                               const DOUBLE max_y_size,
+                                                                               const DOUBLE max_z_size,
+                                                                               const int xbin_refine_factor,
+                                                                               const int ybin_refine_factor,
+                                                                               const int zbin_refine_factor,
+                                                                               int *nlattice_x,
+                                                                               int *nlattice_y,
+                                                                               int *nlattice_z,
+                                                                               const struct config_options *options)
+{
+    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
+    struct timeval t0;
+    if(options->verbose) {
+      gettimeofday(&t0,NULL);
+    }
+
+    DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
+    const int xstatus = get_binsize_data_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
+    const int ystatus = get_binsize_data_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
+    const int zstatus = get_binsize_data_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
+    if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
+      fprintf(stderr,"Received xstatus = %d ystatus = %d zstatus = %d. Error\n", xstatus, ystatus, zstatus);
+      return NULL;
+    }
+
+    const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
+
+    const DOUBLE xdiff = xmax-xmin;
+    const DOUBLE ydiff = ymax-ymin;
+    const DOUBLE zdiff = zmax-zmin;
+
+    const DOUBLE cell_volume=xbinsize*ybinsize*zbinsize;
+    const DOUBLE box_volume=xdiff*ydiff*zdiff;
+    int64_t expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
+    expected_n=expected_n < 2 ? 2:expected_n;
+
+    if(options->verbose) {
+      fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
+    }
+
+    cellarray_mocks_index_particles_DOUBLE *lattice  = (cellarray_mocks_index_particles_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
+    int64_t *nallocated = (int64_t *) my_malloc(sizeof(*nallocated), totncells);
+    if(lattice == NULL || nallocated == NULL) {
+        free(lattice);free(nallocated);
+        return NULL;
+    }
+
+    for (int64_t index=0;index<totncells;index++) {
+        const size_t memsize=sizeof(DOUBLE);
+        lattice[index].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+        lattice[index].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+        lattice[index].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+        lattice[index].cz = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+        if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL ||
+           lattice[index].cz == NULL) {
+            for(int64_t i=index;i>=0;i--) {
+                free(lattice[index].x);free(lattice[index].y);free(lattice[index].z);free(lattice[index].cz);
+                return NULL;
+            }
+        }
+        lattice[index].nelements=0;
+        lattice[index].ngb_cells = NULL;
+        nallocated[index] = expected_n;
+    }
+
+    const DOUBLE xinv=1.0/xbinsize;
+    const DOUBLE yinv=1.0/ybinsize;
+    const DOUBLE zinv=1.0/zbinsize;
+
+    for (int64_t i=0;i<np;i++)  {
+        int ix=(int)((x[i]-xmin)*xinv) ;
+        int iy=(int)((y[i]-ymin)*yinv) ;
+        int iz=(int)((z[i]-zmin)*zinv) ;
+
+        if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
+        if (iy>nmesh_y-1)  iy--;
+        if (iz>nmesh_z-1)  iz--;
+        XRETURN(x[i] >= xmin && x[i] <= xmax, NULL, 
+               "x[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
+               i, x[i], xmin, xmax);
+        XRETURN(y[i] >= ymin && y[i] <= ymax, NULL, 
+               "y[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
+               i, y[i], ymin, ymax);
+        XRETURN(z[i] >= zmin && z[i] <= zmax, NULL, 
+               "z[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
+               i, z[i], zmin, zmax);
+        
+        XRETURN(ix >= 0 && ix < nmesh_x, NULL, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
+        XRETURN(iy >= 0 && iy < nmesh_y, NULL, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
+        XRETURN(iz >= 0 && iz < nmesh_z, NULL, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
+
+        const int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
+
+        if(lattice[index].nelements == nallocated[index]) {
+            expected_n = nallocated[index]*MEMORY_INCREASE_FAC;
+
+            //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
+            //This way, we only increase by a very few particles
+            // at a time. Smaller memory footprint
+            while(expected_n <= nallocated[index])
+                expected_n++;
+
+            const size_t memsize=sizeof(DOUBLE);
+            DOUBLE *posx=NULL, *posy=NULL, *posz=NULL, *poscz=NULL;
+            do{
+                posx = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
+                posy = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
+                posz = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
+                poscz = my_realloc(lattice[index].cz ,memsize,expected_n,"lattice.cz");
+                if(posx == NULL || posy == NULL || posz == NULL || poscz == NULL) {
+                    free(posx);free(posy);free(posz);free(poscz);
+                    expected_n--;
+                }
+            } while(expected_n > nallocated[index] && (posx == NULL ||
+                                                       posy == NULL ||
+                                                       posz == NULL ||
+                                                       poscz == NULL));
+
+            if(expected_n == nallocated[index]) {
+                /*realloc failed. free memory and return */
+                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                        __FUNCTION__, np);
+                fprintf(stderr,"posx = %p posy = %p posz = %p poscz = %p\n", posx, posy, posz, poscz);
+                free_cellarray_mocks_index_particles_DOUBLE(lattice, totncells);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[index].x=posx;
+            lattice[index].y=posy;
+            lattice[index].z=posz;
+            lattice[index].cz=poscz;
+            nallocated[index] = expected_n;
+        }
+        XRETURN(lattice[index].nelements < nallocated[index], NULL, 
+                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
+                index, lattice[index].nelements, nallocated[index]);
+
+        const int64_t ipos = lattice[index].nelements;
+        lattice[index].x[ipos] = x[i];
+        lattice[index].y[ipos] = y[i];
+        lattice[index].z[ipos] = z[i];
+        lattice[index].cz[ipos] = cz[i];
+        lattice[index].nelements++;
+    }
+    free(nallocated);
+
+    /* Do we need to sort the particles in Z ? */
+    if(options->sort_on_z) {
+#if defined(_OPENMP)
+#pragma omp parallel for schedule(dynamic)
+#endif
+        for(int64_t icell=0;icell<totncells;icell++) {
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,X,i,j); \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Y,i,j);           \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Z,i,j);           \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,CZ,i,j) }
+            
+            const cellarray_mocks_index_particles_DOUBLE *first=&(lattice[icell]);
+            if(first->nelements == 0) continue; 
+            
+            DOUBLE *X = first->x;
+            DOUBLE *Y = first->y;
+            DOUBLE *Z = first->z;
+            DOUBLE *CZ = first->cz;
+            
+            SGLIB_ARRAY_QUICK_SORT(DOUBLE, CZ, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+#undef MULTIPLE_ARRAY_EXCHANGER
+        }
+    }
+    
+    //You can free the extra memory reserved by the mallocs by looping over totncells and doing a realloc(lattice[index].x,sizeof(DOUBLE),lattice[index].nelements,"lattice.x")
+    *nlattice_x=nmesh_x;
+    *nlattice_y=nmesh_y;
+    *nlattice_z=nmesh_z;
+    if(options->verbose) {
+      struct timeval t1;
+      gettimeofday(&t1,NULL);
+      fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
+    }
+
+    return lattice;
+}
+
+
+
+int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_particles_DOUBLE *lattice1,
+                                                  struct cellarray_mocks_index_particles_DOUBLE *lattice2, const int64_t totncells,
+                                                  const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
+                                                  const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                                                  const int autocorr)
+{
+  const int64_t nx_ngb = 2*xbin_refine_factor + 1;
+  const int64_t ny_ngb = 2*ybin_refine_factor + 1;
+  const int64_t nz_ngb = 2*zbin_refine_factor + 1;
+  const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
+
+
+  for(int64_t icell=0;icell<totncells;icell++) {
+    struct cellarray_mocks_index_particles_DOUBLE *first = &(lattice1[icell]);
+    if(first->nelements == 0) continue;
+    const int iz = icell % nmesh_z;
+    const int ix = icell / (nmesh_y * nmesh_z );
+    const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
+    XRETURN(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz), EXIT_FAILURE,
+            ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
+            icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
+    
+    first->num_ngb = 0;
+    first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+    if(first->ngb_cells == NULL) {
+        return EXIT_FAILURE;
+    }
+    
+    for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
+      const int iiix = ix + iix;
+      if(iiix < 0 || iiix >= nmesh_x) continue;
+      
+      for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
+          const int iiiy = iy + iiy;
+          if(iiiy < 0 || iiiy >= nmesh_y) continue;
+          for(int64_t iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++){
+              const int iiiz = iz + iiz;
+              if(iiiz < 0 || iiiz >= nmesh_z) continue;
+            
+              const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
+            
+              //For cases where we are not double-counting (i.e., wp and xi), the same-cell
+              //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
+              //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
+              //kernels in that case!
+              if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements==0) {
+                  continue;
+              }
+              const int64_t ngb_index = first->num_ngb;
+              XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
+                      "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
+              first->ngb_cells[ngb_index] = &(lattice2[icell2]);
+              
+              //Note the xwrap/ywraps do not have memory allocated for them in the
+              //non-periodic case. 
+              first->num_ngb++;
+          }
+      }
+    }
+  }
+  
+  return EXIT_SUCCESS;
+}    
+
+
+cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int64_t np,
+                                                                      const DOUBLE *ra, const DOUBLE *dec,
+                                                                      const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, 
+                                                                      const DOUBLE dec_min,const DOUBLE dec_max,
+                                                                      const DOUBLE max_dec_size,
+                                                                      const int dec_refine_factor,
+                                                                      const DOUBLE thetamax,
+                                                                      int64_t *totncells,
+                                                                      const struct config_options *options)
+{
+    int64_t expected_n;
+    size_t totnbytes=0;
+    const DOUBLE dec_diff = dec_max-dec_min;
+    const DOUBLE inv_dec_diff = 1.0/dec_diff;
+
+    struct timeval t0;
+    if(options->verbose) {
+        gettimeofday(&t0,NULL);
+    }
+
+    /* Input validation */
+    XRETURN(thetamax > 0.0, NULL, "Minimum angular separation = %"REAL_FORMAT" must be positive\n", thetamax);
+    XRETURN(dec_diff > 0.0, NULL, "All of the points can not be at the same declination. Declination difference = %"REAL_FORMAT" must be non-zero\n", dec_diff);
+    XRETURN(np > 0, NULL, "Number of points =%"PRId64" must be >0\n", np);
+    XRETURN(ra != NULL, NULL, "RA must be a valid array \n");
+    XRETURN(dec != NULL, NULL, "DEC must be a valid array \n");
+    XRETURN(X != NULL, NULL, "X must be a valid array \n");
+    XRETURN(Y != NULL, NULL, "Y must be a valid array \n");
+    XRETURN(Z != NULL, NULL, "Z must be a valid array \n");
+    XRETURN(dec_refine_factor >= 1, NULL, "DEC refine factor must be at least 1\n");
+    XRETURN(totncells != NULL, NULL, "Pointer to return the total number of cells must be a valid address\n");
+    XRETURN(options != NULL, NULL, "Structure containing code options must be a valid address\n");
+    
+    /* Protect against accidental changes to compile-time (macro) constant */
+    XRETURN(MEMORY_INCREASE_FAC >= 1.0, NULL, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
+    
+    /* Find the max. number of declination cells that can be */
+    const DOUBLE this_ngrid_dec = dec_diff*dec_refine_factor/thetamax;
+    int ngrid_dec = this_ngrid_dec > max_dec_size ? max_dec_size:(int) this_ngrid_dec;
+    ngrid_dec = ngrid_dec < 1  ? 1:ngrid_dec;
+
+    *totncells = ngrid_dec;
+
+    expected_n=(int64_t)( (np/(DOUBLE) (ngrid_dec)) *MEMORY_INCREASE_FAC);
+    expected_n = expected_n < 2 ? 2:expected_n;//at least allocate 2 particles
+
+    /*---Allocate-and-initialize-grid-arrays----------*/
+    cellarray_mocks_index_wtheta_DOUBLE *lattice = (cellarray_mocks_index_wtheta_DOUBLE *) my_calloc(sizeof(*lattice),ngrid_dec);
+    int64_t *nallocated = my_malloc(sizeof(*nallocated), ngrid_dec);
+    if(lattice == NULL || nallocated == NULL) {
+        free(lattice);free(nallocated);
+        return NULL;
+    }
+    totnbytes += sizeof(*lattice)*ngrid_dec;
+    totnbytes += sizeof(*nallocated)*ngrid_dec;
+    for(int j=0;j<ngrid_dec;j++) {
+        const size_t memsize = sizeof(DOUBLE);
+        lattice[j].x = my_malloc(memsize,expected_n);
+        lattice[j].y = my_malloc(memsize,expected_n);
+        lattice[j].z = my_malloc(memsize,expected_n);
+        if(lattice[j].x == NULL || lattice[j].y == NULL || lattice[j].z == NULL) {
+            for(int k=j;k>=0;k--) {
+                free(lattice[k].x);free(lattice[k].y);free(lattice[k].z);
+            }
+            free(lattice);
+            return NULL;
+        }
+        lattice[j].nelements=0;
+        lattice[j].ngb_cells=NULL;
+        nallocated[j] = expected_n;
+        totnbytes += 3 * memsize * expected_n;
+    }
+
+    /*---Loop-over-particles-and-build-grid-arrays----*/
+    for(int64_t i=0;i<np;i++) {
+        int idec = (int)(ngrid_dec*(dec[i]-dec_min)*inv_dec_diff);
+        if(idec >=ngrid_dec) idec--;
+        XRETURN(idec >= 0 && idec < ngrid_dec, NULL,
+                "idec (dec bin index) = %d must be within [0, %d)", idec, ngrid_dec);
+        if(lattice[idec].nelements == nallocated[idec]) {
+            expected_n = nallocated[idec]*MEMORY_INCREASE_FAC;
+            while(expected_n <= lattice[idec].nelements) {
+                expected_n++;
+            }
+
+            const size_t memsize = sizeof(DOUBLE);
+            DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
+            do {
+                posx = my_realloc(lattice[idec].x,memsize,expected_n,"lattice.x");
+                posy = my_realloc(lattice[idec].y,memsize,expected_n,"lattice.y");
+                posz = my_realloc(lattice[idec].z,memsize,expected_n,"lattice.z");
+                if(posx == NULL || posy == NULL || posz == NULL) {
+                    free(posx);free(posy);free(posz);
+                    expected_n--;
+                }
+            } while(expected_n > nallocated[idec] && (posx == NULL ||
+                                                       posy == NULL ||
+                                                       posz == NULL));
+            
+            if(expected_n == nallocated[idec]) {
+                /*realloc failed. free memory and return */
+                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                        __FUNCTION__, np);
+                fprintf(stderr,"posx = %p posy = %p posz = %p\n", posx, posy, posz);
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice, *totncells);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[idec].x=posx;
+            lattice[idec].y=posy;
+            lattice[idec].z=posz;
+            nallocated[idec] = expected_n;
+        }
+
+        XRETURN(lattice[idec].nelements < nallocated[idec],NULL,
+                ANSI_COLOR_RED"BUG: lattice[%d].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
+                idec, lattice[idec].nelements, nallocated[idec]);
+
+        const int64_t ipos=lattice[idec].nelements;
+        lattice[idec].x[ipos]  = X[i];
+        lattice[idec].y[ipos]  = Y[i];
+        lattice[idec].z[ipos]  = Z[i];
+        lattice[idec].nelements++;
+    }
+    free(nallocated);
+    
+    if(options->sort_on_z) {
+        for(int64_t icell=0;icell<ngrid_dec;icell++) {
+            cellarray_mocks_index_wtheta_DOUBLE *first = &lattice[icell];
+            if(first->nelements == 0) continue;
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);           \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);       }
+            
+                DOUBLE *x = first->x;
+                DOUBLE *y = first->y;
+                DOUBLE *z = first->z;
+                
+                SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+#undef MULTIPLE_ARRAY_EXCHANGER
+            
+        }
+    }
+
+    if(options->verbose) {
+        struct timeval t1;
+        gettimeofday(&t1,NULL);
+        fprintf(stderr,"%s> expected_n = %"PRId64" ngrid (declination) = %d np=%"PRId64" Memory required = %0.2lf MB. Time taken = %6.2lf sec \n",
+                __FUNCTION__,expected_n,ngrid_dec,np,totnbytes/1024.0/1024.,ADD_DIFF_TIME(t0,t1));
+    }
+
+    return lattice;
+}
+
+int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
+                                             const int64_t totncells,
+                                             const int dec_refine_factor,
+                                             const int autocorr)
+{
+
+    /* This ngb is a trivial function. Loop over +- idec from every cell. And that's a neighbour */
+    const int64_t max_ngb_cells = 2*dec_refine_factor + 1;
+    for(int64_t icell=0;icell<totncells;icell++) {
+        struct cellarray_mocks_index_wtheta_DOUBLE *first = &(lattice1[icell]);
+        first->num_ngb = 0;
+        if(first->nelements == 0) continue;
+        first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+        if(first->ngb_cells == NULL) {
+            return EXIT_FAILURE;
+        }
+        
+        for(int idec=-dec_refine_factor;idec<=dec_refine_factor;idec++) {
+            const int64_t icell2 = icell + idec;
+            
+            if(icell2 < 0 || icell2 >= totncells) continue;
+            if(lattice2[icell2].nelements==0 || (autocorr == 1 && icell2 >= icell)) continue;
+            
+            const int64_t ngb_index = first->num_ngb;
+            /* I could easily use realloc first->ngb_cells but this condition triggering means there is a bug 
+               in the original max_ngb_cells calculation. Hence the "failure" */
+            XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
+                    "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
+            first->ngb_cells[ngb_index] = &(lattice2[icell2]);
+            first->num_ngb++;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t np,
+                                                                         const DOUBLE *ra, const DOUBLE *dec,
+                                                                         const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, 
+                                                                         const DOUBLE ra_min,const DOUBLE ra_max,
+                                                                         const DOUBLE dec_min, const DOUBLE dec_max,
+                                                                         const int max_ra_size,
+                                                                         const int max_dec_size,
+                                                                         const int ra_refine_factor,
+                                                                         const int dec_refine_factor,
+                                                                         const DOUBLE thetamax,
+                                                                         int64_t *ncells,
+                                                                         int *ngrid_declination,
+                                                                         int *max_nmesh_ra,
+                                                                         int **ngrid_phi,//ngrid in ra, updates on caller -> hence the pointer to pointer
+                                                                         const struct config_options *options)
+{
+    int64_t expected_n;
+    size_t totnbytes=0;
+    const DOUBLE dec_diff = dec_max - dec_min;
+    const DOUBLE ra_diff = ra_max - ra_min;
+    
+    /* Input validation */
+    XRETURN(thetamax > 0.0, NULL, "Minimum angular separation = %"REAL_FORMAT" must be positive\n", thetamax);
+    XRETURN(np > 0, NULL, "Number of points =%"PRId64" must be >0\n", np);
+    XRETURN(ra != NULL, NULL, "RA must be a valid array \n");
+    XRETURN(dec != NULL, NULL, "DEC must be a valid array \n");
+    XRETURN(X != NULL, NULL, "X must be a valid array \n");
+    XRETURN(Y != NULL, NULL, "Y must be a valid array \n");
+    XRETURN(Z != NULL, NULL, "Z must be a valid array \n");
+    XRETURN(ra_refine_factor >= 1, NULL, "RA refine factor must be at least 1\n");
+    XRETURN(dec_refine_factor >= 1, NULL, "DEC refine factor must be at least 1\n");
+    XRETURN(ncells != NULL, NULL, "Pointer to return the total number of cells must be a valid address\n");
+    XRETURN(options != NULL, NULL, "Structure containing code options must be a valid address\n");
+    XRETURN(ngrid_declination != NULL, NULL, "Address to return the number of DEC cells must be valid (ngrid_declination is NULL)\n");
+    
+    
+    /* Validate the point distribution requested */
+    XRETURN(dec_diff > 0.0, NULL, "All of the points can not be at the same declination. Declination difference = %"REAL_FORMAT" must be non-zero\n", dec_diff);
+    XRETURN(ra_diff > 0.0, NULL, "All of the points can not be at the same RA. RA difference = %"REAL_FORMAT" must be non-zero\n", ra_diff);
+
+    /* Protect against accidental edits */
+    XRETURN(MEMORY_INCREASE_FAC >= 1.0, NULL, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
+
+    const DOUBLE inv_dec_diff = 1.0/dec_diff;
+    const DOUBLE inv_ra_diff = 1.0/ra_diff;
+
+    struct timeval t0;
+    if(options->verbose) {
+        gettimeofday(&t0,NULL);
+    }
+
+    const DOUBLE this_ngrid_dec = dec_diff*dec_refine_factor/thetamax;
+    int ngrid_dec = this_ngrid_dec > max_dec_size ? max_dec_size:(int) this_ngrid_dec;
+    ngrid_dec = ngrid_dec < 1 ? 1:ngrid_dec;
+    *ngrid_declination=ngrid_dec;
+
+    DOUBLE dec_binsize=dec_diff/ngrid_dec;
+    XRETURN(max_dec_size >= (2*ra_refine_factor + 1), NULL, 
+            "max_dec_size = %d needs to be larger than the minimum required number of ra cells = %d\n",
+            max_dec_size, 2*ra_refine_factor + 1);
+
+    *ngrid_phi = my_malloc(sizeof(**ngrid_phi), ngrid_dec);
+    if(*ngrid_phi == NULL) {
+        return NULL;
+    }
+    totnbytes += sizeof(**ngrid_phi)*ngrid_dec;
+
+    /* Use a local pointer. Only one level of dereferencing */
+    int *ngrid_ra = *ngrid_phi;
+
+    const DOUBLE costhetamax=COSD(thetamax);
+    const DOUBLE max_phi_cell = ra_diff/(2*ra_refine_factor + 1);
+    int max_nmesh_phi=2*ra_refine_factor + 1;//there will be at least 2*ra_refine_factor + 1 cells in RA
+    for(int idec=0;idec<ngrid_dec;idec++) {
+
+        DOUBLE this_min_dec;
+        DOUBLE this_dec = dec_min + idec*dec_binsize;
+        if(this_dec > 0) {
+            int max_idec = idec + dec_refine_factor >= ngrid_dec ? ngrid_dec-1:idec+dec_refine_factor;
+            this_min_dec = dec_min + (max_idec+1)*dec_binsize;//upper limit for that dec-bin
+        } else {
+            int max_idec = idec - dec_refine_factor < 0 ? 0:idec-dec_refine_factor;
+            this_min_dec = dec_min + max_idec*dec_binsize;//lower limit for that dec-bin
+        }
+
+        DOUBLE phi_cell = max_phi_cell;
+        if( (90.0 - ABS(this_min_dec) ) > 1.0) { //make sure min_dec is not close to the pole (within 1 degree)-> divide by zero happens the cosine term
+            DOUBLE sin_min_dec = SIND(this_min_dec),cos_min_dec=COSD(this_min_dec);
+            phi_cell = ACOS((costhetamax - sin_min_dec*sin_min_dec)/(cos_min_dec*cos_min_dec))*INV_PI_OVER_180;
+            if(phi_cell <= ZERO) {
+                phi_cell = max_phi_cell;
+            }
+        }
+        XRETURN(phi_cell > ZERO, NULL, "RA binsize=%"REAL_FORMAT" in declination bin = %d must be positive. Please remove LINK_IN_RA from compile options "
+                "(or from the code config options\n", phi_cell, idec);
+
+        phi_cell = phi_cell > max_phi_cell ? max_phi_cell:phi_cell;
+        const DOUBLE this_nmesh_ra = ra_diff*ra_refine_factor/phi_cell;
+        int nmesh_ra = this_nmesh_ra > max_ra_size ? max_ra_size:(int) this_nmesh_ra;
+        if(nmesh_ra < (2*ra_refine_factor + 1)) {
+            nmesh_ra = 2*ra_refine_factor + 1;
+            fprintf(stderr,"%s> Using sub-optimal RA binning to ensure correct functioning of the code\n",__FUNCTION__);
+        }
+        
+        if(nmesh_ra > max_nmesh_phi) max_nmesh_phi = nmesh_ra;
+        ngrid_ra[idec] = nmesh_ra;
+    }
+    *max_nmesh_ra = max_nmesh_phi;
+    expected_n=(int64_t)( (np/(DOUBLE) (ngrid_dec*max_nmesh_phi)) *MEMORY_INCREASE_FAC);
+    expected_n = expected_n < 2 ? 2:expected_n;
+
+    /*---Allocate-and-initialize-grid-arrays----------*/
+    const int64_t totncells = ngrid_dec * (int64_t) max_nmesh_phi;
+    *ncells = totncells;
+    cellarray_mocks_index_wtheta_DOUBLE *lattice = my_calloc(sizeof(*lattice), totncells);
+    int64_t *nallocated = my_malloc(sizeof(*nallocated), totncells);
+    if(lattice == NULL || nallocated == NULL) {
+        free(lattice);free(nallocated);
+        return NULL;
+    }
+    totnbytes += sizeof(*lattice) * totncells;
+    totnbytes += sizeof(*nallocated) * totncells;
+    
+    for(int64_t icell=0;icell<totncells;icell++) {
+        lattice[icell].x = NULL;
+        lattice[icell].y = NULL;
+        lattice[icell].z = NULL;
+        lattice[icell].ngb_cells = NULL;
+        lattice[icell].ra_max=0.0;
+        lattice[icell].ra_min=1e10;
+        lattice[icell].nelements=0;
+    }
+    for(int idec=0;idec<ngrid_dec;idec++) {
+        const int nmesh_ra = ngrid_ra[idec];
+        for(int ira=0;ira<nmesh_ra;ira++) {
+            const int64_t index = idec * max_nmesh_phi + ira;
+            const size_t memsize=sizeof(DOUBLE);
+            lattice[index].x = my_malloc(memsize,expected_n);
+            lattice[index].y = my_malloc(memsize,expected_n);
+            lattice[index].z = my_malloc(memsize,expected_n);
+            if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL) {
+                /* Since all the x/y/z/ngb_cells are initialized to NULL, 
+                   I can call the helper routine directly */
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice, totncells);
+                free(lattice);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[index].nelements=0;
+            nallocated[index]=expected_n;
+            totnbytes += 3 * memsize * expected_n;
+        }
+    }
+
+    /*---Loop-over-particles-and-build-grid-arrays----*/
+    for(int64_t i=0;i<np;i++) {
+        int idec = (int)(ngrid_dec*(dec[i]-dec_min)*inv_dec_diff);
+        if(idec >= ngrid_dec) idec--;
+        
+        XRETURN(idec >=0 && idec < ngrid_dec, NULL,
+                "Declination index for particle position = %d must be within [0, %d)\n",
+                idec, ngrid_dec);
+
+        int ira  = (int)(ngrid_ra[idec]*(ra[i]-ra_min)*inv_ra_diff);
+        if(ira >=ngrid_ra[idec]) ira--;
+        XRETURN(ira >=0 && ira < ngrid_ra[idec],NULL,
+                "RA index for particle position = %d must be within [0, %d) for declination bin = %d\n",
+                idec, ngrid_ra[idec], idec);
+
+        const int64_t index = idec*max_nmesh_phi + ira;
+        lattice[index].ra_min = ra[i] < lattice[index].ra_min ? ra[i]:lattice[index].ra_min;
+        lattice[index].ra_max = ra[i] > lattice[index].ra_max ? ra[i]:lattice[index].ra_max;
+        
+        if(lattice[index].nelements == nallocated[index]) {
+            expected_n = nallocated[index]*MEMORY_INCREASE_FAC;
+            while(expected_n <= lattice[index].nelements){
+                expected_n++;
+            }
+
+            const size_t memsize=sizeof(DOUBLE);
+            DOUBLE *posx=NULL, *posy=NULL, *posz = NULL;
+            do {
+                posx = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
+                posy = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
+                posz = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
+                if(posx == NULL || posy == NULL || posz == NULL) {
+                    free(posx);free(posy);free(posz);
+                    expected_n--;
+                }
+            } while(expected_n > nallocated[index] && (posx == NULL ||
+                                                       posy == NULL ||
+                                                       posz == NULL));
+            
+            if(expected_n == nallocated[index]) {
+                /*realloc failed. free memory and return */
+                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                        __FUNCTION__, np);
+                fprintf(stderr,"posx = %p posy = %p posz = %p\n", posx, posy, posz);
+                free_cellarray_mocks_index_wtheta_DOUBLE(lattice, totncells);
+                free(nallocated);
+                return NULL;
+            }
+            lattice[index].x=posx;
+            lattice[index].y=posy;
+            lattice[index].z=posz;
+            nallocated[index] = expected_n;
+            totnbytes += 3 * (expected_n - nallocated[index]) * memsize;
+            nallocated[index] = expected_n;
+        }
+        XRETURN(lattice[index].nelements < nallocated[index],NULL,
+                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
+                index, lattice[index].nelements, nallocated[index]);
+        
+        const int64_t ipos=lattice[index].nelements;
+        lattice[index].x[ipos]  = X[i];
+        lattice[index].y[ipos]  = Y[i];
+        lattice[index].z[ipos]  = Z[i];
+        lattice[index].nelements++;
+    }
+    free(nallocated);
+    if(options->sort_on_z) {
+        for(int64_t icell=0;icell<totncells;icell++) {
+            cellarray_mocks_index_wtheta_DOUBLE *first = &lattice[icell];
+            if(first->nelements == 0) continue;
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);           \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);       }
+            
+                DOUBLE *x = first->x;
+                DOUBLE *y = first->y;
+                DOUBLE *z = first->z;
+                
+                SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+#undef MULTIPLE_ARRAY_EXCHANGER
+            
+        }
+    }
+
+    if(options->verbose) {
+        struct timeval t1;
+        gettimeofday(&t1,NULL);
+        fprintf(stderr,"%s> Max. points in cell <= %"PRId64" ngrid (declination) = %d max ngrid (ra) = %d. Number of points = %"PRId64 " Memory required = %0.2g MB."
+                " Time taken = %6.2lf sec.\n", __FUNCTION__,expected_n,ngrid_dec, max_nmesh_phi, np, totnbytes/1024./1024.,ADD_DIFF_TIME(t0,t1));
+    }
+    return lattice;
+}
+
+
+int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
+                                                const int64_t totncells,
+                                                const int ra_refine_factor, const int dec_refine_factor,
+                                                const int nmesh_dec, const int max_nmesh_ra,
+                                                const DOUBLE ra_min, const DOUBLE ra_diff, 
+                                                const int *nmesh_grid_ra,
+                                                const int autocorr)
+{
+    const int max_dec_ngb = 2*dec_refine_factor + 1;
+    const int max_ra_ngb = 2*ra_refine_factor + 1;
+    const int max_ngb_cells = max_dec_ngb * (max_ra_ngb + 2);//Two additional cells on either end for cases where RA position changes between first and second cells
+    const DOUBLE inv_ra_diff = 1.0/ra_diff;
+    XRETURN( totncells == max_nmesh_ra*nmesh_dec, EXIT_FAILURE,
+             "Total number of cells = %"PRId64" should equal the product of max RA cells = %d and the number of DEC cells = %d\n",
+             totncells, max_nmesh_ra, nmesh_dec);
+    
+    for(int idec=0;idec<nmesh_dec;idec++) {
+        for(int ira=0;ira<nmesh_grid_ra[idec];ira++) {
+            const int64_t icell = idec * max_nmesh_ra + ira;
+            struct cellarray_mocks_index_wtheta_DOUBLE *first = &(lattice1[icell]);
+            if(first->nelements == 0) continue;
+            
+            first->num_ngb = 0;
+            first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+            if(first->ngb_cells == NULL) {
+                return EXIT_FAILURE;
+            }
+            
+            for(int i=-dec_refine_factor;i<=dec_refine_factor;i++){
+                const int this_dec = idec + i;
+                if(this_dec < 0 || this_dec >= nmesh_dec) continue;
+
+                /* Figure out what is the min and max RA cell that any particle in "first" cell could be in 
+                   if the "first" cell particle had a declination for this_dec (rather than idec) */
+                const int max_ra_this_dec = (int) (nmesh_grid_ra[this_dec] * (first->ra_max - ra_min) * inv_ra_diff);
+                const int min_ra_this_dec = (int) (nmesh_grid_ra[this_dec] * (first->ra_min - ra_min) * inv_ra_diff);
+
+                for(int iira=min_ra_this_dec-ra_refine_factor;iira<=max_ra_this_dec+ra_refine_factor;iira++){
+                    /* Note we have to compare with the number of RA bins in the second cell dec index 
+                       i.e., the comparison is against nmesh_grid_ra[this_dec] and NOT nmesh_grid_ra[idec]
+                    */
+                    
+                    /* RA is periodic. The gridlinking code has already ensured there wont be double counting in RA 
+                       as would be the case in num_ra_bins were < 2*ra_refine_factor + 1. But check again. 
+                    */
+                    XRETURN(nmesh_grid_ra[this_dec] >= 2*ra_refine_factor + 1, EXIT_FAILURE,
+                            "Number of RA cells (for declination bin = %d) = %d should be at least %d. Bug in gridlink_mocks\n",
+                            this_dec, nmesh_grid_ra[this_dec], 2*ra_refine_factor + 1);
+                    
+                    /* Note this is iira -> which maps the range of RA values the original particle from first could 
+                       have in this new declination+RA bin  */
+                    const int this_ra = (iira + nmesh_grid_ra[this_dec]) % nmesh_grid_ra[this_dec];
+                    const int64_t icell2 = this_dec * max_nmesh_ra + this_ra;
+                    XRETURN(icell2 < totncells, EXIT_FAILURE,
+                            "index for ngb cell = %"PRId64" should be less total number of cells = %"PRId64"\n",
+                            icell2, totncells);
+                    
+                    //For cases where we are not double-counting (i.e., wp and xi), the same-cell
+                    //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
+                    //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
+                    //kernels in that case!
+                    if(lattice2[icell2].nelements==0 || (autocorr==1 && icell2 >= icell)) {
+                        continue;
+                    }
+                    const int64_t ngb_index = first->num_ngb;
+                    struct cellarray_mocks_index_wtheta_DOUBLE *second = &(lattice2[icell2]);
+                    XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
+                            "ngb index = %"PRId64" should be less than max_ngb = %d\n", ngb_index, max_ngb_cells);
+                    first->ngb_cells[ngb_index] = second;
+                    first->num_ngb++;
+                }//loop over possible range of RA values in this dec bin for the original RA bin in first
+            }//loop over neighbouring DEC cells
+        }//loop over all RA cells contained in this DEC bin
+    }//loop over all DEC cells
+  
+    return EXIT_SUCCESS;
+}
+
+

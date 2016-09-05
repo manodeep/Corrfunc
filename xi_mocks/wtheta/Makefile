@@ -1,80 +1,63 @@
-include ../../mocks.options ../../common.mk
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
 
-# ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
-# MKL_CHECK=mkl
-# endif
+include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+OPT:=$(filter-out -DOUTPUT_RPAVG,$(OPT))
 
-targets := DDtheta_mocks wtheta
-SRC1   := DDtheta_mocks.c  countpairs_theta_mocks.c ../../utils/gridlink_mocks.c \
-			../../utils/utils.c ../../io/io.c ../../io/ftread.c
-INCL   := countpairs_theta_mocks.h ../../io/io.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
-        ../../utils/function_precision.h ../../utils/cellarray_mocks.h ../../utils/avx_calls.h \
-        ../../utils/defs.h
+LIBNAME:=countpairs_theta_mocks
+LIBRARY := lib$(LIBNAME).a
+LIBSRC  := countpairs_theta_mocks.c countpairs_theta_mocks_impl_float.c countpairs_theta_mocks_impl_double.c \
+           $(UTILS_DIR)/gridlink_mocks_impl_float.c $(UTILS_DIR)/gridlink_mocks_impl_double.c \
+           $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c 
+LIBRARY_HEADERS := $(LIBNAME).h
 
-ifeq ($(OUTPUT_PGBAR), 1)
-SRC1 += ../../utils/progressbar.c
-INCL += ../../utils/progressbar.h 
-endif
 
-OBJS1=$(SRC1:.c=.o) 
+TARGET := DDtheta_mocks
+TARGETS := $(TARGET) wtheta
+TARGETSRC := $(LIBSRC) $(TARGET).c $(IO_DIR)/io.c $(IO_DIR)/ftread.c
+INCL     := $(LIBNAME).h countpairs_theta_mocks_kernels_float.c countpairs_theta_mocks_kernels_double.c countpairs_theta_mocks_kernels.c.src \
+            countpairs_theta_mocks_impl.c.src countpairs_theta_mocks_impl.h.src countpairs_theta_mocks_impl_double.h countpairs_theta_mocks_impl_float.h \
+            $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(IO_DIR)/io.h  countpairs_theta_mocks_impl_double.c countpairs_theta_mocks_impl_float.c \
+            $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/gridlink_mocks_impl_float.h $(UTILS_DIR)/gridlink_mocks_impl.h.src \
+            $(UTILS_DIR)/gridlink_mocks_impl_double.c $(UTILS_DIR)/gridlink_mocks_impl_float.c $(UTILS_DIR)/gridlink_mocks_impl.c.src \
+            $(UTILS_DIR)/cellarray_mocks_float.h $(UTILS_DIR)/cellarray_mocks_double.h $(UTILS_DIR)/cellarray_mocks.h.src \
+	    $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h  $(UTILS_DIR)/avx_calls.h  $(UTILS_DIR)/sse_calls.h \
+	    $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/defs.h
 
-all: $(targets) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile
+TARGETOBJS:=$(TARGETSRC:.c=.o)
+LIBOBJS:=$(LIBSRC:.c=.o) 
 
-DDtheta_mocks: $(OBJS1) $(INCL) ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OBJS1) $(CLINK) -o $@ 
+TARGET2:=wtheta
+SRC2:=$(TARGET2).c
 
-SRC2  :=wtheta.c ../../utils/utils.c
-OBJS2 :=$(SRC2:.c=.o)
-wtheta: $(OBJS2) $(INCL) ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OBJS2) $(CLINK) -o $@ 
+all: $(TARGETS) $(TARGETSRC) $(SRC2) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
 
-%.o: %.c $(INCL) ../../mocks.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
+wtheta: $(SRC2) $(UTILS_DIR)/utils.c 
+	$(CC) $(CFLAGS) $(INCLUDE) $^ $(CLINK) -o $@ 
 
-# countpairs_theta_brute_force.o: countpairs_theta_brute_force.c $(INCL) ../../mocks.options ../../common.mk Makefile $(MKL_CHECK)
-# 	$(CC) $(OPT) $(CFLAGS) $(BLAS_INCLUDE) $(INCLUDE) -c $< -o $@
-
-# mkl:
-# ifndef MKLROOT
-# 	$(error $(ccred) You have requested MKL but MKLROOT environment variable is not defined $(ccreset))
-# endif
+countpairs_theta_mocks_impl_double.o: countpairs_theta_mocks_impl_double.c countpairs_theta_mocks_impl_double.h countpairs_theta_mocks_kernels_double.c $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/cellarray_mocks_double.h
+countpairs_theta_mocks_impl_float.o: countpairs_theta_mocks_impl_float.c countpairs_theta_mocks_impl_float.h countpairs_theta_mocks_kernels_float.c $(UTILS_DIR)/gridlink_mocks_impl_float.h $(UTILS_DIR)/cellarray_mocks_float.h
+countpairs_theta_mocks.o:countpairs_theta_mocks.c countpairs_theta_mocks_impl_float.h countpairs_theta_mocks_impl_double.h
 
 libs:lib
-lib: libcountpairs_theta_mocks.a | ../../lib
+lib: $(LIBRARY)
 
-OBJS3 := countpairs_theta_mocks.o ../../utils/gridlink_mocks.o ../../utils/utils.o ../../utils/progressbar.o
-libcountpairs_theta_mocks.a: $(OBJS3) $(INCL) ../../mocks.options ../../common.mk Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS3)
-	cp -p $@ ../../lib/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_theta_mocks.h > ../../include/countpairs_theta_mocks.h
-
-../../lib ../../bin ../../include:
-	mkdir -p $@
-
-install: ../../bin/DDtheta_mocks ../../bin/wtheta | ../../bin
-
-../../bin/DDtheta_mocks:DDtheta_mocks
-	cp -p $< $@
-
-../../bin/wtheta: wtheta
-	cp -p $< $@
-
-.PHONY: clean clena celan distclean realclean install lib libs tests
+install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_BIN_DIR)/wtheta $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
 tests:
 	$(MAKE) -C ../tests wtheta
 
 clean:
-	$(RM) $(targets) $(OBJS1) $(OBJS2) libcountpairs_theta_mocks.a
+	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY) countpairs_theta_mocks_kernels_float.c countpairs_theta_mocks_kernels_double.c countpairs_theta_mocks_impl_double.[ch] countpairs_theta_mocks_impl_float.[ch]
+	$(RM) -R *.dSYM
 
-clena: clean
-celan: clean
+distclean:clean | $(INSTALL_LIB_DIR) $(INSTALL_HEADERS_DIR) $(INSTALL_BIN_DIR)
+	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGETS)
 
-distclean:clean | ../../lib ../../include ../../bin
-	$(RM) ../../lib/libcountpairs_theta_mocks.a ../../include/countpairs_theta_mocks.h
-	cd ../../bin && $(RM) $(targets)
-
-realclean: distclean
-distclena: distclean
-realclena: distclean
-
+include $(ROOT_DIR)/rules.mk

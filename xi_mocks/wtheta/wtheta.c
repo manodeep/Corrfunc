@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
 #include <stdlib.h>
 
 #include "utils.h"
@@ -49,7 +50,7 @@ int main(int argc, char **argv)
     /*---Read-arguments-----------------------------------*/
     if(argc<10)  {
         Printhelp() ;
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     sscanf(argv[1],"%d",&nthetabin) ;
@@ -61,6 +62,10 @@ int main(int argc, char **argv)
     fpD1R2=my_fopen(argv[7],"r") ;
     fpD2R1=my_fopen(argv[8],"r") ;
     fpR1R2=my_fopen(argv[9],"r") ;
+    if(fpD1D2 == NULL || fpD1R2 == NULL || fpD2R1 == NULL || fpR1R2 == NULL) {
+        return EXIT_FAILURE;
+    }
+
 
     /*---Read-D1D2-file-----------------------------------*/
     rmin     = my_malloc(sizeof(*rmin), nthetabin);
@@ -75,7 +80,7 @@ int main(int argc, char **argv)
     }
     if(i!=nthetabin) {
         fprintf(stderr,"wtheta> Warning: nthetabin= %d, but D1D2 file has %d lines\n",nthetabin,i) ;
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     /*---Read-D1R2-file-----------------------------------*/
@@ -88,7 +93,7 @@ int main(int argc, char **argv)
 
     if(i!=nthetabin) {
         fprintf(stderr,"wtheta> Warning: nthetabin= %d, but D1R2 file has %d lines\n",nthetabin,i) ;
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     /*---Read-D2R1-file-----------------------------------*/
@@ -100,7 +105,7 @@ int main(int argc, char **argv)
     }
     if(i!=nthetabin) {
         fprintf(stderr,"wtheta> Warning: nthetabin= %d, but D2R1 file has %d lines\n",nthetabin,i) ;
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     /*---Read-R1R2-file-----------------------------------*/
@@ -112,7 +117,7 @@ int main(int argc, char **argv)
     }
     if(i!=nthetabin) {
         fprintf(stderr,"wtheta> Warning: nthetabin= %d, but R1R2 file has %d lines\n",nthetabin,i) ;
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     /*---Compute-w(theta)---------------------------------*/

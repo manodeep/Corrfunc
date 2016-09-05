@@ -12,29 +12,29 @@
 extern "C" {
 #endif
 
-#include "function_precision.h" //for definition of DOUBLE
-#include <inttypes.h> //for uint64_t
+#include "defs.h" //for struct config_options 
+#include <stdint.h> //for uint64_t
 
-//define the results structure
-typedef struct{
-    uint64_t *npairs;
-    DOUBLE *rupp;
-    DOUBLE *rpavg;
-    DOUBLE pimax;
-    int nbin;
-    int npibin;
-} results_countpairs_rp_pi;
+    //define the results structure
+    typedef struct{
+        uint64_t *npairs;
+        double *rupp;
+        double *rpavg;
+        double pimax;
+        int nbin;
+        int npibin;
+    } results_countpairs_rp_pi;
 
-results_countpairs_rp_pi countpairs_rp_pi(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
-                                          const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE *Z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                          const int numthreads,
-#endif
-                                          const int autocorr,
-                                          const char *binfile,
-                                          const DOUBLE pimax)  __attribute__((warn_unused_result));
+    extern int countpairs_rp_pi(const int64_t ND1, void *X1, void *Y1, void *Z1,
+                                const int64_t ND2, void *X2, void *Y2, void *Z2,
+                                const int numthreads,
+                                const int autocorr,
+                                const char *binfile,
+                                const double pimax,
+                                results_countpairs_rp_pi *results,
+                                struct config_options *options);
     
-void free_results_rp_pi(results_countpairs_rp_pi *results);
+    extern void free_results_rp_pi(results_countpairs_rp_pi *results);
 
 #ifdef __cplusplus
 }

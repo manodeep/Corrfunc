@@ -1,84 +1,94 @@
-include ../../theory.options ../../common.mk
+ROOT_DIR := ../..
+UTILS_DIR:=$(ROOT_DIR)/utils
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+
+THEORY_DIR := $(ROOT_DIR)/xi_theory
+DD_DIR := $(THEORY_DIR)/xi_of_r
+DDrppi_DIR := $(THEORY_DIR)/xi_rp_pi
+WP_DIR := $(THEORY_DIR)/wp
+XI_DIR := $(THEORY_DIR)/xi
+VPF_DIR := $(THEORY_DIR)/vpf
+
+DD_LIB := countpairs
+DDrppi_LIB := countpairs_rp_pi
+WP_LIB := countpairs_wp
+XI_LIB := countpairs_xi
+VPF_LIB := countspheres
+
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 PROJECT := _countpairs
-LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
-SOURCES := _countpairs.c 
+SOURCES := $(PROJECT).c
 OBJECTS := $(SOURCES:.c=.o)
-C_LIBRARY := ../../lib/libcountpairs.a ../../lib/libcountpairs_rp_pi.a ../../lib/libcountpairs_wp.a ../../lib/libcountpairs_xi.a ../../lib/libcountspheres.a
-PHONY_FIX_PY_LINK := 
-
-ifeq ($(FIX_PYTHON_LINK), 1)
-  PHONY_FIX_PY_LINK := sharedlib
-endif
-
-ifeq ($(UNAME), Darwin)
-  LINKER_FLAGS := -install_name "$(LIBRARY)"
-else
-  LINKER_FLAGS := -Wl,-soname=$(PROJECT).$(MAJOR)
-endif
+PYTHON_LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
+C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
+             $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
+INCL := $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
+        $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h 
+LIB_INCLUDE:=-I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(VPF_DIR)
 
 
+all: sharedlib $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-all: $(PHONY_FIX_PY_LINK) $(LIBRARY) $(SOURCES) $(C_LIBRARY) ../../theory.options ../../common.mk Makefile | ../../lib
 
-$(LIBRARY): $(SOURCES) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
-	$(CC) $(OBJECTS) $(C_LIBRARY) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
+$(PROJECT).so: $(PYTHON_LIBRARY)
 	$(RM) $(PROJECT).so
-	ln -s $(LIBRARY) $(PROJECT).so
+	ln -s $(PYTHON_LIBRARY) $(PROJECT).so
 
-sharedlib: $(LIBRARY) | ../../lib
+$(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(INCL)
+	$(CC) $(CFLAGS) $(LIB_INCLUDE) $(PYTHON_CFLAGS) $(INCLUDE) $< -c -o $@
+
+$(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
+
+$(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/*.c $(DD_DIR)/*.c.src $(DD_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(DD_DIR) libs
+
+$(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(DDrppi_DIR)/*.c $(DDrppi_DIR)/*.c.src $(DDrppi_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(DDrppi_DIR) libs
+
+$(WP_DIR)/lib$(WP_LIB).a: $(WP_DIR)/*.c $(WP_DIR)/*.c.src $(WP_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(WP_DIR) libs
+
+$(XI_DIR)/lib$(XI_LIB).a: $(XI_DIR)/*.c $(XI_DIR)/*.c.src $(XI_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(XI_DIR) libs
+
+$(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/*.c $(VPF_DIR)/*.c.src $(VPF_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(VPF_DIR) libs
+
+
+install: sharedlib $(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY) 
+
+sharedlib: $(PROJECT).so
+ifeq ($(FIX_PYTHON_LINK), 1)
 	@{ \
-		CURRENT_PYTHON_LIB=`otool -L $(LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
+		CURRENT_PYTHON_LIB=`otool -L $(PYTHON_LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
 		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
 		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
 		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
-		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(LIBRARY); \
+		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(PYTHON_LIBRARY); \
 		fi ;\
 	}
+endif
 
+$(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY): $(PYTHON_LIBRARY) | $(INSTALL_LIB_DIR)
+	cp -p $(PYTHON_LIBRARY) $(INSTALL_LIB_DIR)/
 
-../../lib:
-	mkdir -p ../../lib
+$(INSTALL_LIB_DIR)/$(PROJECT).so:$(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY)
+	$(RM) $(INSTALL_LIB_DIR)/$(PROJECT).so
+	cd $(INSTALL_LIB_DIR) && ln -s $(PYTHON_LIBRARY) $(PROJECT).so
 
-../../lib/libcountpairs.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi_of_r lib
-
-../../lib/libcountpairs_rp_pi.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi_rp_pi lib
-
-../../lib/libcountpairs_wp.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../wp lib
-
-../../lib/libcountpairs_xi.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../xi lib
-
-../../lib/libcountspheres.a: ../../theory.options ../../common.mk Makefile | ../../lib
-	$(MAKE) -C ../vpf lib
-
-%.o: %.c ../../theory.options ../../common.mk Makefile $(C_LIBRARY)
-	$(CC) $(OPT) $(CFLAGS) -I../../include $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
-
-install: $(PHONY_FIX_PY_LINK) ../../lib/$(LIBRARY) | ../../lib
-
-../../lib/$(LIBRARY): $(LIBRARY)
-	cp -p $(LIBRARY) ../../lib/
-	$(RM) ../../lib/$(PROJECT).so
-	ln -s $(LIBRARY) ../../lib/$(PROJECT).so
-
-
-tests: $(PHONY_FIX_PY_LINK) $(LIBRARY) ../../theory.options ../../common.mk Makefile $(C_LIBRARY) $(OBJECTS) | ../../lib
+tests: sharedlib $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(OBJECTS) | $(ROOT_DIR)/lib
 	python call_correlation_functions.py
 
-distclean: clean | ../../lib
-	$(RM) ../../lib/$(LIBRARY)
-	$(RM) ../../lib/$(PROJECT).so
-
-.PHONY: clean celna clena celan install distclean sharedlib
-
 clean:
-	$(RM) $(LIBRARY) $(OBJECTS) $(PROJECT).so
+	$(RM) $(OBJECTS) $(PYTHON_LIBRARY) $(PROJECT).so
+	$(RM) -R *.dSYM
 
-celan: clean
-celna: clean
-clena: clean
+distclean:clean
+	cd $(INSTALL_LIB_DIR) && $(RM) $(PYTHON_LIBRARY) $(PROJECT).so
+
+include $(ROOT_DIR)/rules.mk
 

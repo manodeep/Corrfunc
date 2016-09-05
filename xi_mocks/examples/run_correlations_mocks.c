@@ -60,12 +60,19 @@ int main(int argc, char **argv)
     struct timeval t0,t1;
     DOUBLE pimax;
     int cosmology=1;
+    int nthreads=1;
 
-#if !(defined(USE_OMP) && defined(_OPENMP))
-    const char argnames[][30]={"file","format","binfile","pimax","cosmology"};
-#else
-    int nthreads=4;//default to 4 threads
+    struct config_options options = get_config_options();
+    options.verbose=1;
+    options.periodic=0;
+    options.need_avg_sep=1;
+    options.float_type = sizeof(DOUBLE);
+    
+#if defined(_OPENMP)
+    nthreads=4;//default to 4 threads
     const char argnames[][30]={"file","format","binfile","pimax","cosmology","Nthreads"};
+#else
+    const char argnames[][30]={"file","format","binfile","pimax","cosmology"};
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
 
@@ -74,7 +81,7 @@ int main(int argc, char **argv)
         if(argc < (nargs + 1) ) {
             //Not enough options were supplied
             Printhelp();
-            exit(EXIT_FAILURE);
+            return EXIT_FAILURE;
         } else {
             //Correct number of options - let's parse them.
             my_snprintf(file,MAXLEN, "%s",argv[1]);
@@ -82,7 +89,7 @@ int main(int argc, char **argv)
             my_snprintf(binfile,MAXLEN,"%s",argv[3]);
             pimax=atof(argv[4]);
             cosmology=atoi(argv[5]);
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
             nthreads = atoi(argv[6]);
 #endif
         }
@@ -101,12 +108,17 @@ int main(int argc, char **argv)
     fprintf(stderr,"\t\t %-10s = %s \n",argnames[2],binfile);
     fprintf(stderr,"\t\t %-10s = %10.4lf\n",argnames[3],pimax);
     fprintf(stderr,"\t\t %-10s = %d\n",argnames[4],cosmology);
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     fprintf(stderr,"\t\t %-10s = %d\n",argnames[5],nthreads);
 #endif
     fprintf(stderr,"\t\t -------------------------------------" ANSI_COLOR_RESET "\n");
 
-    init_cosmology(cosmology);
+    {
+        int status = init_cosmology(cosmology);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
 
 
     //Read-in the data
@@ -121,7 +133,7 @@ int main(int argc, char **argv)
     //Do the DD(rp, pi) counts
     {
         gettimeofday(&t0,NULL);
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d %d'" ANSI_COLOR_RESET "\n",
                 "../DDrppi/DDrppi_mocks",file,fileformat,file,fileformat,binfile,pimax,cosmology,nthreads);
 #else
@@ -129,6 +141,7 @@ int main(int argc, char **argv)
                 "../DDrppi/DDrppi_mocks",file,fileformat,file,fileformat,binfile,pimax,cosmology);
 #endif
 
+<<<<<<< HEAD
         results_countpairs_mocks results  = countpairs_mocks(ND1,ra1,dec1,cz1,
                                                               ND2,ra2,dec2,cz2,
 #if defined(USE_OMP) && defined(_OPENMP)
@@ -138,6 +151,21 @@ int main(int argc, char **argv)
                                                               binfile,
                                                               pimax,
                                                               cosmology);
+=======
+        results_countpairs_mocks results;
+        int status = countpairs_mocks(ND1,ra1,dec1,cz1,
+                                      ND2,ra2,dec2,cz2,
+                                      nthreads,
+                                      autocorr,
+                                      binfile,
+                                      pimax,
+                                      cosmology,
+                                      &results,
+                                      &options);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+>>>>>>> develop
 
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
@@ -164,10 +192,11 @@ int main(int argc, char **argv)
     //Do the w(theta) counts
     {
         gettimeofday(&t0,NULL);
-#if defined(USE_OMP) && defined(_OPENMP)
-        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
-                "../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile,pimax,nthreads);
+#if defined(_OPENMP)
+        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
+                "../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile,nthreads);
 #else
+<<<<<<< HEAD
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s %lf'" ANSI_COLOR_RESET "\n",
                 "../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile,pimax);
 #endif
@@ -176,10 +205,24 @@ int main(int argc, char **argv)
                                                                    ND2,ra2,dec2,
 #if defined(USE_OMP) && defined(_OPENMP)
                                                                    nthreads,
+=======
+        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s '" ANSI_COLOR_RESET "\n",
+                "../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile);
+>>>>>>> develop
 #endif
-                                                                   autocorr,
-                                                                   binfile) ;
 
+        results_countpairs_theta results;
+        options.fast_acos=1;//over-ride Makefile option
+        int status = countpairs_theta_mocks(ND1,ra1,dec1,
+                                            ND2,ra2,dec2,
+                                            nthreads,
+                                            autocorr,
+                                            binfile,
+                                            &results,
+                                            &options);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
         gettimeofday(&t1,NULL);
         DOUBLE pair_time = ADD_DIFF_TIME(t0,t1);
 
@@ -212,6 +255,7 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %lf %d %d %d %lf %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
                 "../vpf/vpf_mocks",rmax,nbin,nc,num_pN,0.0,file,fileformat,"junk","junkformat",centers_file,cosmology);
 
+<<<<<<< HEAD
         results_countspheres_mocks results = countspheres_mocks(ND1, ra1, dec1, cz1,
                                                                  Nran, xran, yran, zran,
                                                                  threshold_neighbors,
@@ -220,6 +264,21 @@ int main(int argc, char **argv)
                                                                  centers_file,
                                                                  cosmology);
 
+=======
+        results_countspheres_mocks results;
+        int status = countspheres_mocks(ND1, ra1, dec1, cz1,
+                                        Nran, xran, yran, zran,
+                                        threshold_neighbors,
+                                        rmax, nbin, nc,
+                                        num_pN,
+                                        centers_file,
+                                        cosmology,
+                                        &results,
+                                        &options);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+>>>>>>> develop
 
 
         gettimeofday(&t1,NULL);
@@ -230,7 +289,7 @@ int main(int argc, char **argv)
         const DOUBLE rstep = rmax/(DOUBLE)nbin ;
         for(int ibin=0;ibin<results.nbin;ibin++) {
             const double r=(ibin+1)*rstep;
-            fprintf(stdout,"%10.2"DOUBLE_FORMAT" ", r);
+            fprintf(stdout,"%10.2"REAL_FORMAT" ", r);
             for(int i=0;i<num_pN;i++) {
                 fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
             }

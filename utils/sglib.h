@@ -29,7 +29,7 @@
 
 /* the assert is used exclusively to write unexpected error messages */
 #include <assert.h>
-
+#include <stdint.h>
 
 /* ---------------------------------------------------------------------------- */
 /* ---------------------------------------------------------------------------- */
@@ -87,6 +87,39 @@
         } while (_m_ != _i_);                                           \
     }
 
+#define SGLIB_ARRAY_HEAP_SORT_MULTICOMP(type, a, max, comparator, elem_exchanger) { \
+    int64_t   _k_;                                                      \
+    for(_k_=(max)/2; _k_>=0; _k_--) {                                   \
+      SGLIB___ARRAY_HEAP_DOWN_MULTICOMP(type, a, _k_, max, comparator, elem_exchanger); \
+    }                                                                   \
+    for(_k_=(max)-1; _k_>=0; _k_--) {                                   \
+      elem_exchanger(type, a, 0, _k_);                                  \
+      SGLIB___ARRAY_HEAP_DOWN_MULTICOMP(type, a, 0, _k_, comparator, elem_exchanger); \
+    }                                                                   \
+  }
+
+#define SGLIB___ARRAY_HEAP_DOWN_MULTICOMP(type, a, ind, max, comparator, elem_exchanger) { \
+    /* type  _t_;\ */                                                   \
+    int64_t   _m_, _l_, _r_, _i_;                                       \
+    _i_ = (ind);                                                        \
+    _m_ = _i_;                                                          \
+    do {                                                                \
+      _i_ = _m_;                                                        \
+      _l_ = 2*_i_+1;                                                    \
+      _r_ = _l_+1;                                                      \
+      if (_l_ < (max)){                                                 \
+        if (comparator(a, _m_, _l_) < 0) _m_ = _l_;                     \
+        if (_r_ < (max)) {                                              \
+          if (comparator(a,_m_, _r_) < 0) _m_ = _r_;                    \
+        }                                                               \
+      }                                                                 \
+      if (_m_ != _i_) {                                                 \
+        elem_exchanger(type, a, _i_, _m_);                              \
+      }                                                                 \
+    } while (_m_ != _i_);                                               \
+  }
+
+
 
 /*             QUICK - SORT   (level 0)          */
 
@@ -95,71 +128,141 @@
     }
 
 #define SGLIB_ARRAY_QUICK_SORT(type, a, max, comparator, elem_exchanger) { \
-        int   _i_, _j_, _p_, _stacki_, _start_, _end_;                  \
-        /* can sort up to 2^64 elements */                              \
-        int   _startStack_[64];                                         \
-        int   _endStack_[64];                                           \
-        /*   type  _tmp_;\ Commented out by Manodeep Sinha, 6th April. The continuing slash is important */ \
-        _startStack_[0] = 0;                                            \
-        _endStack_[0] = (max);                                          \
-        _stacki_ = 1;                                                   \
-        while (_stacki_ > 0) {                                          \
-            _stacki_ --;                                                \
-            _start_ = _startStack_[_stacki_];                           \
-            _end_ = _endStack_[_stacki_];                               \
-            while (_end_ - _start_ > 2) {                               \
-                _p_ = _start_;                                          \
-                _i_ = _start_ + 1;                                      \
-                _j_ = _end_ - 1;                                        \
-                while (_i_<_j_) {                                       \
-                    for(; _i_<=_j_ && comparator(((a)[_i_]),((a)[_p_]))<=0; _i_++) ; \
-                    if (_i_ > _j_) {                                    \
-                        /* all remaining elements lesseq than pivot */  \
-                        elem_exchanger(type, a, _j_, _p_);              \
-                        _i_ = _j_;                                      \
-                    } else {                                            \
-                        for(; _i_<=_j_ && comparator(((a)[_j_]),((a)[_p_]))>=0; _j_--) ; \
-                        if (_i_ > _j_) {                                \
-                            /* all remaining elements greater than pivot */ \
-                            elem_exchanger(type, a, _j_, _p_);          \
-                            _i_ = _j_;                                  \
-                        } else if (_i_ < _j_) {                         \
-                            elem_exchanger(type, a, _i_, _j_);          \
-                            if (_i_+2 < _j_) {_i_++; _j_--;}            \
-                            else if (_i_+1 < _j_) _i_++;                \
-                        }                                               \
-                    }                                                   \
-                }                                                       \
-                /* O.K. i==j and pivot is on a[i] == a[j] */            \
-                /* handle recursive calls without recursion */          \
-                if (_i_-_start_ > 1 && _end_-_j_ > 1) {                 \
-                    /* two recursive calls, use array-stack */          \
-                    if (_i_-_start_ < _end_-_j_-1) {                    \
-                        _startStack_[_stacki_] = _j_+1;                 \
-                        _endStack_[_stacki_] = _end_;                   \
-                        _stacki_ ++;                                    \
-                        _end_ = _i_;                                    \
-                    } else {                                            \
-                        _startStack_[_stacki_] = _start_;               \
-                        _endStack_[_stacki_] = _i_;                     \
-                        _stacki_ ++;                                    \
-                        _start_ = _j_+1;                                \
-                    }                                                   \
-                } else {                                                \
-                    if (_i_-_start_ > 1) {                              \
-                        _end_ = _i_;                                    \
-                    } else {                                            \
-                        _start_ = _j_+1;                                \
-                    }                                                   \
-                }                                                       \
+    int64_t   _i_, _j_, _p_, _stacki_, _start_, _end_;                  \
+    /* can sort up to 2^64 elements */                                  \
+    int64_t   _startStack_[64];                                         \
+    int64_t   _endStack_[64];                                           \
+    /*   type  _tmp_;\ Commented out by Manodeep Sinha, 6th April. The continuing slash is important */ \
+    _startStack_[0] = 0;                                                \
+    _endStack_[0] = (max);                                              \
+    _stacki_ = 1;                                                       \
+    while (_stacki_ > 0) {                                              \
+      _stacki_ --;                                                      \
+      _start_ = _startStack_[_stacki_];                                 \
+      _end_ = _endStack_[_stacki_];                                     \
+      while (_end_ - _start_ > 2) {                                     \
+        _p_ = _start_;                                                  \
+        _i_ = _start_ + 1;                                              \
+        _j_ = _end_ - 1;                                                \
+        while (_i_<_j_) {                                               \
+          for(; _i_<=_j_ && comparator(((a)[_i_]),((a)[_p_]))<=0; _i_++) ; \
+          if (_i_ > _j_) {                                              \
+            /* all remaining elements lesseq than pivot */              \
+            elem_exchanger(type, a, _j_, _p_);                          \
+            _i_ = _j_;                                                  \
+          } else {                                                      \
+            for(; _i_<=_j_ && comparator(((a)[_j_]),((a)[_p_]))>=0; _j_--) ; \
+            if (_i_ > _j_) {                                            \
+              /* all remaining elements greater than pivot */           \
+              elem_exchanger(type, a, _j_, _p_);                        \
+              _i_ = _j_;                                                \
+            } else if (_i_ < _j_) {                                     \
+              elem_exchanger(type, a, _i_, _j_);                        \
+              if (_i_+2 < _j_) {_i_++; _j_--;}                          \
+              else if (_i_+1 < _j_) _i_++;                              \
             }                                                           \
-            if (_end_ - _start_ == 2) {                                 \
-                if (comparator(((a)[_start_]),((a)[_end_-1])) > 0) {    \
-                    elem_exchanger(type, a, _start_, _end_-1);          \
-                }                                                       \
-            }                                                           \
+          }                                                             \
         }                                                               \
-    }
+        /* O.K. i==j and pivot is on a[i] == a[j] */                    \
+        /* handle recursive calls without recursion */                  \
+        if (_i_-_start_ > 1 && _end_-_j_ > 1) {                         \
+          /* two recursive calls, use array-stack */                    \
+          if (_i_-_start_ < _end_-_j_-1) {                              \
+            _startStack_[_stacki_] = _j_+1;                             \
+            _endStack_[_stacki_] = _end_;                               \
+            _stacki_ ++;                                                \
+            _end_ = _i_;                                                \
+          } else {                                                      \
+            _startStack_[_stacki_] = _start_;                           \
+            _endStack_[_stacki_] = _i_;                                 \
+            _stacki_ ++;                                                \
+            _start_ = _j_+1;                                            \
+          }                                                             \
+        } else {                                                        \
+          if (_i_-_start_ > 1) {                                        \
+            _end_ = _i_;                                                \
+          } else {                                                      \
+            _start_ = _j_+1;                                            \
+          }                                                             \
+        }                                                               \
+      }                                                                 \
+      if (_end_ - _start_ == 2) {                                       \
+        if (comparator(((a)[_start_]),((a)[_end_-1])) > 0) {            \
+          elem_exchanger(type, a, _start_, _end_-1);                    \
+        }                                                               \
+      }                                                                 \
+    }                                                                   \
+  }
+
+#define SGLIB_ARRAY_QUICK_SORT_MULTICOMP(type, a, max, comparator, elem_exchanger) { \
+    int64_t   _i_, _j_, _p_, _stacki_, _start_, _end_;                  \
+    /* can sort up to 2^64 elements */                                  \
+    int64_t   _startStack_[64];                                         \
+    int64_t   _endStack_[64];                                           \
+    _startStack_[0] = 0;                                                \
+    _endStack_[0] = (max);                                              \
+    _stacki_ = 1;                                                       \
+    while (_stacki_ > 0) {                                              \
+      _stacki_ --;                                                      \
+      _start_ = _startStack_[_stacki_];                                 \
+      _end_ = _endStack_[_stacki_];                                     \
+      while (_end_ - _start_ > 2) {                                     \
+        _p_ = _start_;                                                  \
+        _i_ = _start_ + 1;                                              \
+        _j_ = _end_ - 1;                                                \
+        while (_i_<_j_) {                                               \
+          for(; _i_<=_j_ && comparator(a, _i_, _p_) <=0; _i_++) ;       \
+          if (_i_ > _j_) {                                              \
+            /* all remaining elements lesseq than pivot */              \
+            elem_exchanger(type, a, _j_, _p_);                          \
+            _i_ = _j_;                                                  \
+          } else {                                                      \
+            for(; _i_<=_j_ && comparator(a, _j_, _p_) >=0; _j_--) ;     \
+            if (_i_ > _j_) {                                            \
+              /* all remaining elements greater than pivot */           \
+              elem_exchanger(type, a, _j_, _p_);                        \
+              _i_ = _j_;                                                \
+            } else if (_i_ < _j_) {                                     \
+              elem_exchanger(type, a, _i_, _j_);                        \
+              if (_i_+2 < _j_) {_i_++; _j_--;}                          \
+              else if (_i_+1 < _j_) _i_++;                              \
+            }                                                           \
+          }                                                             \
+        }                                                               \
+        /* O.K. i==j and pivot is on a[i] == a[j] */                    \
+        /* handle recursive calls without recursion */                  \
+        if (_i_-_start_ > 1 && _end_-_j_ > 1) {                         \
+          /* two recursive calls, use array-stack */                    \
+          if (_i_-_start_ < _end_-_j_-1) {                              \
+            _startStack_[_stacki_] = _j_+1;                             \
+            _endStack_[_stacki_] = _end_;                               \
+            _stacki_ ++;                                                \
+            _end_ = _i_;                                                \
+          } else {                                                      \
+            _startStack_[_stacki_] = _start_;                           \
+            _endStack_[_stacki_] = _i_;                                 \
+            _stacki_ ++;                                                \
+            _start_ = _j_+1;                                            \
+          }                                                             \
+        } else {                                                        \
+          if (_i_-_start_ > 1) {                                        \
+            _end_ = _i_;                                                \
+          } else {                                                      \
+            _start_ = _j_+1;                                            \
+          }                                                             \
+        }                                                               \
+      }                                                                 \
+      if (_end_ - _start_ == 2) {                                       \
+        if (comparator(a, _start_, _end_-1) > 0) {                      \
+          elem_exchanger(type, a, _start_, _end_-1);                    \
+        }                                                               \
+      }                                                                 \
+    }                                                                   \
+  }
+
+
+
+
 
 /*             BINARY SEARCH (level 0)          */
 

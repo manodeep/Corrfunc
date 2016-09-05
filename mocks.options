@@ -1,13 +1,15 @@
-#### Science use-cases for Correlation Functions on mocks
+### Special option for DDrppi_mocks
 OPT += -DOUTPUT_RPAVG  ### Enabling this DOES NOT cause too much of a runtime-hit for DDrppi (<= 10% performance hit)
-#OPT += -DOUTPUT_THETAAVG
+#OPT += -DFAST_DIVIDE ##replaces divide in DDrppi with approximate divides. If you really must get that extra ~20% performance boost
 
-#### Extra options for Correlation Functions on mocks
+### Specific options for wtheta (DDtheta_mocks.c)
+#OPT += -DOUTPUT_THETAAVG
 OPT += -DLINK_IN_DEC
-OPT += -DLINK_IN_RA
+OPT += -DLINK_IN_RA #link_in_dec must be enabled before link_in_ra
+#OPT += -DFAST_ACOS ## replaces acos by an 8th order REMEZ polynomial. Results are approximate (max. absolute error 3.6e-9) ~50% boost, but obviously approximate
 
 #### Code specs for both data Correlation Functions
 OPT += -DDOUBLE_PREC
-OPT += -DUSE_AVX
-OPT += -DUSE_OMP
-#OPT += -DFAST_DIVIDE ##replaces divide in DDrppi with approximate divides. If you really must get that extra ~20% performance boost
+
+
+

@@ -1,0 +1,373 @@
+/* File: countspheres_impl.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <signal.h>
+#include <unistd.h>
+#include <gsl/gsl_rng.h>
+
+#include "countspheres_impl_DOUBLE.h" //function proto-type
+
+#include "utils.h" //all of the utilities
+#include "progressbar.h" //for the progressbar
+#include "cellarray_DOUBLE.h" //definition of struct cellarray*
+#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
+#include "cpu_features.h"
+
+#include "vpf_kernels_DOUBLE.c"
+
+int interrupt_status_vpf_DOUBLE=EXIT_SUCCESS;
+
+void interrupt_handler_vpf_DOUBLE(int signo)
+{
+    fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
+    interrupt_status_vpf_DOUBLE = EXIT_FAILURE;
+}    
+
+vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options) 
+{
+  
+    static vpf_func_ptr_DOUBLE function = NULL;
+    static isa old_isa=-1;
+    if(old_isa == options->instruction_set) {
+        return function;
+    }
+
+    //Seriously this is the declaration for the function pointers...here be dragons.
+    vpf_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX__
+      vpf_avx_intrinsics_DOUBLE,
+#endif			 
+#ifdef __SSE4_2__
+      vpf_sse_intrinsics_DOUBLE,
+#endif
+      vpf_fallback_DOUBLE
+    };
+    const int num_functions = sizeof(allfunctions)/sizeof(void *);
+    const int fallback_offset = num_functions - 1;
+#if defined(__AVX__) || defined __SSE4_2__    
+    const int highest_isa = instrset_detect();
+#endif    
+    int curr_offset = 0;
+    
+    /* Now check if AVX is supported by the CPU */
+    int avx_offset = fallback_offset;
+#ifdef __AVX__
+    avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif        
+    
+    /* Is the SSE function supported at runtime and enabled at compile-time?*/
+    int sse_offset = fallback_offset;
+#ifdef __SSE4_2__
+    sse_offset = highest_isa >= 6 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+    if( curr_offset != fallback_offset) {
+      fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
+              curr_offset, fallback_offset);
+      return NULL;
+    } 
+    
+    int function_dispatch=0;
+    /* Check that cpu supports feature */
+    if(options->instruction_set != 0) {
+      switch(options->instruction_set) {
+      case(AVX):
+        function_dispatch=avx_offset;break;
+      case(SSE42):function_dispatch=sse_offset;break;
+      default:function_dispatch=fallback_offset;break;
+      }
+    }
+
+    if(function_dispatch >= num_functions) {
+      fprintf(stderr,"In %s> ERROR: Could not resolve the correct function.\n Function index = %d must lie between [0, %d)\n",
+              __FUNCTION__, function_dispatch, num_functions);
+      return NULL;
+    }
+    function = allfunctions[function_dispatch];
+    old_isa = options->instruction_set;
+
+    return function;
+}
+
+
+
+
+int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
+                        const double rmax, const int nbin, const int nc,
+                        const int num_pN,
+                        unsigned long seed,
+                        results_countspheres *results,
+                        struct config_options *options)
+{
+    
+    if(options->float_type != sizeof(DOUBLE)) {
+        fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
+                __FUNCTION__, sizeof(DOUBLE), options->float_type);
+        return EXIT_FAILURE;
+    }
+
+    //Input validation
+    if( ! (rmax > 0.0 && nbin > 0 && nc > 0 && num_pN > 0)) {
+        fprintf(stderr,"Error: Invalid input parameters. Expected rmax > 0, number of bins > 0, number of random spheres > 0, number of pN's to calculate > 0.\n"
+                "Found rmax = %lf, nbin = %d nspheres = %d num_pN = %d\n", rmax, nbin, nc, num_pN);
+        return EXIT_FAILURE;
+    }
+    
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
+    int bin_refine_factor=1;
+
+    /* setup interrupt handler -> mostly useful during the python execution. 
+       Let's Ctrl-C abort the extension  */
+    SETUP_INTERRUPT_HANDLERS(interrupt_handler_vpf_DOUBLE);
+
+    const gsl_rng_type * T = gsl_rng_mt19937;
+    gsl_rng *rng = gsl_rng_alloc (T);
+    gsl_rng_set(rng, seed);
+
+    int **pN = (int **) matrix_calloc(sizeof(**pN), nbin, num_pN);
+    if(pN == NULL) {
+        gsl_rng_free(rng);
+        return EXIT_FAILURE;
+    }
+    //Find the min/max of the data
+    DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
+    xmin=1e10;ymin=1e10;zmin=1e10;
+    xmax=-1e10;ymax=-1e10;zmax=-1e10;
+    get_max_min_DOUBLE(np, X, Y, Z, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
+
+    //First create the 3-d linklist
+    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
+    cellarray_DOUBLE *lattice = gridlink_DOUBLE(np, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+    if(lattice == NULL) {
+        return EXIT_FAILURE;
+    }
+    
+    int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
+
+    const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
+    const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
+    const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
+    if(options->verbose && options->periodic) {
+        fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
+        fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
+        fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+    }
+
+
+    const DOUBLE inv_xdiff = ((DOUBLE) 1.0)/xdiff;
+    const DOUBLE inv_ydiff = ((DOUBLE) 1.0)/ydiff;
+    const DOUBLE inv_zdiff = ((DOUBLE) 1.0)/zdiff;
+
+    vpf_func_ptr_DOUBLE vpf_function_DOUBLE = vpf_driver_DOUBLE(options);
+    if(vpf_function_DOUBLE == NULL) {
+        return EXIT_FAILURE;
+    }
+    
+    int interrupted=0;
+    if(options->verbose) {
+        init_my_progressbar(nc,&interrupted);
+    }
+    
+    /* loop through centers, placing each randomly */
+    int ic=0;
+    while(ic < nc && interrupt_status_vpf_DOUBLE == EXIT_SUCCESS) {
+        if(options->verbose) {
+            my_progressbar(ic,&interrupted);
+        }
+        
+        const DOUBLE xc = xdiff*gsl_rng_uniform (rng) + xmin;
+        const DOUBLE yc = ydiff*gsl_rng_uniform (rng) + ymin;
+        const DOUBLE zc = zdiff*gsl_rng_uniform (rng) + zmin;
+
+        if( ! options->periodic) {
+            //Check that the biggest sphere will not intersect
+            //with the box edges iff non-periodic conditions are set
+            if((xc - xmin) < rmax || (xmax - xc) < rmax ||
+               (yc - ymin) < rmax || (ymax - yc) < rmax ||
+               (zc - zmin) < rmax || (zmax - zc) < rmax) {
+                continue;
+            }
+        }
+
+        ic++;
+
+        int ix = (int)(nmesh_x*(xc-xmin)*inv_xdiff);
+        int iy = (int)(nmesh_y*(yc-ymin)*inv_ydiff);
+        int iz = (int)(nmesh_z*(zc-zmin)*inv_zdiff);
+        if(ix > nmesh_x-1) ix--;
+        if(iy > nmesh_y-1) iy--;
+        if(iz > nmesh_z-1) iz--;
+
+        XRETURN(ix >= 0 && ix < nmesh_x,
+                EXIT_FAILURE,
+                "ERROR: x-position = %lf with index = %d should be in [0, %d) \n",
+                xc, ix, nmesh_x);
+        XRETURN(iy >= 0 && iy < nmesh_y,
+                EXIT_FAILURE,
+                "ERROR: y-position = %lf with index = %d should be in [0, %d) \n",
+                yc, iy, nmesh_y);
+        XRETURN(iz >= 0 && iz < nmesh_z,
+                EXIT_FAILURE,
+                "ERROR: z-position = %lf with index = %d should be in [0, %d) \n",
+                zc, iz, nmesh_z);
+
+        int counts_pN[nbin];
+        for(int ibin=0;ibin<nbin;ibin++) {
+            counts_pN[ibin]=0;
+        }
+        
+        /* gettimeofday(&t0,NULL); */
+        for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++) {
+            int iiix;
+            DOUBLE off_xwrap=0.0;
+            if(options->periodic) {
+                if(ix + iix >= nmesh_x) {
+                    off_xwrap = -xdiff;
+                } else if (ix + iix < 0) {
+                    off_xwrap = xdiff;
+                }
+                iiix=(ix+iix+nmesh_x)%nmesh_x;
+            } else {
+                iiix = iix+ix;
+                if(iiix < 0 || iiix >= nmesh_x) {
+                    continue;
+                }
+            }
+            const DOUBLE newxpos = xc + off_xwrap;
+
+            for(int iiy=-bin_refine_factor;iiy<=bin_refine_factor;iiy++) {
+                int iiiy;
+                DOUBLE off_ywrap = 0.0;
+                if(options->periodic) {
+                    if(iy + iiy >= nmesh_y) {
+                        off_ywrap = -ydiff;
+                    } else if (iy + iiy < 0) {
+                        off_ywrap = ydiff;
+                    }
+                    iiiy=(iy+iiy+nmesh_y)%nmesh_y;
+                } else {
+                    iiiy = iiy+iy;
+                    if(iiiy < 0 || iiiy >= nmesh_y) {
+                        continue;
+                    }
+                }
+                const DOUBLE newypos = yc + off_ywrap;
+
+                for(int iiz=-bin_refine_factor;iiz<=bin_refine_factor;iiz++) {
+                    int iiiz;
+                    DOUBLE off_zwrap = 0.0;
+                    if(options->periodic) {
+                        if(iz + iiz >= nmesh_z) {
+                            off_zwrap = -zdiff;
+                        } else if (iz + iiz < 0) {
+                            off_zwrap = zdiff;
+                        }
+                        iiiz=(iz+iiz+nmesh_z)%nmesh_z;
+                    } else {
+                        iiiz = iiz+iz;
+                        if(iiiz < 0 || iiiz >= nmesh_z) {
+                            continue;
+                        }
+                    }
+                    const DOUBLE newzpos = zc + off_zwrap;
+
+                    const int64_t index=iiix*nmesh_y*nmesh_z + iiiy*nmesh_z + iiiz;
+                    const cellarray_DOUBLE *first = &(lattice[index]);
+                    DOUBLE *x2 = first->x;
+                    DOUBLE *y2 = first->y;
+                    DOUBLE *z2 = first->z;
+                    /* fprintf(stderr,"calling vpf on index = %lld\n", index); */
+                    int status = vpf_function_DOUBLE(first->nelements, x2, y2, z2,
+                                                     newxpos, newypos, newzpos,
+                                                     rmax, nbin, 
+                                                     counts_pN);
+                    if(status != EXIT_SUCCESS) {
+                        matrix_free((void **) pN, nbin);
+                        return status;
+                    }
+                }//loop over z-neighbours
+            }//loop over y neighbours
+        }//loop over x neighbours
+
+        /* compute cumulative counts, i.e. counts changes from the number of galaxies
+           in shell ibin to  the number of galaxies in shell ibin or any smaller shell */
+        for(int ibin=1;ibin<nbin;ibin++){
+            counts_pN[ibin]+=counts_pN[ibin-1];
+        }
+
+        /* Probably better of sorting counts. 
+           Then the next double for-loop will be much more coherent (branch-predictions + early exit) */
+        
+        /* compute pN's */
+        for(int ibin=0;ibin<nbin;ibin++) {
+            for(int i=0;i<num_pN;i++) {
+                if(counts_pN[ibin] == i) {
+                    pN[ibin][i]++;
+                }
+            }
+        }
+        
+        /* gettimeofday(&t1,NULL); */
+    }//loop over number of spheres
+    
+    gsl_rng_free (rng);
+    free_cellarray_DOUBLE(lattice, totncells);
+    if(interrupt_status_vpf_DOUBLE != EXIT_SUCCESS) {
+        matrix_free((void **) pN, nbin);
+        return interrupt_status_vpf_DOUBLE;
+    }
+    
+    if(options->verbose) {
+        finish_myprogressbar(&interrupted);
+    }
+
+    //prepare the results
+    results->rmax = rmax;
+    results->nbin = nbin;
+    results->nc   = nc;
+    results->num_pN = num_pN;
+    results->pN = (double **) matrix_malloc(sizeof(double), nbin, num_pN);
+    if(results->pN == NULL) {
+        matrix_free((void **) pN, nbin);
+        free_results_countspheres(results);
+        return EXIT_FAILURE;
+    }
+
+    const DOUBLE inv_nc = ((DOUBLE) 1.0)/(DOUBLE) nc;
+    for(int i=0;i<num_pN;i++) {
+        for(int ibin=0;ibin<nbin;ibin++) {
+            if( pN[ibin][i] > nc) {
+                fprintf(stderr,"ERROR: Number of spheres = %d containing i=%d points can not be larger than the total number of spheres = %d\n",
+                        pN[ibin][i], num_pN, nc);
+                matrix_free((void **) pN, nbin);
+                return EXIT_FAILURE;
+            }
+            (results->pN)[ibin][i] = pN[ibin][i] * inv_nc;
+        }
+    }
+    matrix_free((void **) pN, nbin);
+
+    /* reset interrupt handlers to default */
+    RESET_INTERRUPT_HANDLERS();
+
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
+
+    return EXIT_SUCCESS;
+}

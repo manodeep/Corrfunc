@@ -16,44 +16,20 @@
 #define MAXLEN 500
 #endif
 
-#ifndef DOUBLE_PREC
-#define DOUBLE_PREC
-#endif
-
-#ifndef OUTPUT_RPAVG
-#define OUTPUT_RPAVG
-#endif
-
-#ifndef OUTPUT_THETAAVG
-#define OUTPUT_THETAAVG
-#endif
-
-#ifdef FAST_DIVIDE
-#undef FAST_DIVIDE
-#endif
-
 #if !(defined(__INTEL_COMPILER)) && defined(USE_AVX)
 #warning Test suite for mocks are faster with Intel compiler, icc, AVX libraries.
 #endif
 
-#ifndef SILENT
-#define SILENT
-#endif
 
+#include "defs.h"
 #include "function_precision.h"
 #include "io.h"
-#include "defs.h"
 #include "utils.h"
+#include "cosmology_params.h"
 
-
-//Including the C files directly
-#include "gridlink_mocks.c"
-#include "io.c"
-#include "ftread.c"
-#include "../DDrppi/countpairs_rp_pi_mocks.c"
-#include "../wtheta/countpairs_theta_mocks.c"
-#include "../vpf/countspheres_mocks.c"
-
+#include "../DDrppi/countpairs_rp_pi_mocks.h"
+#include "../wtheta/countpairs_theta_mocks.h"
+#include "../vpf/countspheres_mocks.h"
 
 char tmpoutputfile[]="./tests_mocks_output.txt";
 
@@ -74,14 +50,16 @@ char binfile[]="../tests/bins";
 char angular_binfile[]="../tests/angular_bins";
 DOUBLE pimax=40.0;
 double boxsize=420.0;
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
 const int nthreads=4;
+#else
+const int nthreads=1;
 #endif
 const int cosmology_flag=1;
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
+struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .fast_divide=0, .fast_acos=0, .version=STR(VERSION)};
 //end of global variables
-
 
 int test_DDrppi_mocks(const char *correct_outputfile)
 {
@@ -89,17 +67,25 @@ int test_DDrppi_mocks(const char *correct_outputfile)
     int autocorr = (RA1==RA2) ? 1:0;
 
     //Do DD(rp,pi) counts
-    results_countpairs_mocks results  = countpairs_mocks(ND1,RA1,DEC1,CZ1,
-                                                          ND2,RA2,DEC2,CZ2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                          nthreads,
-#endif
-                                                          autocorr,
-                                                          binfile,
-                                                          pimax,
-                                                          cosmology_flag);
+    results_countpairs_mocks results;
+    int status = countpairs_mocks(ND1,RA1,DEC1,CZ1,
+                                  ND2,RA2,DEC2,CZ2,
+                                  nthreads,
+                                  autocorr,
+                                  binfile,
+                                  pimax,
+                                  cosmology_flag,
+                                  &results,
+                                  &options);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     FILE *fp=my_fopen(tmpoutputfile,"w");
+    if(fp == NULL) {
+        free_results_mocks(&results);
+        return EXIT_FAILURE;
+    }
     const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
     const int npibin = results.npibin;
     for(int i=1;i<results.nbin;i++) {
@@ -122,28 +108,39 @@ int test_DDrppi_mocks(const char *correct_outputfile)
 int test_wtheta_mocks(const char *correct_outputfile)
 {
     int autocorr = (RA1==RA2) ? 1:0;
-
-    results_countpairs_theta results = countpairs_theta_mocks(ND1,RA1,DEC1,
-                                                               ND2,RA2,DEC2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                               nthreads,
-#endif
-                                                               autocorr,
-                                                               angular_binfile) ;
-
+    int ret = EXIT_FAILURE;
+    results_countpairs_theta results;
+    options.link_in_dec=1;
+    options.link_in_ra=1;
+    int status = countpairs_theta_mocks(ND1,RA1,DEC1,
+                                        ND2,RA2,DEC2,
+                                        nthreads,
+                                        autocorr,
+                                        angular_binfile,
+                                        &results,
+                                        &options) ;
+    
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+    
     /*---Output-Pairs-------------------------------------*/
     FILE *fp=my_fopen(tmpoutputfile,"w");
+    if(fp == NULL) {
+        free_results_countpairs_theta(&results);
+        return EXIT_FAILURE;
+    }
     DOUBLE theta_low = results.theta_upp[0];
     for(int i=1;i<results.nbin;i++) {
         fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i]);
         theta_low=results.theta_upp[i];
     }
     fclose(fp);
-
+        
     char execstring[MAXLEN];
     my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
-
+    ret=system(execstring);
+    
     //free the result structure
     free_results_countpairs_theta(&results);
     return ret;
@@ -160,22 +157,30 @@ int test_vpf_mocks(const char *correct_outputfile)
     const int threshold_neighbors=1;
     const char centers_file[]="../tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt";
 
-    results_countspheres_mocks results = countspheres_mocks(ND1, RA1, DEC1, CZ1,
-                                                             Nran, xran, yran, zran,
-                                                             threshold_neighbors,
-                                                             rmax, nbin, nc,
-                                                             num_pN,
-                                                             centers_file,
-                                                             cosmology_flag);
-
-
+    results_countspheres_mocks results;
+    int status = countspheres_mocks(ND1, RA1, DEC1, CZ1,
+                                    Nran, xran, yran, zran,
+                                    threshold_neighbors,
+                                    rmax, nbin, nc,
+                                    num_pN,
+                                    centers_file,
+                                    cosmology_flag,
+                                    &results,
+                                    &options);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     //Output the results
     FILE *fp=my_fopen(tmpoutputfile,"w");
-    const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+    if(fp == NULL) {
+        free_results_countspheres_mocks(&results);
+        return EXIT_FAILURE;
+    }
+    const double rstep = rmax/(double)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
-        fprintf(fp,"%10.2"DOUBLE_FORMAT" ", r);
+        fprintf(fp,"%10.2"REAL_FORMAT" ", r);
         for(int i=0;i<num_pN;i++) {
             fprintf(fp," %10.4e", (results.pN)[ibin][i]);
         }
@@ -186,7 +191,7 @@ int test_vpf_mocks(const char *correct_outputfile)
     char execstring[MAXLEN];
     my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
-    assert(ret == EXIT_SUCCESS);
+
     //free the result structure
     free_results_countspheres_mocks(&results);
     return ret;
@@ -202,7 +207,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 
     //Check to see if data has to be read for RA1/DEC1/CZ1
-    if (strncmp(current_file1,firstfilename,strlen(current_file1)) != 0) {
+    if (strcmp(current_file1,firstfilename) != 0) {
         /* fprintf(stderr,"Freeing the first data-set and replacing with data from file `%s'\n",firstfilename); */
         //replace the data-set
         if(RA1 != NULL) {
@@ -249,15 +254,16 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 int main(int argc, char **argv)
 {
+    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/Mr19_mock_northonly.rdcz.dat";
     char fileformat[]="a";
 
-#ifdef PERIODIC
-#error PERIODIC must not be defined for running non-periodic tests
-#endif
-
-    init_cosmology(cosmology_flag);
+    int status = init_cosmology(cosmology_flag);
+    if(status != EXIT_SUCCESS) {
+        return EXIT_FAILURE;
+    }
     gettimeofday(&tstart,NULL);
 
     //set the globals.
@@ -271,14 +277,13 @@ int main(int argc, char **argv)
     strncpy(current_file2,file,MAXLEN);
 
     int failed=0;
-    int status;
 
     const char alltests_names[][MAXLEN] = {"Mr19 mocks DDrppi (DD)","Mr19 mocks wtheta (DD)","Mr19 mocks vpf (data)","Mr19 mocks DDrppi (DR)", "Mr19 mocks wtheta (DR)","Mr19 mocks vpf (randoms)"};
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
     const int function_pointer_index[] = {0,1,2,0,1,2};//0->DDrppi, 1->wtheta, 2->vpf
     assert(sizeof(function_pointer_index)/sizeof(int) == ntests && "Number of tests should equal the number of functions");
 
-    const char correct_outoutfiles[][MAXLEN] = {"../tests/Mr19_mock.DD", /* Test 0 Mr19 DD */
+    const char correct_outputfiles[][MAXLEN] = {"../tests/Mr19_mock.DD", /* Test 0 Mr19 DD */
                                                 "../tests/Mr19_mock_wtheta.DD", /* Test 1 Mr19 wtheta DD*/
                                                 "../tests/Mr19_mock_vpf", /* Test 2 Mr19 mocks vpf */
                                                 "../tests/Mr19_mock.DR", /* Test 3 Mr19 DR */
@@ -317,11 +322,10 @@ int main(int argc, char **argv)
                 skipped++;
                 continue;
             }
-
             read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
             pimax=allpimax[i];
             gettimeofday(&t0,NULL);
-            status = (*allfunctions[function_index])(correct_outoutfiles[i]);
+            status = (*allfunctions[function_index])(correct_outputfiles[i]);
             gettimeofday(&t1,NULL);
             double pair_time=ADD_DIFF_TIME(t0,t1);
             total_tests++;
@@ -329,13 +333,14 @@ int main(int argc, char **argv)
                 fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-                run_system_call(execstring);
+                run_system_call(execstring);//can ignore the status here
+                
             } else {
                 fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                 failed++;
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
-                run_system_call(execstring);
+                run_system_call(execstring);//can ignore the status here
 
             }
         }
@@ -358,20 +363,20 @@ int main(int argc, char **argv)
                 read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
                 pimax=allpimax[this_test_num];
                 gettimeofday(&t0,NULL);
-                status = (*allfunctions[function_index])(correct_outoutfiles[this_test_num]);
+                status = (*allfunctions[function_index])(correct_outputfiles[this_test_num]);
                 gettimeofday(&t1,NULL);
                 double pair_time = ADD_DIFF_TIME(t0,t1);
                 if(status==EXIT_SUCCESS) {
                     fprintf(stderr,ANSI_COLOR_GREEN "PASSED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_GREEN ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"rm -f %s",tmpoutputfile);
-                    run_system_call(execstring);
+                    run_system_call(execstring);//ignoring status
                 } else {
                     fprintf(stderr,ANSI_COLOR_RED "FAILED: " ANSI_COLOR_MAGENTA "%s" ANSI_COLOR_RED ". Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", testname,pair_time);
                     failed++;
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
-                    run_system_call(execstring);
+                    run_system_call(execstring);//ignoring status
                 }
             } else {
                 fprintf(stderr,ANSI_COLOR_YELLOW "WARNING: Test = %d is not a valid test index. Valid test indices range between [0,%d] " ANSI_COLOR_RESET "\n",this_test_num,ntests-1);

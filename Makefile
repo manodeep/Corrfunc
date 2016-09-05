@@ -23,15 +23,27 @@ tests:
 	$(MAKE) -C xi_theory tests
 	$(MAKE) -C xi_mocks tests
 
+<<<<<<< HEAD
 .PHONY: clean celna clena celan xi_theory xi_mocks install distclean realclean
+=======
+.PHONY: clean celna clena celan xi_theory xi_mocks install distclean realclean libs lib
+>>>>>>> develop
 
 distclean:realclean
 distclena:realclean
 realclena:realclean
 
-realclean:
+realclean:|dirs
 	$(MAKE) -C xi_theory distclean
 	$(MAKE) -C xi_mocks distclean
+	@{\
+		if [ 0 -eq $$(ls -1 lib/lib*.a 2>/dev/null | wc -l) ]; then \
+			echo "No static libs in lib/. Removing defs.h " ;\
+			rm -f include/defs.h;\
+		fi;\
+	}
+	$(MAKE) -C utils clean
+	$(MAKE) -C io clean
 
 clean:
 	$(MAKE) -C xi_theory clean

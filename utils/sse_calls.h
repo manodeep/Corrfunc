@@ -6,7 +6,7 @@
   directory at https://github.com/manodeep/Corrfunc/
 */
 
-#pragma once
+/* #pragma once */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,7 +43,8 @@ extern "C" {
 
 #define SSE_COMPARE_FLOATS_GE(X,Y)       _mm_cmpge_ps(X,Y)
 #define SSE_COMPARE_FLOATS_LT(X,Y)       _mm_cmplt_ps(X,Y)
-
+#define SSE_COMPARE_FLOATS_LE(X,Y)       _mm_cmple_ps(X,Y)    
+#define SSE_COMPARE_FLOATS_GT(X,Y)       _mm_cmpgt_ps(X,Y)    
 // X OP Y
 //#define SSE_COMPARE_FLOATS(X,Y,OP)        _mm_cmp_ps(X,Y,OP)
 #define SSE_BITWISE_AND(X,Y)              _mm_and_ps(X,Y)
@@ -55,6 +56,12 @@ extern "C" {
 
 //Max
 #define SSE_MAX_FLOATS(X,Y)               _mm_max_ps(X,Y)
+
+#ifdef  __INTEL_COMPILER
+#define SSE_ARC_COSINE(X, order)                 _mm_acos_ps(X)
+#else
+#define SSE_ARC_COSINE(X, order)                  inv_cosine_sse(X, order)
+#endif
 
 
 #else //DOUBLE PRECISION CALCULATIONS
@@ -82,6 +89,9 @@ extern "C" {
 //The comparisons
 #define SSE_COMPARE_FLOATS_GE(X,Y)       _mm_cmpge_pd(X,Y)
 #define SSE_COMPARE_FLOATS_LT(X,Y)       _mm_cmplt_pd(X,Y)
+#define SSE_COMPARE_FLOATS_LE(X,Y)       _mm_cmple_pd(X,Y)    
+#define SSE_COMPARE_FLOATS_GT(X,Y)       _mm_cmpgt_pd(X,Y)    
+
 
 //Bitwise and
 #define SSE_BITWISE_AND(X,Y)              _mm_and_pd(X,Y)
@@ -91,7 +101,50 @@ extern "C" {
 
 #define SSE_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm_blendv_pd(FALSEVALUE,TRUEVALUE,MASK)
 
+#ifdef  __INTEL_COMPILER
+#define SSE_ARC_COSINE(X, order)                 _mm_acos_pd(X)
+#else
+#define SSE_ARC_COSINE(X, order)                  inv_cosine_sse(X, order)
+#endif
 
 #define SSE_MAX_FLOATS(X,Y)               _mm_max_pd(X,Y)
 
 #endif
+
+#ifndef  __INTEL_COMPILER
+    #include "fast_acos.h"
+    static inline SSE_FLOATS inv_cosine_sse(const SSE_FLOATS X, const int order)
+{
+    union cos{
+        SSE_FLOATS m;
+        DOUBLE x[SSE_NVEC];
+    };
+    union cos union_costheta;
+    union cos union_returnvalue;
+    union_costheta.m = X;
+    const DOUBLE minus_one = (DOUBLE) -1.0;
+    const DOUBLE one = (DOUBLE) 1.0;
+
+    //Force everything to be in range [0,1]
+    for(int ii=0;ii<SSE_NVEC;ii++) {
+        const DOUBLE costheta = union_costheta.x[ii];
+        union_costheta.x[ii] = costheta <= minus_one ? minus_one:costheta;
+        union_costheta.x[ii] = costheta >= one ? one:costheta;
+    }
+    
+    if(order==0) {
+        for(int ii=0;ii<SSE_NVEC;ii++) {
+            const DOUBLE costheta = union_costheta.x[ii];
+            union_returnvalue.x[ii] = ACOS(costheta);
+        }
+    } else {
+        //fast acos
+        /*Taken from associated C++ code in http://www.geometrictools.com/GTEngine/Include/Mathematics/GteACosEstimate.h*/
+        for(int ii=0;ii<SSE_NVEC;ii++) {
+            union_returnvalue.x[ii] = FAST_ACOS(union_costheta.x[ii]);
+        }
+    }
+    return union_returnvalue.m;
+  }
+#endif
+    

@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "gsl/gsl_integration.h"
 
 #ifdef __cplusplus
 extern "C" {

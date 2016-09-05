@@ -1,65 +1,60 @@
-include ../../theory.options ../../common.mk
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
 
-target := vpf 
-SRC1   := vpf.c countspheres.c ../../utils/gridlink.c ../../utils/utils.c ../../io/ftread.c ../../io/io.c 
-INCL   := countspheres.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
-		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h 
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
-ifeq ($(OUTPUT_PGBAR), 1)
-SRC1 += ../../utils/progressbar.c
-INCL += ../../utils/progressbar.h 
-endif
-OBJS1  := $(SRC1:.c=.o)
+LIBRARY := libcountspheres.a
+LIBRARY_HEADERS := countspheres.h
+LIBSRC := countspheres.c countspheres_impl_double.c countspheres_impl_float.c \
+          $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
+          $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c \
+          $(UTILS_DIR)/cpu_features.c 
 
-all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
+TARGET := vpf
+TARGETSRC := $(TARGET).c $(IO_DIR)/ftread.c $(IO_DIR)/io.c $(LIBSRC)
+INCL   := vpf_kernels_float.c vpf_kernels_double.c vpf_kernels.c.src countspheres.h \
+          countspheres_impl_float.h countspheres_impl_double.h countspheres_impl.h.src countspheres_impl.c.src \
+          $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
+          $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray.h.src \
+          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
+	  $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/defs.h $(UTILS_DIR)/sglib.h $(UTILS_DIR)/progressbar.h \
+          $(UTILS_DIR)/cpu_features.h
 
-$(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(OBJS1) $(GSL_LINK) $(CLINK) -o $@
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+LIBOBJS := $(LIBSRC:.c=.o)
 
-countspheres.o: countspheres.c $(INCL) ../../theory.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(GSL_CFLAGS) $(INCLUDE) -c $< -o $@
+EXTRA_INCL:=$(GSL_CFLAGS)
+EXTRA_LINK:=$(GSL_LINK)
 
-%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
-
-SRC2 := countspheres.c ../../utils/gridlink.c ../../utils/utils.c
-ifeq ($(OUTPUT_PGBAR), 1)
-SRC2 += ../../utils/progressbar.c
-endif
-OBJS2 := $(SRC2:.c=.o)
-
+all: $(TARGET) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 libs: lib
-lib:  libcountspheres.a | ../../lib ../../include 
+lib: $(LIBRARY) 
 
+countspheres_impl_float.o:countspheres_impl_float.c countspheres_impl_float.h vpf_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h  $(UTILS_DIR)/cellarray_float.h
+countspheres_impl_double.o:countspheres_impl_double.c countspheres_impl_double.h vpf_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
+countspheres.o:countspheres.c countspheres_impl_float.h countspheres_impl_double.h
 
-libcountspheres.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS2)
-	cp -p $@ ../../lib/
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countspheres.h > ../../include/countspheres.h 
-
-../../bin ../../include ../../lib:
-	mkdir -p $@
-
-install: ../../bin/$(target) | ../../bin
-
-../../bin/$(target): $(target)
-	cp -p $< $@
-
-distclean: clean | ../../lib ../../include ../../bin
-	$(RM) ../../lib/libcountspheres.a
-	$(RM) ../../include/countspheres.h
-	$(RM) ../../bin/$(target)
-
-clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountspheres.a
-
-clena: clean
-celan: clean
-
-.PHONY: clean clena celan install lib tests distclean
-
+tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
+	$(MAKE) -C ../tests vpf
 
 tests: 
 	$(MAKE) -C ../tests vpf
 
+../tests/tests_nonperiodic:
+	$(MAKE) -C ../tests
+
+install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
+
+clean:
+	$(RM) $(TARGETOBJS) $(LIBRARY) $(TARGET) vpf_kernels_float.c vpf_kernels_double.c countspheres_impl_double.[ch] countspheres_impl_float.[ch]
+	$(RM) -R *.dSYM
+
+distclean:clean
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
+
+include $(ROOT_DIR)/rules.mk
