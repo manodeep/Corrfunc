@@ -28,7 +28,8 @@
 /* #define _GNU_SOURCE  */
 
 
-void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)
+
+int setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)
 {
     //set up the bins according to the binned data file
     //the form of the data file should be <rlow  rhigh ....>
@@ -43,6 +44,10 @@ void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **
     *rupp = my_calloc(sizeof(double),*nbin+1);
 
     fp = my_fopen(fname,"r");
+    if(fp == NULL) {
+        free(*rupp);
+        return EXIT_FAILURE;
+    }
     int index=1;
     while(1) {
         if(fgets(buf,MAXBUFSIZE,fp)!=NULL) {
@@ -66,32 +71,125 @@ void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **
 
     (*rupp)[*nbin]=*rmax ;
     (*rupp)[*nbin-1]=*rmax ;
+
+    return EXIT_SUCCESS;
 }
 
 
-void run_system_call(const char *execstring)
-{
-    int status;
-    status=system(execstring);
-    if(status != EXIT_SUCCESS) {
-        fprintf(stderr,"ERROR: executing system command: \n`%s'\n...exiting\n",execstring);
-        exit(EXIT_FAILURE);
-    }
 
+int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)
+{
+    //set up the bins according to the binned data file
+    //the form of the data file should be <rlow  rhigh ....>
+    const int MAXBUFSIZE=1000;
+    char buf[MAXBUFSIZE];
+    FILE *fp=NULL;
+    double low,hi;
+    const char comment='#';
+    const int nitems=2;
+    int nread=0;
+    *nbin = ((int) getnumlines(fname,comment))+1;
+    *rupp = my_calloc(sizeof(double),*nbin+1);
+
+    fp = my_fopen(fname,"r");
+    if(fp == NULL) {
+        free(*rupp);
+        return EXIT_FAILURE;
+    }
+    int index=1;
+    while(1) {
+        if(fgets(buf,MAXBUFSIZE,fp)!=NULL) {
+            nread=sscanf(buf,"%lf %lf",&low,&hi);
+            if(nread==nitems) {
+
+                if(index==1) {
+                    *rmin=low;
+                    (*rupp)[0]=low;
+                }
+
+                (*rupp)[index] = hi;
+                index++;
+            }
+        } else {
+            break;
+        }
+    }
+    *rmax = (*rupp)[index-1];
+    fclose(fp);
+
+    (*rupp)[*nbin]=*rmax ;
+    (*rupp)[*nbin-1]=*rmax ;
+
+    return EXIT_SUCCESS;
+}
+
+int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float **rupp)
+{
+    //set up the bins according to the binned data file
+    //the form of the data file should be <rlow  rhigh ....>
+    const int MAXBUFSIZE=1000;
+    char buf[MAXBUFSIZE];
+    FILE *fp=NULL;
+    float low,hi;
+    const char comment='#';
+    const int nitems=2;
+    int nread=0;
+    *nbin = ((int) getnumlines(fname,comment))+1;
+    *rupp = my_calloc(sizeof(float),*nbin+1);
+
+    fp = my_fopen(fname,"r");
+    if(fp == NULL) {
+        free(*rupp);
+        return EXIT_FAILURE;
+    }
+    int index=1;
+    while(1) {
+        if(fgets(buf,MAXBUFSIZE,fp)!=NULL) {
+            nread=sscanf(buf,"%f %f",&low,&hi);
+            if(nread==nitems) {
+
+                if(index==1) {
+                    *rmin=low;
+                    (*rupp)[0]=low;
+                }
+
+                (*rupp)[index] = hi;
+                index++;
+            }
+        } else {
+            break;
+        }
+    }
+    *rmax = (*rupp)[index-1];
+    fclose(fp);
+
+    (*rupp)[*nbin]=*rmax ;
+    (*rupp)[*nbin-1]=*rmax ;
+
+    return EXIT_SUCCESS;
+}
+
+
+int run_system_call(const char *execstring)
+{
+    int status=system(execstring);
+    if(status != EXIT_SUCCESS) {
+        fprintf(stderr,"ERROR: executing system command: \n`%s'\n\n",execstring);
+        perror(NULL);
+    }
+    return EXIT_FAILURE;
 }
 
 
 
 FILE * my_fopen(const char *fname,const char *mode)
 {
-    FILE *fp=NULL;
-    fp = fopen(fname,mode);
-    if(fp == NULL)
-        {
-            fprintf(stderr,"Could not open file `%s'\n",fname);
-            exit(EXIT_FAILURE);
-        }
-    return fp;
+    FILE *fp = fopen(fname,mode);
+    if(fp == NULL){
+        fprintf(stderr,"Could not open file `%s'\n",fname);
+        perror(NULL);
+    }
+    return fp;//Could be NULL
 }
 
 /*
@@ -109,20 +207,18 @@ FILE * my_fopen(const char *fname,const char *mode)
 
 FILE * my_fopen_carefully(const char *fname,void (*header)(FILE *))
 {
-    FILE *fp = NULL;
-    fp = fopen(fname,"r");//note I am using fopen and not my_fopen.
+    FILE *fp = fopen(fname,"r");//note I am using fopen and not my_fopen.
 
-    if(fp == NULL)
-        {
-            /*file does not exist -> open with "w" */
-            fp = my_fopen(fname,"w");//using my_fopen here.
+    if(fp == NULL) {
+        /*file does not exist -> open with "w" */
+        fp = my_fopen(fname,"w");//using my_fopen here.
+        if(fp != NULL) {
             (*header)(fp);/* print the header */
         }
-    else
-        {
-            fclose(fp);
-            fp = my_fopen(fname,"a+");//open with append mode
-        }
+    } else {
+        fclose(fp);
+        fp = my_fopen(fname,"a+");//open with append mode
+    }
 
     return fp;
 }
@@ -132,12 +228,12 @@ size_t my_fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t nwritten;
     nwritten = fwrite(ptr, size, nmemb, stream);
-    if(nwritten != nmemb)
-        {
-            fprintf(stderr,"I/O error (fwrite) has occured.\n");
-            fprintf(stderr,"Instead of reading nmemb=%zu, I got nread = %zu ..exiting\n",nmemb,nwritten);
-            exit(EXIT_FAILURE);
-        }
+    if(nwritten != nmemb){
+        fprintf(stderr,"I/O error (fwrite) has occured.\n");
+        fprintf(stderr,"Instead of reading nmemb=%zu, I got nread = %zu \n",nmemb,nwritten);
+        perror(NULL);
+        return -1;
+    }
     return nwritten;
 }
 
@@ -147,8 +243,9 @@ size_t my_fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     nread = fread(ptr, size, nmemb, stream);
     if(nread != nmemb) {
         fprintf(stderr,"I/O error (fread) has occured.\n");
-        fprintf(stderr,"Instead of reading nmemb=%zu, I got nread = %zu ..exiting\n",nmemb,nread);
-        exit(EXIT_FAILURE);
+        fprintf(stderr,"Instead of reading nmemb=%zu, I got nread = %zu\n",nmemb,nread);
+        perror(NULL);
+        return -1;
     }
     return nread;
 }
@@ -158,7 +255,7 @@ int my_fseek(FILE *stream, long offset, int whence)
     int err=fseek(stream,offset,whence);
     if(err != 0) {
         fprintf(stderr,"ERROR: Could not seek `%ld' bytes into the file..exiting\n",offset);
-        exit(EXIT_FAILURE);
+        perror(NULL);
     }
     return err;
 }
@@ -177,11 +274,45 @@ int my_snprintf(char *buffer,int len,const char *format, ...)
     va_end(args);
     if (nwritten > len || nwritten < 0) {
         fprintf(stderr,"ERROR: printing to string failed (wrote %d characters while only %d characters were allocated)\n",nwritten,len);
-        fprintf(stderr,"Increase `len' in the header file ..exiting\n");
-        exit(EXIT_FAILURE);
+        fprintf(stderr,"Increase `len'=%d in the header file\n",len);
+        return -1;
     }
     return nwritten;
 }
+
+int is_big_endian(void)
+{
+    union {
+        uint32_t i;
+        char c[4];
+    } e = { 0x01000000 };
+
+    return e.c[0];
+}
+
+void byte_swap(char * const in, const size_t size, char *out)
+{
+    if(size > 16) {
+        fprintf(stderr,"WARNING: In %s> About to byte_swap %zu bytes but no intrinsic C data-type exists with size larger than 16 bytes",
+                __FUNCTION__, size);
+    }
+    //point to the last byte
+    char *in_char = (char *) in + (size - 1UL);
+
+    //point to the first byte in output
+    char *out_char = out;
+
+    //Start filling in from the front in the output string
+    //taking input from the end of the input
+    for(size_t i=0;i<size;i++) {
+        *out_char = *in_char;
+        out_char++;
+        in_char--;
+    }
+
+}    
+
+
 
 //Taken from the inter-webs: http://stackoverflow.com/questions/1024389/print-an-int-in-binary-representation-using-c
 char * int2bin(int a, char *buffer, int buf_size)
@@ -218,7 +349,42 @@ char * int2bin(int a, char *buffer, int buf_size)
 */
 
 
+char * get_time_string(struct timeval t0,struct timeval t1)
+{
+  const size_t MAXLINESIZE = 1024;
+  char *time_string = my_malloc(sizeof(char), MAXLINESIZE);
+  double timediff = difftime(t1.tv_sec,t0.tv_sec);
+  double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
+  char units[4][10]  = {"days", "hrs" , "mins", "secs"};
+  int which = 0;
 
+  double timeleft = timediff;
+  double time_to_print;
+  
+  if(timediff < ratios[2]) {
+    my_snprintf(time_string, MAXLINESIZE,"%6.3lf secs",1e-6*(t1.tv_usec-t0.tv_usec) + timediff);
+  }  else {
+    size_t curr_index = 0;
+    while (which < 4) {
+      time_to_print = floor(timeleft/ratios[which]);
+      if (time_to_print > 1) {
+        timeleft -= (time_to_print*ratios[which]);
+        char tmp[MAXLINESIZE];
+        my_snprintf(tmp, MAXLINESIZE, "%5d %s",(int)time_to_print,units[which]);
+        const size_t len = strlen(tmp);
+        const size_t required_len = curr_index + len + 1;
+        XRETURN(MAXLINESIZE >= required_len, NULL,
+                "buffer overflow will occur: string has space for %zu bytes while concatenating requires at least %zu bytes\n",
+                MAXLINESIZE, required_len);
+        strcpy(time_string + curr_index, tmp);
+        curr_index += len;
+      }
+      which++;
+    }
+  }
+
+  return time_string;
+}
 
 void print_time(struct timeval t0,struct timeval t1,const char *s)
 {
@@ -256,8 +422,7 @@ void* my_realloc(void *x,size_t size,int64_t N,const char *varname)
 
     if (tmp==NULL) {
         fprintf(stderr,"ERROR: Could not reallocate for %"PRId64" elements with %zu size for variable `%s' ..aborting\n",N,size,varname);
-        my_free((void **) &x);
-        exit(EXIT_FAILURE);
+        perror(NULL);
     }
 
     return tmp;
@@ -269,8 +434,8 @@ void* my_malloc(size_t size,int64_t N)
     void *x = NULL;
     x = malloc(N*size);
     if (x==NULL){
-        fprintf(stderr,"malloc for %"PRId64" elements with %zu bytes failed..aborting\n",N,size);
-        exit(EXIT_FAILURE);
+        fprintf(stderr,"malloc for %"PRId64" elements with %zu bytes failed...\n",N,size);
+        perror(NULL);
     }
         
     return x;
@@ -283,8 +448,8 @@ void* my_calloc(size_t size,int64_t N)
     void *x = NULL;
     x = calloc((size_t) N, size);
     if (x==NULL)    {
-        fprintf(stderr,"malloc for %"PRId64" elements with %zu size failed..aborting\n",N,size);
-        exit(EXIT_FAILURE);
+        fprintf(stderr,"malloc for %"PRId64" elements with %zu size failed...\n",N,size);
+        perror(NULL);
     }
 
     return x;
@@ -312,20 +477,45 @@ void my_free(void ** x)
 
 void **matrix_malloc(size_t size,int64_t nrow,int64_t ncol)
 {
-    void **m;
-    m = (void **) my_malloc(sizeof(void *),nrow);
-    for(int i=0;i<nrow;i++)
+    void **m = (void **) my_malloc(sizeof(void *),nrow);
+    if(m == NULL) {
+        return NULL;
+    }
+
+    for(int i=0;i<nrow;i++) {
         m[i] = (void *) my_malloc(size,ncol);
+        /* Check if allocation failed */
+        if(m[i] == NULL) {
+            /* Free up all the memory allocated so far */
+            for(int j=i-1;j>=0;j--) {
+                free(m[j]);
+            }
+            free(m);
+            return NULL;
+        }
+    }
 
     return m;
 }
 
 void **matrix_calloc(size_t size,int64_t nrow,int64_t ncol)
 {
-    void **m;
-    m = (void **) my_calloc(sizeof(void *),nrow);
-    for(int i=0;i<nrow;i++)
+    void **m = (void **) my_calloc(sizeof(void *),nrow);
+    if(m == NULL) {
+        return m;
+    }
+    for(int i=0;i<nrow;i++) {
         m[i] = (void *) my_calloc(size,ncol);
+        /* Check if allocation failed */
+        if(m[i] == NULL) {
+            /* Free up all the memory allocated so far */
+            for(int j=i-1;j>=0;j--) {
+                free(m[j]);
+            }
+            free(m);
+            return NULL;
+        }
+    }
 
     return m;
 }
@@ -345,12 +535,40 @@ void matrix_free(void **m,int64_t nrow)
 
 void *** volume_malloc(size_t size,int64_t nrow,int64_t ncol,int64_t nframe)
 {
-    void ***v;
-    v = (void ***) my_malloc(sizeof(void **),nrow);
+    void ***v = (void ***) my_malloc(sizeof(void **),nrow);
+    if( v == NULL) {
+        return NULL;
+    }
     for(int i=0;i<nrow;i++) {
         v[i] = (void *) my_malloc(sizeof(void *),ncol);
+        if(v[i] == NULL) {
+            /* Free up all the memory allocated so far */
+            for(int jj=i-1;jj>=0;jj--) {
+                for(int k=0;k<ncol;k++) {
+                    free(v[jj][k]);
+                }
+            }
+            free(v);
+            return NULL;
+        }
+        
         for(int j=0;j<ncol;j++) {
             v[i][j] = my_malloc(size,nframe);
+            if(v[i][j] == NULL) {
+                /* Free up all the memory allocated so far */
+                /* First free up all columns in this row*/
+                for(int k=ncol-1;k>=0;k--) {
+                    free(v[i][k]);
+                }
+                /* Now free all previous rows with all ncols */
+                for(int jj=i-1;jj>=0;jj--) {
+                    for(int k=0;k<ncol;k++) {
+                        free(v[jj][k]);
+                    }
+                }
+                free(v);
+                return NULL;
+            }
         }
     }
 
@@ -359,12 +577,41 @@ void *** volume_malloc(size_t size,int64_t nrow,int64_t ncol,int64_t nframe)
 
 void *** volume_calloc(size_t size,int64_t nrow,int64_t ncol,int64_t nframe)
 {
-    void ***v;
-    v = (void ***) my_malloc(sizeof(void **),nrow);
+    void ***v = (void ***) my_malloc(sizeof(void **),nrow);
+    if(v == NULL) {
+        return NULL;
+    }
+
     for(int i=0;i<nrow;i++) {
         v[i] = (void *) my_malloc(sizeof(void *),ncol);
+        if(v[i] == NULL) {
+            /* Free up all the memory allocated so far */
+            for(int jj=i-1;jj>=0;jj--) {
+                for(int k=0;k<ncol;k++) {
+                    free(v[jj][k]);
+                }
+            }
+            free(v);
+            return NULL;
+        }
+
         for(int j=0;j<ncol;j++) {
             v[i][j] = my_calloc(size,nframe);
+            if(v[i][j] == NULL) {
+                /* Free up all the memory allocated so far */
+                /* First free up all columns in this row*/
+                for(int k=ncol-1;k>=0;k--) {
+                    free(v[i][k]);
+                }
+                /* Now free all previous rows with all ncols */
+                for(int jj=i-1;jj>=0;jj--) {
+                    for(int k=0;k<ncol;k++) {
+                        free(v[j][k]);
+                    }
+                }
+                free(v);
+                return NULL;
+            }
         }
     }
 
@@ -397,6 +644,9 @@ int64_t getnumlines(const char *fname,const char comment)
     char str_line[MAXLINESIZE];
 
     fp = my_fopen(fname,"rt");
+    if(fp == NULL) {
+        return -1;
+    }
 
     while(1){
         if(fgets(str_line, MAXLINESIZE,fp)!=NULL) {

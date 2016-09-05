@@ -6,8 +6,16 @@
   directory at https://github.com/manodeep/Corrfunc/
 */
 
-#include "io.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <inttypes.h>
+#include <string.h>
 
+#include "io.h"
+#include "ftread.h"
+#include "utils.h"
 
 #ifndef MEMORY_INCREASE_FAC
 #define MEMORY_INCREASE_FAC 1.1
@@ -21,9 +29,9 @@
 int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...)
 {
     int64_t np;
-    XASSERT(num_fields >= 1, "Number of fields to read-in = %d must be at least 1\n", num_fields);
-    XASSERT((size == 4 || size == 8), "Size of fields = %zu must be either 4 or 8\n", size);
-
+    XRETURN(num_fields >= 1, -1, "Number of fields to read-in = %d must be at least 1\n", num_fields);
+    XRETURN((size == 4 || size == 8), -1, "Size of fields = %zu must be either 4 or 8\n", size);
+    
     void *data[num_fields];
     {
         //new scope - just to check if file is gzipped.
@@ -40,7 +48,7 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
             if (fp == NULL) {
                 /* well then, file not found*/
                 fprintf(stderr,"ERROR: Could not find file: neither as `%s' nor as `%s'\n",filename,buf);
-                exit(EXIT_FAILURE);
+                return -1;
             } else {
                 /* found the gzipped file. Use a system call to uncompress. */
                 fclose(fp);
@@ -54,7 +62,10 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
                 */
                 my_snprintf(buf,MAXLEN,"gunzip %s.gz",filename);
                 fprintf(stderr,ANSI_COLOR_YELLOW "Could not locate `%s' but found the gzip file `%s.gz'.\nRunning system command `" ANSI_COLOR_BLUE "%s"ANSI_COLOR_YELLOW"' now to uncompress"ANSI_COLOR_RESET "\n",filename,filename,buf);
-                run_system_call(buf);
+                int status = run_system_call(buf);
+                if(status != EXIT_SUCCESS) {
+                    return -1;
+                }
             }
         } else {
             //file exists -> nothing to do.
@@ -69,11 +80,23 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
         bytes += sizeof(int) + sizeof(float) + sizeof(int); //skip znow
         int idat[5];
         FILE *fp = my_fopen(filename,"r");
-        my_ftread(idat,sizeof(int),5,fp);
+        if(fp == NULL) {
+            return -1;
+        }
+        int status = my_ftread(idat,sizeof(int),5,fp);
+        if(status != EXIT_SUCCESS) {
+            return -1;
+        }
         np = (int64_t) idat[1]; //idat[1] is int.
 
         for(int i=0;i<num_fields;i++) {
             data[i] = my_malloc(size,np);
+            if(data[i] == NULL) {
+                for(int j=i-1;j>=0;j--) {
+                    free(data[j]);
+                }
+                return -1;
+            }
         }
 
         my_fseek(fp,bytes,SEEK_CUR);
@@ -87,7 +110,10 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 
         if(dummy == size) {
             for(int i=0;i<num_fields;i++) {
-                my_ftread(data[i],size, np, fp);
+                status = my_ftread(data[i],size, np, fp);
+                if(status != EXIT_SUCCESS) {
+                    return -1;
+                }
             }
         } else {
 #ifndef SILENT
@@ -99,9 +125,16 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
             if(dummy == 4) {
                 XASSERT(size == 8, "size = %zu should have been 8 (doubles were expected)\n", size);
                 float *tmp = my_malloc(dummy,np);
+                if(tmp == NULL) {
+                    return -1;
+                }
+                
                 //read-in the fields
                 for(int i=0;i<num_fields;i++) {
-                    my_ftread(tmp, dummy, np, fp);
+                    status = my_ftread(tmp, dummy, np, fp);
+                    if(status != EXIT_SUCCESS) {
+                        return -1;
+                    }
                     double *tmp_pos = (double *) data[i];
                     for(int64_t j=0;j<np;j++) tmp_pos[j] = tmp[j];
                 }
@@ -111,10 +144,16 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
             } else {
                 XASSERT(size == 4, "size = %zu should have been 4 (floats were expected)\n", size);
                 double *tmp = my_malloc(dummy,np);
+                if(tmp == NULL) {
+                    return -1;
+                }
 
                 //read-in the fields
                 for(int i=0;i<num_fields;i++) {
-                    my_ftread(tmp, dummy, np, fp);
+                    status = my_ftread(tmp, dummy, np, fp);
+                    if(status != EXIT_SUCCESS) {
+                        return -1;
+                    }
                     float *tmp_pos = (float *) data[i];
                     for(int64_t j=0;j<np;j++) tmp_pos[j] = tmp[j];
                 }
@@ -134,9 +173,18 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 
         for(i=0;i<num_fields;i++) {
             data[i] = my_malloc(size,nmax);
+            if(data[i] == NULL) {
+                for(int j=i-1;j>=0;j--) {
+                    free(data[j]);
+                }
+                return -1;
+            }
         }
 
         FILE *fp = my_fopen(filename,"r");
+        if(fp == NULL) {
+            return -1;
+        }
         i = 0 ;
         while(fgets(buffer,MAXBUFSIZE,fp) != NULL) {
             double tmp;
@@ -168,13 +216,30 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 
             if(i==nmax) {
                 nmax *= MEMORY_INCREASE_FAC;
-                while(nmax==i)
-                    nmax += 5;
+                while(nmax<=i)
+                    nmax+=5;
 
                 for(int j=0;j<num_fields;j++) {
                     char varname[20];
                     snprintf(varname,20,"data[%d]",j);
-                    data[j] = my_realloc(data[j],size,nmax,varname);
+                    void *pos=NULL;
+                    do {
+                        pos = my_realloc(data[j],size,nmax,varname);
+                        if(pos == NULL) {
+                            nmax--;
+                        }
+                    } while(nmax > i && pos == NULL);
+
+                    if(nmax == i) {
+                        /*realloc failed. free memory and return */
+                        fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                                __FUNCTION__, nmax);
+                        for(int k=0;k<num_fields;k++) {
+                            free(data[k]);
+                        }
+                        return -1;
+                    }
+                    data[j] = pos;
                 }
             }
         }
@@ -189,8 +254,8 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
         }
         fclose(fp);
     } else {
-        fprintf(stderr,"ERROR: Unknown format `%s'\n",format);
-        exit(EXIT_FAILURE);
+        fprintf(stderr,"ERROR: In %s> Unknown format `%s'\n",__FUNCTION__,format);
+        return -1;
     }
 
     va_list ap;

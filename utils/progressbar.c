@@ -19,6 +19,7 @@ static char PROGRESSBARSTRING[MAXLEN];
 static int beg_of_string_index;
 static double percent=0;
 static int END_INDEX_FOR_PERCENT_DONE[101];
+struct timeval tstart;
 
 void init_my_progressbar(const int64_t N,int *interrupted)
 {
@@ -55,47 +56,54 @@ void init_my_progressbar(const int64_t N,int *interrupted)
     }
     *interrupted=0;
     beg_of_string_index=0;
+    gettimeofday(&tstart, NULL);
 }
 
 void my_progressbar(const int64_t curr_index,int *interrupted)
 {
     int integer_percent=0;
     if(SMALLPRINTSTEP > 0.0 )   {
-        if(*interrupted == 1) {
-            fprintf(stderr,"\n");
-            *interrupted = 0;
-            beg_of_string_index = 0;
-        }
-
-        percent = (curr_index+1)/SMALLPRINTSTEP;//division is in double -> C has 0-based indexing -- the +1 accounts for that.
-        integer_percent = (int) percent;
-
-        if (integer_percent >= 0 && integer_percent <= 100)  {
-            /*        for(int i=beg_of_string_index;i<END_INDEX_FOR_PERCENT_DONE[integer_percent];i++) */
-            /*            fprintf(stderr,"%c",PROGRESSBARSTRING[i]); */
-
-            fprintf(stderr,"%.*s",END_INDEX_FOR_PERCENT_DONE[integer_percent]-beg_of_string_index,&(PROGRESSBARSTRING[beg_of_string_index]));
-            beg_of_string_index = END_INDEX_FOR_PERCENT_DONE[integer_percent];
-        }
+      if(*interrupted == 1) {
+        fprintf(stderr,"\n");
+        *interrupted = 0;
+        beg_of_string_index = 0;
+      }
+      
+      percent = (curr_index+1)/SMALLPRINTSTEP;//division is in double -> C has 0-based indexing -- the +1 accounts for that.
+      integer_percent = (int) percent;
+      
+      if (integer_percent >= 0 && integer_percent <= 100)  {
+        /*        for(int i=beg_of_string_index;i<END_INDEX_FOR_PERCENT_DONE[integer_percent];i++) */
+        /*            fprintf(stderr,"%c",PROGRESSBARSTRING[i]); */
+        
+        fprintf(stderr,"%.*s",END_INDEX_FOR_PERCENT_DONE[integer_percent]-beg_of_string_index,&(PROGRESSBARSTRING[beg_of_string_index]));
+        beg_of_string_index = END_INDEX_FOR_PERCENT_DONE[integer_percent];
+      }
     }
 }
 
 void finish_myprogressbar(int *interrupted)
 {
-    if(SMALLPRINTSTEP > 0.0) {
-        if(*interrupted == 0)   {
-            if(percent < 100.0) {
-                fprintf(stderr,"100%% done \n");
-            } else {
-                fprintf(stderr," done \n");
-            }
-        } else {
-            fprintf(stderr,"\n%s done\n",PROGRESSBARSTRING);
-            *interrupted=0;
-        }
+  struct timeval t1;
+  gettimeofday(&t1, NULL);
+  char * time_string = get_time_string(tstart, t1);
+  if(SMALLPRINTSTEP > 0.0) {
+    if(*interrupted == 0)   {
+      if(percent < 100.0) {
+        fprintf(stderr,"100%% done.");
+      } else {
+        fprintf(stderr," done.");
+      }
     } else {
-        fprintf(stderr," done\n");
+      fprintf(stderr,"\n%s done.",PROGRESSBARSTRING);
+      *interrupted=0;
     }
-    beg_of_string_index = 0;
-    my_snprintf(PROGRESSBARSTRING,MAXLEN,"%s"," ");
+  } else {
+    fprintf(stderr," done.");
+  }
+  fprintf(stderr," Time taken = %s\n", time_string);
+  free(time_string);
+  
+  beg_of_string_index = 0;
+  my_snprintf(PROGRESSBARSTRING,MAXLEN,"%s"," ");
 }

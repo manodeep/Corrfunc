@@ -14,7 +14,7 @@
    * format       = format of data file  (a=ascii, c=csv, f=fast-food)
    * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)
    * numthreads   = number of threads to use (only if USE_OMP is enabled)
-   > xifile         = name of output file. Contains <xi [rpavg=0.0] rmin rmax npairs>
+   > xifile         = name of output file. Contains <xi [ravg=0.0] rmin rmax npairs>
    ----------------------------------------------------------------------
 */
 
@@ -46,13 +46,13 @@ int main(int argc, char *argv[])
     int64_t ND1=0;
     DOUBLE *x1=NULL,*y1=NULL,*z1=NULL;
 
+    int nthreads=1;
 
     /*---Corrfunc-variables----------------*/
-#if !(defined(USE_OMP) && defined(_OPENMP))
-    const char argnames[][30]={"boxsize","file","format","binfile"};
-#else
-    int nthreads=2;
+#if defined(_OPENMP)
     const char argnames[][30]={"boxsize","file","format","binfile","Nthreads"};
+#else
+    const char argnames[][30]={"boxsize","file","format","binfile"};
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
 
@@ -115,16 +115,21 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-    results_countpairs_xi results = countpairs_xi(ND1, x1, y1, z1,
-                                                   boxsize,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                   nthreads,
-#endif
-                                                   binfile);
+    results_countpairs_xi results;
+    struct config_options options = get_config_options();
+    int status = countpairs_xi(ND1, x1, y1, z1,
+                               boxsize,
+                               nthreads,
+                               binfile,
+                               &results,
+                               &options);
+    free(x1);free(y1);free(z1);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
-    free(x1);free(y1);free(z1);
 
     //Output the results
     /* Note: we discard the first bin, to mimic the fact that close pairs
@@ -132,7 +137,7 @@ int main(int argc, char *argv[])
      */
     DOUBLE rlow=results.rupp[0];
     for(int i=1;i<results.nbin;++i) {
-        fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
+        fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\t%e\n",rlow,results.rupp[i],results.ravg[i],results.npairs[i],results.xi[i]);
         rlow=results.rupp[i];
     }
 
@@ -160,9 +165,9 @@ void Printhelp(void)
 #endif
 
 #ifdef OUTPUT_RPAVG
-    fprintf(stderr,"     > xifile        = name of output file. Contains <xi  rpavg  rmin rmax npairs>\n") ;
+    fprintf(stderr,"     > xifile        = name of output file. Contains <xi  ravg  rmin rmax npairs>\n") ;
 #else
-    fprintf(stderr,"     > xifile        = name of output file. Contains <xi [rpavg=0.0] rmin rmax npairs>\n") ;
+    fprintf(stderr,"     > xifile        = name of output file. Contains <xi [ravg=0.0] rmin rmax npairs>\n") ;
 #endif
 
     fprintf(stderr,"\n\tCompile options: \n");

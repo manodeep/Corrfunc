@@ -15,7 +15,6 @@
 #include<math.h>
 #include<string.h>
 #include<limits.h>
-#include<assert.h>
 #include<time.h>
 #include<sys/time.h>
 #include<stdarg.h>
@@ -42,12 +41,62 @@
              fprintf(stderr,"Error in file: %s\tfunc: %s\tline: %d with expression `"#EXP"'\n", __FILE__, __FUNCTION__, __LINE__); \
              fprintf(stderr,__VA_ARGS__);                               \
              fprintf(stderr,ANSI_COLOR_BLUE "Hopefully, input validation. Otherwise, bug in code: please email Manodeep Sinha <manodeep@gmail.com>"ANSI_COLOR_RESET"\n"); \
-             exit(EXIT_FAILURE);                                        \
+             return EXIT_FAILURE;                                       \
          }                                                              \
      } while (0)
 #endif
 
+#ifdef NDEBUG
+#define XPRINT(EXP, ...)                                do{} while(0)
+#else
+#define XPRINT(EXP, ...)                                               \
+     do { if (!(EXP)) {                                                 \
+             fprintf(stderr,"Error in file: %s\tfunc: %s\tline: %d with expression `"#EXP"'\n", __FILE__, __FUNCTION__, __LINE__); \
+             fprintf(stderr,__VA_ARGS__);                               \
+             fprintf(stderr,ANSI_COLOR_BLUE "Hopefully, input validation. Otherwise, bug in code: please email Manodeep Sinha <manodeep@gmail.com>"ANSI_COLOR_RESET"\n"); \
+         }                                                              \
+     } while (0)
+#endif
+
+
+#ifdef NDEBUG
+#define XRETURN(EXP, VAL, ...)                                do{} while(0)
+#else
+#define XRETURN(EXP, VAL, ...)                                           \
+     do { if (!(EXP)) {                                                 \
+             fprintf(stderr,"Error in file: %s\tfunc: %s\tline: %d with expression `"#EXP"'\n", __FILE__, __FUNCTION__, __LINE__); \
+             fprintf(stderr,__VA_ARGS__);                               \
+             fprintf(stderr,ANSI_COLOR_BLUE "Hopefully, input validation. Otherwise, bug in code: please email Manodeep Sinha <manodeep@gmail.com>"ANSI_COLOR_RESET"\n"); \
+             return VAL;                                                \
+         }                                                              \
+     } while (0)
+#endif
+   
+#define SETUP_INTERRUPT_HANDLERS(handler_name)                          \
+     const int interrupt_signals[] = {SIGTERM, SIGINT, SIGHUP};         \
+     const size_t nsig = sizeof(interrupt_signals)/sizeof(interrupt_signals[0]); \
+     typedef void (* sig_handlers)(int);                                \
+     sig_handlers previous_handlers[nsig];                              \
+     for(size_t i=0;i<nsig;i++) {                                       \
+         int signo = interrupt_signals[i];                              \
+         sig_handlers prev = signal(signo, handler_name);               \
+         if (prev == SIG_ERR) {                                         \
+             fprintf(stderr,"Can not handle signal = %d\n", signo);     \
+         }                                                              \
+         previous_handlers[i] = prev;                                   \
+     }                                                              
+
+#define RESET_INTERRUPT_HANDLERS()              \
+     for(size_t i=0;i<nsig;i++) {                                       \
+         int signo = interrupt_signals[i];                              \
+         sig_handlers prev = previous_handlers[i];                      \
+         if(prev == SIG_IGN || prev == SIG_ERR) continue;               \
+         if(signal(signo, prev) == SIG_ERR) {                           \
+             fprintf(stderr,"Could not reset signal handler to default for signal = %d\n", signo); \
+         }                                                              \
+     }
      
+    
      //routines for file i/o
      extern FILE * my_fopen(const char *fname,const char *mode);
      extern FILE * my_fopen_carefully(const char *fname,void (*header)(FILE *));
@@ -58,8 +107,11 @@
      //general utilities
      extern char *int2bin(int a, char *buffer, int buf_size) ;
      extern int my_snprintf(char *buffer,int len,const char *format, ...) __attribute__((format(printf,3,4)));
+     extern char * get_time_string(struct timeval t0,struct timeval t1);
      extern void print_time(struct timeval t0,struct timeval t1,const char *s);
      extern int64_t getnumlines(const char *fname,const char comment);
+     extern int is_big_endian(void);
+     extern void byte_swap(char * const in, const size_t size, char *out);
 
      //memory routines
      extern void* my_realloc(void *x,size_t size,int64_t N,const char *varname);
@@ -75,9 +127,11 @@
      void *** volume_calloc(size_t size,int64_t nrow,int64_t ncol,int64_t nframe);
      void volume_free(void ***v,int64_t nrow,int64_t ncol);
 
-     extern void run_system_call(const char *execstring);
+     extern int run_system_call(const char *execstring);
 
-     extern void  setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
+     extern int setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
+     extern int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
+     extern int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float **rupp);
 
      extern int test_all_files_present(const int nfiles, ...);
      //end function declarations

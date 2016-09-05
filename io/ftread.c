@@ -18,16 +18,16 @@
 #include "ftread.h"
 
 
-
 int my_ftread(void *ptr,size_t size,size_t nitems,FILE *stream)
 {
     int err = ftread(ptr,size,nitems,stream);
     if(err != 0){
-        fprintf(stderr,"ERROR: Read error in ftread ..exiting\n");
-        exit(EXIT_FAILURE);
+        fprintf(stderr,"ERROR: In %s> Read error in ftread while trying to read nitems = %zu "
+                "of %zu bytes each\n", __FUNCTION__, nitems, size);
+        return EXIT_FAILURE;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 

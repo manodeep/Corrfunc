@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -100,23 +101,30 @@ int main(int argc, char *argv[])
     np = read_positions(file,fileformat, sizeof(DOUBLE), 3, &x, &y, &z);
     gettimeofday(&t1,NULL);
 
-    results_countspheres results = countspheres(np, x, y, z,
-                                                rmax, nbin, nc,
-                                                num_pN,
-                                                seed);
+    results_countspheres results;
+    struct config_options options = get_config_options();
+    int status = countspheres(np, x, y, z,
+                              rmax, nbin, nc,
+                              num_pN,
+                              seed,
+                              &results,
+                              &options);
+    free(x);free(y);free(z);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
 
     //Output the results
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
         const double r=(ibin+1)*rstep;
-        fprintf(stdout,"%"DOUBLE_FORMAT" ", r);
+        fprintf(stdout,"%lf ", r);
         for(int i=0;i<num_pN;i++) {
             fprintf(stdout," %10.4e", (results.pN)[ibin][i]);
         }
         fprintf(stdout,"\n");
     }
-
-    free(x);free(y);free(z);
+    
     free_results_countspheres(&results);
     gettimeofday(&t1,NULL);
     fprintf(stderr,"vpf> Done. Ngal = %"PRId64". Time taken = %0.2lf seconds \n",np,ADD_DIFF_TIME(tstart,t1));
@@ -150,12 +158,6 @@ void Printhelp(void)
     fprintf(stderr,"Precision = double\n");
 #else
     fprintf(stderr,"Precision = float\n");
-#endif
-
-#if defined(USE_AVX) && defined(__AVX__)
-    fprintf(stderr,"Use AVX = True\n");
-#else
-    fprintf(stderr,"Use AVX = False\n");
 #endif
 
     fprintf(stderr,"=========================================================================\n") ;

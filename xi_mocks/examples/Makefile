@@ -1,44 +1,54 @@
-include ../../mocks.options
-ifneq (clean,$(findstring clean,$(MAKECMDGOALS)))
-  include ../../common.mk
-endif
+ROOT_DIR := ../..
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
+INCLUDE_DIR := $(ROOT_DIR)/include
+LIB_DIR := $(ROOT_DIR)/lib
+DATA_DIR := ../tests/data
 
-target = run_correlations_mocks
+MOCKS_DIR := $(ROOT_DIR)/xi_mocks
+DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi
+WTHETA_DIR := $(MOCKS_DIR)/wtheta
+VPF_mocks_DIR := $(MOCKS_DIR)/vpf
 
-SRC1   := run_correlations_mocks.c ../../io/ftread.c ../../io/io.c  ../../utils/utils.c ../../utils/progressbar.c \
-					../../utils/cosmology_params.c 
-OBJS1  := $(SRC1:.c=.o)
-C_LIBRARIES = ../../lib/libcountpairs_rp_pi_mocks.a ../../lib/libcountpairs_theta_mocks.a  ../../lib/libcountspheres_mocks.a 
+DDrppi_mocks_LIB := countpairs_rp_pi_mocks
+WTHETA_LIB := countpairs_theta_mocks
+VPF_mocks_LIB := countspheres_mocks
 
-INCL :=	../../include/countpairs_rp_pi_mocks.h ../../include/countpairs_theta_mocks.h ../../include/countspheres_mocks.h\
-		../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink_mocks.h \
-		../../utils/function_precision.h ../../utils/cellarray_mocks.h ../../utils/avx_calls.h \
-		../../utils/defs.h ../../utils/progressbar.h ../../utils/cosmology_params.h 
+include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
-all: $(target) $(SRC1) $(INCL) ../../mocks.options ../../common.mk Makefile $(C_LIBRARIES)
+TARGET := run_correlations_mocks
+TARGETSRC   := $(TARGET).c $(IO_DIR)/ftread.c $(IO_DIR)/io.c  $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c \
+               $(UTILS_DIR)/cosmology_params.c 
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(WTHETA_DIR)/lib$(WTHETA_LIB).a $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a
+INCL :=	$(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h \
+        $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
+        $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/gridlink_mocks_impl_float.h \
+	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_mocks_double.h $(UTILS_DIR)/cellarray_mocks_float.h \
+        $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cosmology_params.h 
 
-$(target): Makefile ../../mocks.options ../../common.mk $(INCL) $(C_LIBRARIES) $(OBJS1) 
-	$(CC) $(OBJS1) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) -o $@
+LIBRARY_INCL := -I$(DDrppi_mocks_DIR) -I$(WTHETA_DIR) -I$(VPF_mocks_DIR)
 
-../../include/countpairs_rp_pi_mocks.h ../../lib/libcountpairs_rp_pi_mocks.a: ../../common.mk ../../mocks.options Makefile
-	$(MAKE) -C ../DDrppi lib
+all: $(TARGET) $(TARGETSRC) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
 
-../../include/countpairs_theta_mocks.h ../../lib/libcountpairs_theta_mocks.a: ../../common.mk ../../mocks.options Makefile
-	$(MAKE) -C ../wtheta lib
+EXTRA_LINK:= $(GSL_LINK)
+EXTRA_INCL:= $(GSL_CFLAGS) $(LIBRARY_INCL)
 
-../../include/countspheres_mocks.h ../../lib/libcountspheres_mocks.a: ../../common.mk ../../mocks.options Makefile
-	$(MAKE) -C ../vpf lib
+$(TARGET):$(C_LIBRARIES)
 
-%.o: %.c ../../common.mk ../../mocks.options Makefile
-	$(CC) $(CFLAGS) -I../../include $(INCLUDE) $(OPT) -c $< -o $@
+$(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/*.c $(DDrppi_mocks_DIR)/*.c.src $(DDrppi_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(DDrppi_mocks_DIR) libs
 
-.PHONY: clean clena celan 
+$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(WTHETA_DIR)/*.c $(WTHETA_DIR)/*.c.src $(WTHETA_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(WTHETA_DIR) libs
+
+$(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/*.c $(VPF_mocks_DIR)/*.c.src $(VPF_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(VPF_mocks_DIR) libs
 
 clean:
-	$(RM) $(target) $(OBJS1) 
+	$(RM) $(TARGET) $(TARGETOBJS)
+	$(RM) -R *.dSYM
 
-clena: clean
-celan: clean
+distclean:clean
 
-
-
+include $(ROOT_DIR)/rules.mk

@@ -1,63 +1,54 @@
-include ../../theory.options ../../common.mk
+ROOT_DIR := ../..
+INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
+INSTALL_LIB_DIR := $(ROOT_DIR)/lib
+INSTALL_BIN_DIR := $(ROOT_DIR)/bin
+UTILS_DIR := $(ROOT_DIR)/utils
+IO_DIR := $(ROOT_DIR)/io
 
-target := wp
-SRC1   := wp.c countpairs_wp.c wp_driver.c ../../utils/utils.c ../../utils/gridlink.c ../../io/io.c ../../io/ftread.c 
-INCL   := countpairs_wp.h wp_driver.h ../../io/ftread.h ../../io/io.h ../../utils/utils.h ../../utils/gridlink.h \
-		../../utils/function_precision.h ../../utils/cellarray.h ../../utils/avx_calls.h \
-		../../utils/defs.h ../../utils/sglib.h wp_kernels.c 
+include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+LIBNAME:= countpairs_wp
+LIBRARY := lib$(LIBNAME).a
+LIBSRC := countpairs_wp.c countpairs_wp_impl_double.c countpairs_wp_impl_float.c \
+         $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
+         $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
+LIBRARY_HEADERS := $(LIBNAME).h
 
-ifeq ($(OUTPUT_PGBAR), 1)
-  SRC1 += ../../utils/progressbar.c
-  INCL += ../../utils/progressbar.h 
-endif
-OBJS1  := $(SRC1:.c=.o)
+TARGET := wp
+TARGETSRC := wp.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(LIBSRC)
 
-all: $(target) $(SRC1) $(INCL) ../../theory.options ../../common.mk Makefile 
+INCL   := wp_kernels_double.c wp_kernels_float.c wp_kernels.c.src countpairs_wp.h \
+          countpairs_wp_impl_float.h countpairs_wp_impl_double.h countpairs_wp_impl.h.src \
+          $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
+          $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray.h.src \
+          $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
+          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/sglib.h $(UTILS_DIR)/progressbar.h 
 
-$(target): $(OBJS1) $(INCL) ../../theory.options ../../common.mk Makefile 
-	$(CC) $(OBJS1) $(CLINK) -o $@
+TARGETOBJS  := $(TARGETSRC:.c=.o)
+LIBOBJS := $(LIBSRC:.c=.o)
 
-%.o: %.c $(INCL) ../../theory.options ../../common.mk Makefile
-	$(CC) $(OPT) $(CFLAGS) $(INCLUDE) -c $< -o $@
+all: $(TARGET) $(TARGETOBJS) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-OBJS2 := countpairs_wp.o wp_driver.o ../../utils/gridlink.o ../../utils/utils.o 
-ifeq ($(OUTPUT_PGBAR), 1)
-  OBJS2 += ../../utils/progressbar.o
-endif
+countpairs_wp_impl_float.o:countpairs_wp_impl_float.c countpairs_wp_impl_float.h wp_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h  $(UTILS_DIR)/cellarray_float.h
+countpairs_wp_impl_double.o:countpairs_wp_impl_double.c countpairs_wp_impl_double.h wp_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
+countpairs_wp.o:countpairs_wp.c countpairs_wp_impl_double.h countpairs_wp_impl_float.h
+countpairs_wp_impl_float.c countpairs_wp_impl_double.c:countpairs_wp_impl.c.src
 
 libs: lib
-lib: ../../lib/libcountpairs_wp.a | ../../lib ../../include
-
-libcountpairs_wp.a: $(OBJS2) $(INCL) ../../theory.options ../../common.mk Makefile | ../../lib ../../include
-	ar rcs $@ $(OBJS2)
-
-../../lib/libcountpairs_wp.a: libcountpairs_wp.a
-	cp -p $< $@
-	sed -e "s/DOUBLE/$(VECTOR_TYPE)/g" countpairs_wp.h > ../../include/countpairs_wp.h
-
-.PHONY: clean clena celan install lib tests distclean
-
-../../lib ../../bin ../../include:
-	mkdir -p $@
-
-install: ../../bin/$(target) | ../../bin
-
-../../bin/$(target): $(target)
-	cp -p $< $@
-
-distclean: clean | ../../lib ../../include ../../bin
-	$(RM) ../../lib/libcountpairs_wp.a ../../include/countpairs_wp.h
-	cd ../../bin && $(RM) $(target)
-
+lib: $(LIBRARY) 
+install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 clean:
-	$(RM) $(target) $(OBJS1) $(OBJS2) libcountpairs_wp.a
+	$(RM) $(TARGETOBJS) $(TARGET) $(LIBRARY) wp_kernels_float.c wp_kernels_double.c countpairs_wp_impl_double.[ch] countpairs_wp_impl_float.[ch]
+	$(RM) -R *.dSYM
 
-clena: clean
-
-celan: celan
+distclean:clean
+	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
+	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
 
 tests: tests_periodic 
 
 tests_periodic: 
 	$(MAKE) -C ../tests wp
+
+include $(ROOT_DIR)/rules.mk
+
 
