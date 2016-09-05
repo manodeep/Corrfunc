@@ -38,14 +38,9 @@ countspheres_impl_float.o:countspheres_impl_float.c countspheres_impl_float.h vp
 countspheres_impl_double.o:countspheres_impl_double.c countspheres_impl_double.h vpf_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
 countspheres.o:countspheres.c countspheres_impl_float.h countspheres_impl_double.h
 
-tests: ../tests/tests_periodic ../tests/tests_nonperiodic 
-	$(MAKE) -C ../tests vpf
-
 tests: 
 	$(MAKE) -C ../tests vpf
 
-../tests/tests_nonperiodic:
-	$(MAKE) -C ../tests
 
 install:$(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
