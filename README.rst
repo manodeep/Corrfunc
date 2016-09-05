@@ -6,7 +6,8 @@ Description
 This repo contains a set of codes to measure the following OpenMP
 parallelized clustering measures in a cosmological box (co-moving XYZ)
 or on a mock (RA, DEC, CZ). Also, contains the associated paper to be
-published in Astronomy & Computing Journal (at some point).
+published in Astronomy & Computing Journal (at some point). Read the
+documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
 
 Installation
 ============
