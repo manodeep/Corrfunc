@@ -23,11 +23,8 @@ tests:
 	$(MAKE) -C xi_theory tests
 	$(MAKE) -C xi_mocks tests
 
-<<<<<<< HEAD
-.PHONY: clean celna clena celan xi_theory xi_mocks install distclean realclean
-=======
+
 .PHONY: clean celna clena celan xi_theory xi_mocks install distclean realclean libs lib
->>>>>>> develop
 
 distclean:realclean
 distclena:realclean
