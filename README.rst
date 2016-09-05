@@ -306,6 +306,7 @@ Project URL
 ===========
 
 -  website (https://manodeep.github.io/Corrfunc/)
+-  documentation (https://corrfunc.rtfd.io/)   
 -  version control (https://github.com/manodeep/Corrfunc)
 
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
