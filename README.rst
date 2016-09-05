@@ -1,4 +1,4 @@
-|Release| |MIT licensed| |DOI| |Travis Build| |Issues| |Coverity|
+|Release| |MIT licensed| |DOI| |Travis Build| |Issues| |Coverity| |RTD|
 
 Description
 ===========
@@ -309,13 +309,22 @@ Project URL
 
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
+   :alt: Latest Release
 .. |MIT licensed| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE
+   :alt: MIT License
 .. |DOI| image:: https://zenodo.org/badge/19184/manodeep/Corrfunc.svg
    :target: https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc
+   :alt: Zenodo DOI
 .. |Travis Build| image:: https://travis-ci.org/manodeep/Corrfunc.svg?branch=master
    :target: https://travis-ci.org/manodeep/Corrfunc
+   :alt: Build Status
 .. |Issues| image:: https://img.shields.io/github/issues/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/issues
+   :alt: Open Issues
 .. |Coverity| image:: https://img.shields.io/coverity/scan/6982.svg
    :target: https://scan.coverity.com/projects/manodeep-corrfunc
+   :alt: Code Health
+.. |RTD| image:: https://readthedocs.org/projects/corrfunc/badge/?version=master
+   :target: http://corrfunc.readthedocs.io/en/master/?badge=master
+   :alt: Documentation Status
