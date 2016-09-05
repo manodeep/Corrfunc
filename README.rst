@@ -1,4 +1,4 @@
-|Release| |MIT licensed| |DOI| |Travis Build| |Issues| |Coverity|
+|Release| |MIT licensed| |DOI| |Travis Build| |Issues| |Coverity| |RTD|
 
 Description
 ===========
@@ -8,6 +8,21 @@ parallelized clustering measures in a cosmological box (co-moving XYZ)
 or on a mock (RA, DEC, CZ). Also, contains the associated paper to be
 published in Astronomy & Computing Journal (at some point). Read the
 documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
+
+Why Should You Use it
+======================
+
+1. **Fast** All theory pair-counting is at least an order of magnitude faster than all existing public codes. Particularly suited for MCMC. 
+2. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
+3. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
+4. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
+
+Benchmark against Existing Codes
+================================
+
+Please see this
+`gist <https://gist.github.com/manodeep/cffd9a5d77510e43ccf0>`__ for
+some benchmarks with current codes. If you have a pair-counter that you would like to compare, please add in a corresponding function and update the timings. 
 
 Installation
 ============
@@ -32,10 +47,10 @@ Pre-requisites
 5. ``numpy>=1.7`` for compiling the C extensions.
 
 *If python and/or numpy are not available, then the C extensions will
-not be compiled*.
+not be compiled.*
 
-*Default compiler on MAC is set to ``clang``, if you want to specify a
-different compiler, you will have to call ``make CC=yourcompiler``*
+*Default compiler on MAC is set to* ``clang``, *if you want to specify a
+different compiler, you will have to call* ``make CC=yourcompiler``
 
 Preferred Method
 ----------------
@@ -57,7 +72,7 @@ python C extensions in your environment, then
 Alternative
 -----------
 
-The python package is directly installable via ``pip install Corrfunc``.
+The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Not recommended unless you are desperate (i.e., `email me <mailto:manodeep@gmail.com>`__ if you are having install issues). 
 
 Installation notes
 ------------------
@@ -103,11 +118,11 @@ All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 
 1. ``DDrppi`` -- The standard auto/cross correlation between two data
    sets. The outputs, DD, DR and RR can be combined using ``wprp`` to
-   produce the Landy-Szalay estimator for :math:`w_p(r_p)`.
+   produce the Landy-Szalay estimator for `wp(rp)`.
 
 2. ``wtheta`` -- Computes angular correlation function between two data
    sets. The outputs from ``DDtheta_mocks`` need to be combined with
-   ``wtheta`` to get the full :math:`\omega(\theta)`
+   ``wtheta`` to get the full `\omega(\theta)`
 
 3. ``vpf`` -- Computes the void probability function on mocks.
 
@@ -131,7 +146,7 @@ Mocks
 -----
 
 1. ``LINK_IN_DEC`` -- creates binning in declination for mocks. Please
-   check that for your desired binning in :math:`r_p`/:math:`\theta`,
+   check that for your desired binning in `r_p` or `\theta`,
    this binning does not produce incorrect results (due to numerical
    precision).
 
@@ -139,17 +154,18 @@ Mocks
    enabled. Same numerical issues as ``LINK_IN_DEC``
 
 3. ``FAST_DIVIDE`` -- Divisions are slow but required
-   :math:`DD(r_p,\pi)`. This Makefile option (in mocks.options) replaces
+   `DD(r_p,\pi)`. This ``Makefile`` option (in ``mocks.options``) replaces
    the divisions to a reciprocal followed by a Newton-Raphson. The code
    will run ~20% faster at the expense of some numerical precision.
    Please check that the loss of precision is not important for your
-   use-case. Also, note that the mocks tests for :math:`DD(r_p, \pi)`
+   use-case. Also, note that the mocks tests for `DD(r_p, \pi)`
    *will fail* if you enable ``FAST_DIVIDE``.
 
 Running the codes
 =================
 
-The documentation is lacking currently but I am actively working on it.
+Read the documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
+
 
 Using the command-line interface
 --------------------------------
@@ -220,13 +236,6 @@ use the Python interface. Here are a few examples:
               .format(wp[0], wp[1], wp[3], wp[4]))
                                                         
 
-Benchmark against Existing Codes
-================================
-
-Please see this
-`gist <https://gist.github.com/manodeep/cffd9a5d77510e43ccf0>`__ for
-some benchmarks with current codes.
-
 Common Code options for both Mocks and Cosmological Boxes
 =========================================================
 
@@ -236,27 +245,27 @@ Common Code options for both Mocks and Cosmological Boxes
 2. ``USE_AVX`` -- uses the AVX instruction set found in Intel/AMD CPUs
    >= 2011 (Intel: Sandy Bridge or later; AMD: Bulldozer or later).
    Enabled by default - code will run much slower if the CPU does not
-   support AVX instructions. On Linux, check for "avx" in /proc/cpuinfo
-   under flags. If you do not have AVX, but have a SSE4 system instead,
-   email me - I will send you a copy of the code with SSE4 intrinsics.
-   Or, take the relevant SSE code from the public repo at
-   `pairwise <https://manodeep.github.io/pairwise>`__.
+   support AVX instructions. The ``Makefile`` will automatically check
+   for "AVX" support and disable this option for unsupported CPUs. 
 
 3. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD
    (perfect scaling up to 12 threads in my tests) and okay (runtime
    becomes constant ~6-8 threads in my tests) for ``DDrppi`` and ``wp``.
+   Enabled by default. The ``Makefile`` will compare the `CC` variable with
+   known OpenMP enabled compilers and set compile options accordingly. 
 
 *Optimization for your architecture*
 
 1. The values of ``bin_refine_factor`` and/or ``zbin_refine_factor`` in
-   the countpairs\_\*.c files control the cache-misses, and
+   the ``countpairs\_\*.c`` files control the cache-misses, and
    consequently, the runtime. In my trial-and-error methods, I have seen
    any values larger than 3 are always slower. But some different
    combination of 1/2 for ``(z)bin_refine_factor`` might be faster on
    your platform.
 
-2. If you have AVX2/AVX-512/KNC, you will need to rewrite the entire AVX
-   section.
+2. If you have AVX2/AVX-512/KNC, you will need to add a new kernel within
+   the ``*_kernels.c`` and edit the runtime dispatch code to call this new
+   kernel. 
 
 Author
 ======
@@ -272,15 +281,15 @@ for the code is
 
 ::
 
-    @misc{manodeep_sinha_2016_49720,
-      author       = {Manodeep Sinha},
-      title        = {Corrfunc: Corrfunc-1.0.0},
-      month        = apr,
-      year         = 2016,
-      doi          = {10.5281/zenodo.49720},
-      url          = {http://dx.doi.org/10.5281/zenodo.49720}
-    }
-
+   @misc{manodeep_sinha_2016_55161,
+       author       = {Manodeep Sinha},
+       title        = {Corrfunc: Corrfunc-1.1.0},
+       month        = jun,
+       year         = 2016,
+       doi          = {10.5281/zenodo.55161},
+       url          = {http://dx.doi.org/10.5281/zenodo.55161}
+   }
+       
 Mailing list
 ============
 
@@ -297,17 +306,27 @@ Project URL
 ===========
 
 -  website (https://manodeep.github.io/Corrfunc/)
+-  documentation (http://corrfunc.rtfd.io/)   
 -  version control (https://github.com/manodeep/Corrfunc)
 
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
+   :alt: Latest Release
 .. |MIT licensed| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE
+   :alt: MIT License
 .. |DOI| image:: https://zenodo.org/badge/19184/manodeep/Corrfunc.svg
    :target: https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc
+   :alt: Zenodo DOI
 .. |Travis Build| image:: https://travis-ci.org/manodeep/Corrfunc.svg?branch=master
    :target: https://travis-ci.org/manodeep/Corrfunc
+   :alt: Build Status
 .. |Issues| image:: https://img.shields.io/github/issues/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/issues
+   :alt: Open Issues
 .. |Coverity| image:: https://img.shields.io/coverity/scan/6982.svg
    :target: https://scan.coverity.com/projects/manodeep-corrfunc
+   :alt: Code Health
+.. |RTD| image:: https://readthedocs.org/projects/corrfunc/badge/?version=master
+   :target: http://corrfunc.readthedocs.io/en/master/?badge=master
+   :alt: Documentation Status

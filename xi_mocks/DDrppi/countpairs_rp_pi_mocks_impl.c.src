@@ -178,7 +178,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                             const DOUBLE pimax,
                             const int cosmology,
                             results_countpairs_mocks *results,
-                            struct config_options *options)
+                            struct config_options *options, struct extra_options *extra)
 {
 
     if(options->float_type != sizeof(DOUBLE)) {
@@ -186,6 +186,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
+    (void) extra;
 
     options->sort_on_z = 1;
     struct timeval t0;

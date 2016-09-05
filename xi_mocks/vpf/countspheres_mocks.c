@@ -34,7 +34,8 @@ int countspheres_mocks(const int64_t Ngal, void *xgal, void *ygal, void *zgal,
                        const char *centers_file,
                        const int cosmology,
                        results_countspheres_mocks *results,
-                       struct config_options *options)
+                       struct config_options *options,
+                       struct extra_options *extra)
 {
 
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
@@ -57,7 +58,8 @@ int countspheres_mocks(const int64_t Ngal, void *xgal, void *ygal, void *zgal,
                                         centers_file,
                                         cosmology,
                                         results,
-                                        options);
+                                        options,
+                                        extra);
     } else {
         return countspheres_mocks_double(Ngal, (double *) xgal, (double *)ygal, (double *)zgal,
                                          Nran, (double * restrict) xran, (double * restrict) yran, (double * restrict) zran,
@@ -67,6 +69,7 @@ int countspheres_mocks(const int64_t Ngal, void *xgal, void *ygal, void *zgal,
                                          centers_file,
                                          cosmology,
                                          results,
-                                         options);
+                                         options,
+                                         extra);
     }
 }

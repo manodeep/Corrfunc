@@ -30,8 +30,8 @@ OPT += -DUSE_OMP
 
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
-MAJOR:=1
-MINOR:=9
+MAJOR:=2
+MINOR:=0
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 DO_CHECKS := 1

@@ -33,7 +33,7 @@ extern "C" {
                                   const char *centers_file,
                                   const int cosmology,
                                   results_countspheres_mocks *results,
-                                  struct config_options *options);
+                                  struct config_options *options, struct extra_options *extra);
     
     extern void free_results_countspheres_mocks(results_countspheres_mocks *results);
 

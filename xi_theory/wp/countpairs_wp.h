@@ -26,15 +26,16 @@ extern "C" {
         int nbin;
     } results_countpairs_wp;
     
-    int countpairs_wp(const int64_t ND1, void * restrict X1, void * restrict Y1, void * restrict Z1,
-                      const double boxsize,
-                      const int numthreads,
-                      const char *binfile,
-                      const double pimax,
-                      results_countpairs_wp *result,
-                      struct config_options *options) __attribute__((warn_unused_result));
+    extern int countpairs_wp(const int64_t ND1, void * restrict X1, void * restrict Y1, void * restrict Z1,
+                             const double boxsize,
+                             const int numthreads,
+                             const char *binfile,
+                             const double pimax,
+                             results_countpairs_wp *result,
+                             struct config_options *options,
+                             struct extra_options *extra) __attribute__((warn_unused_result));
 
-    void free_results_wp(results_countpairs_wp *results);
+    extern void free_results_wp(results_countpairs_wp *results);
 
 #ifdef __cplusplus
 }

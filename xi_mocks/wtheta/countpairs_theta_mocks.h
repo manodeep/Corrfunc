@@ -29,7 +29,7 @@ extern "C" {
                                       const int autocorr,
                                       const char *binfile,
                                       results_countpairs_theta *results,
-                                      struct config_options *options);
+                                      struct config_options *options, struct extra_options *extra);
     
     extern void free_results_countpairs_theta(results_countpairs_theta *results);
 

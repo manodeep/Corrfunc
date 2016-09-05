@@ -32,7 +32,7 @@ int countpairs_theta_mocks(const int64_t ND1, void *phi1, void *theta1,
                            const int autocorr,
                            const char *binfile,
                            results_countpairs_theta *results,
-                           struct config_options *options)
+                           struct config_options *options, struct extra_options *extra)
 {
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
         fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
@@ -52,7 +52,8 @@ int countpairs_theta_mocks(const int64_t ND1, void *phi1, void *theta1,
                                             autocorr,
                                             binfile,
                                             results,
-                                            options);
+                                            options,
+                                            extra);
     } else {
         return countpairs_theta_mocks_double(ND1, (double *) phi1, (double *) theta1, 
                                              ND2, (double *) phi2, (double *) theta2, 
@@ -60,6 +61,7 @@ int countpairs_theta_mocks(const int64_t ND1, void *phi1, void *theta1,
                                              autocorr,
                                              binfile,
                                              results,
-                                             options);
+                                             options,
+                                             extra);
     }
 }

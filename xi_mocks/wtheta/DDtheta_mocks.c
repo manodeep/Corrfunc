@@ -121,7 +121,7 @@ int main(int argc, char **argv)
                                         autocorr,
                                         binfile,
                                         &results,
-                                        &options);
+                                        &options, NULL);
 
     gettimeofday(&t1,NULL);
     pair_time = ADD_DIFF_TIME(t0,t1);

@@ -29,12 +29,13 @@ extern "C" {
     extern countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
     
     extern int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
-                          const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
-                          const int numthreads,
-                          const int autocorr,
-                          const char *binfile,
-                          results_countpairs *results,
-                          struct config_options *options);
+                                 const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
+                                 const int numthreads,
+                                 const int autocorr,
+                                 const char *binfile,
+                                 results_countpairs *results,
+                                 struct config_options *options,
+                                 struct extra_options *extra);
 
 #ifdef __cplusplus
 }

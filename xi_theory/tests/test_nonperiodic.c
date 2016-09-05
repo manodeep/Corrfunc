@@ -63,7 +63,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
                             autocorr,
                             binfile,
                             &results,
-                            &options);
+                            &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -102,7 +102,7 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
                                   binfile,
                                   pimax,
                                   &results,
-                                  &options);
+                                  &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -190,8 +190,6 @@ int main(int argc, char **argv)
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
 
-    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
-    
 #ifdef PERIODIC
 #error PERIODIC must not be defined for running non-periodic tests
 #endif

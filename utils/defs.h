@@ -23,7 +23,7 @@ extern "C" {
 #define STRINGIFY(x)   #x
 #define STR(x) STRINGIFY(x)
 
-#define API_VERSION          STR("1.9.0")
+#define API_VERSION          STR("2.0.0")
 
 typedef enum {
   DEFAULT=-42,/* present simply to make the enum a signed int*/
@@ -179,7 +179,11 @@ static inline struct config_options get_config_options(void)
 #ifdef FAST_ACOS
     options.fast_acos=1;
 #endif    
-                             
+
+#ifdef COMOVING_DIST
+    options.is_comoving_dist=1;
+#endif
+    
     return options;
 }
 
@@ -189,14 +193,40 @@ struct extra_options
 {
     void **weights;//pointer to an array of pointers to store the weight arrays
     void (*weightfunc)(void);//Treacherous territory, generic weighting function pointer
-    uint8_t num_weights;//number of kinds of weights
-    uint8_t weighting_func_type;//way to type-cast the generic weightfunc into the actual
+    uint64_t num_weights;//number of valid weight arrays
+    uint64_t weighting_func_type;//way to type-cast the generic weightfunc into the actual
                                 //function. 
     
-    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(void **) - sizeof(void *) - 2*sizeof(uint8_t)];
+    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(void **) - sizeof(void *) - 2*sizeof(uint64_t)];
 };
 
-ENSURE_STRUCT_SIZE(struct extra_options, EXTRA_OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+static inline int get_extra_options(struct extra_options *extra)
+{    
+    ENSURE_STRUCT_SIZE(struct extra_options, EXTRA_OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
+    if(extra == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    memset(extra, 0, EXTRA_OPTIONS_HEADER_SIZE);
+    /*Pre-allocate space for 2 sets of weights array pointers */
+    extra->num_weights = 2;
+    extra->weights = malloc(sizeof(*(extra->weights)) * extra->num_weights);
+    if(extra->weights == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+static inline void free_extra_options(struct extra_options *extra)
+{
+    for(uint64_t i=0;i<extra->num_weights;i++) {
+        free(extra->weights[i]);
+    }
+    free(extra->weights);
+    extra->weights = NULL;
+    extra->num_weights = 0;
+}    
     
 
 #ifdef __cplusplus
