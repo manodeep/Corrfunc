@@ -127,7 +127,9 @@ int main(int argc, char *argv[])
                             autocorr,
                             binfile,
                             &results,
-                            &options);
+                            &options,
+                            NULL);/* This is for ABI compatibility */
+
     
     free(x1);free(y1);free(z1);
     if(autocorr == 0) {

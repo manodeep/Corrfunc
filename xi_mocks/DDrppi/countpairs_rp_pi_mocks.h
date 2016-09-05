@@ -34,7 +34,7 @@ extern "C" {
                          const double pimax,
                          const int cosmology,
                          results_countpairs_mocks *results,
-                         struct config_options *options);
+                         struct config_options *options, struct extra_options *extra);
 
     void free_results_mocks(results_countpairs_mocks *results);
 

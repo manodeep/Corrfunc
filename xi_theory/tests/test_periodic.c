@@ -69,7 +69,7 @@ int test_periodic_DD(const char *correct_outputfile)
                             autocorr,
                             binfile,
                             &results,
-                            &options);
+                            &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -106,7 +106,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
                                   binfile,
                                   pimax,
                                   &results,
-                                  &options);
+                                  &options, NULL);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -145,7 +145,7 @@ int test_wp(const char *correct_outputfile)
                                binfile,
                                pimax,
                                &results,
-                               &options);
+                               &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -182,7 +182,7 @@ int test_vpf(const char *correct_outputfile)
                               num_pN,
                               seed,
                               &results,
-                              &options);
+                              &options, NULL);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -221,7 +221,7 @@ int test_xi(const char *correct_outputfile)
                                nthreads,
                                binfile,
                                &results,
-                               &options);
+                               &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -305,8 +305,6 @@ int main(int argc, char **argv)
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
 
-    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
-    
     gettimeofday(&tstart,NULL);
 
     //set the globals

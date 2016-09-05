@@ -158,12 +158,15 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
                                                             const DOUBLE *theta_upp,
                                                             const DOUBLE *costheta_upp, 
                                                             results_countpairs_theta *results,
-                                                            struct config_options *options)
+                                                            struct config_options *options,
+                                                            struct extra_options *extra)
                                                             
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
+    (void) extra;
+    
     /* Always print a message saying "brute-force" is running*/
     fprintf(stderr,"Running brute force algorithm\n");
     struct timeval t0;
@@ -261,7 +264,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                   const int autocorr,
                                   const char *binfile,
                                   results_countpairs_theta *results,
-                                  struct config_options *options)
+                                  struct config_options *options, struct extra_options *extra)
 {
     if(ND1 == 0 || ND2 == 0) {
         fprintf(stderr,"Warning: Received 0 particles in at least one of the arrays. len(array1) = %"PRId64" len(array2) = %"PRId64"\n",
@@ -276,6 +279,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
         return EXIT_SUCCESS;
     }
+    (void) extra;
 
     if(options->float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
@@ -373,7 +377,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                                theta_upp,
                                                                costheta_upp, 
                                                                results,
-                                                               options);
+                                                               options,
+                                                               extra);
         free(X1);free(Y1);free(Z1);
         if(autocorr == 0) {
             free(X2);free(Y2);free(Z2);
@@ -549,7 +554,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                                theta_upp,
                                                                costheta_upp, 
                                                                results,
-                                                               options);
+                                                               options,
+                                                               extra);
         free(X1);free(Y1);free(Z1);
         if(autocorr == 0) {
             free(X2);free(Y2);free(Z2);

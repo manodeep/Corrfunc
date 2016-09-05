@@ -107,7 +107,8 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                         const int num_pN,
                         unsigned long seed,
                         results_countspheres *results,
-                        struct config_options *options)
+                        struct config_options *options,
+                        struct extra_options *extra)
 {
     
     if(options->float_type != sizeof(DOUBLE)) {
@@ -115,7 +116,8 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
-
+    (void) extra;
+    
     //Input validation
     if( ! (rmax > 0.0 && nbin > 0 && nc > 0 && num_pN > 0)) {
         fprintf(stderr,"Error: Invalid input parameters. Expected rmax > 0, number of bins > 0, number of random spheres > 0, number of pN's to calculate > 0.\n"

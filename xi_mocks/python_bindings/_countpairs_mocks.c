@@ -768,7 +768,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                   pimax,
                                   cosmology,
                                   &results,
-                                  &options);
+                                  &options, NULL);
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
     }
@@ -974,7 +974,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                         autocorr,
                                         binfile,
                                         &results,
-                                        &options);
+                                        &options, NULL);
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
     }
@@ -1176,7 +1176,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
                                     centers_file,
                                     cosmology,
                                     &results,
-                                    &options);
+                                    &options, NULL);
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
     }

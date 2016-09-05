@@ -32,7 +32,8 @@ int countpairs_rp_pi(const int64_t ND1, void *X1, void *Y1, void *Z1,
                      const char *binfile,
                      const double pimax,
                      results_countpairs_rp_pi *results,
-                     struct config_options *options)
+                     struct config_options *options,
+                     struct extra_options *extra)
 {
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
         fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
@@ -53,7 +54,8 @@ int countpairs_rp_pi(const int64_t ND1, void *X1, void *Y1, void *Z1,
                                     binfile,
                                     pimax,
                                     results,
-                                    options);
+                                    options,
+                                    extra);
     } else {
         return countpairs_rp_pi_double(ND1, (double *) X1, (double *) Y1, (double *) Z1,
                                        ND2, (double *) X2, (double *) Y2, (double *) Z2,
@@ -62,6 +64,7 @@ int countpairs_rp_pi(const int64_t ND1, void *X1, void *Y1, void *Z1,
                                        binfile,
                                        pimax,
                                        results,
-                                       options);
+                                       options,
+                                       extra);
     }
 }

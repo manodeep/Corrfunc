@@ -76,7 +76,7 @@ int test_DDrppi_mocks(const char *correct_outputfile)
                                   pimax,
                                   cosmology_flag,
                                   &results,
-                                  &options);
+                                  &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -118,7 +118,7 @@ int test_wtheta_mocks(const char *correct_outputfile)
                                         autocorr,
                                         angular_binfile,
                                         &results,
-                                        &options) ;
+                                        &options, NULL);
     
     if(status != EXIT_SUCCESS) {
         return status;
@@ -166,7 +166,7 @@ int test_vpf_mocks(const char *correct_outputfile)
                                     centers_file,
                                     cosmology_flag,
                                     &results,
-                                    &options);
+                                    &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -254,8 +254,6 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 int main(int argc, char **argv)
 {
-    ENSURE_STRUCT_SIZE(struct config_options, OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
-    
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/Mr19_mock_northonly.rdcz.dat";
     char fileformat[]="a";

@@ -15,7 +15,7 @@ __all__ = ["_countpairs", "_countpairs_mocks", "utils", "theory", "mocks"]
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
 
-__version__ = "1.9.0"
+__version__ = "2.0.0"
 
 
 def read_text_file(filename, encoding="utf-8"):

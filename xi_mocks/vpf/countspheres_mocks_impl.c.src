@@ -175,11 +175,12 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
                               const char *centers_file,
                               const int cosmology,
                               results_countspheres_mocks *results,
-                              struct config_options *options)
+                              struct config_options *options, struct extra_options *extra)
     
 {
     int ngrid;
     int itry,isucceed;
+    (void) extra;
 
     //Input validation
     XRETURN(rmax > 0.0, EXIT_FAILURE, "rmax=%lf has to be positive", rmax);

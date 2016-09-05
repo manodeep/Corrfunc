@@ -34,7 +34,8 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
                const int autocorr,
                const char *binfile,
                results_countpairs *results,
-               struct config_options *options)
+               struct config_options *options,
+               struct extra_options *extra)
 {
 
     
@@ -57,7 +58,8 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
                                 autocorr,
                                 binfile,
                                 results,
-                                options);
+                                options,
+                                extra);
   } else {
         return countpairs_double(ND1, (double * restrict) X1, (double * restrict) Y1, (double * restrict) Z1,
                                  ND2, (double * restrict) X2, (double * restrict) Y2, (double * restrict) Z2,
@@ -65,7 +67,8 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
                                  autocorr,
                                  binfile,
                                  results,
-                                 options);
+                                 options,
+                                 extra);
     }
     
 }

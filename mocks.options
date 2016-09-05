@@ -8,8 +8,12 @@ OPT += -DLINK_IN_DEC
 OPT += -DLINK_IN_RA #link_in_dec must be enabled before link_in_ra
 #OPT += -DFAST_ACOS ## replaces acos by an 8th order REMEZ polynomial. Results are approximate (max. absolute error 3.6e-9) ~50% boost, but obviously approximate
 
-#### Code specs for both data Correlation Functions
+#### Floating point precision to use
 OPT += -DDOUBLE_PREC
+
+#### If input distances are already in co-moving (relevant for DDrppi_mocks and vpf)
+#OPT += -DCOMOVING_DIST
+
 
 
 
