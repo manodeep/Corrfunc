@@ -141,17 +141,6 @@ int main(int argc, char **argv)
                 "../DDrppi/DDrppi_mocks",file,fileformat,file,fileformat,binfile,pimax,cosmology);
 #endif
 
-<<<<<<< HEAD
-        results_countpairs_mocks results  = countpairs_mocks(ND1,ra1,dec1,cz1,
-                                                              ND2,ra2,dec2,cz2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                              nthreads,
-#endif
-                                                              autocorr,
-                                                              binfile,
-                                                              pimax,
-                                                              cosmology);
-=======
         results_countpairs_mocks results;
         int status = countpairs_mocks(ND1,ra1,dec1,cz1,
                                       ND2,ra2,dec2,cz2,
@@ -165,7 +154,6 @@ int main(int argc, char **argv)
         if(status != EXIT_SUCCESS) {
             return status;
         }
->>>>>>> develop
 
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
@@ -196,19 +184,8 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
                 "../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile,nthreads);
 #else
-<<<<<<< HEAD
-        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s %lf'" ANSI_COLOR_RESET "\n",
-                "../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile,pimax);
-#endif
-
-        results_countpairs_theta results = countpairs_theta_mocks(ND1,ra1,dec1,
-                                                                   ND2,ra2,dec2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                                   nthreads,
-=======
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %s %s %s %s %s '" ANSI_COLOR_RESET "\n",
                 "../wtheta/DDtheta_mocks",file,fileformat,file,fileformat,binfile);
->>>>>>> develop
 #endif
 
         results_countpairs_theta results;
@@ -255,16 +232,6 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent w(theta) calculation would be:\n `%s %lf %d %d %d %lf %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
                 "../vpf/vpf_mocks",rmax,nbin,nc,num_pN,0.0,file,fileformat,"junk","junkformat",centers_file,cosmology);
 
-<<<<<<< HEAD
-        results_countspheres_mocks results = countspheres_mocks(ND1, ra1, dec1, cz1,
-                                                                 Nran, xran, yran, zran,
-                                                                 threshold_neighbors,
-                                                                 rmax, nbin, nc,
-                                                                 num_pN,
-                                                                 centers_file,
-                                                                 cosmology);
-
-=======
         results_countspheres_mocks results;
         int status = countspheres_mocks(ND1, ra1, dec1, cz1,
                                         Nran, xran, yran, zran,
@@ -278,7 +245,6 @@ int main(int argc, char **argv)
         if(status != EXIT_SUCCESS) {
             return status;
         }
->>>>>>> develop
 
 
         gettimeofday(&t1,NULL);

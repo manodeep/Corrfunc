@@ -147,18 +147,6 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
-<<<<<<< HEAD
-    results_countpairs_rp_pi results = countpairs_rp_pi(ND1,x1,y1,z1,
-                                                        ND2,x2,y2,z2,
-#if defined(USE_OMP) && defined(_OPENMP)
-                                                        nthreads,
-#endif
-                                                        autocorr,
-                                                        binfile,
-                                                        pimax);
-
-
-=======
     results_countpairs_rp_pi results;
     struct config_options options = get_config_options();
     int status = countpairs_rp_pi(ND1,x1,y1,z1,
@@ -169,7 +157,6 @@ int main(int argc, char *argv[])
                                   pimax,
                                   &results,
                                   &options);
->>>>>>> develop
 
     free(x1);free(y1);free(z1);
     if(autocorr == 0) {
@@ -183,21 +170,13 @@ int main(int argc, char *argv[])
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
 
-<<<<<<< HEAD
-    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
-=======
     const double dpi = pimax/(double)results.npibin ;
->>>>>>> develop
     const int npibin = results.npibin;
     for(int i=1;i<results.nbin;i++) {
         const double logrp = LOG10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
-<<<<<<< HEAD
-            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
-=======
             fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\n",logrp, (j+1)*dpi, results.rpavg[index], results.npairs[index]);
->>>>>>> develop
         }
     }
 
