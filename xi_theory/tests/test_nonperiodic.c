@@ -63,7 +63,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
                             autocorr,
                             binfile,
                             &results,
-                            &options);
+                            &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -102,7 +102,7 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
                                   binfile,
                                   pimax,
                                   &results,
-                                  &options);
+                                  &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }

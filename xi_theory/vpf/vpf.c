@@ -108,7 +108,8 @@ int main(int argc, char *argv[])
                               num_pN,
                               seed,
                               &results,
-                              &options);
+                              &options,
+                              NULL);
     free(x);free(y);free(z);
     if(status != EXIT_SUCCESS) {
         return status;

@@ -110,14 +110,16 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                          const char *binfile,
                          const double pimax,
                          results_countpairs_wp *results,
-                         struct config_options *options)
+                         struct config_options *options,
+                         struct extra_options *extra)
 {
     if(options->float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
-
+    (void) extra;
+    
     struct timeval t0;
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);

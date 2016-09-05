@@ -137,7 +137,8 @@ int main(int argc, char *argv[])
                                binfile,
                                pimax,
                                &results,
-                               &options);
+                               &options,
+                               NULL);
     free(x1);free(y1);free(z1);
     if(status != EXIT_SUCCESS) {
         return status;

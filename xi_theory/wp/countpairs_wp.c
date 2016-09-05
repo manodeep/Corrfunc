@@ -32,7 +32,8 @@ int countpairs_wp(const int64_t ND, void * restrict X, void * restrict Y, void *
                   const char *binfile,
                   const double pimax,
                   results_countpairs_wp *results,
-                  struct config_options *options)
+                  struct config_options *options,
+                  struct extra_options *extra)
 {
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
         fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
@@ -52,14 +53,16 @@ int countpairs_wp(const int64_t ND, void * restrict X, void * restrict Y, void *
                                  binfile,
                                  pimax,
                                  results,
-                                 options);
+                                 options,
+                                 extra);
     } else {
       return countpairs_wp_double(ND, (double * restrict) X, (double * restrict) Y, (double * restrict) Z,
-                                 boxsize,
-                                 numthreads,
-                                 binfile,
-                                 pimax,
-                                 results,
-                                 options);
+                                  boxsize,
+                                  numthreads,
+                                  binfile,
+                                  pimax,
+                                  results,
+                                  options,
+                                  extra);
     }
 }

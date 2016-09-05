@@ -33,7 +33,7 @@ extern "C" {
                                              const int autocorr,
                                              const char *binfile,
                                              results_countpairs_theta *results,
-                                             struct config_options *options);
+                                             struct config_options *options, struct extra_options *extra);
     
     extern int check_ra_dec_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta);
     

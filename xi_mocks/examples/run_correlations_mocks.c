@@ -150,7 +150,7 @@ int main(int argc, char **argv)
                                       pimax,
                                       cosmology,
                                       &results,
-                                      &options);
+                                      &options, NULL);
         if(status != EXIT_SUCCESS) {
             return status;
         }
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
                                             autocorr,
                                             binfile,
                                             &results,
-                                            &options);
+                                            &options, NULL);
         if(status != EXIT_SUCCESS) {
             return status;
         }
@@ -241,7 +241,7 @@ int main(int argc, char **argv)
                                         centers_file,
                                         cosmology,
                                         &results,
-                                        &options);
+                                        &options, NULL);
         if(status != EXIT_SUCCESS) {
             return status;
         }

@@ -69,7 +69,7 @@ int test_periodic_DD(const char *correct_outputfile)
                             autocorr,
                             binfile,
                             &results,
-                            &options);
+                            &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -106,7 +106,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
                                   binfile,
                                   pimax,
                                   &results,
-                                  &options);
+                                  &options, NULL);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -145,7 +145,7 @@ int test_wp(const char *correct_outputfile)
                                binfile,
                                pimax,
                                &results,
-                               &options);
+                               &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -182,7 +182,7 @@ int test_vpf(const char *correct_outputfile)
                               num_pN,
                               seed,
                               &results,
-                              &options);
+                              &options, NULL);
 
     if(status != EXIT_SUCCESS) {
         return status;
@@ -221,7 +221,7 @@ int test_xi(const char *correct_outputfile)
                                nthreads,
                                binfile,
                                &results,
-                               &options);
+                               &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }

@@ -147,7 +147,7 @@ int main(int argc, char **argv)
                                       binfile,
                                       pimax,
                                       &results,
-                                      &options);
+                                      &options, NULL);
         if(status != EXIT_SUCCESS) {
             return status;
         }
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
                                 autocorr,
                                 binfile,
                                 &results,
-                                &options);
+                                &options, NULL);
         if(status != EXIT_SUCCESS) {
             return status;
         }
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
                                    binfile,
                                    pimax,
                                    &results,
-                                   &options);
+                                   &options, NULL);
         gettimeofday(&t1,NULL);
         if(status != EXIT_SUCCESS) {
             return status;
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
                                    nthreads,
                                    binfile,
                                    &results,
-                                   &options);
+                                   &options, NULL);
         if(status != EXIT_SUCCESS) {
             return status;
         }
@@ -310,7 +310,7 @@ int main(int argc, char **argv)
                                   num_pN,
                                   seed,
                                   &results,
-                                  &options);
+                                  &options, NULL);
         if(status != EXIT_SUCCESS) {
             return status;
         }

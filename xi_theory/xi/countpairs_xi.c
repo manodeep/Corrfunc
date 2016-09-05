@@ -32,7 +32,8 @@ int countpairs_xi(const int64_t ND, void * restrict X, void * restrict Y, void *
                   const int numthreads,
                   const char *binfile,
                   results_countpairs_xi *results,
-                  struct config_options *options)
+                  struct config_options *options,
+                  struct extra_options *extra)
 {
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
         fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
@@ -50,13 +51,15 @@ int countpairs_xi(const int64_t ND, void * restrict X, void * restrict Y, void *
                                    numthreads,
                                    binfile,
                                    results,
-                                   options);
+                                   options,
+                                   extra);
     } else {
         return countpairs_xi_double(ND, (double * restrict) X, (double * restrict) Y, (double * restrict) Z,
                                     boxsize,
                                     numthreads,
                                     binfile,
                                     results,
-                                    options);
+                                    options,
+                                    extra);
     }
 }

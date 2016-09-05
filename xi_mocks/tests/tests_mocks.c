@@ -76,7 +76,7 @@ int test_DDrppi_mocks(const char *correct_outputfile)
                                   pimax,
                                   cosmology_flag,
                                   &results,
-                                  &options);
+                                  &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -166,7 +166,7 @@ int test_vpf_mocks(const char *correct_outputfile)
                                     centers_file,
                                     cosmology_flag,
                                     &results,
-                                    &options);
+                                    &options, NULL);
     if(status != EXIT_SUCCESS) {
         return status;
     }
