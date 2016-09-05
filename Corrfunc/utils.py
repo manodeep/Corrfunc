@@ -188,14 +188,19 @@ def read_text_file(filename, encoding="utf-8"):
 
 def read_catalog(filebase=None):
     """
-    Reads a galaxy/randoms catalog.
+    Reads a galaxy/randoms catalog and returns 3 XYZ arrays.
 
-    :param filebase: (optional)
+    Parameters
+    -----------
+    
+    filebase: string (optional)
         The fully qualified path to the file. If omitted, reads the
         theory galaxy catalog under ../xi_theory/tests/data/
 
-    Returns:
-    * ``x y z`` - Unpacked numpy arrays compatible with the installed
+    Returns
+    --------
+
+    ``x y z`` - Unpacked numpy arrays compatible with the installed
     version of ``Corrfunc``.
 
     **Note** If the filename is omitted, then first the fast-food file
