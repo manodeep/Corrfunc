@@ -23,7 +23,7 @@ extern "C" {
 #define STRINGIFY(x)   #x
 #define STR(x) STRINGIFY(x)
 
-#define API_VERSION          STR("1.9.0")
+#define API_VERSION          STR("2.0.0")
 
 typedef enum {
   DEFAULT=-42,/* present simply to make the enum a signed int*/

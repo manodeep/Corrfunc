@@ -118,7 +118,7 @@ int test_wtheta_mocks(const char *correct_outputfile)
                                         autocorr,
                                         angular_binfile,
                                         &results,
-                                        &options) ;
+                                        &options, NULL);
     
     if(status != EXIT_SUCCESS) {
         return status;
