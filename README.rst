@@ -281,14 +281,14 @@ for the code is
 
 ::
 
-   @misc{manodeep_sinha_2016_55161,
-       author       = {Manodeep Sinha},
-       title        = {Corrfunc: Corrfunc-1.1.0},
-       month        = jun,
-       year         = 2016,
-       doi          = {10.5281/zenodo.55161},
-       url          = {http://dx.doi.org/10.5281/zenodo.55161}
-   }
+      @misc{manodeep_sinha_2016_61511,
+         author       = {Manodeep Sinha},
+         title        = {Corrfunc: Corrfunc-2.0.0},
+         month        = sep,
+         year         = 2016,
+         doi          = {10.5281/zenodo.61511},
+         url          = {http://dx.doi.org/10.5281/zenodo.61511}
+      }
        
 Mailing list
 ============
