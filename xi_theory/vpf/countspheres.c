@@ -34,7 +34,8 @@ int countspheres(const int64_t np, void * restrict X, void * restrict Y, void * 
                  const int num_pN,
                  unsigned long seed,
                  results_countspheres *results,
-                 struct config_options *options)
+                 struct config_options *options,
+                 struct extra_options *extra)
 {
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
         fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
@@ -53,14 +54,16 @@ int countspheres(const int64_t np, void * restrict X, void * restrict Y, void * 
                                   num_pN,
                                   seed,
                                   results,
-                                  options);
+                                  options,
+                                  extra);
     } else {
         return countspheres_double(np,  (double * restrict) X, (double * restrict) Y, (double * restrict) Z,
                                    rmax, nbin, nc,
                                    num_pN,
                                    seed,
                                    results,
-                                   options);
+                                   options,
+                                   extra);
     }
 
 }

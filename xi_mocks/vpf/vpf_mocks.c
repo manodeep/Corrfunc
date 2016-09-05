@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
                                     centers_file,
                                     cosmology,
                                     &results,
-                                    &options);
+                                    &options, NULL);
 
     free(ra);free(dec);free(cz);
     if(need_randoms == 1) {

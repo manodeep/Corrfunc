@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
                                   pimax,
                                   cosmology,
                                   &results,
-                                  &options);
+                                  &options, NULL);
 
     free(phiD1);free(thetaD1);free(czD1);
     if(autocorr == 0) {

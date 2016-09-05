@@ -663,7 +663,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
                             autocorr,
                             binfile,
                             &results,
-                            &options);
+                            &options, NULL);
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
     }
@@ -862,7 +862,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
                                   binfile,
                                   pimax,
                                   &results,
-                                  &options);
+                                  &options, NULL);
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
     }
@@ -1012,7 +1012,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
                                binfile,
                                pimax,
                                &results,
-                               &options);
+                               &options, NULL);
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
     }
@@ -1161,7 +1161,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
                                nthreads,
                                binfile,
                                &results,
-                               &options);
+                               &options, NULL);
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
     }
@@ -1308,7 +1308,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
                               num_pN,
                               seed,
                               &results,
-                              &options);
+                              &options, NULL);
 
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
