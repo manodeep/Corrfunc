@@ -88,7 +88,7 @@ int test_periodic_DD(const char *correct_outputfile)
     fclose(fp);
 
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     free_results(&results);
@@ -129,7 +129,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -162,7 +162,7 @@ int test_wp(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -205,7 +205,7 @@ int test_vpf(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -239,7 +239,7 @@ int test_xi(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure

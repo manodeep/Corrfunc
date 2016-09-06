@@ -32,7 +32,7 @@
 #include "../wtheta/countpairs_theta_mocks.h"
 #include "../vpf/countspheres_mocks.h"
 
-char tmpoutputfile[]="./tests_mocks_output.txt";
+char tmpoutputfile[]="../tests/tests_mocks_output.txt";
 
 int test_DDrppi_mocks(const char *correct_outputfile);
 int test_wtheta_mocks(const char *correct_outputfile);
@@ -99,7 +99,7 @@ int test_DDrppi_mocks(const char *correct_outputfile)
     fclose(fp);
 
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     free_results_mocks(&results);
@@ -139,7 +139,7 @@ int test_wtheta_mocks(const char *correct_outputfile)
     fclose(fp);
         
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     ret=system(execstring);
     
     //free the result structure
@@ -190,7 +190,7 @@ int test_vpf_mocks(const char *correct_outputfile)
     fclose(fp);
 
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -340,7 +340,7 @@ int main(int argc, char **argv)
                 char execstring[MAXLEN];
                 my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,i);
                 run_system_call(execstring);//can ignore the status here
-
+                fprintf(stderr, ANSI_COLOR_RED "Failed output copied to %s.%d correct output is in %s"ANSI_COLOR_RESET"\n", tmpoutputfile, i, correct_outputfiles[i]);
             }
         }
     } else {
@@ -376,6 +376,7 @@ int main(int argc, char **argv)
                     char execstring[MAXLEN];
                     my_snprintf(execstring,MAXLEN,"mv %s %s.%d",tmpoutputfile,tmpoutputfile,this_test_num);
                     run_system_call(execstring);//ignoring status
+                    fprintf(stderr, ANSI_COLOR_RED "Failed output copied to %s.%d correct output is in %s"ANSI_COLOR_RESET"\n", tmpoutputfile, this_test_num, correct_outputfiles[this_test_num]);
                 }
             } else {
                 fprintf(stderr,ANSI_COLOR_YELLOW "WARNING: Test = %d is not a valid test index. Valid test indices range between [0,%d] " ANSI_COLOR_RESET "\n",this_test_num,ntests-1);

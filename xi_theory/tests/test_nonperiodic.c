@@ -84,7 +84,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     fclose(fp);
 
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     free_results(&results);
@@ -124,7 +124,7 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s 2>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
