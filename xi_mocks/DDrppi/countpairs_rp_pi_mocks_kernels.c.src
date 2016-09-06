@@ -124,11 +124,13 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const AVX_FLOATS m_perpy = AVX_SUBTRACT_FLOATS(m_ypos, m_y2);
             const AVX_FLOATS m_perpz = AVX_SUBTRACT_FLOATS(m_zpos, m_z2);
             const AVX_FLOATS m_dsep =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
-
-            /* const AVX_FLOATS m_dsep_mask = AVX_COMPARE_FLOATS(m_dsep, m_max_sep, _CMP_LT_OQ); */
-            /* if(AVX_TEST_COMPARISON(m_dsep_mask) == 0) { */
-            /*     continue; */
+            
+            /* const AVX_FLOATS m_dz_mask = AVX_COMPARE_FLOATS(m_perpz, m_max_sep, _CMP_LT_OQ); */
+            /* if(AVX_TEST_COMPARISON(m_dz_mask) == 0) { */
+            /*     j = N1; */
+            /*     break; */
             /* } */
+
             const AVX_FLOATS m_numerator = AVX_SQUARE_FLOAT(m_dsep);
             const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
             const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
