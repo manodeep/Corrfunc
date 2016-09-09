@@ -1,0 +1,415 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Corrfunc.mocks.vpf_mocks &mdash; Corrfunc 2.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Corrfunc 2.0.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Corrfunc 2.0.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Corrfunc.mocks.vpf_mocks</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Python wrapper around the C extension for the counts-in-cells</span>
+<span class="sd">for positions on the sky. Corresponding C codes are in `xi_mocks/vpf`</span>
+<span class="sd">while the python wrapper is in `~Corrfunc.mocks.vpf_mocks`</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="p">(</span><span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">absolute_import</span><span class="p">,</span>
+                        <span class="n">unicode_literals</span><span class="p">)</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Manodeep Sinha&#39;</span><span class="p">)</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;vpf_mocks&#39;</span><span class="p">,</span> <span class="p">)</span>
+
+
+<div class="viewcode-block" id="vpf_mocks"><a class="viewcode-back" href="../../../modules/mock_functions.html#Corrfunc.mocks.vpf_mocks">[docs]</a><span class="k">def</span> <span class="nf">vpf_mocks</span><span class="p">(</span><span class="n">rmax</span><span class="p">,</span> <span class="n">nbins</span><span class="p">,</span> <span class="n">nspheres</span><span class="p">,</span> <span class="n">num_pN</span><span class="p">,</span>
+              <span class="n">threshold_ngb</span><span class="p">,</span> <span class="n">centers_file</span><span class="p">,</span> <span class="n">cosmology</span><span class="p">,</span>
+              <span class="n">RA</span><span class="p">,</span> <span class="n">DEC</span><span class="p">,</span> <span class="n">CZ</span><span class="p">,</span>
+              <span class="n">RAND_RA</span><span class="p">,</span> <span class="n">RAND_DEC</span><span class="p">,</span> <span class="n">RAND_CZ</span><span class="p">,</span>
+              <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">is_comoving_dist</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+              <span class="n">c_api_timer</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">isa</span><span class="o">=</span><span class="s1">&#39;fastest&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to compute the counts-in-cells on points on the sky. Suitable</span>
+<span class="sd">    for mock catalogs and observed galaxies.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns a numpy structured array containing the probability of a</span>
+<span class="sd">    sphere of radius up to ``rmax`` containing [0, num_pN-1] galaxies.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    </span>
+<span class="sd">    rmax: double</span>
+<span class="sd">       Maximum radius of the sphere to place on the particles</span>
+<span class="sd">    </span>
+<span class="sd">    nbins: integer</span>
+<span class="sd">       Number of bins in the counts-in-cells. Radius of first shell</span>
+<span class="sd">       is rmax/nbins</span>
+<span class="sd">    </span>
+<span class="sd">    nspheres: integer (&gt;= 0)</span>
+<span class="sd">       Number of random spheres to place within the particle distribution.</span>
+<span class="sd">       For a small number of spheres, the error is larger in the measured</span>
+<span class="sd">       pN&#39;s.</span>
+<span class="sd">    </span>
+<span class="sd">    num_pN: integer (&gt;= 1)</span>
+<span class="sd">       Governs how many unique pN&#39;s are to returned. If ``num_pN` is set to 1,</span>
+<span class="sd">       then only the vpf (p0) is returned. For `num_pN=2`, p0 and p1 are</span>
+<span class="sd">       returned.</span>
+
+<span class="sd">       More explicitly, the columns in the results look like the following:</span>
+<span class="sd">         num_pN = 1 -&gt; p0</span>
+<span class="sd">         num_pN = 2 -&gt; p0 p1</span>
+<span class="sd">         num_pN = 3 -&gt; p0 p1 p2</span>
+<span class="sd">         and so on...(note that p0 is the vpf).</span>
+
+<span class="sd">    threshold_ngb: integer</span>
+<span class="sd">       Minimum number of random points needed in a ``rmax`` sphere such that it</span>
+<span class="sd">       is considered to be entirely within the mock footprint. The</span>
+<span class="sd">       command-line version, ``xi_mocks/vpf/vpf_mocks.c``, assumes that the</span>
+<span class="sd">       minimum number of randoms can be at most a 1-sigma deviation from</span>
+<span class="sd">       the expected random number density.</span>
+
+<span class="sd">    centers_file: string, filename</span>
+<span class="sd">       A file containing random sphere centers. If the file does not exist,</span>
+<span class="sd">       then a list of random centers will be written out. In that case, the</span>
+<span class="sd">       randoms arrays, ``RAND_RA``, ``RAND_DEC`` and ``RAND_CZ`` are used to</span>
+<span class="sd">       check that the sphere is entirely within the footprint. If the file does</span>
+<span class="sd">       exist but either ``rmax`` is too small or there are not enough centers</span>
+<span class="sd">       then the file will be overwritten.</span>
+
+<span class="sd">       Note: If the centers file has to be written, the code will take</span>
+<span class="sd">       significantly longer to finish. However, subsequent runs can re-use</span>
+<span class="sd">       that centers file and will be faster.</span>
+
+<span class="sd">    cosmology: integer, required</span>
+<span class="sd">        Integer choice for setting cosmology. Valid values are 1-&gt;LasDamas</span>
+<span class="sd">        cosmology and 2-&gt;Planck cosmology. If you need arbitrary cosmology,</span>
+<span class="sd">        easiest way is to convert the ``CZ`` values into co-moving distance,</span>
+<span class="sd">        based on your preferred cosmology. Set ``is_comoving_dist=True``, to</span>
+<span class="sd">        indicate that the co-moving distance conversion has already been done.</span>
+<span class="sd">    </span>
+<span class="sd">        Choices: 1 -&gt; LasDamas cosmology. Om=0.25,  Ol=0.75</span>
+<span class="sd">                 2 -&gt; Planck   cosmology. Om=0.302, Ol=0.698</span>
+<span class="sd">     </span>
+<span class="sd">        To setup a new cosmology, add an entry to the function,</span>
+<span class="sd">        ``init_cosmology`` in ``ROOT/utils/cosmology_params.c` and re-install</span>
+<span class="sd">        the entire package.</span>
+
+<span class="sd">    RA: array-like, real (float/double)</span>
+<span class="sd">        The array of Right Ascensions for the first set of points. RA&#39;s</span>
+<span class="sd">        are expected to be in [0.0, 360.0], but the code will try to fix cases</span>
+<span class="sd">        where the RA&#39;s are in [-180, 180.0]. For peace of mind, always supply</span>
+<span class="sd">        RA&#39;s in [0.0, 360.0].</span>
+
+<span class="sd">        Calculations are done in the precision of the supplied arrays.</span>
+
+<span class="sd">    DEC: array-like, real (float/double)</span>
+<span class="sd">         Array of Declinations for the first set of points. DEC&#39;s are expected</span>
+<span class="sd">         to be in the [-90.0, 90.0], but the code will try to fix cases where</span>
+<span class="sd">         the DEC&#39;s are in [0.0, 180.0]. Again, for peace of mind, always supply</span>
+<span class="sd">         DEC&#39;s in [-90.0, 90.0].</span>
+
+<span class="sd">         Must be of same precision type as RA.</span>
+
+<span class="sd">    CZ: array-like, real (float/double)</span>
+<span class="sd">         Array of (Speed Of Light * Redshift) values for the first set of</span>
+<span class="sd">         points. Code will try to detect cases where ``redshifts`` have been</span>
+<span class="sd">         passed and multiply the entire array with the ``speed of light``.</span>
+
+<span class="sd">         * If is_comoving_dist is set, then ``CZ`` is interpreted as the</span>
+<span class="sd">         co-moving distance, rather than (Speed Of Light * Redshift).</span>
+
+
+<span class="sd">    RAND_RA: array-like, real (float/double)</span>
+<span class="sd">        The array of Right Ascensions for the randoms. RA&#39;s are expected to be</span>
+<span class="sd">        in [0.0, 360.0], but the code will try to fix cases where the RA&#39;s are</span>
+<span class="sd">        in [-180, 180.0]. For peace of mind, always supply RA&#39;s in</span>
+<span class="sd">        [0.0, 360.0].</span>
+
+<span class="sd">        Must be of same precision type as RA/DEC/CZ.</span>
+
+<span class="sd">    RAND_DEC: array-like, real (float/double)</span>
+<span class="sd">         Array of Declinations for the randoms. DEC&#39;s are expected to be in the</span>
+<span class="sd">         [-90.0, 90.0], but the code will try to fix cases where the DEC&#39;s are</span>
+<span class="sd">         in [0.0, 180.0]. Again, for peace of mind, always supply DEC&#39;s in</span>
+<span class="sd">         [-90.0, 90.0].</span>
+
+<span class="sd">         Must be of same precision type as RA/DEC/CZ.</span>
+
+<span class="sd">    RAND_CZ: array-like, real (float/double)</span>
+<span class="sd">         Array of (Speed Of Light * Redshift) values for the randoms. Code</span>
+<span class="sd">         will try to detect cases where ``redshifts`` have been</span>
+<span class="sd">         passed and multiply the entire array with the ``speed of light``.</span>
+
+<span class="sd">         * If is_comoving_dist is set, then ``CZ2`` is interpreted as the</span>
+<span class="sd">         co-moving distance, rather than `(Speed Of Light * Redshift)`.</span>
+
+<span class="sd">    NOTE: RAND_RA, RAND_DEC and RAND_CZ are only used when the ``centers_file``</span>
+<span class="sd">          needs to be written out. In that case, the RAND_RA, RAND_DEC, and</span>
+<span class="sd">          RAND_CZ are used as random centers.</span>
+
+<span class="sd">    verbose: boolean (default false)</span>
+<span class="sd">       Boolean flag to control output of informational messages</span>
+<span class="sd">    </span>
+<span class="sd">    is_comoving_dist: boolean (default false)</span>
+<span class="sd">         Boolean flag to indicate that ``cz`` values have already been</span>
+<span class="sd">         converted into co-moving distances. This flag allows arbitrary</span>
+<span class="sd">         cosmologies to be used in ``Corrfunc``.</span>
+
+<span class="sd">    c_api_timer: boolean (default false)</span>
+<span class="sd">       Boolean flag to measure actual time spent in the C libraries. Here</span>
+<span class="sd">       to allow for benchmarking and scaling studies.</span>
+
+<span class="sd">    isa: string (default ``fastest``)</span>
+<span class="sd">       Controls the runtime dispatch for the instruction set to use. Possible</span>
+<span class="sd">       options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]</span>
+<span class="sd">    </span>
+<span class="sd">       Setting isa to ``fastest`` will pick the fastest available instruction</span>
+<span class="sd">       set on the current computer. However, if you set ``isa`` to, say,</span>
+<span class="sd">       ``avx`` and ``avx`` is not available on the computer, then the code will</span>
+<span class="sd">       revert to using ``fallback`` (even though ``sse42`` might be available).</span>
+<span class="sd">       </span>
+<span class="sd">       Unless you are benchmarking the different instruction sets, you should</span>
+<span class="sd">       always leave ``isa`` to the default value. And if you *are*</span>
+<span class="sd">       benchmarking, then the string supplied here gets translated into an</span>
+<span class="sd">       ``enum`` for the instruction set defined in ``utils/defs.h``.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+
+<span class="sd">    results: Numpy structured array</span>
+
+<span class="sd">       A numpy structured array containing [rmax, pN[num_pN]] with ``nbins``</span>
+<span class="sd">       elements. Each row contains the maximum radius of the sphere and the</span>
+<span class="sd">       ``num_pN`` elements in the ``pN`` array. Each element of this array</span>
+<span class="sd">       contains the probability that a sphere of radius ``rmax`` contains</span>
+<span class="sd">       *exactly* ``N`` galaxies. For example, pN[0] (p0, the void probibility</span>
+<span class="sd">       function) is the probability that a sphere of radius ``rmax`` contains 0</span>
+<span class="sd">       galaxies.</span>
+
+<span class="sd">       if ``c_api_timer`` is set, then the return value is a tuple containing</span>
+<span class="sd">       (results, api_time). ``api_time`` measures only the time spent within</span>
+<span class="sd">       the C library and ignores all python overhead.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    --------</span>
+
+<span class="sd">    &gt;&gt;&gt; import Corrfunc</span>
+<span class="sd">    &gt;&gt;&gt; import math</span>
+<span class="sd">    &gt;&gt;&gt; from os.path import dirname, abspath, join as pjoin</span>
+<span class="sd">    &gt;&gt;&gt; rmax = 10.0</span>
+<span class="sd">    &gt;&gt;&gt; nbins = 10</span>
+<span class="sd">    &gt;&gt;&gt; numbins_to_print = nbins</span>
+<span class="sd">    &gt;&gt;&gt; nspheres = 10000</span>
+<span class="sd">    &gt;&gt;&gt; num_pN = 6</span>
+<span class="sd">    &gt;&gt;&gt; threshold_ngb = 1  # does not matter since we have the centers</span>
+<span class="sd">    &gt;&gt;&gt; cosmology = 1  # LasDamas cosmology</span>
+<span class="sd">    &gt;&gt;&gt; centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),</span>
+<span class="sd">                             &quot;../xi_mocks/tests/data/&quot;,</span>
+<span class="sd">                             &quot;Mr19_centers_xyz_forVPF_rmax_10Mpc.txt&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; N = 100000</span>
+<span class="sd">    &gt;&gt;&gt; boxsize = 420.0</span>
+<span class="sd">    &gt;&gt;&gt; X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)</span>
+<span class="sd">    &gt;&gt;&gt; Y = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)</span>
+<span class="sd">    &gt;&gt;&gt; Z = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)</span>
+<span class="sd">    &gt;&gt;&gt; CZ = np.sqrt(X*X + Y*Y + Z*Z)</span>
+<span class="sd">    &gt;&gt;&gt; inv_cz = 1.0/CZ</span>
+<span class="sd">    &gt;&gt;&gt; X *= inv_cz</span>
+<span class="sd">    &gt;&gt;&gt; Y *= inv_cz</span>
+<span class="sd">    &gt;&gt;&gt; Z *= inv_cz</span>
+<span class="sd">    &gt;&gt;&gt; DEC = 90.0 - np.arccos(Z)*180.0/math.pi</span>
+<span class="sd">    &gt;&gt;&gt; RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0</span>
+<span class="sd">    &gt;&gt;&gt; results = vpf_mocks(rmax, nbins, nspheres, num_pN,</span>
+<span class="sd">                            threshold_ngb, centers_file, cosmology,</span>
+<span class="sd">                            RA, DEC, CZ,</span>
+<span class="sd">                            RA, DEC, CZ,</span>
+<span class="sd">                            verbose=True,</span>
+<span class="sd">                            is_comoving_dist=True)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">Corrfunc._countpairs_mocks</span> <span class="kn">import</span> <span class="n">countspheres_vpf_mocks</span>\
+            <span class="k">as</span> <span class="n">vpf_extn</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Could not import the C extension for the Counts-in-Cells &quot;</span>\
+              <span class="s2">&quot; (vpf)&quot;</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">future.utils</span> <span class="kn">import</span> <span class="n">bytes_to_native_str</span>
+    <span class="kn">from</span> <span class="nn">Corrfunc.utils</span> <span class="kn">import</span> <span class="n">translate_isa_string_to_enum</span>
+    
+    <span class="n">integer_isa</span> <span class="o">=</span> <span class="n">translate_isa_string_to_enum</span><span class="p">(</span><span class="n">isa</span><span class="p">)</span>
+    <span class="n">extn_results</span><span class="p">,</span> <span class="n">api_time</span> <span class="o">=</span> <span class="n">vpf_extn</span><span class="p">(</span><span class="n">rmax</span><span class="p">,</span> <span class="n">nbins</span><span class="p">,</span> <span class="n">nspheres</span><span class="p">,</span> <span class="n">num_pN</span><span class="p">,</span>
+                                      <span class="n">threshold_ngb</span><span class="p">,</span> <span class="n">centers_file</span><span class="p">,</span>
+                                      <span class="n">cosmology</span><span class="p">,</span>
+                                      <span class="n">RA</span><span class="p">,</span> <span class="n">DEC</span><span class="p">,</span> <span class="n">CZ</span><span class="p">,</span>
+                                      <span class="n">RAND_RA</span><span class="p">,</span> <span class="n">RAND_DEC</span><span class="p">,</span> <span class="n">RAND_CZ</span><span class="p">,</span>
+                                      <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+                                      <span class="n">is_comoving_dist</span><span class="o">=</span><span class="n">is_comoving_dist</span><span class="p">,</span>
+                                      <span class="n">c_api_timer</span><span class="o">=</span><span class="n">c_api_timer</span><span class="p">,</span>
+                                      <span class="n">isa</span><span class="o">=</span><span class="n">integer_isa</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">extn_results</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;RuntimeError occurred&quot;</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="n">results_dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="n">bytes_to_native_str</span><span class="p">(</span><span class="n">b</span><span class="s1">&#39;rmax&#39;</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                              <span class="p">(</span><span class="n">bytes_to_native_str</span><span class="p">(</span><span class="n">b</span><span class="s1">&#39;pN&#39;</span><span class="p">),</span>
+                               <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">num_pN</span><span class="p">))])</span>
+    <span class="n">nbin</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">extn_results</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbin</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">results_dtype</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">extn_results</span><span class="p">):</span>
+        <span class="n">results</span><span class="p">[</span><span class="s1">&#39;rmax&#39;</span><span class="p">][</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">num_pN</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">[</span><span class="s1">&#39;pN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">num_pN</span><span class="p">):</span>
+                <span class="n">results</span><span class="p">[</span><span class="s1">&#39;pN&#39;</span><span class="p">][</span><span class="n">ii</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">c_api_timer</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">results</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">results</span><span class="p">,</span> <span class="n">api_time</span></div>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">pi</span>
+    <span class="kn">import</span> <span class="nn">Corrfunc</span>
+    <span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">dirname</span><span class="p">,</span> <span class="n">abspath</span><span class="p">,</span> <span class="n">join</span> <span class="k">as</span> <span class="n">pjoin</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Running VPF for mocks&quot;</span><span class="p">)</span>
+    <span class="n">rmax</span> <span class="o">=</span> <span class="mf">10.0</span>
+    <span class="n">nbins</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">numbins_to_print</span> <span class="o">=</span> <span class="n">nbins</span>
+    <span class="n">nspheres</span> <span class="o">=</span> <span class="mi">10000</span>
+    <span class="n">num_pN</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">threshold_ngb</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># does not matter since we have the centers</span>
+    <span class="n">cosmology</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># LasDamas cosmology</span>
+
+    <span class="c1"># file containing the centers of random spheres</span>
+    <span class="n">centers_file</span> <span class="o">=</span> <span class="n">pjoin</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="n">abspath</span><span class="p">(</span><span class="n">Corrfunc</span><span class="o">.</span><span class="n">__file__</span><span class="p">)),</span>
+                         <span class="s2">&quot;../xi_mocks/tests/data/&quot;</span><span class="p">,</span>
+                         <span class="s2">&quot;Mr19_centers_xyz_forVPF_rmax_10Mpc.txt&quot;</span><span class="p">)</span>
+    
+    <span class="n">N</span> <span class="o">=</span> <span class="mi">100000</span>
+    <span class="n">boxsize</span> <span class="o">=</span> <span class="mf">420.0</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">boxsize</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">boxsize</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">boxsize</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">boxsize</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">boxsize</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">boxsize</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+    
+    <span class="c1"># Convert XYZ into RA/DEC/CZ</span>
+    <span class="n">CZ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">X</span><span class="o">*</span><span class="n">X</span> <span class="o">+</span> <span class="n">Y</span><span class="o">*</span><span class="n">Y</span> <span class="o">+</span> <span class="n">Z</span><span class="o">*</span><span class="n">Z</span><span class="p">)</span>
+    <span class="n">inv_cz</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">CZ</span>
+
+    <span class="c1"># Convert to unit sphere</span>
+    <span class="n">X</span> <span class="o">*=</span> <span class="n">inv_cz</span>
+    <span class="n">Y</span> <span class="o">*=</span> <span class="n">inv_cz</span>
+    <span class="n">Z</span> <span class="o">*=</span> <span class="n">inv_cz</span>
+
+    <span class="kn">import</span> <span class="nn">math</span>
+    <span class="n">DEC</span> <span class="o">=</span> <span class="mf">90.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span><span class="o">*</span><span class="mf">180.0</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">RA</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span><span class="o">*</span><span class="mf">180.0</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">+</span> <span class="mf">180.0</span>
+
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">results</span><span class="p">,</span> <span class="n">api_time</span> <span class="o">=</span> <span class="n">vpf_mocks</span><span class="p">(</span><span class="n">rmax</span><span class="p">,</span> <span class="n">nbins</span><span class="p">,</span> <span class="n">nspheres</span><span class="p">,</span> <span class="n">num_pN</span><span class="p">,</span>
+                                  <span class="n">threshold_ngb</span><span class="p">,</span> <span class="n">centers_file</span><span class="p">,</span> <span class="n">cosmology</span><span class="p">,</span>
+                                  <span class="n">RA</span><span class="p">,</span> <span class="n">DEC</span><span class="p">,</span> <span class="n">CZ</span><span class="p">,</span>
+                                  <span class="n">RA</span><span class="p">,</span> <span class="n">DEC</span><span class="p">,</span> <span class="n">CZ</span><span class="p">,</span>
+                                  <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                  <span class="n">c_api_timer</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                  <span class="n">is_comoving_dist</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                                  
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Results from vpf_mocks (Npts = {0}): Time taken = {1:0.3f} sec &quot;</span>
+          <span class="s2">&quot;Python time = {2:0.3f} sec&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">api_time</span><span class="p">,</span> <span class="n">t1</span><span class="o">-</span><span class="n">t0</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;{0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Corrfunc 2.0.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Manodeep Sinha.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
+    </div>
+  </body>
+</html>

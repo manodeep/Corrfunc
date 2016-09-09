@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Package Installation &mdash; Corrfunc 2.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="Corrfunc 2.0.0 documentation" href="index.html" />
+    <link rel="next" title="Function-usage examples by category" href="modules/index.html" />
+    <link rel="prev" title="Corrfunc Documentation" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="modules/index.html" title="Function-usage examples by category"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Corrfunc Documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Corrfunc 2.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="package-installation">
+<span id="step-by-step-install"></span><h1>Package Installation<a class="headerlink" href="#package-installation" title="Permalink to this headline">¶</a></h1>
+<p>To install Corrfunc, you can either use pip or clone the repo from GitHub and build the source code.
+Either way, be sure to read the <a class="reference internal" href="#corrfunc-dependencies"><span>Dependencies</span></a> section prior to installation.</p>
+<div class="section" id="using-pip">
+<h2>Using pip<a class="headerlink" href="#using-pip" title="Permalink to this headline">¶</a></h2>
+<p>The simplest way to install the latest release of the code is with pip. Before installation, be sure you have installed the package dependencies described in the <a class="reference internal" href="#corrfunc-dependencies"><span>Dependencies</span></a> section:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>pip install Corrfunc
+</pre></div>
+</div>
+<p>This will install the latest official release of the code.
+If you want the latest master branch,
+you will need to build the code from source following the instructions in the next section.</p>
+</div>
+<div class="section" id="building-from-source">
+<h2>Building from source<a class="headerlink" href="#building-from-source" title="Permalink to this headline">¶</a></h2>
+<p>If you don&#8217;t install the latest release using pip,
+you can instead clone the cource code and call the setup file.
+Before installation, be sure you have installed the package dependencies
+described in the <a class="reference internal" href="#corrfunc-dependencies"><span>Dependencies</span></a> section.
+The first step is to clone the Corrfunc repository:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>git clone https://github.com/manodeep/Corrfunc.git
+cd Corrfunc
+make install
+python setup.py install
+</pre></div>
+</div>
+</div>
+<div class="section" id="dependencies">
+<span id="corrfunc-dependencies"></span><h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<p>The command-line version of Corrfunc needs the following packages to be installed:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://www.gnu.org/software/make/">make</a>: 3.80 or later</li>
+<li><a class="reference external" href="https://gcc.gnu.org/">C compiler</a>: gcc &gt;=4.6, clang, icc. Multi-threading
+will be disabled if the compiler does not support OpenMP.</li>
+<li><a class="reference external" href="https://www.gnu.org/software/gsl/">gsl</a>: any recent version</li>
+</ul>
+<p>If you plan to use the C extensions, then the following are required:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://www.python.org/">Python</a>: 2.6 or later</li>
+<li><a class="reference external" href="http://www.numpy.org/">Numpy</a>: 1.7 or later</li>
+</ul>
+<p>Any of the above can be installed with either pip or conda.</p>
+</div>
+<div class="section" id="verifying-your-installation">
+<span id="id1"></span><h2>Verifying your installation<a class="headerlink" href="#verifying-your-installation" title="Permalink to this headline">¶</a></h2>
+<p>After installing Corrfunc, you should run the integrated test suite to make
+sure that the package was installed correctly. If you installed from source,
+then type the following in the root package directory,</p>
+<div class="code shell highlight-python"><div class="highlight"><pre><span></span>make tests
+</pre></div>
+</div>
+<p>If you installed using pip/conda, then use the following to run the tests</p>
+<div class="code python highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">Corrfunc</span>
+<span class="n">Corrfunc</span><span class="o">.</span><span class="n">run_tests</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Once you have installed the package, see <span class="xref std std-ref">getting_started</span> for instructions on how to get up and running.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Package Installation</a><ul>
+<li><a class="reference internal" href="#using-pip">Using pip</a></li>
+<li><a class="reference internal" href="#building-from-source">Building from source</a></li>
+<li><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li><a class="reference internal" href="#verifying-your-installation">Verifying your installation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Corrfunc Documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="modules/index.html"
+                        title="next chapter">Function-usage examples by category</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/install.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="modules/index.html" title="Function-usage examples by category"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Corrfunc Documentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Corrfunc 2.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, Manodeep Sinha.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.5.
+    </div>
+  </body>
+</html>
