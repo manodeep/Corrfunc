@@ -19,11 +19,7 @@
 
 
 static inline void cpuid (int output[4], int functionnumber) {	
-#if defined (_MSC_VER) || defined (__INTEL_COMPILER)       // Microsoft or Intel compiler, intrin.h included
-
-    __cpuidex(output, functionnumber, 0);                  // intrinsic function for CPUID
-
-#elif defined(__GNUC__) || defined(__clang__)              // use inline assembly, Gnu/AT&T syntax
+#if defined(__GNUC__) || defined(__clang__)              // use inline assembly, Gnu/AT&T syntax
 
    int a, b, c, d;
    __asm("cpuid" : "=a"(a),"=b"(b),"=c"(c),"=d"(d) : "a"(functionnumber),"c"(0) : );
