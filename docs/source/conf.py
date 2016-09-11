@@ -14,8 +14,16 @@
 
 import sys
 import os
+from os.path import abspath, dirname, join as pjoin
 from recommonmark.parser import CommonMarkParser
 
+
+this_dir = dirname(abspath(__file__))
+root_path = abspath(pjoin(this_dir,
+                          '../../'))
+if os.path.isdir(root_path):
+    sys.path.insert(1, root_path)
+        
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -372,3 +380,5 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+
+del sys.path[1]
