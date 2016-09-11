@@ -260,9 +260,22 @@ expected to be ``Right Ascension``, ``Declination`` and ``CZ`` (speed of light
 times redshift, in ``Mpc/h``). Cosmology has to be specified since ``CZ`` needs
 to be converted into co-moving distance. If you want to calculate in arbitrary
 cosmology, then convert ``CZ`` into co-moving distance, and then pass the
-converted array while setting the option ``is_comoving_dist=True``.
+converted array while setting the option ``is_comoving_dist=True``. The
+projected and line of sight separations are calculated using the following
+equations from `Zehavi et al. 2002 <http://adsabs.harvard.edu/abs/2002ApJ...571..172Z>`_
 
-
+.. math::
+   
+   \mathbf{s} &= \mathbf{v_1} - \mathbf{v_2}, \\
+   \mathbf{l} &= \frac{1}{2}\left(\mathbf{v_1} + \mathbf{v_2}\right), \\
+   \pi &= \left(\mathbf{s} \cdot \mathbf{l}\right)/\mathbf{l}, \\
+   r_p &= \mathbf{s} \cdot \mathbf{s} - \pi^2
+   
+where, :math:`\mathbf{v_1}` and :math:`\mathbf{v_2}` are the vectors for the
+two points under consideration. 
+   
+Here is the python code to call ``Corrfunc.mocks.DDrppi_mocks``:
+   
 .. code:: python
 
           from Corrfunc.mocks import DDrppi_mocks
