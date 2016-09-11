@@ -36,7 +36,6 @@ Corrfunc supports three separate mechanisms to compute the clustering statistics
   20% slower compared to the command-line  executables.
 
   See :ref:`python-interface` for details on how to use the python interface.
-  
     
 * **Via static libraries directly in C codes**
 
