@@ -70,10 +70,10 @@ If you installed using pip/conda, then use the following to run the tests
 
 .. code:: python
           
-          import Corrfunc
-          Corrfunc.run_tests()
+          from Corrfunc.tests import tests
+          tests()
 
-Once you have installed the package, see :ref:`getting_started` for instructions on how to get up and running.
+Once you have installed the package, see :ref:`quickstart` for instructions on how to get up and running.
 
 
 
