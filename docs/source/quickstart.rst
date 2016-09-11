@@ -26,7 +26,7 @@ Computing Clustering Statistics with Corrfunc
   
 Corrfunc supports three separate mechanisms to compute the clustering statistics:
 
-* **Via python (if you have ``python`` and ``numpy`` installed)**
+* **Via python** (if you have ``python`` and ``numpy`` installed)
 
   Pros: Fully flexible API to modulate code behaviour at runtime. For instance,
         calculations can be performed in double-precision simply by passing
