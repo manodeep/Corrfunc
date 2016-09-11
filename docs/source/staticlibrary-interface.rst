@@ -39,6 +39,7 @@ required by the C static libraries.
 .. code:: c
 
           #include "io.h"
+          
           const char file[] = {"xi_theory/tests/data/gals_Mr19.ff"}; 
           const char fileformat[] = {"f"};  
           const char binfile[] = {"xi_theory/tests/bins"};
