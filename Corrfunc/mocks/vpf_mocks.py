@@ -14,7 +14,7 @@ __author__ = ('Manodeep Sinha')
 __all__ = ('vpf_mocks', )
 
 
-def vpf_mocks(rmax, nbins, nspheres, num_pN,
+def vpf_mocks(rmax, nbins, nspheres, numpN,
               threshold_ngb, centers_file, cosmology,
               RA, DEC, CZ,
               RAND_RA, RAND_DEC, RAND_CZ,
@@ -25,7 +25,7 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
     for mock catalogs and observed galaxies.
     
     Returns a numpy structured array containing the probability of a
-    sphere of radius up to ``rmax`` containing [0, num_pN-1] galaxies.
+    sphere of radius up to ``rmax`` containing [0, numpN-1] galaxies.
 
     Parameters
     -----------
@@ -42,15 +42,15 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
        For a small number of spheres, the error is larger in the measured
        pN's.
     
-    num_pN: integer (>= 1)
-       Governs how many unique pN's are to returned. If ``num_pN` is set to 1,
-       then only the vpf (p0) is returned. For `num_pN=2`, p0 and p1 are
+    numpN: integer (>= 1)
+       Governs how many unique pN's are to returned. If ``numpN` is set to 1,
+       then only the vpf (p0) is returned. For `numpN=2`, p0 and p1 are
        returned.
 
        More explicitly, the columns in the results look like the following:
-         num_pN = 1 -> p0
-         num_pN = 2 -> p0 p1
-         num_pN = 3 -> p0 p1 p2
+         numpN = 1 -> p0
+         numpN = 2 -> p0 p1
+         numpN = 3 -> p0 p1 p2
          and so on...(note that p0 is the vpf).
 
     threshold_ngb: integer
@@ -170,9 +170,9 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
 
     results: Numpy structured array
 
-       A numpy structured array containing [rmax, pN[num_pN]] with ``nbins``
+       A numpy structured array containing [rmax, pN[numpN]] with ``nbins``
        elements. Each row contains the maximum radius of the sphere and the
-       ``num_pN`` elements in the ``pN`` array. Each element of this array
+       ``numpN`` elements in the ``pN`` array. Each element of this array
        contains the probability that a sphere of radius ``rmax`` contains
        *exactly* ``N`` galaxies. For example, pN[0] (p0, the void probibility
        function) is the probability that a sphere of radius ``rmax`` contains 0
@@ -192,7 +192,7 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
     >>> nbins = 10
     >>> numbins_to_print = nbins
     >>> nspheres = 10000
-    >>> num_pN = 6
+    >>> numpN = 6
     >>> threshold_ngb = 1  # does not matter since we have the centers
     >>> cosmology = 1  # LasDamas cosmology
     >>> centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
@@ -210,7 +210,7 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
     >>> Z *= inv_cz
     >>> DEC = 90.0 - np.arccos(Z)*180.0/math.pi
     >>> RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0
-    >>> results = vpf_mocks(rmax, nbins, nspheres, num_pN,
+    >>> results = vpf_mocks(rmax, nbins, nspheres, numpN,
                             threshold_ngb, centers_file, cosmology,
                             RA, DEC, CZ,
                             RA, DEC, CZ,
@@ -231,7 +231,7 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
     from Corrfunc.utils import translate_isa_string_to_enum
     
     integer_isa = translate_isa_string_to_enum(isa)
-    extn_results, api_time = vpf_extn(rmax, nbins, nspheres, num_pN,
+    extn_results, api_time = vpf_extn(rmax, nbins, nspheres, numpN,
                                       threshold_ngb, centers_file,
                                       cosmology,
                                       RA, DEC, CZ,
@@ -247,16 +247,16 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
 
     results_dtype = np.dtype([(bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'pN'),
-                               (np.float, num_pN))])
+                               (np.float, numpN))])
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
     
     for ii, r in enumerate(extn_results):
         results['rmax'][ii] = r[0]
-        if num_pN == 1:
+        if numpN == 1:
             results['pN'] = r[1]
         else:
-            for j in xrange(num_pN):
+            for j in xrange(numpN):
                 results['pN'][ii][j] = r[1 + j]
 
     if not c_api_timer:
@@ -268,7 +268,6 @@ def vpf_mocks(rmax, nbins, nspheres, num_pN,
 if __name__ == '__main__':
     import numpy as np
     import time
-    from math import pi
     import Corrfunc
     from os.path import dirname, abspath, join as pjoin
     print("\nRunning VPF for mocks")
@@ -276,7 +275,7 @@ if __name__ == '__main__':
     nbins = 10
     numbins_to_print = nbins
     nspheres = 10000
-    num_pN = 6
+    numpN = 6
     threshold_ngb = 1  # does not matter since we have the centers
     cosmology = 1  # LasDamas cosmology
 
@@ -305,7 +304,7 @@ if __name__ == '__main__':
     RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0
 
     t0 = time.time()
-    results, api_time = vpf_mocks(rmax, nbins, nspheres, num_pN,
+    results, api_time = vpf_mocks(rmax, nbins, nspheres, numpN,
                                   threshold_ngb, centers_file, cosmology,
                                   RA, DEC, CZ,
                                   RA, DEC, CZ,
