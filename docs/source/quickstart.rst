@@ -29,13 +29,14 @@ Corrfunc supports three separate mechanisms to compute the clustering statistics
 * **Via python** (if you have ``python`` and ``numpy`` installed)
 
   Pros: Fully flexible API to modulate code behaviour at runtime. For instance,
-        calculations can be performed in double-precision simply by passing
-        arrays of doubles (rather than floats).
-
+  calculations can be performed in double-precision simply by passing arrays of
+  doubles (rather than floats).
+  
   Cons: Has fixed python overhead. For low particle numbers, can be as much as
-        20% slower compared to the command-line  executables.
+  20% slower compared to the command-line  executables.
 
   See :ref:`python-interface` for details on how to use the python interface.
+  
     
 * **Via static libraries directly in C codes**
 
