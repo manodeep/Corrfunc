@@ -16,13 +16,25 @@ import sys
 import os
 from os.path import abspath, dirname, join as pjoin
 from recommonmark.parser import CommonMarkParser
+try:
+    from unittest.mock import MagicMock
+except ImportError:
+    from mock import Mock as MagicMock
 
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return Mock()
+    
+MOCK_MODULES = ['numpy']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 this_dir = dirname(abspath(__file__))
 root_path = abspath(pjoin(this_dir,
                           '../../'))
 if os.path.isdir(root_path):
-    sys.path.insert(1, root_path)
+    sys.path.insert(0, root_path)
         
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -381,4 +393,4 @@ epub_exclude_files = ['search.html']
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
 
-del sys.path[1]
+del sys.path[0]
