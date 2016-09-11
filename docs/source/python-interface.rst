@@ -313,7 +313,7 @@ sphere of a certain size contains zero galaxies.
           numpN = 6
 
           # File with sphere centers (centers such that spheres with size
-          rmax=10 Mpc/h are completely inside the survey)
+          # rmax=10 Mpc/h are completely inside the survey)
           centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
                                "../xi_mocks/tests/data/",
                                "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
