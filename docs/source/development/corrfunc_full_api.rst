@@ -5,10 +5,10 @@ Comprehensive Corrfunc Reference/API
 *************************************
 .. automodule:: Corrfunc.utils
 
-.. automodule:: Corrfunc.theory
+.. .noindex. automodule:: Corrfunc.theory
    :members: DD, DDrppi, wp, xi vpf       
                 
-.. automodule:: Corrfunc.mocks
+.. .noindex. automodule:: Corrfunc.mocks
    :members: DDrppi_mocks, DDtheta_mocks, vpf_mocks
 
 
