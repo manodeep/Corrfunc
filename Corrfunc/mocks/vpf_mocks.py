@@ -25,15 +25,17 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     for mock catalogs and observed galaxies.
     
     Returns a numpy structured array containing the probability of a
-    sphere of radius up to ``rmax`` containing [0, numpN-1] galaxies.
+    sphere of radius up to ``rmax`` containing ``0--numpN-1`` galaxies.
+
+
 
     Parameters
-    -----------
-    
-    rmax: double
+    ----------
+   
+    rmax : double
        Maximum radius of the sphere to place on the particles
-    
-    nbins: integer
+
+    nbins : integer
        Number of bins in the counts-in-cells. Radius of first shell
        is rmax/nbins
     
@@ -43,8 +45,8 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        pN's.
     
     numpN: integer (>= 1)
-       Governs how many unique pN's are to returned. If ``numpN` is set to 1,
-       then only the vpf (p0) is returned. For `numpN=2`, p0 and p1 are
+       Governs how many unique pN's are to returned. If ``numpN`` is set to 1,
+       then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
        returned.
 
        More explicitly, the columns in the results look like the following:
@@ -73,79 +75,79 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        that centers file and will be faster.
 
     cosmology: integer, required
-        Integer choice for setting cosmology. Valid values are 1->LasDamas
-        cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
-        easiest way is to convert the ``CZ`` values into co-moving distance,
-        based on your preferred cosmology. Set ``is_comoving_dist=True``, to
-        indicate that the co-moving distance conversion has already been done.
+       Integer choice for setting cosmology. Valid values are 1->LasDamas
+       cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
+       easiest way is to convert the ``CZ`` values into co-moving distance,
+       based on your preferred cosmology. Set ``is_comoving_dist=True``, to
+       indicate that the co-moving distance conversion has already been done.
     
-        Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75
-                 2 -> Planck   cosmology. Om=0.302, Ol=0.698
+       Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75
+                2 -> Planck   cosmology. Om=0.302, Ol=0.698
      
-        To setup a new cosmology, add an entry to the function,
-        ``init_cosmology`` in ``ROOT/utils/cosmology_params.c` and re-install
-        the entire package.
+       To setup a new cosmology, add an entry to the function,
+       ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
+       the entire package.
 
     RA: array-like, real (float/double)
-        The array of Right Ascensions for the first set of points. RA's
-        are expected to be in [0.0, 360.0], but the code will try to fix cases
-        where the RA's are in [-180, 180.0]. For peace of mind, always supply
-        RA's in [0.0, 360.0].
+       The array of Right Ascensions for the first set of points. RA's
+       are expected to be in [0.0, 360.0], but the code will try to fix cases
+       where the RA's are in [-180, 180.0]. For peace of mind, always supply
+       RA's in [0.0, 360.0].
 
-        Calculations are done in the precision of the supplied arrays.
+       Calculations are done in the precision of the supplied arrays.
 
     DEC: array-like, real (float/double)
-         Array of Declinations for the first set of points. DEC's are expected
-         to be in the [-90.0, 90.0], but the code will try to fix cases where
-         the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
-         DEC's in [-90.0, 90.0].
+       Array of Declinations for the first set of points. DEC's are expected
+       to be in the [-90.0, 90.0], but the code will try to fix cases where
+       the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
+       DEC's in [-90.0, 90.0].
 
-         Must be of same precision type as RA.
+       Must be of same precision type as RA.
 
     CZ: array-like, real (float/double)
-         Array of (Speed Of Light * Redshift) values for the first set of
-         points. Code will try to detect cases where ``redshifts`` have been
-         passed and multiply the entire array with the ``speed of light``.
+       Array of (Speed Of Light * Redshift) values for the first set of
+       points. Code will try to detect cases where ``redshifts`` have been
+       passed and multiply the entire array with the ``speed of light``.
 
-         * If is_comoving_dist is set, then ``CZ`` is interpreted as the
-         co-moving distance, rather than (Speed Of Light * Redshift).
+       If ``is_comoving_dist`` is set, then ``CZ`` is interpreted as the
+       co-moving distance, rather than (Speed Of Light * Redshift).
 
 
     RAND_RA: array-like, real (float/double)
-        The array of Right Ascensions for the randoms. RA's are expected to be
-        in [0.0, 360.0], but the code will try to fix cases where the RA's are
-        in [-180, 180.0]. For peace of mind, always supply RA's in
-        [0.0, 360.0].
+       The array of Right Ascensions for the randoms. RA's are expected to be
+       in [0.0, 360.0], but the code will try to fix cases where the RA's are
+       in [-180, 180.0]. For peace of mind, always supply RA's in
+       [0.0, 360.0].
 
-        Must be of same precision type as RA/DEC/CZ.
+       Must be of same precision type as RA/DEC/CZ.
 
     RAND_DEC: array-like, real (float/double)
-         Array of Declinations for the randoms. DEC's are expected to be in the
-         [-90.0, 90.0], but the code will try to fix cases where the DEC's are
-         in [0.0, 180.0]. Again, for peace of mind, always supply DEC's in
-         [-90.0, 90.0].
+       Array of Declinations for the randoms. DEC's are expected to be in the
+       [-90.0, 90.0], but the code will try to fix cases where the DEC's are
+       in [0.0, 180.0]. Again, for peace of mind, always supply DEC's in
+       [-90.0, 90.0].
 
-         Must be of same precision type as RA/DEC/CZ.
+       Must be of same precision type as RA/DEC/CZ.
 
     RAND_CZ: array-like, real (float/double)
-         Array of (Speed Of Light * Redshift) values for the randoms. Code
-         will try to detect cases where ``redshifts`` have been
-         passed and multiply the entire array with the ``speed of light``.
+       Array of (Speed Of Light * Redshift) values for the randoms. Code
+       will try to detect cases where ``redshifts`` have been
+       passed and multiply the entire array with the ``speed of light``.
 
-         * If is_comoving_dist is set, then ``CZ2`` is interpreted as the
-         co-moving distance, rather than `(Speed Of Light * Redshift)`.
+       If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the
+       co-moving distance, rather than ``(Speed Of Light * Redshift)``.
 
-    NOTE: RAND_RA, RAND_DEC and RAND_CZ are only used when the ``centers_file``
-          needs to be written out. In that case, the RAND_RA, RAND_DEC, and
-          RAND_CZ are used as random centers.
+       *NOTE*: RAND_RA, RAND_DEC and RAND_CZ are only used when the
+          ``centers_file``  needs to be written out. In that case, the
+          RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
     
     is_comoving_dist: boolean (default false)
-         Boolean flag to indicate that ``cz`` values have already been
-         converted into co-moving distances. This flag allows arbitrary
-         cosmologies to be used in ``Corrfunc``.
+       Boolean flag to indicate that ``cz`` values have already been
+       converted into co-moving distances. This flag allows arbitrary
+       cosmologies to be used in ``Corrfunc``.
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -164,6 +166,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
+
        
     Returns
     --------
@@ -181,6 +184,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        if ``c_api_timer`` is set, then the return value is a tuple containing
        (results, api_time). ``api_time`` measures only the time spent within
        the C library and ignores all python overhead.
+
 
     Example
     --------
@@ -216,6 +220,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
                             RA, DEC, CZ,
                             verbose=True,
                             is_comoving_dist=True)
+
 
     """
 
