@@ -129,6 +129,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z, verbose=False,
               "correlation function."
         raise ImportError(msg)
 
+    import numpy as np
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins

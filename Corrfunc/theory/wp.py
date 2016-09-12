@@ -136,10 +136,11 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
               "correlation function."
         raise ImportError(msg)
 
+    import numpy as np
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins
-
+    
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = wp_extn(boxsize, pimax, nthreads, rbinfile,
