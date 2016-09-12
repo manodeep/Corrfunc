@@ -3,11 +3,27 @@
 *************************************
 Comprehensive Corrfunc Reference/API
 *************************************
+
+Helper Utilities
+==================
+
 .. currentmodule:: Corrfunc.utils
 .. autofunction:: translate_isa_string_to_enum
 .. autofunction:: return_file_with_rbins
+
+
+Input/Output Routines
+======================
+                 
+.. currentmodule:: Corrfunc.io                 
 ..  autofunction:: read_catalog
-                   
+..  autofunction:: read_ascii_catalog
+..  autofunction:: read_fastfood_catalog
+
+
+Clustering statistics on simulations
+=====================================
+    
 .. currentmodule:: Corrfunc.theory
                    
 ..  autofunction:: DD
@@ -16,6 +32,9 @@ Comprehensive Corrfunc Reference/API
 ..  autofunction:: xi
 ..  autofunction:: vpf                  
 
+Clustering statistics on mock catalogs
+=======================================
+                   
 .. currentmodule:: Corrfunc.mocks
 ..  autofunction:: DDrppi_mocks
 ..  autofunction:: DDtheta_mocks

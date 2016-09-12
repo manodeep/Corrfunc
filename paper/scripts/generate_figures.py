@@ -7,7 +7,7 @@ from Corrfunc._countpairs import countpairs as DD, \
     countpairs_wp as wp, \
     countpairs_xi as xi
 
-from Corrfunc.utils import read_catalog
+from Corrfunc.io import read_catalog
 from os.path import join as pjoin, abspath, dirname
 import time
 

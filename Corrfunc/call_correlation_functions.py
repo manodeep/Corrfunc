@@ -17,7 +17,7 @@ from os.path import dirname, abspath, join as pjoin
 import time
 
 import Corrfunc
-from Corrfunc.utils import read_catalog
+from Corrfunc.io import read_catalog
 from Corrfunc._countpairs import\
     countpairs as DD_extn,\
     countpairs_rp_pi as DDrppi_extn,\

@@ -62,7 +62,7 @@ def read_catalog(filebase=None):
 
     import numpy as np
 
-    def read_ascii(filename, return_dtype=None):
+    def read_ascii_catalog(filename, return_dtype=None):
         if return_dtype is None:
             msg = 'Return data-type must be set and a valid numpy data-type'
             raise ValueError(msg)
@@ -91,7 +91,7 @@ def read_catalog(filebase=None):
 
         return x, y, z
 
-    def read_fastfood(filename, return_dtype=None, need_header=None):
+    def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
         if return_dtype is None:
             msg = "Return data-type must be set and a valid numpy data-type"
             raise ValueError(msg)
@@ -159,10 +159,10 @@ def read_catalog(filebase=None):
         filename = pjoin(dirname(abspath(_countpairs.__file__)),
                          "../tests/data/", "gals_Mr19")
         dtype = np.float32
-        allowed_exts = {'.ff': read_fastfood,
-                        '.txt': read_ascii,
-                        '.dat': read_ascii,
-                        '.csv': read_ascii
+        allowed_exts = {'.ff': read_fastfood_catalog,
+                        '.txt': read_ascii_catalog,
+                        '.dat': read_ascii_catalog,
+                        '.csv': read_ascii_catalog
                         }
 
         for e in allowed_exts:
@@ -176,7 +176,7 @@ def read_catalog(filebase=None):
         # Likely an user-supplied value
         if exists(filebase):
             extension = splitext(filebase)[1]
-            f = read_fastfood if '.ff' in extension else read_ascii
+            f = read_fastfood_catalog if '.ff' in extension else read_ascii_catalog
 
             # default return is double
             x, y, z = f(filebase, np.float)

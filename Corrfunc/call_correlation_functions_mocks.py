@@ -19,7 +19,7 @@ def main():
     import numpy as np
     import time
     import Corrfunc
-    from Corrfunc.utils import read_catalog
+    from Corrfunc.io import read_catalog
     from Corrfunc._countpairs_mocks import\
         countpairs_rp_pi_mocks as rp_pi_mocks_extn,\
         countpairs_theta_mocks as theta_mocks_extn,\

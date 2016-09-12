@@ -81,7 +81,7 @@ clustering functions:
 .. code:: python
 
           import numpy as np
-          from Corrfunc.utils import read_catalog
+          from Corrfunc.io import read_catalog
           
           # Read the default galaxies supplied with
           # Corrfunc. ~ 1 million galaxies on a 420 Mpc/h
@@ -222,7 +222,7 @@ sets up the default arrays and parameters for the actual clustering calculations
           import numpy as np
           import Corrfunc
           from os.path import dirname, abspath, join as pjoin
-          from Corrfunc.utils import read_catalog
+          from Corrfunc.io import read_catalog
 
           # Mock catalog (SDSS-North) supplied with Corrfunc
           mock_catalog = pjoin(dirname(abspath(Corrfunc.__file__)),
