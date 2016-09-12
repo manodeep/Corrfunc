@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 #include "defs.h" //for struct config_options 
-#include <stdint.h> //for uint64_t
+#include <inttypes.h> //for uint64_t
 
 
 #include "countpairs_rp_pi.h"//for struct results_countpairs_rp_pi

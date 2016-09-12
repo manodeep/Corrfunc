@@ -61,12 +61,12 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
        array does not need to be sorted.
 
     X1/Y1/Z1: array-like, real (float/double)
-        The array of X/Y/Z positions for the first set of points.
-        Calculations are done in the precision of the supplied arrays.
+       The array of X/Y/Z positions for the first set of points.
+       Calculations are done in the precision of the supplied arrays.
 
     X2/Y2/Z2: array-like, real (float/double)
-    Array of XYZ positions for the second set of points. *Must* be the same
-    precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
+       Array of XYZ positions for the second set of points. *Must* be the same
+       precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
 
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.

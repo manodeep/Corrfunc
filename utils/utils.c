@@ -22,10 +22,14 @@
   print_time with timeval and gettimeofday
 */
 
+#include<inttypes.h>//defines PRId64 for printing int64_t + includes stdint.h
+#include<math.h>
+#include<string.h>
+#include<limits.h>
+#include<stdarg.h>
+
+#include "macros.h"
 #include "utils.h"
-/* #define __USE_XOPEN2K */
-/* #define _XOPEN_SOURCE_EXTENDED */
-/* #define _GNU_SOURCE  */
 
 
 
@@ -353,7 +357,7 @@ char * get_time_string(struct timeval t0,struct timeval t1)
 {
   const size_t MAXLINESIZE = 1024;
   char *time_string = my_malloc(sizeof(char), MAXLINESIZE);
-  double timediff = difftime(t1.tv_sec,t0.tv_sec);
+  double timediff = t1.tv_sec - t0.tv_sec;
   double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
   char units[4][10]  = {"days", "hrs" , "mins", "secs"};
   int which = 0;
@@ -388,7 +392,7 @@ char * get_time_string(struct timeval t0,struct timeval t1)
 
 void print_time(struct timeval t0,struct timeval t1,const char *s)
 {
-    double timediff = difftime(t1.tv_sec,t0.tv_sec);
+    double timediff = t1.tv_sec - t0.tv_sec;
     double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
     char units[4][10]  = {"days", "hrs" , "mins", "secs"};
     int which = 0;

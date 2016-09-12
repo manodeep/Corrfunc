@@ -76,7 +76,8 @@ vpf: tests_mocks
 	./$(TARGET) 2 5
 
 clean:
-	$(RM) $(TARGETS) $(TARGETOBJS) 
+	$(RM) $(TARGETS) $(TARGETOBJS)
+	$(RM) -R *.dSYM
 
 
 include $(ROOT_DIR)/rules.mk

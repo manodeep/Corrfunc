@@ -7,12 +7,13 @@ This repo contains a set of codes to measure the following OpenMP
 parallelized clustering measures in a cosmological box (co-moving XYZ)
 or on a mock (RA, DEC, CZ). Also, contains the associated paper to be
 published in Astronomy & Computing Journal (at some point). Read the
-documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
+documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_. 
+
 
 Why Should You Use it
 ======================
 
-1. **Fast** All theory pair-counting is at least an order of magnitude faster than all existing public codes. Particularly suited for MCMC. 
+1. **Fast** All theory pair-counting is at least **2x** faster than all existing public codes. Particularly suited for MCMC. 
 2. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
 3. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
 4. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
@@ -67,7 +68,9 @@ Assuming you have ``gcc`` in your ``PATH``, ``make`` and
 ``make install`` should compile and install the C libraries + python
 extensions within the source directory. If you would like to install the
 python C extensions in your environment, then
-``python setup.py install (--user)`` should be sufficient.
+``python setup.py install (--user)`` should be sufficient. If you are primarily
+interested in the ``python`` interface, you can condense all of the steps
+by using ``python setup.py install CC=yourcompiler (--user)`` after ``git clone``.
 
 Alternative
 -----------
@@ -129,37 +132,76 @@ All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 Science options
 ===============
 
+If you plan to use the command-line, then you will have to specify the
+code runtime options at compile-time. For theory routines, these options
+are in the file ``theory.options`` while for the mocks, these options are
+in file ``mocks.options``. 
+
+**Note** All options can be specified at 
+runtime if you use the python interface or the static libraries. Each one of
+the following ``Makefile`` option has a corresponding entry for the runtime
+libraries. 
+
+Theory (in ``theory.options``)
+-------------------------------
+
 1. ``PERIODIC`` (ignored in case of wp/xi) -- switches periodic boundary
    conditions on/off. Enabled by default.
 
 2. ``OUTPUT_RPAVG`` -- switches on output of ``<rp>`` in each ``rp``
    bin. Can be a massive performance hit (~ 2.2x in case of wp).
-   Disabled by default. Needs code option ``DOUBLE_PREC`` to be enabled
-   as well. For the mocks, ``OUTPUT_RPAVG`` causes only a mild increase
-   in runtime and is enabled by default.
+   Disabled by default. 
 
-3. ``OUTPUT_THETAAVG`` -- switches on output of in each theta bin. Can
+3. ``DOUBLE_PREC`` -- switches on calculations in double precision. Disabled
+   by default (i.e., calculations are performed in single precision by default).
+   
+Mocks (in ``mocks.options``)
+----------------------------
+
+1. ``OUTPUT_RPAVG`` -- switches on output of ``<rp>`` in each ``rp``
+   bin for ``DDrppi_mocks``. Enabled by default.
+
+2. ``OUTPUT_THETAAVG`` -- switches on output of in each theta bin. Can
    be extremely slow (~5x) depending on compiler, and CPU capabilities.
    Disabled by default.
 
-Mocks
------
+3. ``DOUBLE_PREC`` -- switches on calculations in double precision. Disabled
+   by default (i.e., calculations are performed in single precision by default).
+   
+4. ``LINK_IN_DEC`` -- creates binning in declination for ``DDtheta``. Please
+   check that for your desired limits ``\theta``, this binning does not 
+   produce incorrect results (due to numerical precision). Generally speaking,
+   if your ``\thetamax`` (the max. ``\theta`` to consider pairs within) is too
+   small (probaly less than 1 degree), then you should check with and without
+   this option. Errors are typically sub-percent level. 
 
-1. ``LINK_IN_DEC`` -- creates binning in declination for mocks. Please
-   check that for your desired binning in `r_p` or `\theta`,
-   this binning does not produce incorrect results (due to numerical
-   precision).
-
-2. ``LINK_IN_RA`` -- creates binning in RA once binning in DEC has been
+5. ``LINK_IN_RA`` -- creates binning in RA once binning in DEC has been
    enabled. Same numerical issues as ``LINK_IN_DEC``
 
-3. ``FAST_DIVIDE`` -- Divisions are slow but required
-   `DD(r_p,\pi)`. This ``Makefile`` option (in ``mocks.options``) replaces
-   the divisions to a reciprocal followed by a Newton-Raphson. The code
+6. ``FAST_DIVIDE`` -- Disabled by default. Divisions are slow but required
+   ``DD(r_p,\pi)``. Enabling this option, replaces
+   the divisions with a reciprocal followed by a Newton-Raphson. The code
    will run ~20% faster at the expense of some numerical precision.
    Please check that the loss of precision is not important for your
-   use-case. Also, note that the mocks tests for `DD(r_p, \pi)`
-   *will fail* if you enable ``FAST_DIVIDE``.
+   use-case. 
+
+7. ``FAST_ACOS`` -- Relevant only when ``OUTPUT_THETAAVG`` is enabled. Disabled 
+   by default. An ``arccos`` is required to calculate ``<\theta>``. In absence of vectorized
+   ``arccos`` (intel compiler, ``icc`` provides one via intel Short Vector Math 
+   Library), this calculation is extremely slow. However, we can approximate
+   ``arccos`` using polynomials (with `Remez Algorithm <https://en.wikipedia.org/wiki/Remez_algorithm>`_).
+   The approximations are taken from implementations released by `Geometric Tools <http://geometrictools.com/>`_.
+   Depending on the level of accuracy desired, this implementation of ``fast acos`` 
+   can be tweaked in the file `utils/fast_acos.h <utils/fast_acos.h>`__. An alternate, less
+   accurate implementation is already present in that file. Please check that the loss of 
+   precision is not important for your use-case. 
+
+8. ``COMOVING_DIST`` -- Currently there is no support in ``Corrfunc`` for different cosmologies. However, for the
+   mocks routines like, ``DDrppi_mocks`` and ``vpf_mocks``, cosmology parameters are required to convert between
+   redshift and co-moving distance. Both ``DDrppi_mocks`` and ``vpf_mocks`` expects to receive a ``redshift`` array 
+   as input; however, with this option enabled, the ``redshift`` array will be assumed to contain already converted
+   co-moving distances. So, if you have redshifts and want to use an arbitrary cosmology, then convert the redshifts
+   into co-moving distances, enable this option, and pass the co-moving distance array into the routines. 
 
 Running the codes
 =================
@@ -197,7 +239,7 @@ Calling from Python
 If all went well, the codes can be directly called from ``python``.
 Please see ``Corrfunc/call_correlation_functions.py`` and
 ``Corrfunc/call_correlation_functions_mocks.py`` for examples on how to
-use the Python interface. Here are a few examples:
+use the C extensions directly. Here are a few examples:
 
 .. code:: python
 
@@ -239,20 +281,12 @@ use the Python interface. Here are a few examples:
 Common Code options for both Mocks and Cosmological Boxes
 =========================================================
 
-1. ``DOUBLE_PREC`` -- does the calculations in double precision.
-   Disabled by default.
-
-2. ``USE_AVX`` -- uses the AVX instruction set found in Intel/AMD CPUs
-   >= 2011 (Intel: Sandy Bridge or later; AMD: Bulldozer or later).
-   Enabled by default - code will run much slower if the CPU does not
-   support AVX instructions. The ``Makefile`` will automatically check
-   for "AVX" support and disable this option for unsupported CPUs. 
-
-3. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD
+1. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD
    (perfect scaling up to 12 threads in my tests) and okay (runtime
    becomes constant ~6-8 threads in my tests) for ``DDrppi`` and ``wp``.
    Enabled by default. The ``Makefile`` will compare the `CC` variable with
    known OpenMP enabled compilers and set compile options accordingly. 
+   Set in ``common.mk`` by default. 
 
 *Optimization for your architecture*
 
@@ -281,14 +315,14 @@ for the code is
 
 ::
 
-   @misc{manodeep_sinha_2016_55161,
-       author       = {Manodeep Sinha},
-       title        = {Corrfunc: Corrfunc-1.1.0},
-       month        = jun,
-       year         = 2016,
-       doi          = {10.5281/zenodo.55161},
-       url          = {http://dx.doi.org/10.5281/zenodo.55161}
-   }
+      @misc{manodeep_sinha_2016_61511,
+         author       = {Manodeep Sinha},
+         title        = {Corrfunc: Corrfunc-2.0.0},
+         month        = sep,
+         year         = 2016,
+         doi          = {10.5281/zenodo.61511},
+         url          = {http://dx.doi.org/10.5281/zenodo.61511}
+      }
        
 Mailing list
 ============

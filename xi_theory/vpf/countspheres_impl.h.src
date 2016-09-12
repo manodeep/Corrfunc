@@ -12,6 +12,9 @@
 extern "C" {
 #endif
 
+#include "defs.h"
+#include <inttypes.h>
+    
 #include "countspheres.h" //for definition of DOUBLE
 
     extern void interrupt_handler_vpf_DOUBLE(int signo);

@@ -84,28 +84,28 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
        array does not need to be sorted.
 
     RA1: array-like, real (float/double)
-        The array of Right Ascensions for the first set of points. RA's
-        are expected to be in [0.0, 360.0], but the code will try to fix cases
-        where the RA's are in [-180, 180.0]. For peace of mind, always supply
-        RA's in [0.0, 360.0].
+       The array of Right Ascensions for the first set of points. RA's
+       are expected to be in [0.0, 360.0], but the code will try to fix cases
+       where the RA's are in [-180, 180.0]. For peace of mind, always supply
+       RA's in [0.0, 360.0].
 
-        Calculations are done in the precision of the supplied arrays.
+       Calculations are done in the precision of the supplied arrays.
 
     DEC1: array-like, real (float/double)
-         Array of Declinations for the first set of points. DEC's are expected
-         to be in the [-90.0, 90.0], but the code will try to fix cases where
-         the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
-         DEC's in [-90.0, 90.0].
+       Array of Declinations for the first set of points. DEC's are expected
+       to be in the [-90.0, 90.0], but the code will try to fix cases where
+       the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
+       DEC's in [-90.0, 90.0].
 
-         Must be of same precision type as RA1.
+       Must be of same precision type as RA1.
 
     CZ1: array-like, real (float/double)
-         Array of (Speed Of Light * Redshift) values for the first set of
-         points. Code will try to detect cases where ``redshifts`` have been
-         passed and multiply the entire array with the ``speed of light``.
+       Array of (Speed Of Light * Redshift) values for the first set of
+       points. Code will try to detect cases where ``redshifts`` have been
+       passed and multiply the entire array with the ``speed of light``.
 
-         * If is_comoving_dist is set, then ``CZ1`` is interpreted as the
-         co-moving distance, rather than `cz`.
+       If is_comoving_dist is set, then ``CZ1`` is interpreted as the
+       co-moving distance, rather than `cz`.
 
     RA2: array-like, real (float/double)
         The array of Right Ascensions for the second set of points. RA's
@@ -116,60 +116,62 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         Must be of same precision type as RA1/DEC1/CZ1.
 
     DEC2: array-like, real (float/double)
-         Array of Declinations for the second set of points. DEC's are expected
-         to be in the [-90.0, 90.0], but the code will try to fix cases where
-         the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
-         DEC's in [-90.0, 90.0].
+        Array of Declinations for the second set of points. DEC's are expected
+        to be in the [-90.0, 90.0], but the code will try to fix cases where
+        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
+        DEC's in [-90.0, 90.0].
 
-         Must be of same precision type as RA1/DEC1/CZ1.
+        Must be of same precision type as RA1/DEC1/CZ1.
 
     CZ2: array-like, real (float/double)
-         Array of (Speed Of Light * Redshift) values for the second set of
-         points. Code will try to detect cases where ``redshifts`` have been
-         passed and multiply the entire array with the ``speed of light``.
+        Array of (Speed Of Light * Redshift) values for the second set of
+        points. Code will try to detect cases where ``redshifts`` have been
+        passed and multiply the entire array with the ``speed of light``.
 
-         * If is_comoving_dist is set, then ``CZ2`` is interpreted as the
-         co-moving distance, rather than `cz`.
+        If is_comoving_dist is set, then ``CZ2`` is interpreted as the
+        co-moving distance, rather than `cz`.
         
-         Must be of same precision type as RA1/DEC1/CZ1.
+        Must be of same precision type as RA1/DEC1/CZ1.
 
     is_comoving_dist: boolean (default false)
-         Boolean flag to indicate that ``cz`` values have already been
-         converted into co-moving distances. This flag allows arbitrary
-         cosmologies to be used in ``Corrfunc``.
+        Boolean flag to indicate that ``cz`` values have already been
+        converted into co-moving distances. This flag allows arbitrary
+        cosmologies to be used in ``Corrfunc``.
 
     verbose: boolean (default false)
-       Boolean flag to control output of informational messages
+        Boolean flag to control output of informational messages
 
     output_rpavg: boolean (default false)
-       Boolean flag to output the average ``rp`` for each bin. Code will
-       run slower if you set this flag. Also, note, if you are calculating
-       in single-precision, ``rpavg`` will suffer from numerical loss of
-       precision and can not be trusted. If you need accurate ``rpavg``
-       values, then pass in double precision arrays for the particle positions.
+        Boolean flag to output the average ``rp`` for each bin. Code will
+        run slower if you set this flag. Also, note, if you are calculating
+        in single-precision, ``rpavg`` will suffer from numerical loss of
+        precision and can not be trusted. If you need accurate ``rpavg``
+        values, then pass in double precision arrays for the particle
+        positions.
 
     fast_divide: boolean (default false)
-       Boolean flag to replace the division in ``AVX`` implementation with an
-       approximate reciprocal, followed by a Newton-Raphson step. Improves
-       runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.
+        Boolean flag to replace the division in ``AVX`` implementation with an
+        approximate reciprocal, followed by a Newton-Raphson step. Improves
+        runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.
 
     c_api_timer: boolean (default false)
-       Boolean flag to measure actual time spent in the C libraries. Here
-       to allow for benchmarking and scaling studies.
+        Boolean flag to measure actual time spent in the C libraries. Here
+        to allow for benchmarking and scaling studies.
 
     isa: string (default ``fastest``)
-       Controls the runtime dispatch for the instruction set to use. Possible
-       options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
+        Controls the runtime dispatch for the instruction set to use. Possible
+        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
     
-       Setting isa to ``fastest`` will pick the fastest available instruction
-       set on the current computer. However, if you set ``isa`` to, say,
-       ``avx`` and ``avx`` is not available on the computer, then the code will
-       revert to using ``fallback`` (even though ``sse42`` might be available).
+        Setting isa to ``fastest`` will pick the fastest available instruction
+        set on the current computer. However, if you set ``isa`` to, say,
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).
        
-       Unless you are benchmarking the different instruction sets, you should
-       always leave ``isa`` to the default value. And if you *are*
-       benchmarking, then the string supplied here gets translated into an
-       ``enum`` for the instruction set defined in ``utils/defs.h``.
+        Unless you are benchmarking the different instruction sets, you should
+        always leave ``isa`` to the default value. And if you *are*
+        benchmarking, then the string supplied here gets translated into an
+        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
     Returns
     --------

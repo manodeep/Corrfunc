@@ -2,7 +2,6 @@
 Corrfunc Documentation
 =======================
 
-
 Corrfunc is a set of high-performance routines to measure clustering statistics.
 The main features of Corrfunc are:
 
@@ -14,14 +13,15 @@ The main features of Corrfunc are:
 
 The source code is publicly available at https://github.com/manodeep/Corrfunc.
 
-******************
-Getting Started
-******************
+*********************
+Overview of Corrfunc
+*********************
 
 .. toctree::
    :maxdepth: 1
 
    install
+   quickstart
    modules/index
    development/index
               

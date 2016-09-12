@@ -95,7 +95,8 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
     
     const AVX_FLOATS m_sqr_pimax  = AVX_SET_FLOAT(sqr_pimax);
     const AVX_FLOATS m_sqr_rpmax  = AVX_SET_FLOAT(sqr_rpmax);
-    const AVX_FLOATS m_max_sep = AVX_SET_FLOAT(sqr_max_sep);
+    const AVX_FLOATS m_sqr_max_sep = AVX_SET_FLOAT(sqr_max_sep);
+    /* const AVX_FLOATS m_max_sep = AVX_SET_FLOAT(max_sep); */
     const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
     const AVX_FLOATS m_sqr_rpmin  = AVX_SET_FLOAT(sqr_rpmin);
     const AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
@@ -123,11 +124,13 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const AVX_FLOATS m_perpy = AVX_SUBTRACT_FLOATS(m_ypos, m_y2);
             const AVX_FLOATS m_perpz = AVX_SUBTRACT_FLOATS(m_zpos, m_z2);
             const AVX_FLOATS m_dsep =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
-
-            /* const AVX_FLOATS m_dsep_mask = AVX_COMPARE_FLOATS(m_dsep, m_max_sep, _CMP_LT_OQ); */
-            /* if(AVX_TEST_COMPARISON(m_dsep_mask) == 0) { */
-            /*     continue; */
+            
+            /* const AVX_FLOATS m_dz_mask = AVX_COMPARE_FLOATS(m_perpz, m_max_sep, _CMP_LT_OQ); */
+            /* if(AVX_TEST_COMPARISON(m_dz_mask) == 0) { */
+            /*     j = N1; */
+            /*     break; */
             /* } */
+
             const AVX_FLOATS m_numerator = AVX_SQUARE_FLOAT(m_dsep);
             const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
             const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
@@ -137,7 +140,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
             //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
             //we would discard the pair.
-            const AVX_FLOATS m_mask_3d_sep = AVX_COMPARE_FLOATS(m_sqr_sep, m_max_sep, _CMP_LT_OQ);
+            const AVX_FLOATS m_mask_3d_sep = AVX_COMPARE_FLOATS(m_sqr_sep, m_sqr_max_sep, _CMP_LT_OQ);
             const AVX_FLOATS m_sqr_norm_l = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_parx), AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_pary), AVX_SQUARE_FLOAT(m_parz)));
             
             //\pi ^2 = |s.l| ^2 / |l|^2
@@ -392,7 +395,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 
     const SSE_FLOATS m_sqr_pimax  = SSE_SET_FLOAT(sqr_pimax);
     const SSE_FLOATS m_sqr_rpmax  = SSE_SET_FLOAT(sqr_rpmax);
-    const SSE_FLOATS m_max_sep = SSE_SET_FLOAT(sqr_max_sep);
+    const SSE_FLOATS m_sqr_max_sep = SSE_SET_FLOAT(sqr_max_sep);
     const SSE_FLOATS m_inv_dpi    = SSE_SET_FLOAT(inv_dpi);
     const SSE_FLOATS m_sqr_rpmin  = SSE_SET_FLOAT(sqr_rpmin);
     const SSE_FLOATS m_npibin     = SSE_SET_FLOAT((DOUBLE) npibin);
@@ -421,7 +424,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             const SSE_FLOATS m_perpz = SSE_SUBTRACT_FLOATS(m_zpos, m_z2);
 
             const SSE_FLOATS m_dsep =  SSE_SUBTRACT_FLOATS(SSE_SQUARE_FLOAT(m_d2), SSE_SQUARE_FLOAT(m_dpos));
-            /* const SSE_FLOATS m_dsep_mask = SSE_COMPARE_FLOATS_LT(m_dsep, m_max_sep); */
+            /* const SSE_FLOATS m_dsep_mask = SSE_COMPARE_FLOATS_LT(m_dsep, m_sqr_max_sep); */
             /* if(SSE_TEST_COMPARISON(m_dsep_mask) == 0) { */
             /*     j = N1; */
             /*     break; */
@@ -439,7 +442,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
             //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
             //we would discard the pair.
-            const SSE_FLOATS m_mask_3d_sep = SSE_COMPARE_FLOATS_LT(m_sqr_sep, m_max_sep);
+            const SSE_FLOATS m_mask_3d_sep = SSE_COMPARE_FLOATS_LT(m_sqr_sep, m_sqr_max_sep);
             
             const SSE_FLOATS m_sqr_norm_l = SSE_ADD_FLOATS(SSE_SQUARE_FLOAT(m_parx), SSE_ADD_FLOATS(SSE_SQUARE_FLOAT(m_pary), SSE_SQUARE_FLOAT(m_parz)));
             

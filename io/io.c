@@ -16,6 +16,7 @@
 #include "io.h"
 #include "ftread.h"
 #include "utils.h"
+#include "macros.h"
 
 #ifndef MEMORY_INCREASE_FAC
 #define MEMORY_INCREASE_FAC 1.1
@@ -76,14 +77,16 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
 
     if(strncmp(format,"f",1)==0) { /*Read-in fast-food file*/
         //read fast-food file
-        size_t bytes=sizeof(int) + sizeof(float)*9 + sizeof(int);//skip fdat
-        bytes += sizeof(int) + sizeof(float) + sizeof(int); //skip znow
         int idat[5];
+        float fdat[9];
+        size_t bytes=sizeof(int) + sizeof(fdat) + sizeof(int);//skip fdat
+        bytes += sizeof(int) + sizeof(float) + sizeof(int); //skip znow
+
         FILE *fp = my_fopen(filename,"r");
         if(fp == NULL) {
             return -1;
         }
-        int status = my_ftread(idat,sizeof(int),5,fp);
+        int status = my_ftread(idat,sizeof(idat[0]),5,fp);
         if(status != EXIT_SUCCESS) {
             return -1;
         }
@@ -104,7 +107,7 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
         unsigned int dummy;
         my_fread(&dummy,sizeof(dummy), 1, fp);
         //so rewind by 4 bytes  prepare for calls to ftread
-        my_fseek(fp, -sizeof(dummy), SEEK_CUR);
+        my_fseek(fp, -4, SEEK_CUR);
         dummy /= np;
         XASSERT((dummy == 4 || dummy == 8), "Data-type in file = %u must be either 4 byte (float) or 8 byte(double) precision", dummy);
 

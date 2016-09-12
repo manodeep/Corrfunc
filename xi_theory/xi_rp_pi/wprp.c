@@ -30,8 +30,11 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "utils.h"
+#include "macros.h"
+
 void Printhelp(void);
 
 int main(int argc, char *argv[])

@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 #include "cellarray_DOUBLE.h"
-
+#include <inttypes.h>
 
   extern int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax,
                                 const DOUBLE rmax,
