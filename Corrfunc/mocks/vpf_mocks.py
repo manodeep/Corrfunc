@@ -232,6 +232,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
               " (vpf)"
         raise ImportError(msg)
 
+    import numpy as np
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum
     

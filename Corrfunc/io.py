@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+Routines to read galaxy catalogs from disk.
+"""
+
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import sys
+from os.path import dirname, abspath, splitext, exists as file_exists,\
+    join as pjoin
+import numpy as np
 try:
     from future.utils import bytes_to_native_str
 except ImportError:
@@ -10,17 +17,13 @@ except ImportError:
           "the 'Corrfunc' package\n")
     raise
 
-from os.path import dirname, abspath, splitext, exists as file_exists,\
-    join as pjoin
-import numpy as np
-
 
 __all__ = ['read_catalog', 'read_fastfood_catalog', 'read_ascii_catalog', ]
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
 
 
-def read_fastfood_catalog(filename, return_dtype=np.float, need_header=None):
+def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
     """
     Read a galaxy catalog from a fast-food binary file.
 
@@ -53,7 +56,9 @@ def read_fastfood_catalog(filename, return_dtype=np.float, need_header=None):
 
 
     """
-    
+    if return_dtype is None:
+        return_dtype = np.float
+
     if return_dtype not in [np.float32, np.float]:
         msg = "Return data-type must be set and a valid numpy float"
         raise ValueError(msg)

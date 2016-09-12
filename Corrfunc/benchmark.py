@@ -1,3 +1,8 @@
+"""
+Code to benchmark 3D pair-counters.
+
+"""
+
 from __future__ import print_function
 import numpy as np
 try:

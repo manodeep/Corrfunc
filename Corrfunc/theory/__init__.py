@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
-Python wrapper for all of the theory C extensions.
+Wrapper for all clustering statistic calculations on galaxies
+in a simulation volume.
 """
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
