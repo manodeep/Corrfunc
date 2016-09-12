@@ -32,7 +32,7 @@ except ImportError:
     autojit = None
     
 from Corrfunc.theory import DD
-from Corrfunc.utils import read_catalog
+from Corrfunc.io import read_catalog
 import time
 
 
