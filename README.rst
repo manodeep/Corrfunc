@@ -247,7 +247,7 @@ use the C extensions directly. Here are a few examples:
     import os.path as path
     import numpy as np
     import Corrfunc
-    from Corrfunc._countpairs import countpairs_wp as wp
+    from Corrfunc.theory import wp
 
     # Setup the problem for wp
     boxsize = 500.0
@@ -263,19 +263,22 @@ use the C extensions directly. Here are a few examples:
     y *= boxsize
     z *= boxsize
 
-    # Use a file with histogram bins, containing Nbins pairs of (rmin rmax)
-    binfile = path.join(path.dirname(path.abspath(Corrfunc.__file__)), "../xi_theory/tests/", "bins")
+    # Setup the bins
+    rmin = 0.1
+    rmax = 20.0
+    nbins = 20
+    
+    # Create the bins
+    rbins = np.logspace(np.log10(0.1), np.log10(rmax), nbins)
 
     # Call wp
-    wp_results = wp(boxsize, pimax, nthreads, binfile, x, y, z)
+    wp_results = wp(boxsize, pimax, nthreads, rbins, x, y, z, verbose=True, output_rpavg=True)
 
     # Print the results
-    print("###########################################")
-    print("##   rmin       rmax        wp       npairs")
-    print("###########################################")
-    for wp in wp_results:
-        print("{0:10.4f} {1:10.4f} {2:12.6f} {3:8d}"
-              .format(wp[0], wp[1], wp[3], wp[4]))
+    print("#############################################################################")
+    print("##       rmin           rmax            ravg             wp            npairs")
+    print("#############################################################################")
+    print(wp_results)
                                                         
 
 Common Code options for both Mocks and Cosmological Boxes
