@@ -122,7 +122,7 @@ int main(int argc, char **argv)
     fprintf(stderr,"\t\t -------------------------------------" ANSI_COLOR_RESET "\n");
 
     //Read-in the data
-    const int64_t ND1 = read_positions(file,fileformat,sizeof(DOUBLE),3, &x1, &y1, &z1);
+    const int64_t ND1 = read_positions(file,fileformat,sizeof(*x1),3, &x1, &y1, &z1);
 
     int autocorr=1;
     DOUBLE *x2 = x1;
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
         results_countpairs_wp results;
         options.need_avg_sep = 1;
         options.verbose = 1;
-        options.float_type = sizeof(DOUBLE);
+        options.float_type = sizeof(*x1);
         int status = countpairs_wp(ND1,x1,y1,z1,
                                    boxsize,
                                    nthreads,
@@ -243,7 +243,7 @@ int main(int argc, char **argv)
         
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
-        DOUBLE rlow=results.rupp[0];
+        double rlow=results.rupp[0];
         for(int i=1;i<results.nbin;++i) {
             fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.wp[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
             rlow=results.rupp[i];

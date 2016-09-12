@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     options.verbose=1;
     options.periodic=0;
     options.need_avg_sep=1;
-    options.float_type = sizeof(DOUBLE);
+    options.float_type = sizeof(*ra1);
     
 #if defined(_OPENMP)
     nthreads=4;//default to 4 threads
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
 
     //Read-in the data
-    const int64_t ND1 = read_positions(file,fileformat,sizeof(DOUBLE),3, &ra1, &dec1, &cz1);
+    const int64_t ND1 = read_positions(file,fileformat,sizeof(*ra1),3, &ra1, &dec1, &cz1);
 
     int autocorr=1;
     DOUBLE *ra2 = ra1;
