@@ -1,9 +1,9 @@
 
 .. _function_usage_examples:
 
-****************************************
-Function-usage examples by category
-****************************************
+**********************************
+Detailed help for typical usecases
+**********************************
 
 Here we present docstrings of the most commonly used functions and classes
 grouped together by functionality.

@@ -227,8 +227,11 @@ static inline void free_extra_options(struct extra_options *extra)
     extra->weights = NULL;
     extra->num_weights = 0;
 }    
-    
 
+
+#include "macros.h"
+
+    
 #ifdef __cplusplus
 }
 #endif

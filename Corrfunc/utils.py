@@ -119,14 +119,14 @@ def translate_isa_string_to_enum(isa):
     of. Here to facilitate easy extension when a new instruction set has
     been added in.
 
-    Parameters:
-    ----------
+    Parameters
+    ------------
     isa: string
        A string containing the desired instruction set. Valid values are
        ['AVX', 'SSE42', 'FALLBACK', 'FASTEST']
     
-    Returns:
-    -------
+    Returns
+    --------
     instruction_set: integer
        An integer corresponding to the desired instruction set, as used in the
        underlying C API. The enum used here should be defined *exactly* the

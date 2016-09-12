@@ -27,9 +27,10 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <assert.h>
-#include <stdlib.h>
+#include <inttypes.h>
 
 #include "utils.h"
 

@@ -27,12 +27,14 @@
 #include <math.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <inttypes.h>
 
-#include "defs.h" //for ADD_DIFF_TIME
+#include "defs.h" //for basic API + all macros
 #include "function_precision.h" //definition of DOUBLE
 #include "countpairs_rp_pi_mocks.h" //function proto-type for countpairs
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
+
 
 void Printhelp(void);
 

@@ -3,18 +3,23 @@
 *************************************
 Comprehensive Corrfunc Reference/API
 *************************************
-.. automodule:: Corrfunc.utils
+.. currentmodule:: Corrfunc.utils
+.. autofunction:: translate_isa_string_to_enum
+.. autofunction:: return_file_with_rbins
+..  autofunction:: read_catalog
+                   
+.. currentmodule:: Corrfunc.theory
+                   
+..  autofunction:: DD
+..  autofunction:: DDrppi
+..  autofunction:: wp
+..  autofunction:: xi
+..  autofunction:: vpf                  
 
-.. automodule:: Corrfunc.theory
-.. autofunction:: Corrfunc.theory.DD
-.. autofunction:: Corrfunc.theory.DDrppi
-.. autofunction:: Corrfunc.theory.wp
-.. autofunction:: Corrfunc.theory.xi
-.. autofunction:: Corrfunc.theory.vpf
-                
-.. automodule:: Corrfunc.mocks
-.. autofunction:: Corrfunc.mocks.DDrppi_mocks
-.. autofunction:: Corrfunc.mocks.DDtheta_mocks
-.. autofunction:: Corrfunc.mocks.vpf_mocks                
+.. currentmodule:: Corrfunc.mocks
+..  autofunction:: DDrppi_mocks
+..  autofunction:: DDtheta_mocks
+..  autofunction:: vpf_mocks                  
+
 
 

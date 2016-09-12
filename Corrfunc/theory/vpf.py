@@ -14,7 +14,7 @@ __author__ = ('Manodeep Sinha')
 __all__ = ('vpf', )
 
 
-def vpf(rmax, nbins, nspheres, num_pN, seed,
+def vpf(rmax, nbins, nspheres, numpN, seed,
         X, Y, Z,
         verbose=False, periodic=True, boxsize=0.0,
         c_api_timer=False, isa='fastest'):
@@ -22,7 +22,7 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
     Function to compute the counts-in-cells on 3-D real-space points.
     
     Returns a numpy structured array containing the probability of a
-    sphere of radius up to ``rmax`` containing [0, num_pN-1] galaxies.
+    sphere of radius up to ``rmax`` containing [0, numpN-1] galaxies.
 
     Parameters
     -----------
@@ -39,15 +39,15 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
        For a small number of spheres, the error is larger in the measured
        pN's.
     
-    num_pN: integer (>= 1)
-       Governs how many unique pN's are to returned. If ``num_pN` is set to 1,
-       then only the vpf (p0) is returned. For ``num_pN=2``, p0 and p1 are
+    numpN: integer (>= 1)
+       Governs how many unique pN's are to returned. If ``numpN` is set to 1,
+       then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
        returned.
 
        More explicitly, the columns in the results look like the following:
-         num_pN = 1 -> p0
-         num_pN = 2 -> p0 p1
-         num_pN = 3 -> p0 p1 p2
+         numpN = 1 -> p0
+         numpN = 2 -> p0 p1
+         numpN = 3 -> p0 p1 p2
          and so on...(note that p0 is the vpf).
 
     seed: unsigned integer
@@ -98,9 +98,9 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
 
     results: Numpy structured array
 
-       A numpy structured array containing [rmax, pN[num_pN]] with ``nbins``
+       A numpy structured array containing [rmax, pN[numpN]] with ``nbins``
        elements. Each row contains the maximum radius of the sphere and the
-       ``num_pN`` elements in the ``pN`` array. Each element of this array
+       ``numpN`` elements in the ``pN`` array. Each element of this array
        contains the probability that a sphere of radius ``rmax`` contains
        *exactly* ``N`` galaxies. For example, pN[0] (p0, the void probibility
        function) is the probability that a sphere of radius ``rmax`` contains 0
@@ -118,14 +118,14 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
     >>> rmax = 10.0
     >>> nbins = 10
     >>> nspheres = 10000
-    >>> num_pN = 8
+    >>> numpN = 8
     >>> seed = -1
     >>> N = 100000
     >>> boxsize = 420.0
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-    >>> results, api_time = vpf(rmax, nbins, nspheres, num_pN, seed,
+    >>> results, api_time = vpf(rmax, nbins, nspheres, numpN, seed,
                                 X, Y, Z,
                                 verbose=True,
                                 c_api_timer=True,
@@ -144,6 +144,10 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum
     from math import pi
+
+    if numpN <= 0:
+        msg = "Number of counts-in-cells wanted must be at least 1"
+        raise ValueError(msg)
     
     if boxsize > 0.0:
         volume = boxsize * boxsize * boxsize
@@ -164,7 +168,7 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
     integer_isa = translate_isa_string_to_enum(isa)
     extn_results, api_time = vpf_extn(rmax, nbins,
                                       nspheres,
-                                      num_pN,
+                                      numpN,
                                       seed,
                                       X, Y, Z,
                                       verbose=verbose,
@@ -179,16 +183,16 @@ def vpf(rmax, nbins, nspheres, num_pN, seed,
 
     results_dtype = np.dtype([(bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'pN'),
-                               (np.float, num_pN))])
+                               (np.float, numpN))])
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
     
     for ii, r in enumerate(extn_results):
         results['rmax'][ii] = r[0]
-        if num_pN == 1:
+        if numpN == 1:
             results['pN'] = r[1]
         else:
-            for j in xrange(num_pN):
+            for j in xrange(numpN):
                 results['pN'][ii][j] = r[1 + j]
 
     if not c_api_timer:
@@ -204,7 +208,7 @@ if __name__ == '__main__':
     rmax = 10.0
     nbins = 10
     nspheres = 10000
-    num_pN = 6
+    numpN = 6
     seed = 42
     N = 100000
     boxsize = 420.0
@@ -214,7 +218,7 @@ if __name__ == '__main__':
     Z = np.random.uniform(0, boxsize, N)
 
     t0 = time.time()
-    results, api_time = vpf(rmax, nbins, nspheres, num_pN, seed,
+    results, api_time = vpf(rmax, nbins, nspheres, numpN, seed,
                             X, Y, Z,
                             verbose=True,
                             c_api_timer=True,

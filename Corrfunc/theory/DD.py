@@ -50,11 +50,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
         Calculations are done in the precision of the supplied arrays.
 
     periodic: boolean
-        Boolean flag to indicate periodic boundary conditions.
+       Boolean flag to indicate periodic boundary conditions.
 
     X2/Y2/Z2: array-like, real (float/double)
-    Array of XYZ positions for the second set of points. *Must* be the same
-    precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
+       Array of XYZ positions for the second set of points. *Must* be the same
+       precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -93,7 +93,6 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     --------
 
     results: Numpy structured array
-
        A numpy structured array containing [rmin, rmax, ravg, npairs] for each
        radial bin specified in the ``binfile``. If ``output_ravg`` is not set,
        then ``ravg`` will be set to 0.0 for all bins. ``npairs`` contains the
