@@ -276,7 +276,7 @@ use the C extensions directly. Here are a few examples:
 
     # Print the results
     print("#############################################################################")
-    print("##       rmin           rmax            ravg             wp            npairs")
+    print("##       rmin           rmax            rpavg             wp            npairs")
     print("#############################################################################")
     print(wp_results)
                                                         
