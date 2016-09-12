@@ -14,14 +14,25 @@ if sys.version_info[0] < 3:
 def return_file_with_rbins(rbins):
     """
     Helper function to ensure that the ``binfile`` required by the Corrfunc
-    extensions is a actually a string (expecting that to be a filename).
+    extensions is a actually a string.
 
     Checks if the input is a string and file; return if True. If not, and
     the input is an array, then a temporary file is created and the contents
     of rbins is written out.
+
+    Parameters
+    -----------
+    rbins: string or array-like
+       Expected to be a string or an array containing the bins
     
-    Returns a filename containing the bins and a flag stating if the file needs
-    to be deleted after use.
+    Returns
+    ---------
+    binfile: string, filename
+       If the input ``rbins`` was a valid filename, then returns the same
+       string. If ``rbins`` was an array, then this function creates a
+       temporary file with the contents of the ``rbins`` arrays. This
+       temporary filename is returned
+
     """
 
     is_string = False
@@ -63,28 +74,66 @@ def return_file_with_rbins(rbins):
 def fix_cz(cz):
     """
     Multiplies the input array by speed of light, if the input values are
-    too small. Essentially, converts redshift into `cz`, if the user passed
+    too small.
+
+    Essentially, converts redshift into `cz`, if the user passed
     redshifts instead of `cz`.
+
+    Parameters
+    -----------
+    cz: array-like, reals
+       An array containing ``[Speed of Light *] redshift`` values.
+    
+    Returns
+    ---------
+    cz: array-like
+       Actual ``cz`` values, multiplying the input ``cz`` array by the
+       ``Speed of Light``, if ``redshift`` values were passed as input ``cz``.
+    
     """
 
     # if I find that max cz is smaller than this threshold,
     # then I will assume z has been supplied rather than cz
     max_cz_threshold = 10.0
+    try:
+        input_dtype = cz.dtype
+    except:
+        msg = "Input cz array must be a numpy array"
+        raise TypeError(msg)
+        
     if max(cz) < max_cz_threshold:
         speed_of_light = 299800.0
         cz *= speed_of_light
 
-    return cz
+    return cz.astype(input_dtype)
 
 
 def fix_ra_dec(ra, dec):
     """
     Wraps input RA and DEC values into range expected by the extensions.
-    
-    RA: In range [0, 360.0]
-    DEC: In range [-90.0, 90.0]
+
+    Parameters
+    ------------
+    RA: array-like, units must be degrees
+       Right Ascension values (astronomical longitude)
+
+    DEC: array-like, units must be degrees
+       Declination values (astronomical latitude)
+
+    Returns
+    --------
+    Tuple (RA, DEC): array-like
+         RA is wrapped into range [0.0, 360.0]
+         Declination is wrapped into range [-90.0, 90.0]
+
     """
 
+    try:
+        input_dtype = ra.dtype
+    except:
+        msg = "Input RA array must be a numpy array"
+        raise TypeError(msg)
+    
     if ra is None or dec is None:
         msg = "RA or DEC must be valid arrays"
         raise ValueError(msg)
@@ -98,19 +147,17 @@ def fix_ra_dec(ra, dec):
         print("Warning: found DEC values more than 90.0; wrapping into "
               "[-90.0, 90.0] range")
         dec += 90.0
-    
+
+    return ra.astype(input_dtype), dec.astype(input_dtype)
+
 
 def translate_isa_string_to_enum(isa):
     """
     Helper function to convert an user-supplied string to the
     underlying enum in the C-API. The extensions only have specific
-    implementations for AVX, SSE42 and FALLBACK. Any other value,
+    implementations for AVX, SSE42 and FALLBACK. Any other value
     will raise a ValueError.
     
-    The enum definition contains all the valid instruction sets I know
-    of. Here to facilitate easy extension when a new instruction set has
-    been added in.
-
     Parameters
     ------------
     isa: string
