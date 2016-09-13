@@ -5,7 +5,7 @@ INSTALL_BIN_DIR := $(ROOT_DIR)/bin
 UTILS_DIR := $(ROOT_DIR)/utils
 IO_DIR := $(ROOT_DIR)/io
 
-MOCKS_DIR := $(ROOT_DIR)/xi_mocks
+MOCKS_DIR := $(ROOT_DIR)/mocks
 DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi
 WTHETA_DIR := $(MOCKS_DIR)/wtheta
 VPF_mocks_DIR := $(MOCKS_DIR)/vpf

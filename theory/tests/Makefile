@@ -5,7 +5,7 @@ INSTALL_BIN_DIR := $(ROOT_DIR)/bin
 UTILS_DIR := $(ROOT_DIR)/utils
 IO_DIR := $(ROOT_DIR)/io
 
-THEORY_DIR := $(ROOT_DIR)/xi_theory
+THEORY_DIR := $(ROOT_DIR)/theory
 DD_DIR := $(THEORY_DIR)/xi_of_r
 DDrppi_DIR := $(THEORY_DIR)/xi_rp_pi
 WP_DIR := $(THEORY_DIR)/wp

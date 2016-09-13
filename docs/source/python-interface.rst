@@ -59,8 +59,8 @@ Broadly speaking, Corrfunc requires these following inputs:
   randoms for ``Corrfunc.mocks``.
  
 * A file containing the bins for the clustering statistic (where
-  relevant). Look at ``xi_theory/tests/bins`` for an example of the contents of
-  the file for spatial bins. See ``xi_mocks/tests/angular_bins`` for an example
+  relevant). Look at ``theory/tests/bins`` for an example of the contents of
+  the file for spatial bins. See ``mocks/tests/angular_bins`` for an example
   containing angular bins for mocks routines. Passing a filename is the most
   general way of specifying bins in Corrfunc. However, you can also pass in a
   1-D array for the bins.   
@@ -226,12 +226,12 @@ sets up the default arrays and parameters for the actual clustering calculations
 
           # Mock catalog (SDSS-North) supplied with Corrfunc
           mock_catalog = pjoin(dirname(abspath(Corrfunc.__file__)),
-                               "../xi_mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
+                               "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
           RA, DEC, CZ = read_catalog(mock_catalog)
 
           # Randoms catalog (SDSS-North) supplied with Corrfunc
           randoms_catalog = pjoin(dirname(abspath(Corrfunc.__file__)),
-                                  "../xi_mocks/tests/data/", "Mr19_randoms_northonly.rdcz.ff")
+                                  "../mocks/tests/data/", "Mr19_randoms_northonly.rdcz.ff")
           RAND_RA, RAND_DEC, RAND_CZ = read_catalog(randoms_catalog)
                                   
           # Number of threads to use
@@ -328,7 +328,7 @@ sphere of a certain size contains zero galaxies.
           # File with sphere centers (centers such that spheres with size
           # rmax=10 Mpc/h are completely inside the survey)
           centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
-                               "../xi_mocks/tests/data/",
+                               "../mocks/tests/data/",
                                "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
 
           results_vpf_mocks = vpf_mocks(rmax, nbins, nspheres, numpN,

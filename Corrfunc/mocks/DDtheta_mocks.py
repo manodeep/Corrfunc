@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the angular correlation function
-:math:`\\omega(\theta)`. Corresponding C routines are in xi_mocks/wtheta/,
+:math:`\\omega(\theta)`. Corresponding C routines are in mocks/wtheta/,
 python interface is `~Corrfunc.mocks.DDtheta_mocks`
 x"""
 
@@ -30,7 +30,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\omega(\theta)`. See the
-    ``xi_mocks/wtheta/wtheta`` for computing :math:`\\omega(\theta)` from
+    ``mocks/wtheta/wtheta`` for computing :math:`\\omega(\theta)` from
     the pair counts returned.
 
     Parameters
@@ -168,7 +168,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                  "../xi_mocks/tests/", "angular_bins")
+                  "../mocks/tests/", "angular_bins")
     >>> N = 100000
     >>> nthreads = 4
     >>> seed = 42
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     print("\nRunning angular correlation function w(theta)")
 
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_mocks/tests/", "angular_bins")
+                    "../mocks/tests/", "angular_bins")
     
     N = 100000
     nthreads = 4

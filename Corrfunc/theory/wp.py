@@ -116,7 +116,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
     >>> import Corrfunc
     >>> from Corrfunc.theory import wp
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../xi_theory/tests/", "bins")
+                        "../theory/tests/", "bins")
     >>> N = 10000
     >>> boxsize = 420.0
     >>> pimax = 40.0
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     import Corrfunc
     import time
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
+                    "../theory/tests/", "bins")
     
     N = 100000
     boxsize = 420.0

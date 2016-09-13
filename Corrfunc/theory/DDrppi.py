@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``xi_theory/xi_rp_pi``. `~Corrfunc.theory.DDrppi`
+``theory/xi_rp_pi``. `~Corrfunc.theory.DDrppi`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -25,7 +25,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
 
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\xi(r_p, \pi)`. See the
-    ``xi_theory/xi_rp_pi/wprp.c`` for computing :math:`wp(r_p)` from
+    ``theory/xi_rp_pi/wprp.c`` for computing :math:`wp(r_p)` from
     the pair counts returned.
      
     Parameters
@@ -127,7 +127,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     >>> import Corrfunc
     >>> from Corrfunc.theory import DDrppi
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../xi_theory/tests/", "bins")
+                        "../theory/tests/", "bins")
     >>> N = 10000
     >>> boxsize = 420.0
     >>> nthreads = 4
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     import time
     from os.path import dirname, abspath, join as pjoin
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
+                    "../theory/tests/", "bins")
     
     N = 100000
     boxsize = 420.0

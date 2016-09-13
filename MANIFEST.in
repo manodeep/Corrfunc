@@ -1,17 +1,17 @@
 include README.rst Makefile .travis.yml common.mk rules.mk theory.options mocks.options FAQ INSTALL LICENSE
-include xi_theory/python_bindings/call_correlation_functions.py xi_mocks/python_bindings/call_correlation_functions_mocks.py
+include theory/python_bindings/call_correlation_functions.py mocks/python_bindings/call_correlation_functions_mocks.py
 
-recursive-include xi_theory             *.c *.h *.c.src *.h.src Makefile
-recursive-include xi_mocks              *.c *.h *.c.src *.h.src Makefile
+recursive-include theory             *.c *.h *.c.src *.h.src Makefile
+recursive-include mocks              *.c *.h *.c.src *.h.src Makefile
 recursive-include io                    *.c *.h Makefile
 recursive-include utils                 *.c *.h *.c.src *.h.src Makefile
 
-recursive-include xi_theory/tests       Mr19_* cmass* bins
-recursive-include xi_theory/tests/data  *.ff 
-recursive-include xi_mocks/tests        bins angular_bins Mr19*
-recursive-include xi_mocks/tests/data   *.txt *.dat 
+recursive-include theory/tests       Mr19_* cmass* bins
+recursive-include theory/tests/data  *.ff 
+recursive-include mocks/tests        bins angular_bins Mr19*
+recursive-include mocks/tests/data   *.txt *.dat 
 
-exclude xi_theory/tests/data/random_Zspace.ff
-exclude xi_mocks/tests/data/Mr19_randoms_northonly.rdcz.ff
+exclude theory/tests/data/random_Zspace.ff
+exclude mocks/tests/data/Mr19_randoms_northonly.rdcz.ff
 
 

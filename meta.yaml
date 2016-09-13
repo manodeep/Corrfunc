@@ -29,14 +29,14 @@ build:
   
 test:
   files:
-    - xi_theory/tests/data/gals_Mr19.ff
-    - xi_mocks/tests/data/Mr19_mock_northonly.rdcz.dat
+    - theory/tests/data/gals_Mr19.ff
+    - mocks/tests/data/Mr19_mock_northonly.rdcz.dat
     - include/countpairs.h
     - include/countpairs_rp_pi_mocks.h
-    - xi_theory/tests/bins
-    - xi_mocks/tests/bins
-    - xi_mocks/tests/angular_bins
-    - xi_mocks/tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt
+    - theory/tests/bins
+    - mocks/tests/bins
+    - mocks/tests/angular_bins
+    - mocks/tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt
   imports:
     - Corrfunc
     - Corrfunc._countpairs

@@ -9,8 +9,8 @@ section of the documentation to get the package and its dependencies set
 up on your machine. This guide also assumes some familiarity with C coding.
 
 This concepts in this guide are implemented in the files
-``xi_theory/examples/run_correlations.c`` and
-``xi_mocks/examples/run_correlations_mocks.c`` for simulations and mock
+``theory/examples/run_correlations.c`` and
+``mocks/examples/run_correlations_mocks.c`` for simulations and mock
 catalogs respectively.
 
 The basic principle of using the static libraries has the following steps:
@@ -40,9 +40,9 @@ required by the C static libraries.
 
           #include "io.h"
           
-          const char file[] = {"xi_theory/tests/data/gals_Mr19.ff"}; 
+          const char file[] = {"theory/tests/data/gals_Mr19.ff"}; 
           const char fileformat[] = {"f"};  
-          const char binfile[] = {"xi_theory/tests/bins"};
+          const char binfile[] = {"theory/tests/bins"};
           const double boxsize=420.0;
           const double pimax=40.0;
           int autocorr=1;
@@ -63,7 +63,7 @@ required by the C static libraries.
           options.float_type = sizeof(*x1); 
 
 
-Calculating 2-D projected auto-correlation (``xi_theory/wp/libcountpairs_wp.a``)
+Calculating 2-D projected auto-correlation (``theory/wp/libcountpairs_wp.a``)
 --------------------------------------------------------------------------------
 
 Corrfunc can directly compute the projected auto-correlation function,
@@ -99,7 +99,7 @@ separation, :math:`\pi` is calculated in the Z plane. Only pairs with
          }
 
 This is the generic pattern for using all of the correlation function. Look in
-``xi_theory/examples/run_correlations.c`` for details on how to use all of the available
+``theory/examples/run_correlations.c`` for details on how to use all of the available
 static libraries.
           
 Worked out example C code for clustering statistics in mock catalogs
@@ -112,7 +112,7 @@ cosmology, then you have two options:
 
 * convert ``CZ`` into co-moving distance, and then pass the converted array while setting ``config_option.is_comoving_dist=1``.
 * Add another cosmology in ``utils/cosmology_params.c`` in the function
-  ``init_cosmology``. Then, recompile the ``Corrfunc.xi_mocks`` and pass
+  ``init_cosmology``. Then, recompile the ``Corrfunc.mocks`` and pass
   ``cosmology=integer_for_newcosmology`` into the relevant functions.
 
 
@@ -125,9 +125,9 @@ required by the C static libraries.
 
           #include "io.h"   //for read_positions function
           
-          const char file[] = {"xi_mocks/tests/data/Mr19_mock_northonly.rdcz.dat"};
+          const char file[] = {"mocks/tests/data/Mr19_mock_northonly.rdcz.dat"};
           const char fileformat[] = {"a"};     // ascii format
-          const char binfile[] = {"xi_mocks/tests/bins"};
+          const char binfile[] = {"mocks/tests/bins"};
           const double pimax=40.0;
           int autocorr=1;
           const int nthreads=2;
@@ -150,7 +150,7 @@ required by the C static libraries.
           options.need_avg_sep=1;
           options.float_type = sizeof(*ra1);
 
-Calculating 2-D pair counts (``xi_mocks/DDrppi_mocks/libcountpairs_rp_pi_mocks.a``)
+Calculating 2-D pair counts (``mocks/DDrppi_mocks/libcountpairs_rp_pi_mocks.a``)
 -----------------------------------------------------------------------------------
 Here is a code snippet demonstrating how to calculate :math:`DD(r_p, \pi)` for
 mock catalogs. The projected separation, :math:`r_p` and line of sight
@@ -193,5 +193,5 @@ two points under consideration. Here is the C code for calling ``DDrppi_mocks``:
           }
 
 This is the generic pattern for using all of the correlation function. Look in
-``xi_mocks/examples/run_correlations_mocks.c`` for details on how to use all of the available
+``mocks/examples/run_correlations_mocks.c`` for details on how to use all of the available
 static libraries.

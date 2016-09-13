@@ -41,7 +41,7 @@ def main():
     nthreads = 4
     pimax = 40.0
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
+                    "../theory/tests/", "bins")
     autocorr = 1
     periodic = 1
 

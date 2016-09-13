@@ -28,7 +28,7 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
     print("Benchmarking routines = {0}".format(keys))
     x, y, z = read_catalog()
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
+                    "../theory/tests/", "bins")
     autocorr = 1
     pimax = 40.0
     boxsize = 420.0

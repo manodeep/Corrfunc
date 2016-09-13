@@ -1,6 +1,6 @@
 """
 Python wrapper around the C extension for the pair counter in
-``xi_theory/xi_of_r``. `~Corrfunc.theory.DD`
+``theory/xi_of_r``. `~Corrfunc.theory.DD`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -19,7 +19,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     function, :math:`\\xi(r)`.
 
     Note, that this module only returns pair counts and not the actual
-    correlation function :math:`\\xi(r)`. See the ``xi_mocks/wtheta/wtheta.c``
+    correlation function :math:`\\xi(r)`. See the ``mocks/wtheta/wtheta.c``
     for computing :math:`\\xi(r)` from the pair counts returned.
      
     Parameters
@@ -111,7 +111,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     >>> import Corrfunc
     >>> from Corrfunc.theory import DD
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../xi_theory/tests/", "bins")
+                        "../theory/tests/", "bins")
     >>> N = 10000
     >>> boxsize = 420.0
     >>> nthreads = 4

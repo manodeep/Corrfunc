@@ -41,7 +41,7 @@ class nf(float):
 
 
 def main():
-    base_dir = '../xi_theory/wp/'
+    base_dir = '../theory/wp/'
     base_string = 'wp'
     files = ['timings_naive', 'timings_sse', 'timings_avx']
     files = [base_dir + f for f in files]

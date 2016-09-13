@@ -91,7 +91,7 @@ static PyMethodDef module_methods[] = {
      "Calculate the 3-D pair-counts, "XI_UNICODE"(r), auto/cross-correlation function given two sets of points\n"
      "represented by X1/Y1/Z1 and X2/Y2/Z2 arrays.\n"
      "Note, that this module only returns pair counts and not the actual correlation function\n"
-     ""XI_UNICODE"(r). See the xi_mocks/wtheta/wtheta.c for computing "XI_UNICODE"(r) from DD(r).\n"
+     ""XI_UNICODE"(r). See the mocks/wtheta/wtheta.c for computing "XI_UNICODE"(r) from DD(r).\n"
      "\n"
      "parameters (all parameters are required)\n"
      "----------------------------------------\n"
@@ -133,7 +133,7 @@ static PyMethodDef module_methods[] = {
      "are set to 1.0 in position units.\n"
      "\n"
      "Note, that this module only returns pair counts and not the actual correlation function\n"
-     ""XI_UNICODE"(rp, "PI_UNICODE"). See the xi_theory/xi_rp_pi/wprp.c for computing wp(rp) from DD(rp, "PI_UNICODE").\n"
+     ""XI_UNICODE"(rp, "PI_UNICODE"). See the theory/xi_rp_pi/wprp.c for computing wp(rp) from DD(rp, "PI_UNICODE").\n"
      "\n"
      "parameters (all parameters are required)\n"
      "----------------------------------------\n"
@@ -182,7 +182,7 @@ static PyMethodDef module_methods[] = {
      "x,y,z = np.genfromtxt('/path/to/ascii/galaxy/file/(x y z)',dtype=np.float32,unpack=True)\n"
      "autocorr=1\n"
      "nthreads=4\n"
-     "DD = countpairs(autocorr,nthreads,'../xi_theory/tests/bins',x,y,z,x,y,z)\n"
+     "DD = countpairs(autocorr,nthreads,'../theory/tests/bins',x,y,z,x,y,z)\n"
      "\n"
     },
     {"countpairs_wp"         ,(PyCFunction) countpairs_countpairs_wp    ,METH_VARARGS | METH_KEYWORDS,
