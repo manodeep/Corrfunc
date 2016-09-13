@@ -137,7 +137,7 @@ int main(int argc, char **argv)
     /*---Output-Pairs-------------------------------------*/
     DOUBLE theta_low = results.theta_upp[0];
     for(int i=1;i<results.nbin;i++) {
-        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i]);
+        fprintf(stdout,"%20.8lf %20.8lf %20.8lf %10"PRIu64"\n",theta_low,results.theta_upp[i], results.theta_avg[i], results.npairs[i]);
         theta_low=results.theta_upp[i];
     }
 
