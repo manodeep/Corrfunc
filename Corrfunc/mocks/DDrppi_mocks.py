@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``xi_mocks/DDrppi``. This python wrapper is in `~Corrfunc.mocks.DDrppi_mocks`
+``mocks/DDrppi``. This python wrapper is in `~Corrfunc.mocks.DDrppi_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -34,7 +34,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\xi(r_p, \pi)`. See the
-    ``xi_mocks/DDrppi/wprp_mocks.c`` for computing :math:`wp(r_p)` from
+    ``mocks/DDrppi/wprp_mocks.c`` for computing :math:`wp(r_p)` from
     the pair counts returned.
      
     Parameters
@@ -197,7 +197,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     >>> import math
     >>> from os.path import dirname, abspath, join as pjoin
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../xi_theory/tests/", "bins")
+                        "../mocks/tests/", "bins")
     >>> N = 100000
     >>> boxsize = 420.0
     >>> X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
@@ -297,7 +297,7 @@ if __name__ == '__main__':
 
     print("\nRunning 2-D correlation function for mocks DD(rp,pi)")
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
+                    "../mocks/tests/", "bins")
     
     N = 100000
     boxsize = 420.0

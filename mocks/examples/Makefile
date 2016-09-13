@@ -5,7 +5,7 @@ INCLUDE_DIR := $(ROOT_DIR)/include
 LIB_DIR := $(ROOT_DIR)/lib
 DATA_DIR := ../tests/data
 
-MOCKS_DIR := $(ROOT_DIR)/xi_mocks
+MOCKS_DIR := $(ROOT_DIR)/mocks
 DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi
 WTHETA_DIR := $(MOCKS_DIR)/wtheta
 VPF_mocks_DIR := $(MOCKS_DIR)/vpf

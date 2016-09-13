@@ -5,7 +5,7 @@ INCLUDE_DIR := $(ROOT_DIR)/include
 LIB_DIR := $(ROOT_DIR)/lib
 DATA_DIR := ../tests/data
 
-THEORY_DIR := $(ROOT_DIR)/xi_theory
+THEORY_DIR := $(ROOT_DIR)/theory
 DD_DIR := $(THEORY_DIR)/xi_of_r
 DDrppi_DIR := $(THEORY_DIR)/xi_rp_pi
 WP_DIR := $(THEORY_DIR)/wp

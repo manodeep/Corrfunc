@@ -19,11 +19,11 @@ associated with each type of clustering statistic:
 ======================  ========================
 Clustering Statistic    Full path to executable
 ======================  ========================
-:math:`DD(r)`            ``xi_theory/xi_of_r/DD``
-:math:`DD(r_p,\pi)`      ``xi_theory/xi_rp_pi/DDrppi``
-:math:`w_p(r_p)`         ``xi_theory/wp/wp``
-:math:`\xi(r)`           ``xi_theory/xi/xi``
-:math:`pN(n)`            ``xi_theory/vpf/vpf``
+:math:`DD(r)`            ``theory/xi_of_r/DD``
+:math:`DD(r_p,\pi)`      ``theory/xi_rp_pi/DDrppi``
+:math:`w_p(r_p)`         ``theory/wp/wp``
+:math:`\xi(r)`           ``theory/xi/xi``
+:math:`pN(n)`            ``theory/vpf/vpf``
 ======================  ========================      
       
 
@@ -35,9 +35,9 @@ command-line executables are:
 ======================  ========================
 Clustering Statistic    Full path to executable
 ======================  ========================
-:math:`DD(r_p,\pi)`      ``xi_mocks/DDrppi/DDrppi_mocks``
-:math:`DD(\theta)`       ``xi_mocks/wtheta/DDtheta_mocks``
-:math:`pN(n)`            ``xi_mocks/vpf/vpf_mocks``
+:math:`DD(r_p,\pi)`      ``mocks/DDrppi/DDrppi_mocks``
+:math:`DD(\theta)`       ``mocks/wtheta/DDtheta_mocks``
+:math:`pN(n)`            ``mocks/vpf/vpf_mocks``
 ======================  ========================      
 
 

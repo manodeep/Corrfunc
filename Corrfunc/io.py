@@ -198,7 +198,7 @@ def read_catalog(filebase=None):
     
     filebase: string (optional)
         The fully qualified path to the file. If omitted, reads the
-        theory galaxy catalog under ../xi_theory/tests/data/
+        theory galaxy catalog under ../theory/tests/data/
 
     Returns
     --------
@@ -213,7 +213,7 @@ def read_catalog(filebase=None):
 
     if filebase is None:
         filename = pjoin(dirname(abspath(__file__)),
-                         "../xi_theory/tests/data/", "gals_Mr19")
+                         "../theory/tests/data/", "gals_Mr19")
         dtype = np.float
         allowed_exts = {'.ff': read_fastfood_catalog,
                         '.txt': read_ascii_catalog,

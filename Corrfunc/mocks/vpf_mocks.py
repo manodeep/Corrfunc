@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the counts-in-cells
-for positions on the sky. Corresponding C codes are in `xi_mocks/vpf`
+for positions on the sky. Corresponding C codes are in `mocks/vpf`
 while the python wrapper is in `~Corrfunc.mocks.vpf_mocks`
 """
 
@@ -58,7 +58,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     threshold_ngb: integer
        Minimum number of random points needed in a ``rmax`` sphere such that it
        is considered to be entirely within the mock footprint. The
-       command-line version, ``xi_mocks/vpf/vpf_mocks.c``, assumes that the
+       command-line version, ``mocks/vpf/vpf_mocks.c``, assumes that the
        minimum number of randoms can be at most a 1-sigma deviation from
        the expected random number density.
 
@@ -200,7 +200,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     >>> threshold_ngb = 1  # does not matter since we have the centers
     >>> cosmology = 1  # LasDamas cosmology
     >>> centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
-                             "../xi_mocks/tests/data/",
+                             "../mocks/tests/data/",
                              "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
     >>> N = 100000
     >>> boxsize = 420.0
@@ -287,7 +287,7 @@ if __name__ == '__main__':
 
     # file containing the centers of random spheres
     centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
-                         "../xi_mocks/tests/data/",
+                         "../mocks/tests/data/",
                          "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
     
     N = 100000

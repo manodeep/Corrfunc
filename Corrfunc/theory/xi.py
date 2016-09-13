@@ -4,7 +4,7 @@
 """
 Python wrapper around the C extension for the theoretical 3-D
 real-space correlation function, :math:`\\xi(r)`. Corresponding
-C routines are in xi_theory/xi/, python interface is `~Corrfunc.theory.xi`
+C routines are in theory/xi/, python interface is `~Corrfunc.theory.xi`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -110,7 +110,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z, verbose=False,
     >>> import Corrfunc
     >>> from Corrfunc.theory import xi
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../xi_theory/tests/", "bins")
+                        "../theory/tests/", "bins")
     >>> N = 100000
     >>> boxsize = 420.0
     >>> nthreads = 4
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     import time
     from os.path import dirname, abspath, join as pjoin
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
+                    "../theory/tests/", "bins")
     
     N = 100000
     boxsize = 420.0

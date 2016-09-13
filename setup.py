@@ -440,8 +440,8 @@ def setup_packages():
     sys.path.insert(0, src_path)
 
     # create a list of the python extensions
-    python_dirs = ["xi_theory/python_bindings",
-                   "xi_mocks/python_bindings"]
+    python_dirs = ["theory/python_bindings",
+                   "mocks/python_bindings"]
     extensions = generate_extensions(python_dirs)
 
     # check requirement for extensions and set the compiler if specified
@@ -464,12 +464,12 @@ def setup_packages():
     # Now the lib + associated header files have been generated
     # and put in lib/ and include/
     # This step must run after ``make install``
-    dirs_patterns = {'xi_theory/tests/data': ['*.ff', '*.txt',
+    dirs_patterns = {'theory/tests/data': ['*.ff', '*.txt',
                                               '*.txt.gz', '*.dat'],
-                     'xi_mocks/tests/data': ['*.ff', '*.txt',
+                     'mocks/tests/data': ['*.ff', '*.txt',
                                              '*.txt.gz', '*.dat'],
-                     'xi_theory/tests': ['Mr19*', 'bins*', 'cmass*'],
-                     'xi_mocks/tests': ['Mr19*', 'bins*', 'angular_bins*'],
+                     'theory/tests': ['Mr19*', 'bins*', 'cmass*'],
+                     'mocks/tests': ['Mr19*', 'bins*', 'angular_bins*'],
                      'include': ['count*.h'],
                      'lib': ['libcount*.a']
                      }

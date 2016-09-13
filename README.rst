@@ -96,7 +96,7 @@ Clustering Measures on a Cosmological box
 -----------------------------------------
 
 All codes that work on cosmological boxes with co-moving positions are
-located in the ``xi_theory`` directory. The various clustering measures
+located in the ``theory`` directory. The various clustering measures
 are:
 
 1. ``xi_of_r`` -- Measures auto/cross-correlations between two boxes.
@@ -117,7 +117,7 @@ Clustering measures on a Mock
 -----------------------------
 
 All codes that work on mock catalogs (RA, DEC, CZ) are located in the
-``xi_mocks`` directory. The various clustering measures are:
+``mocks`` directory. The various clustering measures are:
 
 1. ``DDrppi`` -- The standard auto/cross correlation between two data
    sets. The outputs, DD, DR and RR can be combined using ``wprp`` to
@@ -219,15 +219,15 @@ what you want. If not, edit those two files (and possibly
 executables in each individual subdirectory corresponding to the
 clustering measure you are interested in. For example, if you want to
 compute the full 3-D correlation function, ``\xi(r)``, then navigate to
-``xi_theory/xi`` and run the executable ``xi``. If you run executables
+``theory/xi`` and run the executable ``xi``. If you run executables
 without any arguments, the message will you tell you all the required
 arguments.
 
 Calling from C
 --------------
 
-Look under the ``xi_theory/examples/run_correlations.c`` and
-``xi_mocks/examples/run_correlations_mocks.c`` to see examples of
+Look under the ``theory/examples/run_correlations.c`` and
+``mocks/examples/run_correlations_mocks.c`` to see examples of
 calling the C API directly. If you run the executables,
 ``run_correlations`` and ``run_correlations_mocks``, the output will
 also show how to call the command-line interface for the various

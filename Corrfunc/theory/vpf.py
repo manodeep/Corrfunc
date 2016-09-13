@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the counts-in-cells
-for 3-D real space. Corresponding C codes are in `xi_theory/vpf`
+for 3-D real space. Corresponding C codes are in `theory/vpf`
 while the python wrapper is in `~Corrfunc.theory.vpf`
 """
 

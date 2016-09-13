@@ -27,7 +27,7 @@ def main():
     
     tstart = time.time()
     filename = pjoin(dirname(abspath(Corrfunc.__file__)),
-                     "../xi_mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
+                     "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
 
     t0 = time.time()
     ra, dec, cz = read_catalog(filename)
@@ -42,7 +42,7 @@ def main():
     nthreads = 4
     pimax = 40.0
     binfile = pjoin(dirname(abspath(__file__)),
-                    "../xi_mocks/tests/", "bins")
+                    "../mocks/tests/", "bins")
     autocorr = 1
     numbins_to_print = 5
     cosmology = 1
@@ -64,7 +64,7 @@ def main():
     print("-----------------------------------------------------------")
 
     binfile = pjoin(dirname(abspath(__file__)),
-                    "../xi_mocks/tests/", "angular_bins")
+                    "../mocks/tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")
     results_wtheta, _ = theta_mocks_extn(autocorr, nthreads, binfile,
                                          ra, dec, ra, dec,
@@ -89,7 +89,7 @@ def main():
     num_pN = 6
     threshold_neighbors = 1  # does not matter since we have the centers
     centers_file = pjoin(dirname(abspath(__file__)),
-                         "../xi_mocks/tests/data/",
+                         "../mocks/tests/data/",
                          "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
     results_vpf, _ = vpf_mocks_extn(rmax, nbin, num_spheres, num_pN,
                                     threshold_neighbors, centers_file,
