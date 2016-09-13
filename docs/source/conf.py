@@ -59,6 +59,7 @@ if on_rtd:
         'sphinx.ext.mathjax',
         'sphinx.ext.ifconfig',
         'sphinx.ext.viewcode',
+        'sphinx.ext.napoleon',
     ]
 else:
     extensions = [
