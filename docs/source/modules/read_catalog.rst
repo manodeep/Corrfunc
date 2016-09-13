@@ -54,10 +54,10 @@ ASCII and fast-food formats (for description of fast-food binaries, see
 read both these types of files.      
 
 
-Using utility: ``Corrfunc.read_catalog``
-------------------------------------------
+Using utility: ``Corrfunc.io.read_catalog``
+--------------------------------------------
 
-``Corrfunc.read_catalog`` can directly read ASCII files or fast-food binary
+``Corrfunc.io.read_catalog`` can directly read ASCII files or fast-food binary
 files. 
 
 .. code:: python
