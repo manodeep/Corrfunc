@@ -75,7 +75,7 @@ int main(int argc, char **argv)
     D1D2     = my_malloc(sizeof(*D1D2),    nthetabin);
 
     i = 0 ;
-    while(fscanf(fpD1D2,"%lf %lf %lf %lf%*[^\n]",&D1D2[i],&thetaavg[i],&rmin[i],&rmax[i])!=EOF) {
+    while(fscanf(fpD1D2,"%lf %lf %lf %lf%*[^\n]",&rmin[i],&rmax[i],&thetaavg[i],&D1D2[i])!=EOF) {
         i++;
         assert(i<= nthetabin && "Output contains too many bins");
     }
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     /*---Read-D1R2-file-----------------------------------*/
     D1R2=my_calloc(sizeof(*D1R2),nthetabin);
     i = 0 ;
-    while(fscanf(fpD1R2,"%lf%*[^\n]",&D1R2[i])!=EOF) {
+    while(fscanf(fpD1R2,"%*f %*f %*f %lf%*[^\n]",&D1R2[i])!=EOF) {
         i++ ;
         assert(i<= nthetabin && "Output contains too many bins");
     }
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
     /*---Read-D2R1-file-----------------------------------*/
     D2R1=my_calloc(sizeof(*D2R1),nthetabin);
     i = 0 ;
-    while(fscanf(fpD2R1,"%lf%*[^\n]",&D2R1[i])!=EOF) {
+    while(fscanf(fpD2R1,"%*f %*f %*f %lf%*[^\n]",&D2R1[i])!=EOF) {
         i++ ;
         assert(i<= nthetabin && "Output contains too many bins");
     }
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
     /*---Read-R1R2-file-----------------------------------*/
     R1R2=my_calloc(sizeof(*R1R2),nthetabin);
     i = 0 ;
-    while(fscanf(fpR1R2,"%lf%*[^\n]",&R1R2[i])!=EOF) {
+    while(fscanf(fpR1R2,"%*f %*f %*f %lf%*[^\n]",&R1R2[i])!=EOF) {
         i++ ;
         assert(i<= nthetabin && "Output contains too many bins");
     }
