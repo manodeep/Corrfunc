@@ -27,15 +27,6 @@ Clustering statistics For Mocks
 
    mock_functions
 
-
-Utilities
-~~~~~~~~~
-
-.. toctree::
-   :maxdepth: 1
-
-   utilities
-
 Reading input data
 ~~~~~~~~~~~~~~~~~~
 
