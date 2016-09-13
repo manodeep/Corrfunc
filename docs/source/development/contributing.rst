@@ -21,9 +21,10 @@ Here are the basic steps to get your statistic into the Corrfunc package:
   ``mocks/python_bindings/_countpairs_mocks.c`` for statistics relevant for
   simulations and mocks respectively. It is preferred to have the extension
   documented but not necessary.
-* Add a call to this *extension* in the
-  ``python_bindings/call_correlation_functions*.py`` script. **NOTE**: Different
-  from corresponding script in ``Corrfunc/`` directory.
+* Add a call to this new *extension* in the
+  ``python_bindings/call_correlation_functions*.py`` script.
+  
+  **NOTE**: Different from corresponding script in ``Corrfunc/`` directory.
 * Add a python wrapper for the previous python extension. This wrapper should
   exist in ``Corrfunc/theory/`` or ``Corrfunc/mocks/``. Wrapper **must** have
   inline API docs.
@@ -32,8 +33,9 @@ Here are the basic steps to get your statistic into the Corrfunc package:
 * Add an example call to this *wrapper* in
   ``Corrfunc/call_correlation_functions.py`` or
   ``Corrfunc/call_correlation_functions_mocks.py`` for simulations and mocks
-  respectively. **NOTE**: Different from corresponding script in
-  ``python_bindings`` directory.
+  respectively.
+
+  **NOTE**: Different from corresponding script in ``python_bindings`` directory.
 * Add the new wrapper to the API docs within
   ``ROOT_DIR/docs/source/theory_functions.rst`` or
   ``ROOT_DIR/docs/source/mocks_functions.rst``. Also add this python wrapper to
@@ -57,9 +59,11 @@ All of the algorithms in Corrfunc have the following components:
 * Creating the 3-D lattice structure. Relevant routines are in the
   ``utils/gridlink_impl.c.src``  and ``utils/gridlink_mocks.c.src``. This
   lattice grids up the particle distribution on cell-sizes of ``rmax`` (the
-  maximum search radius). **NOTE**: This duplicates the particle memory. If you
+  maximum search radius).
+
+  **NOTE**: The current lattice code duplicates the particle memory. If you
   need a lattice that does not duplicate the particle memory, then please email
-  the `author <mailto:manodeep@gmail.com>`. Relevant code existed in Corrfunc
+  the `author <mailto:manodeep@gmail.com>`_. Relevant code existed in Corrfunc
   but has been removed in the current incarnation.
 * Setting up the OpenMP sections such that threads have local copies of
   histogram arrays. If OpenMP is not enabled, then this section should not
