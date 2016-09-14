@@ -75,7 +75,7 @@ $(INSTALL_LIB_DIR) $(INSTALL_BIN_DIR) $(INSTALL_HEADERS_DIR):
 
 ifdef PROJECT
   ifeq ($(UNAME), Darwin)
-    PYTHON_LINK += -Xlinker -install_name -Xlinker $(PROJECT).so.$(MAJOR)
+    PYTHON_LINK += -Xlinker -install_name -Xlinker $(PROJECT)
   else
     PYTHON_LINK += -Xlinker -soname -Xlinker $(PROJECT).so.$(MAJOR)
   endif
