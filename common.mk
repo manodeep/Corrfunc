@@ -34,6 +34,7 @@ MAJOR:=2
 MINOR:=0
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
+ABI_COMPAT_VERSION:=2.0
 DO_CHECKS := 1
 ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
@@ -391,7 +392,7 @@ ifeq ($(DO_CHECKS), 1)
         PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
         PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
         PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-        PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(MAJOR).$(MINOR) -Wl,-current_version,$(VERSION)
+        PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(ABI_COMPAT_VERSION) -Wl,-current_version,$(VERSION)
         PYTHON_LINK += -headerpad_max_install_names
 
         ### Another check for stack-size. travis ci chokes on this with gcc
