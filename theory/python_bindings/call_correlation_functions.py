@@ -20,11 +20,12 @@ from os.path import dirname, abspath, exists, splitext, join as pjoin
 import time
 
 import _countpairs
-from _countpairs import countpairs_rp_pi as DDrppi
-from _countpairs import countpairs as DD
-from _countpairs import countpairs_wp as wp
-from _countpairs import countpairs_xi as xi
-from _countpairs import countspheres_vpf as vpf
+from _countpairs import \
+    countpairs as DD,\
+    countpairs_rp_pi as DDrppi,\
+    countpairs_wp as wp,\
+    countpairs_xi as xi,\
+    countspheres_vpf as vpf
 
 
 def read_text_file(filename, encoding="utf-8"):

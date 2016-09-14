@@ -12,11 +12,10 @@ from os.path import dirname, abspath, join as pjoin
 import time
 import numpy as np
 
-# Import from current directory first,
-# and then from the package.
-from _countpairs_mocks import countpairs_rp_pi_mocks as rp_pi_mocks
-from _countpairs_mocks import countpairs_theta_mocks as theta_mocks
-from _countpairs_mocks import countspheres_vpf_mocks as vpf_mocks
+from _countpairs_mocks import \
+    countpairs_rp_pi_mocks as rp_pi_mocks,\
+    countpairs_theta_mocks as theta_mocks,\
+    countspheres_vpf_mocks as vpf_mocks
 
 
 try:
