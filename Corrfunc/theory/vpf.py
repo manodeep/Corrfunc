@@ -71,6 +71,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         Boolean flag to indicate periodic boundary conditions.
 
     boxsize: double
+        The side-length of the cube in the cosmological simulation.
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.

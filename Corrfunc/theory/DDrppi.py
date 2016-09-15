@@ -75,6 +75,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
        Boolean flag to control output of informational messages
 
     boxsize: double
+        The side-length of the cube in the cosmological simulation.
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
