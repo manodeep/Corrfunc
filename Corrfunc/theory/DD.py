@@ -35,7 +35,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
-       ``DDrppi_mocks``. The file should contain white-space separated values
+       ``DDrppi``. The file should contain white-space separated values
        of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
        contiguous but must be in increasing order (smallest bins come first).
 
@@ -60,6 +60,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
        Boolean flag to control output of informational messages
 
     boxsize: double
+        The side-length of the cube in the cosmological simulation.
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
