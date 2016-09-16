@@ -110,9 +110,9 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
 
     results: Numpy structured array
 
-       A numpy structured array containing [rmin, rmax, ravg, pimax, npairs]
-       for each radial bin specified in the ``binfile``. If ``output_ravg``
-       is not set, then ``ravg`` will be set to 0.0 for all bins. ``npairs``
+       A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs]
+       for each radial bin specified in the ``binfile``. If ``output_rpavg``
+       is not set, then ``rpavg`` will be set to 0.0 for all bins. ``npairs``
        contains the number of pairs in that bin and can be used to compute the
        actual :math:`\\xi(r_p, \pi)` by combining with (DR, RR) counts.
 
@@ -139,7 +139,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> results = DDrppi(autocorr, nthreads, pimax, binfile,
                          X, Y, Z,
-                         verbose=True, output_ravg=True)
+                         verbose=True, output_rpavg=True)
 
     """
     try:

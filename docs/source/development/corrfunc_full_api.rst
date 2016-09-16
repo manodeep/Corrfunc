@@ -8,9 +8,10 @@ Helper Utilities
 ==================
 
 .. currentmodule:: Corrfunc.utils
+.. autofunction:: convert_3d_counts_to_cf
+.. autofunction:: convert_rp_pi_counts_to_wp
+.. autofunction:: return_file_with_rbins                  
 .. autofunction:: translate_isa_string_to_enum
-.. autofunction:: return_file_with_rbins
-
 
 Input/Output Routines
 ======================
