@@ -8,10 +8,234 @@ from __future__ import (absolute_import, division, print_function,
 import sys
 from os.path import exists as file_exists
 
-__all__ = ['translate_isa_string_to_enum', 'return_file_with_rbins',
+__all__ = ['convert_3d_counts_to_cf', 'convert_rp_pi_counts_to_wp',
+           'translate_isa_string_to_enum', 'return_file_with_rbins',
            'fix_ra_dec', 'fix_cz', ]
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
+
+
+def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
+                            D1D2, D1R2, D2R1, R1R2,
+                            estimator='LS'):
+                            
+    """
+    Converts raw pair counts to a correlation function.
+    
+    Parameters
+    ----------
+    
+    ND1 : integer
+       Number of points in the first dataset
+
+    ND2 : integer
+        Number of points in the second dataset
+
+    NR1 : integer
+        Number of points in the randoms for first dataset
+
+    NR2 : integer
+        Number of points in the randoms for second dataset
+
+    D1D2 : array-like, integer
+        Pair-counts for the cross-correlation between D1 and D2
+
+    D1R2 : array-like, integer
+        Pair-counts for the cross-correlation between D1 and R2
+
+    D2R1 : array-like, integer
+        Pair-counts for the cross-correlation between D2 and R1
+
+    R1R2 : array-like, integer
+        Pair-counts for the cross-correlation between R1 and R2
+
+    For all of these pair-counts arrays, the corresponding ``numpy``
+    struct returned by the theory/mocks modules can also be passed
+
+    estimator: string, default='LS' (Landy-Szalay)
+        The kind of estimator to use for computing the correlation
+        function. Currently, only supports Landy-Szalay
+
+    Returns
+    ---------
+    
+    cf : A numpy array
+        The correlation function, calculated using the chosen estimator,
+        is returned
+
+
+    Example
+    --------
+
+    >>> from Corrfunc.theory import DD
+    >>> from Corrfunc.io import read_catalog
+    >>> from Corrfunc.utils import convert_3d_counts_to_cf
+    >>> X, Y, Z = read_catalog()
+    >>> boxsize = 420.0
+    >>> rand_N = 3*N
+    >>> rand_X = np.random.uniform(0, boxsize, rand_N)
+    >>> rand_Y = np.random.uniform(0, boxsize, rand_N)
+    >>> rand_Z = np.random.uniform(0, boxsize, rand_N)
+    >>> nthreads = 2
+    >>> bins = np.linspace(0.1, 10.0, 10)
+    >>> DD_counts = DD(1, nthreads, bins, X, Y, Z,
+                       periodic=False, verbose=True)
+    >>> DR_counts = DD(0, nthreads, bins, X, Y, Z,
+                       rand_X, rand_Y, rand_Z,
+                       periodic=False, verbose=True)
+    >>> RR_counts = DD(1, nthreads, bins, rand_X, rand_Y, rand_Z,
+                       periodic=False, verbose=True)
+    >>> cf = convert_3d_counts_to_cf(N, N, rand_N, rand_N,
+                                     DD_counts, DR_counts,
+                                     DR_counts, RR_counts)
+    """
+
+    import numpy as np
+    pair_counts = dict()
+    fields = ['D1D2', 'D1R2', 'D2R1', 'R1R2']
+    arrays = [D1D2, D1R2, D2R1, R1R2]
+    for (field, array) in zip(fields, arrays):
+        try:
+            npairs = array['npairs']
+            pair_counts[field] = npairs
+        except IndexError:
+            pair_counts[field] = array
+
+    nbins = len(pair_counts['D1D2'])
+    if (nbins != len(pair_counts['D1R2'])) or \
+       (nbins != len(pair_counts['D2R1'])) or \
+       (nbins != len(pair_counts['R1R2'])):
+        msg = 'Pair counts must have the same number of elements (same bins)'
+        raise ValueError(msg)
+
+    if 'LS' in estimator or 'Landy' in estimator:
+        fN1 = np.float(NR1)/np.float(ND1)
+        fN2 = np.float(NR2)/np.float(ND2)
+        cf = (fN1*fN2*pair_counts['D1D2'] -
+              fN1*pair_counts['D1R2'] -
+              fN2*pair_counts['D2R1'] +
+              pair_counts['R1R2']) / pair_counts['R1R2']
+        cf = np.array(cf)
+        if len(cf) != nbins:
+            msg = 'Bug in code. Calculated correlation function does not '\
+                  'have the same number of bins as input arrays. Input bins '\
+                  '={0} bins in (wrong) calculated correlation = {1}'.format(
+                      nbins, len(cf))
+            raise RuntimeError(msg)
+    else:
+        msg = "Only the Landy-Szalay estimator is supported. Pass estimator"\
+              "='LS'. (Got estimator = {0})".format(estimator)
+        raise ValueError(msg)
+        
+    return cf
+
+
+def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
+                               D1D2, D1R2, D2R1, R1R2,
+                               nrpbins, dpi=1.0,
+                               estimator='LS'):
+                            
+    """
+    Converts raw pair counts to a correlation function.
+    
+    Parameters
+    ----------
+    
+    ND1 : integer
+       Number of points in the first dataset
+
+    ND2 : integer
+        Number of points in the second dataset
+
+    NR1 : integer
+        Number of points in the randoms for first dataset
+
+    NR2 : integer
+        Number of points in the randoms for second dataset
+
+    D1D2 : array-like, integer
+        Pair-counts for the cross-correlation between D1 and D2
+
+    D1R2 : array-like, integer
+        Pair-counts for the cross-correlation between D1 and R2
+
+    D2R1 : array-like, integer
+        Pair-counts for the cross-correlation between D2 and R1
+
+    R1R2 : array-like, integer
+        Pair-counts for the cross-correlation between R1 and R2
+
+    For all of these pair-counts arrays, the corresponding ``numpy``
+    struct returned by the theory/mocks modules can also be passed
+
+    nrpbins : integer
+        Number of bins in ``rp``
+
+    dpi : float, default=1.0 Mpc/h
+        Binsize in the line of sight direction
+
+    estimator: string, default='LS' (Landy-Szalay)
+        The kind of estimator to use for computing the correlation
+        function. Currently, only supports Landy-Szalay
+
+    Returns
+    ---------
+    
+    wp : A numpy array
+        The projected correlation function, calculated using the chosen
+        estimator, is returned
+
+
+    Example
+    --------
+
+    >>> from Corrfunc.theory import DDrppi
+    >>> from Corrfunc.io import read_catalog
+    >>> from Corrfunc.utils import convert_rp_pi_counts_to_cf
+    >>> X, Y, Z = read_catalog()
+    >>> boxsize = 420.0
+    >>> rand_N = 3*N
+    >>> rand_X = np.random.uniform(0, boxsize, rand_N)
+    >>> rand_Y = np.random.uniform(0, boxsize, rand_N)
+    >>> rand_Z = np.random.uniform(0, boxsize, rand_N)
+    >>> nthreads = 2
+    >>> pimax = 40.0
+    >>> bins = np.linspace(0.1, 10.0, 10)
+    >>> DD_counts = DDrppi(1, nthreads, bins, X, Y, Z,
+                           periodic=False, verbose=True)
+    >>> DR_counts = DDrppi(0, nthreads, bins, X, Y, Z,
+                           rand_X, rand_Y, rand_Z,
+                           periodic=False, verbose=True)
+    >>> RR_counts = DDrppi(1, nthreads, bins, rand_X, rand_Y, rand_Z,
+                           periodic=False, verbose=True)
+    >>> wp = convert_rp_pi_counts_to_cf(N, N, rand_N, rand_N,
+                                        DD_counts, DR_counts,
+                                        DR_counts, RR_counts)
+    """
+    import numpy as np
+    if dpi <= 0.0:
+        msg = 'Binsize along the line of sight (dpi) = {0}'\
+              'must be positive'.format(dpi)
+        raise ValueError(msg)
+    
+    xirppi = convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
+                                     D1D2, D1R2, D2R1, R1R2,
+                                     estimator=estimator)
+    wp = np.empty(nrpbins)
+    npibins = len(xirppi) // nrpbins
+    if ((npibins * nrpbins) != len(xirppi)):
+        msg = 'Number of pi bins could not be calculated correctly.'\
+              'Expected to find that the total number of bins = {0}'\
+              'would be the product of the number of pi bins = {1}'\
+              'and the number of rp bins = {2}'.format(len(xirppi),
+                                                       npibins,
+                                                       nrpbins)
+        raise ValueError(msg)
+        
+    for i in xrange(nrpbins):
+        wp[i] = 2.0 * dpi * np.sum(xirppi[i * npibins:(i + 1) * npibins])
+    
+    return wp
 
 
 def return_file_with_rbins(rbins):

@@ -5,7 +5,7 @@
 Python wrapper around the C extension for the angular correlation function
 :math:`\\omega(\theta)`. Corresponding C routines are in mocks/wtheta/,
 python interface is `~Corrfunc.mocks.DDtheta_mocks`
-x"""
+"""
 
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)

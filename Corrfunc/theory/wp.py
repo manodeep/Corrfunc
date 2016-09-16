@@ -23,7 +23,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted.
 
-    Note that pairs are double-counted. And if ``rmin`` is set to
+    Note that pairs are double-counted. And if ``rpmin`` is set to
     0.0, then all the self-pairs (i'th particle with itself) are
     added to the first bin => minimum number of pairs in the first bin
     is the total number of particles.

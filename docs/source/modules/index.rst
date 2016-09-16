@@ -10,23 +10,6 @@ grouped together by functionality.
 Many docstrings contain example code to demonstrate basic usage.
 For documentation of functions not listed here, see :ref:`complete_reference_api`.
 
-
-Clustering statistics on a Simulation 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. toctree::
-   :maxdepth: 1
-
-   theory_functions
-
-Clustering statistics For Mocks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. toctree::
-   :maxdepth: 1
-
-   mock_functions
-
 Reading input data
 ~~~~~~~~~~~~~~~~~~
 
@@ -44,3 +27,40 @@ Creating a file with bins for the clustering statistics
    generate_bins
 
 
+Calculating Correlation Functions on Simulations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. toctree::
+   :maxdepth: 1
+
+   converting_3d_counts
+   converting_rp_pi_counts
+   computing_wp_and_xi
+   
+
+Calculating Correlation Functions on Mock Catalogs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. toctree::
+   :maxdepth: 1
+
+   converting_rp_pi_mocks
+   converting_ddtheta_mocks
+   
+Detailed help for all Clustering statistics on Simulations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. toctree::
+   :maxdepth: 1
+
+   theory_functions
+
+   
+Detailed help for all Clustering statistics on Mock Catalogs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. toctree::
+  :maxdepth: 1
+
+  mock_functions
+                       
