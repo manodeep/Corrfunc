@@ -49,6 +49,6 @@ wrapper `Corrfunc.theory.DD`
                                        DD_counts, DR_counts,
                                        DR_counts, RR_counts)
           
-See the complete reference here :ref:`complete_reference_api`.
+See the complete reference here `api/modules`.
    
                    

@@ -22,6 +22,6 @@ using the Natural Estimator. The relevant python wrappers are present in
           xi_counts = xi(boxsize, nthreads, bins, X, Y, Z,
                          verbose=True)
           
-See the complete reference here :ref:`complete_reference_api`.
+See the complete reference here `api/modules`.
    
                    

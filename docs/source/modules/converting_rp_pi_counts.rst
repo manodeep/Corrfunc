@@ -48,6 +48,6 @@ by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
                                           DD_counts, DR_counts,
                                           DR_counts, RR_counts)
           
-See the complete reference here :ref:`complete_reference_api`.
+See the complete reference here `api/modules`.
    
                    

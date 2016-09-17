@@ -1,4 +1,3 @@
-
 .. _function_usage_examples:
 
 **********************************
@@ -8,7 +7,7 @@ Detailed help for typical usecases
 Here we present docstrings of the most commonly used functions and classes
 grouped together by functionality.
 Many docstrings contain example code to demonstrate basic usage.
-For documentation of functions not listed here, see :ref:`complete_reference_api`.
+For documentation of functions not listed here, see `api/modules`.
 
 Reading input data
 ~~~~~~~~~~~~~~~~~~
