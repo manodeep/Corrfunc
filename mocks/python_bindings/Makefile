@@ -24,7 +24,9 @@ INCL :=	$(DDrppi_mocks_DIR_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB
         $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
         $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_mocks.h \
 	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_mocks.h \
-        $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cosmology_params.h 
+        $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cosmology_params.h \
+        $(UTILS_DIR)/cpu_features.h $(UTILS_DIR)/macros.h
+
 LIB_INCLUDE:=-I$(DDrppi_mocks_DIR) -I$(WTHETA_DIR) -I$(VPF_mocks_DIR)
 
 
