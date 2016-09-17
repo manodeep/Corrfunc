@@ -111,8 +111,8 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        Boolean flag to output the average ``\theta`` for each bin. Code will
        run slower if you set this flag. Also, note, if you are calculating
        in single-precision, ``thetaavg`` will suffer from numerical loss of
-       precision and can not be trusted. If you need accurate ``ravg``
-       values, then pass in double precision arrays for ``XYZ``.
+       precision and can not be trusted. If you need accurate ``thetaavg``
+       values, then pass in double precision arrays for ``RA/DEC``.
 
        **NOTE** Code will run significantly slower if you enable this option.
        Use ``fast_acos`` if you can tolerate some loss of precision.

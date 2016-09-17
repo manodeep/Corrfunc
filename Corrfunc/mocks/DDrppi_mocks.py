@@ -178,11 +178,11 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
     results: Numpy structured array
 
-       A numpy structured array containing [rmin, rmax, ravg, pimax, npairs]
+       A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs]
        for each radial bin specified in the ``binfile``. If ``output_ravg`` is
-       not set, then ``ravg`` will be set to 0.0 for all bins. ``npairs``
+       not set, then ``rpavg`` will be set to 0.0 for all bins. ``npairs``
        contains the number of pairs in that bin and can be used to compute the
-       actual :math:`\\xi(r_p, \pi)` or :math:`\\wp(r_p)` by combining with
+       actual :math:`\\xi(r_p, \pi)` or :math:`wp(rp)` by combining with
        (DR, RR) counts.
 
        if ``c_api_timer`` is set, then the return value is a tuple containing

@@ -98,8 +98,8 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
 
     results: Numpy structured array
 
-       A numpy structured array containing [rmin, rmax, rpavg, wp, npairs] for
-       each radial specified in the ``binfile``. If ``output_rpavg`` is not
+       A numpy structured array containing [rpmin, rpmax, rpavg, wp, npairs]
+       for each radial specified in the ``binfile``. If ``output_rpavg`` is not
        set then ``rpavg`` will be set to 0.0 for all bins. ``wp`` contains the
        projected correlation function while ``npairs`` contains the number of
        unique pairs in that bin.

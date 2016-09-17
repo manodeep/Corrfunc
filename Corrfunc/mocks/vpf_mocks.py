@@ -27,11 +27,9 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     Returns a numpy structured array containing the probability of a
     sphere of radius up to ``rmax`` containing ``0--numpN-1`` galaxies.
 
-
-
     Parameters
     ----------
-   
+
     rmax : double
        Maximum radius of the sphere to place on the particles
 
