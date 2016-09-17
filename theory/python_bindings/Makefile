@@ -1,5 +1,6 @@
 ROOT_DIR := ../..
 UTILS_DIR:=$(ROOT_DIR)/utils
+IO_DIR:=$(ROOT_DIR)/io
 INSTALL_HEADERS_DIR := $(ROOT_DIR)/include
 INSTALL_LIB_DIR := $(ROOT_DIR)/lib
 INSTALL_BIN_DIR := $(ROOT_DIR)/bin
@@ -26,7 +27,11 @@ PYTHON_LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
              $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
 INCL := $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
-        $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h 
+        $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h \
+        $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
+        $(UTILS_DIR)/utils.h \
+	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/progressbar.h \
+        $(UTILS_DIR)/cpu_features.h $(UTILS_DIR)/macros.h
 LIB_INCLUDE:=-I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(VPF_DIR)
 
 
