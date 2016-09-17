@@ -42,7 +42,7 @@ distclean:realclean
 distclena:realclean
 realclena:realclean
 
-realclean: clean
+realclean: 
 	$(RM) $(ROOT_DIR)/bin/logbins
 	$(RM) -R *.dSYM
 	$(MAKE) -C xi_of_r distclean
