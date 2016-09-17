@@ -339,4 +339,4 @@ sphere of a certain size contains zero galaxies.
           print("Results: VPF_mocks = {0}".format(results_vpf_mocks))
 
 
-You can also access the comprehensive API documentation here -- :ref:`complete_reference_api`.
+You can also access the comprehensive API documentation here -- `api/modules`.

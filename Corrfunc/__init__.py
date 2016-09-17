@@ -22,6 +22,7 @@ if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
 
 __version__ = "2.0.0"
+__author__ = "Manodeep Sinha <manodeep@gmail.com>"
 
 
 def read_text_file(filename, encoding="utf-8"):

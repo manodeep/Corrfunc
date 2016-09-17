@@ -11,16 +11,20 @@ Clustering in 3-D
 ------------------
 
 .. autofunction:: DD
+   :noindex:
 .. autofunction:: xi
+   :noindex:
 
 Clustering in 2-D
 ------------------
 
 .. autofunction:: DDrppi
+   :noindex:
 .. autofunction:: wp
-
+   :noindex:
 
 Counts-in-cells
 ----------------
 
 .. autofunction:: vpf
+   :noindex:

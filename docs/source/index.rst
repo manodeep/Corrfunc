@@ -32,7 +32,7 @@ Reference
 .. toctree::
    :maxdepth: 1
 
-   development/corrfunc_full_api
+   api/modules
 
 *********************
 License and Credits

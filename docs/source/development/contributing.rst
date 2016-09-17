@@ -38,8 +38,7 @@ Here are the basic steps to get your statistic into the Corrfunc package:
   **NOTE**: Different from corresponding script in ``python_bindings`` directory.
 * Add the new wrapper to the API docs within
   ``ROOT_DIR/docs/source/theory_functions.rst`` or
-  ``ROOT_DIR/docs/source/mocks_functions.rst``. Also add this python wrapper to
-  ``ROOT_DIR/docs/source/development/corrfunc_full_api.rst``.
+  ``ROOT_DIR/docs/source/mocks_functions.rst``. 
 * Add to the contributors list under
   ``ROOT_DIR/docs/source/development/contributors.rst``.
 *  Submit pull request

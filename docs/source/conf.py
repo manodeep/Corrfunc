@@ -15,8 +15,11 @@
 import sys
 import os
 from os.path import abspath, dirname, join as pjoin
+from datetime import date
 from recommonmark.parser import CommonMarkParser
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
     try:
         from unittest.mock import MagicMock
@@ -80,11 +83,11 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Corrfunc'
-copyright = u'2016, Manodeep Sinha'
-author = u'Manodeep Sinha'
-
 __import__(project)
 package = sys.modules[project]
+author = package.__author__
+current_year = date.today().year
+copyright = u'2014-{0}, {1}'.format(current_year, author)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -117,11 +120,11 @@ exclude_patterns = []
 #default_role = None
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
-#add_function_parentheses = True
+add_function_parentheses = True
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-#add_module_names = True
+add_module_names = True
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -144,7 +147,6 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
 if on_rtd:
     html_theme = 'default'
 else:
