@@ -169,11 +169,9 @@ int main(int argc, char *argv[])
     for(i=0;i<nrpbin;i++) {
         logrp[i] = logrp1[indx] ;
         for(j=0;j<npibin;j++) {
-            if(j<npimax) {
-                wp[i] += 2.*dpi*xirppi[indx] ;
-                rpavg[i] += D1D2[indx]*ravg1[indx] ;
-                DDtot[i] += D1D2[indx] ;
-            }
+            wp[i] += 2.*dpi*xirppi[indx] ;
+            rpavg[i] += D1D2[indx]*ravg1[indx] ;
+            DDtot[i] += D1D2[indx] ;
             indx++ ;
         }
         if(DDtot[i]>0)
