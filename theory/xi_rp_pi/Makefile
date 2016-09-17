@@ -48,6 +48,7 @@ clean:
 distclean:clean
 	cd $(INSTALL_HEADERS_DIR) && $(RM) $(LIBRARY_HEADERS)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(LIBRARY)
+	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 tests: 
 	$(MAKE) -C ../tests xi_rp_pi
