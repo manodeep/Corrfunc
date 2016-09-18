@@ -20,10 +20,10 @@ PYTHON_LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 SOURCES := $(PROJECT).c
 OBJECTS := $(SOURCES:.c=.o)
 C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(WTHETA_DIR)/lib$(WTHETA_LIB).a $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a
-INCL :=	$(DDrppi_mocks_DIR_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h \
+INCL :=	$(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h \
         $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
-        $(UTILS_DIR)/utils.h $(UTILS_DIR)/gridlink_mocks.h \
-	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/cellarray_mocks.h \
+        $(UTILS_DIR)/utils.h \
+	$(UTILS_DIR)/function_precision.h \
         $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cosmology_params.h \
         $(UTILS_DIR)/cpu_features.h $(UTILS_DIR)/macros.h
 
@@ -42,7 +42,7 @@ $(PROJECT).so: $(PYTHON_LIBRARY)
 	$(RM) $(PROJECT).so
 	ln -s $(PYTHON_LIBRARY) $(PROJECT).so
 
-$(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES)
+$(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(INCL)
 	$(CC) $(CFLAGS) $(LIB_INCLUDE) $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
 tests: sharedlib $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(OBJECTS) | $(ROOT_DIR)/lib
