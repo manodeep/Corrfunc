@@ -167,8 +167,8 @@ int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen
 }
 
 
-int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DOUBLE *zgal,
-                              const int64_t Nran, DOUBLE *xran, DOUBLE *yran, DOUBLE *zran,
+int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBLE *CZ,
+                              const int64_t Nran, DOUBLE *RAND_RA, DOUBLE *RAND_DEC, DOUBLE *RAND_CZ,
                               const int threshold_neighbors,
                               const DOUBLE rmax, const int nbin, const int nc,
                               const int num_pN,
@@ -268,11 +268,14 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         accelerator =  gsl_interp_accel_alloc();
         gsl_interp_init(interpolation, redshifts, comoving_distance, Nzdc);
     }
-    
+
+    DOUBLE *xgal = my_malloc(sizeof(*xgal), Ngal);
+    DOUBLE *ygal = my_malloc(sizeof(*ygal), Ngal);
+    DOUBLE *zgal = my_malloc(sizeof(*zgal), Ngal);
     for(int64_t i=0;i<Ngal;i++) {
-        const DOUBLE new_phi   = xgal[i];
-        const DOUBLE new_theta = ygal[i];
-        const DOUBLE new_cz    = zgal[i];
+        const DOUBLE new_phi   = RA[i];
+        const DOUBLE new_theta = DEC[i];
+        const DOUBLE new_cz    = CZ[i];
         DOUBLE dc;
         if(options->is_comoving_dist == 0) {
             dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
@@ -286,11 +289,18 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         zgal[i] = dc*SIND(new_theta) ;
     }
 
+    DOUBLE *xran = NULL;
+    DOUBLE *yran = NULL;
+    DOUBLE *zran = NULL;
+    
     if (need_randoms == 1) {
+        xran = my_malloc(sizeof(*xran), Nran);
+        yran = my_malloc(sizeof(*yran), Nran);
+        zran = my_malloc(sizeof(*zran), Nran);
         for(int64_t i=0;i<Nran;i++) {
-            const DOUBLE new_phi   = xran[i];
-            const DOUBLE new_theta = yran[i];
-            const DOUBLE new_cz    = zran[i];
+            const DOUBLE new_phi   = RAND_RA[i];
+            const DOUBLE new_theta = RAND_DEC[i];
+            const DOUBLE new_cz    = RAND_CZ[i];
             DOUBLE dc;
             if(options->is_comoving_dist == 0) {
                 dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
@@ -360,6 +370,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         XRETURN(nmesh_x == nmesh_y && nmesh_x == nmesh_z, EXIT_FAILURE, "The number of grid cells along each dimension should be identical. "
                 "(nx, ny, nz) = (%d, %d, %d)\n", nmesh_x, nmesh_y, nmesh_z);
         ngrid = nmesh_x;//could have been nmesh_y/nmesh_z -> all three are equal
+        free(xgal);free(ygal);free(zgal);
     }
 
     if(need_randoms == 1) {
@@ -375,6 +386,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
         XRETURN(nran_x == nran_y && nran_x == nran_z, EXIT_FAILURE, "The number of (randoms) grid cells along each dimension should be identical. "
                 "(nx, ny, nz) = (%d, %d, %d)\n",nran_x,nran_y,nran_z);
         XRETURN(nran_x == ngrid, EXIT_FAILURE, "The number of grid cells for randoms = %d should be identical to that in the data = %d\n", nran_x, ngrid);
+        free(xran);free(yran);free(zran);
     }
     const int64_t totncells = ngrid * (int64_t) ngrid * ngrid;
 
