@@ -25,8 +25,8 @@ extern "C" {
     extern vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
 
 
-    extern int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DOUBLE *zgal,
-                                         const int64_t Nran, DOUBLE * restrict xran, DOUBLE * restrict yran, DOUBLE * restrict zran,
+    extern int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBLE *CZ,
+                                         const int64_t Nran, DOUBLE * restrict RAND_RA, DOUBLE * restrict RAND_DEC, DOUBLE * restrict RAND_CZ,
                                          const int threshold_neighbors,
                                          const DOUBLE rmax, const int nbin, const int nc,
                                          const int num_pN,
