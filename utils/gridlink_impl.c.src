@@ -218,7 +218,6 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
                 /*realloc failed. free memory and return */
                 fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
                         __FUNCTION__, np);
-                fprintf(stderr,"posx = %p posy = %p posz = %p\n", posx, posy, posz);
                 free_cellarray_DOUBLE(lattice, totncells);
                 free(nallocated);
                 return NULL;
@@ -391,7 +390,6 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
                 /*realloc failed. free memory and return */
                 fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
                         __FUNCTION__, np);
-                fprintf(stderr,"posx = %p posy = %p posz = %p\n", posx, posy, posz);
                 free_cellarray_index_particles_DOUBLE(lattice, totncells);
                 free(nallocated);
                 return NULL;

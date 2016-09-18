@@ -175,6 +175,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
 
     vpf_func_ptr_DOUBLE vpf_function_DOUBLE = vpf_driver_DOUBLE(options);
     if(vpf_function_DOUBLE == NULL) {
+        free_cellarray_DOUBLE(lattice, totncells);
         return EXIT_FAILURE;
     }
     
