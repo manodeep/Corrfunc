@@ -7,7 +7,7 @@ Detailed help for typical usecases
 Here we present docstrings of the most commonly used functions and classes
 grouped together by functionality.
 Many docstrings contain example code to demonstrate basic usage.
-For documentation of functions not listed here, see `api/modules`.
+For documentation of functions not listed here, see :py:mod:`Corrfunc`.
 
 Reading input data
 ~~~~~~~~~~~~~~~~~~

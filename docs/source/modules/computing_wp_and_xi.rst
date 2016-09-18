@@ -22,6 +22,7 @@ using the Natural Estimator. The relevant python wrappers are present in
           xi_counts = xi(boxsize, nthreads, bins, X, Y, Z,
                          verbose=True)
           
-See the complete reference here `api/modules`.
+See the complete reference here :py:mod:`Corrfunc`.
+
    
                    

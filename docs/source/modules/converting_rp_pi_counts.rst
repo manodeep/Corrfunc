@@ -47,7 +47,8 @@ by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
           wp = convert_rp_pi_counts_to_cf(N, N, rand_N, rand_N,
                                           DD_counts, DR_counts,
                                           DR_counts, RR_counts)
-          
-See the complete reference here `api/modules`.
+
+See the complete reference here :py:mod:`Corrfunc`.  
+
    
                    

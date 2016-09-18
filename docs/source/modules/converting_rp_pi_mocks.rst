@@ -52,7 +52,7 @@ wrapper `Corrfunc.mocks.DDrppi_mocks`
           wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
                                           DD_counts, DR_counts,
                                           DR_counts, RR_counts)
-          
-See the complete reference here `api/modules`.
+
+See the complete reference here :py:mod:`Corrfunc`.
    
                    
