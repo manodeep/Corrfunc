@@ -269,30 +269,38 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     
     if(options->is_comoving_dist == 0) {
         //Setup variables to do the cz->comoving distance
-        double *zz=my_calloc(sizeof(*zz),COSMO_DIST_SIZE);
-        double *ddc=my_calloc(sizeof(*ddc),COSMO_DIST_SIZE);
-        int Nzdc = set_cosmo_dist(MAX_REDSHIFT_FOR_COSMO_DIST, COSMO_DIST_SIZE, zz, ddc, cosmology);
+        DOUBLE czmax = 0.0;
+        const DOUBLE inv_speed_of_light = 1.0/SPEED_OF_LIGHT;
+        get_max_DOUBLE(ND1, czD1, &czmax);
+        if(autocorr == 0) {
+            get_max_DOUBLE(ND2, czD2, &czmax);
+        }
+        const double zmax = czmax * inv_speed_of_light + 0.01;
+        
+        const int workspace_size = 10000;
+        double *interp_redshift  = my_calloc(sizeof(*interp_redshift), workspace_size);//the interpolation is done in 'z' and not in 'cz'
+        double *interp_comoving_dist = my_calloc(sizeof(*interp_comoving_dist),workspace_size);
+        int Nzdc = set_cosmo_dist(zmax, workspace_size, interp_redshift, interp_comoving_dist, cosmology);
         if(Nzdc < 0) {
-            free(zz);free(ddc);
+            free(interp_redshift);free(interp_comoving_dist);
             return EXIT_FAILURE;
         }
 
         gsl_interp *interpolation;
         gsl_interp_accel *accelerator;
-        const DOUBLE inv_speed_of_light = 1.0/SPEED_OF_LIGHT;
         accelerator =  gsl_interp_accel_alloc();
         interpolation = gsl_interp_alloc (gsl_interp_linear,Nzdc);
-        gsl_interp_init(interpolation, zz, ddc, Nzdc);
+        gsl_interp_init(interpolation, interp_redshift, interp_comoving_dist, Nzdc);
         for(int64_t i=0;i<ND1;i++) {
-            D1[i] = gsl_interp_eval(interpolation, zz, ddc, czD1[i]*inv_speed_of_light, accelerator);
+            D1[i] = gsl_interp_eval(interpolation, interp_redshift, interp_comoving_dist, czD1[i]*inv_speed_of_light, accelerator);
         }
 
         if(autocorr==0) {
             for(int64_t i=0;i<ND2;i++) {
-                D2[i] = gsl_interp_eval(interpolation, zz, ddc, czD2[i]*inv_speed_of_light, accelerator);
+                D2[i] = gsl_interp_eval(interpolation, interp_redshift, interp_comoving_dist, czD2[i]*inv_speed_of_light, accelerator);
             }
         }
-        free(zz);free(ddc);
+        free(interp_redshift);free(interp_comoving_dist);
         gsl_interp_free(interpolation);
         gsl_interp_accel_free(accelerator);
     }

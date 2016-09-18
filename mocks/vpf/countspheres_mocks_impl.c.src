@@ -242,15 +242,23 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *xgal, DOUBLE *ygal, DO
     gsl_interp_accel *accelerator=NULL;
     const DOUBLE inv_speed_of_light=1.0/SPEED_OF_LIGHT;
     if(options->is_comoving_dist == 0) {
+        DOUBLE czmax = 0.0;
+        get_max_DOUBLE(Ngal, CZ, &czmax);
+        if(need_randoms == 1) {
+            get_max_DOUBLE(Nran, RAND_CZ, &czmax);
+        }
+        const double zmax = czmax * inv_speed_of_light + 0.01; 
+            
         //set up the interpolation for comoving distances
-        redshifts=my_malloc(sizeof(*redshifts),COSMO_DIST_SIZE);
-        comoving_distance=my_malloc(sizeof(*comoving_distance),COSMO_DIST_SIZE);
+        const int workspace_size = 10000;
+        redshifts=my_malloc(sizeof(*redshifts),workspace_size);
+        comoving_distance=my_malloc(sizeof(*comoving_distance),workspace_size);
         if(redshifts == NULL || comoving_distance == NULL) {
             free(comoving_distance);free(redshifts);
             return EXIT_FAILURE;
         }
         
-        int Nzdc = set_cosmo_dist(MAX_REDSHIFT_FOR_COSMO_DIST, COSMO_DIST_SIZE, redshifts, comoving_distance, cosmology);
+        int Nzdc = set_cosmo_dist(zmax, workspace_size, redshifts, comoving_distance, cosmology);
         if(Nzdc < 0) {
             free(comoving_distance);free(redshifts);
             return EXIT_FAILURE;
