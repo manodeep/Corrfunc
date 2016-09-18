@@ -51,7 +51,8 @@ wrapper `Corrfunc.mocks.DDtheta_mocks`
           wtheta = convert_3d_counts_to_cf(N, N, rand_N, rand_N,
                                            DD_counts, DR_counts,
                                            DR_counts, RR_counts)
-          
-See the complete reference here `api/modules`.
+
+See the complete reference here :py:mod:`Corrfunc`.   
+
    
                    

@@ -338,5 +338,4 @@ sphere of a certain size contains zero galaxies.
                                         verbose=True)
           print("Results: VPF_mocks = {0}".format(results_vpf_mocks))
 
-
-You can also access the comprehensive API documentation here -- `api/modules`.
+See the complete reference here :py:mod:`Corrfunc`.
