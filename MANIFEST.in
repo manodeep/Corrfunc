@@ -1,7 +1,8 @@
 include README.rst Makefile .travis.yml common.mk rules.mk theory.options mocks.options FAQ INSTALL LICENSE
 include theory/python_bindings/call_correlation_functions.py mocks/python_bindings/call_correlation_functions_mocks.py
 
-recursive-include docs *
+include           docs               Makefile
+recursive-include docs/source        *
 
 recursive-include theory             *.c *.h *.c.src *.h.src Makefile
 recursive-include mocks              *.c *.h *.c.src *.h.src Makefile
