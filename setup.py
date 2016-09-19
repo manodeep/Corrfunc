@@ -457,7 +457,7 @@ def setup_packages():
         if compiler != '':
             extra_string = 'CC={0}'.format(compiler)
             
-        command = "make install {0}".format(extra_string)
+        command = "make libs {0}".format(extra_string)
         run_command(command)
         
     # find all the data-files required.

@@ -27,14 +27,13 @@ PYTHON_CONFIG_EXE:=
 ## Set OpenMP for both theory and mocks
 OPT += -DUSE_OMP
 
-
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=2
 MINOR:=0
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
-ABI_COMPAT_VERSION:=2.0
+ABI_COMPAT_VERSION:=$(MAJOR).0
 DO_CHECKS := 1
 ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
