@@ -20,6 +20,10 @@ This getting-started guide assumes you have already followed the
 :ref:`step_by_step_install` section of the documentation to get the package 
 and its dependencies set up on your machine. 
 
+If you want to compute correlation functions and have installed the python
+extensions, then see :ref:`function_usage_examples` for typical
+tasks. Otherwise, read on for the various interfaces available within Corrfunc.
+
 
 Computing Clustering Statistics with Corrfunc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
