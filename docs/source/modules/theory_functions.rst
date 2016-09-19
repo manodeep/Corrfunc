@@ -1,7 +1,7 @@
 .. _theory_functions:
 
-Clustering Statistics on Simulations
-====================================
+Detailed API for Clustering Statistics on Simulations
+=======================================================
 
 All of these can be imported from `Corrfunc.theory`.
 

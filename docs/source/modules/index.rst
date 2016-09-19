@@ -1,8 +1,8 @@
 .. _function_usage_examples:
 
-**********************************
-Detailed help for typical usecases
-**********************************
+**************************************************
+Typical Tasks for Computing Correlation Functions
+**************************************************
 
 Here we present docstrings of the most commonly used functions and classes
 grouped together by functionality.
@@ -35,7 +35,7 @@ Calculating Correlation Functions on Simulations
    converting_3d_counts
    converting_rp_pi_counts
    computing_wp_and_xi
-   
+   theory_functions   
 
 Calculating Correlation Functions on Mock Catalogs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,21 +45,5 @@ Calculating Correlation Functions on Mock Catalogs
 
    converting_rp_pi_mocks
    converting_ddtheta_mocks
-   
-Detailed help for all Clustering statistics on Simulations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. toctree::
-   :maxdepth: 1
-
-   theory_functions
-
-   
-Detailed help for all Clustering statistics on Mock Catalogs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. toctree::
-  :maxdepth: 1
-
-  mock_functions
+   mock_functions
                        

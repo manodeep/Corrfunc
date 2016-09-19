@@ -1,7 +1,7 @@
 .. _mock_functions:
 
-Clustering Statistics on Mock Catalogs
-======================================
+Detailed API for Clustering Statistics on Mock Catalogs
+=========================================================
 
 All of these can be imported from `Corrfunc.mocks`.
 

@@ -68,8 +68,10 @@ Broadly speaking, Corrfunc requires these following inputs:
   See :ref:`generate_bins` for details on how to specify the bins as a file as
   well as an array
 
+See :ref:`function_usage_examples` for a broad overview of the typical tasks
+associated with computing correlation functions. Read on for the various
+pair-counters available within the python interfaces of Corrfunc. 
 
-  
 Calculating spatial clustering statistics in simulation boxes
 ==============================================================
 
