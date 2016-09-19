@@ -31,5 +31,5 @@ Other credits
   <https://github.com/astropy/halotools>`_. I know, first-hand, how much of an
   effort it was for the developers of `Halotools` to generate all of this
   documentation. Having such a template made creating the docs for Corrfunc a
-  lot easier process. 
-  
+  lot easier process. The API generation script for Corrfunc was lifter
+  directly out of the repo `bccp/nbodykit/ <https://github.com/bccp/nbodykit/>`_.
