@@ -36,7 +36,7 @@ wrapper `Corrfunc.theory.DD`
           # Cross pair counts in DR
           autocorr=0
           DR_counts = DD(autocorr, nthreads, bins, X, Y, Z,
-                         rand_X, rand_Y, rand_Z,
+                         X2=rand_X, Y2=rand_Y, Z2=rand_Z,
                          periodic=False, verbose=True)
                          
           # Auto pairs counts in RR

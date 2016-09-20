@@ -35,7 +35,7 @@ by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
           # Cross pair counts in DR          
           autocorr=0                   
           DR_counts = DDrppi(autocorr, nthreads, bins, X, Y, Z,
-                             rand_X, rand_Y, rand_Z,
+                             X2=rand_X, Y2=rand_Y, Z2=rand_Z,
                              periodic=False, verbose=True)
 
           # Auto pairs counts in RR          

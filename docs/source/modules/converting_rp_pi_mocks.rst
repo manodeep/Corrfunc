@@ -39,7 +39,7 @@ wrapper `Corrfunc.mocks.DDrppi_mocks`
           autocorr=0
           DR_counts = DDrppi_mocks(autocorr, nthreads, pimax, bins,
                                     RA, DEC, CZ, 
-                                    rand_RA, rand_DEC, rand_CZ, 
+                                    RA2=rand_RA, DEC2=rand_DEC, CZ2=rand_CZ, 
                                     verbose=True)
                          
           # Auto pairs counts in RR
