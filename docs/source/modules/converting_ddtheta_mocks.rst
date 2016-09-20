@@ -38,7 +38,7 @@ wrapper `Corrfunc.mocks.DDtheta_mocks`
           autocorr=0
           DR_counts = DDtheta_mocks(autocorr, nthreads, bins,
                                     RA, DEC,
-                                    rand_RA, rand_DEC,
+                                    RA2=rand_RA, DEC2=rand_DEC,
                                     verbose=True)
                          
           # Auto pairs counts in RR
