@@ -23,7 +23,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     """
     Function to compute the counts-in-cells on points on the sky. Suitable
     for mock catalogs and observed galaxies.
-    
+
     Returns a numpy structured array containing the probability of a
     sphere of radius up to ``rmax`` containing ``0--numpN-1`` galaxies.
 
@@ -36,12 +36,12 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     nbins : integer
        Number of bins in the counts-in-cells. Radius of first shell
        is rmax/nbins
-    
+
     nspheres: integer (>= 0)
        Number of random spheres to place within the particle distribution.
        For a small number of spheres, the error is larger in the measured
        pN's.
-    
+
     numpN: integer (>= 1)
        Governs how many unique pN's are to returned. If ``numpN`` is set to 1,
        then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
@@ -78,10 +78,10 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        easiest way is to convert the ``CZ`` values into co-moving distance,
        based on your preferred cosmology. Set ``is_comoving_dist=True``, to
        indicate that the co-moving distance conversion has already been done.
-    
+
        Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75
                 2 -> Planck   cosmology. Om=0.302, Ol=0.698
-     
+
        To setup a new cosmology, add an entry to the function,
        ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
        the entire package.
@@ -141,7 +141,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
-    
+
     is_comoving_dist: boolean (default false)
        Boolean flag to indicate that ``cz`` values have already been
        converted into co-moving distances. This flag allows arbitrary
@@ -154,18 +154,18 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     isa: string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
-    
+
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,
        ``avx`` and ``avx`` is not available on the computer, then the code will
        revert to using ``fallback`` (even though ``sse42`` might be available).
-       
+
        Unless you are benchmarking the different instruction sets, you should
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
 
-       
+
     Returns
     --------
 
@@ -233,7 +233,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     import numpy as np
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum
-    
+
     integer_isa = translate_isa_string_to_enum(isa)
     extn_results, api_time = vpf_extn(rmax, nbins, nspheres, numpN,
                                       threshold_ngb, centers_file,
@@ -244,7 +244,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
                                       is_comoving_dist=is_comoving_dist,
                                       c_api_timer=c_api_timer,
                                       isa=integer_isa)
-    
+
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -254,7 +254,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
                                (np.float, numpN))])
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
-    
+
     for ii, r in enumerate(extn_results):
         results['rmax'][ii] = r[0]
         if numpN == 1:
@@ -287,16 +287,16 @@ if __name__ == '__main__':
     centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
                          "../mocks/tests/data/",
                          "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
-    
+
     N = 100000
     boxsize = 420.0
-    X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    Y = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    Z = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    
+    X = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+    Y = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+    Z = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+
     # Convert XYZ into RA/DEC/CZ
-    CZ = np.sqrt(X*X + Y*Y + Z*Z)
-    inv_cz = 1.0/CZ
+    CZ = np.sqrt(X * X + Y * Y + Z * Z)
+    inv_cz = 1.0 / CZ
 
     # Convert to unit sphere
     X *= inv_cz
@@ -304,8 +304,8 @@ if __name__ == '__main__':
     Z *= inv_cz
 
     import math
-    DEC = 90.0 - np.arccos(Z)*180.0/math.pi
-    RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0
+    DEC = 90.0 - np.arccos(Z) * 180.0 / math.pi
+    RA = (np.arctan2(Y, X) * 180.0 / math.pi) + 180.0
 
     t0 = time.time()
     results, api_time = vpf_mocks(rmax, nbins, nspheres, numpN,
@@ -315,11 +315,10 @@ if __name__ == '__main__':
                                   verbose=True,
                                   c_api_timer=True,
                                   is_comoving_dist=True)
-                                  
+
     t1 = time.time()
     print("Results from vpf_mocks (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1-t0))
+          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
 
     for r in results:
         print("{0}".format(r))
-

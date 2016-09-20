@@ -42,7 +42,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
 
     Returns
     --------
-    
+
     X, Y, Z: numpy arrays
         Returns the triplet of X/Y/Z positions as separate numpy arrays.
 
@@ -66,7 +66,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
     if not file_exists(filename):
         msg = "Could not find file = {0}".format(filename)
         raise IOError(msg)
-        
+
     import struct
     with open(filename, "rb") as f:
         skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
@@ -128,7 +128,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
     else:
         return x, y, z
 
-    
+
 def read_ascii_catalog(filename, return_dtype=None):
     """
     Read a galaxy catalog from an ascii file.
@@ -144,7 +144,7 @@ def read_ascii_catalog(filename, return_dtype=None):
 
     Returns
     --------
-    
+
     X, Y, Z: numpy arrays
         Returns the triplet of X/Y/Z positions as separate numpy arrays.
 
@@ -155,7 +155,7 @@ def read_ascii_catalog(filename, return_dtype=None):
     >>> X, Y, Z = read_ascii(filename, dtype=numpy.float)
 
     """
-    
+
     if return_dtype is None:
         msg = 'Return data-type must be set and a valid numpy data-type'
         raise ValueError(msg)
@@ -188,14 +188,14 @@ def read_ascii_catalog(filename, return_dtype=None):
 
     return x, y, z
 
-    
+
 def read_catalog(filebase=None):
     """
     Reads a galaxy/randoms catalog and returns 3 XYZ arrays.
 
     Parameters
     -----------
-    
+
     filebase: string (optional)
         The fully qualified path to the file. If omitted, reads the
         theory galaxy catalog under ../theory/tests/data/

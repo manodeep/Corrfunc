@@ -145,7 +145,7 @@ def read_catalog(filebase=None):
                 array = np.fromfile(f, input_dtype, ngal)
                 skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
                 pos[field] = array if return_dtype == input_dtype \
-                             else [return_dtype(a) for a in array]
+                    else [return_dtype(a) for a in array]
 
         x = pos['x']
         y = pos['y']
@@ -212,7 +212,7 @@ def main():
                        boxsize=boxsize,
                        verbose=True,
                        output_ravg=True)
-    
+
     print("\n#      **** DD(r): first {0} bins  *******       "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg       npairs")
@@ -234,7 +234,7 @@ def main():
                                boxsize=boxsize,
                                verbose=True,
                                output_rpavg=True)
-    
+
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg     pi_upper     npairs")
@@ -282,7 +282,7 @@ def main():
     results_vpf, _ = vpf(rmax=rmax, nbins=nbin, nspheres=nspheres,
                          num_pN=num_pN, seed=seed, X=x, Y=y, Z=z, verbose=True,
                          periodic=periodic)
-    
+
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))
     print('#       r    ', end="")

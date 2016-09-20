@@ -8,9 +8,6 @@ from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 import sys
 
-from .DDrppi_mocks import DDrppi_mocks
-from .DDtheta_mocks import DDtheta_mocks
-from .vpf_mocks import vpf_mocks
 
 __author__ = ('Manodeep Sinha')
 __all__ = ('DDrppi_mocks', 'DDtheta_mocks', 'vpf_mocks', )

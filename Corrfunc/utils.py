@@ -18,13 +18,12 @@ if sys.version_info[0] < 3:
 def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
                             D1D2, D1R2, D2R1, R1R2,
                             estimator='LS'):
-                            
     """
     Converts raw pair counts to a correlation function.
-    
+
     Parameters
     ----------
-    
+
     ND1 : integer
        Number of points in the first dataset
 
@@ -58,7 +57,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
     Returns
     ---------
-    
+
     cf : A numpy array
         The correlation function, calculated using the chosen estimator,
         is returned
@@ -109,11 +108,11 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
         raise ValueError(msg)
 
     if 'LS' in estimator or 'Landy' in estimator:
-        fN1 = np.float(NR1)/np.float(ND1)
-        fN2 = np.float(NR2)/np.float(ND2)
-        cf = (fN1*fN2*pair_counts['D1D2'] -
-              fN1*pair_counts['D1R2'] -
-              fN2*pair_counts['D2R1'] +
+        fN1 = np.float(NR1) / np.float(ND1)
+        fN2 = np.float(NR2) / np.float(ND2)
+        cf = (fN1 * fN2 * pair_counts['D1D2'] -
+              fN1 * pair_counts['D1R2'] -
+              fN2 * pair_counts['D2R1'] +
               pair_counts['R1R2']) / pair_counts['R1R2']
         cf = np.array(cf)
         if len(cf) != nbins:
@@ -126,7 +125,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
         msg = "Only the Landy-Szalay estimator is supported. Pass estimator"\
               "='LS'. (Got estimator = {0})".format(estimator)
         raise ValueError(msg)
-        
+
     return cf
 
 
@@ -134,13 +133,12 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                D1D2, D1R2, D2R1, R1R2,
                                nrpbins, dpi=1.0,
                                estimator='LS'):
-                            
     """
     Converts raw pair counts to a correlation function.
-    
+
     Parameters
     ----------
-    
+
     ND1 : integer
        Number of points in the first dataset
 
@@ -180,7 +178,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
 
     Returns
     ---------
-    
+
     wp : A numpy array
         The projected correlation function, calculated using the chosen
         estimator, is returned
@@ -217,7 +215,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
         msg = 'Binsize along the line of sight (dpi) = {0}'\
               'must be positive'.format(dpi)
         raise ValueError(msg)
-    
+
     xirppi = convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
                                      D1D2, D1R2, D2R1, R1R2,
                                      estimator=estimator)
@@ -231,10 +229,10 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                                        npibins,
                                                        nrpbins)
         raise ValueError(msg)
-        
+
     for i in xrange(nrpbins):
         wp[i] = 2.0 * dpi * np.sum(xirppi[i * npibins:(i + 1) * npibins])
-    
+
     return wp
 
 
@@ -251,7 +249,7 @@ def return_file_with_rbins(rbins):
     -----------
     rbins: string or array-like
        Expected to be a string or an array containing the bins
-    
+
     Returns
     ---------
     binfile: string, filename
@@ -285,8 +283,8 @@ def return_file_with_rbins(rbins):
         import tempfile
         rbins = sorted(rbins)
         with tempfile.NamedTemporaryFile(delete=False) as f:
-            for i in xrange(len(rbins)-1):
-                f.write("{0} {1}\n".format(rbins[i], rbins[i+1]))
+            for i in xrange(len(rbins) - 1):
+                f.write("{0} {1}\n".format(rbins[i], rbins[i + 1]))
 
             tmpfilename = f.name
 
@@ -297,7 +295,7 @@ def return_file_with_rbins(rbins):
           "Num elements = {0}".format(len(rbins))
     raise TypeError(msg)
 
-    
+
 def fix_cz(cz):
     """
     Multiplies the input array by speed of light, if the input values are
@@ -310,13 +308,13 @@ def fix_cz(cz):
     -----------
     cz: array-like, reals
        An array containing ``[Speed of Light *] redshift`` values.
-    
+
     Returns
     ---------
     cz: array-like
        Actual ``cz`` values, multiplying the input ``cz`` array by the
        ``Speed of Light``, if ``redshift`` values were passed as input ``cz``.
-    
+
     """
 
     # if I find that max cz is smaller than this threshold,
@@ -327,7 +325,7 @@ def fix_cz(cz):
     except:
         msg = "Input cz array must be a numpy array"
         raise TypeError(msg)
-        
+
     if max(cz) < max_cz_threshold:
         speed_of_light = 299800.0
         cz *= speed_of_light
@@ -360,11 +358,11 @@ def fix_ra_dec(ra, dec):
     except:
         msg = "Input RA array must be a numpy array"
         raise TypeError(msg)
-    
+
     if ra is None or dec is None:
         msg = "RA or DEC must be valid arrays"
         raise ValueError(msg)
-    
+
     if min(ra) < 0.0:
         print("Warning: found negative RA values, wrapping into [0.0, 360.0] "
               " range")
@@ -384,13 +382,13 @@ def translate_isa_string_to_enum(isa):
     underlying enum in the C-API. The extensions only have specific
     implementations for AVX, SSE42 and FALLBACK. Any other value
     will raise a ValueError.
-    
+
     Parameters
     ------------
     isa: string
        A string containing the desired instruction set. Valid values are
        ['AVX', 'SSE42', 'FALLBACK', 'FASTEST']
-    
+
     Returns
     --------
     instruction_set: integer
@@ -399,7 +397,7 @@ def translate_isa_string_to_enum(isa):
        same way as the enum in ``utils/defs.h``.
 
     """
-    
+
     msg = "Input to translate_isa_string_to_enum must be "\
           "of string type. Found type = {0}".format(type(isa))
     try:
@@ -414,7 +412,7 @@ def translate_isa_string_to_enum(isa):
         msg = "Desired instruction set = {0} is not in the list of valid "\
               "instruction sets = {1}".format(isa, valid_isa)
         raise ValueError(msg)
-    
+
     enums = {'FASTEST': -1,
              'FALLBACK': 0,
              'SSE': 1,
@@ -433,5 +431,3 @@ def translate_isa_string_to_enum(isa):
         print("Do not know instruction type = {0}".format(isa))
         print("Valid instructions are {0}".format(enums.keys()))
         raise
-    
-

@@ -30,6 +30,6 @@ def tests():
     # Run the mocks script
     cm.main()
 
-    
+
 if __name__ == '__main__':
     tests()

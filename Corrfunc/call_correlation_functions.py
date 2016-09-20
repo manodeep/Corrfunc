@@ -89,7 +89,7 @@ def main():
     print("\nRunning 3-D auto-correlation function xi(r)")
     results_xi, _ = xi_extn(boxsize, nthreads, binfile,
                             x, y, z, verbose=True)
-                            
+
     print("\n#            ******    xi: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        xi       npairs")
