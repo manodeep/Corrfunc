@@ -40,6 +40,7 @@ all: tests $(TARGETS) $(INCL) uncompress $(ROOT_DIR)/mocks.options $(ROOT_DIR)/c
 
 $(TARGET):$(C_LIBRARIES)
 
+%.a: $(UTILS_DIR)/*.[ch] $(UTILS_DIR)/*.c.src $(UTILS_DIR)/*.h.src
 $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/*.c $(DDrppi_mocks_DIR)/*.c.src $(DDrppi_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_mocks_DIR) libs
 
