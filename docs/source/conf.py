@@ -27,14 +27,15 @@ if on_rtd:
         from mock import Mock as MagicMock
 
     class Mock(MagicMock):
+
         @classmethod
         def __getattr__(cls, name):
             return Mock()
-    
+
     MOCK_MODULES = ['numpy']
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-        
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -62,7 +63,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon']
-    
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -70,8 +71,8 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 source_parsers = {
-        '.md': CommonMarkParser,
-    }
+    '.md': CommonMarkParser,
+}
 source_suffix = ['.rst', '.md']
 #source_suffix = '.rst'
 
@@ -248,17 +249,17 @@ htmlhelp_basename = 'Corrfuncdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

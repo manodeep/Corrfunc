@@ -39,7 +39,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     autocorr: boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
         then the second set of particle positions are not required.
-    
+
     nthreads: integer
        Number of threads to use.
 
@@ -106,7 +106,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
-    
+
     output_thetaavg: boolean (default false)
        Boolean flag to output the average ``\theta`` for each bin. Code will
        run slower if you set this flag. Also, note, if you are calculating
@@ -127,9 +127,9 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        to implement faster (and less accurate) functions, particularly relevant
        if you know your ``theta`` range is limited. If you implement a new
        version, then you will have to reinstall the entire Corrfunc package.
-       
+
        Note that tests will fail if you run the tests with``fast_acos=True``.
-       
+
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
@@ -137,17 +137,17 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     isa: string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
-    
+
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,
        ``avx`` and ``avx`` is not available on the computer, then the code will
        revert to using ``fallback`` (even though ``sse42`` might be available).
-       
+
        Unless you are benchmarking the different instruction sets, you should
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
+
     Returns
     --------
 
@@ -161,7 +161,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     Example
     --------
-    
+
     >>> import numpy as np
     >>> import time
     >>> from math import pi
@@ -195,7 +195,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins
     from future.utils import bytes_to_native_str
-    
+
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
             msg = "Must pass valid arrays for RA2/DEC2 for "\
@@ -211,7 +211,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     if link_in_ra is True:
         link_in_dec = True
-        
+
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
@@ -224,7 +224,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
                                                 c_api_timer=c_api_timer,
                                                 fast_acos=fast_acos,
                                                 isa=integer_isa)
-        
+
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -232,15 +232,15 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     if delete_after_use:
         import os
         os.remove(rbinfile)
-    
+
     results_dtype = np.dtype([(bytes_to_native_str(b'thetamin'), np.float),
                               (bytes_to_native_str(b'thetamax'), np.float),
                               (bytes_to_native_str(b'thetaavg'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64)])
-    
+
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
-    
+
     for ii, r in enumerate(extn_results):
         results['thetamin'][ii] = r[0]
         results['thetamax'][ii] = r[1]
@@ -263,17 +263,17 @@ if __name__ == '__main__':
 
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
                     "../mocks/tests/", "angular_bins")
-    
+
     N = 100000
     nthreads = 4
     t0 = time.time()
     seed = 42
     np.random.seed(seed)
-    
+
     # Faster way of generating random RA's and DEC's
-    RA = np.random.uniform(0.0, 2.0*pi, N)*180.0/pi
+    RA = np.random.uniform(0.0, 2.0 * pi, N) * 180.0 / pi
     cos_theta = np.random.uniform(-1.0, 1.0, N)
-    DEC = 90.0 - np.arccos(cos_theta)*180.0/pi
+    DEC = 90.0 - np.arccos(cos_theta) * 180.0 / pi
 
     autocorr = 1
     results, api_time = DDtheta_mocks(autocorr, nthreads, binfile,
@@ -285,7 +285,6 @@ if __name__ == '__main__':
     t1 = time.time()
     print("Results from DDtheta_mocks (Npts = {0}): API time = {1:0.3f} sec "
           "python overhead = {2:0.3f} sec".format(N, api_time,
-                                                  (t1-t0) - api_time))
+                                                  (t1 - t0) - api_time))
     for r in results:
         print("{0}".format(r))
-

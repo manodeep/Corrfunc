@@ -20,25 +20,25 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         c_api_timer=False, isa='fastest'):
     """
     Function to compute the counts-in-cells on 3-D real-space points.
-    
+
     Returns a numpy structured array containing the probability of a
     sphere of radius up to ``rmax`` containing [0, numpN-1] galaxies.
 
     Parameters
     -----------
-    
+
     rmax: double
        Maximum radius of the sphere to place on the particles
-    
+
     nbins: integer
        Number of bins in the counts-in-cells. Radius of first shell
        is rmax/nbins
-    
+
     nspheres: integer (>= 0)
        Number of random spheres to place within the particle distribution.
        For a small number of spheres, the error is larger in the measured
        pN's.
-    
+
     numpN: integer (>= 1)
        Governs how many unique pN's are to returned. If ``numpN` is set to 1,
        then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
@@ -58,7 +58,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
        Particle positions in the 3 axes. Must be within [0, boxsize]
        and specified in the same units as ``rp_bins`` and boxsize. All
        3 arrays must be of the same floating-point type.
-       
+
        Calculations will be done in the same precision as these arrays,
        i.e., calculations will be in floating point if XYZ are single
        precision arrays (C float type); or in double-precision if XYZ
@@ -66,7 +66,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
-    
+
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
 
@@ -83,17 +83,17 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     isa: string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
-    
+
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,
        ``avx`` and ``avx`` is not available on the computer, then the code will
        revert to using ``fallback`` (even though ``sse42`` might be available).
-       
+
        Unless you are benchmarking the different instruction sets, you should
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
+
     Returns
     --------
 
@@ -150,21 +150,21 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     if numpN <= 0:
         msg = "Number of counts-in-cells wanted must be at least 1"
         raise ValueError(msg)
-    
+
     if boxsize > 0.0:
         volume = boxsize * boxsize * boxsize
     else:
         volume = (max(X) - min(X)) * \
                  (max(Y) - min(Y)) * \
                  (max(Z) - min(Z))
-        
-    volume_sphere = 4./3. * pi * rmax * rmax * rmax
-    if nspheres*volume_sphere > volume:
+
+    volume_sphere = 4. / 3. * pi * rmax * rmax * rmax
+    if nspheres * volume_sphere > volume:
         msg = "There are not as many independent volumes in the "\
               "requested particle distribution. Num. spheres = {0} "\
               "rmax = {1} => effective volume = {2}.\nVolume of particles ="\
               "{3}. Reduce rmax or Nspheres"\
-              .format(nspheres, rmax, nspheres*volume_sphere, volume)
+              .format(nspheres, rmax, nspheres * volume_sphere, volume)
         raise ValueError(msg)
 
     integer_isa = translate_isa_string_to_enum(isa)
@@ -178,7 +178,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
                                       boxsize=boxsize,
                                       c_api_timer=c_api_timer,
                                       isa=integer_isa)
-    
+
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -188,7 +188,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
                                (np.float, numpN))])
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
-    
+
     for ii, r in enumerate(extn_results):
         results['rmax'][ii] = r[0]
         if numpN == 1:
@@ -229,8 +229,7 @@ if __name__ == '__main__':
 
     t1 = time.time()
     print("Results from vpf (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1-t0))
+          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
 
     for r in results:
         print("{0}".format(r))
-

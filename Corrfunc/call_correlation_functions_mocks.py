@@ -24,7 +24,7 @@ def main():
         countpairs_rp_pi_mocks as rp_pi_mocks_extn,\
         countpairs_theta_mocks as theta_mocks_extn,\
         countspheres_vpf_mocks as vpf_mocks_extn
-    
+
     tstart = time.time()
     filename = pjoin(dirname(abspath(Corrfunc.__file__)),
                      "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
@@ -95,7 +95,7 @@ def main():
                                     threshold_neighbors, centers_file,
                                     cosmology,
                                     ra, dec, cz, ra, dec, cz, verbose=True)
-    
+
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))
     print('#       r    ', end="")

@@ -36,7 +36,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     correlation function :math:`\\xi(r_p, \pi)`. See the
     ``mocks/DDrppi/wprp_mocks.c`` for computing :math:`wp(r_p)` from
     the pair counts returned.
-     
+
     Parameters
     -----------
 
@@ -50,10 +50,10 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         easiest way is to convert the ``CZ`` values into co-moving distance,
         based on your preferred cosmology. Set ``is_comoving_dist=True``, to
         indicate that the co-moving distance conversion has already been done.
-    
+
         Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75
                  2 -> Planck   cosmology. Om=0.302, Ol=0.698
-     
+
         To setup a new cosmology, add an entry to the function,
         ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
         the entire package.
@@ -130,7 +130,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
         If is_comoving_dist is set, then ``CZ2`` is interpreted as the
         co-moving distance, rather than `cz`.
-        
+
         Must be of same precision type as RA1/DEC1/CZ1.
 
     is_comoving_dist: boolean (default false)
@@ -161,18 +161,18 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     isa: string (default ``fastest``)
         Controls the runtime dispatch for the instruction set to use. Possible
         options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
-    
+
         Setting isa to ``fastest`` will pick the fastest available instruction
         set on the current computer. However, if you set ``isa`` to, say,
         ``avx`` and ``avx`` is not available on the computer, then the code
         will revert to using ``fallback`` (even though ``sse42`` might be
         available).
-       
+
         Unless you are benchmarking the different instruction sets, you should
         always leave ``isa`` to the default value. And if you *are*
         benchmarking, then the string supplied here gets translated into an
         ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
+
     Returns
     --------
 
@@ -235,7 +235,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins
     from future.utils import bytes_to_native_str
-    
+
     if autocorr == 0:
         if RA2 is None or DEC2 is None or CZ2 is None:
             msg = "Must pass valid arrays for RA2/DEC2/CZ2 for "\
@@ -275,7 +275,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                               (bytes_to_native_str(b'rpavg'), np.float),
                               (bytes_to_native_str(b'pimax'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64)])
-    
+
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
     for ii, r in enumerate(extn_results):
@@ -298,16 +298,16 @@ if __name__ == '__main__':
     print("\nRunning 2-D correlation function for mocks DD(rp,pi)")
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
                     "../mocks/tests/", "bins")
-    
+
     N = 100000
     boxsize = 420.0
-    X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    Y = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    Z = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    
+    X = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+    Y = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+    Z = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+
     # Convert XYZ into RA/DEC/CZ
-    CZ = np.sqrt(X*X + Y*Y + Z*Z)
-    inv_cz = 1.0/CZ
+    CZ = np.sqrt(X * X + Y * Y + Z * Z)
+    inv_cz = 1.0 / CZ
 
     # Convert to unit sphere
     X *= inv_cz
@@ -315,8 +315,8 @@ if __name__ == '__main__':
     Z *= inv_cz
 
     import math
-    DEC = 90.0 - np.arccos(Z)*180.0/math.pi
-    RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0
+    DEC = 90.0 - np.arccos(Z) * 180.0 / math.pi
+    RA = (np.arctan2(Y, X) * 180.0 / math.pi) + 180.0
 
     autocorr = 1
     cosmology = 1
@@ -335,7 +335,6 @@ if __name__ == '__main__':
                                      output_rpavg=True)
     t1 = time.time()
     print("Results from DDrppi_mocks: Time taken = {0:0.3f} sec "
-          "Python time = {0:0.3f} sec".format(api_time, t1-t0))
+          "Python time = {0:0.3f} sec".format(api_time, t1 - t0))
     for r in results[0:10]:
         print("{0}".format(r))
-

@@ -27,7 +27,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     correlation function :math:`\\xi(r_p, \pi)`. See the
     ``theory/xi_rp_pi/wprp.c`` for computing :math:`wp(r_p)` from
     the pair counts returned.
-     
+
     Parameters
     -----------
 
@@ -79,7 +79,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
-    
+
     output_rpavg: boolean (default false)
        Boolean flag to output the average ``rp`` for each bin. Code will
        run slower if you set this flag. Also, note, if you are calculating
@@ -94,17 +94,17 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     isa: string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
-    
+
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,
        ``avx`` and ``avx`` is not available on the computer, then the code will
        revert to using ``fallback`` (even though ``sse42`` might be available).
-       
+
        Unless you are benchmarking the different instruction sets, you should
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
+
     Returns
     --------
 
@@ -190,13 +190,13 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     if delete_after_use:
         import os
         os.remove(rbinfile)
-    
+
     results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float),
                               (bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'rpavg'), np.float),
                               (bytes_to_native_str(b'pimax'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64)])
-    
+
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
     for ii, r in enumerate(extn_results):
@@ -211,7 +211,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     else:
         return results, api_time
 
-    
+
 if __name__ == '__main__':
     import numpy as np
     import Corrfunc
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     from os.path import dirname, abspath, join as pjoin
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
                     "../theory/tests/", "bins")
-    
+
     N = 100000
     boxsize = 420.0
     nthreads = 4
@@ -239,9 +239,8 @@ if __name__ == '__main__':
 
     t1 = time.time()
     print("Results from DDrppi (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1-t0))
+          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
 
     # Only print the first ten bins (1st rp bin, with 10 pimax bins)
     for r in results[0:10]:
         print("{0}".format(r))
-

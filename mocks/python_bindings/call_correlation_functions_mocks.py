@@ -39,7 +39,7 @@ def read_text_file(filename, encoding="utf-8"):
             r = f.read()
     return r
 
-    
+
 def main():
     tstart = time.time()
     filename = pjoin(dirname(abspath(__file__)),

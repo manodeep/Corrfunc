@@ -13,7 +13,6 @@ __all__ = ('DD', )
 def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
        X2=None, Y2=None, Z2=None, verbose=False, boxsize=0.0,
        output_ravg=False, c_api_timer=False, isa='fastest'):
-
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
@@ -21,7 +20,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\xi(r)`. See the ``mocks/wtheta/wtheta.c``
     for computing :math:`\\xi(r)` from the pair counts returned.
-     
+
     Parameters
     -----------
 
@@ -64,7 +63,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
-    
+
     output_ravg: boolean (default false)
        Boolean flag to output the average ``r`` for each bin. Code will
        run slower if you set this flag. Also, note, if you are calculating
@@ -79,17 +78,17 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     isa: string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
-    
+
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,
        ``avx`` and ``avx`` is not available on the computer, then the code will
        revert to using ``fallback`` (even though ``sse42`` might be available).
-       
+
        Unless you are benchmarking the different instruction sets, you should
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
+
     Returns
     --------
 
@@ -142,7 +141,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
-        
+
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     if autocorr == 1:
@@ -167,11 +166,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
-    
+
     if delete_after_use:
         import os
         os.remove(rbinfile)
-    
+
     results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float),
                               (bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'ravg'), np.float),
@@ -179,7 +178,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
 
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
-    
+
     for ii, r in enumerate(extn_results):
         results['rmin'][ii] = r[0]
         results['rmax'][ii] = r[1]
@@ -217,7 +216,6 @@ if __name__ == '__main__':
 
     t1 = time.time()
     print("Results from DD (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1-t0))
+          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
     for r in results:
         print("{0}".format(r))
-
