@@ -1,4 +1,4 @@
-|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |Coverity| |RTD|
+|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |RTD|
 
 Description
 ===========
@@ -365,9 +365,6 @@ Project URL
 .. |Issues| image:: https://img.shields.io/github/issues/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/issues
    :alt: Open Issues
-.. |Coverity| image:: https://img.shields.io/coverity/scan/6982.svg
-   :target: https://scan.coverity.com/projects/manodeep-corrfunc
-   :alt: Code Health
 .. |RTD| image:: https://readthedocs.org/projects/corrfunc/badge/?version=master
    :target: http://corrfunc.readthedocs.io/en/master/?badge=master
    :alt: Documentation Status
