@@ -208,5 +208,5 @@ install:
         
 script:
   - make tests CC=$COMPILER
-  - cd docs && make html
-  - cd docs && make doctest  
+  - cd docs && make html && cd ../
+  - cd docs && make doctest && cd ../
