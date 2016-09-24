@@ -23,7 +23,7 @@ include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 PROJECT := _countpairs
 SOURCES := $(PROJECT).c
 OBJECTS := $(SOURCES:.c=.o)
-PYTHON_LIBRARY := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
+PYTHON_EXTN := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
              $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
 INCL := $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
@@ -38,14 +38,14 @@ LIB_INCLUDE:=-I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(VPF_DIR)
 all: sharedlib $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
 
-$(PROJECT).so: $(PYTHON_LIBRARY)
+$(PROJECT).so: $(PYTHON_EXTN)
 	$(RM) $(PROJECT).so
-	ln -s $(PYTHON_LIBRARY) $(PROJECT).so
+	ln -s $(PYTHON_EXTN) $(PROJECT).so
 
 $(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(INCL)
 	$(CC) $(CFLAGS) $(LIB_INCLUDE) $(PYTHON_CFLAGS) $(INCLUDE) $< -c -o $@
 
-$(PYTHON_LIBRARY): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+$(PYTHON_EXTN): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 
 $(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/*.c $(DD_DIR)/*.c.src $(DD_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
@@ -64,36 +64,36 @@ $(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/*.c $(VPF_DIR)/*.c.src $(VPF_DIR)/*.h.src
 	$(MAKE) -C $(VPF_DIR) libs
 
 
-install: sharedlib $(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY) 
-
+install: sharedlib $(INSTALL_LIB_DIR)/$(PYTHON_EXTN) 
 sharedlib: $(PROJECT).so
 ifeq ($(FIX_PYTHON_LINK), 1)
 	@{ \
-		CURRENT_PYTHON_LIB=`otool -L $(PYTHON_LIBRARY) | grep -i python | cut -d " " -f1 | xargs` ; \
+		CURRENT_PYTHON_LIB=`otool -L $(PYTHON_EXTN) | grep -i python | cut -d " " -f1 | grep -v $(PROJECT) | xargs` ; \
 		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
 		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
 		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
-		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(PYTHON_LIBRARY); \
+		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(PYTHON_EXTN); \
 		fi ;\
 	}
 endif
 
-$(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY): $(PYTHON_LIBRARY) | $(INSTALL_LIB_DIR)
-	cp -p $(PYTHON_LIBRARY) $(INSTALL_LIB_DIR)/
 
-$(INSTALL_LIB_DIR)/$(PROJECT).so:$(INSTALL_LIB_DIR)/$(PYTHON_LIBRARY)
+$(INSTALL_LIB_DIR)/$(PYTHON_EXTN): $(PYTHON_EXTN) | $(INSTALL_LIB_DIR)
+	cp -p $(PYTHON_EXTN) $(INSTALL_LIB_DIR)/
+
+$(INSTALL_LIB_DIR)/$(PROJECT).so:$(INSTALL_LIB_DIR)/$(PYTHON_EXTN)
 	$(RM) $(INSTALL_LIB_DIR)/$(PROJECT).so
-	cd $(INSTALL_LIB_DIR) && ln -s $(PYTHON_LIBRARY) $(PROJECT).so
+	cd $(INSTALL_LIB_DIR) && ln -s $(PYTHON_EXTN) $(PROJECT).so
 
 tests: sharedlib $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(OBJECTS) | $(ROOT_DIR)/lib
 	python call_correlation_functions.py
 
 clean:
-	$(RM) $(OBJECTS) $(PYTHON_LIBRARY) $(PROJECT).so
+	$(RM) $(OBJECTS) $(PYTHON_EXTN) $(PROJECT).so
 	$(RM) -R *.dSYM
 
 distclean:clean
-	cd $(INSTALL_LIB_DIR) && $(RM) $(PYTHON_LIBRARY) $(PROJECT).so
+	cd $(INSTALL_LIB_DIR) && $(RM) $(PYTHON_EXTN) $(PROJECT).so
 
 include $(ROOT_DIR)/rules.mk
 

@@ -458,6 +458,13 @@ def setup_packages():
     # Some command options require headers/libs to be generated
     # so that the following dirs_patters supplies them.
     if install_required():
+        from distutils.sysconfig import get_config_var
+        if get_config_var('SHLIB_EXT') != '".so"' and version_info[0] == 2:
+            msg = "The extensions all get the `.so` automatically. "\
+                  "However, python expects the extension to be `{0}`"\
+                  .format(get_config_var('SHLIB_EXT'))
+            raise ValueError(msg)
+        
         # global variable compiler is set if passed in
         # command-line
         extra_string = ''
@@ -466,6 +473,15 @@ def setup_packages():
 
         command = "make libs {0}".format(extra_string)
         run_command(command)
+        
+    else:
+        # not installing. Check if creating source distribution
+        # in that case run distclean to delete auto-generated C
+        # files
+        if 'sdist' in sys.argv:
+            command = "make distclean"
+            run_command(command)
+            
 
     # find all the data-files required.
     # Now the lib + associated header files have been generated
@@ -509,34 +525,37 @@ def setup_packages():
                    'Programming Language :: Python :: 3.4',
                    'Programming Language :: Python :: 3.5']
     metadata = dict(
-        name=projectname,
-        version=version,
-        author='Manodeep Sinha',
-        author_email='manodeep@gmail.com',
-        maintainer='Manodeep Sinha',
-        maintainer_email='manodeep@gmail.com',
-        url=base_url,
-        download_url='{0}/archive/{1}-{2}.tar.gz'.format(
-            base_url, projectname, version),
-        description='Blazing fast correlation functions on the CPU',
-        long_description=long_description,
-        classifiers=classifiers,
-        license='MIT',
-        # Solaris might work, Windows will almost certainly not work
-        platforms=["Linux", "Mac OSX", "Unix"],
-        keywords=['correlation functions', 'simulations',
-                  'surveys', 'galaxies'],
-        provides=[projectname],
-        packages=find_packages(),
-        ext_package=projectname,
-        ext_modules=extensions,
-        package_data={'': data_files},
-        include_package_data=True,
-        install_requires=['setuptools',
-                          'numpy>={0}.{1}'.format(min_np_major, min_np_minor),
-                          'future'],
-        zip_safe=False,
-        cmdclass={'build_ext': BuildExtSubclass})
+            name=projectname,
+            version=version,
+            author='Manodeep Sinha',
+            author_email='manodeep@gmail.com',
+            maintainer='Manodeep Sinha',
+            maintainer_email='manodeep@gmail.com',
+            url=base_url,
+            download_url='{0}/archive/{1}-{2}.tar.gz'.format(
+                    base_url, projectname, version),
+            description='Blazing fast correlation functions on the CPU',
+            long_description=long_description,
+            classifiers=classifiers,
+            license='MIT',
+            # Solaris might work, Windows will almost certainly not work
+            platforms=["Linux", "Mac OSX", "Unix"],
+            keywords=['correlation functions', 'simulations',
+                      'surveys', 'galaxies'],
+            provides=[projectname],
+            packages=find_packages(),
+            ext_package=projectname,
+            ext_modules=extensions,
+            package_data={'': data_files},
+            include_package_data=True,
+            setup_requires=['setuptools',
+                            'numpy>={0}.{1}'.format(min_np_major,
+                                                    min_np_minor)],
+            install_requires=['numpy>={0}.{1}'.format(min_np_major,
+                                                      min_np_minor),
+                              'future'],
+            zip_safe=False,
+            cmdclass={'build_ext': BuildExtSubclass})
 
     # Now the actual setup
     try:
