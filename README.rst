@@ -349,8 +349,7 @@ Project URL
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
    :alt: Latest Release
-[![PyPI Version](https://img.shields.io/pypi/v/obspy.svg)](https://pypi.python.org/pypi/obspy)
-   
+
 .. |PyPI| image:: https://img.shields.io/pypi/v/Corrfunc.svg
    :target: https://pypi.python.org/pypi/Corrfunc
    :alt: PyPI Release
