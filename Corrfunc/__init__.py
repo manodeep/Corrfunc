@@ -10,13 +10,20 @@ from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 import os
 
-from .theory import *
-from .mocks import *
-from . import io
-from . import utils
-
 __version__ = "2.0.0"
 __author__ = "Manodeep Sinha <manodeep@gmail.com>"
+
+
+try:
+        __CORRFUNC_SETUP__
+except NameError:
+    __CORRFUNC_SETUP__ = False
+
+if not __CORRFUNC_SETUP__:
+    from .theory import *
+    from .mocks import *
+    from .io import *
+    from .utils import *
 
 
 def read_text_file(filename, encoding="utf-8"):

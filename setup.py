@@ -10,9 +10,10 @@ from sys import version_info
 import re
 import subprocess
 
-# partial import
-import Corrfunc
-from Corrfunc import read_text_file, write_text_file, which
+if sys.version_info[0] < 3:
+        import __builtin__ as builtins
+else:
+    import builtins
 
 # Make sure we are running on posix (Linux, Unix, MAC OSX)
 if os.name != 'posix':
@@ -24,6 +25,12 @@ projectname = 'Corrfunc'
 # global variables
 version = ''
 compiler = ''
+
+builtins.__CORRFUNC_SETUP__ = True
+
+# partial import
+import Corrfunc
+from Corrfunc import read_text_file, write_text_file, which
 
 # numpy 1.7 supports python 2.4-2.5; python 3.1-3.3.
 try:
