@@ -75,11 +75,14 @@ $(INSTALL_LIB_DIR) $(INSTALL_BIN_DIR) $(INSTALL_HEADERS_DIR):
 
 ifdef PROJECT
   ifeq ($(UNAME), Darwin)
-    PYTHON_LINK += -Xlinker -install_name -Xlinker $(PROJECT)
+    PYTHON_LINK += -Xlinker -install_name -Xlinker $(PROJECT)$(PYTHON_SOABI)
   else
-    PYTHON_LINK += -Xlinker -soname -Xlinker $(PROJECT).so.$(MAJOR)
+    PYTHON_LINK += -Xlinker -soname -Xlinker $(PROJECT)$(PYTHON_SOABI).so.$(MAJOR)
   endif
+
 endif
+
+
 
 .PHONY: clean clena celan install lib tests distclean all realclean libs
 

@@ -27,6 +27,8 @@ PYTHON_CONFIG_EXE:=
 ## Set OpenMP for both theory and mocks
 OPT += -DUSE_OMP
 
+CONDA_BUILD ?=0
+
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=2
@@ -379,15 +381,27 @@ ifeq ($(DO_CHECKS), 1)
       export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
       export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
       export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+      SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))")
+      ifndef SOABI
+        PYTHON_SOABI = 
+      else
+        PYTHON_SOABI = .$(SOABI)
+      endif
+      export PYTHON_SOABI
       export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
 
       ### Check if conda is being used on OSX - then we need to fix python link libraries
       export FIX_PYTHON_LINK := 0
-      ifeq ($(UNAME), Darwin)
-        PATH_TO_PYTHON := $(shell which python)
-        ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
-	  FIX_PYTHON_LINK := 1
+      ifeq ($(CONDA_BUILD), 0)
+        ## Check if conda build is under progress -> do nothing in that case. Let conda handle it
+        ifeq ($(UNAME), Darwin)
+          PATH_TO_PYTHON := $(shell which python)
+          ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
+	    FIX_PYTHON_LINK := 1
+          endif
         endif
+      endif
+      ifeq ($(UNAME), Darwin)
         PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
         PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
         PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
