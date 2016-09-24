@@ -27,6 +27,7 @@ PYTHON_CONFIG_EXE:=
 ## Set OpenMP for both theory and mocks
 OPT += -DUSE_OMP
 
+CONDA_BUILD ?=0
 
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
@@ -34,6 +35,7 @@ MAJOR:=2
 MINOR:=0
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
+ABI_COMPAT_VERSION:=$(MAJOR).0
 DO_CHECKS := 1
 ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
@@ -153,7 +155,7 @@ ifeq ($(DO_CHECKS), 1)
 
   INCLUDE:=-I../../io -I../../utils
   ### The POSIX_SOURCE flag is required to get the definition of strtok_r
-  CFLAGS += -DVERSION=\"${VERSION}\"
+  CFLAGS += -DVERSION=\"${VERSION}\" -DUSE_UNICODE
   CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE=200809L -D_GNU_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
   GSL_FOUND := $(shell gsl-config --version)
   ifndef GSL_FOUND
@@ -379,19 +381,31 @@ ifeq ($(DO_CHECKS), 1)
       export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
       export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
       export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+      SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))")
+      ifndef SOABI
+        PYTHON_SOABI = 
+      else
+        PYTHON_SOABI = .$(SOABI)
+      endif
+      export PYTHON_SOABI
       export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
 
       ### Check if conda is being used on OSX - then we need to fix python link libraries
       export FIX_PYTHON_LINK := 0
-      ifeq ($(UNAME), Darwin)
-        PATH_TO_PYTHON := $(shell which python)
-        ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
-	  FIX_PYTHON_LINK := 1
+      ifeq ($(CONDA_BUILD), 0)
+        ## Check if conda build is under progress -> do nothing in that case. Let conda handle it
+        ifeq ($(UNAME), Darwin)
+          PATH_TO_PYTHON := $(shell which python)
+          ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
+	    FIX_PYTHON_LINK := 1
+          endif
         endif
+      endif
+      ifeq ($(UNAME), Darwin)
         PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
         PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
         PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-        PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(MAJOR).$(MINOR) -Wl,-current_version,$(VERSION)
+        PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(ABI_COMPAT_VERSION) -Wl,-current_version,$(VERSION)
         PYTHON_LINK += -headerpad_max_install_names
 
         ### Another check for stack-size. travis ci chokes on this with gcc

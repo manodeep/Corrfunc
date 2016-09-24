@@ -15,8 +15,9 @@
 import sys
 import os
 from os.path import abspath, dirname, join as pjoin
-from recommonmark.parser import CommonMarkParser
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
+from datetime import date
+
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
     try:
         from unittest.mock import MagicMock
@@ -24,14 +25,15 @@ if on_rtd:
         from mock import Mock as MagicMock
 
     class Mock(MagicMock):
+
         @classmethod
         def __getattr__(cls, name):
             return Mock()
-    
+
     MOCK_MODULES = ['numpy']
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-        
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -50,39 +52,23 @@ if os.path.isdir(root_path):
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-if on_rtd:
-    extensions = [
-        'sphinx.ext.autodoc',
-        'sphinx.ext.doctest',
-        'sphinx.ext.intersphinx',
-        'sphinx.ext.todo',
-        'sphinx.ext.mathjax',
-        'sphinx.ext.ifconfig',
-        'sphinx.ext.viewcode',
-    ]
-else:
-    extensions = [
-        'sphinx.ext.autodoc',
-        'sphinx.ext.doctest',
-        'sphinx.ext.intersphinx',
-        'sphinx.ext.todo',
-        'sphinx.ext.mathjax',
-        'sphinx.ext.ifconfig',
-        'sphinx.ext.viewcode',
-        'numpydoc',
-    ]
-    
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.napoleon']
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
-source_parsers = {
-        '.md': CommonMarkParser,
-    }
-source_suffix = ['.rst', '.md']
-#source_suffix = '.rst'
+source_suffix = '.rst'
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
@@ -92,11 +78,11 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Corrfunc'
-copyright = u'2016, Manodeep Sinha'
-author = u'Manodeep Sinha'
-
 __import__(project)
 package = sys.modules[project]
+author = package.__author__
+current_year = date.today().year
+copyright = u'2014-{0}, {1}'.format(current_year, author)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -129,11 +115,11 @@ exclude_patterns = []
 #default_role = None
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
-#add_function_parentheses = True
+add_function_parentheses = True
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-#add_module_names = True
+add_module_names = True
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -156,7 +142,6 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
 if on_rtd:
     html_theme = 'default'
 else:
@@ -228,7 +213,7 @@ html_last_updated_fmt = '%b %d, %Y'
 #html_show_sphinx = True
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
+html_show_copyright = True
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -258,17 +243,17 @@ htmlhelp_basename = 'Corrfuncdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

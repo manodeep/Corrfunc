@@ -14,6 +14,11 @@ on. For the command-line interface, the input files can only
 be in ASCII or fast-food format (for description of fast-food
 binaries, see :ref:`fast_food_binary`). 
 
+.. toctree::
+   :maxdepth: 1
+
+   fast_food_binary
+
 
 Reading from ASCII files
 ========================
@@ -49,15 +54,15 @@ ASCII and fast-food formats (for description of fast-food binaries, see
 read both these types of files.      
 
 
-Using utility: ``Corrfunc.read_catalog``
-------------------------------------------
+Using utility: ``Corrfunc.io.read_catalog``
+--------------------------------------------
 
-``Corrfunc.read_catalog`` can directly read ASCII files or fast-food binary
+``Corrfunc.io.read_catalog`` can directly read ASCII files or fast-food binary
 files. 
 
 .. code:: python
 
-          from Corrfunc.utils import read_catalog
+          from Corrfunc.io import read_catalog
 
           # Read the standard theory catalog (on a box)
           # supplied with Corrfunc
@@ -68,10 +73,6 @@ files.
           fname = "myfile_containing_xyz_columns.dat"
           X, Y, Z = read_catalog(fname)
 
-.. toctree::
-   :maxdepth: 1
-
-   fast_food_binary
 
 
           

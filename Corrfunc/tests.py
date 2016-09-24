@@ -5,7 +5,7 @@ from __future__ import (absolute_import, division, print_function,
 import sys
 
 
-__all__ = ['tests']
+__all__ = ['tests', ]
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
 
@@ -30,6 +30,6 @@ def tests():
     # Run the mocks script
     cm.main()
 
-    
+
 if __name__ == '__main__':
     tests()

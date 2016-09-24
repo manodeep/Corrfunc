@@ -38,7 +38,7 @@ matrix:
     #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
     #     - bash miniconda.sh -b -p $HOME/miniconda
     #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
     #     - source activate test
     #     - conda install -q --yes -c asmeurer gsl
 
@@ -53,7 +53,7 @@ matrix:
     #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
     #     - bash miniconda.sh -b -p $HOME/miniconda
     #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
     #     - source activate test
     #     - conda install -q --yes -c asmeurer gsl        
 
@@ -65,7 +65,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
         - source activate test
         - conda install -q --yes -c asmeurer gsl
 
@@ -77,7 +77,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
         - source activate test
         - conda install -q --yes -c asmeurer gsl
 
@@ -90,7 +90,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
         - source activate test
         - conda install -q --yes -c asmeurer gsl
 
@@ -103,7 +103,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
         - source activate test
         - conda install -q --yes -c asmeurer gsl
 
@@ -116,7 +116,7 @@ matrix:
     #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
     #     - bash miniconda.sh -b -p $HOME/miniconda
     #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
     #     - source activate test
     #     - conda install -q --yes -c asmeurer gsl
         
@@ -133,7 +133,7 @@ matrix:
     #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
     #     - bash miniconda.sh -b -p $HOME/miniconda
     #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
     #     - source activate test
 
     # - os: linux
@@ -149,7 +149,7 @@ matrix:
     #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
     #     - bash miniconda.sh -b -p $HOME/miniconda
     #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
     #     - source activate test
         
     - os: linux
@@ -161,7 +161,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
         - source activate test
 
     - os: linux
@@ -173,7 +173,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
         - source activate test
         
     - os: linux
@@ -185,7 +185,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
         - source activate test
 
     - os: linux
@@ -197,7 +197,7 @@ matrix:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION
+        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
         - source activate test
         
 
@@ -208,4 +208,5 @@ install:
         
 script:
   - make tests CC=$COMPILER
-  
+  - cd docs && make html && cd ../
+  - cd docs && make doctest && cd ../

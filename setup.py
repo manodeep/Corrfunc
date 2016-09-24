@@ -9,10 +9,11 @@ import sys
 from sys import version_info
 import re
 import subprocess
-    
-# partial import
-import Corrfunc
-from Corrfunc import read_text_file, write_text_file, which
+
+if sys.version_info[0] < 3:
+        import __builtin__ as builtins
+else:
+    import builtins
 
 # Make sure we are running on posix (Linux, Unix, MAC OSX)
 if os.name != 'posix':
@@ -24,6 +25,12 @@ projectname = 'Corrfunc'
 # global variables
 version = ''
 compiler = ''
+
+builtins.__CORRFUNC_SETUP__ = True
+
+# partial import
+import Corrfunc
+from Corrfunc import read_text_file, write_text_file, which
 
 # numpy 1.7 supports python 2.4-2.5; python 3.1-3.3.
 try:
@@ -45,7 +52,7 @@ def strip_line(line, sep=os.linesep):
     """
     Removes occurrence of character (sep) from a line of text
     """
-    
+
     try:
         return line.strip(sep)
     except TypeError:
@@ -88,7 +95,7 @@ def get_dict_from_buffer(buf, keys=['DISTNAME', 'MAJOR',
     "match-sequence-of-key-value-pairs-at-end-of-string
 
     """
-    
+
     import re
 
     pairs = dict()
@@ -122,7 +129,7 @@ def get_dict_from_buffer(buf, keys=['DISTNAME', 'MAJOR',
     matches = regex.findall(buf)
     for match in matches:
         key, val = match.split('=', 1)
-        
+
         # remove colon and leading/trailing whitespace from key
         key = (strip_line(key, ':')).strip()
 
@@ -134,7 +141,7 @@ def get_dict_from_buffer(buf, keys=['DISTNAME', 'MAJOR',
                   "= {2}".format(regex.pattern, key, '|'.join(keys))
             raise AssertionError(msg)
         pairs.setdefault(key, []).append(val)
-        
+
     return pairs
 
 
@@ -191,7 +198,7 @@ def requirements_check():
               'C claims project = {0} while python has {1}'.\
               format(name, projectname)
         raise AssertionError(msg)
-        
+
     global version
     version = "{0}.{1}.{2}".format(major, minor, patch)
     # Check that version matches
@@ -222,7 +229,7 @@ def requirements_check():
               "through the shell. Please report your python setup and file "\
               "an installation issue at {1}.".format(make_python, base_url)
         raise RuntimeError(msg)
-        
+
     get_full_python = strip_line(get_full_python, os.linesep)
     if get_full_python != this_python:
         msg = "Looks like python specified in Makefile = {0} is different "\
@@ -239,7 +246,7 @@ def requirements_check():
     # for building the extensions as required
     min_py_major = int(common_dict['MIN_PYTHON_MAJOR'][0])
     min_py_minor = int(common_dict['MIN_PYTHON_MINOR'][0])
-    
+
     # Enforce minimum python version
     if version_info[0] < min_py_major or \
        (version_info[0] == min_py_major and version_info[1] < min_py_minor):
@@ -268,7 +275,7 @@ def requirements_check():
                           "pattern ['CC=/path/to/compiler']). Parsing "\
                           "produced CC={1}".format(arg, key)
                     raise ValueError(msg)
-                
+
                 # Is there an "=" sign or did the user
                 # simply pass `CC /path/to/compiler`
                 if check_arg < len(sys.argv):
@@ -303,7 +310,7 @@ def requirements_check():
                       "Please specify CC=/path/to/compiler in the "\
                       "python setup.py call.".format(value)
                 raise ValueError(msg)
-            
+
             replacement = '\n{0}:={1}'.format(CC, value)
             replace_first_key_in_makefile(common, CC,
                                           replacement, common_mk_file)
@@ -313,7 +320,7 @@ def requirements_check():
             break
 
     return common_dict
-    
+
 
 class BuildExtSubclass(build_ext):
     def build_extensions(self):
@@ -345,7 +352,7 @@ class BuildExtSubclass(build_ext):
                 extra_string = 'CC={0}'.format(compiler)
             command = "cd {0} && make {1}".format(ext_dir, extra_string)
             run_command(command)
-            
+
             import shutil
             import errno
             try:
@@ -358,7 +365,7 @@ class BuildExtSubclass(build_ext):
             #                                 version)
             full_build_name = '{0}.{1}'.format(
                 self.get_ext_fullpath(ext.name), version)
-            
+
             full_name = '{0}.so'.format(pjoin(ext_dir, ext.name))
             full_build_name = '{0}'.format(self.get_ext_fullpath(ext.name))
             pkg_sourcedir = '{0}'.format(pjoin(ext_dir, '../../Corrfunc'))
@@ -368,8 +375,8 @@ class BuildExtSubclass(build_ext):
 
             # just copy the newly created library in the Corrfunc module directory.
             # Installed Corrfunc version will automatically get the extensions
-            #os.remove(pkg_in_srcdir)
-            #os.symlink('{0}'.format(pjoin('../', full_name)),
+            # os.remove(pkg_in_srcdir)
+            # os.symlink('{0}'.format(pjoin('../', full_name)),
             #           pkg_in_srcdir)
             shutil.copyfile(full_name, pkg_in_srcdir)
 
@@ -414,11 +421,11 @@ def recursive_glob(rootdir='.', patterns=['*']):
 def install_required():
     install_args = ['build', 'build_ext', 'build_clib',
                     'install', 'bdist']
-    
+
     for arg in install_args:
         if arg in sys.argv:
             return True
-        
+
     return False
 
 
@@ -440,8 +447,8 @@ def setup_packages():
     sys.path.insert(0, src_path)
 
     # create a list of the python extensions
-    python_dirs = ["xi_theory/python_bindings",
-                   "xi_mocks/python_bindings"]
+    python_dirs = ["theory/python_bindings",
+                   "mocks/python_bindings"]
     extensions = generate_extensions(python_dirs)
 
     # check requirement for extensions and set the compiler if specified
@@ -451,25 +458,41 @@ def setup_packages():
     # Some command options require headers/libs to be generated
     # so that the following dirs_patters supplies them.
     if install_required():
+        from distutils.sysconfig import get_config_var
+        if get_config_var('SHLIB_EXT') != '".so"' and version_info[0] == 2:
+            msg = "The extensions all get the `.so` automatically. "\
+                  "However, python expects the extension to be `{0}`"\
+                  .format(get_config_var('SHLIB_EXT'))
+            raise ValueError(msg)
+        
         # global variable compiler is set if passed in
         # command-line
         extra_string = ''
         if compiler != '':
             extra_string = 'CC={0}'.format(compiler)
-            
-        command = "make install {0}".format(extra_string)
+
+        command = "make libs {0}".format(extra_string)
         run_command(command)
         
+    else:
+        # not installing. Check if creating source distribution
+        # in that case run distclean to delete auto-generated C
+        # files
+        if 'sdist' in sys.argv:
+            command = "make distclean"
+            run_command(command)
+            
+
     # find all the data-files required.
     # Now the lib + associated header files have been generated
     # and put in lib/ and include/
     # This step must run after ``make install``
-    dirs_patterns = {'xi_theory/tests/data': ['*.ff', '*.txt',
+    dirs_patterns = {'theory/tests/data': ['*.ff', '*.txt',
                                               '*.txt.gz', '*.dat'],
-                     'xi_mocks/tests/data': ['*.ff', '*.txt',
+                     'mocks/tests/data': ['*.ff', '*.txt',
                                              '*.txt.gz', '*.dat'],
-                     'xi_theory/tests': ['Mr19*', 'bins*', 'cmass*'],
-                     'xi_mocks/tests': ['Mr19*', 'bins*', 'angular_bins*'],
+                     'theory/tests': ['Mr19*', 'bins*', 'cmass*'],
+                     'mocks/tests': ['Mr19*', 'bins*', 'angular_bins*'],
                      'include': ['count*.h'],
                      'lib': ['libcount*.a']
                      }
@@ -484,7 +507,7 @@ def setup_packages():
     long_description = read_text_file('README.rst')
     min_np_major = int(common_dict['MIN_NUMPY_MAJOR'][0])
     min_np_minor = int(common_dict['MIN_NUMPY_MINOR'][0])
-    
+
     # All book-keeping is done.
     # base_url = "https://github.com/manodeep/Corrfunc"
     classifiers = ['Development Status :: 4 - Beta',
@@ -502,34 +525,37 @@ def setup_packages():
                    'Programming Language :: Python :: 3.4',
                    'Programming Language :: Python :: 3.5']
     metadata = dict(
-        name=projectname,
-        version=version,
-        author='Manodeep Sinha',
-        author_email='manodeep@gmail.com',
-        maintainer='Manodeep Sinha',
-        maintainer_email='manodeep@gmail.com',
-        url=base_url,
-        download_url='{0}/archive/{1}-{2}.tar.gz'.format(
-            base_url, projectname, version),
-        description='Blazing fast correlation functions on the CPU',
-        long_description=long_description,
-        classifiers=classifiers,
-        license='MIT',
-        # Solaris might work, Windows will almost certainly not work
-        platforms=["Linux", "Mac OSX", "Unix"],
-        keywords=['correlation functions', 'simulations',
-                  'surveys', 'galaxies'],
-        provides=[projectname],
-        packages=find_packages(),
-        ext_package=projectname,
-        ext_modules=extensions,
-        package_data={'': data_files},
-        include_package_data=True,
-        install_requires=['setuptools',
-                          'numpy>={0}.{1}'.format(min_np_major, min_np_minor),
-                          'future'],
-        zip_safe=False,
-        cmdclass={'build_ext': BuildExtSubclass})
+            name=projectname,
+            version=version,
+            author='Manodeep Sinha',
+            author_email='manodeep@gmail.com',
+            maintainer='Manodeep Sinha',
+            maintainer_email='manodeep@gmail.com',
+            url=base_url,
+            download_url='{0}/archive/{1}-{2}.tar.gz'.format(
+                    base_url, projectname, version),
+            description='Blazing fast correlation functions on the CPU',
+            long_description=long_description,
+            classifiers=classifiers,
+            license='MIT',
+            # Solaris might work, Windows will almost certainly not work
+            platforms=["Linux", "Mac OSX", "Unix"],
+            keywords=['correlation functions', 'simulations',
+                      'surveys', 'galaxies'],
+            provides=[projectname],
+            packages=find_packages(),
+            ext_package=projectname,
+            ext_modules=extensions,
+            package_data={'': data_files},
+            include_package_data=True,
+            setup_requires=['setuptools',
+                            'numpy>={0}.{1}'.format(min_np_major,
+                                                    min_np_minor)],
+            install_requires=['numpy>={0}.{1}'.format(min_np_major,
+                                                      min_np_minor),
+                              'future'],
+            zip_safe=False,
+            cmdclass={'build_ext': BuildExtSubclass})
 
     # Now the actual setup
     try:

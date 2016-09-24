@@ -1,38 +1,38 @@
-all: dirs xi_theory xi_mocks
+all: dirs theory mocks
 
 dirs: | lib bin include
 
 lib bin include: 
 	mkdir -p $@
 
-xi_theory: | dirs
-	$(MAKE) -C xi_theory
+theory: | dirs
+	$(MAKE) -C theory
 
-xi_mocks: | dirs
-	$(MAKE) -C xi_mocks
+mocks: | dirs
+	$(MAKE) -C mocks
 
 install: | dirs
-	$(MAKE) -C xi_theory install
-	$(MAKE) -C xi_mocks install
+	$(MAKE) -C theory install
+	$(MAKE) -C mocks install
 
 libs: | dirs
-	$(MAKE) -C xi_theory libs
-	$(MAKE) -C xi_mocks libs
+	$(MAKE) -C theory libs
+	$(MAKE) -C mocks libs
 
 tests:
-	$(MAKE) -C xi_theory tests
-	$(MAKE) -C xi_mocks tests
+	$(MAKE) -C theory tests
+	$(MAKE) -C mocks tests
 
 
-.PHONY: clean celna clena celan xi_theory xi_mocks install distclean realclean libs lib
+.PHONY: clean celna clena celan theory mocks install distclean realclean libs lib
 
 distclean:realclean
 distclena:realclean
 realclena:realclean
 
 realclean:|dirs
-	$(MAKE) -C xi_theory distclean
-	$(MAKE) -C xi_mocks distclean
+	$(MAKE) -C theory distclean
+	$(MAKE) -C mocks distclean
 	@{\
 		if [ 0 -eq $$(ls -1 lib/lib*.a 2>/dev/null | wc -l) ]; then \
 			echo "No static libs in lib/. Removing defs.h " ;\
@@ -43,8 +43,8 @@ realclean:|dirs
 	$(MAKE) -C io clean
 
 clean:
-	$(MAKE) -C xi_theory clean
-	$(MAKE) -C xi_mocks clean
+	$(MAKE) -C theory clean
+	$(MAKE) -C mocks clean
 
 clena: clean
 celan: clean

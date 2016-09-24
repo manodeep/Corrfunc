@@ -17,7 +17,7 @@ from os.path import dirname, abspath, join as pjoin
 import time
 
 import Corrfunc
-from Corrfunc.utils import read_catalog
+from Corrfunc.io import read_catalog
 from Corrfunc._countpairs import\
     countpairs as DD_extn,\
     countpairs_rp_pi as DDrppi_extn,\
@@ -41,7 +41,7 @@ def main():
     nthreads = 4
     pimax = 40.0
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
+                    "../theory/tests/", "bins")
     autocorr = 1
     periodic = 1
 
@@ -89,7 +89,7 @@ def main():
     print("\nRunning 3-D auto-correlation function xi(r)")
     results_xi, _ = xi_extn(boxsize, nthreads, binfile,
                             x, y, z, verbose=True)
-                            
+
     print("\n#            ******    xi: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        xi       npairs")

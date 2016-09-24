@@ -31,6 +31,23 @@
 #include "macros.h"
 #include "utils.h"
 
+void get_max_float(const int64_t ND1, const float *cz1, float *czmax)
+{
+    float max=*czmax;
+    for(int64_t i=0;i<ND1;i++) {
+        if(cz1[i] > max) max = cz1[i];
+    }
+    *czmax = max;
+}
+
+void get_max_double(const int64_t ND1, const double *cz1, double *czmax)
+{
+    double max=*czmax;
+    for(int64_t i=0;i<ND1;i++) {
+        if(cz1[i] > max) max = cz1[i];
+    }
+    *czmax = max;
+}
 
 
 int setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)

@@ -3,9 +3,9 @@
 
 """
 Python wrapper around the C extension for the angular correlation function
-:math:`\\omega(\theta)`. Corresponding C routines are in xi_mocks/wtheta/,
+:math:`\\omega(\theta)`. Corresponding C routines are in mocks/wtheta/,
 python interface is `~Corrfunc.mocks.DDtheta_mocks`
-x"""
+"""
 
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
@@ -30,7 +30,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\omega(\theta)`. See the
-    ``xi_mocks/wtheta/wtheta`` for computing :math:`\\omega(\theta)` from
+    ``mocks/wtheta/wtheta`` for computing :math:`\\omega(\theta)` from
     the pair counts returned.
 
     Parameters
@@ -39,7 +39,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     autocorr: boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
         then the second set of particle positions are not required.
-    
+
     nthreads: integer
        Number of threads to use.
 
@@ -106,13 +106,13 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
-    
+
     output_thetaavg: boolean (default false)
        Boolean flag to output the average ``\theta`` for each bin. Code will
        run slower if you set this flag. Also, note, if you are calculating
        in single-precision, ``thetaavg`` will suffer from numerical loss of
-       precision and can not be trusted. If you need accurate ``ravg``
-       values, then pass in double precision arrays for ``XYZ``.
+       precision and can not be trusted. If you need accurate ``thetaavg``
+       values, then pass in double precision arrays for ``RA/DEC``.
 
        **NOTE** Code will run significantly slower if you enable this option.
        Use ``fast_acos`` if you can tolerate some loss of precision.
@@ -127,9 +127,9 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        to implement faster (and less accurate) functions, particularly relevant
        if you know your ``theta`` range is limited. If you implement a new
        version, then you will have to reinstall the entire Corrfunc package.
-       
+
        Note that tests will fail if you run the tests with``fast_acos=True``.
-       
+
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
@@ -137,38 +137,43 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     isa: string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
-    
+
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,
        ``avx`` and ``avx`` is not available on the computer, then the code will
        revert to using ``fallback`` (even though ``sse42`` might be available).
-       
+
        Unless you are benchmarking the different instruction sets, you should
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
+
     Returns
     --------
 
     results: Numpy structured array
 
-       A numpy structured array containing [rmin, rmax, ravg, xi, npairs] for
-       each radial specified in the ``binfile``. If ``output_ravg`` is not
-       set then ``ravg`` will be set to 0.0 for all bins. ``xi`` contains the
-       projected correlation function while ``npairs`` contains the number of
-       unique pairs in that bin.
+       A numpy structured array containing [thetamin, thetamaxax, thetaavg,
+       npairs] for each angular bin specified in the ``binfile``. If
+       ``output_thetaavg`` is not set then ``thetavg`` will be set to 0.0 for
+       all bins. ``npairs`` contains the number of pairs in that bin.
+
+       if ``c_api_timer`` is set, then the return value is a tuple containing
+       (results, api_time). ``api_time`` measures only the time spent within
+       the C library and ignores all python overhead.
 
     Example
     --------
-    
+
+    >>> from __future__ import print_function
     >>> import numpy as np
     >>> import time
     >>> from math import pi
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
+    >>> from Corrfunc.mocks.DDtheta_mocks import DDtheta_mocks
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                  "../xi_mocks/tests/", "angular_bins")
+    ...                 "../mocks/tests/", "angular_bins")
     >>> N = 100000
     >>> nthreads = 4
     >>> seed = 42
@@ -178,8 +183,31 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     >>> DEC = 90.0 - np.arccos(cos_theta)*180.0/pi
     >>> autocorr = 1
     >>> results = DDtheta_mocks(autocorr, nthreads, binfile,
-                                RA, DEC,
-                                verbose=True)
+    ...                         RA, DEC)
+    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d}".
+    ...                         format(r['thetamin'], r['thetamax'],
+    ...                         r['thetaavg'], r['npairs']))
+    ...                         # doctest: +NORMALIZE_WHITESPACE
+    0.010000   0.014125   0.000000         62
+    0.014125   0.019953   0.000000        172
+    0.019953   0.028184   0.000000        298
+    0.028184   0.039811   0.000000        598
+    0.039811   0.056234   0.000000       1164
+    0.056234   0.079433   0.000000       2438
+    0.079433   0.112202   0.000000       4658
+    0.112202   0.158489   0.000000       9414
+    0.158489   0.223872   0.000000      19098
+    0.223872   0.316228   0.000000      37848
+    0.316228   0.446684   0.000000      75520
+    0.446684   0.630957   0.000000     150934
+    0.630957   0.891251   0.000000     301840
+    0.891251   1.258925   0.000000     599866
+    1.258925   1.778279   0.000000    1200122
+    1.778279   2.511886   0.000000    2395808
+    2.511886   3.548134   0.000000    4773238
+    3.548134   5.011872   0.000000    9525106
+    5.011872   7.079458   0.000000   18972498
+    7.079458  10.000000   0.000000   37727488
 
     """
 
@@ -195,7 +223,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins
     from future.utils import bytes_to_native_str
-    
+
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
             msg = "Must pass valid arrays for RA2/DEC2 for "\
@@ -211,7 +239,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     if link_in_ra is True:
         link_in_dec = True
-        
+
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
@@ -224,7 +252,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
                                                 c_api_timer=c_api_timer,
                                                 fast_acos=fast_acos,
                                                 isa=integer_isa)
-        
+
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -232,15 +260,15 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     if delete_after_use:
         import os
         os.remove(rbinfile)
-    
+
     results_dtype = np.dtype([(bytes_to_native_str(b'thetamin'), np.float),
                               (bytes_to_native_str(b'thetamax'), np.float),
                               (bytes_to_native_str(b'thetaavg'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64)])
-    
+
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
-    
+
     for ii, r in enumerate(extn_results):
         results['thetamin'][ii] = r[0]
         results['thetamax'][ii] = r[1]
@@ -262,18 +290,18 @@ if __name__ == '__main__':
     print("\nRunning angular correlation function w(theta)")
 
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_mocks/tests/", "angular_bins")
-    
+                    "../mocks/tests/", "angular_bins")
+
     N = 100000
     nthreads = 4
     t0 = time.time()
     seed = 42
     np.random.seed(seed)
-    
+
     # Faster way of generating random RA's and DEC's
-    RA = np.random.uniform(0.0, 2.0*pi, N)*180.0/pi
+    RA = np.random.uniform(0.0, 2.0 * pi, N) * 180.0 / pi
     cos_theta = np.random.uniform(-1.0, 1.0, N)
-    DEC = 90.0 - np.arccos(cos_theta)*180.0/pi
+    DEC = 90.0 - np.arccos(cos_theta) * 180.0 / pi
 
     autocorr = 1
     results, api_time = DDtheta_mocks(autocorr, nthreads, binfile,
@@ -285,7 +313,6 @@ if __name__ == '__main__':
     t1 = time.time()
     print("Results from DDtheta_mocks (Npts = {0}): API time = {1:0.3f} sec "
           "python overhead = {2:0.3f} sec".format(N, api_time,
-                                                  (t1-t0) - api_time))
+                                                  (t1 - t0) - api_time))
     for r in results:
         print("{0}".format(r))
-
