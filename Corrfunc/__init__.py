@@ -8,18 +8,12 @@ points.
 
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
-import sys
 import os
 
-__all__ = ["_countpairs", "_countpairs_mocks", "utils", "io",
-           "theory", "mocks", "tests"]
-
-# from Corrfunc import * throws: TypeError: Item in ``from list'' not a string
-# following the accepted answer in:
-# http://stackoverflow.com/questions/19913653/no-unicode-in-all-
-# for-a-packages-init
-if sys.version_info[0] < 3:
-    __all__ = [n.encode('ascii') for n in __all__]
+from .theory import *
+from .mocks import *
+from . import io
+from . import utils
 
 __version__ = "2.0.0"
 __author__ = "Manodeep Sinha <manodeep@gmail.com>"

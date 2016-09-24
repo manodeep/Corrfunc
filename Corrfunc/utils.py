@@ -289,7 +289,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                                        nrpbins)
         raise ValueError(msg)
 
-    for i in xrange(nrpbins):
+    for i in range(nrpbins):
         wp[i] = 2.0 * dpi * np.sum(xirppi[i * npibins:(i + 1) * npibins])
 
     return wp
@@ -342,7 +342,7 @@ def return_file_with_rbins(rbins):
         import tempfile
         rbins = sorted(rbins)
         with tempfile.NamedTemporaryFile(delete=False) as f:
-            for i in xrange(len(rbins) - 1):
+            for i in range(len(rbins) - 1):
                 f.write("{0} {1}\n".format(rbins[i], rbins[i + 1]))
 
             tmpfilename = f.name
