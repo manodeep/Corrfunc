@@ -209,7 +209,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         if numpN == 1:
             results['pN'] = r[1]
         else:
-            for j in xrange(numpN):
+            for j in range(numpN):
                 results['pN'][ii][j] = r[1 + j]
 
     if not c_api_timer:

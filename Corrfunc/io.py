@@ -6,21 +6,17 @@ Routines to read galaxy catalogs from disk.
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-import sys
+
 from os.path import dirname, abspath, splitext, exists as file_exists,\
     join as pjoin
 import numpy as np
+
 try:
     from future.utils import bytes_to_native_str
 except ImportError:
     print("\n\tPlease run python setup.py install before using "
           "the 'Corrfunc' package\n")
     raise
-
-
-__all__ = ['read_catalog', 'read_fastfood_catalog', 'read_ascii_catalog', ]
-if sys.version_info[0] < 3:
-    __all__ = [n.encode('ascii') for n in __all__]
 
 
 def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
@@ -182,11 +178,13 @@ def read_ascii_catalog(filename, return_dtype=None):
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
     >>> from Corrfunc.io import read_ascii_catalog
-    >>> filename = pjoin(dirname(abspath(Corrfunc.__file__)), "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.dat")
+    >>> filename = pjoin(dirname(abspath(Corrfunc.__file__)),
+    ...                 "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.dat")
     >>> ra, dec, cz = read_ascii_catalog(filename)
     >>> N = 20
     >>> for r,d,c in zip(ra[0:N], dec[0:N], cz[0:]):
-    ...     print("{0:10.5f} {1:10.5f} {2:10.5f}".format(r, d, c)) # doctest: +NORMALIZE_WHITESPACE
+    ...     print("{0:10.5f} {1:10.5f} {2:10.5f}".format(r, d, c))
+    ...     # doctest: +NORMALIZE_WHITESPACE
     178.45087   67.01112 19905.28514
     178.83495   67.72519 19824.02285
     179.50132   67.67628 19831.21553
@@ -295,4 +293,4 @@ def read_catalog(filebase=None):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testmod()
+    doctest.testmod(verbose=True)
