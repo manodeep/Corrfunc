@@ -52,8 +52,11 @@ celna celan clena: clean
 clean:
 	rm -rf $(BUILDDIR)/*
 
+.PHONY: generate-api
+generate-api: source/apidoc.sh
+	bash $<
 .PHONY: html
-html:
+html: generate-api
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."

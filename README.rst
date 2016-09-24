@@ -1,4 +1,4 @@
-|Release| |MIT licensed| |DOI| |Travis Build| |Issues| |Coverity| |RTD|
+|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |Coverity| |RTD|
 
 Description
 ===========
@@ -13,7 +13,7 @@ documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
 Why Should You Use it
 ======================
 
-1. **Fast** All theory pair-counting is at least **2x** faster than all existing public codes. Particularly suited for MCMC. 
+1. **Fast** Theory pair-counting is **7x** faster than ``SciPy cKDTree``, and at least **2x** faster than all existing public codes.
 2. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
 3. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
 4. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
@@ -96,7 +96,7 @@ Clustering Measures on a Cosmological box
 -----------------------------------------
 
 All codes that work on cosmological boxes with co-moving positions are
-located in the ``xi_theory`` directory. The various clustering measures
+located in the ``theory`` directory. The various clustering measures
 are:
 
 1. ``xi_of_r`` -- Measures auto/cross-correlations between two boxes.
@@ -117,7 +117,7 @@ Clustering measures on a Mock
 -----------------------------
 
 All codes that work on mock catalogs (RA, DEC, CZ) are located in the
-``xi_mocks`` directory. The various clustering measures are:
+``mocks`` directory. The various clustering measures are:
 
 1. ``DDrppi`` -- The standard auto/cross correlation between two data
    sets. The outputs, DD, DR and RR can be combined using ``wprp`` to
@@ -219,15 +219,15 @@ what you want. If not, edit those two files (and possibly
 executables in each individual subdirectory corresponding to the
 clustering measure you are interested in. For example, if you want to
 compute the full 3-D correlation function, ``\xi(r)``, then navigate to
-``xi_theory/xi`` and run the executable ``xi``. If you run executables
+``theory/xi`` and run the executable ``xi``. If you run executables
 without any arguments, the message will you tell you all the required
 arguments.
 
 Calling from C
 --------------
 
-Look under the ``xi_theory/examples/run_correlations.c`` and
-``xi_mocks/examples/run_correlations_mocks.c`` to see examples of
+Look under the ``theory/examples/run_correlations.c`` and
+``mocks/examples/run_correlations_mocks.c`` to see examples of
 calling the C API directly. If you run the executables,
 ``run_correlations`` and ``run_correlations_mocks``, the output will
 also show how to call the command-line interface for the various
@@ -247,7 +247,7 @@ use the C extensions directly. Here are a few examples:
     import os.path as path
     import numpy as np
     import Corrfunc
-    from Corrfunc._countpairs import countpairs_wp as wp
+    from Corrfunc.theory import wp
 
     # Setup the problem for wp
     boxsize = 500.0
@@ -263,19 +263,22 @@ use the C extensions directly. Here are a few examples:
     y *= boxsize
     z *= boxsize
 
-    # Use a file with histogram bins, containing Nbins pairs of (rmin rmax)
-    binfile = path.join(path.dirname(path.abspath(Corrfunc.__file__)), "../xi_theory/tests/", "bins")
+    # Setup the bins
+    rmin = 0.1
+    rmax = 20.0
+    nbins = 20
+    
+    # Create the bins
+    rbins = np.logspace(np.log10(0.1), np.log10(rmax), nbins)
 
     # Call wp
-    wp_results = wp(boxsize, pimax, nthreads, binfile, x, y, z)
+    wp_results = wp(boxsize, pimax, nthreads, rbins, x, y, z, verbose=True, output_rpavg=True)
 
     # Print the results
-    print("###########################################")
-    print("##   rmin       rmax        wp       npairs")
-    print("###########################################")
-    for wp in wp_results:
-        print("{0:10.4f} {1:10.4f} {2:12.6f} {3:8d}"
-              .format(wp[0], wp[1], wp[3], wp[4]))
+    print("#############################################################################")
+    print("##       rmin           rmax            rpavg             wp            npairs")
+    print("#############################################################################")
+    print(wp_results)
                                                         
 
 Common Code options for both Mocks and Cosmological Boxes
@@ -346,6 +349,10 @@ Project URL
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
    :alt: Latest Release
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/Corrfunc.svg
+   :target: https://pypi.python.org/pypi/Corrfunc
+   :alt: PyPI Release
 .. |MIT licensed| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE
    :alt: MIT License

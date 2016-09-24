@@ -9,16 +9,20 @@ statistics. The codes are divided conceptually into two different segments:
 
 * theory - calculates clustering statistics on **simulation** volumes. Input
   positions are expected to be Cartesian X/Y/Z. Periodic boundary conditions
-  are supported. Relevant C codes are in directory ``xi_theory/``
+  are supported. Relevant C codes are in directory ``theory/``
   
 * mocks - calculates clustering statistics on **observation** volumes. Input
   positions are assumed to be in obverser frame, ``Right Ascension``, ``Declination``
   and ``SpeedofLight*Redshift`` (where required; :math:`\omega(\theta)`
-  only needs ``RA`` and ``DEC``). Relevant C codes are in directory ``xi_mocks/``
+  only needs ``RA`` and ``DEC``). Relevant C codes are in directory ``mocks/``
 
 This getting-started guide assumes you have already followed the
 :ref:`step_by_step_install` section of the documentation to get the package 
 and its dependencies set up on your machine. 
+
+If you want to compute correlation functions and have installed the python
+extensions, then see :ref:`function_usage_examples` for typical
+tasks. Otherwise, read on for the various interfaces available within Corrfunc.
 
 
 Computing Clustering Statistics with Corrfunc
@@ -42,7 +46,7 @@ Corrfunc supports three separate mechanisms to compute the clustering statistics
   Pros: Fully flexible API to modulate code behaviour at runtime. All features supported by the python extensions are also supported here. 
 
   Cons: Requires coding in C. See example C codes invoking the ``theory`` and
-  ``mocks`` in the directories: ``xi_theory/examples/run_correlations.c`` and ``xi_mocks/examples/run_correlations_mocks.c``.
+  ``mocks`` in the directories: ``theory/examples/run_correlations.c`` and ``mocks/examples/run_correlations_mocks.c``.
 
   See :ref:`staticlibrary-interface` for details on how to use the static library interface.
   

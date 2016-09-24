@@ -7,6 +7,9 @@
 */
 
 #include "set_cosmology.h"
+#include "cosmology_params.h"
+#include "set_cosmo_dist.h"
+#include "macros.h"
 
 #include<math.h>
 #include<gsl/gsl_integration.h>
@@ -25,7 +28,7 @@ double get_age(const double z)
     F.function = &agefunc;
     F.params = &dummy;
     gsl_integration_qags (&F, z, RECOMBINATION_REDSHIFT, 0, 1e-7,NWORKSPACE,w,&result, &error);
-    result *=  9.77813/PARAMS.COSMO->h100;
+    result *=  9.77813/LITTLE_H;
 
     result += AGE_AT_RECOMBINATION;
 
@@ -35,11 +38,12 @@ double get_age(const double z)
 
 double agefunc(double z,void *params)
 {
+    (void) params;
     return 1.0/(epeebles(z)*(1.0+z));
 }
 
 
-double get_comoving_distance(const double z)
+double get_comoving_distance(const double zlow, const double z)
 {
     const int NWORKSPACE=1000;
     gsl_integration_workspace *w = gsl_integration_workspace_alloc(NWORKSPACE);
@@ -47,22 +51,25 @@ double get_comoving_distance(const double z)
     double dummy=0.0;
     double result=0.0,error=0.0;
 
-    if(comoving_distance_func(0.0) < 0) {
+    if(comoving_distance_func(0.0, NULL) < 0) {
         return -1.0;
     }
     
     F.function = &comoving_distance_func;
     F.params = &dummy;
-    gsl_integration_qags (&F, 0.0, z, 0, 1e-7,NWORKSPACE,w,&result, &error);
+    gsl_integration_qag (&F, zlow, z, 0, 1e-7, GSL_INTEG_GAUSS51, NWORKSPACE,w,&result, &error);
 
     gsl_integration_workspace_free (w);
-    return result;
+    const double smallh=1.0;
+    const double Dh = SPEED_OF_LIGHT*0.01/smallh ;// c/(100) -> in units of little h^-1 Mpc
+    return Dh*result;
 }
 
 
 double comoving_distance_func(const double z, void *params)
 {
-    return epeebles(z);
+    (void) params;
+    return 1.0/epeebles(z);
 }
 
 
@@ -74,6 +81,7 @@ double epeebles(const double z)
                 "initialize cosmology by calling the function `init_cosmology' in cosmology_params.c\n");
         return -1.0;
     }
-    double ez = sqrt(OMEGA_M*(1.0+z)*(1.0+z)*(1.0+z) + Omegak *(1+z) +  OMEGA_L);
+    const double Omegak = 1.0 - OMEGA_M - OMEGA_L;
+    const double ez = sqrt(OMEGA_M*(1.0+z)*(1.0+z)*(1.0+z) + Omegak *(1+z) +  OMEGA_L);
     return ez;
 }

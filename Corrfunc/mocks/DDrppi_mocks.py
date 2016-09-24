@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``xi_mocks/DDrppi``. This python wrapper is in `~Corrfunc.mocks.DDrppi_mocks`
+``mocks/DDrppi``. This python wrapper is in `~Corrfunc.mocks.DDrppi_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -34,9 +34,9 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\xi(r_p, \pi)`. See the
-    ``xi_mocks/DDrppi/wprp_mocks.c`` for computing :math:`wp(r_p)` from
+    ``mocks/DDrppi/wprp_mocks.c`` for computing :math:`wp(r_p)` from
     the pair counts returned.
-     
+
     Parameters
     -----------
 
@@ -50,10 +50,10 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         easiest way is to convert the ``CZ`` values into co-moving distance,
         based on your preferred cosmology. Set ``is_comoving_dist=True``, to
         indicate that the co-moving distance conversion has already been done.
-    
+
         Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75
                  2 -> Planck   cosmology. Om=0.302, Ol=0.698
-     
+
         To setup a new cosmology, add an entry to the function,
         ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
         the entire package.
@@ -130,7 +130,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
         If is_comoving_dist is set, then ``CZ2`` is interpreted as the
         co-moving distance, rather than `cz`.
-        
+
         Must be of same precision type as RA1/DEC1/CZ1.
 
     is_comoving_dist: boolean (default false)
@@ -161,28 +161,28 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     isa: string (default ``fastest``)
         Controls the runtime dispatch for the instruction set to use. Possible
         options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
-    
+
         Setting isa to ``fastest`` will pick the fastest available instruction
         set on the current computer. However, if you set ``isa`` to, say,
         ``avx`` and ``avx`` is not available on the computer, then the code
         will revert to using ``fallback`` (even though ``sse42`` might be
         available).
-       
+
         Unless you are benchmarking the different instruction sets, you should
         always leave ``isa`` to the default value. And if you *are*
         benchmarking, then the string supplied here gets translated into an
         ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
+
     Returns
     --------
 
     results: Numpy structured array
 
-       A numpy structured array containing [rmin, rmax, ravg, pimax, npairs]
+       A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs]
        for each radial bin specified in the ``binfile``. If ``output_ravg`` is
-       not set, then ``ravg`` will be set to 0.0 for all bins. ``npairs``
+       not set, then ``rpavg`` will be set to 0.0 for all bins. ``npairs``
        contains the number of pairs in that bin and can be used to compute the
-       actual :math:`\\xi(r_p, \pi)` or :math:`\\wp(r_p)` by combining with
+       actual :math:`\\xi(r_p, \pi)` or :math:`wp(rp)` by combining with
        (DR, RR) counts.
 
        if ``c_api_timer`` is set, then the return value is a tuple containing
@@ -192,14 +192,18 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     Example
     --------
 
-    >>> import Corrfunc
-    >>> from Corrfunc.mocks import DDrppi_mocks
-    >>> import math
+    >>> from __future__ import print_function
+    >>> import numpy as np
     >>> from os.path import dirname, abspath, join as pjoin
+    >>> import Corrfunc
+    >>> from Corrfunc.mocks.DDrppi_mocks import DDrppi_mocks
+    >>> import math
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../xi_theory/tests/", "bins")
+    ...                 "../mocks/tests/", "bins")
     >>> N = 100000
     >>> boxsize = 420.0
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
     >>> Y = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
     >>> Z = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
@@ -215,12 +219,53 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     >>> nthreads = 2
     >>> pimax = 40.0
     >>> results = DDrppi_mocks(autocorr, cosmology, nthreads,
-                               pimax, binfile,
-                               RA, DEC, CZ,
-                               fast_divide=False,
-                               verbose=False,
-                               is_comoving_dist=True,
-                               output_rpavg=True)
+    ...                        pimax, binfile, RA, DEC, CZ,
+    ...                        output_rpavg=True, is_comoving_dist=True)
+    >>> for r in results[519:]: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.1f}"
+    ...                               " {4:10d}".format(r['rmin'], r['rmax'],
+    ...                               r['rpavg'], r['pimax'], r['npairs']))
+    ...                         # doctest: +NORMALIZE_WHITESPACE
+    11.359969  16.852277  14.285169       40.0     104850
+    16.852277  25.000000  21.181246        1.0     274144
+    16.852277  25.000000  21.190844        2.0     272876
+    16.852277  25.000000  21.183321        3.0     272294
+    16.852277  25.000000  21.188486        4.0     272506
+    16.852277  25.000000  21.170832        5.0     272100
+    16.852277  25.000000  21.165379        6.0     271788
+    16.852277  25.000000  21.175246        7.0     270040
+    16.852277  25.000000  21.187417        8.0     269492
+    16.852277  25.000000  21.172066        9.0     269682
+    16.852277  25.000000  21.182460       10.0     268266
+    16.852277  25.000000  21.170594       11.0     268744
+    16.852277  25.000000  21.178608       12.0     266820
+    16.852277  25.000000  21.187184       13.0     266510
+    16.852277  25.000000  21.184937       14.0     265484
+    16.852277  25.000000  21.180184       15.0     265258
+    16.852277  25.000000  21.191504       16.0     262952
+    16.852277  25.000000  21.187746       17.0     262602
+    16.852277  25.000000  21.189778       18.0     260206
+    16.852277  25.000000  21.188882       19.0     259410
+    16.852277  25.000000  21.185684       20.0     256806
+    16.852277  25.000000  21.194036       21.0     255574
+    16.852277  25.000000  21.184115       22.0     255406
+    16.852277  25.000000  21.178255       23.0     252394
+    16.852277  25.000000  21.184644       24.0     252220
+    16.852277  25.000000  21.187020       25.0     251668
+    16.852277  25.000000  21.183827       26.0     249648
+    16.852277  25.000000  21.183121       27.0     247160
+    16.852277  25.000000  21.180872       28.0     246238
+    16.852277  25.000000  21.185251       29.0     246030
+    16.852277  25.000000  21.183488       30.0     242124
+    16.852277  25.000000  21.194538       31.0     242426
+    16.852277  25.000000  21.190702       32.0     239778
+    16.852277  25.000000  21.188985       33.0     239046
+    16.852277  25.000000  21.187092       34.0     237640
+    16.852277  25.000000  21.185515       35.0     236256
+    16.852277  25.000000  21.190278       36.0     233536
+    16.852277  25.000000  21.183240       37.0     233274
+    16.852277  25.000000  21.183796       38.0     231628
+    16.852277  25.000000  21.200668       39.0     230378
+    16.852277  25.000000  21.181153       40.0     229006
 
     """
     try:
@@ -235,7 +280,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins
     from future.utils import bytes_to_native_str
-    
+
     if autocorr == 0:
         if RA2 is None or DEC2 is None or CZ2 is None:
             msg = "Must pass valid arrays for RA2/DEC2/CZ2 for "\
@@ -275,7 +320,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                               (bytes_to_native_str(b'rpavg'), np.float),
                               (bytes_to_native_str(b'pimax'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64)])
-    
+
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
     for ii, r in enumerate(extn_results):
@@ -297,17 +342,17 @@ if __name__ == '__main__':
 
     print("\nRunning 2-D correlation function for mocks DD(rp,pi)")
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../xi_theory/tests/", "bins")
-    
+                    "../mocks/tests/", "bins")
+
     N = 100000
     boxsize = 420.0
-    X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    Y = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    Z = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
-    
+    X = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+    Y = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+    Z = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
+
     # Convert XYZ into RA/DEC/CZ
-    CZ = np.sqrt(X*X + Y*Y + Z*Z)
-    inv_cz = 1.0/CZ
+    CZ = np.sqrt(X * X + Y * Y + Z * Z)
+    inv_cz = 1.0 / CZ
 
     # Convert to unit sphere
     X *= inv_cz
@@ -315,8 +360,8 @@ if __name__ == '__main__':
     Z *= inv_cz
 
     import math
-    DEC = 90.0 - np.arccos(Z)*180.0/math.pi
-    RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0
+    DEC = 90.0 - np.arccos(Z) * 180.0 / math.pi
+    RA = (np.arctan2(Y, X) * 180.0 / math.pi) + 180.0
 
     autocorr = 1
     cosmology = 1
@@ -335,7 +380,6 @@ if __name__ == '__main__':
                                      output_rpavg=True)
     t1 = time.time()
     print("Results from DDrppi_mocks: Time taken = {0:0.3f} sec "
-          "Python time = {0:0.3f} sec".format(api_time, t1-t0))
+          "Python time = {0:0.3f} sec".format(api_time, t1 - t0))
     for r in results[0:10]:
         print("{0}".format(r))
-

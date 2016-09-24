@@ -1,22 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+Corrfunc is a set of high-performance routines for
+computing clustering statistics on a distribution of
+points.
+"""
 
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
-import sys
 import os
 
-__all__ = ["_countpairs", "_countpairs_mocks", "utils", "theory", "mocks",
-           "tests"]
-
-# from Corrfunc import * throws: TypeError: Item in ``from list'' not a string
-# following the accepted answer in:
-# http://stackoverflow.com/questions/19913653/no-unicode-in-all-
-# for-a-packages-init
-if sys.version_info[0] < 3:
-    __all__ = [n.encode('ascii') for n in __all__]
-
 __version__ = "2.0.0"
+__author__ = "Manodeep Sinha <manodeep@gmail.com>"
+
+
+try:
+        __CORRFUNC_SETUP__
+except NameError:
+    __CORRFUNC_SETUP__ = False
+
+if not __CORRFUNC_SETUP__:
+    from .theory import *
+    from .mocks import *
+    from .io import *
+    from .utils import *
 
 
 def read_text_file(filename, encoding="utf-8"):
@@ -45,7 +52,7 @@ def write_text_file(filename, contents, encoding="utf-8"):
     try:
         with open(filename, 'w', encoding) as f:
             f.write(contents)
-            
+
     except TypeError:
         with open(filename, 'w') as f:
             f.write(contents)
@@ -57,7 +64,7 @@ def which(program, mode=os.F_OK | os.X_OK, path=None):
     For python3.3+, shutil.which provides all of the required functionality.
     An implementation is provided in case shutil.which does
     not exist.
-    
+
     :param program: (required) string
            Name of program (can be fully-qualified path as well)
     :param mode: (optional) integer flag bits
@@ -78,7 +85,7 @@ def which(program, mode=os.F_OK | os.X_OK, path=None):
     except ImportError:
         def is_exe(fpath):
             return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-        
+
         fpath, fname = os.path.split(program)
         if fpath:
             if is_exe(program):
@@ -88,12 +95,12 @@ def which(program, mode=os.F_OK | os.X_OK, path=None):
                 path = os.environ.get("PATH", os.defpath)
             if not path:
                 return None
-            
+
             path = path.split(os.pathsep)
             for pathdir in path:
                 pathdir = pathdir.strip('"')
                 exe_file = os.path.join(pathdir, program)
                 if is_exe(exe_file):
                     return exe_file
-                
+
         return None

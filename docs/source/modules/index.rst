@@ -1,40 +1,13 @@
-
 .. _function_usage_examples:
 
-**********************************
-Detailed help for typical usecases
-**********************************
+**************************************************
+Typical Tasks for Computing Correlation Functions
+**************************************************
 
 Here we present docstrings of the most commonly used functions and classes
 grouped together by functionality.
 Many docstrings contain example code to demonstrate basic usage.
-For documentation of functions not listed here, see :ref:`complete_reference_api`.
-
-
-Clustering statistics on a Simulation 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. toctree::
-   :maxdepth: 1
-
-   theory_functions
-
-Clustering statistics For Mocks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. toctree::
-   :maxdepth: 1
-
-   mock_functions
-
-
-Utilities
-~~~~~~~~~
-
-.. toctree::
-   :maxdepth: 1
-
-   utilities
+For documentation of functions not listed here, see :py:mod:`Corrfunc`.
 
 Reading input data
 ~~~~~~~~~~~~~~~~~~
@@ -53,3 +26,24 @@ Creating a file with bins for the clustering statistics
    generate_bins
 
 
+Calculating Correlation Functions on Simulations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. toctree::
+   :maxdepth: 1
+
+   converting_3d_counts
+   converting_rp_pi_counts
+   computing_wp_and_xi
+   theory_functions   
+
+Calculating Correlation Functions on Mock Catalogs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. toctree::
+   :maxdepth: 1
+
+   converting_rp_pi_mocks
+   converting_ddtheta_mocks
+   mock_functions
+                       

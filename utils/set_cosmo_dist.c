@@ -12,7 +12,11 @@
    a given cosmological model.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <gsl/gsl_integration.h>
+
 #include "set_cosmo_dist.h"
 #include "cosmology_params.h"
 
@@ -27,7 +31,7 @@ int set_cosmo_dist(const double zmax,const int max_size,double *zc,double *dc,co
     if(status != EXIT_SUCCESS) {
         return -1;
     }
-
+    
     int i = 0;
     double Omegak;
     double dz,z,Deltaz,z2;
@@ -37,20 +41,14 @@ int set_cosmo_dist(const double zmax,const int max_size,double *zc,double *dc,co
     Omegak = 1.0 - OMEGA_M - OMEGA_L;
     Dh = SPEED_OF_LIGHT*0.01/smallh ;// c/(100) -> in units of little h^-1 Mpc
 
-    dz = 0.000001 ;
-    Deltaz = 0.0001 ;
+    Deltaz = 1.0/max_size;
+    dz = 1e-2*Deltaz;
 
     Eint=0. ;
     E2=1. ;
     z2=Deltaz ;
     for(z=2.*dz;z<zmax;z+=2.*dz) {
         E0 = E2 ;
-        /* one_plus_z = 1+z; */
-        /* one_plus_z_minus_dz = one_plus_z - dz; */
-        /* one_plus_z_sqr = SQR(one_plus_z); */
-        /* one_plus_z_minus_dz_sqr = SQR(one_plus_z_minus_dz); */
-        /* E1 = 1./sqrt(OMEGA_M*one_plus_z_minus_dz_sqr*one_plus_z_minus_dz + Omegak*one_plus_z_minus_dz_sqr + OMEGA_L) ; */
-        /* E2 = 1./sqrt(OMEGA_M*one_plus_z_sqr*one_plus_z + Omegak*one_plus_z_sqr + OMEGA_L) ; */
 
         E1 = 1.0/sqrt(OMEGA_M * CUBE(1+z-dz) + Omegak *(1+z-dz) + OMEGA_L);
         E2 = 1.0/sqrt(OMEGA_M * CUBE(1+z) + Omegak *(1+z) + OMEGA_L);

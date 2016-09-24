@@ -22,19 +22,23 @@ smallest bin can start from 0.0.
   the second column should be the high-edge
   of the bin. Like so:
 
-  |  **0.10     0.15**
+::
+   
+    0.10     0.15
 
 * Now add as many such lines as the number of bins you
   want. Here is a valid example:
-  
-  |  **0.10     0.15**
-  |  **0.20     0.50**
-  |  **0.50     5.00**
 
-  This example specifies 3 bins, with the individual
-  bin limits specified on each line. Notice that the
-  bins need not be continuous, and the width of each
-  bin can be independently specified.
+::
+  
+     0.10     0.15
+     0.20     0.50
+     0.50     5.00
+
+This example specifies 3 bins, with the individual
+bin limits specified on each line. Notice that the
+bins need not be continuous, and the width of each
+bin can be independently specified.
   
 **NOTE** Make sure that the bins are in increasing
 order -- smallest bin first, then the next smallest

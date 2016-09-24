@@ -16,7 +16,8 @@ DD
 build*
 dist*
 *egg*
-*_mocks*
+*_mocks
+*.pro
 logbins
 vpf
 wp

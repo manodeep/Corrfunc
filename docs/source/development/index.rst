@@ -16,6 +16,6 @@ contribute to the Corrfunc code base.
    contributors
    bug_reports
    staying_up_to_date
-
+   contributing
 
 

@@ -1,35 +1,322 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+A set of utility routines
+"""
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import sys
-try:
-    from future.utils import bytes_to_native_str
-except ImportError:
-    print("\n\tPlease run python setup.py install before using "
-          "the 'Corrfunc' package\n")
-    raise
+from os.path import exists as file_exists
 
-from os.path import dirname, abspath, splitext, exists as file_exists,\
-    join as pjoin
-
-__all__ = ['translate_isa_string_to_enum', 'read_text_file', 'read_catalog',
-           'return_file_with_rbins', 'fix_ra_dec', 'fix_cz']
+__all__ = ['convert_3d_counts_to_cf', 'convert_rp_pi_counts_to_wp',
+           'translate_isa_string_to_enum', 'return_file_with_rbins',
+           'fix_ra_dec', 'fix_cz', ]
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
+
+
+def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
+                            D1D2, D1R2, D2R1, R1R2,
+                            estimator='LS'):
+    """
+    Converts raw pair counts to a correlation function.
+
+    Parameters
+    ----------
+
+    ND1 : integer
+       Number of points in the first dataset
+
+    ND2 : integer
+        Number of points in the second dataset
+
+    NR1 : integer
+        Number of points in the randoms for first dataset
+
+    NR2 : integer
+        Number of points in the randoms for second dataset
+
+    D1D2 : array-like, integer
+        Pair-counts for the cross-correlation between D1 and D2
+
+    D1R2 : array-like, integer
+        Pair-counts for the cross-correlation between D1 and R2
+
+    D2R1 : array-like, integer
+        Pair-counts for the cross-correlation between D2 and R1
+
+    R1R2 : array-like, integer
+        Pair-counts for the cross-correlation between R1 and R2
+
+    For all of these pair-counts arrays, the corresponding ``numpy``
+    struct returned by the theory/mocks modules can also be passed
+
+    estimator: string, default='LS' (Landy-Szalay)
+        The kind of estimator to use for computing the correlation
+        function. Currently, only supports Landy-Szalay
+
+    Returns
+    ---------
+
+    cf : A numpy array
+        The correlation function, calculated using the chosen estimator,
+        is returned
+
+
+    Example
+    --------
+
+    >>> from __future__ import print_function
+    >>> import numpy as np
+    >>> from Corrfunc.theory.DD import DD
+    >>> from Corrfunc.io import read_catalog
+    >>> from Corrfunc.utils import convert_3d_counts_to_cf
+    >>> X, Y, Z = read_catalog()
+    >>> N = len(X)
+    >>> boxsize = 420.0
+    >>> rand_N = 3*N
+    >>> seed = 42
+    >>> np.random.seed(seed)
+    >>> rand_X = np.random.uniform(0, boxsize, rand_N)
+    >>> rand_Y = np.random.uniform(0, boxsize, rand_N)
+    >>> rand_Z = np.random.uniform(0, boxsize, rand_N)
+    >>> nthreads = 2
+    >>> rmin = 0.1
+    >>> rmax = 15.0
+    >>> nbins = 10
+    >>> bins = np.linspace(rmin, rmax, nbins)
+    >>> autocorr = 1
+    >>> DD_counts = DD(autocorr, nthreads, bins, X, Y, Z)
+    >>> autocorr = 0
+    >>> DR_counts = DD(autocorr, nthreads, bins,
+    ...                X, Y, Z,
+    ...                X2=rand_X, Y2=rand_Y, Z2=rand_Z)
+    >>> autocorr = 1
+    >>> RR_counts = DD(autocorr, nthreads, bins, rand_X, rand_Y, rand_Z)
+    >>> cf = convert_3d_counts_to_cf(N, N, rand_N, rand_N,
+    ...                              DD_counts, DR_counts,
+    ...                              DR_counts, RR_counts)
+    >>> for xi in cf: print("{0:10.6f}".format(xi))
+    ...                    # doctest: +NORMALIZE_WHITESPACE
+    18.737938
+    3.007926
+    1.392979
+    0.857290
+    0.590195
+    0.436621
+    0.338937
+    0.265153
+    0.209904
+
+    """
+
+    import numpy as np
+    pair_counts = dict()
+    fields = ['D1D2', 'D1R2', 'D2R1', 'R1R2']
+    arrays = [D1D2, D1R2, D2R1, R1R2]
+    for (field, array) in zip(fields, arrays):
+        try:
+            npairs = array['npairs']
+            pair_counts[field] = npairs
+        except IndexError:
+            pair_counts[field] = array
+
+    nbins = len(pair_counts['D1D2'])
+    if (nbins != len(pair_counts['D1R2'])) or \
+       (nbins != len(pair_counts['D2R1'])) or \
+       (nbins != len(pair_counts['R1R2'])):
+        msg = 'Pair counts must have the same number of elements (same bins)'
+        raise ValueError(msg)
+
+    nonzero = pair_counts['R1R2'] > 0
+    if 'LS' in estimator or 'Landy' in estimator:
+        fN1 = np.float(NR1) / np.float(ND1)
+        fN2 = np.float(NR2) / np.float(ND2)
+        cf = np.zeros(nbins)
+        cf[:] = np.nan
+        cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
+                       fN1 * pair_counts['D1R2'][nonzero] -
+                       fN2 * pair_counts['D2R1'][nonzero] +
+                       pair_counts['R1R2'][nonzero]) / pair_counts['R1R2'][nonzero]
+        if len(cf) != nbins:
+            msg = 'Bug in code. Calculated correlation function does not '\
+                  'have the same number of bins as input arrays. Input bins '\
+                  '={0} bins in (wrong) calculated correlation = {1}'.format(
+                      nbins, len(cf))
+            raise RuntimeError(msg)
+    else:
+        msg = "Only the Landy-Szalay estimator is supported. Pass estimator"\
+              "='LS'. (Got estimator = {0})".format(estimator)
+        raise ValueError(msg)
+
+    return cf
+
+
+def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
+                               D1D2, D1R2, D2R1, R1R2,
+                               nrpbins, dpi=1.0,
+                               estimator='LS'):
+    """
+    Converts raw pair counts to a correlation function.
+
+    Parameters
+    ----------
+
+    ND1 : integer
+       Number of points in the first dataset
+
+    ND2 : integer
+        Number of points in the second dataset
+
+    NR1 : integer
+        Number of points in the randoms for first dataset
+
+    NR2 : integer
+        Number of points in the randoms for second dataset
+
+    D1D2 : array-like, integer
+        Pair-counts for the cross-correlation between D1 and D2
+
+    D1R2 : array-like, integer
+        Pair-counts for the cross-correlation between D1 and R2
+
+    D2R1 : array-like, integer
+        Pair-counts for the cross-correlation between D2 and R1
+
+    R1R2 : array-like, integer
+        Pair-counts for the cross-correlation between R1 and R2
+
+    For all of these pair-counts arrays, the corresponding ``numpy``
+    struct returned by the theory/mocks modules can also be passed
+
+    nrpbins : integer
+        Number of bins in ``rp``
+
+    dpi : float, default=1.0 Mpc/h
+        Binsize in the line of sight direction
+
+    estimator: string, default='LS' (Landy-Szalay)
+        The kind of estimator to use for computing the correlation
+        function. Currently, only supports Landy-Szalay
+
+    Returns
+    ---------
+
+    wp : A numpy array
+        The projected correlation function, calculated using the chosen
+        estimator, is returned
+
+
+    Example
+    --------
+
+    >>> from __future__ import print_function
+    >>> import numpy as np
+    >>> from Corrfunc.theory.DDrppi import DDrppi
+    >>> from Corrfunc.io import read_catalog
+    >>> from Corrfunc.utils import convert_rp_pi_counts_to_wp
+    >>> X, Y, Z = read_catalog()
+    >>> N = len(X)
+    >>> boxsize = 420.0
+    >>> rand_N = 3*N
+    >>> seed = 42
+    >>> np.random.seed(seed)
+    >>> rand_X = np.random.uniform(0, boxsize, rand_N)
+    >>> rand_Y = np.random.uniform(0, boxsize, rand_N)
+    >>> rand_Z = np.random.uniform(0, boxsize, rand_N)
+    >>> nthreads = 4
+    >>> pimax = 40.0
+    >>> nrpbins = 20
+    >>> rpmin = 0.1
+    >>> rpmax = 10.0
+    >>> bins = np.linspace(rpmin, rpmax, nrpbins)
+    >>> autocorr = 1
+    >>> DD_counts = DDrppi(autocorr, nthreads, pimax, bins,
+    ...                    X, Y, Z)
+    >>> autocorr = 0
+    >>> DR_counts = DDrppi(autocorr, nthreads, pimax, bins,
+    ...                    X, Y, Z,
+    ...                    X2=rand_X, Y2=rand_Y, Z2=rand_Z)
+    >>> autocorr = 1
+    >>> RR_counts = DDrppi(autocorr, nthreads, pimax, bins,
+    ...                    rand_X, rand_Y, rand_Z)
+    >>> wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
+    ...                                 DD_counts, DR_counts,
+    ...                                 DR_counts, RR_counts,
+    ...                                 nrpbins)
+    >>> for w in wp: print("{0:10.6f}".format(w))
+    ...                    # doctest: +NORMALIZE_WHITESPACE
+    181.595583
+    79.433954
+    50.906305
+    38.617981
+    32.004716
+    27.873267
+    24.922330
+    22.517251
+    20.609248
+    19.071534
+    17.537370
+    16.129591
+    15.042474
+    13.992861
+    12.963111
+    12.005260
+    11.215819
+    10.598148
+    10.019164
+    9.631157
+
+    """
+    
+    import numpy as np
+    if dpi <= 0.0:
+        msg = 'Binsize along the line of sight (dpi) = {0}'\
+              'must be positive'.format(dpi)
+        raise ValueError(msg)
+
+    xirppi = convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
+                                     D1D2, D1R2, D2R1, R1R2,
+                                     estimator=estimator)
+    wp = np.empty(nrpbins)
+    npibins = len(xirppi) // nrpbins
+    if ((npibins * nrpbins) != len(xirppi)):
+        msg = 'Number of pi bins could not be calculated correctly.'\
+              'Expected to find that the total number of bins = {0}'\
+              'would be the product of the number of pi bins = {1}'\
+              'and the number of rp bins = {2}'.format(len(xirppi),
+                                                       npibins,
+                                                       nrpbins)
+        raise ValueError(msg)
+
+    for i in range(nrpbins):
+        wp[i] = 2.0 * dpi * np.sum(xirppi[i * npibins:(i + 1) * npibins])
+
+    return wp
 
 
 def return_file_with_rbins(rbins):
     """
     Helper function to ensure that the ``binfile`` required by the Corrfunc
-    extensions is a actually a string (expecting that to be a filename).
+    extensions is a actually a string.
 
     Checks if the input is a string and file; return if True. If not, and
     the input is an array, then a temporary file is created and the contents
     of rbins is written out.
-    
-    Returns a filename containing the bins and a flag stating if the file needs
-    to be deleted after use.
+
+    Parameters
+    -----------
+    rbins: string or array-like
+       Expected to be a string or an array containing the bins
+
+    Returns
+    ---------
+    binfile: string, filename
+       If the input ``rbins`` was a valid filename, then returns the same
+       string. If ``rbins`` was an array, then this function creates a
+       temporary file with the contents of the ``rbins`` arrays. This
+       temporary filename is returned
+
     """
 
     is_string = False
@@ -54,9 +341,9 @@ def return_file_with_rbins(rbins):
     if len(rbins) >= 1:
         import tempfile
         rbins = sorted(rbins)
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            for i in xrange(len(rbins)-1):
-                f.write("{0} {1}\n".format(rbins[i], rbins[i+1]))
+        with tempfile.NamedTemporaryFile(delete=False, mode='w') as f:
+            for i in range(len(rbins) - 1):
+                f.write("{0} {1}\n".format(rbins[i], rbins[i + 1]))
 
             tmpfilename = f.name
 
@@ -67,36 +354,74 @@ def return_file_with_rbins(rbins):
           "Num elements = {0}".format(len(rbins))
     raise TypeError(msg)
 
-    
+
 def fix_cz(cz):
     """
     Multiplies the input array by speed of light, if the input values are
-    too small. Essentially, converts redshift into `cz`, if the user passed
+    too small.
+
+    Essentially, converts redshift into `cz`, if the user passed
     redshifts instead of `cz`.
+
+    Parameters
+    -----------
+    cz: array-like, reals
+       An array containing ``[Speed of Light *] redshift`` values.
+
+    Returns
+    ---------
+    cz: array-like
+       Actual ``cz`` values, multiplying the input ``cz`` array by the
+       ``Speed of Light``, if ``redshift`` values were passed as input ``cz``.
+
     """
 
     # if I find that max cz is smaller than this threshold,
     # then I will assume z has been supplied rather than cz
     max_cz_threshold = 10.0
+    try:
+        input_dtype = cz.dtype
+    except:
+        msg = "Input cz array must be a numpy array"
+        raise TypeError(msg)
+
     if max(cz) < max_cz_threshold:
         speed_of_light = 299800.0
         cz *= speed_of_light
 
-    return cz
+    return cz.astype(input_dtype)
 
 
 def fix_ra_dec(ra, dec):
     """
     Wraps input RA and DEC values into range expected by the extensions.
-    
-    RA: In range [0, 360.0]
-    DEC: In range [-90.0, 90.0]
+
+    Parameters
+    ------------
+    RA: array-like, units must be degrees
+       Right Ascension values (astronomical longitude)
+
+    DEC: array-like, units must be degrees
+       Declination values (astronomical latitude)
+
+    Returns
+    --------
+    Tuple (RA, DEC): array-like
+         RA is wrapped into range [0.0, 360.0]
+         Declination is wrapped into range [-90.0, 90.0]
+
     """
+
+    try:
+        input_dtype = ra.dtype
+    except:
+        msg = "Input RA array must be a numpy array"
+        raise TypeError(msg)
 
     if ra is None or dec is None:
         msg = "RA or DEC must be valid arrays"
         raise ValueError(msg)
-    
+
     if min(ra) < 0.0:
         print("Warning: found negative RA values, wrapping into [0.0, 360.0] "
               " range")
@@ -106,25 +431,23 @@ def fix_ra_dec(ra, dec):
         print("Warning: found DEC values more than 90.0; wrapping into "
               "[-90.0, 90.0] range")
         dec += 90.0
-    
+
+    return ra.astype(input_dtype), dec.astype(input_dtype)
+
 
 def translate_isa_string_to_enum(isa):
     """
     Helper function to convert an user-supplied string to the
     underlying enum in the C-API. The extensions only have specific
-    implementations for AVX, SSE42 and FALLBACK. Any other value,
+    implementations for AVX, SSE42 and FALLBACK. Any other value
     will raise a ValueError.
-    
-    The enum definition contains all the valid instruction sets I know
-    of. Here to facilitate easy extension when a new instruction set has
-    been added in.
 
     Parameters
     ------------
     isa: string
        A string containing the desired instruction set. Valid values are
        ['AVX', 'SSE42', 'FALLBACK', 'FASTEST']
-    
+
     Returns
     --------
     instruction_set: integer
@@ -133,7 +456,7 @@ def translate_isa_string_to_enum(isa):
        same way as the enum in ``utils/defs.h``.
 
     """
-    
+
     msg = "Input to translate_isa_string_to_enum must be "\
           "of string type. Found type = {0}".format(type(isa))
     try:
@@ -148,7 +471,7 @@ def translate_isa_string_to_enum(isa):
         msg = "Desired instruction set = {0} is not in the list of valid "\
               "instruction sets = {1}".format(isa, valid_isa)
         raise ValueError(msg)
-    
+
     enums = {'FASTEST': -1,
              'FALLBACK': 0,
              'SSE': 1,
@@ -167,170 +490,8 @@ def translate_isa_string_to_enum(isa):
         print("Do not know instruction type = {0}".format(isa))
         print("Valid instructions are {0}".format(enums.keys()))
         raise
-    
-
-def read_text_file(filename, encoding="utf-8"):
-    """
-    Reads a file under python3 with encoding (default UTF-8).
-    Also works under python2, without encoding.
-    Uses the EAFP (https://docs.python.org/2/glossary.html#term-eafp)
-    principle.
-    """
-    try:
-        with open(filename, 'r', encoding) as f:
-            r = f.read()
-    except TypeError:
-        with open(filename, 'r') as f:
-            r = f.read()
-
-    return r
 
 
-def read_catalog(filebase=None):
-    """
-    Reads a galaxy/randoms catalog and returns 3 XYZ arrays.
-
-    Parameters
-    -----------
-    
-    filebase: string (optional)
-        The fully qualified path to the file. If omitted, reads the
-        theory galaxy catalog under ../xi_theory/tests/data/
-
-    Returns
-    --------
-
-    ``x y z`` - Unpacked numpy arrays compatible with the installed
-    version of ``Corrfunc``.
-
-    **Note** If the filename is omitted, then first the fast-food file
-    is searched for, and then the ascii file. End-users should always
-    supply the full filename.
-    """
-
-    import numpy as np
-
-    def read_ascii(filename, return_dtype=None):
-        if return_dtype is None:
-            msg = 'Return data-type must be set and a valid numpy data-type'
-            raise ValueError(msg)
-
-        # check if pandas is available - much faster to read in the data
-        # using pandas
-        print("Reading in the data...")
-        try:
-            import pandas as pd
-        except ImportError:
-            pd = None
-
-        if pd is not None:
-            df = pd.read_csv(filename, header=None,
-                             engine="c",
-                             dtype={"x": return_dtype,
-                                    "y": return_dtype,
-                                    "z": return_dtype},
-                             delim_whitespace=True)
-            x = np.asarray(df[0], dtype=return_dtype)
-            y = np.asarray(df[1], dtype=return_dtype)
-            z = np.asarray(df[2], dtype=return_dtype)
-
-        else:
-            x, y, z = np.genfromtxt(filename, dtype=return_dtype, unpack=True)
-
-        return x, y, z
-
-    def read_fastfood(filename, return_dtype=np.float, need_header=None):
-        if return_dtype not in [np.float32, np.float]:
-            msg = "Return data-type must be set and a valid numpy float"
-            raise ValueError(msg)
-        
-        import struct
-        with open(filename, "rb") as f:
-            skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-            idat = struct.unpack(bytes_to_native_str(b'@iiiii'),
-                                 f.read(20))[0:5]
-            skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-            assert skip1 == 20 and skip2 == 20,\
-                "fast-food file seems to be incorrect (reading idat)"
-            ngal = idat[1]
-
-            if need_header is not None:
-                # now read fdat
-                skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-                fdat = struct.unpack(bytes_to_native_str(b'@fffffffff'),
-                                     f.read(36))[0:9]
-                skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-                assert skip1 == 36 and skip2 == 36,\
-                    "fast-food file seems to be incorrect (reading fdat )"
-
-                skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-                znow = struct.unpack(bytes_to_native_str(b'@f'), f.read(4))[0]
-                skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-                assert skip1 == 4 and skip2 == 4,\
-                    "fast-food file seems to be incorrect (reading redshift)"
-            else:
-                fdat_bytes = 4 + 36 + 4
-                znow_bytes = 4 + 4 + 4
-                # seek over the fdat + znow fields + padding bytes
-                # from current position
-                f.seek(fdat_bytes + znow_bytes, 1)
-
-            # read the padding bytes for the x-positions
-            skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-            assert skip1 == ngal * 4 or skip1 == ngal * 8, \
-                "fast-food file seems to be corrupt (padding bytes)"
-
-            # seek back 4 bytes from current position
-            f.seek(-4, 1)
-            pos = {}
-            for field in 'xyz':
-                skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-                assert skip1 == ngal * 4 or skip1 == ngal * 8, \
-                    "fast-food file seems to be corrupt (padding bytes a)"
-                # the next division must be the integer division
-                input_dtype = np.float32 if skip1 // ngal == 4 else np.float
-                array = np.fromfile(f, input_dtype, ngal)
-                skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-                if return_dtype == input_dtype:
-                    pos[field] = array
-                else:
-                    pos[field] = [return_dtype(a) for a in array]
-                
-        x = np.array(pos['x'])
-        y = np.array(pos['y'])
-        z = np.array(pos['z'])
-
-        if need_header is not None:
-            return idat, fdat, znow, x, y, z
-        else:
-            return x, y, z
-
-    if filebase is None:
-        filename = pjoin(dirname(abspath(__file__)),
-                         "../xi_theory/tests/data/", "gals_Mr19")
-        dtype = np.float
-        allowed_exts = {'.ff': read_fastfood,
-                        '.txt': read_ascii,
-                        '.dat': read_ascii,
-                        '.csv': read_ascii
-                        }
-
-        for e in allowed_exts:
-            if file_exists(filename + e):
-                f = allowed_exts[e]
-                x, y, z = f(filename + e, dtype)
-                return x, y, z
-
-        raise IOError("Could not locate {0} with any of these extensions \
-        = {1}".format(filename, allowed_exts.keys()))
-    else:
-        # Likely an user-supplied value
-        if file_exists(filebase):
-            extension = splitext(filebase)[1]
-            f = read_fastfood if '.ff' in extension else read_ascii
-
-            # default return is double
-            x, y, z = f(filebase, np.float)
-            return x, y, z
-
-        raise IOError("Could not locate file {0}".format(filebase))
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

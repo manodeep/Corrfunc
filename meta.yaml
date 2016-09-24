@@ -1,42 +1,46 @@
 package:
   name: corrfunc
-  version: "0.2.1"
+  version: "2.0.0"
 
 source:
   path: dist
-  fn: Corrfunc-0.2.1.tar.gz
-  md5: 54e2b777517f074847f11223344a1577
+  fn: Corrfunc-2.0.0.tar.gz
+  md5: 59ad43b044225ce8c87e60f41dda6873
 
-  # fn: Corrfunc-0.2.1.tar.gz
-  # url: https://github.com/manodeep/Corrfunc/archive/0.2.1.tar.gz
-  # md5: 2bd15dac1706cb59b5ddb528cd5c7db2
-
+  
+  # git_url: https://github.com/manodeep/Corrfunc.git
+  # git_rev: master
+  
 requirements:
   build:
-    - python
-    - numpy
-    - setuptools 
+    - python >=2.6
+    - numpy >=1.7
+    - setuptools
+    - future
+    - gsl
 
   run:
-    - python
-    - numpy
+    - python >=2.6
+    - future
+    - numpy >=1.7
+    - gsl
 
 build:
   detect_binary_files_with_prefix: True
-  script: make install && python setup.py install 
+  script: python setup.py install --single-version-externally-managed --record record.txt
   binary_relocation: True
-  skip: True #[win]
+  skip: True # [win]
   
 test:
   files:
-    - xi_theory/tests/data/gals_Mr19.ff
-    - xi_mocks/tests/data/Mr19_mock_northonly.rdcz.dat
+    - theory/tests/data/gals_Mr19.ff
+    - mocks/tests/data/Mr19_mock_northonly.rdcz.dat
     - include/countpairs.h
     - include/countpairs_rp_pi_mocks.h
-    - xi_theory/tests/bins
-    - xi_mocks/tests/bins
-    - xi_mocks/tests/angular_bins
-    - xi_mocks/tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt
+    - theory/tests/bins
+    - mocks/tests/bins
+    - mocks/tests/angular_bins
+    - mocks/tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt
   imports:
     - Corrfunc
     - Corrfunc._countpairs

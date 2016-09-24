@@ -19,15 +19,15 @@ def main():
     import numpy as np
     import time
     import Corrfunc
-    from Corrfunc.utils import read_catalog
+    from Corrfunc.io import read_catalog
     from Corrfunc._countpairs_mocks import\
         countpairs_rp_pi_mocks as rp_pi_mocks_extn,\
         countpairs_theta_mocks as theta_mocks_extn,\
         countspheres_vpf_mocks as vpf_mocks_extn
-    
+
     tstart = time.time()
     filename = pjoin(dirname(abspath(Corrfunc.__file__)),
-                     "../xi_mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
+                     "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
 
     t0 = time.time()
     ra, dec, cz = read_catalog(filename)
@@ -42,7 +42,7 @@ def main():
     nthreads = 4
     pimax = 40.0
     binfile = pjoin(dirname(abspath(__file__)),
-                    "../xi_mocks/tests/", "bins")
+                    "../mocks/tests/", "bins")
     autocorr = 1
     numbins_to_print = 5
     cosmology = 1
@@ -64,7 +64,7 @@ def main():
     print("-----------------------------------------------------------")
 
     binfile = pjoin(dirname(abspath(__file__)),
-                    "../xi_mocks/tests/", "angular_bins")
+                    "../mocks/tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")
     results_wtheta, _ = theta_mocks_extn(autocorr, nthreads, binfile,
                                          ra, dec, ra, dec,
@@ -89,13 +89,13 @@ def main():
     num_pN = 6
     threshold_neighbors = 1  # does not matter since we have the centers
     centers_file = pjoin(dirname(abspath(__file__)),
-                         "../xi_mocks/tests/data/",
+                         "../mocks/tests/data/",
                          "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
     results_vpf, _ = vpf_mocks_extn(rmax, nbin, num_spheres, num_pN,
                                     threshold_neighbors, centers_file,
                                     cosmology,
                                     ra, dec, cz, ra, dec, cz, verbose=True)
-    
+
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))
     print('#       r    ', end="")
