@@ -106,22 +106,40 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     Example
     --------
 
+    >>> from __future__ import print_function
     >>> import numpy as np
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
-    >>> from Corrfunc.theory import DD
+    >>> from Corrfunc.theory.DD import DD
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../theory/tests/", "bins")
+    ...                 "../theory/tests/", "bins")
     >>> N = 10000
     >>> boxsize = 420.0
     >>> nthreads = 4
     >>> autocorr = 1
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-    >>> results = DD(autocorr, nthreads, binfile, X, Y, Z,
-                     verbose=True,periodic=False,
-                     output_ravg=True)
+    >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, output_ravg=True)
+    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d}".
+    ...                         format(r['rmin'], r['rmax'], r['ravg'],
+    ...                         r['npairs'])) # doctest: +NORMALIZE_WHITESPACE
+    0.167536   0.238755   0.000000          0
+    0.238755   0.340251   0.000000          0
+    0.340251   0.484892   0.000000          0
+    0.484892   0.691021   0.000000          0
+    0.691021   0.984777   0.945372          2
+    0.984777   1.403410   1.340525         10
+    1.403410   2.000000   1.732968         36
+    2.000000   2.850200   2.558878         54
+    2.850200   4.061840   3.564959        208
+    4.061840   5.788530   4.999278        674
+    5.788530   8.249250   7.126673       2154
+    8.249250  11.756000  10.201834       5996
+    11.756000  16.753600  14.517830      17746
+    16.753600  23.875500  20.716017      50252
 
     """
     try:
@@ -191,31 +209,5 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
         return results, api_time
 
 if __name__ == '__main__':
-    import numpy as np
-    import time
-    bins = [0.0, 1.0, 2.0, 10.0, 30.0]
-    N = 100000
-    boxsize = 420.0
-    nthreads = 4
-    autocorr = 1
-    seed = 42
-    np.random.seed(seed)
-    X = np.random.uniform(0, boxsize, N)
-    Y = np.random.uniform(0, boxsize, N)
-    Z = np.random.uniform(0, boxsize, N)
-
-    t0 = time.time()
-    results, api_time = DD(autocorr, nthreads, bins,
-                           X, Y, Z,
-                           verbose=True,
-                           boxsize=boxsize,
-                           periodic=True,
-                           c_api_timer=True,
-                           output_ravg=True,
-                           isa='fastest')
-
-    t1 = time.time()
-    print("Results from DD (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
-    for r in results:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()

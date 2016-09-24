@@ -113,8 +113,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
        A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs]
        for each radial bin specified in the ``binfile``. If ``output_rpavg``
        is not set, then ``rpavg`` will be set to 0.0 for all bins. ``npairs``
-       contains the number of pairs in that bin and can be used to compute the
-       actual :math:`\\xi(r_p, \pi)` by combining with (DR, RR) counts.
+       contains the number of pairs in that bin and can be used to compute
+       :math:`\\xi(r_p, \pi)` by combining with (DR, RR) counts.
 
        if ``c_api_timer`` is set, then the return value is a tuple containing
        (results, api_time). ``api_time`` measures only the time spent within
@@ -123,24 +123,71 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     Example
     --------
 
+    >>> from __future__ import print_function
     >>> import numpy as np
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
-    >>> from Corrfunc.theory import DDrppi
+    >>> from Corrfunc.theory.DDrppi import DDrppi
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../theory/tests/", "bins")
+    ...                 "../theory/tests/", "bins")
     >>> N = 10000
     >>> boxsize = 420.0
     >>> nthreads = 4
     >>> autocorr = 1
     >>> pimax = 40.0
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> results = DDrppi(autocorr, nthreads, pimax, binfile,
-                         X, Y, Z,
-                         verbose=True, output_rpavg=True)
-
+    ...                  X, Y, Z, output_rpavg=True)
+    >>> for r in results[519:]: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.1f}"
+    ...                               " {4:10d}".format(r['rmin'], r['rmax'],
+    ...                               r['rpavg'], r['pimax'], r['npairs']))
+    ...                         # doctest: +NORMALIZE_WHITESPACE
+    11.756000  16.753600  14.379250       40.0       1150
+    16.753600  23.875500  20.449131        1.0       2604
+    16.753600  23.875500  20.604834        2.0       2370
+    16.753600  23.875500  20.523989        3.0       2428
+    16.753600  23.875500  20.475181        4.0       2462
+    16.753600  23.875500  20.458005        5.0       2532
+    16.753600  23.875500  20.537162        6.0       2522
+    16.753600  23.875500  20.443087        7.0       2422
+    16.753600  23.875500  20.474580        8.0       2360
+    16.753600  23.875500  20.420360        9.0       2512
+    16.753600  23.875500  20.478355       10.0       2472
+    16.753600  23.875500  20.485268       11.0       2406
+    16.753600  23.875500  20.372985       12.0       2420
+    16.753600  23.875500  20.647998       13.0       2378
+    16.753600  23.875500  20.556208       14.0       2420
+    16.753600  23.875500  20.527992       15.0       2462
+    16.753600  23.875500  20.581017       16.0       2380
+    16.753600  23.875500  20.491819       17.0       2346
+    16.753600  23.875500  20.534440       18.0       2496
+    16.753600  23.875500  20.529129       19.0       2512
+    16.753600  23.875500  20.501946       20.0       2500
+    16.753600  23.875500  20.513349       21.0       2544
+    16.753600  23.875500  20.471915       22.0       2430
+    16.753600  23.875500  20.450651       23.0       2354
+    16.753600  23.875500  20.550753       24.0       2460
+    16.753600  23.875500  20.540262       25.0       2490
+    16.753600  23.875500  20.559572       26.0       2350
+    16.753600  23.875500  20.534245       27.0       2382
+    16.753600  23.875500  20.511302       28.0       2508
+    16.753600  23.875500  20.491632       29.0       2456
+    16.753600  23.875500  20.592493       30.0       2386
+    16.753600  23.875500  20.506234       31.0       2484
+    16.753600  23.875500  20.482109       32.0       2538
+    16.753600  23.875500  20.518463       33.0       2544
+    16.753600  23.875500  20.482515       34.0       2534
+    16.753600  23.875500  20.503124       35.0       2382
+    16.753600  23.875500  20.471307       36.0       2356
+    16.753600  23.875500  20.384231       37.0       2554
+    16.753600  23.875500  20.454012       38.0       2458
+    16.753600  23.875500  20.585543       39.0       2394
+    16.753600  23.875500  20.504965       40.0       2500
+    
     """
     try:
         from Corrfunc._countpairs import countpairs_rp_pi as DDrppi_extn
@@ -213,34 +260,5 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
 
 
 if __name__ == '__main__':
-    import numpy as np
-    import Corrfunc
-    import time
-    from os.path import dirname, abspath, join as pjoin
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../theory/tests/", "bins")
-
-    N = 100000
-    boxsize = 420.0
-    nthreads = 4
-    autocorr = 1
-    pimax = 40.0
-    seed = 42
-    np.random.seed(seed)
-    X = np.random.uniform(0, boxsize, N)
-    Y = np.random.uniform(0, boxsize, N)
-    Z = np.random.uniform(0, boxsize, N)
-    t0 = time.time()
-    results, api_time = DDrppi(autocorr, nthreads, pimax, binfile,
-                               X, Y, Z,
-                               verbose=True,
-                               c_api_timer=True,
-                               output_rpavg=True)
-
-    t1 = time.time()
-    print("Results from DDrppi (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
-
-    # Only print the first ten bins (1st rp bin, with 10 pimax bins)
-    for r in results[0:10]:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()

@@ -153,22 +153,27 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     results: Numpy structured array
 
-       A numpy structured array containing [rmin, rmax, ravg, xi, npairs] for
-       each radial specified in the ``binfile``. If ``output_ravg`` is not
-       set then ``ravg`` will be set to 0.0 for all bins. ``xi`` contains the
-       projected correlation function while ``npairs`` contains the number of
-       unique pairs in that bin.
+       A numpy structured array containing [thetamin, thetamaxax, thetaavg,
+       npairs] for each angular bin specified in the ``binfile``. If
+       ``output_thetaavg`` is not set then ``thetavg`` will be set to 0.0 for
+       all bins. ``npairs`` contains the number of pairs in that bin.
+
+       if ``c_api_timer`` is set, then the return value is a tuple containing
+       (results, api_time). ``api_time`` measures only the time spent within
+       the C library and ignores all python overhead.
 
     Example
     --------
 
+    >>> from __future__ import print_function
     >>> import numpy as np
     >>> import time
     >>> from math import pi
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
+    >>> from Corrfunc.mocks.DDtheta_mocks import DDtheta_mocks
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                  "../mocks/tests/", "angular_bins")
+    ...                 "../mocks/tests/", "angular_bins")
     >>> N = 100000
     >>> nthreads = 4
     >>> seed = 42
@@ -178,8 +183,31 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     >>> DEC = 90.0 - np.arccos(cos_theta)*180.0/pi
     >>> autocorr = 1
     >>> results = DDtheta_mocks(autocorr, nthreads, binfile,
-                                RA, DEC,
-                                verbose=True)
+    ...                         RA, DEC)
+    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d}".
+    ...                         format(r['thetamin'], r['thetamax'],
+    ...                         r['thetaavg'], r['npairs']))
+    ...                         # doctest: +NORMALIZE_WHITESPACE
+    0.010000   0.014125   0.000000         62
+    0.014125   0.019953   0.000000        172
+    0.019953   0.028184   0.000000        298
+    0.028184   0.039811   0.000000        598
+    0.039811   0.056234   0.000000       1164
+    0.056234   0.079433   0.000000       2438
+    0.079433   0.112202   0.000000       4658
+    0.112202   0.158489   0.000000       9414
+    0.158489   0.223872   0.000000      19098
+    0.223872   0.316228   0.000000      37848
+    0.316228   0.446684   0.000000      75520
+    0.446684   0.630957   0.000000     150934
+    0.630957   0.891251   0.000000     301840
+    0.891251   1.258925   0.000000     599866
+    1.258925   1.778279   0.000000    1200122
+    1.778279   2.511886   0.000000    2395808
+    2.511886   3.548134   0.000000    4773238
+    3.548134   5.011872   0.000000    9525106
+    5.011872   7.079458   0.000000   18972498
+    7.079458  10.000000   0.000000   37727488
 
     """
 

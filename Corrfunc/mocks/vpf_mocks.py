@@ -187,9 +187,12 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     Example
     --------
 
-    >>> import Corrfunc
+    >>> from __future__ import print_function
     >>> import math
     >>> from os.path import dirname, abspath, join as pjoin
+    >>> import numpy as np
+    >>> import Corrfunc
+    >>> from Corrfunc.mocks.vpf_mocks import vpf_mocks
     >>> rmax = 10.0
     >>> nbins = 10
     >>> numbins_to_print = nbins
@@ -198,10 +201,12 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     >>> threshold_ngb = 1  # does not matter since we have the centers
     >>> cosmology = 1  # LasDamas cosmology
     >>> centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
-                             "../mocks/tests/data/",
-                             "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
-    >>> N = 100000
+    ...                      "../mocks/tests/data/",
+    ...                      "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
+    >>> N = 1000000
     >>> boxsize = 420.0
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
     >>> Y = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
     >>> Z = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
@@ -212,13 +217,28 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     >>> Z *= inv_cz
     >>> DEC = 90.0 - np.arccos(Z)*180.0/math.pi
     >>> RA = (np.arctan2(Y, X)*180.0/math.pi) + 180.0
-    >>> results = vpf_mocks(rmax, nbins, nspheres, numpN,
-                            threshold_ngb, centers_file, cosmology,
-                            RA, DEC, CZ,
-                            RA, DEC, CZ,
-                            verbose=True,
-                            is_comoving_dist=True)
-
+    >>> results = vpf_mocks(rmax, nbins, nspheres, numpN, threshold_ngb,
+    ...                     centers_file, cosmology,
+    ...                     RA, DEC, CZ,
+    ...                     RA, DEC, CZ,
+    ...                     is_comoving_dist=True)
+    >>> for r in results:
+    ...     print("{0:10.1f} ".format(r[0]), end="")
+    ...     # doctest: +NORMALIZE_WHITESPACE
+    ...     for pn in r[1]:
+    ...         print("{0:10.3f} ".format(pn), end="")
+    ...         # doctest: +NORMALIZE_WHITESPACE
+    ...     print("") # doctest: +NORMALIZE_WHITESPACE
+    1.0      0.999      0.001      0.000      0.000      0.000      0.000
+    2.0      0.992      0.007      0.001      0.000      0.000      0.000
+    3.0      0.982      0.009      0.005      0.002      0.001      0.000
+    4.0      0.975      0.006      0.006      0.005      0.003      0.003
+    5.0      0.971      0.004      0.003      0.003      0.004      0.003
+    6.0      0.967      0.003      0.003      0.001      0.003      0.002
+    7.0      0.962      0.004      0.002      0.003      0.002      0.001
+    8.0      0.958      0.004      0.002      0.003      0.001      0.002
+    9.0      0.953      0.003      0.003      0.002      0.003      0.001
+    10.0      0.950      0.003      0.002      0.002      0.001      0.002
 
     """
 

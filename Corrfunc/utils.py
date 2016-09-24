@@ -66,27 +66,48 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
     Example
     --------
 
-    >>> from Corrfunc.theory import DD
+    >>> from __future__ import print_function
+    >>> import numpy as np
+    >>> from Corrfunc.theory.DD import DD
     >>> from Corrfunc.io import read_catalog
     >>> from Corrfunc.utils import convert_3d_counts_to_cf
     >>> X, Y, Z = read_catalog()
+    >>> N = len(X)
     >>> boxsize = 420.0
     >>> rand_N = 3*N
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> rand_X = np.random.uniform(0, boxsize, rand_N)
     >>> rand_Y = np.random.uniform(0, boxsize, rand_N)
     >>> rand_Z = np.random.uniform(0, boxsize, rand_N)
     >>> nthreads = 2
-    >>> bins = np.linspace(0.1, 10.0, 10)
-    >>> DD_counts = DD(1, nthreads, bins, X, Y, Z,
-                       periodic=False, verbose=True)
-    >>> DR_counts = DD(0, nthreads, bins, X, Y, Z,
-                       rand_X, rand_Y, rand_Z,
-                       periodic=False, verbose=True)
-    >>> RR_counts = DD(1, nthreads, bins, rand_X, rand_Y, rand_Z,
-                       periodic=False, verbose=True)
+    >>> rmin = 0.1
+    >>> rmax = 15.0
+    >>> nbins = 10
+    >>> bins = np.linspace(rmin, rmax, nbins)
+    >>> autocorr = 1
+    >>> DD_counts = DD(autocorr, nthreads, bins, X, Y, Z)
+    >>> autocorr = 0
+    >>> DR_counts = DD(autocorr, nthreads, bins,
+    ...                X, Y, Z,
+    ...                X2=rand_X, Y2=rand_Y, Z2=rand_Z)
+    >>> autocorr = 1
+    >>> RR_counts = DD(autocorr, nthreads, bins, rand_X, rand_Y, rand_Z)
     >>> cf = convert_3d_counts_to_cf(N, N, rand_N, rand_N,
-                                     DD_counts, DR_counts,
-                                     DR_counts, RR_counts)
+    ...                              DD_counts, DR_counts,
+    ...                              DR_counts, RR_counts)
+    >>> for xi in cf: print("{0:10.6f}".format(xi))
+    ...                    # doctest: +NORMALIZE_WHITESPACE
+    18.737938
+    3.007926
+    1.392979
+    0.857290
+    0.590195
+    0.436621
+    0.338937
+    0.265153
+    0.209904
+
     """
 
     import numpy as np
@@ -107,14 +128,16 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
         msg = 'Pair counts must have the same number of elements (same bins)'
         raise ValueError(msg)
 
+    nonzero = pair_counts['R1R2'] > 0
     if 'LS' in estimator or 'Landy' in estimator:
         fN1 = np.float(NR1) / np.float(ND1)
         fN2 = np.float(NR2) / np.float(ND2)
-        cf = (fN1 * fN2 * pair_counts['D1D2'] -
-              fN1 * pair_counts['D1R2'] -
-              fN2 * pair_counts['D2R1'] +
-              pair_counts['R1R2']) / pair_counts['R1R2']
-        cf = np.array(cf)
+        cf = np.zeros(nbins)
+        cf[:] = np.nan
+        cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
+                       fN1 * pair_counts['D1R2'][nonzero] -
+                       fN2 * pair_counts['D2R1'][nonzero] +
+                       pair_counts['R1R2'][nonzero]) / pair_counts['R1R2'][nonzero]
         if len(cf) != nbins:
             msg = 'Bug in code. Calculated correlation function does not '\
                   'have the same number of bins as input arrays. Input bins '\
@@ -187,29 +210,65 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     Example
     --------
 
-    >>> from Corrfunc.theory import DDrppi
+    >>> from __future__ import print_function
+    >>> import numpy as np
+    >>> from Corrfunc.theory.DDrppi import DDrppi
     >>> from Corrfunc.io import read_catalog
-    >>> from Corrfunc.utils import convert_rp_pi_counts_to_cf
+    >>> from Corrfunc.utils import convert_rp_pi_counts_to_wp
     >>> X, Y, Z = read_catalog()
+    >>> N = len(X)
     >>> boxsize = 420.0
     >>> rand_N = 3*N
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> rand_X = np.random.uniform(0, boxsize, rand_N)
     >>> rand_Y = np.random.uniform(0, boxsize, rand_N)
     >>> rand_Z = np.random.uniform(0, boxsize, rand_N)
-    >>> nthreads = 2
+    >>> nthreads = 4
     >>> pimax = 40.0
-    >>> bins = np.linspace(0.1, 10.0, 10)
-    >>> DD_counts = DDrppi(1, nthreads, bins, X, Y, Z,
-                           periodic=False, verbose=True)
-    >>> DR_counts = DDrppi(0, nthreads, bins, X, Y, Z,
-                           rand_X, rand_Y, rand_Z,
-                           periodic=False, verbose=True)
-    >>> RR_counts = DDrppi(1, nthreads, bins, rand_X, rand_Y, rand_Z,
-                           periodic=False, verbose=True)
-    >>> wp = convert_rp_pi_counts_to_cf(N, N, rand_N, rand_N,
-                                        DD_counts, DR_counts,
-                                        DR_counts, RR_counts)
+    >>> nrpbins = 20
+    >>> rpmin = 0.1
+    >>> rpmax = 10.0
+    >>> bins = np.linspace(rpmin, rpmax, nrpbins)
+    >>> autocorr = 1
+    >>> DD_counts = DDrppi(autocorr, nthreads, pimax, bins,
+    ...                    X, Y, Z)
+    >>> autocorr = 0
+    >>> DR_counts = DDrppi(autocorr, nthreads, pimax, bins,
+    ...                    X, Y, Z,
+    ...                    X2=rand_X, Y2=rand_Y, Z2=rand_Z)
+    >>> autocorr = 1
+    >>> RR_counts = DDrppi(autocorr, nthreads, pimax, bins,
+    ...                    rand_X, rand_Y, rand_Z)
+    >>> wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
+    ...                                 DD_counts, DR_counts,
+    ...                                 DR_counts, RR_counts,
+    ...                                 nrpbins)
+    >>> for w in wp: print("{0:10.6f}".format(w))
+    ...                    # doctest: +NORMALIZE_WHITESPACE
+    181.595583
+    79.433954
+    50.906305
+    38.617981
+    32.004716
+    27.873267
+    24.922330
+    22.517251
+    20.609248
+    19.071534
+    17.537370
+    16.129591
+    15.042474
+    13.992861
+    12.963111
+    12.005260
+    11.215819
+    10.598148
+    10.019164
+    9.631157
+
     """
+    
     import numpy as np
     if dpi <= 0.0:
         msg = 'Binsize along the line of sight (dpi) = {0}'\
@@ -431,3 +490,8 @@ def translate_isa_string_to_enum(isa):
         print("Do not know instruction type = {0}".format(isa))
         print("Valid instructions are {0}".format(enums.keys()))
         raise
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

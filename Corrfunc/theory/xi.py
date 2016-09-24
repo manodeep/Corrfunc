@@ -94,8 +94,8 @@ def xi(boxsize, nthreads, binfile, X, Y, Z, verbose=False,
        A numpy structured array containing [rmin, rmax, ravg, xi, npairs] for
        each radial specified in the ``binfile``. If ``output_ravg`` is not
        set then ``ravg`` will be set to 0.0 for all bins. ``xi`` contains the
-       projected correlation function while ``npairs`` contains the number of
-       unique pairs in that bin.
+       correlation function while ``npairs`` contains the number of
+       pairs in that bin.
 
        if ``c_api_timer`` is set, then the return value is a tuple containing
        (results, api_time). ``api_time`` measures only the time spent within
@@ -104,20 +104,40 @@ def xi(boxsize, nthreads, binfile, X, Y, Z, verbose=False,
     Example
     --------
 
+    >>> from __future__ import print_function
     >>> import numpy as np
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
-    >>> from Corrfunc.theory import xi
+    >>> from Corrfunc.theory.xi import xi
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../theory/tests/", "bins")
+    ...                 "../theory/tests/", "bins")
     >>> N = 100000
     >>> boxsize = 420.0
     >>> nthreads = 4
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-    >>> results = xi(boxsize, nthreads, binfile, X, Y, Z,
-                     verbose=True, output_ravg=True)
+    >>> results = xi(boxsize, nthreads, binfile, X, Y, Z, output_ravg=True)
+    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.6f}"
+    ...                         " {4:10d}".format(r['rmin'], r['rmax'],
+    ...                         r['ravg'], r['xi'], r['npairs']))
+    ...                   # doctest: +NORMALIZE_WHITESPACE
+    0.167536   0.238755   0.226592  -0.205741          4
+    0.238755   0.340251   0.289277  -0.176737         12
+    0.340251   0.484892   0.426819  -0.051838         40
+    0.484892   0.691021   0.596187  -0.131862        106
+    0.691021   0.984777   0.850100  -0.049217        336
+    0.984777   1.403410   1.225112   0.028532       1052
+    1.403410   2.000000   1.737153   0.011392       2994
+    2.000000   2.850200   2.474588   0.005395       8614
+    2.850200   4.061840   3.532018  -0.014108      24448
+    4.061840   5.788530   5.022241  -0.010794      70996
+    5.788530   8.249250   7.160648  -0.001598     207392
+    8.249250  11.756000  10.207213  -0.000333     601002
+    11.756000  16.753600  14.541171  -0.000003    1740084
+    16.753600  23.875500  20.728773  -0.001605    5028058
 
     """
 
@@ -172,29 +192,5 @@ def xi(boxsize, nthreads, binfile, X, Y, Z, verbose=False,
 
 
 if __name__ == '__main__':
-    import numpy as np
-    import Corrfunc
-    import time
-    from os.path import dirname, abspath, join as pjoin
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../theory/tests/", "bins")
-
-    N = 100000
-    boxsize = 420.0
-    nthreads = 2
-    seed = 42
-    np.random.seed(seed)
-    X = np.random.uniform(0, boxsize, N)
-    Y = np.random.uniform(0, boxsize, N)
-    Z = np.random.uniform(0, boxsize, N)
-    t0 = time.time()
-    results, api_time = xi(boxsize, nthreads, binfile,
-                           X, Y, Z,
-                           verbose=True,
-                           output_ravg=True,
-                           c_api_timer=True)
-    t1 = time.time()
-    print("Results from xi (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
-    for r in results:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()
