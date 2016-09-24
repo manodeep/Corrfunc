@@ -8,6 +8,7 @@ the projected auto correlation function, :math:`wp(rp)`, can be directly compute
 using the Natural Estimator. The relevant python wrappers are present in
 `Corrfunc.theory.xi` and `Corrfunc.theory.wp`
 
+::
 
           >>> import numpy as np
           >>> from Corrfunc.theory.wp import wp

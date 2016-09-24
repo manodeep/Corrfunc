@@ -8,6 +8,7 @@ by using the helper function `Corrfunc.utils.convert_3d_counts_to_cf`.
 First, we have to compute the relevant pair counts using the python
 wrapper `Corrfunc.theory.DD`
 
+::
 
           >>> import numpy as np
           >>> from os.path import dirname, abspath, join as pjoin

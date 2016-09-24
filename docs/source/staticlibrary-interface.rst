@@ -36,7 +36,7 @@ Common setup code for the simulation C routines
 In this code section, we will setup the arrays and the overall common inputs
 required by the C static libraries. 
 
-.. code:: c
+::
 
           #include "io.h"
           
@@ -73,7 +73,7 @@ separation, :math:`r_p` is calculated in the X-Y plane while the line-of-sight
 separation, :math:`\pi` is calculated in the Z plane. Only pairs with
 :math:`\pi` separation less than :math:`\pi_{max}` are counted.
 
-.. code:: c
+::
 
           #include "countpairs_wp.h"
           
@@ -121,35 +121,36 @@ Common setup code for the mocks C routines
 In this code section, we will setup the arrays and the overall common inputs
 required by the C static libraries. 
 
-.. code:: c
+::
 
-          #include "io.h"   //for read_positions function
+   #include "io.h"   //for read_positions function
           
-          const char file[] = {"mocks/tests/data/Mr19_mock_northonly.rdcz.dat"};
-          const char fileformat[] = {"a"};     // ascii format
-          const char binfile[] = {"mocks/tests/bins"};
-          const double pimax=40.0;
-          int autocorr=1;
-          const int nthreads=2;
-          const int cosmology=1;  // 1->LasDamas cosmology, 2->Planck
+   const char file[] = {"mocks/tests/data/Mr19_mock_northonly.rdcz.dat"};
+   const char fileformat[] = {"a"};     // ascii format
+   const char binfile[] = {"mocks/tests/bins"};
+   const double pimax=40.0;
+   int autocorr=1;
+   const int nthreads=2;
+   const int cosmology=1;  // 1->LasDamas cosmology, 2->Planck
 
-          // This computes in double-precision. Change to float for computing in float
-          double *ra1=NULL, *dec1=NULL, *cz1=NULL, *ra2=NULL, *dec2=NULL, *cz2=NULL;
+   // This computes in double-precision. Change to float for computing in float
+   double *ra1=NULL, *dec1=NULL, *cz1=NULL, *ra2=NULL, *dec2=NULL, *cz2=NULL;
 
-          //Read-in the data
-          const int64_t ND1 = read_positions(file,fileformat,sizeof(*ra1),3, &ra1, &dec1, &cz1);
+   //Read-in the data
+   const int64_t ND1 = read_positions(file,fileformat,sizeof(*ra1),3, &ra1, &dec1, &cz1);
 
-          ra2 = ra1;
-          dec2 = dec1;
-          cz2 = cz1;
-          const int64_t ND2 = ND1;
+   ra2 = ra1;
+   dec2 = dec1;
+   cz2 = cz1;
+   const int64_t ND2 = ND1;
 
-          struct config_options options = get_config_options();
-          options.verbose=1;
-          options.periodic=0;
-          options.need_avg_sep=1;
-          options.float_type = sizeof(*ra1);
+   struct config_options options = get_config_options();
+   options.verbose=1;
+   options.periodic=0;
+   options.need_avg_sep=1;
+   options.float_type = sizeof(*ra1);
 
+   
 Calculating 2-D pair counts (``mocks/DDrppi_mocks/libcountpairs_rp_pi_mocks.a``)
 -----------------------------------------------------------------------------------
 Here is a code snippet demonstrating how to calculate :math:`DD(r_p, \pi)` for
@@ -167,30 +168,30 @@ al 2002 <http://adsabs.harvard.edu/abs/2002ApJ...571..172Z>`_:
 where, :math:`\mathbf{v_1}` and :math:`\mathbf{v_2}` are the vectors for the
 two points under consideration. Here is the C code for calling ``DDrppi_mocks``:
 
-.. code:: c
+::
 
-          #include "countpairs_rp_pi_mocks.h"
-          
-          results_countpairs_mocks results;
-          int status = countpairs_mocks(ND1,ra1,dec1,cz1,
-                                        ND2,ra2,dec2,cz2,
-                                        nthreads,
-                                        autocorr,
-                                        binfile,
-                                        pimax,
-                                        cosmology,
-                                        &results,
-                                        &options, NULL);
+   #include "countpairs_rp_pi_mocks.h"
 
-          const double dpi = pimax/(double)results.npibin ;
-          const int npibin = results.npibin;
-          for(int i=1;i<results.nbin;i++) {
-              const double logrp = LOG10(results.rupp[i]);
-              for(int j=0;j<npibin;j++) {
-                  int index = i*(npibin+1) + j;
-                  fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
-              }
-          }
+   results_countpairs_mocks results;
+   int status = countpairs_mocks(ND1,ra1,dec1,cz1,
+                                 ND2,ra2,dec2,cz2,
+                                 nthreads,
+                                 autocorr,
+                                 binfile,
+                                 pimax,
+                                 cosmology,
+                                 &results,
+                                 &options, NULL);
+
+   const double dpi = pimax/(double)results.npibin ;
+   const int npibin = results.npibin;
+   for(int i=1;i<results.nbin;i++) {
+       const double logrp = LOG10(results.rupp[i]);
+       for(int j=0;j<npibin;j++) {
+           int index = i*(npibin+1) + j;
+           fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+       }
+   }
 
 This is the generic pattern for using all of the correlation function. Look in
 ``mocks/examples/run_correlations_mocks.c`` for details on how to use all of the available
