@@ -11,13 +11,6 @@ from os.path import dirname, abspath, splitext, exists as file_exists,\
     join as pjoin
 import numpy as np
 
-try:
-    from future.utils import bytes_to_native_str
-except ImportError:
-    print("\n\tPlease run python setup.py install before using "
-          "the 'Corrfunc' package\n")
-    raise
-
 
 def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
     """
@@ -92,6 +85,13 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
         raise IOError(msg)
 
     import struct
+    try:
+        from future.utils import bytes_to_native_str
+    except ImportError:
+        print("\n\tPlease run python setup.py install before using "
+              "the 'Corrfunc' package\n")
+        raise
+    
     with open(filename, "rb") as f:
         skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
         idat = struct.unpack(bytes_to_native_str(b'@iiiii'),
