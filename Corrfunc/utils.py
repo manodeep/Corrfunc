@@ -341,7 +341,7 @@ def return_file_with_rbins(rbins):
     if len(rbins) >= 1:
         import tempfile
         rbins = sorted(rbins)
-        with tempfile.NamedTemporaryFile(delete=False) as f:
+        with tempfile.NamedTemporaryFile(delete=False, mode='w') as f:
             for i in range(len(rbins) - 1):
                 f.write("{0} {1}\n".format(rbins[i], rbins[i + 1]))
 
