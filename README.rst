@@ -13,7 +13,7 @@ documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
 Why Should You Use it
 ======================
 
-1. **Fast** All theory pair-counting is at least **2x** faster than all existing public codes. Particularly suited for MCMC. 
+1. **Fast** Theory pair-counting is **7x** faster than ``SciPy cKDTree``, and at least **2x** faster than all existing public codes.
 2. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
 3. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
 4. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
@@ -349,8 +349,7 @@ Project URL
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
    :alt: Latest Release
-[![PyPI Version](https://img.shields.io/pypi/v/obspy.svg)](https://pypi.python.org/pypi/obspy)
-   
+
 .. |PyPI| image:: https://img.shields.io/pypi/v/Corrfunc.svg
    :target: https://pypi.python.org/pypi/Corrfunc
    :alt: PyPI Release
