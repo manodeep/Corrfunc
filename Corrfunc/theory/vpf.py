@@ -114,24 +114,39 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     Example
     --------
 
+    >>> from __future__ import print_function
     >>> import numpy as np
-    >>> from Corrfunc.theory import vpf
+    >>> from Corrfunc.theory.vpf import vpf
     >>> rmax = 10.0
     >>> nbins = 10
     >>> nspheres = 10000
-    >>> numpN = 8
+    >>> numpN = 5
     >>> seed = -1
     >>> N = 100000
     >>> boxsize = 420.0
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-    >>> results, api_time = vpf(rmax, nbins, nspheres, numpN, seed,
-                                X, Y, Z,
-                                verbose=True,
-                                c_api_timer=True,
-                                boxsize=boxsize,
-                                periodic=True)
+    >>> results = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z)
+    >>> for r in results:
+    ...     print("{0:10.1f} ".format(r[0]), end="")
+    ...     # doctest: +NORMALIZE_WHITESPACE
+    ...     for pn in r[1]:
+    ...         print("{0:10.3f} ".format(pn), end="")
+    ...         # doctest: +NORMALIZE_WHITESPACE
+    ...     print("") # doctest: +NORMALIZE_WHITESPACE
+    1.0      0.995      0.005      0.000      0.000      0.000
+    2.0      0.956      0.044      0.001      0.000      0.000
+    3.0      0.858      0.130      0.012      0.001      0.000
+    4.0      0.695      0.252      0.047      0.005      0.001
+    5.0      0.493      0.347      0.127      0.028      0.005
+    6.0      0.295      0.362      0.219      0.091      0.026
+    7.0      0.141      0.285      0.265      0.179      0.085
+    8.0      0.056      0.159      0.228      0.229      0.161
+    9.0      0.019      0.066      0.135      0.192      0.192
+    10.0      0.003      0.019      0.054      0.106      0.150
 
     """
 
@@ -204,32 +219,5 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
 
 
 if __name__ == '__main__':
-    import numpy as np
-    import time
-
-    rmax = 10.0
-    nbins = 10
-    nspheres = 10000
-    numpN = 6
-    seed = 42
-    N = 100000
-    boxsize = 420.0
-    np.random.seed(seed=seed)
-    X = np.random.uniform(0, boxsize, N)
-    Y = np.random.uniform(0, boxsize, N)
-    Z = np.random.uniform(0, boxsize, N)
-
-    t0 = time.time()
-    results, api_time = vpf(rmax, nbins, nspheres, numpN, seed,
-                            X, Y, Z,
-                            verbose=True,
-                            c_api_timer=True,
-                            boxsize=boxsize,
-                            periodic=True)
-
-    t1 = time.time()
-    print("Results from vpf (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
-
-    for r in results:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()

@@ -110,21 +110,41 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
     Example
     --------
 
+    >>> from __future__ import print_function
     >>> import numpy as np
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
-    >>> from Corrfunc.theory import wp
+    >>> from Corrfunc.theory.wp import wp
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                        "../theory/tests/", "bins")
+    ...                 "../theory/tests/", "bins")
     >>> N = 10000
     >>> boxsize = 420.0
     >>> pimax = 40.0
     >>> nthreads = 4
+    >>> seed = 42
+    >>> np.random.seed(seed)
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-    >>> results = wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
-                     verbose=True, output_rpavg=True)
+    >>> results = wp(boxsize, pimax, nthreads, binfile, X, Y, Z)
+    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.6f} "
+    ...                         "{4:10d}".format(r['rmin'], r['rmax'],
+    ...                         r['rpavg'], r['wp'], r['npairs']))
+    ...                   # doctest: +NORMALIZE_WHITESPACE
+    0.167536   0.238755   0.000000  66.702471         18
+    0.238755   0.340251   0.000000 -15.792466         16
+    0.340251   0.484892   0.000000   2.990170         42
+    0.484892   0.691021   0.000000 -15.786307         66
+    0.691021   0.984777   0.000000 -11.973531        142
+    0.984777   1.403410   0.000000  -9.706936        298
+    1.403410   2.000000   0.000000 -11.705601        588
+    2.000000   2.850200   0.000000   3.839991       1466
+    2.850200   4.061840   0.000000  -0.929359       2808
+    4.061840   5.788530   0.000000   0.446806       5802
+    5.788530   8.249250   0.000000   1.420201      11926
+    8.249250  11.756000   0.000000  -1.075778      23478
+    11.756000  16.753600   0.000000  -0.561263      47994
+    16.753600  23.875500   0.000000  -0.094424      98042
 
     """
 
@@ -158,7 +178,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
 
     results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float),
                               (bytes_to_native_str(b'rmax'), np.float),
-                              (bytes_to_native_str(b'ravg'), np.float),
+                              (bytes_to_native_str(b'rpavg'), np.float),
                               (bytes_to_native_str(b'wp'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64)])
 
@@ -168,7 +188,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
     for ii, r in enumerate(extn_results):
         results['rmin'][ii] = r[0]
         results['rmax'][ii] = r[1]
-        results['ravg'][ii] = r[2]
+        results['rpavg'][ii] = r[2]
         results['wp'][ii] = r[3]
         results['npairs'][ii] = r[4]
 
@@ -179,31 +199,5 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
 
 
 if __name__ == '__main__':
-    import numpy as np
-    from os.path import dirname, abspath, join as pjoin
-    import Corrfunc
-    import time
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../theory/tests/", "bins")
-
-    N = 100000
-    boxsize = 420.0
-    pimax = 40.0
-    nthreads = 2
-    seed = 42
-    np.random.seed(seed)
-    X = np.random.uniform(0, boxsize, N)
-    Y = np.random.uniform(0, boxsize, N)
-    Z = np.random.uniform(0, boxsize, N)
-    t0 = time.time()
-    results, api_time = wp(boxsize, pimax, nthreads, binfile,
-                           X, Y, Z,
-                           verbose=True,
-                           c_api_timer=True,
-                           output_rpavg=True)
-
-    t1 = time.time()
-    print("Results from wp (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
-    for r in results:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()

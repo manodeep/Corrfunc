@@ -80,34 +80,49 @@ counts-in-cells. For all of these calculations a few inputs are required. The
 following code section sets up the default inputs that are used later on in the
 clustering functions:
 
+
 .. code:: python
+               
+               >>> import numpy as np
+               >>> from Corrfunc.io import read_catalog
+          
+               # Read the default galaxies supplied with
+               # Corrfunc. ~ 1 million galaxies on a 420 Mpc/h cube
+               >>> X, Y, Z = read_catalog()
+               
+               # Specify boxsize for the XYZ arrays
+               >>> boxsize = 420.0
+               
+               # Number of threads to use
+               >>> nthreads = 2
+
+               # Create the bins array
+               >>> rmin = 0.1
+               >>> rmax = 20.0
+               >>> nbins = 20
+               >>> rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
+          
+               # Specify the distance to integrate along line of sight
+               >>> pimax = 40.0
+               
+               # Specify that an autocorrelation is wanted
+               >>> autocorr = 1
+
+.. testsetup:: theory
 
           import numpy as np
           from Corrfunc.io import read_catalog
-          
-          # Read the default galaxies supplied with
-          # Corrfunc. ~ 1 million galaxies on a 420 Mpc/h
-          # side cube.
           X, Y, Z = read_catalog()
-
-          # Specify boxsize for the XYZ arrays
           boxsize = 420.0
-
-          # Number of threads to use
           nthreads = 2
-
-          # Create the bins array
           rmin = 0.1
           rmax = 20.0
           nbins = 20
           rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
-          
-          # Specify the distance to integrate along line of sight
           pimax = 40.0
-
-          # Specify that an autocorrelation is wanted
           autocorr = 1
 
+          
 Calculating 2-D projected auto-correlation (``Corrfunc.theory.wp``)
 ---------------------------------------------------------------------
 
@@ -118,13 +133,11 @@ separation, :math:`r_p` is calculated in the X-Y plane while the line-of-sight
 separation, :math:`\pi` is calculated in the Z plane. Only pairs with
 :math:`\pi` separation less than :math:`\pi_{max}` are counted.
 
-.. code:: python
+.. testcode:: theory
 
-          from Corrfunc.theory import wp
-          results_wp = wp(boxsize, pimax, nthreads, rbins,
-                          X, Y, Z,
-                          verbose=True)
-          print("Results: wp = {0}".format(results_wp))
+          from Corrfunc.theory.wp import wp
+          results_wp = wp(boxsize, pimax, nthreads, rbins, X, Y, Z)
+          
 
 Calculating 3-D autocorrelation (``Corrfunc.theory.xi``)
 ------------------------------------------------------------
@@ -134,13 +147,10 @@ Corrfunc can also compute the 3-D auto-correlation function,
 boundary conditions and an auto-correlation. Randoms are calculated
 analytically on the supplied boxsize. 
 
-.. code:: python
+.. testcode:: theory
 
-          from Corrfunc.theory import xi
-          results_xi = xi(boxsize, nthreads, rbins,
-                          X, Y, Z,
-                          verbose=True)
-          print("Results: xi = {0}".format(results_xi))
+          from Corrfunc.theory.xi import xi
+          results_xi = xi(boxsize, nthreads, rbins, X, Y, Z)
 
    
 Calculating 3-D pair-counts (``Corrfunc.theory.DD``)
@@ -151,13 +161,10 @@ calculation can be either auto or cross-correlation, *and* with or without perio
 boundaries. The pairs are always double-counted. Additionally, if the smallest
 bin is ``0.0`` for an autocorrelation, then the self-pairs *will* be counted.
 
-.. code:: python
+.. testcode:: theory
 
-          from Corrfunc.theory import DD
-          results_DD = DD(autocorr, nthreads, rbins,
-                          X, Y, Z, boxsize=boxsize,
-                          verbose=True)
-          print("Results: DD = {0}".format(results_DD))
+          from Corrfunc.theory.DD import DD
+          results_DD = DD(autocorr, nthreads, rbins, X, Y, Z)
           
 
 Calculating 2-D pair-counts (``Corrfunc.theory.DDrppi``)
@@ -170,13 +177,10 @@ line-of-sight separation, :math:`\pi` is calculated in the Z plane.
 The pairs are always double-counted. Additionally, if the smallest
 bin is ``0.0`` for an autocorrelation, then the self-pairs *will* be counted.
 
-.. code:: python
+.. testcode:: theory
 
-          from Corrfunc.theory import DDrppi
-          results_DDrppi = DDrppi(autocorr, nthreads, pimax, rbins,
-                                  X, Y, Z, boxsize=boxsize,
-                                  verbose=True)
-          print("Results: DDrppi = {0}".format(results_DDrppi))
+          from Corrfunc.theory.DDrppi import DDrppi
+          results_DDrppi = DDrppi(autocorr, nthreads, pimax, rbins, X, Y, Z, boxsize=boxsize)
 
 
 Calculating the Counts-in-Cells (``Corrfunc.theory.vpf``)
@@ -185,9 +189,9 @@ Corrfunc can calculate the counts-in-cells statistics. The simplest example for
 counts-in-cells is the Void Probability Function -- the probability that a
 sphere of a certain size contains zero galaxies.
 
-.. code:: python
+.. testcode:: theory
 
-          from Corrfunc.theory import vpf
+          from Corrfunc.theory.vpf import vpf
 
           # Maximum radius of the sphere in Mpc/h
           rmax = 10.0
@@ -204,12 +208,7 @@ sphere of a certain size contains zero galaxies.
           # Random number seed (used for choosing sphere centres)
           seed = 42
 
-          results_vpf = vpf(rmax, nbins, nspheres, numpN, seed,
-                            X, Y, Z,
-                            verbose=True,
-                            boxsize=boxsize,
-                            periodic=False)
-          print("Results: VPF = {0}".format(results_vpf))
+          results_vpf = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z)
 
 
 Calculating clustering statistics in mock catalogs
@@ -219,21 +218,20 @@ positions are assumed to be specified as on-sky (``Right Ascension``,
 ``Declination``, and ``speed of light * redshift``). The following code section
 sets up the default arrays and parameters for the actual clustering calculations:
 
-.. code:: python
 
+.. code:: python
+          
           import numpy as np
           import Corrfunc
           from os.path import dirname, abspath, join as pjoin
           from Corrfunc.io import read_catalog
 
           # Mock catalog (SDSS-North) supplied with Corrfunc
-          mock_catalog = pjoin(dirname(abspath(Corrfunc.__file__)),
-                               "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
+          mock_catalog = pjoin(dirname(abspath(Corrfunc.__file__)), "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
           RA, DEC, CZ = read_catalog(mock_catalog)
 
           # Randoms catalog (SDSS-North) supplied with Corrfunc
-          randoms_catalog = pjoin(dirname(abspath(Corrfunc.__file__)),
-                                  "../mocks/tests/data/", "Mr19_randoms_northonly.rdcz.ff")
+          randoms_catalog = pjoin(dirname(abspath(Corrfunc.__file__)), "../mocks/tests/data/", "Mr19_randoms_northonly.rdcz.ff")
           RAND_RA, RAND_DEC, RAND_CZ = read_catalog(randoms_catalog)
                                   
           # Number of threads to use
@@ -254,6 +252,27 @@ sets up the default arrays and parameters for the actual clustering calculations
           # Specify that an autocorrelation is wanted
           autocorr = 1
 
+
+.. testsetup:: mocks
+
+          import numpy as np
+          import Corrfunc
+          from os.path import dirname, abspath, join as pjoin
+          from Corrfunc.io import read_catalog
+          mock_catalog = pjoin(dirname(abspath(Corrfunc.__file__)), "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
+          RA, DEC, CZ = read_catalog(mock_catalog)
+          randoms_catalog = pjoin(dirname(abspath(Corrfunc.__file__)), "../mocks/tests/data/", "Mr19_randoms_northonly.rdcz.ff")
+          RAND_RA, RAND_DEC, RAND_CZ = read_catalog(randoms_catalog)
+          nthreads = 2
+          cosmology = 1 
+          rmin = 0.1
+          rmax = 20.0
+          nbins = 20
+          rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
+          pimax = 40.0
+          autocorr = 1
+
+          
 
 Calculating 2-D pair counts (``Corrfunc.mocks.DDrppi_mocks``)
 -------------------------------------------------------------
@@ -277,16 +296,12 @@ where, :math:`\mathbf{v_1}` and :math:`\mathbf{v_2}` are the vectors for the
 two points under consideration. 
    
 Here is the python code to call ``Corrfunc.mocks.DDrppi_mocks``:
-   
-.. code:: python
 
-          from Corrfunc.mocks import DDrppi_mocks
+.. testcode:: mocks
+
+          from Corrfunc.mocks.DDrppi_mocks import DDrppi_mocks
           results_DDrppi_mocks = DDrppi_mocks(autocorr, cosmology, nthreads,
-                                              pimax, rbins,
-                                              RA, DEC, CZ,
-                                              verbose=True)
-          print("Results: DDrppi_mocks = {0}".format(results_DDrppi_mocks))
-
+          pimax, rbins, RA, DEC, CZ)
   
 
 Calculating angular pair-counts (``Corrfunc.mocks.DDtheta_mocks``)
@@ -295,14 +310,10 @@ Corrfunc can compute angular pair counts for mock catalogs. The input positions
 are expected to be ``Right Ascension`` and ``Declination``. Since all
 calculations are in angular space, cosmology is not required.
 
-.. code:: python
+.. testcode:: mocks
 
-          from Corrfunc.mocks import DDtheta_mocks
-          results_DDtheta_mocks = DDtheta_mocks(autocorr, nthreads, rbins,
-                                                RA, DEC,
-                                                verbose=True)
-          print("Results: DDtheta_mocks = {0}".format(results_DDtheta_mocks))
-
+          from Corrfunc.mocks.DDtheta_mocks import DDtheta_mocks
+          results_DDtheta_mocks = DDtheta_mocks(autocorr, nthreads, rbins, RA, DEC)
 
           
 Calculating the Counts-in-Cells (``Corrfunc.mocks.vpf_mocks``)
@@ -311,9 +322,9 @@ Corrfunc can calculate the counts-in-cells statistics. The simplest example for
 counts-in-cells is the Void Probability Function -- the probability that a
 sphere of a certain size contains zero galaxies.
 
-.. code:: python
+.. testcode:: mocks
 
-          from Corrfunc.mocks import vpf_mocks
+          from Corrfunc.mocks.vpf_mocks import vpf_mocks
 
           # Maximum radius of the sphere in Mpc/h
           rmax = 10.0
@@ -327,17 +338,16 @@ sphere of a certain size contains zero galaxies.
           # Max number of galaxies in sphere (must be >=1)
           numpN = 6
 
+          # Minimum number of random points needed in a ``rmax`` sphere
+          # such that it is considered to be entirely within the mock
+          # footprint. Does not matter in this case, since we already
+          # have the centers for the fully enclosed spheres
+          threshold_ngb = 1                                                                                                        
+
           # File with sphere centers (centers such that spheres with size
           # rmax=10 Mpc/h are completely inside the survey)
-          centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
-                               "../mocks/tests/data/",
-                               "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
+          centers_file = pjoin(dirname(abspath(Corrfunc.__file__)), "../mocks/tests/data/", "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
 
-          results_vpf_mocks = vpf_mocks(rmax, nbins, nspheres, numpN,
-                                        threshold_ngb, centers_file, cosmology,
-                                        RA, DEC, CZ,
-                                        RAND_RA, RAND_DEC, RAND_CZ,
-                                        verbose=True)
-          print("Results: VPF_mocks = {0}".format(results_vpf_mocks))
+          results_vpf_mocks = vpf_mocks(rmax, nbins, nspheres, numpN, threshold_ngb, centers_file, cosmology, RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ)
 
 See the complete reference here :py:mod:`Corrfunc`.

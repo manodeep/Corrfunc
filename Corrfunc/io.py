@@ -50,10 +50,38 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
 
     Example
     --------
+    >>> import numpy as np
+    >>> from os.path import dirname, abspath, join as pjoin
+    >>> import Corrfunc
     >>> from Corrfunc.io import read_fastfood_catalog
-    >>> filename = "galaxies.ff"
-    >>> X, Y, Z = read_fastfood_catalog(filename, dtype=numpy.float32)
-
+    >>> filename = pjoin(dirname(abspath(Corrfunc.__file__)),
+    ...                  "../theory/tests/data/",
+    ...                  "gals_Mr19.ff")
+    >>> X, Y, Z = read_fastfood_catalog(filename)
+    >>> N = 20
+    >>> for x,y,z in zip(X[0:N], Y[0:N], Z[0:]):
+    ...     print("{0:10.5f} {1:10.5f} {2:10.5f}".format(x, y, z))
+    ...     # doctest: +NORMALIZE_WHITESPACE
+    419.94550    1.96340    0.01610
+    419.88272    1.79736    0.11960
+    0.32880   10.63620    4.16550
+    0.15314   10.68723    4.06529
+    0.46400    8.91150    6.97090
+    6.30690    9.77090    8.61080
+    5.87160    9.65870    9.29810
+    8.06210    0.42350    4.89410
+    11.92830    4.38660    4.54410
+    11.95543    4.32622    4.51485
+    11.65676    4.34665    4.53181
+    11.75739    4.26262    4.31666
+    11.81329    4.27530    4.49183
+    11.80406    4.54737    4.26824
+    12.61570    4.14470    3.70140
+    13.23640    4.34750    5.26450
+    13.19833    4.33196    5.29435
+    13.21249    4.35695    5.37418
+    13.06805    4.24275    5.35126
+    13.19693    4.37618    5.28772
 
     """
     if return_dtype is None:
@@ -150,15 +178,40 @@ def read_ascii_catalog(filename, return_dtype=None):
 
     Example
     --------
+    >>> from __future__ import print_function
+    >>> from os.path import dirname, abspath, join as pjoin
+    >>> import Corrfunc
     >>> from Corrfunc.io import read_ascii_catalog
-    >>> filename = "galaxies.dat"
-    >>> X, Y, Z = read_ascii(filename, dtype=numpy.float)
+    >>> filename = pjoin(dirname(abspath(Corrfunc.__file__)), "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.dat")
+    >>> ra, dec, cz = read_ascii_catalog(filename)
+    >>> N = 20
+    >>> for r,d,c in zip(ra[0:N], dec[0:N], cz[0:]):
+    ...     print("{0:10.5f} {1:10.5f} {2:10.5f}".format(r, d, c)) # doctest: +NORMALIZE_WHITESPACE
+    178.45087   67.01112 19905.28514
+    178.83495   67.72519 19824.02285
+    179.50132   67.67628 19831.21553
+    182.75497   67.13004 19659.79825
+    186.29853   68.64099 20030.64412
+    186.32346   68.65879 19763.38137
+    187.36173   68.15151 19942.66996
+    187.20613   68.56189 19996.36607
+    185.56358   67.97724 19729.32308
+    183.27930   67.11318 19609.71345
+    183.86498   67.82823 19500.44130
+    184.07771   67.43429 19440.53790
+    185.13370   67.15382 19390.60304
+    189.15907   68.28252 19858.85853
+    190.12209   68.55062 20044.29744
+    193.65245   68.36878 19445.62469
+    194.93514   68.34870 19158.93155
+    180.36897   67.50058 18671.40780
+    179.63278   67.51318 18657.59191
+    180.75742   67.95530 18586.88913
 
     """
 
     if return_dtype is None:
-        msg = 'Return data-type must be set and a valid numpy data-type'
-        raise ValueError(msg)
+        return_dtype = np.float
 
     if not file_exists(filename):
         msg = "Could not find file = {0}".format(filename)
@@ -166,7 +219,6 @@ def read_ascii_catalog(filename, return_dtype=None):
 
     # check if pandas is available - much faster to read in the data
     # using pandas
-    print("Reading in the data...")
     try:
         import pandas as pd
     except ImportError:
@@ -240,3 +292,7 @@ def read_catalog(filebase=None):
             return x, y, z
 
         raise IOError("Could not locate file {0}".format(filebase))
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
