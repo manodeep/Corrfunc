@@ -190,11 +190,11 @@ static inline struct config_options get_config_options(void)
 
 #define EXTRA_OPTIONS_HEADER_SIZE     (1024)
 
-typedef struct weight_struct
+typedef struct
 {
     void **weights;
     uint64_t num_weights;
-}
+} weight_struct;
 
 
     
@@ -203,7 +203,7 @@ struct extra_options
     weight_struct weights;
     uint64_t weighting_func_type;//way to type-cast the generic weightfunc into the actual
                                 //function. 
-    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(weight_struct) - 2*sizeof(uint64_t)];
+    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(weight_struct) - sizeof(uint64_t)];
 };
 
 static inline int get_extra_options(struct extra_options *extra)
@@ -215,9 +215,10 @@ static inline int get_extra_options(struct extra_options *extra)
 
     memset(extra, 0, EXTRA_OPTIONS_HEADER_SIZE);
     /*Pre-allocate space for 2 sets of weights array pointers */
-    extra->num_weights = 2;
-    extra->weights = malloc(sizeof(*(extra->weights)) * extra->num_weights);
-    if(extra->weights == NULL) {
+    weight_struct *w = &(extra->weights);
+    w->num_weights = 2;
+    w->weights = malloc(sizeof(*(w->weights)) * w->num_weights);
+    if(w->weights == NULL) {
         return EXIT_FAILURE;
     }
 
@@ -226,12 +227,13 @@ static inline int get_extra_options(struct extra_options *extra)
 
 static inline void free_extra_options(struct extra_options *extra)
 {
-    for(uint64_t i=0;i<extra->num_weights;i++) {
-        free(extra->weights[i]);
+    weight_struct *w = &(extra->weights);
+    for(uint64_t i=0;i<w->num_weights;i++) {
+        free(w->weights[i]);
     }
-    free(extra->weights);
-    extra->weights = NULL;
-    extra->num_weights = 0;
+    free(w->weights);
+    w->weights = NULL;
+    w->num_weights = 0;
 }    
 
 

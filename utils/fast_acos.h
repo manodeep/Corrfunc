@@ -60,7 +60,7 @@ static inline DOUBLE FAST_ACOS(const DOUBLE x)
     /*Taken from associated C++ code in http://www.geometrictools.com/GTEngine/Include/Mathematics/GteACosEstimate.h*/
     /* 8th degree polynomial, valid on [0, 1], max absolute error 3.6e-9 */
 
-    /* Faster but with a larger error bound than the alternate implementation */
+    /* Faster but with a larger error bound than the alternate FAST_ACOS implementation above */
     
     DOUBLE poly;
 #define GTE_C_ACOS_DEG8_C0 +1.5707963267948966
