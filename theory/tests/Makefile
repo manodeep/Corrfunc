@@ -86,11 +86,11 @@ wp: test_periodic
 	./test_periodic 2
 
 xi_rp_pi: test_periodic test_nonperiodic
-	./test_periodic 1 5 6 7
+	./test_periodic 0 5 6 7
 	./test_nonperiodic 1 2 
 
 xi_of_r: test_periodic test_nonperiodic
-	./test_periodic 0
+	./test_periodic 1
 	./test_nonperiodic 0
 
 vpf: test_periodic

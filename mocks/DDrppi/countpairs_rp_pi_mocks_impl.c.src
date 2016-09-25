@@ -150,14 +150,14 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
     
     int function_dispatch=0;
     /* Check that cpu supports feature */
-    if(options->instruction_set != 0) {
-      switch(options->instruction_set) {
-      case(AVX):
-        function_dispatch=avx_offset;break;
-      case(SSE42):function_dispatch=sse_offset;break;
-      default:function_dispatch=fallback_offset;break;
-      }
+    if(options->instruction_set >= 0) {
+        switch(options->instruction_set) {
+        case(AVX):function_dispatch=avx_offset;break;
+        case(SSE42): function_dispatch=sse_offset;break;
+        default:function_dispatch=fallback_offset;break;
+        }
     }
+
     if(function_dispatch >= num_functions) {
       fprintf(stderr,"In %s> ERROR: Could not resolve the correct function.\n Function index = %d must lie between [0, %d)\n",
               __FUNCTION__, function_dispatch, num_functions);

@@ -645,10 +645,6 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             const DOUBLE perpy = ypos - *localy1;
             const DOUBLE perpz = zpos - *localz1;
             const DOUBLE dot_product = dpos*dpos - (*locald1) * (*locald1);//parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
-            /* if(dot_product*dot_product >= sqr_max_sep) { */
-            /*     break; */
-            /* } */
-            
             localx1++;localy1++;localz1++;locald1++;
             
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
