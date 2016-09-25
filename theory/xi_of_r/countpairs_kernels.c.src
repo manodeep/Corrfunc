@@ -414,7 +414,7 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
                                              const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                              DOUBLE *src_rpavg, uint64_t *src_npairs)
 {
-  /*----------------- FALLBACK CODE --------------------*/
+    /*----------------- FALLBACK CODE --------------------*/
   const int32_t need_rpavg = src_rpavg != NULL;
 
   uint64_t npairs[nbin];
