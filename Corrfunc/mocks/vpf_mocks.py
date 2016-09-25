@@ -48,10 +48,17 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        returned.
 
        More explicitly, the columns in the results look like the following:
-         numpN = 1 -> p0
-         numpN = 2 -> p0 p1
-         numpN = 3 -> p0 p1 p2
-         and so on...(note that p0 is the vpf).
+
+         ======   ==========================
+         numpN    Columns in output
+         ======   ==========================
+            1      p0
+            2      p0      p1
+            3      p0      p1     p2
+            4      p0      p1     p2     p3
+         ======   ==========================
+
+       and so on...(note that p0 is the vpf).
 
     threshold_ngb: integer
        Minimum number of random points needed in a ``rmax`` sphere such that it
