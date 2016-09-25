@@ -11,5 +11,12 @@ import sys
 __author__ = ('Manodeep Sinha')
 __all__ = ('DD', 'DDrppi', 'wp', 'xi', 'vpf', )
 
+from .DD import DD
+from .DDrppi import DDrppi
+from .wp import wp
+from .xi import xi
+from .vpf import vpf
+
+
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
