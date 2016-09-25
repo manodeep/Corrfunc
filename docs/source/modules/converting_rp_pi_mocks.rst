@@ -3,10 +3,10 @@
 Calculating the projected correlation function, :math:`wp(rp)`
 ==============================================================
 
-Angular pair counts can be converted into a :math:`wp(rp)`
-by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
+2-D Pair counts can be converted into a :math:`wp(rp)`
+by using the helper function :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp`.
 First, we have to compute the relevant pair counts using the python
-wrapper `Corrfunc.mocks.DDrppi_mocks`
+wrapper :py:mod:`Corrfunc.mocks.DDrppi_mocks`
 
 ::
 

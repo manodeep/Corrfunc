@@ -4,7 +4,7 @@ Converting :math:`(r_p, \pi)` pairs into a projected correlation function
 ==========================================================================
 
 Pair counts in :math:`(r_p, \pi)` can be converted into a projected correlation function
-by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
+by using the helper function :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp`.
 
 ::
 
