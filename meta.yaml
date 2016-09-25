@@ -5,7 +5,7 @@ package:
 source:
   path: dist
   fn: Corrfunc-2.0.0.tar.gz
-  md5: 59ad43b044225ce8c87e60f41dda6873
+  md5: 8523662c871c33f3db44ffe535c0e286
 
   
   # git_url: https://github.com/manodeep/Corrfunc.git
@@ -28,7 +28,7 @@ requirements:
 build:
   detect_binary_files_with_prefix: True
   script: python setup.py install --single-version-externally-managed --record record.txt
-  binary_relocation: True
+  binary_relocation: False
   skip: True # [win]
   
 test:

@@ -27,7 +27,6 @@ PYTHON_CONFIG_EXE:=
 ## Set OpenMP for both theory and mocks
 OPT += -DUSE_OMP
 
-CONDA_BUILD ?=0
 
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
@@ -36,6 +35,9 @@ MINOR:=0
 PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 ABI_COMPAT_VERSION:=$(MAJOR).0
+# Whenever conda needs to be checked again
+# this ':' should be replaced by '?'
+CONDA_BUILD :=0
 DO_CHECKS := 1
 ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
   DO_CHECKS := 0
