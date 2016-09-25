@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Example python code to call the theory correlation function
-extensions from python. (The codes are written in C)
-
-Author: Manodeep Sinha <manodeep@gmail.com>
-
-Requires: numpy
+Example python code to call the theory clustering functions
+from python. This script calls the python extensions directly;
+however the recommended use is via the wrappers provided
+in :py:mod:`Corrfunc.theory`.
 
 """
 from __future__ import (absolute_import, division, print_function,
