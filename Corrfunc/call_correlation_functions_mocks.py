@@ -2,13 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Example python code to call the mocks correlation function
-extensions from python. (The codes are written in C)
-
-Author: Manodeep Sinha <manodeep@gmail.com>
-
-Requires: numpy
-
+Example python code to call the mocks clustering functions
+from python. This script calls the python extensions
+directly; however the recommended use is via the wrappers provided
+in :py:mod:`Corrfunc.mocks`.
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)

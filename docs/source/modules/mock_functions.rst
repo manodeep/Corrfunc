@@ -3,7 +3,7 @@
 Detailed API for Clustering Statistics on Mock Catalogs
 =========================================================
 
-All of these can be imported from `Corrfunc.mocks`. See the complete reference here :py:mod:`Corrfunc`.`
+All of these can be imported from :py:mod:`Corrfunc.mocks`. See the complete reference here :py:mod:`Corrfunc`.`
 
 .. currentmodule:: Corrfunc.mocks
 

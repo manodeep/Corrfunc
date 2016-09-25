@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``theory/xi_rp_pi``. `~Corrfunc.theory.DDrppi`
+``theory/xi_rp_pi``. This wrapper is in :py:mod:`Corrfunc.theory.DDrppi`
 """
 
 from __future__ import (division, print_function, absolute_import,
