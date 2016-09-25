@@ -40,15 +40,22 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
        pN's.
 
     numpN: integer (>= 1)
-       Governs how many unique pN's are to returned. If ``numpN` is set to 1,
+       Governs how many unique pN's are to returned. If ``numpN`` is set to 1,
        then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
        returned.
 
        More explicitly, the columns in the results look like the following:
-         numpN = 1 -> p0
-         numpN = 2 -> p0 p1
-         numpN = 3 -> p0 p1 p2
-         and so on...(note that p0 is the vpf).
+
+         ======   ==========================
+         numpN    Columns in output
+         ======   ==========================
+            1      p0
+            2      p0      p1
+            3      p0      p1     p2
+            4      p0      p1     p2     p3
+         ======   ==========================
+
+       and so on...(note that p0 is the vpf).
 
     seed: unsigned integer
        Random number seed for the underlying GSL random number generator. Used
