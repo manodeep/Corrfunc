@@ -4,9 +4,9 @@ Converting 3D pair counts into a correlation function
 ======================================================
 
 3D pair counts can be converted into a correlation function
-by using the helper function `Corrfunc.utils.convert_3d_counts_to_cf`.
+by using the helper function :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf`.
 First, we have to compute the relevant pair counts using the python
-wrapper `Corrfunc.theory.DD`
+wrapper :py:mod:`Corrfunc.theory.DD`
 
 ::
 

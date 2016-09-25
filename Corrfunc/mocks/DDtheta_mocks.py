@@ -3,8 +3,8 @@
 
 """
 Python wrapper around the C extension for the angular correlation function
-:math:`\\omega(\theta)`. Corresponding C routines are in mocks/wtheta/,
-python interface is `~Corrfunc.mocks.DDtheta_mocks`
+:math:`\\omega(\\theta)`. Corresponding C routines are in ``mocks/wtheta/``,
+python interface is :py:mod:`Corrfunc.mocks.DDtheta_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -68,7 +68,6 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        to be in the [-90.0, 90.0], but the code will try to fix cases where
        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
        DEC's in [-90.0, 90.0].
-
        Must be of same precision type as RA1.
 
     RA2: array-like, real (float/double)

@@ -1,6 +1,6 @@
 """
 Python wrapper around the C extension for the pair counter in
-``theory/xi_of_r``. `~Corrfunc.theory.DD`
+``theory/xi_of_r``. This wrapper is in :py:mod:`Corrfunc.theory.DD`
 """
 
 from __future__ import (division, print_function, absolute_import,

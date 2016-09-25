@@ -3,8 +3,8 @@
 
 """
 Python wrapper around the C extension for the counts-in-cells
-for 3-D real space. Corresponding C codes are in `theory/vpf`
-while the python wrapper is in `~Corrfunc.theory.vpf`
+for 3-D real space. Corresponding C codes are in ``theory/vpf``
+while the python wrapper is in :py:mod:`Corrfunc.theory.vpf`.
 """
 
 from __future__ import (division, print_function, absolute_import,

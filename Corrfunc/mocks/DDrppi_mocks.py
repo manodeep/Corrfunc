@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``mocks/DDrppi``. This python wrapper is in `~Corrfunc.mocks.DDrppi_mocks`
+``mocks/DDrppi``. This python wrapper is :py:mod:`Corrfunc.mocks.DDrppi_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -51,8 +51,9 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         based on your preferred cosmology. Set ``is_comoving_dist=True``, to
         indicate that the co-moving distance conversion has already been done.
 
-        Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75
-                 2 -> Planck   cosmology. Om=0.302, Ol=0.698
+        Choices:
+                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\Lambda=0.75`
+                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\Lambda=0.698`
 
         To setup a new cosmology, add an entry to the function,
         ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install

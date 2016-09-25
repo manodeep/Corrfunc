@@ -3,7 +3,8 @@
 
 """
 Python wrapper around the C extension for the theoretical projected
-auto-correlation function, wp(rp). `~Corrfunc.theory.wp`
+auto-correlation function, wp(rp), in ``theory/wp``. This python
+wrapper is in :py:mod:`Corrfunc.theory.wp`.
 """
 
 from __future__ import (division, print_function, absolute_import,
