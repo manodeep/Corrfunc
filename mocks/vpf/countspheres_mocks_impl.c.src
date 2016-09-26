@@ -84,13 +84,12 @@ vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *o
     
     int function_dispatch=0;
     /* Check that cpu supports feature */
-    if(options->instruction_set != 0) {
-      switch(options->instruction_set) {
-      case(AVX):
-        function_dispatch=avx_offset;break;
-      case(SSE42):function_dispatch=sse_offset;break;
-      default:function_dispatch=fallback_offset;break;
-      }
+    if(options->instruction_set >= 0) {
+        switch(options->instruction_set) {
+        case(AVX): function_dispatch=avx_offset;break;
+        case(SSE42):function_dispatch=sse_offset;break;
+        default:function_dispatch=fallback_offset;break;
+        }
     }
 
     if(function_dispatch >= num_functions) {

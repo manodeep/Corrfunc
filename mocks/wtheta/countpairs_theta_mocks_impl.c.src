@@ -130,13 +130,13 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
     
     int function_dispatch=0;
     /* Check that cpu supports feature */
-    if(options->instruction_set != 0) {
-      switch(options->instruction_set) {
-      case(AVX):
-        function_dispatch=avx_offset;break;
-      case(SSE42):function_dispatch=sse_offset;break;
-      default:function_dispatch=fallback_offset;break;
-      }
+    if(options->instruction_set >= 0) {
+        switch(options->instruction_set) {
+        case(AVX):
+            function_dispatch=avx_offset;break;
+        case(SSE42):function_dispatch=sse_offset;break;
+        default:function_dispatch=fallback_offset;break;
+        }
     }
     if(function_dispatch >= num_functions) {
       fprintf(stderr,"In %s> ERROR: Could not resolve the correct function.\n Function index = %d must lie between [0, %d)\n",
@@ -330,7 +330,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     int nthetabin;
     DOUBLE thetamin,thetamax;
     setup_bins_DOUBLE(binfile,&thetamin,&thetamax,&nthetabin,&theta_upp);
-    if( ! (thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax < 180.0 && nthetabin > 0) ) {
+    if( ! (thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax < 90.0 && nthetabin > 0) ) {
         fprintf(stderr,"Error: Could not setup with theta bins correctly. (thetamin = %lf, thetamax = %lf, with nbins = %d). Expected non-zero rmin/rmax with thetamax > "
                 "thetamin and nbins >=1 \n",thetamin, thetamax, nthetabin);
         return EXIT_FAILURE;

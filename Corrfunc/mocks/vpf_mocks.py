@@ -3,8 +3,8 @@
 
 """
 Python wrapper around the C extension for the counts-in-cells
-for positions on the sky. Corresponding C codes are in `mocks/vpf`
-while the python wrapper is in `~Corrfunc.mocks.vpf_mocks`
+for positions on the sky. Corresponding C codes are in ``mocks/vpf``
+while the python wrapper is in :py:mod:`Corrfunc.mocks.vpf_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -48,10 +48,17 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        returned.
 
        More explicitly, the columns in the results look like the following:
-         numpN = 1 -> p0
-         numpN = 2 -> p0 p1
-         numpN = 3 -> p0 p1 p2
-         and so on...(note that p0 is the vpf).
+
+         ======   ==========================
+         numpN    Columns in output
+         ======   ==========================
+            1      p0
+            2      p0      p1
+            3      p0      p1     p2
+            4      p0      p1     p2     p3
+         ======   ==========================
+
+       and so on...(note that p0 is the vpf).
 
     threshold_ngb: integer
        Minimum number of random points needed in a ``rmax`` sphere such that it
@@ -73,18 +80,19 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        that centers file and will be faster.
 
     cosmology: integer, required
-       Integer choice for setting cosmology. Valid values are 1->LasDamas
-       cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
-       easiest way is to convert the ``CZ`` values into co-moving distance,
-       based on your preferred cosmology. Set ``is_comoving_dist=True``, to
-       indicate that the co-moving distance conversion has already been done.
+        Integer choice for setting cosmology. Valid values are 1->LasDamas
+        cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
+        easiest way is to convert the ``CZ`` values into co-moving distance,
+        based on your preferred cosmology. Set ``is_comoving_dist=True``, to
+        indicate that the co-moving distance conversion has already been done.
 
-       Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75
-                2 -> Planck   cosmology. Om=0.302, Ol=0.698
+        Choices:
+                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\Lambda=0.75`
+                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\Lambda=0.698`
 
-       To setup a new cosmology, add an entry to the function,
-       ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
-       the entire package.
+        To setup a new cosmology, add an entry to the function,
+        ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
+        the entire package.
 
     RA: array-like, real (float/double)
        The array of Right Ascensions for the first set of points. RA's
@@ -109,7 +117,6 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
        If ``is_comoving_dist`` is set, then ``CZ`` is interpreted as the
        co-moving distance, rather than (Speed Of Light * Redshift).
-
 
     RAND_RA: array-like, real (float/double)
        The array of Right Ascensions for the randoms. RA's are expected to be

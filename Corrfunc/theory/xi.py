@@ -4,7 +4,8 @@
 """
 Python wrapper around the C extension for the theoretical 3-D
 real-space correlation function, :math:`\\xi(r)`. Corresponding
-C routines are in theory/xi/, python interface is `~Corrfunc.theory.xi`
+C routines are in ``theory/xi/``, python interface is
+:py:mod:`Corrfunc.theory.xi`.
 """
 
 from __future__ import (division, print_function, absolute_import,

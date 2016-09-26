@@ -3,7 +3,7 @@
 Detailed API for Clustering Statistics on Simulations
 =======================================================
 
-All of these can be imported from `Corrfunc.theory`. See the complete reference here :py:mod:`Corrfunc`.`
+All of these can be imported from :py:mod:`Corrfunc.theory`. See the complete reference here :py:mod:`Corrfunc`.`
 
 .. currentmodule:: Corrfunc.theory
 

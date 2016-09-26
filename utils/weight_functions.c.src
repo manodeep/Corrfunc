@@ -1,0 +1,15 @@
+#include "defs.h"
+
+/* Maps a name to weighting method
+   `method` and `nweights` will be set on return.
+   `nweights` is the number of weights per point this method uses
+ */
+static inline int get_weight_method_by_name(char *name, weight_method_t *method, int *nweights){
+    if(strcmp(name, "p")){
+        *method = PAIR_PRODUCT;
+        *nweights = 1;
+        return EXIT_SUCCESS;
+    }
+        
+    return EXIT_FAILURE;
+}
