@@ -273,7 +273,8 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
                                                                    int *nlattice_x,
                                                                    int *nlattice_y,
                                                                    int *nlattice_z,
-                                                                   const struct config_options *options)
+                                                                   const struct config_options *options,
+                                                                   const struct extra_options *extra)
 {
 
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;

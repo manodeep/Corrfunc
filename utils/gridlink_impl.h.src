@@ -60,7 +60,8 @@ extern "C" {
                                                                             int *nlattice_x,
                                                                             int *nlattice_y,
                                                                             int *nlattice_z,
-                                                                            const struct config_options *options) __attribute__((warn_unused_result));
+                                                                            const struct config_options *options,
+                                                                            const struct extra_options *extra) __attribute__((warn_unused_result));
   extern int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOUBLE *lattice1, struct cellarray_index_particles_DOUBLE *lattice2,
                                                       const int64_t totncells,
                                                       const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,

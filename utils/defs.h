@@ -41,6 +41,12 @@ typedef enum {
 } isa;//name for instruction sets -> corresponds to the return from instrset_detect in cpu_features.c
 
 
+typedef enum {
+  NONE=-42, /* default */
+  PAIR_PRODUCT=0,
+  NUM_WEIGHT_TYPE 
+} weight_method_t; // type of weighting to apply
+
 #define OPTIONS_HEADER_SIZE     (1024)
 struct config_options
 {
@@ -187,29 +193,32 @@ static inline struct config_options get_config_options(void)
     return options;
 }
 
-
 #define EXTRA_OPTIONS_HEADER_SIZE     (1024)
 struct extra_options
 {
-    void **weights;//pointer to an array of pointers to store the weight arrays
-    void (*weightfunc)(void);//Treacherous territory, generic weighting function pointer
-    uint64_t num_weights;//number of valid weight arrays
-    uint64_t weighting_func_type;//way to type-cast the generic weightfunc into the actual
+    struct weight_t **weights;//pointer to an array of pointers to store the weight arrays
+    DOUBLE (*weightfunc)(struct weight_t *weight1, struct weight_t *weight2);
+    //Treacherous territory, generic weighting function pointer
+    uint32_t num_weights;//number of valid weight arrays
+    weight_method_t weighting_method;//way to type-cast the generic weightfunc into the actual
                                 //function. 
     
-    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(void **) - sizeof(void *) - 2*sizeof(uint64_t)];
+    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(DOUBLE **) - sizeof(DOUBLE *) - sizeof(uint32_t) - sizeof(weight_method_t)];
 };
 
-static inline int get_extra_options(struct extra_options *extra)
+static inline int get_extra_options(struct extra_options *extra, const weight_method_t weighting_method)
 {    
     ENSURE_STRUCT_SIZE(struct extra_options, EXTRA_OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
     if(extra == NULL) {
         return EXIT_FAILURE;
     }
+    if(num_weights < 0){
+        return EXIT_FAILURE;
+    }
 
     memset(extra, 0, EXTRA_OPTIONS_HEADER_SIZE);
-    /*Pre-allocate space for 2 sets of weights array pointers */
-    extra->num_weights = 2;
+    /*Pre-allocate space for an array of weights array pointers */
+    extra->num_weights = num_weights;
     extra->weights = malloc(sizeof(*(extra->weights)) * extra->num_weights);
     if(extra->weights == NULL) {
         return EXIT_FAILURE;
