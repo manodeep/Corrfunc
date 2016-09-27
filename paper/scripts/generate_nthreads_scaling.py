@@ -174,6 +174,7 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
                         index += 1
 
             print("{0}".format(all_runtimes[start_thread_index:index]))
+            sys.stdout.flush()
             
     print("index = {0} totN = {1}".format(index, totN))
     return keys, isa, all_runtimes
