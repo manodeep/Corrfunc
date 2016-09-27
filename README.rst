@@ -1,4 +1,4 @@
-|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |RTD|
+|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |RTD| |Landscape|
 
 Description
 ===========
@@ -368,3 +368,6 @@ Project URL
 .. |RTD| image:: https://readthedocs.org/projects/corrfunc/badge/?version=master
    :target: http://corrfunc.readthedocs.io/en/master/?badge=master
    :alt: Documentation Status
+.. |Landscape| image:: https://landscape.io/github/manodeep/Corrfunc/master/landscape.svg?style=flat
+   :target: https://landscape.io/github/manodeep/Corrfunc/master
+   :alt: Code Health

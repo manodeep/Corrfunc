@@ -12,9 +12,11 @@ import sys
 import os
     
 
-# Taken directly from answer by  J.F. Sebastian 
+# Taken directly from answer by  J.F. Sebastian
 # http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python/17954769#17954769
 from contextlib import contextmanager
+
+
 @contextmanager
 def stderr_redirected(to=os.devnull):
     """
@@ -26,21 +28,21 @@ def stderr_redirected(to=os.devnull):
     """
     fd = sys.stderr.fileno()
 
-    ##### assert that Python and C stdio write using the same file descriptor
-    ####assert libc.fileno(ctypes.c_void_p.in_dll(libc, "stderr")) == fd == 1
+    # assert that Python and C stdio write using the same file descriptor
+    # assert libc.fileno(ctypes.c_void_p.in_dll(libc, "stderr")) == fd == 1
     
     def _redirect_stderr(to):
-        sys.stderr.close() # + implicit flush()
-        os.dup2(to.fileno(), fd) # fd writes to 'to' file
-        sys.stderr = os.fdopen(fd, 'w') # Python writes to fd
+        sys.stderr.close()  # + implicit flush()
+        os.dup2(to.fileno(), fd)  # fd writes to 'to' file
+        sys.stderr = os.fdopen(fd, 'w')  # Python writes to fd
 
     with os.fdopen(os.dup(fd), 'w') as old_stderr:
         with open(to, 'w') as file:
             _redirect_stderr(to=file)
         try:
-            yield # allow code to be run with the redirected stderr
+            yield  # allow code to be run with the redirected stderr
         finally:
-            _redirect_stderr(to=old_stderr) # restore stderr.
+            _redirect_stderr(to=old_stderr)    # restore stderr
             # buffering and flags such as
             # CLOEXEC may be different
             
@@ -69,11 +71,10 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
                 msg = "Valid instructions sets benchmark are: {0}\n"\
                       "Found routine = {1}".format(allisa, i)
                 raise ValueError(msg)
-
             
     def _get_time_from_stderr(filename='stderr.txt'):
         serial_time = 0.0
-        with open(filename,'r') as f:
+        with open(filename, 'r') as f:
             for l in f:
                 if 'gridlink' in l:
                     splits = l.split()
@@ -82,7 +83,6 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
 
         return serial_time
 
-            
     print("Benchmarking routines = {0} with isa = {1}".format(keys, isa))
     x, y, z = read_catalog()
     binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
@@ -100,12 +100,12 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
 
     totN = (max_threads - min_threads + 1) * len(keys) * len(isa) * nrepeats
     all_runtimes = np.empty(totN, dtype=dtype)
-    index = 0L
-
+    index = 0
     stderr_filename = 'stderr.txt'
     for run_isa in isa:
         for nthreads in range(min_threads, max_threads + 1):
-            print("Working on nthreads = {0}".format(nthreads), file=sys.stderr)
+            print("Working on nthreads = {0}".format(nthreads),
+                  file=sys.stderr)
             start_thread_index = index
             if 'DD' in keys:
                 for repeat in range(nrepeats):
@@ -113,9 +113,9 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
                     with stderr_redirected(to=stderr_filename):
                         t0 = time.time()
                         _, api_time = DD(autocorr, nthreads, binfile, x, y, z,
-                                         verbose=True, c_api_timer=True, isa=run_isa)
+                                         verbose=True, c_api_timer=True,
+                                         isa=run_isa)
                         t1 = time.time()
-                        serial_time = _get_time_from_stderr(stderr_filename)
                         all_runtimes['name'][index] = 'DD'
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
@@ -124,14 +124,15 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
                         all_runtimes['api_time'][index] = api_time
                         index += 1
 
-            
             if 'DDrppi' in keys:
                 for repeat in range(nrepeats):
                     all_runtimes['repeat'][index] = repeat
-                    with stderr_redirected(to=stderr_filename):                
+                    with stderr_redirected(to=stderr_filename):
                         t0 = time.time()
-                        _, api_time = DDrppi(autocorr, nthreads, pimax, binfile, x, y, z,
-                                             verbose=True, c_api_timer=True, isa=run_isa)
+                        _, api_time = DDrppi(autocorr, nthreads, pimax,
+                                             binfile, x, y, z,
+                                             verbose=True, c_api_timer=True,
+                                             isa=run_isa)
                         t1 = time.time()
                         all_runtimes['name'][index] = 'DDrppi'
                         all_runtimes['isa'][index] = run_isa
@@ -144,10 +145,12 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
             if 'wp' in keys:
                 for repeat in range(nrepeats):
                     all_runtimes['repeat'][index] = repeat
-                    with stderr_redirected(to=stderr_filename):                                
+                    with stderr_redirected(to=stderr_filename):
                         t0 = time.time()
-                        _, api_time = wp(boxsize, pimax, nthreads, binfile, x, y, z,
-                                         verbose=True, c_api_timer=True, isa=run_isa)
+                        _, api_time = wp(boxsize, pimax, nthreads,
+                                         binfile, x, y, z,
+                                         verbose=True, c_api_timer=True,
+                                         isa=run_isa)
                         t1 = time.time()
                         all_runtimes['name'][index] = 'wp'
                         all_runtimes['isa'][index] = run_isa
@@ -160,10 +163,11 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
             if 'xi' in keys:
                 for repeat in range(nrepeats):
                     all_runtimes['repeat'][index] = repeat
-                    with stderr_redirected(to=stderr_filename):                
+                    with stderr_redirected(to=stderr_filename):
                         t0 = time.time()
                         _, api_time = xi(boxsize, nthreads, binfile, x, y, z,
-                                         verbose=True, c_api_timer=True, isa=run_isa)
+                                         verbose=True, c_api_timer=True,
+                                         isa=run_isa)
                         t1 = time.time()
                         all_runtimes['name'][index] = 'xi'
                         all_runtimes['isa'][index] = run_isa
@@ -181,7 +185,7 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=16,
 
 
 keys, isa, all_runtimes = benchmark_theory_threads_all(nrepeats=10)
-np.savez('runtimes.npz',keys=keys,isa=isa,all_runtimes=all_runtimes)
+np.savez('runtimes.npz', keys=keys, isa=isa, all_runtimes=all_runtimes)
 print("all_runtimes = {0}".format(all_runtimes))
 nthreads = set(nthreads for nthreads in all_runtimes['nthreads'])
 print("keys = {0}".format(keys))
