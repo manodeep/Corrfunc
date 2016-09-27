@@ -248,7 +248,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
     if(options->verbose) {
       struct timeval t1;
       gettimeofday(&t1,NULL);
-      fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
+      fprintf(stderr," Time taken = %7.3lf sec\n",ADD_DIFF_TIME(t0,t1));
     }
 
     return lattice;
@@ -444,7 +444,7 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
     if(options->verbose) {
       struct timeval t1;
       gettimeofday(&t1,NULL);
-      fprintf(stderr," Time taken = %6.2lf sec\n",ADD_DIFF_TIME(t0,t1));
+      fprintf(stderr," Time taken = %7.3lf sec\n",ADD_DIFF_TIME(t0,t1));
     }
 
     return lattice;
