@@ -381,6 +381,6 @@ if __name__ == '__main__':
                                      output_rpavg=True)
     t1 = time.time()
     print("Results from DDrppi_mocks: Time taken = {0:0.3f} sec "
-          "Python time = {0:0.3f} sec".format(api_time, t1 - t0))
+          "Python time = {1:0.3f} sec".format(api_time, t1 - t0))
     for r in results[0:10]:
         print("{0}".format(r))

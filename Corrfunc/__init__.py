@@ -20,10 +20,10 @@ except NameError:
     __CORRFUNC_SETUP__ = False
 
 if not __CORRFUNC_SETUP__:
-    from .theory import *
-    from .mocks import *
-    from .io import *
-    from .utils import *
+    from . import io 
+    from . import utils
+    from . import theory
+    from . import mocks
 
 
 def read_text_file(filename, encoding="utf-8"):
@@ -86,7 +86,7 @@ def which(program, mode=os.F_OK | os.X_OK, path=None):
         def is_exe(fpath):
             return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
-        fpath, fname = os.path.split(program)
+        fpath, _ = os.path.split(program)
         if fpath:
             if is_exe(program):
                 return program

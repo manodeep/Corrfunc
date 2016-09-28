@@ -22,7 +22,7 @@ static inline void cpuid (int output[4], int functionnumber) {
 #if defined(__GNUC__) || defined(__clang__)              // use inline assembly, Gnu/AT&T syntax
 
    int a, b, c, d;
-   __asm("cpuid" : "=a"(a),"=b"(b),"=c"(c),"=d"(d) : "a"(functionnumber),"c"(0) : );
+   __asm("cpuid" : "=a"(a),"=b"(b),"=c"(c),"=d"(d) : "a"(functionnumber),"c"(0) );
    output[0] = a;
    output[1] = b;
    output[2] = c;

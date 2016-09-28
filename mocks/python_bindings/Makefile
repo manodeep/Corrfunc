@@ -32,13 +32,6 @@ INCL :=	$(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h 
 
 LIB_INCLUDE:=-I$(DDrppi_mocks_DIR) -I$(WTHETA_DIR) -I$(VPF_mocks_DIR)
 
-
-ifeq ($(UNAME), Darwin)
-  LINKER_FLAGS := -install_name "$(PYTHON_EXTN)"
-else
-  LINKER_FLAGS := -Wl,-soname=$(PROJECT).$(MAJOR)
-endif
-
 all: sharedlib $(LIBRARY) $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
 
 $(PROJECT).so: $(PYTHON_EXTN)
@@ -52,7 +45,7 @@ tests: sharedlib $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(C_LI
 	python call_correlation_functions_mocks.py
 
 $(PYTHON_EXTN): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
-	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
+	$(CC) $(OBJECTS) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 
 $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/*.c $(DDrppi_mocks_DIR)/*.c.src $(DDrppi_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_mocks_DIR) libs
@@ -89,8 +82,10 @@ $(INSTALL_LIB_DIR)/$(PROJECT).so:$(INSTALL_LIB_DIR)/$(PYTHON_EXTN)
 
 distclean: clean | $(LIB_DIR)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(PYTHON_EXTN) $(PROJECT).so
+	cd ../../Corrfunc && $(RM) $(PROJECT).so
 
 clean:
 	$(RM) $(PYTHON_EXTN) $(OBJECTS) $(PROJECT).so
+	$(RM) -R *.dSYM
 
-
+include $(ROOT_DIR)/rules.mk
