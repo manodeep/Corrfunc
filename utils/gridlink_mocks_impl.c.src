@@ -233,9 +233,12 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
                 posz = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
                 poscz = my_realloc(lattice[index].cz ,memsize,expected_n,"lattice.cz");
                 if(posx == NULL || posy == NULL || posz == NULL || poscz == NULL) {
-                    free(posx);free(posy);free(posz);free(poscz);
                     expected_n--;
                 }
+                lattice[index].x  = (posx == NULL)  ? lattice[index].x:posx;
+                lattice[index].y  = (posy == NULL)  ? lattice[index].y:posy;
+                lattice[index].z  = (posz == NULL)  ? lattice[index].z:posz;
+                lattice[index].cz = (poscz == NULL) ? lattice[index].cz:poscz;
             } while(expected_n > nallocated[index] && (posx == NULL ||
                                                        posy == NULL ||
                                                        posz == NULL ||
@@ -250,10 +253,6 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
                 free(nallocated);
                 return NULL;
             }
-            lattice[index].x=posx;
-            lattice[index].y=posy;
-            lattice[index].z=posz;
-            lattice[index].cz=poscz;
             nallocated[index] = expected_n;
         }
         XRETURN(lattice[index].nelements < nallocated[index], NULL, 
@@ -465,9 +464,11 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
                 posy = my_realloc(lattice[idec].y,memsize,expected_n,"lattice.y");
                 posz = my_realloc(lattice[idec].z,memsize,expected_n,"lattice.z");
                 if(posx == NULL || posy == NULL || posz == NULL) {
-                    free(posx);free(posy);free(posz);
                     expected_n--;
                 }
+                lattice[idec].x = (posx == NULL) ? lattice[idec].x:posx;
+                lattice[idec].y = (posy == NULL) ? lattice[idec].y:posy;
+                lattice[idec].z = (posz == NULL) ? lattice[idec].z:posz;
             } while(expected_n > nallocated[idec] && (posx == NULL ||
                                                        posy == NULL ||
                                                        posz == NULL));
@@ -481,9 +482,6 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
                 free(nallocated);
                 return NULL;
             }
-            lattice[idec].x=posx;
-            lattice[idec].y=posy;
-            lattice[idec].z=posz;
             nallocated[idec] = expected_n;
         }
 
@@ -748,9 +746,11 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
                 posy = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
                 posz = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
                 if(posx == NULL || posy == NULL || posz == NULL) {
-                    free(posx);free(posy);free(posz);
                     expected_n--;
                 }
+                lattice[index].x = (posx == NULL) ? lattice[index].x:posx;
+                lattice[index].y = (posy == NULL) ? lattice[index].y:posy;
+                lattice[index].z = (posz == NULL) ? lattice[index].z:posz;
             } while(expected_n > nallocated[index] && (posx == NULL ||
                                                        posy == NULL ||
                                                        posz == NULL));
@@ -764,9 +764,6 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
                 free(nallocated);
                 return NULL;
             }
-            lattice[index].x=posx;
-            lattice[index].y=posy;
-            lattice[index].z=posz;
             nallocated[index] = expected_n;
             totnbytes += 3 * (expected_n - nallocated[index]) * memsize;
             nallocated[index] = expected_n;
