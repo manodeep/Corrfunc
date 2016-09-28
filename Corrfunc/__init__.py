@@ -20,10 +20,10 @@ except NameError:
     __CORRFUNC_SETUP__ = False
 
 if not __CORRFUNC_SETUP__:
-    from .theory import *
-    from .mocks import *
-    from .io import *
-    from .utils import *
+    from . import io 
+    from . import utils
+    from . import theory
+    from . import mocks
 
 
 def read_text_file(filename, encoding="utf-8"):

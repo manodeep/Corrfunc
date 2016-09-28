@@ -82,6 +82,7 @@ $(INSTALL_LIB_DIR)/$(PROJECT).so:$(INSTALL_LIB_DIR)/$(PYTHON_EXTN)
 
 distclean: clean | $(LIB_DIR)
 	cd $(INSTALL_LIB_DIR) && $(RM) $(PYTHON_EXTN) $(PROJECT).so
+	cd ../../Corrfunc && $(RM) $(PROJECT).so
 
 clean:
 	$(RM) $(PYTHON_EXTN) $(OBJECTS) $(PROJECT).so
