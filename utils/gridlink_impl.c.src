@@ -207,9 +207,11 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
                 posy = my_realloc(lattice[index].y,memsize,expected_n,"lattice.y");
                 posz = my_realloc(lattice[index].z,memsize,expected_n,"lattice.z");
                 if(posx == NULL || posy == NULL || posz == NULL) {
-                    free(posx);free(posy);free(posz);
                     expected_n--;
                 }
+                lattice[index].x = (posx == NULL) ? lattice[index].x:posx;
+                lattice[index].y = (posy == NULL) ? lattice[index].y:posy;
+                lattice[index].z = (posz == NULL) ? lattice[index].z:posz;
             } while(expected_n > nallocated[index] && (posx == NULL ||
                                                        posy == NULL ||
                                                        posz == NULL));
@@ -222,9 +224,6 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
                 free(nallocated);
                 return NULL;
             }
-            lattice[index].x=posx;
-            lattice[index].y=posy;
-            lattice[index].z=posz;
             nallocated[index] = expected_n;
         }
         XRETURN(lattice[index].nelements < nallocated[index], NULL, 
@@ -379,9 +378,11 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
                 posy = my_realloc(lattice[index].y,memsize,expected_n,"lattice.y");
                 posz = my_realloc(lattice[index].z,memsize,expected_n,"lattice.z");
                 if(posx == NULL || posy == NULL || posz == NULL) {
-                    free(posx);free(posy);free(posz);
                     expected_n--;
                 }
+                lattice[index].x = (posx == NULL) ? lattice[index].x:posx;
+                lattice[index].y = (posy == NULL) ? lattice[index].y:posy;
+                lattice[index].z = (posz == NULL) ? lattice[index].z:posz;
             } while(expected_n > nallocated[index] && (posx == NULL ||
                                                        posy == NULL ||
                                                        posz == NULL));
@@ -394,9 +395,6 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
                 free(nallocated);
                 return NULL;
             }
-            lattice[index].x=posx;
-            lattice[index].y=posy;
-            lattice[index].z=posz;
             nallocated[index] = expected_n;
         }
         XRETURN(lattice[index].nelements < nallocated[index], NULL, 
