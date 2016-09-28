@@ -386,10 +386,11 @@ ifeq ($(DO_CHECKS), 1)
       # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
       # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
       SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))")
-      ifndef SOABI
-        PYTHON_SOABI = 
-      else
-        PYTHON_SOABI = .$(SOABI)
+      export PYTHON_SOABI := 
+      ifdef SOABI
+        ifneq ($(SOABI), None))
+          PYTHON_SOABI = .$(SOABI)
+        endif
       endif
       export PYTHON_SOABI
       # export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))

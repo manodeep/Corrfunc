@@ -94,6 +94,7 @@ clean:
 
 distclean:clean
 	cd $(INSTALL_LIB_DIR) && $(RM) $(PYTHON_EXTN) $(PROJECT).so
+	cd ../../Corrfunc && $(RM) $(PROJECT).so
 
 include $(ROOT_DIR)/rules.mk
 
