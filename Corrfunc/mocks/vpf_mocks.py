@@ -297,55 +297,5 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
 
 if __name__ == '__main__':
-    import numpy as np
-    import time
-    import Corrfunc
-    from os.path import dirname, abspath, join as pjoin
-    print("\nRunning VPF for mocks")
-    rmax = 10.0
-    nbins = 10
-    numbins_to_print = nbins
-    nspheres = 10000
-    numpN = 6
-    threshold_ngb = 1  # does not matter since we have the centers
-    cosmology = 1  # LasDamas cosmology
-
-    # file containing the centers of random spheres
-    centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
-                         "../mocks/tests/data/",
-                         "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
-
-    N = 100000
-    boxsize = 420.0
-    X = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-    Y = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-    Z = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-
-    # Convert XYZ into RA/DEC/CZ
-    CZ = np.sqrt(X * X + Y * Y + Z * Z)
-    inv_cz = 1.0 / CZ
-
-    # Convert to unit sphere
-    X *= inv_cz
-    Y *= inv_cz
-    Z *= inv_cz
-
-    import math
-    DEC = 90.0 - np.arccos(Z) * 180.0 / math.pi
-    RA = (np.arctan2(Y, X) * 180.0 / math.pi) + 180.0
-
-    t0 = time.time()
-    results, api_time = vpf_mocks(rmax, nbins, nspheres, numpN,
-                                  threshold_ngb, centers_file, cosmology,
-                                  RA, DEC, CZ,
-                                  RA, DEC, CZ,
-                                  verbose=True,
-                                  c_api_timer=True,
-                                  is_comoving_dist=True)
-
-    t1 = time.time()
-    print("Results from vpf_mocks (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
-
-    for r in results:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()
