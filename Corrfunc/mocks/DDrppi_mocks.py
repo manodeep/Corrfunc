@@ -337,50 +337,6 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         return results, api_time
 
 if __name__ == '__main__':
-    import numpy as np
-    import Corrfunc
-    from os.path import dirname, abspath, join as pjoin
-
-    print("\nRunning 2-D correlation function for mocks DD(rp,pi)")
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../mocks/tests/", "bins")
-
-    N = 100000
-    boxsize = 420.0
-    X = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-    Y = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-    Z = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-
-    # Convert XYZ into RA/DEC/CZ
-    CZ = np.sqrt(X * X + Y * Y + Z * Z)
-    inv_cz = 1.0 / CZ
-
-    # Convert to unit sphere
-    X *= inv_cz
-    Y *= inv_cz
-    Z *= inv_cz
-
-    import math
-    DEC = 90.0 - np.arccos(Z) * 180.0 / math.pi
-    RA = (np.arctan2(Y, X) * 180.0 / math.pi) + 180.0
-
-    autocorr = 1
-    cosmology = 1
-    nthreads = 2
-    pimax = 40.0
-
-    import time
-    t0 = time.time()
-    results, api_time = DDrppi_mocks(autocorr, cosmology, nthreads,
-                                     pimax, binfile,
-                                     RA, DEC, CZ,
-                                     fast_divide=False,
-                                     verbose=False,
-                                     is_comoving_dist=True,
-                                     c_api_timer=True,
-                                     output_rpavg=True)
-    t1 = time.time()
-    print("Results from DDrppi_mocks: Time taken = {0:0.3f} sec "
-          "Python time = {1:0.3f} sec".format(api_time, t1 - t0))
-    for r in results[0:10]:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()
+    
