@@ -52,6 +52,25 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                                  keys=None,
                                  isa=None):
 
+    def _get_times(filename='stderr.txt'):
+        serial_time = 0.0
+        pair_time = 0.0
+
+        # Can be at most 2, for cross-correlations
+        # Once for dataset1, and once for dataset2
+        nfound = 0
+        with open(filename, 'r') as f:
+            for l in f:
+                if 'gridlink' in l:
+                    splits = l.split()
+                    serial_time += np.float(splits[-2])
+
+                if l.startswith('0%'):
+                    splits = l.split()
+                    pair_time = np.float(splits[-2])
+                    
+        return (serial_time, pair_time)
+
     from Corrfunc.theory import DD, DDrppi, wp, xi
     allkeys = ['DDrppi', 'DD', 'wp', 'xi']
     allisa = ['avx', 'sse42', 'fallback']
@@ -72,22 +91,12 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                 msg = "Valid instructions sets benchmark are: {0}\n"\
                       "Found routine = {1}".format(allisa, i)
                 raise ValueError(msg)
-            
-    def _get_time_from_stderr(filename='stderr.txt'):
-        serial_time = 0.0
-        with open(filename, 'r') as f:
-            for l in f:
-                if 'gridlink' in l:
-                    splits = l.split()
-                    serial_time = np.float(splits[-2])
-                    break
 
-        return serial_time
 
     print("Benchmarking theory routines = {0} with isa = {1}".format(keys,
                                                                      isa))
     x, y, z = read_catalog()
-    rmax = 10.0
+    rmax = 15.0
     rmin = 0.1
     nbins = 20
     bins = np.logspace(np.log10(rmin),
@@ -102,6 +111,7 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                       ('nthreads', np.int),
                       ('runtime', np.float),
                       ('serial_time', np.float),
+                      ('pair_time', np.float),
                       ('api_time', np.float)])
 
     totN = (max_threads - min_threads + 1) * len(keys) * len(isa) * nrepeats
@@ -126,7 +136,9 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
                         all_runtimes['runtime'][index] = t1 - t0
-                        all_runtimes['serial_time'][index] = _get_time_from_stderr(stderr_filename)
+                        serial_time, pair_time = _get_times(stderr_filename)
+                        all_runtimes['serial_time'][index] = serial_time
+                        all_runtimes['pair_time'][index] = pair_time
                         all_runtimes['api_time'][index] = api_time
                         index += 1
 
@@ -144,7 +156,9 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
                         all_runtimes['runtime'][index] = t1 - t0
-                        all_runtimes['serial_time'][index] = _get_time_from_stderr(stderr_filename)
+                        serial_time, pair_time = _get_times(stderr_filename)
+                        all_runtimes['serial_time'][index] = serial_time
+                        all_runtimes['pair_time'][index] = pair_time
                         all_runtimes['api_time'][index] = api_time
                         index += 1
 
@@ -162,7 +176,9 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
                         all_runtimes['runtime'][index] = t1 - t0
-                        all_runtimes['serial_time'][index] = _get_time_from_stderr(stderr_filename)                
+                        serial_time, pair_time = _get_times(stderr_filename)
+                        all_runtimes['serial_time'][index] = serial_time
+                        all_runtimes['pair_time'][index] = pair_time
                         all_runtimes['api_time'][index] = api_time
                         index += 1
 
@@ -179,7 +195,9 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
                         all_runtimes['runtime'][index] = t1 - t0
-                        all_runtimes['serial_time'][index] = _get_time_from_stderr(stderr_filename)                
+                        serial_time, pair_time = _get_times(stderr_filename)
+                        all_runtimes['serial_time'][index] = serial_time
+                        all_runtimes['pair_time'][index] = pair_time
                         all_runtimes['api_time'][index] = api_time
                         index += 1
 
@@ -196,8 +214,8 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                                 isa=None):
     from Corrfunc.mocks import DDrppi_mocks, DDtheta_mocks
     allkeys = ['DDrppi (DD)',
-               'DDrppi (DR)',
                'DDtheta (DD)',
+               'DDrppi (DR)',
                'DDtheta (DR)']
     allisa = ['avx', 'sse42', 'fallback']
     if keys is None:
@@ -218,16 +236,25 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                       "Found routine = {1}".format(allisa, i)
                 raise ValueError(msg)
             
-    def _get_time_from_stderr(filename='stderr.txt'):
+    def _get_times(filename='stderr.txt'):
         serial_time = 0.0
+        pair_time = 0.0
+
+        # Can be at most 2, for cross-correlations
+        # Once for dataset1, and once for dataset2
+        nfound = 0
         with open(filename, 'r') as f:
             for l in f:
                 if 'gridlink' in l:
                     splits = l.split()
-                    serial_time = np.float(splits[-2])
-                    break
+                    serial_time += np.float(splits[-2])
 
-        return serial_time
+                if l.startswith('0%'):
+                    splits = l.split()
+                    pair_time = np.float(splits[-2])
+                    
+        return (serial_time, pair_time)
+
 
     print("Benchmarking mocks routines = {0} with isa = {1}".format(keys, isa))
     mocks_file = pjoin(dirname(abspath(Corrfunc.__file__)),
@@ -240,18 +267,21 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
     cosmology = 1
     nbins = 20
     rmin = 0.1
-    rmax = 10.0
-    bins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
+    rmax = 20.0
+    angmax = 10.0
+    rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
     pimax = rmax    # set to rmax for easier handling of
                     # scaling with number of  particles
+    angbins = np.logspace(np.log10(rmin), np.log10(angmax), nbins)
     dtype = np.dtype([('repeat', np.int),
                       ('name', 'S16'),
                       ('isa', 'S16'),
                       ('nthreads', np.int),
                       ('runtime', np.float),
                       ('serial_time', np.float),
+                      ('pair_time', np.float),
                       ('api_time', np.float)])
-
+    
     totN = (max_threads - min_threads + 1) * len(keys) * len(isa) * nrepeats
     all_runtimes = np.empty(totN, dtype=dtype)
     index = 0
@@ -267,7 +297,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                     with stderr_redirected(to=stderr_filename):
                         autocorr = 1
                         t0 = time.time()
-                        _, api_time = DDtheta_mocks(autocorr, nthreads, bins,
+                        _, api_time = DDtheta_mocks(autocorr, nthreads, angbins,
                                                     ra, dec,
                                                     verbose=True,
                                                     c_api_timer=True,
@@ -277,7 +307,9 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
                         all_runtimes['runtime'][index] = t1 - t0
-                        all_runtimes['serial_time'][index] = _get_time_from_stderr(stderr_filename)
+                        serial_time, pair_time = _get_times(stderr_filename)
+                        all_runtimes['serial_time'][index] = serial_time
+                        all_runtimes['pair_time'][index] = pair_time
                         all_runtimes['api_time'][index] = api_time
                         index += 1
 
@@ -287,7 +319,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                     with stderr_redirected(to=stderr_filename):
                         autocorr = 0
                         t0 = time.time()
-                        _, api_time = DDtheta_mocks(autocorr, nthreads, bins,
+                        _, api_time = DDtheta_mocks(autocorr, nthreads, angbins,
                                                     ra, dec,
                                                     RA2=rand_ra,
                                                     DEC2=rand_dec,
@@ -299,7 +331,9 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
                         all_runtimes['runtime'][index] = t1 - t0
-                        all_runtimes['serial_time'][index] = _get_time_from_stderr(stderr_filename)
+                        serial_time, pair_time = _get_times(stderr_filename)
+                        all_runtimes['serial_time'][index] = serial_time
+                        all_runtimes['pair_time'][index] = pair_time
                         all_runtimes['api_time'][index] = api_time
                         index += 1
                         
@@ -311,7 +345,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         t0 = time.time()
                         _, api_time = DDrppi_mocks(autocorr, cosmology,
                                                    nthreads, pimax,
-                                                   bins, ra, dec, cz,
+                                                   rbins, ra, dec, cz,
                                                    verbose=True,
                                                    c_api_timer=True,
                                                    isa=run_isa)
@@ -320,7 +354,9 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
                         all_runtimes['runtime'][index] = t1 - t0
-                        all_runtimes['serial_time'][index] = _get_time_from_stderr(stderr_filename)
+                        serial_time, pair_time = _get_times(stderr_filename)
+                        all_runtimes['serial_time'][index] = serial_time
+                        all_runtimes['pair_time'][index] = pair_time
                         all_runtimes['api_time'][index] = api_time
                         index += 1
 
@@ -332,7 +368,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         t0 = time.time()
                         _, api_time = DDrppi_mocks(autocorr, cosmology,
                                                    nthreads, pimax,
-                                                   bins, ra, dec, cz,
+                                                   rbins, ra, dec, cz,
                                                    RA2=rand_ra,
                                                    DEC2=rand_dec,
                                                    CZ2=rand_cz,
@@ -344,7 +380,9 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         all_runtimes['isa'][index] = run_isa
                         all_runtimes['nthreads'][index] = nthreads
                         all_runtimes['runtime'][index] = t1 - t0
-                        all_runtimes['serial_time'][index] = _get_time_from_stderr(stderr_filename)
+                        serial_time, pair_time = _get_times(stderr_filename)
+                        all_runtimes['serial_time'][index] = serial_time
+                        all_runtimes['pair_time'][index] = pair_time
                         all_runtimes['api_time'][index] = api_time
                         index += 1
 
@@ -355,14 +393,14 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
     return keys, isa, all_runtimes
 
 if len(sys.argv) == 1:
-    # print("Running theory benchmarks")
-    # keys, isa, all_runtimes = benchmark_theory_threads_all(nrepeats=10)
-    # np.savez('theory_runtimes.npz', keys=keys, isa=isa,
-    #          all_runtimes=all_runtimes)
-    # print("Theory: all_runtimes = {0}".format(all_runtimes))
+    print("Running theory benchmarks")
+    keys, isa, all_runtimes = benchmark_theory_threads_all(nrepeats=5)
+    np.savez('theory_runtimes.npz', keys=keys, isa=isa,
+             all_runtimes=all_runtimes)
+    print("Theory: all_runtimes = {0}".format(all_runtimes))
 
     print("Running mocks benchmarks")
-    keys, isa, all_runtimes = benchmark_mocks_threads_all(nrepeats=10)
+    keys, isa, all_runtimes = benchmark_mocks_threads_all(nrepeats=5)
     np.savez('mocks_runtimes.npz', keys=keys, isa=isa,
              all_runtimes=all_runtimes)
     print("Mocks: all_runtimes = {0}".format(all_runtimes))
