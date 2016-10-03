@@ -26,6 +26,7 @@ extern "C" {
         DOUBLE *y;
         DOUBLE *z;
         DOUBLE *cz;//co-moving distance
+        weight_struct weights;
         cellarray_mocks_index_particles_DOUBLE **ngb_cells;
     };
 
@@ -37,6 +38,7 @@ extern "C" {
         DOUBLE *x;
         DOUBLE *y;
         DOUBLE *z;
+        weight_struct weights;
         DOUBLE ra_max;
         DOUBLE ra_min;
         cellarray_mocks_index_wtheta_DOUBLE **ngb_cells;

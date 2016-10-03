@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     char *file1=NULL,*file2=NULL;
     char *fileformat1=NULL,*fileformat2=NULL;
     char *binfile=NULL;
-    weight_method_t weight_type = NONE;
+    weight_method_t weight_method = NONE;
 
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
@@ -83,10 +83,12 @@ int main(int argc, char *argv[])
 
     int n_weights = 0;
     if(argc > (n_mandatory_args+1)){
-        int status = get_weight_method_by_name(argv[n_mandatory_args+2], &weight_type, &n_weights);
+        int status = get_weight_method_by_name(argv[n_mandatory_args+2], &weight_method);
         if(status != EXIT_SUCCESS){
+            fprintf(stderr, "Bad weight method %s\n", argv[n_mandatory_args+2]);
             return status;
         }
+        int n_weights = get_num_weights_by_method(weight_method);
         num_fields += n_weights;
     }
 
@@ -105,8 +107,13 @@ int main(int argc, char *argv[])
 
     /*---Read-data1-file----------------------------------*/
     gettimeofday(&t0,NULL);
-    // No good way to read a variable number of weights fields without modifying read_positions
-    ND1=read_positions(file1,fileformat1, sizeof(DOUBLE), num_fields, &x1, &y1, &z1, &weight1);
+    ND1=read_positions(file1,fileformat1, sizeof(DOUBLE), num_fields, &x1, &y1, &z1);
+    /*wND1=read_positions(weight_file1, weight_fileformat1, sizeof(DOUBLE), n_weights, &weight1);
+    if(ND1 != wND1){
+        fprintf(stderr, "Number of weights "PRId64" did not match the number of positions "PRId64"!\n", wND1, ND1);
+        return EXIT_FAILURE;
+    }*/
+    
     gettimeofday(&t1,NULL);
     read_time += ADD_DIFF_TIME(t0,t1);
 
@@ -136,13 +143,12 @@ int main(int argc, char *argv[])
     options.float_type = sizeof(DOUBLE);
     
     struct extra_options extra;
-    int status = get_extra_options(&extra, n_weights);
+    int status = get_extra_options(&extra, weight_method);
     if(status != EXIT_SUCCESS){
         return status;
     }
-    extra.weighting_func_type = weight_method;
-    extra.weights[0] = weight1;
-    extra.weights[1] = weight2;
+    //extra.weights[0] = weight1;
+    //extra.weights[1] = weight2;
     
     results_countpairs results;
     status = countpairs(ND1,x1,y1,z1,
@@ -172,7 +178,7 @@ int main(int argc, char *argv[])
         rlow=results.rupp[i];
     }
 
-    //free the memory in the results structx
+    //free the memory in the results struct
     free_results(&results);
     gettimeofday(&t_end,NULL);
     fprintf(stderr,"xi_of_r> Done -  ND1=%"PRId64" ND2=%"PRId64". Time taken = %6.2lf seconds. read-in time = %6.2lf seconds sec pair-counting time = %6.2lf sec\n",

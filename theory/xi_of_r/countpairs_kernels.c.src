@@ -13,16 +13,18 @@
 #include <stdint.h>
 
 #include "function_precision.h"
+#include "utils.h"
 
 #if defined(__AVX__)
 #include "avx_calls.h"
 
-static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
-                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int same_cell, 
-                                                   const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rpmax
-                                                   ,const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                                   ,DOUBLE *src_rpavg
-                                                   ,uint64_t *src_npairs)
+static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct *weights0,
+                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct *weights1,
+                                             const int same_cell,
+                                             const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rpmax,
+                                             const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                             DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                             DOUBLE *src_weightavg, const weight_func_t weight_func)
 {
   const int32_t need_rpavg = src_rpavg != NULL;
   uint64_t npairs[nbin];
@@ -233,12 +235,13 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
 #if defined (__SSE4_2__)
 #include "sse_calls.h"
 
-static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
-                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int same_cell,
-                                                   const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rpmax
-                                                   ,const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                                   ,DOUBLE *src_rpavg
-                                                   ,uint64_t *src_npairs)
+static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct *weights0,
+                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct *weights1,
+                                             const int same_cell,
+                                             const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rpmax,
+                                             const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                             DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                             DOUBLE *src_weightavg, const weight_func_t weight_func)
 {
   uint64_t npairs[nbin];
   for(int i=0;i<nbin;i++) {
@@ -407,25 +410,52 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
 #endif //__SSE4_2__
 
 
-static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
-                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
+static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct *weights0,
+                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct *weights1,
                                              const int same_cell,
                                              const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rpmax,
                                              const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
-                                             DOUBLE *src_rpavg, uint64_t *src_npairs)
+                                             DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                             DOUBLE *src_weightavg, const weight_func_t weight_func)
 {
     /*----------------- FALLBACK CODE --------------------*/
   const int32_t need_rpavg = src_rpavg != NULL;
+  const int32_t need_weightavg = src_weightavg != NULL;
 
   uint64_t npairs[nbin];
   for(int i=0;i<nbin;i++) {
     npairs[i]=0;
   }
-  DOUBLE rpavg[nbin];
-  if(need_rpavg) {
-    for(int i=0;i<nbin;i++) {
+  DOUBLE rpavg[nbin], weightavg[nbin];
+  for(int i=0;i<nbin;i++) {
+    if(need_rpavg) {
       rpavg[i]=0;
     }
+    if(need_weightavg){
+      weightavg[i]=0;
+    }
+  }
+  
+  // A copy whose pointers we can advance
+  weight_struct local_w0, local_w1;
+  pair_struct pair;
+  if(need_weightavg){
+      local_w0.num_weights = weights0->num_weights;
+      local_w1.num_weights = weights1->num_weights;
+      XASSERT(local_w0.num_weights == local_w1.num_weights, "Weights0/1 count does not match!\n");
+      
+      // Separate copy of the pointers into the particle list that we can advance
+      local_w0.weights = (DOUBLE *) my_malloc(sizeof(DOUBLE*), local_w0.num_weights);
+      local_w1.weights = (DOUBLE *) my_malloc(sizeof(DOUBLE*), local_w1.num_weights);
+      
+      for(int w = 0; w < local_w0.num_weights; w++){
+          local_w0.weights[w] = weights0[w];
+          local_w1.weights[w] = weights1[w];
+      }
+      
+      pair.num_weights = local_w0.num_weights;
+      pair.weights0 = (DOUBLE *) my_malloc(sizeof(DOUBLE), local_w0.num_weights);
+      pair.weights1 = (DOUBLE *) my_malloc(sizeof(DOUBLE), local_w1.num_weights);
   }
   
   /* naive implementation that is guaranteed to compile */
@@ -433,7 +463,13 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
     const DOUBLE zpos = *z0++ + off_zwrap;
-
+    
+    if(need_weightavg){
+        for(int w = 0; w < pair.num_weights; w++){
+            pair.weights0[w] = *local_w0.weights[w]++;
+        }
+    }
+    
     DOUBLE *localz1 = ((DOUBLE *) z1) ;
     int64_t j= 0;
     if(same_cell == 1) {
@@ -450,11 +486,16 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
     DOUBLE *localx1 = ((DOUBLE *) x1) + j;
     DOUBLE *localy1 = ((DOUBLE *) y1) + j;
     
+    // Reset local_w1 pointer
+    for(int w = 0; w < pair.num_weights; w++){
+        local_w1.weights[w] = weights1.weights[w];
+    }
+
     for(;j<N1;j++) {
       const DOUBLE dx = *localx1++ - xpos;
       const DOUBLE dy = *localy1++ - ypos;
       const DOUBLE dz = *localz1++ - zpos;
-      
+            
       if(dz >= rpmax) break;
       
       const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
@@ -464,6 +505,16 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
       if(need_rpavg) {
         r = SQRT(r2);
       }
+      
+      if(need_weightavg){
+        pair.dx = dx;
+        pair.dy = dy;
+        pair.dz = dz;
+        
+        for(int w = 0; w < pair.num_weights; w++){
+            pair.weights1[w] = *local_w1.weights[w]++;
+        }
+      }
 
       for(int kbin=nbin-1;kbin>=1;kbin--){
         if(r2 >= rupp_sqr[kbin-1]) {
@@ -471,9 +522,12 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
           if(need_rpavg) {
             rpavg[kbin] += r;
           }
+          if(need_weightavg){
+            weightavg[kbin] += weight_func(&pair);
+          }
           break;
         }
-      }//searching for kbin loop                                                               
+      }//searching for kbin loop
     }
   }
   
@@ -481,6 +535,9 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
     src_npairs[i] += npairs[i];
     if(need_rpavg) {
       src_rpavg[i] += rpavg[i];
+    }
+    if(need_weightavg){
+      src_weightavg[i] += weightavg[i];
     }
   }
   /*----------------- FALLBACK CODE --------------------*/

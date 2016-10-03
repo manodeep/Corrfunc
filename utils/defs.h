@@ -8,6 +8,13 @@
 
 #pragma once
 
+// Maybe we want to make this defs.h.src?
+#ifdef DOUBLE_PREC
+#define DOUBLE double
+#else
+#define DOUBLE float
+#endif
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -137,11 +144,7 @@ static inline struct config_options get_config_options(void)
     struct config_options options;
     memset(&options, 0, OPTIONS_HEADER_SIZE);
     snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", API_VERSION);
-#ifdef DOUBLE_PREC    
-    options.float_type = sizeof(double);
-#else
-    options.float_type = sizeof(float);
-#endif    
+    options.float_type = sizeof(DOUBLE);
 #ifndef SILENT
     options.verbose = 1;
 #endif
@@ -195,37 +198,47 @@ static inline struct config_options get_config_options(void)
 
 #define EXTRA_OPTIONS_HEADER_SIZE     (1024)
 
+// Info about a particle pair that we will pass to the weight function
 typedef struct
 {
-    void **weights;
-    uint64_t num_weights;
+    int64_t num_weights;
+    DOUBLE *weights0;  // array of length num_weights
+    DOUBLE *weights1;
+    DOUBLE dx, dy, dz;
+} pair_struct;
+
+typedef struct
+{
+    DOUBLE **weights;
+    int64_t num_weights;
 } weight_struct;
 
-
+typedef DOUBLE (*weight_func_t)(const pair_struct*);
     
-struct extra_options
+struct __attribute__((packed)) extra_options
 {
-    weight_struct weights;
-    uint64_t weighting_func_type;//way to type-cast the generic weightfunc into the actual
-                                //function. 
-    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(weight_struct) - sizeof(uint64_t)];
+    weight_struct weights0;
+    weight_struct weights1;
+    weight_method_t weighting_method; //way to type-cast the generic weightfunc into the actual function.
+    weight_func_t weight_func;
+    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(weight_struct) - sizeof(weight_method_t) - sizeof(weight_func_t)];
 };
 
+// Here we want to return an int because malloc may fail (unlike get_config_options)
 static inline int get_extra_options(struct extra_options *extra, const weight_method_t weighting_method)
 {    
     ENSURE_STRUCT_SIZE(struct extra_options, EXTRA_OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
     if(extra == NULL) {
         return EXIT_FAILURE;
     }
-    if(num_weights < 0){
-        return EXIT_FAILURE;
-    }
 
     memset(extra, 0, EXTRA_OPTIONS_HEADER_SIZE);
-    /*Pre-allocate space for 2 sets of weights array pointers */
+    extra->weighting_method = weighting_method;
+    extra->weight_func = get_weight_func_by_method(extra->weighting_method);
+    
     weight_struct *w = &(extra->weights);
-    w->num_weights = 2;
-    w->weights = malloc(sizeof(*(w->weights)) * w->num_weights);
+    w->num_weights = get_num_weights_by_method(extra->weighting_method);
+    w->weights = (DOUBLE **) malloc(sizeof(*(w->weights)) * w->num_weights);
     if(w->weights == NULL) {
         return EXIT_FAILURE;
     }

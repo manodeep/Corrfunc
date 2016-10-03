@@ -1,15 +1,52 @@
 #include "defs.h"
 
+//////////////////////////////////
+// Weighting functions
+//////////////////////////////////
+
+/*
+ * The pair weight is the product of the particle weights
+ */
+static inline DOUBLE pair_product(const pair_struct *pair){
+    return pair->weights0[0]*pair->weights1[0];
+}
+
+
+//////////////////////////////////
+// Utility functions
+//////////////////////////////////
+
 /* Maps a name to weighting method
-   `method` and `nweights` will be set on return.
+   `method` will be set on return.
    `nweights` is the number of weights per point this method uses
  */
-static inline int get_weight_method_by_name(char *name, weight_method_t *method, int *nweights){
+static inline int get_weight_method_by_name(char *name, weight_method_t *method){
     if(strcmp(name, "p")){
         *method = PAIR_PRODUCT;
-        *nweights = 1;
         return EXIT_SUCCESS;
     }
         
     return EXIT_FAILURE;
+}
+
+/* Gives the number of weight arrays required by the given weighting method
+ */
+static inline int get_num_weights_by_method(const weight_method_t method){
+    switch(method){
+        case NONE:
+            return 0;
+        case PAIR_PRODUCT:
+            return 1;
+    }
+}
+
+/* Gives a pointer to the weight function for the given weighting method
+ */
+static inline weight_func_t get_weight_func_by_method(const weight_method_t method){
+    switch(method){
+        case NONE:
+            return NULL;
+        case PAIR_PRODUCT:
+            return &pair_product;
+    }
 }

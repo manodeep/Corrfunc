@@ -20,7 +20,6 @@ typedef struct{
   DOUBLE *x;
   DOUBLE *y;
   DOUBLE *z;
-  DOUBLE *weight;
   int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
 } cellarray_DOUBLE;
 
@@ -32,7 +31,7 @@ struct cellarray_index_particles_DOUBLE{
   DOUBLE *x;
   DOUBLE *y;
   DOUBLE *z;
-  DOUBLE *weight;
+  weight_struct weights;
   cellarray_index_particles_DOUBLE **ngb_cells;
   DOUBLE *xwrap;
   DOUBLE *ywrap;
