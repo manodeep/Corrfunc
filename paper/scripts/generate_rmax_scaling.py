@@ -66,7 +66,8 @@ def _get_times(filename='stderr.txt'):
     return (serial_time, pair_time)
 
 
-def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
+def benchmark_theory_threads_all(rmax_array=[2.0, 5.0, 10.0, 15.0, 20.0, 25.0,
+                                             40.0, 50.0, 60.0, 70.0, 80.0],
                                  nrepeats=1,
                                  keys=None,
                                  isa=None):
@@ -91,19 +92,16 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                 msg = "Valid instructions sets benchmark are: {0}\n"\
                       "Found routine = {1}".format(allisa, i)
                 raise ValueError(msg)
-
-    print("Benchmarking theory routines = {0} with isa = {1}".format(keys,
-                                                                     isa))
+    rmax_array = np.array(rmax_array)
+    print("Benchmarking theory routines {0} for isa = {1}".format(keys, isa))
     x, y, z = read_catalog()
-    rmax = 15.0
+
     rmin = 0.1
     nbins = 20
-    bins = np.logspace(np.log10(rmin),
-                       np.log10(rmax),
-                       nbins)
     autocorr = 1
-    pimax = rmax  # Set to rmax for comparisons between wp and xi
     boxsize = 420.0
+    nthreads = max_threads
+    
     dtype = np.dtype([('repeat', np.int),
                       ('name', 'S16'),
                       ('isa', 'S16'),
@@ -113,14 +111,17 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                       ('pair_time', np.float),
                       ('api_time', np.float)])
 
-    totN = (max_threads - min_threads + 1) * len(keys) * len(isa) * nrepeats
+    totN = len(rmax_array) * len(keys) * len(isa) * nrepeats
     runtimes = np.empty(totN, dtype=dtype)
     index = 0
     stderr_filename = 'stderr.txt'
     for run_isa in isa:
-        for nthreads in range(min_threads, max_threads + 1):
-            print("Working on nthreads = {0}".format(nthreads),
-                  file=sys.stderr)
+        for rmax in rmax_array:
+            bins = np.logspace(np.log10(rmin),
+                               np.log10(rmax),
+                               nbins)
+            pimax = rmax  # Set to rmax for comparisons between wp and xi
+            print("Working on rmax = {0}".format(rmax), file=sys.stderr)
             start_thread_index = index
             if 'DD' in keys:
                 for repeat in range(nrepeats):
@@ -207,7 +208,8 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
     return keys, isa, runtimes
 
 
-def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
+def benchmark_mocks_threads_all(rmax_array=[2.0, 5.0, 10.0, 15.0, 20.0, 25.0,
+                                            40.0, 50.0, 60.0, 70.0, 80.0],
                                 nrepeats=1,
                                 keys=None,
                                 isa=None):
@@ -235,6 +237,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                       "Found routine = {1}".format(allisa, i)
                 raise ValueError(msg)
 
+    rmax_array = np.array(rmax_array)
     print("Benchmarking mocks routines = {0} with isa = {1}".format(keys, isa))
     mocks_file = pjoin(dirname(abspath(Corrfunc.__file__)),
                        "../mocks/tests/data", "Mr19_mock_northonly.rdcz.ff")
@@ -244,16 +247,10 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                       "../mocks/tests/data", "Mr19_randoms_northonly.rdcz.ff")
     rand_ra, rand_dec, rand_cz = read_catalog(rand_file)
     cosmology = 1
-    nbins = 20
     rmin = 0.1
-    rmax = 20.0
-    angmax = 10.0
-    rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
-
-    # set to rmax for easier handling of
-    # scaling with number of  particles
-    pimax = rmax
-    angbins = np.logspace(np.log10(rmin), np.log10(angmax), nbins)
+    nbins = 20
+    nthreads = max_threads
+    
     dtype = np.dtype([('repeat', np.int),
                       ('name', 'S16'),
                       ('isa', 'S16'),
@@ -263,14 +260,17 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                       ('pair_time', np.float),
                       ('api_time', np.float)])
     
-    totN = (max_threads - min_threads + 1) * len(keys) * len(isa) * nrepeats
+    totN = len(rmax_array) * len(keys) * len(isa) * nrepeats
     runtimes = np.empty(totN, dtype=dtype)
     index = 0
     stderr_filename = 'stderr.txt'
     for run_isa in isa:
-        for nthreads in range(min_threads, max_threads + 1):
-            print("Working on nthreads = {0}".format(nthreads),
-                  file=sys.stderr)
+        for rmax in rmax_array:
+            bins = np.logspace(np.log10(rmin),
+                               np.log10(rmax),
+                               nbins)
+            pimax = rmax  # Set to rmax for comparisons between wp and xi
+            print("Working on rmax = {0}".format(rmax), file=sys.stderr)
             start_thread_index = index
             if 'DDtheta (DD)' in keys:
                 for repeat in range(nrepeats):
@@ -279,7 +279,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         autocorr = 1
                         t0 = time.time()
                         _, api_time = DDtheta_mocks(autocorr, nthreads,
-                                                    angbins,
+                                                    bins,
                                                     ra, dec,
                                                     verbose=True,
                                                     c_api_timer=True,
@@ -302,7 +302,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         autocorr = 0
                         t0 = time.time()
                         _, api_time = DDtheta_mocks(autocorr, nthreads,
-                                                    angbins,
+                                                    bins,
                                                     ra, dec,
                                                     RA2=rand_ra,
                                                     DEC2=rand_dec,
@@ -328,7 +328,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         t0 = time.time()
                         _, api_time = DDrppi_mocks(autocorr, cosmology,
                                                    nthreads, pimax,
-                                                   rbins, ra, dec, cz,
+                                                   bins, ra, dec, cz,
                                                    verbose=True,
                                                    c_api_timer=True,
                                                    isa=run_isa)
@@ -351,7 +351,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         t0 = time.time()
                         _, api_time = DDrppi_mocks(autocorr, cosmology,
                                                    nthreads, pimax,
-                                                   rbins, ra, dec, cz,
+                                                   bins, ra, dec, cz,
                                                    RA2=rand_ra,
                                                    DEC2=rand_dec,
                                                    CZ2=rand_cz,
@@ -378,13 +378,13 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
 if len(sys.argv) == 1:
     print("Running theory benchmarks")
     keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=5)
-    np.savez('theory_scaling_nthreads.npz', keys=keys, isa=isa,
+    np.savez('theory_scaling_rmax.npz', keys=keys, isa=isa,
              runtimes=runtimes)
     print("Theory: runtimes = {0}".format(runtimes))
 
     print("Running mocks benchmarks")
     keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=5)
-    np.savez('mocks_scaling_nthreads.npz', keys=keys, isa=isa,
+    np.savez('mocks_scaling_rmax.npz', keys=keys, isa=isa,
              runtimes=runtimes)
     print("Mocks: runtimes = {0}".format(runtimes))
     
@@ -414,10 +414,10 @@ else:
 
     if 'theory' in timings_file:
         output_file = pjoin(dirname(__file__), '../tables/',
-                            'timings_Mr19_openmp_theory.tex')
+                            'timings_Mr19_rmax_theory.tex')
     else:
         output_file = pjoin(dirname(__file__), '../tables/',
-                            'timings_Mr19_openmp_mocks.tex')
+                            'timings_Mr19_rmax_mocks.tex')
 
     with open(output_file, 'w') as f:
 

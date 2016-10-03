@@ -279,37 +279,6 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
 
 if __name__ == '__main__':
-    import numpy as np
-    import time
-    from math import pi
-    from os.path import dirname, abspath, join as pjoin
-    import Corrfunc
-    print("\nRunning angular correlation function w(theta)")
-
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../mocks/tests/", "angular_bins")
-
-    N = 100000
-    nthreads = 4
-    t0 = time.time()
-    seed = 42
-    np.random.seed(seed)
-
-    # Faster way of generating random RA's and DEC's
-    RA = np.random.uniform(0.0, 2.0 * pi, N) * 180.0 / pi
-    cos_theta = np.random.uniform(-1.0, 1.0, N)
-    DEC = 90.0 - np.arccos(cos_theta) * 180.0 / pi
-
-    autocorr = 1
-    results, api_time = DDtheta_mocks(autocorr, nthreads, binfile,
-                                      RA, DEC,
-                                      output_thetaavg=False,
-                                      c_api_timer=True,
-                                      verbose=True)
-
-    t1 = time.time()
-    print("Results from DDtheta_mocks (Npts = {0}): API time = {1:0.3f} sec "
-          "python overhead = {2:0.3f} sec".format(N, api_time,
-                                                  (t1 - t0) - api_time))
-    for r in results:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()
+    
