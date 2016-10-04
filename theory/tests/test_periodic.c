@@ -55,7 +55,7 @@ const int nthreads=1;
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .version=STR(VERSION)};
+struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .version=STR(VERSION), .max_cells_per_dim = NLATMAX};
 //end of global variables
 
 int test_periodic_DD(const char *correct_outputfile)
@@ -317,7 +317,8 @@ int main(int argc, char **argv)
 
     strncpy(current_file1,file,MAXLEN);
     strncpy(current_file2,file,MAXLEN);
-
+    reset_bin_refine_factors(&options);
+    
     int failed=0;
     int status;
 

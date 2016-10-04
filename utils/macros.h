@@ -1,5 +1,20 @@
 #pragma once
 
+#define NLATMAX           100
+
+
+/* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
+   which is in turn taken from the linux kernel */
+/* #define BUILD_BUG_OR_ZERO(e) (sizeof(struct{ int:-!!(e);})) */
+/* #define ENSURE_STRUCT_SIZE(e, size)  BUILD_BUG_OR_ZERO(sizeof(e) != size) */
+/* However, the previous one gives me an unused-value warning and I do not want 
+   to turn that compiler warning off. Therefore, this version, which results in 
+   an unused local typedef warning is used. I turn off the corresponding warning 
+   in common.mk (-Wno-unused-local-typedefs) via CFLAGS
+*/
+#define BUILD_BUG_OR_ZERO(cond, msg) typedef volatile char assertion_on_##msg[( !!(cond) )*2-1 ] 
+#define ENSURE_STRUCT_SIZE(e, size)                 BUILD_BUG_OR_ZERO(sizeof(e) == size, sizeof_struct_config_options)
+
 /* Macro Constants */
 //Just to output some colors
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -92,7 +107,7 @@ the ROOT DIRECTORY of ``Corrfunc`` and re-install the entire packge.\n"
          }                                                              \
      } while (0)
 #endif
-   
+
 #define SETUP_INTERRUPT_HANDLERS(handler_name)                          \
      const int interrupt_signals[] = {SIGTERM, SIGINT, SIGHUP};         \
      const size_t nsig = sizeof(interrupt_signals)/sizeof(interrupt_signals[0]); \

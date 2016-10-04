@@ -15,7 +15,8 @@ __all__ = ('wp',)
 
 
 def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
-       output_rpavg=False, c_api_timer=False, isa='fastest'):
+       output_rpavg=False, xbin_refine_factor=2, ybin_refine_factor=2,
+       zbin_refine_factor=1, c_api_timer=False, isa='fastest'):
     """
     Function to compute the projected correlation function in a
     periodic cosmological box. Pairs which are separated by less
@@ -74,6 +75,10 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
        in single-precision, ``rpavg`` will suffer from numerical loss of
        precision and can not be trusted. If you need accurate ``rpavg``
        values, then pass in double precision arrays for ``XYZ``.
+
+    (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime.
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -167,6 +172,9 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,
                                      X, Y, Z,
                                      verbose=verbose,
                                      output_rpavg=output_rpavg,
+                                     xbin_refine_factor=xbin_refine_factor,
+                                     ybin_refine_factor=ybin_refine_factor,
+                                     zbin_refine_factor=zbin_refine_factor,
                                      c_api_timer=c_api_timer,
                                      isa=integer_isa)
     if extn_results is None:

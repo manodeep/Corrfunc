@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <inttypes.h>
 
 #include "defs.h" //for ADD_DIFF_TIME
@@ -75,7 +74,10 @@ int main(int argc, char *argv[])
 
 #if defined(USE_OMP) && defined(_OPENMP)
     nthreads=atoi(argv[6]);
-    assert(nthreads >= 1 && "Number of threads must be at least 1");
+    if(nthreads < 1) {
+        fprintf(stderr,"Error: Nthreads must be at least 1...returning\n");
+        return EXIT_FAILURE;
+    }
 #endif
 
 
@@ -119,7 +121,9 @@ int main(int argc, char *argv[])
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
     struct config_options options = get_config_options();
-    options.float_type = sizeof(DOUBLE);
+    /* If you want to change the bin refine factors */
+    /* const int bf[] = {2, 2, 1}; */
+    /* set_bin_refine_factors(&options, bf); */
     results_countpairs results;
     int status = countpairs(ND1,x1,y1,z1,
                             ND2,x2,y2,z2,

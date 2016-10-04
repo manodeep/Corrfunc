@@ -135,7 +135,20 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     options->sort_on_z = 1;
     options->autocorr = 1;
     
-    int bin_refine_factor=2,zbin_refine_factor=1;
+    for(int i=0;i<3;i++) {
+        if(options->bin_refine_factors[i] < 1) {
+            fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                    i, options->bin_refine_factors[i]);
+            reset_bin_refine_factors(options);
+            break;/* all factors have been reset -> no point continuing with the loop */
+        }
+    }
+
+
+    if(options->max_cells_per_dim == 0) {
+        fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+        options->max_cells_per_dim = NLATMAX;
+    }
     int nmesh_x, nmesh_y, nmesh_z;
 
     /* setup interrupt handler -> mostly useful during the python execution. 
@@ -163,31 +176,60 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         rupp_sqr[i] = rupp[i]*rupp[i];
     }
 
-    if(rpmax < 0.05*boxsize) bin_refine_factor = 1;
+    if(get_bin_refine_scheme(options) == BINNING_DFL) {
+        if(rpmax < 0.05*boxsize) {
+            for(int i=0;i<2;i++) {
+                options->bin_refine_factors[i] = 1;
+            }
+        }
+        if(pimax < 0.05*boxsize) {
+            options->bin_refine_factors[2] = 1;
+        }
+    }
+    
     
     const DOUBLE sqr_rpmin = rupp_sqr[0];
     const DOUBLE sqr_rpmax = rupp_sqr[nrpbins-1];
 
     //set up the 3-d grid structure. Each element of the structure contains a
     //pointer to the cellarray structure that itself contains all the points
-    cellarray_index_particles_DOUBLE *lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+    cellarray_index_particles_DOUBLE *lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z,
+                                                                                xmin, xmax, ymin, ymax, zmin, zmax,
+                                                                                rpmax, rpmax, pimax,
+                                                                                options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                                                &nmesh_x, &nmesh_y, &nmesh_z, options);
     if(lattice == NULL) {
       return EXIT_FAILURE;
     }
     if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
-        fprintf(stderr,"countpairs_wp> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
-        bin_refine_factor *=2;
-        zbin_refine_factor *=2;
-        free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-        lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, pimax, bin_refine_factor, bin_refine_factor, zbin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
-        if(lattice == NULL) {
-          return EXIT_FAILURE;
+        if(get_bin_refine_scheme(options) == BINNING_DFL) {          
+          fprintf(stderr,"%s> gridlink seems inefficient nmesh = (%d, %d, %d). Boosting bin refine factor - should lead to better performance\n", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z);
+          fprintf(stderr,"xmin = %lf xmax=%lf rpmax = %lf\n", xmin, xmax, rpmax);
+          free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+          for(int i=0;i<3;i++) {
+              options->bin_refine_factors[i] *= 2;
+          }
+          lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z,
+                                                     xmin, xmax, ymin, ymax, zmin, zmax,
+                                                     rpmax, rpmax, pimax,
+                                                     options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                     &nmesh_x, &nmesh_y, &nmesh_z, options);
+          if(lattice == NULL) {
+              return EXIT_FAILURE;
+          }
+          
+        } else {
+            fprintf(stderr,"%s> gridlink seems inefficient nmesh = (%d, %d, %d), boosting bin refine factor could have helped. However, since custom bin refine factors "
+                    "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, options->bin_refine_factors[0],
+                    options->bin_refine_factors[1], options->bin_refine_factors[2]);
         }
     }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
     /* Setup pointers for the neighbouring cells */
     {
-        int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells, bin_refine_factor, bin_refine_factor, zbin_refine_factor, nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options->autocorr, options->periodic);//options->autocorr == 1 and options->periodic == 1
+        int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells,
+                                                             options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                             nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options->autocorr, options->periodic);//options->autocorr == 1 and options->periodic == 1
         if(status != EXIT_SUCCESS) {
             free_cellarray_index_particles_DOUBLE(lattice, totncells);
             free(rupp);
@@ -462,6 +504,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
+    reset_bin_refine_factors(options);
     
     if(options->c_api_timer) {
         struct timeval t1;

@@ -104,6 +104,9 @@ int main(int argc, char *argv[])
 
     results_countspheres results;
     struct config_options options = get_config_options();
+    /* If you want to change the bin refine factors */
+    /* const int bf[] = {2, 2, 1}; */
+    /* set_bin_refine_factors(&options, bf); */
     int status = countspheres(np, x, y, z,
                               rmax, nbin, nc,
                               num_pN,
