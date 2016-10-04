@@ -223,6 +223,31 @@ def main():
               .format(items[0], items[1], items[2], items[3]))
     print("------------------------------------------------")
 
+
+    print("Running 3-D correlation function DD(r)")
+    results_DD, _ = DD(autocorr=autocorr,
+                       nthreads=nthreads,
+                       binfile=binfile,
+                       X1=x, Y1=y, Z1=z,
+                       periodic=periodic,
+                       boxsize=boxsize,
+                       verbose=True,
+                       output_ravg=True,
+                       xbin_refine_factor=3,
+                       ybin_refine_factor=1,
+                       zbin_refine_factor=2)
+
+    print("\n#      **** DD(r): first {0} bins  *******       "
+          .format(numbins_to_print))
+    print("#      rmin        rmax       rpavg       npairs")
+    print("################################################")
+    for ibin in range(numbins_to_print):
+        items = results_DD[ibin]
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10d}"
+              .format(items[0], items[1], items[2], items[3]))
+    print("------------------------------------------------")
+
+    
     print("\nRunning 2-D correlation function DD(rp,pi)")
     results_DDrppi, _ = DDrppi(autocorr=autocorr,
                                nthreads=nthreads,

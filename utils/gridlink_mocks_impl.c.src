@@ -140,9 +140,9 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
     }
 
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_data_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_data_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_data_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
+    const int xstatus = get_binsize_data_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
+    const int ystatus = get_binsize_data_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
+    const int zstatus = get_binsize_data_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
     if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
       fprintf(stderr,"Received xstatus = %d ystatus = %d zstatus = %d. Error\n", xstatus, ystatus, zstatus);
       return NULL;
@@ -648,13 +648,22 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
         DOUBLE phi_cell = max_phi_cell;
         if( (90.0 - ABS(this_min_dec) ) > 1.0) { //make sure min_dec is not close to the pole (within 1 degree)-> divide by zero happens the cosine term
             DOUBLE sin_min_dec = SIND(this_min_dec),cos_min_dec=COSD(this_min_dec);
-            phi_cell = ACOS((costhetamax - sin_min_dec*sin_min_dec)/(cos_min_dec*cos_min_dec))*INV_PI_OVER_180;
+            DOUBLE cos_phi_cell = (costhetamax - sin_min_dec*sin_min_dec)/(cos_min_dec*cos_min_dec);
+            phi_cell = ACOS(cos_phi_cell)*INV_PI_OVER_180;
             if(phi_cell <= ZERO) {
                 phi_cell = max_phi_cell;
             }
+            if( ! (phi_cell > ZERO) ) {
+                fprintf(stderr,"Error: Encountered invalid binsize for RA bins = %"REAL_FORMAT" for declination bin = %d\n", phi_cell, idec);
+                fprintf(stderr,"min(declination in bin) = %"REAL_FORMAT" (min_dec)\n", this_min_dec);
+                fprintf(stderr,"costhetamax = %"REAL_FORMAT" sin(min_dec) = %"REAL_FORMAT" cos(min_dec) = %"REAL_FORMAT"\n",
+                        costhetamax, sin_min_dec, cos_min_dec);
+                fprintf(stderr,"cos(phi_cell) = %"REAL_FORMAT" := numerator/denom. numerator = %"REAL_FORMAT" denom = %"REAL_FORMAT"\n",
+                        cos_phi_cell, (costhetamax - sin_min_dec*sin_min_dec), (cos_min_dec*cos_min_dec));
+            }
         }
-        XRETURN(phi_cell > ZERO, NULL, "RA binsize=%"REAL_FORMAT" in declination bin = %d must be positive. Please remove LINK_IN_RA from compile options "
-                "(or from the code config options\n", phi_cell, idec);
+        XRETURN(phi_cell > ZERO, NULL, "Please remove LINK_IN_RA from compile options "
+                "(or from the code config options)\n");
 
         phi_cell = phi_cell > max_phi_cell ? max_phi_cell:phi_cell;
         const DOUBLE this_nmesh_ra = ra_diff*ra_refine_factor/phi_cell;

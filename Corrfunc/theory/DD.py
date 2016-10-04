@@ -12,7 +12,8 @@ __all__ = ('DD', )
 
 def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
        X2=None, Y2=None, Z2=None, verbose=False, boxsize=0.0,
-       output_ravg=False, c_api_timer=False, isa='fastest'):
+       output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,
+       zbin_refine_factor=1, c_api_timer=False, isa='fastest'):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
@@ -70,6 +71,10 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
        in single-precision, ``ravg`` will suffer from numerical loss of
        precision and can not be trusted. If you need accurate ``ravg``
        values, then pass in double precision arrays for the particle positions.
+
+    (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime.
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -159,28 +164,25 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
+    else:
+        X2 = np.empty(1)
+        Y2 = np.empty(1)
+        Z2 = np.empty(1)
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
-    if autocorr == 1:
-        extn_results, api_time = DD_extn(autocorr, nthreads, rbinfile,
-                                         X1, Y1, Z1,
-                                         periodic=periodic,
-                                         output_ravg=output_ravg,
-                                         verbose=verbose,
-                                         boxsize=boxsize,
-                                         c_api_timer=c_api_timer,
-                                         isa=integer_isa)
-    else:
-        extn_results, api_time = DD_extn(autocorr, nthreads, rbinfile,
-                                         X1, Y1, Z1,
-                                         X2, Y2, Z2,
-                                         periodic=periodic,
-                                         verbose=verbose,
-                                         boxsize=boxsize,
-                                         output_ravg=output_ravg,
-                                         c_api_timer=c_api_timer,
-                                         isa=integer_isa)
+    extn_results, api_time = DD_extn(autocorr, nthreads, rbinfile,
+                                     X1, Y1, Z1,
+                                     X2, Y2, Z2,
+                                     periodic=periodic,
+                                     verbose=verbose,
+                                     boxsize=boxsize,
+                                     output_ravg=output_ravg,
+                                     xbin_refine_factor=xbin_refine_factor,
+                                     ybin_refine_factor=ybin_refine_factor,
+                                     zbin_refine_factor=zbin_refine_factor,
+                                     c_api_timer=c_api_timer,
+                                     isa=integer_isa)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)

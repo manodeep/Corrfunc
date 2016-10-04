@@ -149,6 +149,9 @@ int main(int argc, char *argv[])
     gettimeofday(&t0,NULL);
     results_countpairs_rp_pi results;
     struct config_options options = get_config_options();
+    /* If you want to change the bin refine factors */
+    /* const int bf[] = {2, 2, 1}; */
+    /* set_bin_refine_factors(&options, bf); */
     int status = countpairs_rp_pi(ND1,x1,y1,z1,
                                   ND2,x2,y2,z2,
                                   nthreads,
