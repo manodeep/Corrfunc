@@ -1,5 +1,11 @@
 #include "defs.h"
 
+typedef enum {
+  NONE=-42, /* default */
+  PAIR_PRODUCT=0,
+  NUM_WEIGHT_TYPE 
+} weight_method_t; // type of weighting to apply
+
 //////////////////////////////////
 // Weighting functions
 //////////////////////////////////
@@ -18,10 +24,13 @@ static inline DOUBLE pair_product(const pair_struct *pair){
 
 /* Maps a name to weighting method
    `method` will be set on return.
-   `nweights` is the number of weights per point this method uses
  */
-static inline int get_weight_method_by_name(char *name, weight_method_t *method){
-    if(strcmp(name, "p")){
+static inline int get_weight_method_by_name(const char *name, weight_method_t *method){
+    if(name == NULL || strcmp(name, "")){
+        *method = NONE;
+        return EXIT_SUCCESS;
+    }
+    if(strcmp(name, "pair_product") == 0 || strcmp(name, "p") == 0){
         *method = PAIR_PRODUCT;
         return EXIT_SUCCESS;
     }
@@ -33,10 +42,11 @@ static inline int get_weight_method_by_name(char *name, weight_method_t *method)
  */
 static inline int get_num_weights_by_method(const weight_method_t method){
     switch(method){
-        case NONE:
-            return 0;
         case PAIR_PRODUCT:
             return 1;
+        default:
+        case NONE:
+            return 0;
     }
 }
 
@@ -44,9 +54,10 @@ static inline int get_num_weights_by_method(const weight_method_t method){
  */
 static inline weight_func_t get_weight_func_by_method(const weight_method_t method){
     switch(method){
-        case NONE:
-            return NULL;
         case PAIR_PRODUCT:
             return &pair_product;
+        default:
+        case NONE:
+            return NULL;
     }
 }

@@ -190,7 +190,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
 
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, extra->weights0, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0), xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
   if(lattice1 == NULL) {
     return EXIT_FAILURE;
   }
@@ -199,7 +199,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
       fprintf(stderr,"xmin = %lf xmax=%lf rpmax = %lf\n", xmin, xmax, rpmax);
       bin_refine_factor *=2;
       free_cellarray_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-      lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, extra->weights0; xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+      lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0), xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
       if(lattice1 == NULL) {
           return EXIT_FAILURE;
       }
@@ -208,7 +208,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
     cellarray_index_particles_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2, extra->weights1, xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
+        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1), xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
         if(lattice2 == NULL) {
           return EXIT_FAILURE;
         }
@@ -291,16 +291,19 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
         return EXIT_FAILURE;
     }
 #else
-    uint64_t npairs[nrpbin] = {0};
-    DOUBLE rpavg[nrpbin] = {0.};
-    DOUBLE weightavg[nrpbin] = {0.};
+    uint64_t npairs[nrpbin];
+    DOUBLE rpavg[nrpbin];
+    DOUBLE weightavg[nrpbin];
     
-    /*for(int i=0; i < nrpbin;i++) {
+    for(int i=0;i<nrpbin;i++) {
       npairs[i] = 0;
       if(options->need_avg_sep) {
-          rpavg[i] = (DOUBLE) 0.0;
+        rpavg[i] = 0.0;
       }
-    }*/
+      if(need_weightavg) {
+        weightavg[i] = 0.0;
+      }
+    }
 #endif
 
     DOUBLE rupp_sqr[nrpbin];
@@ -323,16 +326,19 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
 #pragma omp parallel shared(numdone, abort_status, interrupt_status_DOUBLE)
     {
       int tid = omp_get_thread_num();
-      uint64_t npairs[nrpbin] = {0};
-      DOUBLE rpavg[nrpbin] = {0.}; //thread-level, stored on stack
-      DOUBLE weightavg[nrpbin] = {0.};
+      uint64_t npairs[nrpbin];
+      DOUBLE rpavg[nrpbin]; //thread-level, stored on stack
+      DOUBLE weightavg[nrpbin];
       
-      /*for(int i=0;i<nrpbin;i++) {
+      for(int i=0;i<nrpbin;i++) {
         npairs[i] = 0;
         if(options->need_avg_sep) {
           rpavg[i] = 0.0;
         }
-      }*/
+        if(need_weightavg) {
+          weightavg[i] = 0.0;
+        }
+      }
 
 
 #pragma omp for  schedule(dynamic) nowait
@@ -366,7 +372,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
           DOUBLE *x1 = first->x;
           DOUBLE *y1 = first->y;
           DOUBLE *z1 = first->z;
-          weight_struct *weights1 = &(first->weights);
+          const weight_struct *weights1 = &(first->weights);
           const int64_t N1 = first->nelements;
           if(autocorr == 1) {
               int same_cell = 1;
@@ -378,8 +384,8 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
               if(need_weightavg) {
                   this_weightavg = weightavg;
               }
-              const int status = countpairs_function_DOUBLE(N1, x1, y1, z1, weights1
-                                                            N1, x1, y1, z1, weights1
+              const int status = countpairs_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                            N1, x1, y1, z1, weights1,
                                                             same_cell,
                                                             sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
                                                             ZERO, ZERO, ZERO,
@@ -404,7 +410,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
             DOUBLE *x2 = second->x;
             DOUBLE *y2 = second->y;
             DOUBLE *z2 = second->z;
-            weight_struct *weights2 = &(second->weights);
+            const weight_struct *weights2 = &(second->weights);
             DOUBLE off_xwrap = 0.0, off_ywrap = 0.0, off_zwrap = 0.0;
             if(options->periodic) {
               off_xwrap = first->xwrap[ngb];
@@ -473,16 +479,19 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
     }
     
 #if defined(_OPENMP)
-    uint64_t npairs[nrpbin] = {0};
-    DOUBLE rpavg[nrpbin] = {0.};
-    DOUBLE weightavg[nrpbin] = {0.};
+    uint64_t npairs[nrpbin];
+    DOUBLE rpavg[nrpbin];
+    DOUBLE weightavg[nrpbin];
     
-    /*for(int i=0;i<nrpbin;i++) {
+    for(int i=0;i<nrpbin;i++) {
       npairs[i] = 0;
       if(options->need_avg_sep) {
         rpavg[i] = 0.0;
       }
-    }*/
+      if(need_weightavg) {
+        weightavg[i] = 0.0;
+      }
+    }
 
     for(int i=0;i<numthreads;i++) {
       for(int j=0;j<nrpbin;j++) {

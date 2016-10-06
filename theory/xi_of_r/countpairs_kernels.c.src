@@ -437,20 +437,20 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
   }
   
   // A copy whose pointers we can advance
-  weight_struct local_w0, local_w1;
+  weight_struct local_w0 = {NULL, 0}, local_w1 = {NULL, 0};
   pair_struct pair;
   if(need_weightavg){
-      local_w0.num_weights = weights0->num_weights;
-      local_w1.num_weights = weights1->num_weights;
+      local_w0 = *weights0;
+      local_w1 = *weights1;
       XASSERT(local_w0.num_weights == local_w1.num_weights, "Weights0/1 count does not match!\n");
       
       // Separate copy of the pointers into the particle list that we can advance
-      local_w0.weights = (DOUBLE *) my_malloc(sizeof(DOUBLE*), local_w0.num_weights);
-      local_w1.weights = (DOUBLE *) my_malloc(sizeof(DOUBLE*), local_w1.num_weights);
+      local_w0.weights = (DOUBLE **) my_malloc(sizeof(DOUBLE*), local_w0.num_weights);
+      local_w1.weights = (DOUBLE **) my_malloc(sizeof(DOUBLE*), local_w1.num_weights);
       
       for(int w = 0; w < local_w0.num_weights; w++){
-          local_w0.weights[w] = weights0[w];
-          local_w1.weights[w] = weights1[w];
+          local_w0.weights[w] = weights0->weights[w];
+          local_w1.weights[w] = weights1->weights[w];
       }
       
       pair.num_weights = local_w0.num_weights;
@@ -486,9 +486,11 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
     DOUBLE *localx1 = ((DOUBLE *) x1) + j;
     DOUBLE *localy1 = ((DOUBLE *) y1) + j;
     
-    // Reset local_w1 pointer
-    for(int w = 0; w < pair.num_weights; w++){
-        local_w1.weights[w] = weights1.weights[w];
+    if(need_weightavg){
+        // Start the local_w1 pointer from offset j
+        for(int w = 0; w < pair.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + j;
+        }
     }
 
     for(;j<N1;j++) {

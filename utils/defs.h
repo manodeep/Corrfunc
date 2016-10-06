@@ -47,13 +47,6 @@ typedef enum {
   NUM_ISA 
 } isa;//name for instruction sets -> corresponds to the return from instrset_detect in cpu_features.c
 
-
-typedef enum {
-  NONE=-42, /* default */
-  PAIR_PRODUCT=0,
-  NUM_WEIGHT_TYPE 
-} weight_method_t; // type of weighting to apply
-
 #define OPTIONS_HEADER_SIZE     (1024)
 struct config_options
 {
@@ -209,22 +202,26 @@ typedef struct
 
 typedef struct
 {
-    DOUBLE **weights;
+    DOUBLE **weights;  // This will be of shape weights[num_weights][num_particles]
     int64_t num_weights;
 } weight_struct;
 
 typedef DOUBLE (*weight_func_t)(const pair_struct*);
+
+#include "weight_functions.c"
     
 struct __attribute__((packed)) extra_options
 {
+    // Two possible weight_structs (at most we will have two loaded sets of particles)
     weight_struct weights0;
     weight_struct weights1;
-    weight_method_t weighting_method; //way to type-cast the generic weightfunc into the actual function.
+    weight_method_t weighting_method; // the function that will get called to give the weight of a particle pair
     weight_func_t weight_func;
-    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(weight_struct) - sizeof(weight_method_t) - sizeof(weight_func_t)];
+    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - 2*sizeof(weight_struct) - sizeof(weight_method_t) - sizeof(weight_func_t)];
 };
 
 // Here we want to return an int because malloc may fail (unlike get_config_options)
+// weighting_method determines the number of various weighting arrays that we allocate
 static inline int get_extra_options(struct extra_options *extra, const weight_method_t weighting_method)
 {    
     ENSURE_STRUCT_SIZE(struct extra_options, EXTRA_OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
@@ -236,10 +233,15 @@ static inline int get_extra_options(struct extra_options *extra, const weight_me
     extra->weighting_method = weighting_method;
     extra->weight_func = get_weight_func_by_method(extra->weighting_method);
     
-    weight_struct *w = &(extra->weights);
-    w->num_weights = get_num_weights_by_method(extra->weighting_method);
-    w->weights = (DOUBLE **) malloc(sizeof(*(w->weights)) * w->num_weights);
-    if(w->weights == NULL) {
+    weight_struct *w0 = &(extra->weights0);
+    weight_struct *w1 = &(extra->weights1);
+    w0->num_weights = get_num_weights_by_method(extra->weighting_method);
+    w1->num_weights = w0->num_weights;
+    w0->weights = (DOUBLE **) malloc(sizeof(*(w0->weights)) * w0->num_weights);
+    w1->weights = (DOUBLE **) malloc(sizeof(*(w1->weights)) * w1->num_weights);
+    
+    if(w0->weights == NULL || w1->weights == NULL) {
+        free(w0->weights); free(w1->weights);
         return EXIT_FAILURE;
     }
 
@@ -248,13 +250,28 @@ static inline int get_extra_options(struct extra_options *extra, const weight_me
 
 static inline void free_extra_options(struct extra_options *extra)
 {
-    weight_struct *w = &(extra->weights);
-    for(uint64_t i=0;i<w->num_weights;i++) {
-        free(w->weights[i]);
+    weight_struct *w0 = &(extra->weights0);
+    weight_struct *w1 = &(extra->weights1);
+    
+    if(w0->weights != NULL){
+        // Free particle lists
+        for(int64_t i=0; i < w0->num_weights; i++) {
+            free(w0->weights[i]);
+            w0->weights[i] = NULL;  // avoid double free from aliased w0/w1
+        }
+        free(w0->weights);
+        w0->weights = NULL;
+        w0->num_weights = 0;
     }
-    free(w->weights);
-    w->weights = NULL;
-    w->num_weights = 0;
+    if(w1->weights != NULL){
+        for(int64_t i=0; i < w1->num_weights; i++) {
+            free(w1->weights[i]);
+            w1->weights[i] = NULL;
+        }
+        free(w1->weights);
+        w1->weights = NULL;
+        w1->num_weights = 0;
+    }
 }    
 
 

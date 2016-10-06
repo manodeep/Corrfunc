@@ -161,7 +161,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     const DOUBLE ymin = 0.0, ymax=boxsize;
     const DOUBLE zmin = 0.0, zmax=boxsize;
 
-    cellarray_index_particles_DOUBLE *lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+    cellarray_index_particles_DOUBLE *lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, NULL, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
     if(lattice == NULL) {
         return EXIT_FAILURE;
     }
@@ -169,7 +169,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         fprintf(stderr,"%s> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n",__FUNCTION__);
         bin_refine_factor *=2;
         free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-        lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+        lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, NULL, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
         if(lattice == NULL) {
             return EXIT_FAILURE;
         }
