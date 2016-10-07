@@ -118,6 +118,18 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
     return EXIT_FAILURE;
   }
   
+  // If no extra options were passed, create dummy options
+  struct extra_options dummy_extra;
+  if(extra == NULL){
+      weight_method_t dummy_method = NONE;
+      int estatus = get_extra_options(&dummy_extra, dummy_method);
+      if(estatus != EXIT_SUCCESS){
+        fprintf(stderr,"ERROR: In %s> Failed to create dummy extra_options. Malloc failure?\n", __FUNCTION__);
+        return EXIT_FAILURE;
+      }
+      extra = &dummy_extra;
+  }
+  
   int need_weightavg = extra->weighting_method != NONE;
   
   struct timeval t0;

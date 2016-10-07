@@ -6,6 +6,9 @@
   directory at https://github.com/manodeep/Corrfunc/
 */
 
+// Presently, all tests are double precision
+#define DOUBLE_PREC
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -30,6 +33,7 @@
 char tmpoutputfile[]="./test_periodic_output.txt";
 
 int test_periodic_DD(const char *correct_outputfile);
+int test_periodic_DD_weighted(const char *correct_outputfile);
 int test_periodic_DDrppi(const char *correct_outputfile);
 int test_wp(const char *correct_outputfile);
 int test_vpf(const char *correct_outputfile);
@@ -39,10 +43,10 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 //Global variables
 int ND1;
-double *X1=NULL,*Y1=NULL,*Z1=NULL;
+double *X1=NULL,*Y1=NULL,*Z1=NULL,*weights1=NULL;
 
 int ND2;
-double *X2=NULL,*Y2=NULL,*Z2=NULL;
+double *X2=NULL,*Y2=NULL,*Z2=NULL,*weights2=NULL;
 
 char binfile[]="bins";
 double pimax=40.0;
@@ -88,10 +92,81 @@ int test_periodic_DD(const char *correct_outputfile)
     fclose(fp);
 
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     free_results(&results);
+    return ret;
+}
+
+int test_periodic_DD_weighted(const char *correct_outputfile)
+{
+    int autocorr = (X1==X2) ? 1:0;
+
+    // Set up the weights pointers
+    struct extra_options extra;
+    weight_method_t weight_method = PAIR_PRODUCT;
+    int estatus = get_extra_options(&extra, weight_method);
+    if(estatus != EXIT_SUCCESS){
+        fprintf(stderr,"ERROR: In %s> Failed to create extra_options. Malloc failure?\n", __FUNCTION__);
+        return EXIT_FAILURE;
+    }
+    
+    // Populate the weights
+    extra.weights0.weights[0] = (double *) my_malloc(sizeof(double), ND1);
+    if(autocorr){
+        extra.weights1.weights[0] = extra.weights0.weights[0];
+    } else {
+        extra.weights1.weights[0] = (double *) my_malloc(sizeof(double), ND2);
+    }
+    
+    for(int i = 0; i < ND1; i++){
+        extra.weights0.weights[0][i] = 0.5;
+        if(!autocorr){
+            extra.weights1.weights[0][i] = 0.5;
+        }
+    }
+
+
+    //Do the DD counts with weights
+    results_countpairs results;
+    int status = countpairs(ND1,X1,Y1,Z1,
+                            ND2,X2,Y2,Z2,
+                            nthreads,
+                            autocorr,
+                            binfile,
+                            &results,
+                            &options,
+                            &extra);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    double rlow=results.rupp[0];
+    FILE *fp=my_fopen(tmpoutputfile,"w");
+    if(fp == NULL) {
+        free_results(&results);
+        return EXIT_FAILURE;
+    }
+    for(int i=1;i<results.nbin;i++) {
+        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf\n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i],results.weightavg[i]);
+        rlow = results.rupp[i];
+    }
+    fclose(fp);
+
+    char execstring[MAXLEN];
+    // On machines where system() invokes 'sh' instead of 'bash',
+    // redirecting the output via '&>/dev/null' does not work and hides test failures!
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
+    int ret=system(execstring);
+
+    free_results(&results);
+    
+    // Free weights
+    free(extra.weights0.weights[0]);
+    if(!autocorr){
+        free(extra.weights1.weights[0]);
+    }
     return ret;
 }
 
@@ -129,7 +204,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -162,7 +237,7 @@ int test_wp(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -205,7 +280,7 @@ int test_vpf(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -239,7 +314,7 @@ int test_xi(const char *correct_outputfile)
     }
     fclose(fp);
     char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
+    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
     int ret=system(execstring);
 
     //free the result structure
@@ -321,22 +396,56 @@ int main(int argc, char **argv)
     int failed=0;
     int status;
 
-    const char alltests_names[][MAXLEN] = {"Mr19 DDrppi (periodic)","Mr19 DD (periodic)","Mr19 wp (periodic)","Mr19 vpf (periodic)","Mr19 xi periodic)",
-                                           "CMASS DDrppi DD (periodic)","CMASS DDrppi DR (periodic)","CMASS DDrppi RR (periodic)"};
+    const char alltests_names[][MAXLEN] = {"Mr19 DDrppi (periodic)",
+                                           "Mr19 DD (periodic)",
+                                           "Mr19 DD weighted (periodic)",
+                                           "Mr19 wp (periodic)",
+                                           "Mr19 vpf (periodic)",
+                                           "Mr19 xi periodic)",
+                                           "CMASS DDrppi DD (periodic)",
+                                           "CMASS DDrppi DR (periodic)",
+                                           "CMASS DDrppi RR (periodic)"};
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
-    const int function_pointer_index[] = {1,0,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi
+    const int function_pointer_index[] = {1,0,5,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi, 5->weighted
 
-    const char correct_outputfiles[][MAXLEN] = {"Mr19_DDrppi_periodic","Mr19_DD_periodic","Mr19_wp","Mr19_vpf_periodic","Mr19_xi","cmass_DD_periodic","cmass_DR_periodic","cmass_RR_periodic"};
-    const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
-                                          "../tests/data/cmassmock_Zspace.ff","../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff"};
-    const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
-    const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff",
-                                           "../tests/data/cmassmock_Zspace.ff","../tests/data/random_Zspace.ff","../tests/data/random_Zspace.ff"};
-    const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
-    const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
+    const char correct_outputfiles[][MAXLEN] = {"Mr19_DDrppi_periodic",
+                                                "Mr19_DD_periodic",
+                                                "Mr19_DD_periodic_weighted",
+                                                "Mr19_wp",
+                                                "Mr19_vpf_periodic",
+                                                "Mr19_xi",
+                                                "cmass_DD_periodic",
+                                                "cmass_DR_periodic",
+                                                "cmass_RR_periodic"};
+    const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff",
+                                          "../tests/data/gals_Mr19.ff",
+                                          "../tests/data/gals_Mr19.ff",
+                                          "../tests/data/gals_Mr19.ff",
+                                          "../tests/data/gals_Mr19.ff",
+                                          "../tests/data/gals_Mr19.ff",
+                                          "../tests/data/cmassmock_Zspace.ff",
+                                          "../tests/data/cmassmock_Zspace.ff",
+                                          "../tests/data/random_Zspace.ff"};
+    const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f","f"};
+    const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff",
+                                           "../tests/data/gals_Mr19.ff",
+                                           "../tests/data/gals_Mr19.ff",
+                                           "../tests/data/gals_Mr19.ff",
+                                           "../tests/data/gals_Mr19.ff",
+                                           "../tests/data/gals_Mr19.ff",
+                                           "../tests/data/cmassmock_Zspace.ff",
+                                           "../tests/data/random_Zspace.ff",
+                                           "../tests/data/random_Zspace.ff"};
+    const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f","f"};
+    const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
 
-    int (*allfunctions[]) (const char *) = {test_periodic_DD,test_periodic_DDrppi,test_wp,test_vpf,test_xi};
-    const int numfunctions=5;//5 functions total
+    int (*allfunctions[]) (const char *) = {test_periodic_DD,
+                                            test_periodic_DDrppi,
+                                            test_wp,
+                                            test_vpf,
+                                            test_xi,
+                                            test_periodic_DD_weighted};
+    const int numfunctions=6;//5 functions total
 
     int total_tests=0,skipped=0;
 

@@ -420,7 +420,7 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
         lattice[index].y[ipos] = y[i];
         lattice[index].z[ipos] = z[i];
         for(int w = 0; w < lattice[index].weights.num_weights; w++){
-            lattice[index].weights.weights[w][i] = weights->weights[w][i];
+            lattice[index].weights.weights[w][ipos] = weights->weights[w][i];
         }
         lattice[index].nelements++;
     }
