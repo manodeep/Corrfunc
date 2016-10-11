@@ -19,8 +19,9 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
                   RA2=None, DEC2=None,
                   link_in_dec=True, link_in_ra=True,
                   verbose=False, output_thetaavg=False,
-                  fast_acos=False, c_api_timer=False,
-                  isa='fastest'):
+                  fast_acos=False, ra_refine_factor=2,
+                  dec_refine_factor=2, max_cells_per_dim=100,
+                  c_api_timer=False, isa='fastest'):
     """
     Function to compute the angular correlation function for points on
     the sky (i.e., mock catalogs or observed galaxies).
@@ -127,6 +128,17 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
        Note that tests will fail if you run the tests with``fast_acos=True``.
 
+    (radec)_refine_factor: integer, default is (2,2); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime. Note, only two refine factors are to be specified and these
+       correspond to ``ra`` and ``dec`` (rather, than the usual three of
+       ``(xyz)bin_refine_factor`` for all other correlation functions).
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``thetamax``
+       is too small relative to the boxsize (and increasing helps the runtime).
+
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
@@ -150,7 +162,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     results: Numpy structured array
 
-       A numpy structured array containing [thetamin, thetamaxax, thetaavg,
+       A numpy structured array containing [thetamin, thetamax, thetaavg,
        npairs] for each angular bin specified in the ``binfile``. If
        ``output_thetaavg`` is not set then ``thetavg`` will be set to 0.0 for
        all bins. ``npairs`` contains the number of pairs in that bin.
@@ -246,8 +258,11 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
                                                 link_in_dec=link_in_dec,
                                                 link_in_ra=link_in_ra,
                                                 output_thetaavg=output_thetaavg,
-                                                c_api_timer=c_api_timer,
                                                 fast_acos=fast_acos,
+                                                ra_refine_factor=ra_refine_factor,
+                                                dec_refine_factor=dec_refine_factor,
+                                                max_cells_per_dim=max_cells_per_dim,
+                                                c_api_timer=c_api_timer,
                                                 isa=integer_isa)
 
     if extn_results is None:

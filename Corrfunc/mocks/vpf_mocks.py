@@ -19,6 +19,8 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
               RA, DEC, CZ,
               RAND_RA, RAND_DEC, RAND_CZ,
               verbose=False, is_comoving_dist=False,
+              xbin_refine_factor=1, ybin_refine_factor=1,
+              zbin_refine_factor=1, max_cells_per_dim=100,
               c_api_timer=False, isa='fastest'):
     """
     Function to compute the counts-in-cells on points on the sky. Suitable
@@ -154,6 +156,17 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        converted into co-moving distances. This flag allows arbitrary
        cosmologies to be used in ``Corrfunc``.
 
+    (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime. Note, since the counts in spheres calculation is symmetric
+       in all 3 dimensions, the defaults are different from the clustering
+       routines.
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
+       too small relative to the boxsize (and increasing helps the runtime).
+
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
@@ -269,6 +282,10 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
                                       RAND_RA, RAND_DEC, RAND_CZ,
                                       verbose=verbose,
                                       is_comoving_dist=is_comoving_dist,
+                                      xbin_refine_factor=xbin_refine_factor,
+                                      ybin_refine_factor=ybin_refine_factor,
+                                      zbin_refine_factor=zbin_refine_factor,
+                                      max_cells_per_dim=max_cells_per_dim,
                                       c_api_timer=c_api_timer,
                                       isa=integer_isa)
 

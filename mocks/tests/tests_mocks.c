@@ -59,7 +59,8 @@ const int nthreads=1;
 const int cosmology_flag=1;
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .fast_divide=0, .fast_acos=0, .version=STR(VERSION)};
+struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .fast_divide=0, .fast_acos=0, .version=STR(VERSION),
+                                 .max_cells_per_dim=NLATMAX};
 //end of global variables
 
 int test_DDrppi_mocks(const char *correct_outputfile)
@@ -274,7 +275,8 @@ int main(int argc, char **argv)
 
     strncpy(current_file1,file,MAXLEN);
     strncpy(current_file2,file,MAXLEN);
-
+    reset_bin_refine_factors(&options);
+    
     int failed=0;
 
     const char alltests_names[][MAXLEN] = {"Mr19 mocks DDrppi (DD)","Mr19 mocks wtheta (DD)","Mr19 mocks vpf (data)","Mr19 mocks DDrppi (DR)", "Mr19 mocks wtheta (DR)","Mr19 mocks vpf (randoms)"};

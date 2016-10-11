@@ -312,29 +312,50 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     (void) numthreads;
 #endif
 
-    int ra_refine_factor = 2;
-    int dec_refine_factor = 2;
-
     /* setup interrupt handler -> mostly useful during the python execution. 
        Let's Ctrl-C abort the extension  */
     SETUP_INTERRUPT_HANDLERS(interrupt_handler_wtheta_mocks_DOUBLE);
 
-#if defined(_OPENMP)
-    if((options->link_in_ra == 0) && (dec_refine_factor < numthreads)) {
-        dec_refine_factor=numthreads;
-    }
-#endif
-    
-    
     DOUBLE *theta_upp;
     int nthetabin;
     DOUBLE thetamin,thetamax;
     setup_bins_DOUBLE(binfile,&thetamin,&thetamax,&nthetabin,&theta_upp);
-    if( ! (thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax < 90.0 && nthetabin > 0) ) {
+    if( ! (thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax <= 90.0 && nthetabin > 0) ) {
         fprintf(stderr,"Error: Could not setup with theta bins correctly. (thetamin = %lf, thetamax = %lf, with nbins = %d). Expected non-zero rmin/rmax with thetamax > "
                 "thetamin and nbins >=1 \n",thetamin, thetamax, nthetabin);
         return EXIT_FAILURE;
     }
+    if(thetamax >= 45.0) {
+        fprintf(stderr,"Max. angular separation requested = %e "
+                "is so large that linking in RA will make "
+                "no difference (but might crash the code). "
+                "Only linking in declination and disabling "
+                " `link in ra' \n", thetamax);
+        options->link_in_ra = 0;
+        options->link_in_dec = 0;
+    }
+    
+#if defined(_OPENMP)
+    if((options->link_in_ra == 0) &&
+       (options->bin_refine_factors[1] < numthreads) &&
+       (get_bin_refine_scheme(options) == BINNING_DFL)) {
+        options->bin_refine_factors[1]=numthreads;
+    }
+#endif
+    for(int i=0;i<3;i++) {
+        if(options->bin_refine_factors[i] < 1) {
+            fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                    i, options->bin_refine_factors[i]);
+            reset_bin_refine_factors(options);
+            break;/* all factors have been reset -> no point continuing with the loop */
+        }
+    }
+    
+    if(options->max_cells_per_dim == 0) {
+        fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+        options->max_cells_per_dim = NLATMAX;
+    }
+    
 
     DOUBLE costheta_upp[nthetabin];
     for(int i=0;i<nthetabin;i++) {
@@ -385,7 +406,6 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     }
 
 
-    
     //Create the lattices
     DOUBLE ra_min=0.0,dec_min=1e10;
     DOUBLE ra_max=360.0,dec_max=-1e10;
@@ -404,9 +424,10 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         lattice1 = gridlink_mocks_theta_ra_dec_DOUBLE(ND1, ra1, dec1, X1, Y1, Z1,
                                                       ra_min, ra_max,
                                                       dec_min, dec_max,
-                                                      NLATMAX, NLATMAX,
-                                                      ra_refine_factor,
-                                                      dec_refine_factor,
+                                                      options->max_cells_per_dim,
+                                                      options->max_cells_per_dim,
+                                                      options->bin_refine_factors[0],
+                                                      options->bin_refine_factors[1],
                                                       thetamax,
                                                       &totncells,
                                                       &nmesh_dec,
@@ -423,9 +444,9 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 lattice2 = gridlink_mocks_theta_ra_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
                                                               ra_min, ra_max,
                                                               dec_min, dec_max,
-                                                              NLATMAX, NLATMAX,
-                                                              ra_refine_factor,
-                                                              dec_refine_factor,
+                                                              options->max_cells_per_dim, options->max_cells_per_dim,
+                                                              options->bin_refine_factors[0],
+                                                              options->bin_refine_factors[1],
                                                               thetamax,
                                                               &totncells2,
                                                               &nmesh_dec2,
@@ -467,7 +488,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             const DOUBLE ra_diff = ra_max - ra_min;
             /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
             status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells,
-                                                                 ra_refine_factor, dec_refine_factor,
+                                                                 options->bin_refine_factors[0], options->bin_refine_factors[1],
                                                                  nmesh_dec, max_nmesh_ra,
                                                                  ra_min, ra_diff,
                                                                  nmesh_grid_ra,
@@ -491,8 +512,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         /* Only link in declination */
         lattice1 = gridlink_mocks_theta_dec_DOUBLE(ND1,ra1,dec1,X1,Y1,Z1,
                                                    dec_min, dec_max,
-                                                   NLATMAX,
-                                                   dec_refine_factor,
+                                                   options->max_cells_per_dim,
+                                                   options->bin_refine_factors[1],
                                                    thetamax,
                                                    &totncells,
                                                    options);
@@ -504,8 +525,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 int64_t totncells_2=0;
                 lattice2 = gridlink_mocks_theta_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
                                                            dec_min, dec_max,
-                                                           NLATMAX,
-                                                           dec_refine_factor,
+                                                           options->max_cells_per_dim,
+                                                           options->bin_refine_factors[1],
                                                            thetamax,
                                                            &totncells_2,
                                                            options);
@@ -524,7 +545,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         
         if(status == EXIT_SUCCESS) {
             //The lattice structures are identical -> try to assign ngb cells
-            status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1, lattice2, totncells, dec_refine_factor, autocorr);
+            status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1, lattice2, totncells, options->bin_refine_factors[1], autocorr);
         }
             
         if(status != EXIT_SUCCESS) {
@@ -806,7 +827,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
-
+    reset_bin_refine_factors(options);
+    
     if(options->c_api_timer) {
         struct timeval t1;
         gettimeofday(&t1, NULL);
