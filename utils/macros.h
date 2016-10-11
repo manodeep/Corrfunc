@@ -2,6 +2,8 @@
 
 #define NLATMAX           100
 
+#define THRESH_FOR_BOOST   10
+#define BOOST_BIN_REF       2
 
 /* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
    which is in turn taken from the linux kernel */
