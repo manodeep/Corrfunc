@@ -186,13 +186,15 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     if(lattice == NULL) {
         return EXIT_FAILURE;
     }
-    if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
+
+    /* If there too few cells (THRESH_FOR_BOOST is ~10), and the number of cells can be increased, then boost bin refine factor (by 2x)*/
+    if(nmesh_x <= THRESH_FOR_BOOST && nmesh_y <= THRESH_FOR_BOOST && nmesh_z <= THRESH_FOR_BOOST && options->max_cells_per_dim >= BOOST_BIN_REF*THRESH_FOR_BOOST) {
         if(get_bin_refine_scheme(options) == BINNING_DFL) {
             fprintf(stderr,"%s> gridlink seems inefficient nmesh = (%d, %d, %d). Boosting bin refine factor - should lead to better performance\n", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z);
             fprintf(stderr,"xmin = %lf xmax=%lf rmax = %lf\n", xmin, xmax, rmax);
             free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
             for(int i=0;i<3;i++) {
-                options->bin_refine_factors[i] *= 2;
+                options->bin_refine_factors[i] *= BOOST_BIN_REF;
             }
             lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z,
                                                        xmin, xmax, ymin, ymax, zmin, zmax,
