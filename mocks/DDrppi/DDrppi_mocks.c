@@ -141,7 +141,6 @@ int main(int argc, char *argv[])
     /*---Count-pairs--------------------------------------*/
     results_countpairs_mocks results;
     struct config_options options = get_config_options();
-    options.float_type = sizeof(DOUBLE);//not really required, but I am always paranoid
     int status = countpairs_mocks(ND1,phiD1,thetaD1,czD1,
                                   ND2,phiD2,thetaD2,czD2,
                                   nthreads,

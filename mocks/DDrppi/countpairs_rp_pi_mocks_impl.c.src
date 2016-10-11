@@ -218,8 +218,19 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     (void) numthreads;
 #endif
 
-    int bin_refine_factor=2;
-    int zbin_refine_factor=2;
+    if(options->max_cells_per_dim == 0) {
+        fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+        options->max_cells_per_dim = NLATMAX;
+    }
+    for(int i=0;i<3;i++) {
+        if(options->bin_refine_factors[i] < 1) {
+            fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                    i, options->bin_refine_factors[i]);
+            reset_bin_refine_factors(options);
+            break;/* all factors have been reset -> no point continuing with the loop */
+        }
+    }
+    
     const int npibin = (int) pimax;
 
     /* setup interrupt handler -> mostly useful during the python execution. 
@@ -351,7 +362,19 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     }
 
     const DOUBLE xdiff = xmax-xmin;
-    if(rpmax < 0.05*xdiff) bin_refine_factor = 1;
+    const DOUBLE ydiff = ymax-ymin;
+    const DOUBLE zdiff = zmax-zmin;
+    if(get_bin_refine_scheme(options) == BINNING_DFL) {
+        if(max_sep < 0.05*xdiff) {
+            options->bin_refine_factors[0] = 1;
+      }
+        if(max_sep < 0.05*ydiff) {
+            options->bin_refine_factors[1] = 1;
+        }
+        if(max_sep < 0.05*zdiff) {
+            options->bin_refine_factors[2] = 1;
+        }
+    }
     
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
@@ -360,7 +383,9 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                                                                                              ymin, ymax,
                                                                                              zmin, zmax,
                                                                                              max_sep, max_sep, max_sep,
-                                                                                             bin_refine_factor, bin_refine_factor, zbin_refine_factor,
+                                                                                             options->bin_refine_factors[0],
+                                                                                             options->bin_refine_factors[1],
+                                                                                             options->bin_refine_factors[2],
                                                                                              &nmesh_x, &nmesh_y, &nmesh_z,
                                                                                              options);
     if(lattice1 == NULL) {
@@ -368,19 +393,29 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     }
 
     if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
-        fprintf(stderr,"countpairs> gridlink seems inefficient - boosting bin refine factor - should lead to better performance\n");
-        bin_refine_factor *=2;
-        free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-        lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1,
-                                                         xmin, xmax,
-                                                         ymin, ymax,
-                                                         zmin, zmax,
-                                                         max_sep, max_sep, max_sep, 
-                                                         bin_refine_factor, bin_refine_factor, zbin_refine_factor,
-                                                         &nmesh_x, &nmesh_y, &nmesh_z,
-                                                         options);
-        if(lattice1 == NULL) {
-            return EXIT_FAILURE;
+        if(get_bin_refine_scheme(options) == BINNING_DFL) {            
+            fprintf(stderr,"%s> gridlink seems inefficient nmesh = (%d, %d, %d). Boosting bin refine factor - should lead to better performance\n", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z);
+            for(int i=0;i<3;i++) {
+                options->bin_refine_factors[i] *=2;
+            }
+            free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+            lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1,
+                                                             xmin, xmax,
+                                                             ymin, ymax,
+                                                             zmin, zmax,
+                                                             max_sep, max_sep, max_sep, 
+                                                             options->bin_refine_factors[0],
+                                                             options->bin_refine_factors[1],
+                                                             options->bin_refine_factors[2],
+                                                             &nmesh_x, &nmesh_y, &nmesh_z,
+                                                             options);
+            if(lattice1 == NULL) {
+                return EXIT_FAILURE;
+            }
+        } else {
+            fprintf(stderr,"%s> gridlink seems inefficient nmesh = (%d, %d, %d), boosting bin refine factor could have helped. However, since custom bin refine factors "
+                    "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, options->bin_refine_factors[0],
+                    options->bin_refine_factors[1], options->bin_refine_factors[2]);
         }
     }
 
@@ -392,7 +427,9 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                                                          ymin, ymax,
                                                          zmin, zmax,
                                                          max_sep, max_sep, max_sep,
-                                                         bin_refine_factor, bin_refine_factor, zbin_refine_factor,
+                                                         options->bin_refine_factors[0],
+                                                         options->bin_refine_factors[1],
+                                                         options->bin_refine_factors[2],
                                                          &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
         if(lattice2 == NULL) {
             return EXIT_FAILURE;
@@ -422,7 +459,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
     {
         int status = assign_ngb_cells_mocks_index_particles_DOUBLE(lattice1, lattice2, totncells,
-                                                                   bin_refine_factor, bin_refine_factor, zbin_refine_factor,
+                                                                   options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                                                    nmesh_x, nmesh_y, nmesh_z,
                                                                    autocorr);
         if(status != EXIT_SUCCESS) {
@@ -664,7 +701,8 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
 
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
-
+    reset_bin_refine_factors(options);
+    
     if(options->c_api_timer) {
         struct timeval t1;
         gettimeofday(&t1, NULL);

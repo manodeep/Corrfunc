@@ -18,7 +18,10 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                  RA2=None, DEC2=None, CZ2=None,
                  is_comoving_dist=False,
                  verbose=False, output_rpavg=False,
-                 fast_divide=False, c_api_timer=False, isa='fastest'):
+                 fast_divide=False, xbin_refine_factor=2,
+                 ybin_refine_factor=2, zbin_refine_factor=1,
+                 max_cells_per_dim=100,
+                 c_api_timer=False, isa='fastest'):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
     function, :math:`\\xi(r_p, \pi)`. Pairs which are separated by less
@@ -154,6 +157,15 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         Boolean flag to replace the division in ``AVX`` implementation with an
         approximate reciprocal, followed by a Newton-Raphson step. Improves
         runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.
+
+    (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime.
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
+       too small relative to the boxsize (and increasing helps the runtime).
 
     c_api_timer: boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here
@@ -306,6 +318,10 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                                          verbose=verbose,
                                          output_rpavg=output_rpavg,
                                          fast_divide=fast_divide,
+                                         xbin_refine_factor=xbin_refine_factor,
+                                         ybin_refine_factor=ybin_refine_factor,
+                                         zbin_refine_factor=zbin_refine_factor,
+                                         max_cells_per_dim=max_cells_per_dim,
                                          c_api_timer=c_api_timer,
                                          isa=integer_isa)
     if extn_results is None:
