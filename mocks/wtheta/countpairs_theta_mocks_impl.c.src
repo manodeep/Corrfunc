@@ -151,6 +151,7 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
 
 static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
+                                                            const int numthreads,
                                                             const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
                                                             const DOUBLE *theta_upp,
                                                             const DOUBLE *costheta_upp, 
@@ -166,20 +167,34 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     
     /* Always print a message saying "brute-force" is running*/
     fprintf(stderr,"Running brute force algorithm\n");
+#if defined(_OPENMP)    
+    omp_set_num_threads(numthreads);
+#else
+    (void) numthreads;
+#endif
+    
     struct timeval t0;
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);
     }
     const int32_t need_thetaavg = options->need_avg_sep;
-    uint64_t npairs[nthetabin];
-    DOUBLE thetaavg[nthetabin];
-    for(int i=0;i<nthetabin;i++) {
-        npairs[i] = 0;
-        if(need_thetaavg) {
-            thetaavg[i] = ZERO;
-        }
-    }
 
+#if defined(_OPENMP)
+    uint64_t all_npairs[numthreads][nthetabin];
+    DOUBLE all_thetaavg[numthreads][nthetabin];
+    memset(all_npairs, 0, sizeof(DOUBLE)*numthreads*nthetabin);
+    if(options->need_avg_sep) {
+        memset(all_thetaavg, 0, sizeof(DOUBLE)*numthreads*nthetabin);
+    }
+#else
+    uint64_t npairs[nthetabin];
+    for(int i=0;i<nthetabin;i++) npairs[i]=0;
+    DOUBLE thetaavg[nthetabin];
+    if(options->need_avg_sep) {
+        for(int i=0;i<nthetabin;i++) thetaavg[i] = ZERO;
+    }
+#endif
+    
     /* runtime dispatch - get the function pointer */
     countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_function_DOUBLE = countpairs_theta_mocks_driver_DOUBLE(options);
     if(countpairs_theta_mocks_function_DOUBLE == NULL) {
@@ -187,40 +202,102 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     }
 
     const int block_size = 128;
-    int interrupted=0,same_cell=0;
+    int64_t numdone=0;
+    int interrupted=0,same_cell=0,abort_status=EXIT_SUCCESS;
+    
     if(options->verbose) {
         init_my_progressbar(N0, &interrupted);
     }
-    for(int64_t i=0;i<N0;i+=block_size) {
-        if(options->verbose) {
-            my_progressbar(i, &interrupted);
-        }
-        const int64_t block_size1 = (N0-i) > block_size ? block_size:(N0-i);
-        for(int64_t j=0;j<N1;j+=block_size) {
-            if(interrupt_status_wtheta_mocks_DOUBLE == EXIT_SUCCESS) {
-                const int64_t block_size2 = (N1-j) > block_size ? block_size:(N1-j);
-                DOUBLE *this_thetaavg = need_thetaavg ? thetaavg:NULL;
-                int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i],
-                                                                    block_size2, &x1[j], &y1[j], &z1[j],
-                                                                    same_cell,
-                                                                    options->fast_acos,
-                                                                    costhetamax, costhetamin, nthetabin,
-                                                                    costheta_upp,
-                                                                    this_thetaavg,
-                                                                    npairs);
-                if(status != EXIT_SUCCESS) {
-                    return status;
-                }
+#if defined(_OPENMP)
+#pragma omp parallel shared(numdone, abort_status, interrupt_status_wtheta_mocks_DOUBLE)
+    {
+        int tid = omp_get_thread_num();
+        uint64_t npairs[nthetabin];
+        DOUBLE thetaavg[nthetabin];
+        for(int i=0;i<nthetabin;i++) {
+            npairs[i] = 0;
+            if(options->need_avg_sep) {
+                thetaavg[i] = ZERO;
             }
         }
-    }
-    if(interrupt_status_wtheta_mocks_DOUBLE != EXIT_SUCCESS){
+
+#pragma omp for  schedule(dynamic)
+#endif
+        for(int64_t i=0;i<N0;i+=block_size) {
+            
+#if defined(_OPENMP)
+#pragma omp flush (abort_status)
+#endif
+            if(abort_status == EXIT_SUCCESS && interrupt_status_wtheta_mocks_DOUBLE == EXIT_SUCCESS) {
+                //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
+                
+                /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
+                if(options->verbose) {
+#if defined(_OPENMP)
+                    if (omp_get_thread_num() == 0)
+#endif
+                        my_progressbar(numdone,&interrupted);
+                    
+                    
+#if defined(_OPENMP)
+#pragma omp atomic
+#endif
+                    numdone+=block_size;
+                }
+                
+                const int64_t block_size1 = (N0-i) > block_size ? block_size:(N0-i);
+                for(int64_t j=0;j<N1;j+=block_size) {
+                    const int64_t block_size2 = (N1-j) > block_size ? block_size:(N1-j);
+                    DOUBLE *this_thetaavg = need_thetaavg ? thetaavg:NULL;
+                    int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i],
+                                                                        block_size2, &x1[j], &y1[j], &z1[j],
+                                                                        same_cell,
+                                                                        options->fast_acos,
+                                                                        costhetamax, costhetamin, nthetabin,
+                                                                        costheta_upp,
+                                                                        this_thetaavg,
+                                                                        npairs);
+                    abort_status |= status;
+                } //N1 loop
+            } //abort_status condition
+        }//N0 loop
+        
+#if defined(_OPENMP)
+        for(int j=0;j<nthetabin;j++) {
+            all_npairs[tid][j] = npairs[j];
+            if(options->need_avg_sep) {
+                all_thetaavg[tid][j] = thetaavg[j];
+            }
+        }
+    }//close the omp parallel region
+#endif
+
+    if(abort_status != EXIT_SUCCESS || interrupt_status_wtheta_mocks_DOUBLE != EXIT_SUCCESS) {
         return EXIT_FAILURE;
     }
-    
+
     if(options->verbose) {
         finish_myprogressbar(&interrupted);
     }
+
+#if defined(_OPENMP)
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin];
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        if(options->need_avg_sep) {
+            thetaavg[i] = ZERO;
+        }
+    }
+    for(int i=0;i<numthreads;i++) {
+        for(int j=0;j<nthetabin;j++) {
+            npairs[j] += all_npairs[i][j];
+            if(options->need_avg_sep) {
+                thetaavg[j] += all_thetaavg[i][j];
+            }
+        }
+    }
+#endif//USE_OMP
 
     if(options->need_avg_sep) {
         for(int i=1;i<nthetabin;i++) {
@@ -229,7 +306,8 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
             }
         }
     }
-    
+
+
     //prepare results
     //Pack in the results
     results->nbin = nthetabin;
@@ -391,6 +469,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         //this is equivalent to brute force calculating on the entire dataset
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
+                                                               numthreads,
                                                                costhetamax, costhetamin, nthetabin,
                                                                theta_upp,
                                                                costheta_upp, 
@@ -568,6 +647,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         //this is equivalent to brute force calculating on the entire dataset
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
+                                                               numthreads,
                                                                costhetamax, costhetamin, nthetabin,
                                                                theta_upp,
                                                                costheta_upp, 
