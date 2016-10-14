@@ -59,6 +59,8 @@ const int nthreads=1;
 const int cosmology_flag=1;
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
+const DOUBLE maxdiff = 1e-9;
+const DOUBLE maxreldiff = 1e-6;
 
 struct config_options options;
 //end of global variables
@@ -127,22 +129,31 @@ int test_wtheta_mocks(const char *correct_outputfile)
     }
     
     /*---Output-Pairs-------------------------------------*/
-    FILE *fp=my_fopen(tmpoutputfile,"w");
+    FILE *fp=my_fopen(correct_outputfile,"r");
     if(fp == NULL) {
         free_results_countpairs_theta(&results);
         return EXIT_FAILURE;
     }
-    DOUBLE theta_low = results.theta_upp[0];
     for(int i=1;i<results.nbin;i++) {
-        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i]);
-        theta_low=results.theta_upp[i];
+        uint64_t npairs;
+        DOUBLE theta_avg;
+        ret = EXIT_FAILURE;
+        int nitems = fscanf(fp,"%"SCNu64" %lf%*[^\n]", &npairs, &theta_avg);
+        if(nitems != 2) {
+            fclose(fp);
+            break;
+        }
+        int floats_equal = AlmostEqualRelativeAndAbs_double(theta_avg, results.theta_avg[i], maxdiff, maxreldiff);
+        if(npairs != results.npairs[i] || floats_equal != EXIT_SUCCESS) {
+            fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
+            fprintf(stderr,"Failed. True thetaavg = %e Computed thetaavg = %e. floats_equal = %d\n", theta_avg, results.theta_avg[i], floats_equal);
+            fclose(fp);
+            break;
+        }
+        ret = EXIT_SUCCESS;
     }
     fclose(fp);
         
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    ret=system(execstring);
-    
     //free the result structure
     free_results_countpairs_theta(&results);
     return ret;
