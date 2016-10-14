@@ -61,7 +61,12 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             if(dz > -rpmax) break;
             z1++;x1++;y1++;
         }
+
+        /* Since 'z' is sorted in increasing order for both the first and second cells, 
+           no more valid pairs can be found between these two cell pairs
+         */
         if(prev_j == N1) {
+            i=N0;
             break;
         }
         j = prev_j;
@@ -261,28 +266,32 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
     }
   }
   
-
+  int64_t prev_j=0;
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
     const DOUBLE zpos = *z0++ + off_zwrap;
-      
-    DOUBLE *localz1 = ((DOUBLE *) z1) ;
-    int64_t j= 0;
+
+    int64_t j=0; 
     if(same_cell == 1) {
-      j = i+1;
-      localz1 += j;
+        z1++;x1++;y1++;
+        j = i+1;
     } else {
-      while(j < N1){
-        const DOUBLE dz = *localz1++ - zpos;
-        if(dz > -rpmax) break;
-        j++;
-      }
-      localz1 -= 1;
+        for(;prev_j<N1;prev_j++) {
+            const DOUBLE dz = *z1 - zpos;
+            if(dz > -rpmax) break;
+            z1++;x1++;y1++;
+        }
+        if(prev_j == N1) {
+            i=N0;
+            break;
+        }
+        j = prev_j;
     }
-    DOUBLE *localx1 = ((DOUBLE *) x1) + j;
-    DOUBLE *localy1 = ((DOUBLE *) y1) + j;
-        
+    DOUBLE *localz1 = z1;
+    DOUBLE *localx1 = x1;
+    DOUBLE *localy1 = y1;
+   
     for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
       union int4{
         SSE_INTS m_ibin;
@@ -430,28 +439,38 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
   }
   
   /* naive implementation that is guaranteed to compile */
+  int64_t nleft=N1;
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
     const DOUBLE zpos = *z0++ + off_zwrap;
 
-    DOUBLE *localz1 = ((DOUBLE *) z1) ;
-    int64_t j= 0;
+    /* If in the same cell, unique pairs are guaranteed by not including the current particle */
     if(same_cell == 1) {
-      j = i+1;
-      localz1 += j;
+        z1++;x1++;y1++;
+        nleft--;
     } else {
-      while(j < N1){
-        const DOUBLE dz = *localz1++ - zpos;
-        if(dz > -rpmax) break;
-        j++;
-      }
-      localz1 -= 1;
+        /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
+        while(nleft > 0) {
+            /*Particles are sorted on 'z', in increasing order */
+            const DOUBLE dz = *z1 - zpos;
+            if(dz > -rpmax) break;
+            z1++;x1++;y1++;
+            nleft--;
+        }
+        /*If no particle in the second cell satisfies distance constraints on 'dz' for the current 'i'th particle in first cell, 
+          then there can be no more pairs from any particles in the first cell (since the first cell is also sorted in increasing order in 'z')
+        */
+        if(nleft == 0) {
+            i=N0;/*noting intent for which loop is break'ing */
+            break;
+        }
     }
-    DOUBLE *localx1 = ((DOUBLE *) x1) + j;
-    DOUBLE *localy1 = ((DOUBLE *) y1) + j;
+    DOUBLE *localz1 = z1;
+    DOUBLE *localx1 = x1;
+    DOUBLE *localy1 = y1;
     
-    for(;j<N1;j++) {
+    for(int64_t j=0;j<nleft;j++) {
       const DOUBLE dx = *localx1++ - xpos;
       const DOUBLE dy = *localy1++ - ypos;
       const DOUBLE dz = *localz1++ - zpos;

@@ -388,7 +388,7 @@ ifeq ($(DO_CHECKS), 1)
       SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))")
       export PYTHON_SOABI := 
       ifdef SOABI
-        ifneq ($(SOABI), None))
+        ifneq ($(SOABI), None)
           PYTHON_SOABI = .$(SOABI)
         endif
       endif
