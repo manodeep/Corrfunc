@@ -48,7 +48,7 @@ const int nthreads=1;
 #endif
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=0, .float_type=sizeof(double), .version=STR(VERSION), .max_cells_per_dim = NLATMAX};
+struct config_options options;
 //end of global variables
 
 
@@ -190,10 +190,11 @@ int main(int argc, char **argv)
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
-
-#ifdef PERIODIC
-#error PERIODIC must not be defined for running non-periodic tests
-#endif
+    options = get_config_options();
+    options.need_avg_sep=1;
+    options.verbose=0;
+    options.periodic=0;
+    options.float_type=sizeof(double);
 
     gettimeofday(&tstart,NULL);
 
