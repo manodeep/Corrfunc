@@ -54,27 +54,31 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
     const DOUBLE dpi = pimax/npibin;
     const DOUBLE inv_dpi = 1.0/dpi;
 
-    
+    int64_t prev_j = 0;    
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
         const DOUBLE zpos = *z0++ + off_zwrap;
-        DOUBLE *localz1 = ((DOUBLE *) z1);
 
-        int64_t j= 0;
+        int64_t j;
         if(same_cell == 1) {
+            z1++;x1++;y1++;
             j = i+1;
-            localz1 += j;
         } else {
-            while(j < N1){
-                const DOUBLE dz = *localz1++ - zpos;
+            for(;prev_j<N1;prev_j++) {
+                const DOUBLE dz = *z1 - zpos;
                 if(dz > -pimax) break;
-                j++;
+                z1++;x1++;y1++;
             }
-            localz1--;
+            if(prev_j == N1) {
+                i = N0;
+                break;
+            }
+            j = prev_j;
         }
-        DOUBLE *localx1 = ((DOUBLE *) x1) + j;
-        DOUBLE *localy1 = ((DOUBLE *) y1) + j;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1;
+        DOUBLE *localy1 = y1;
 
         for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
             const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
