@@ -55,8 +55,7 @@ const int nthreads=1;
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .version=STR(VERSION), .max_cells_per_dim = NLATMAX};
-//end of global variables
+struct config_options options;
 
 int test_periodic_DD(const char *correct_outputfile)
 {
@@ -303,6 +302,12 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 int main(int argc, char **argv)
 {
     struct timeval tstart,t0,t1;
+    options = get_config_options();
+    options.need_avg_sep=1;
+    options.verbose=0;
+    options.periodic=1;
+    options.float_type=sizeof(double);
+
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
 

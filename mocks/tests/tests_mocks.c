@@ -59,8 +59,8 @@ const int nthreads=1;
 const int cosmology_flag=1;
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .fast_divide=0, .fast_acos=0, .version=STR(VERSION),
-                                 .max_cells_per_dim=NLATMAX};
+
+struct config_options options;
 //end of global variables
 
 int test_DDrppi_mocks(const char *correct_outputfile)
@@ -259,7 +259,14 @@ int main(int argc, char **argv)
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/Mr19_mock_northonly.rdcz.dat";
     char fileformat[]="a";
-
+    options = get_config_options();
+    options.need_avg_sep=1;
+    options.verbose=0;
+    options.periodic=0;
+    options.float_type=sizeof(double);
+    options.fast_divide=0;
+    options.fast_acos=0;
+    
     int status = init_cosmology(cosmology_flag);
     if(status != EXIT_SUCCESS) {
         return EXIT_FAILURE;
