@@ -66,23 +66,23 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
 
         int64_t j;
         if(same_cell == 1) {
-            z1++;x1++;y1++;d1++;
+            d1++;x1++;y1++;z1++;
             j = i+1;
         } else {
             for(;prev_j<N1;prev_j++) {
-                const DOUBLE dz = *z1 - zpos;
+                const DOUBLE dz = *d1 - dpos;
                 if(dz > -max_sep) break;
-                z1++;x1++;y1++;d1++;
+                d1++;x1++;y1++;z1++;
             }
             if(prev_j == N1) {
                 break;
             }
             j = prev_j;
         }
-        DOUBLE *localz1 = z1;
+        DOUBLE *locald1 = d1;
         DOUBLE *localx1 = x1;
         DOUBLE *localy1 = y1;
-        DOUBLE *locald1 = d1;
+        DOUBLE *localz1 = z1;
 
         AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
         AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
@@ -364,30 +364,38 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
         }
     }
 
+    int64_t prev_j=0;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
         const DOUBLE dpos = *d0++;
 
-        int64_t j = (same_cell == 1) ? (i+1):0;
-        if(same_cell == 0) {
-            DOUBLE *locald1 = d1;
-            while(j < N1) {
-                const DOUBLE dz = *locald1++ - dpos;
-                if(dz > -max_sep) break;
-                j++;
-            }
-        }
-        DOUBLE *localx1 = x1 + j;
-        DOUBLE *localy1 = y1 + j;
-        DOUBLE *localz1 = z1 + j;
-        DOUBLE *locald1 = d1 + j;
 
-        SSE_FLOATS m_xpos    = SSE_SET_FLOAT(xpos);
-        SSE_FLOATS m_ypos    = SSE_SET_FLOAT(ypos);
-        SSE_FLOATS m_zpos    = SSE_SET_FLOAT(zpos);
-        SSE_FLOATS m_dpos    = SSE_SET_FLOAT(dpos);
+        int64_t j;
+        if(same_cell == 1) {
+            d1++;x1++;y1++;z1++;
+            j = i+1;
+        } else {
+            for(;prev_j<N1;prev_j++) {
+                const DOUBLE dz = *d1 - dpos;
+                if(dz > -max_sep) break;
+                d1++;x1++;y1++;z1++;
+            }
+            if(prev_j == N1) {
+                break;
+            }
+            j = prev_j;
+        }
+        DOUBLE *locald1 = d1;
+        DOUBLE *localx1 = x1;
+        DOUBLE *localy1 = y1;
+        DOUBLE *localz1 = z1;
+        
+        const SSE_FLOATS m_xpos    = SSE_SET_FLOAT(xpos);
+        const SSE_FLOATS m_ypos    = SSE_SET_FLOAT(ypos);
+        const SSE_FLOATS m_zpos    = SSE_SET_FLOAT(zpos);
+        const SSE_FLOATS m_dpos    = SSE_SET_FLOAT(dpos);
 
         union int8 {
             SSE_INTS m_ibin;
@@ -623,27 +631,41 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 
     const DOUBLE dpi = pimax/npibin;
     const DOUBLE inv_dpi = 1.0/dpi;
+    int64_t nleft=N1;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
-        const DOUBLE dpos = *d0++;
+        const DOUBLE dpos = *d0++;//d is the co-moving distance
 
-        int64_t j = (same_cell == 1) ? (i+1):0;
-        if(same_cell == 0) {
-            DOUBLE *locald1 = d1;
-            while(j < N1) {
-                const DOUBLE dz = *locald1++ - dpos;
-                if(dz > - max_sep) break;
-                j++;
+        /* If in the same cell, unique pairs are guaranteed by not including the current particle */
+        if(same_cell == 1) {
+            d1++;x1++;y1++;z1++;
+            nleft--;
+        } else {
+            /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
+            while(nleft > 0) {
+                /*Particles are sorted on 'd', in increasing order */
+                const DOUBLE dz = *d1 - dpos;
+                if(dz > -max_sep) break;
+                d1++;x1++;y1++;z1++;
+                nleft--;
+            }
+            /*If no particle in the second cell satisfies distance constraints on 'dz' for the current 'i'th particle in first cell, 
+              then there can be no more pairs from any particles in the first cell (since the first cell is also sorted in increasing order in 'd')
+             */
+            if(nleft == 0) {
+                i=N0;
+                break;
             }
         }
-        DOUBLE *localx1 = x1 + j;
-        DOUBLE *localy1 = y1 + j;
-        DOUBLE *localz1 = z1 + j;
-        DOUBLE *locald1 = d1 + j;
 
-        for(;j<N1;j++){
+        DOUBLE *localx1 = x1;
+        DOUBLE *localy1 = y1;
+        DOUBLE *localz1 = z1;
+        DOUBLE *locald1 = d1;
+
+        for(int64_t j=0;j<nleft;j++){
             const DOUBLE parx = xpos + *localx1;
             const DOUBLE pary = ypos + *localy1;
             const DOUBLE parz = zpos + *localz1;
