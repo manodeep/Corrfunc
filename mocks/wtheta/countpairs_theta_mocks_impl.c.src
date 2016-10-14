@@ -132,6 +132,8 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
+        case(AVX512F):
+        case(AVX2):
         case(AVX):
             function_dispatch=avx_offset;break;
         case(SSE42):function_dispatch=sse_offset;break;
