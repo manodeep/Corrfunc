@@ -83,12 +83,12 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             
             union int8 {
                 AVX_INTS m_ibin;
-                int ibin[NVEC];
+                int ibin[AVX_NVEC];
             };
             union int8 union_finalbin;
             union float8{
                 AVX_FLOATS m_Dperp;
-                DOUBLE Dperp[NVEC];
+                DOUBLE Dperp[AVX_NVEC];
             };
             union float8 union_mDperp;
 
@@ -173,9 +173,9 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
 
             //update the histograms
 #if defined(__ICC) || defined(__INTEL_COMPILER)
-#pragma unroll(NVEC)
+#pragma unroll(AVX_NVEC)
 #endif
-            for(int jj=0;jj<NVEC;jj++) {
+            for(int jj=0;jj<AVX_NVEC;jj++) {
                 int ibin = union_finalbin.ibin[jj];
                 npairs[ibin]++;
                 if(need_rpavg) {
@@ -396,7 +396,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
 
             //update the histograms
 #if defined(__ICC) || defined(__INTEL_COMPILER)
-#pragma unroll(NVEC)
+#pragma unroll(SSE_NVEC)
 #endif
             for(int jj=0;jj<SSE_NVEC;jj++) {
                 int ibin = union_finalbin.ibin[jj];
