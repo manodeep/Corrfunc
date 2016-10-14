@@ -710,4 +710,80 @@ int test_all_files_present(const int nfiles, ...)
 }
 
 
+/* int float_almost_equal(const float A, const float B, int maxUlps) */
+/* { */
+/*     /\* MS -- taken from */
+/*        http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm */
+/*     *\/ */
+
+/*     const int upper_limit_maxulps = 4 * 1024 * 1024; */
+/*     /\* Make sure maxUlps is non-negative and small enough that the */
+/*        default NAN won't compare as equal to anything.*\/ */
+/*     if(maxUlps <= 0 || maxUlps >= upper_limit_maxulps){ */
+/*         fprintf(stderr,"Error: Comparison between floats should have smaller number of max. units in last place. Found maxUlps = %d (max allowed = %d)\n", */
+/*                 maxUlps, upper_limit_maxulps); */
+/*         return EXIT_FAILURE; */
+/*     } */
+/*     int aInt = *(int*)&A; */
+    
+/*     /\* Make aInt lexicographically ordered as a twos-complement int*\/ */
+/*     if (aInt < 0) */
+/*         aInt = 0x80000000 - aInt; */
+    
+/*     /\* Make bInt lexicographically ordered as a twos-complement int*\/ */
+    
+/*     int bInt = *(int*)&B; */
+/*     if (bInt < 0) */
+/*         bInt = 0x80000000 - bInt; */
+    
+/*     int intDiff = abs(aInt - bInt); */
+/*     if (intDiff <= maxUlps) */
+/*         return 1; */
+    
+/*     return 0; */
+/* } */
+
+
+/* Directly taken from https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/ */
+int AlmostEqualRelativeAndAbs_float(float A, float B,
+                                    const float maxDiff,
+                                    const float maxRelDiff)
+{
+    // Check if the numbers are really close -- needed
+    // when comparing numbers near zero.
+    float diff = fabsf(A - B);
+    if (diff <= maxDiff)
+        return EXIT_SUCCESS;
+
+    A = fabsf(A);
+    B = fabsf(B);
+    float largest = (B > A) ? B : A;
+
+    if (diff <= largest * maxRelDiff)
+        return EXIT_SUCCESS;
+    
+    return EXIT_FAILURE;
+}
+
+int AlmostEqualRelativeAndAbs_double(double A, double B,
+                                     const double maxDiff,
+                                     const double maxRelDiff)
+{
+    // Check if the numbers are really close -- needed
+    // when comparing numbers near zero.
+    double diff = fabs(A - B);
+    if (diff <= maxDiff)
+        return EXIT_SUCCESS;
+
+    A = fabs(A);
+    B = fabs(B);
+    double largest = (B > A) ? B : A;
+
+    if (diff <= largest * maxRelDiff)
+        return EXIT_SUCCESS;
+
+    fprintf(stderr,"diff = %e largest * maxRelDiff = %e\n", diff, largest * maxRelDiff);
+    return EXIT_FAILURE;
+}
+
 /* #undef __USE_XOPEN2K */
