@@ -5,6 +5,25 @@
 #define THRESH_FOR_BOOST   10
 #define BOOST_BIN_REF       2
 
+#define ADD_DIFF_TIME(t0,t1)            ((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
+#define REALTIME_ELAPSED_NS(t0, t1)     ((t1.tv_sec - t0.tv_sec)*1000000000.0 + (t1.tv_nsec - t0.tv_nsec))
+    
+#define ALIGNMENT                32
+
+#define STRINGIFY(x)   #x
+#define STR(x) STRINGIFY(x)
+
+
+#define ASSIGN_CELL_TIMINGS(thread_timings, nx1, nx2, timediff, tid, first_cellid, second_cellid) \
+    {                                                                   \
+        thread_timings->N1 = nx1;                                       \
+        thread_timings->N2 = nx2;                                       \
+        thread_timings->time_in_ns = timediff;                          \
+        thread_timings->tid = tid;                                      \
+        thread_timings->first_cellindex = first_cellid;                 \
+        thread_timings->second_cellindex = second_cellid;               \
+    }
+
 /* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
    which is in turn taken from the linux kernel */
 /* #define BUILD_BUG_OR_ZERO(e) (sizeof(struct{ int:-!!(e);})) */
