@@ -160,6 +160,12 @@ int main(int argc, char *argv[])
         rlow=results.rupp[i];
     }
 
+    /* If the thread timings were requested, then print the timings to stderr and free */
+    if(options.c_cell_timer) {
+        print_thread_timings(&options);
+        free_thread_timings(&options);
+    }
+    
     //free the memory in the results struct
     free_results_wp(&results);
 

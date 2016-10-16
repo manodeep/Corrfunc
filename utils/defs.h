@@ -11,19 +11,13 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include <stdint.h>
+#include <inttypes.h>
 
 #include "macros.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define ADD_DIFF_TIME(t0,t1)     fabs((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
-#define ALIGNMENT                32
-
-#define STRINGIFY(x)   #x
-#define STR(x) STRINGIFY(x)
 
 #define API_VERSION          STR("2.0.0")
 
@@ -54,6 +48,16 @@ the ``uint32_t binning_flags`` */
 
 #define BINNING_DFL   0x0
 #define BINNING_CUST  0x1
+    
+struct api_cell_timings
+{
+    int64_t N1;/* Number of points in the first cell*/
+    int64_t N2;/* Number of points in the second cell */
+    int64_t time_in_ns;/* Time taken in the compute kernel, measured in nano-seconds*/
+    int first_cellindex;
+    int second_cellindex;
+    int tid;/* Thread-id, 0 for serial case, wastes 4 bytes, since thread id is 4bytes integer and not 8 bytes */
+};
     
     
 #define OPTIONS_HEADER_SIZE     (1024)
@@ -87,6 +91,12 @@ struct config_options
        Enabled when the flag c_timer is set
      */
     double c_api_time;
+
+    /* Per cell timers. Keeps track of the number of particles per cell pair
+       and time spent to compute the pairs. Might slow down code */
+    struct api_cell_timings *thread_timings;
+    int64_t totncells_timings;
+    
     
     size_t float_type; /* floating point type -> vectorized supports double/float; fallback can support long double*/
     int32_t instruction_set; /* select instruction set to run on */
@@ -94,6 +104,7 @@ struct config_options
     char version[32];/* fill in the version number */
     uint8_t verbose; /* Outputs progressbar and times */
     uint8_t c_api_timer; /* Measures time spent in the C function */
+    uint8_t c_cell_timer;/* Measures time spent per cell-pair. Might slow down the code */
 
     /* Options valid for both theory and mocks */
     uint8_t need_avg_sep; /* <rp> or <\theta> is required */
@@ -116,12 +127,13 @@ struct config_options
     /* Fast arccos for wtheta (effective only when OUTPUT_THETAAVG is enabled) */
     uint8_t fast_acos;
 
-    uint16_t max_cells_per_dim;/* max number of cells per dimension. same for both theory and mocks */
 
     int8_t bin_refine_factors[3];/* Array for the custom bin refine factors in each dim 
                                    xyz for theory routines and ra/dec/cz for mocks
                                    Must be signed integers since some for loops might use -bin_refine_factor
                                    as the starting point */
+
+    uint16_t max_cells_per_dim;/* max number of cells per dimension. same for both theory and mocks */
     union{
         uint32_t binning_flags;/* flag for all linking features, 
                                   Will contain OR'ed flags from enum from `binning_scheme`
@@ -130,10 +142,12 @@ struct config_options
                                   functionality */
         uint8_t bin_masks[4];
     };
+
     /* Reserving to maintain ABI compatibility for the future */
     /* Note that the math here assumes no padding bytes, that's because of the 
        order in which the fields are declared (largest to smallest alignments)  */
-    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - 3*sizeof(int) - sizeof(uint16_t) - 13*sizeof(uint8_t)];
+    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - 3*sizeof(int)
+                     - sizeof(uint16_t) - 14*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
 };
 
 static inline void set_bin_refine_scheme(struct config_options *options, const int8_t flag)
@@ -277,6 +291,13 @@ static inline struct config_options get_config_options(void)
     options.is_comoving_dist=1;
 #endif
 
+    /* For the thread timings */
+    options.totncells_timings = 0;
+    /* If the API level timers are requested, then 
+       this pointer will have to be allocated */
+    options.thread_timings = NULL;
+    
+    /*Setup the binning options */
     reset_max_cells(&options);
     reset_bin_refine_factors(&options);
     return options;
@@ -320,6 +341,30 @@ static inline int get_extra_options(struct extra_options *extra)
 
     return EXIT_SUCCESS;
 }
+
+static inline void print_thread_timings(struct config_options *options)
+{
+    fprintf(stderr,"#########################################################################\n");
+    fprintf(stderr,"#  Cell_1    Cell_2          N1          N2        Time_ns     ThreadID  \n");
+    fprintf(stderr,"#########################################################################\n");
+    for(int64_t i=0;i<options->totncells_timings;i++) {
+        fprintf(stderr,"%8d %8d %12"PRId64" %12"PRId64" %12"PRId64" %12d\n",
+                options->thread_timings[i].first_cellindex,
+                options->thread_timings[i].second_cellindex,
+                options->thread_timings[i].N1,
+                options->thread_timings[i].N2,
+                options->thread_timings[i].time_in_ns,
+                options->thread_timings[i].tid);
+    }
+
+}
+
+static inline void free_thread_timings(struct config_options *options)
+{
+    if(options->totncells_timings > 0 && options->thread_timings != NULL) {
+        free(options->thread_timings);
+    }
+}    
 
 static inline void free_extra_options(struct extra_options *extra)
 {
