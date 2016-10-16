@@ -10,9 +10,9 @@ __author__ = ('Manodeep Sinha')
 __all__ = ('DD', )
 
 
-def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
-       X2=None, Y2=None, Z2=None, verbose=False, boxsize=0.0,
-       output_ravg=False, c_api_timer=False, isa='fastest'):
+def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
+       X2=None, Y2=None, Z2=None, weights2=None, verbose=False, boxsize=0.0,
+       output_ravg=False, c_api_timer=False, isa='fastest', weight_type=None):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
@@ -47,6 +47,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     X1/Y1/Z1: array-like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
         Calculations are done in the precision of the supplied arrays.
+        
+    weights1: array-like, real (float/double), optional
+        An array of weights of shape (n_weights, n_positions) or (n_positions,).
+        `weight_type` specifies how these weights are used; results are returned
+        in the `weightavg` field.
 
     periodic: boolean
        Boolean flag to indicate periodic boundary conditions.
@@ -54,6 +59,9 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     X2/Y2/Z2: array-like, real (float/double)
        Array of XYZ positions for the second set of points. *Must* be the same
        precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
+       
+    weights2: array-like, real (float/double), optional
+        Same as weights1, but for the second set of positions
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -88,18 +96,22 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
+    
+    weight_type: string, optional
+        The type of weighting to apply.  Default: None.
 
     Returns
     --------
 
     results: Numpy structured array
-       A numpy structured array containing [rmin, rmax, ravg, npairs] for each
-       radial bin specified in the ``binfile``. If ``output_ravg`` is not set,
-       then ``ravg`` will be set to 0.0 for all bins. ``npairs`` contains the
-       number of pairs in that bin and can be used to compute the actual
-       :math:`\\xi(r)` by combining with (DR, RR) counts.
+       A numpy structured array containing [rmin, rmax, ravg, npairs, weightavg]
+       for each radial bin specified in the ``binfile``. If ``output_ravg`` is
+       not set, then ``ravg`` will be set to 0.0 for all bins; similarly for
+       `weightavg`. ``npairs`` contains the number of pairs in that bin and can
+       be used to compute the actual :math:`\\xi(r)` by combining with (DR, RR) counts.
 
-       if ``c_api_timer`` is set, then the return value is a tuple containing
+    api_time: float, optional
+       If ``c_api_timer`` is set, then the return value is a tuple containing
        (results, api_time). ``api_time`` measures only the time spent within
        the C library and ignores all python overhead.
 
@@ -159,6 +171,13 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
+      
+    # Passing None parameters breaks the parsing code, so avoid this
+    kwargs = {}
+    for k in ['weights1', 'weights2', 'weight_type']:
+        v = locals()[k]
+        if v is not None:
+            kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
@@ -170,17 +189,17 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
                                          verbose=verbose,
                                          boxsize=boxsize,
                                          c_api_timer=c_api_timer,
-                                         isa=integer_isa)
+                                         isa=integer_isa, **kwargs)
     else:
         extn_results, api_time = DD_extn(autocorr, nthreads, rbinfile,
                                          X1, Y1, Z1,
-                                         X2, Y2, Z2,
+                                         X2=X2, Y2=Y2, Z2=Z2,
                                          periodic=periodic,
                                          verbose=verbose,
                                          boxsize=boxsize,
                                          output_ravg=output_ravg,
                                          c_api_timer=c_api_timer,
-                                         isa=integer_isa)
+                                         isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -192,7 +211,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
     results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float),
                               (bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'ravg'), np.float),
-                              (bytes_to_native_str(b'npairs'), np.uint64)])
+                              (bytes_to_native_str(b'npairs'), np.uint64),
+                              (bytes_to_native_str(b'weightavg'), np.float)])
 
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
@@ -202,6 +222,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, periodic=True,
         results['rmax'][ii] = r[1]
         results['ravg'][ii] = r[2]
         results['npairs'][ii] = r[3]
+        results['weightavg'][ii] = r[4]
 
     if not c_api_timer:
         return results

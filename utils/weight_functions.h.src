@@ -1,0 +1,78 @@
+#pragma once
+
+#include "defs.h"
+#include "weight_defs_DOUBLE.h"
+#include "avx_calls.h"
+#include "sse_calls.h"
+
+typedef union {
+    DOUBLE d;
+    AVX_FLOATS a;
+    SSE_FLOATS s;
+} weight_union_DOUBLE;
+
+// Info about a particle pair that we will pass to the weight function
+typedef struct
+{
+    int64_t num_weights;
+    weight_union_DOUBLE weights0[MAX_NUM_WEIGHTS];
+    weight_union_DOUBLE weights1[MAX_NUM_WEIGHTS];
+    weight_union_DOUBLE dx, dy, dz;
+} pair_struct_DOUBLE;
+
+typedef DOUBLE (*weight_func_t)(const pair_struct_DOUBLE*);
+typedef AVX_FLOATS (*avx_weight_func_t)(const pair_struct_DOUBLE*);
+typedef SSE_FLOATS (*sse_weight_func_t)(const pair_struct_DOUBLE*);
+
+//////////////////////////////////
+// Weighting functions
+//////////////////////////////////
+
+/*
+ * The pair weight is the product of the particle weights
+ */
+static inline DOUBLE pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+    return pair->weights0[0].d*pair->weights1[0].d;
+}
+
+static inline AVX_FLOATS avx_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+    return AVX_MULTIPLY_FLOATS(pair->weights0[0].a, pair->weights1[0].a);
+}
+
+//////////////////////////////////
+// Utility functions
+//////////////////////////////////
+
+/* Gives a pointer to the weight function for the given weighting method
+ * and instruction set.
+ */
+static inline weight_func_t get_weight_func_by_method(const weight_method_t method){
+    switch(method){
+        case PAIR_PRODUCT:
+            return &pair_product_DOUBLE;
+        default:
+        case NONE:
+            return NULL;
+    }
+}
+
+static inline avx_weight_func_t get_avx_weight_func_by_method(const weight_method_t method){
+    switch(method){
+        case PAIR_PRODUCT:
+            return &avx_pair_product_DOUBLE;
+        default:
+        case NONE:
+            return NULL;
+    }
+}
+
+static inline sse_weight_func_t get_sse_weight_func_by_method(const weight_method_t method){
+    switch(method){
+        case PAIR_PRODUCT:
+            return NULL;  //&sse_pair_product_DOUBLE;
+        default:
+        case NONE:
+            return NULL;
+    }
+}
+

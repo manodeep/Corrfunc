@@ -39,7 +39,10 @@ int test_wp(const char *correct_outputfile);
 int test_vpf(const char *correct_outputfile);
 int test_xi(const char *correct_outputfile);
 
-void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
+void read_data_and_set_globals(const char *firstfilename, const char *firstformat,
+                               const char *secondfilename, const char *secondformat,
+                               const char *firstweightsfilename, const char *firstweightsfileformat,
+                               const char *secondweightsfilename, const char *secondweightsfileformat);
 
 //Global variables
 int ND1;
@@ -59,50 +62,13 @@ const int nthreads=1;
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .version=STR(VERSION)};
+struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .version=STR(VERSION), .instruction_set=FALLBACK};
 //end of global variables
 
 int test_periodic_DD(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
-
-    //Do the straight-up DD counts
-    results_countpairs results;
-    int status = countpairs(ND1,X1,Y1,Z1,
-                            ND2,X2,Y2,Z2,
-                            nthreads,
-                            autocorr,
-                            binfile,
-                            &results,
-                            &options, NULL);
-    if(status != EXIT_SUCCESS) {
-        return status;
-    }
-
-    double rlow=results.rupp[0];
-    FILE *fp=my_fopen(tmpoutputfile,"w");
-    if(fp == NULL) {
-        free_results(&results);
-        return EXIT_FAILURE;
-    }
-    for(int i=1;i<results.nbin;i++) {
-        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
-        rlow = results.rupp[i];
-    }
-    fclose(fp);
-
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
-
-    free_results(&results);
-    return ret;
-}
-
-int test_periodic_DD_weighted(const char *correct_outputfile)
-{
-    int autocorr = (X1==X2) ? 1:0;
-
+    
     // Set up the weights pointers
     struct extra_options extra;
     weight_method_t weight_method = PAIR_PRODUCT;
@@ -111,24 +77,10 @@ int test_periodic_DD_weighted(const char *correct_outputfile)
         fprintf(stderr,"ERROR: In %s> Failed to create extra_options. Malloc failure?\n", __FUNCTION__);
         return EXIT_FAILURE;
     }
-    
-    // Populate the weights
-    extra.weights0.weights[0] = (double *) my_malloc(sizeof(double), ND1);
-    if(autocorr){
-        extra.weights1.weights[0] = extra.weights0.weights[0];
-    } else {
-        extra.weights1.weights[0] = (double *) my_malloc(sizeof(double), ND2);
-    }
-    
-    for(int i = 0; i < ND1; i++){
-        extra.weights0.weights[0][i] = 0.5;
-        if(!autocorr){
-            extra.weights1.weights[0][i] = 0.5;
-        }
-    }
+    extra.weights0.weights[0] = weights1;
+    extra.weights1.weights[0] = weights2;
 
-
-    //Do the DD counts with weights
+    //Do the straight-up DD counts
     results_countpairs results;
     int status = countpairs(ND1,X1,Y1,Z1,
                             ND2,X2,Y2,Z2,
@@ -149,7 +101,8 @@ int test_periodic_DD_weighted(const char *correct_outputfile)
         return EXIT_FAILURE;
     }
     for(int i=1;i<results.nbin;i++) {
-        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf\n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i],results.weightavg[i]);
+        //fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf\n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i], results.weightavg[i]);
         rlow = results.rupp[i];
     }
     fclose(fp);
@@ -161,14 +114,9 @@ int test_periodic_DD_weighted(const char *correct_outputfile)
     int ret=system(execstring);
 
     free_results(&results);
-    
-    // Free weights
-    free(extra.weights0.weights[0]);
-    if(!autocorr){
-        free(extra.weights1.weights[0]);
-    }
     return ret;
 }
+
 
 int test_periodic_DDrppi(const char *correct_outputfile)
 {
@@ -322,7 +270,10 @@ int test_xi(const char *correct_outputfile)
     return ret;
 }
 
-void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat)
+void read_data_and_set_globals(const char *firstfilename, const char *firstformat,
+                               const char *secondfilename, const char *secondformat,
+                               const char *firstweightsfilename, const char *firstweightsfileformat,
+                               const char *secondweightsfilename, const char *secondweightsfileformat)
 {
     int free_X2=0;
     if(X2 != NULL && X2 != X1) {
@@ -334,7 +285,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
     if (strncmp(current_file1,firstfilename,strlen(current_file1)) != 0) {
         //replace the data-set
         if(X1 != NULL) {
-            free(X1);free(Y1);free(Z1);
+            free(X1);free(Y1);free(Z1);free(weights1);
         }
 
         //Since X2 was pointing to X1, need to signal that the memory location is no longer valid
@@ -342,21 +293,28 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
             X2 = NULL;
             Y2 = NULL;
             Z2 = NULL;
+            weights2 = NULL;
         }
         ND1 = read_positions(firstfilename,firstformat, sizeof(double), 3, &X1, &Y1, &Z1);
         strncpy(current_file1,firstfilename,MAXLEN);
+        int64_t wND1 = read_columns_into_array(firstweightsfilename, firstweightsfileformat, sizeof(double), 1, (void **) &weights1);
+        if(wND1 != ND1){
+            fprintf(stderr, "Error: number of weights read from %s did not match number of positions read from %s\n", firstweightsfilename, firstfilename);
+            return;
+        }
     }
 
     //first check if only one unique file is asked for
     if(strncmp(firstfilename,secondfilename,strlen(firstfilename))==0) {
         //But X2 might have read-in a different file->avoid a memory-leak
         if(free_X2 == 1) {
-            free(X2);free(Y2);free(Z2);
+            free(X2);free(Y2);free(Z2);free(weights2);
             free_X2 = 0;//not essential since the code returns after this section
         }
         X2=X1;
         Y2=Y1;
         Z2=Z1;
+        weights2=weights1;
         ND2=ND1;
         strncpy(current_file2,secondfilename,MAXLEN);
         return;
@@ -367,28 +325,39 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
     if (strncmp(current_file2,secondfilename,strlen(current_file2)) != 0 || X2 == NULL) {
         //replace the data-set
         if(free_X2 == 1) {
-            free(X2);free(Y2);free(Z2);
+            free(X2);free(Y2);free(Z2);free(weights2);
         }
         ND2 = read_positions(secondfilename,secondformat, sizeof(double), 3, &X2, &Y2, &Z2);
         strncpy(current_file2,secondfilename,MAXLEN);
+        int64_t wND2 = read_columns_into_array(secondweightsfilename, secondweightsfileformat, sizeof(double), 1, (void **) &weights2);
+        if(wND2 != ND2){
+            fprintf(stderr,"Error: number of weights read from %s did not match number of positions read from %s\n", secondweightsfilename, secondfilename);
+            return;
+        }
     }
 }
-
 
 int main(int argc, char **argv)
 {
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
+    
+    char weights_file[] = "../tests/data/gals_Mr19_weights_random.csv";
+    char weights_fileformat[] = "c";
 
     gettimeofday(&tstart,NULL);
 
     //set the globals
     ND1 = read_positions(file,fileformat, sizeof(double), 3, &X1, &Y1, &Z1);
+    int64_t wND1 = read_columns_into_array(weights_file, weights_fileformat, sizeof(double), 1, (void **) &weights1);
+    XASSERT(wND1 == ND1, "Error: number of weights read from %s did not match number of positions read from %s\n", weights_file, file);
+    
     ND2 = ND1;
     X2 = X1;
     Y2 = Y1;
     Z2 = Z1;
+    weights2 = weights1;
 
     strncpy(current_file1,file,MAXLEN);
     strncpy(current_file2,file,MAXLEN);
@@ -398,7 +367,6 @@ int main(int argc, char **argv)
 
     const char alltests_names[][MAXLEN] = {"Mr19 DDrppi (periodic)",
                                            "Mr19 DD (periodic)",
-                                           "Mr19 DD weighted (periodic)",
                                            "Mr19 wp (periodic)",
                                            "Mr19 vpf (periodic)",
                                            "Mr19 xi periodic)",
@@ -406,11 +374,10 @@ int main(int argc, char **argv)
                                            "CMASS DDrppi DR (periodic)",
                                            "CMASS DDrppi RR (periodic)"};
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
-    const int function_pointer_index[] = {1,0,5,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi, 5->weighted
+    const int function_pointer_index[] = {1,0,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi
 
     const char correct_outputfiles[][MAXLEN] = {"Mr19_DDrppi_periodic",
                                                 "Mr19_DD_periodic",
-                                                "Mr19_DD_periodic_weighted",
                                                 "Mr19_wp",
                                                 "Mr19_vpf_periodic",
                                                 "Mr19_xi",
@@ -422,13 +389,11 @@ int main(int argc, char **argv)
                                           "../tests/data/gals_Mr19.ff",
                                           "../tests/data/gals_Mr19.ff",
                                           "../tests/data/gals_Mr19.ff",
-                                          "../tests/data/gals_Mr19.ff",
                                           "../tests/data/cmassmock_Zspace.ff",
                                           "../tests/data/cmassmock_Zspace.ff",
                                           "../tests/data/random_Zspace.ff"};
-    const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f","f"};
+    const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
     const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff",
-                                           "../tests/data/gals_Mr19.ff",
                                            "../tests/data/gals_Mr19.ff",
                                            "../tests/data/gals_Mr19.ff",
                                            "../tests/data/gals_Mr19.ff",
@@ -436,16 +401,33 @@ int main(int argc, char **argv)
                                            "../tests/data/cmassmock_Zspace.ff",
                                            "../tests/data/random_Zspace.ff",
                                            "../tests/data/random_Zspace.ff"};
-    const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f","f"};
-    const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
+    const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
+    const char firstweightsfilename[][MAXLEN] = {"../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/cmassmock_Zspace_weights_random.csv",
+                                                 "../tests/data/cmassmock_Zspace_weights_random.csv",
+                                                 "../tests/data/random_Zspace_weights_random.csv"};
+    const char firstweightsfiletype[][MAXLEN] = {"c","c","c","c","c","c","c","c"};
+    const char secondweightsfilename[][MAXLEN] = {"../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/gals_Mr19_weights_random.csv",
+                                                 "../tests/data/cmassmock_Zspace_weights_random.csv",
+                                                 "../tests/data/random_Zspace_weights_random.csv",
+                                                 "../tests/data/random_Zspace_weights_random.csv"};
+    const char secondweightsfiletype[][MAXLEN] = {"c","c","c","c","c","c","c","c"};
+    const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
 
     int (*allfunctions[]) (const char *) = {test_periodic_DD,
                                             test_periodic_DDrppi,
                                             test_wp,
                                             test_vpf,
-                                            test_xi,
-                                            test_periodic_DD_weighted};
-    const int numfunctions=6;//5 functions total
+                                            test_xi};
+    const int numfunctions=5;//5 functions total
 
     int total_tests=0,skipped=0;
 
@@ -455,13 +437,13 @@ int main(int argc, char **argv)
             int function_index = function_pointer_index[i];
             assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
             const char *testname = alltests_names[i];
-            int skip_test=test_all_files_present(2,firstfilename[i],secondfilename[i]);
+            int skip_test=test_all_files_present(4,firstfilename[i],secondfilename[i],firstweightsfilename[i],secondweightsfilename[i]);
             if(skip_test != 0) {
                 fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". File(s) not found\n", testname);
                 skipped++;
                 continue;
             }
-            read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
+            read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i], firstweightsfilename[i], firstweightsfiletype[i], secondweightsfilename[i], secondweightsfiletype[i]);
             pimax=allpimax[i];
             gettimeofday(&t0,NULL);
             status = (*allfunctions[function_index])(correct_outputfiles[i]);
@@ -490,14 +472,14 @@ int main(int argc, char **argv)
                 int function_index = function_pointer_index[this_test_num];
                 assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
                 const char *testname = alltests_names[this_test_num];
-                int skip_test=test_all_files_present(2,firstfilename[this_test_num],secondfilename[this_test_num]);
+                int skip_test=test_all_files_present(4,firstfilename[this_test_num],secondfilename[this_test_num],firstweightsfilename[this_test_num],secondweightsfilename[this_test_num]);
                 if(skip_test != 0) {
                     fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". File(s) not found\n", testname);
                     skipped++;
                     continue;
                 }
                 total_tests++;
-                read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
+                read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num], firstweightsfilename[this_test_num], firstweightsfiletype[this_test_num], secondweightsfilename[this_test_num], secondweightsfiletype[this_test_num]);
                 pimax=allpimax[this_test_num];
                 gettimeofday(&t0,NULL);
                 status = (*allfunctions[function_index])(correct_outputfiles[this_test_num]);
@@ -534,8 +516,8 @@ int main(int argc, char **argv)
     }
 
     if(X2 != X1) {
-        free(X2);free(Y2);free(Z2);
+        free(X2);free(Y2);free(Z2);free(weights2);
     }
-    free(X1);free(Y1);free(Z1);
+    free(X1);free(Y1);free(Z1);free(weights1);
     return failed;
 }

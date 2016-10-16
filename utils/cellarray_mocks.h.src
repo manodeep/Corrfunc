@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include "weight_functions_DOUBLE.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,7 +27,7 @@ extern "C" {
         DOUBLE *y;
         DOUBLE *z;
         DOUBLE *cz;//co-moving distance
-        weight_struct weights;
+        weight_struct_DOUBLE weights;
         cellarray_mocks_index_particles_DOUBLE **ngb_cells;
     };
 
@@ -38,7 +39,7 @@ extern "C" {
         DOUBLE *x;
         DOUBLE *y;
         DOUBLE *z;
-        weight_struct weights;
+        weight_struct_DOUBLE weights;
         DOUBLE ra_max;
         DOUBLE ra_min;
         cellarray_mocks_index_wtheta_DOUBLE **ngb_cells;

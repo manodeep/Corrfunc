@@ -14,6 +14,8 @@
 extern "C" {
 #endif
 
+#include "weight_functions_DOUBLE.h"
+
 #define NLATMAX   100      /* maximum grid dimension in X-Y plane */
 
 typedef struct{
@@ -31,7 +33,7 @@ struct cellarray_index_particles_DOUBLE{
   DOUBLE *x;
   DOUBLE *y;
   DOUBLE *z;
-  weight_struct weights;
+  weight_struct_DOUBLE weights;
   cellarray_index_particles_DOUBLE **ngb_cells;
   DOUBLE *xwrap;
   DOUBLE *ywrap;

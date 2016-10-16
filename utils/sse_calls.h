@@ -6,7 +6,7 @@
   directory at https://github.com/manodeep/Corrfunc/
 */
 
-/* #pragma once */
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -26,14 +26,33 @@
 #define MAXLEN 500
 #endif
 
-
 int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...)
 {
+    XASSERT((sizeof(void *) == sizeof(float *) && sizeof(void *) == sizeof(double *)),
+            "Size of void pointer = %zu must be the same as size of float pointer = %zu and sizeof double pointers = %zu\n",
+            sizeof(void *), sizeof(float *), sizeof(double *));
+            
+    void *columns[num_fields];
+    int64_t np = read_columns_into_array(filename, format, size, num_fields, columns);
+    
+    va_list ap;
+    va_start(ap,num_fields);
+    
+    for(int i=0;i<num_fields;i++) {
+        void **source = va_arg(ap, void **);
+        *source =  columns[i];
+    }
+    va_end(ap);
+
+    return np;
+}
+
+
+int64_t read_columns_into_array(const char *filename, const char *format, const size_t size, const int num_fields, void **data){
     int64_t np;
     XRETURN(num_fields >= 1, -1, "Number of fields to read-in = %d must be at least 1\n", num_fields);
     XRETURN((size == 4 || size == 8), -1, "Size of fields = %zu must be either 4 or 8\n", size);
     
-    void *data[num_fields];
     {
         //new scope - just to check if file is gzipped.
         //in that case, use gunzip to unzip the file.
@@ -260,19 +279,6 @@ int64_t read_positions(const char *filename, const char *format, const size_t si
         fprintf(stderr,"ERROR: In %s> Unknown format `%s'\n",__FUNCTION__,format);
         return -1;
     }
-
-    va_list ap;
-    va_start(ap,num_fields);
-
-    XASSERT((sizeof(void *) == sizeof(float *) && sizeof(void *) == sizeof(double *)),
-            "Size of void pointer = %zu must be the same as size of float pointer = %zu and sizeof double pointers = %zu\n",
-            sizeof(void *), sizeof(float *), sizeof(double *));
     
-    for(int i=0;i<num_fields;i++) {
-        void **source = va_arg(ap, void **);
-        *source =  data[i];
-    }
-    va_end(ap);
-
     return np;
 }

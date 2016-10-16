@@ -18,6 +18,7 @@ except ImportError:
 
 from os.path import dirname, abspath, exists, splitext, join as pjoin
 import time
+import numpy as np
 
 import _countpairs
 from _countpairs import \
@@ -207,21 +208,22 @@ def main():
     results_DD, _ = DD(autocorr=autocorr,
                        nthreads=nthreads,
                        binfile=binfile,
-                       X1=x, Y1=y, Z1=z,
+                       X1=x, Y1=y, Z1=z, weights1=np.ones_like(x)/2.,weight_type='pair_product',
                        periodic=periodic,
                        boxsize=boxsize,
                        verbose=True,
-                       output_ravg=True)
+                       output_ravg=True,
+                       isa=-1)
 
     print("\n#      **** DD(r): first {0} bins  *******       "
           .format(numbins_to_print))
-    print("#      rmin        rmax       rpavg       npairs")
-    print("################################################")
+    print("#      rmin        rmax       rpavg       npairs       weight_avg")
+    print("##################################################################")
     for ibin in range(numbins_to_print):
         items = results_DD[ibin]
-        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10d}"
-              .format(items[0], items[1], items[2], items[3]))
-    print("------------------------------------------------")
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10d} {4:13.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4]))
+    print("------------------------------------------------------------------")
 
     print("\nRunning 2-D correlation function DD(rp,pi)")
     results_DDrppi, _ = DDrppi(autocorr=autocorr,

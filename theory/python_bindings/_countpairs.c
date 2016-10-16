@@ -876,7 +876,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         NULL
     };
 
-
+    // type 'O!' doesn't allow for None to be passed, which we might want to do.
     if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|O!O!O!O!O!bbdbbis", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
@@ -949,8 +949,16 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     get_extra_options(&extra, weighting_method);
     if(extra.weights0.num_weights > 0 && extra.weights0.num_weights != found_weights){
         char msg[1024];
-        snprintf(msg, 1024, "ValueError: In %s: specified weighting method %s which requires %"PRId64" weight(s)-per-particle, but found %d weight(s) instead!",
+        snprintf(msg, 1024, "ValueError: In %s: specified weighting method %s which requires %"PRId64" weight(s)-per-particle, but found %d weight(s) instead!\n",
                  __FUNCTION__, weighting_method_str, extra.weights0.num_weights, found_weights);
+        countpairs_error_out(module, msg);
+        Py_RETURN_NONE;
+    }
+    
+    if(extra.weights0.num_weights > 0 && found_weights > MAX_NUM_WEIGHTS){
+        char msg[1024];
+        snprintf(msg, 1024, "ValueError: In %s: Provided %d weights-per-particle, but the code was compiled with MAX_NUM_WEIGHTS=%d.\n",
+                 __FUNCTION__, found_weights, MAX_NUM_WEIGHTS);
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
@@ -964,7 +972,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
             countpairs_error_out(module, msg);
             Py_RETURN_NONE;
         }
-        if((weights2_obj == NULL) != (weights2_obj == NULL)){
+        if((weights1_obj == NULL) != (weights2_obj == NULL)){
             snprintf(msg, 1024, "ValueError: In %s: If autocorr is 0, must pass either zero or two sets of weights.\n",
                      __FUNCTION__);
             countpairs_error_out(module, msg);
@@ -1058,9 +1066,9 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     
     /* Pack the weights into extra_options */
     for(int64_t w = 0; w < extra.weights0.num_weights; w++){
-        extra.weights0.weights[w] = (DOUBLE *) weights1 + w*ND1;
+        extra.weights0.weights[w] = (uint8_t *) weights1 + w*ND1*element_size;
         if(autocorr == 0){
-            extra.weights1.weights[w] = (DOUBLE *) weights2 + w*ND2;
+            extra.weights1.weights[w] = (uint8_t *) weights2 + w*ND2*element_size;
         }
     }
 

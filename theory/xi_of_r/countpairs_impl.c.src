@@ -100,6 +100,19 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
     }
     function = allfunctions[function_dispatch];
     old_isa = options->instruction_set;
+    
+    if(options->verbose){
+        // This must be first (AVX/SSE may be aliased to fallback)
+        if(function_dispatch == fallback_offset){
+            printf("Using fallback kernel\n");
+        } else if(function_dispatch == avx_offset){
+            printf("Using AVX kernel\n");
+        } else if(function_dispatch == sse_offset){
+            printf("Using SSE kernel\n");
+        } else {
+            printf("Unknown kernel!\n");
+        }
+    }
 
     return function;
 }
@@ -132,7 +145,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
       extra = &dummy_extra;
   }
   
-  int need_weightavg = extra->weighting_method != NONE;
+  int need_weightavg = extra->weight_method != NONE;
   
   struct timeval t0;
   if(options->c_api_timer) {
@@ -386,7 +399,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
           DOUBLE *x1 = first->x;
           DOUBLE *y1 = first->y;
           DOUBLE *z1 = first->z;
-          const weight_struct *weights1 = &(first->weights);
+          const weight_struct_DOUBLE *weights1 = &(first->weights);
           const int64_t N1 = first->nelements;
           if(autocorr == 1) {
               int same_cell = 1;
@@ -404,7 +417,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                                                             sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
                                                             ZERO, ZERO, ZERO,
                                                             this_rpavg, npairs,
-                                                            this_weightavg, extra->weight_func);
+                                                            this_weightavg, extra->weight_method);
               /* This actually causes a race condition under OpenMP - but mostly
                  I care that an error occurred - rather than the exact value of
                  the error status */
@@ -424,7 +437,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
             DOUBLE *x2 = second->x;
             DOUBLE *y2 = second->y;
             DOUBLE *z2 = second->z;
-            const weight_struct *weights2 = &(second->weights);
+            const weight_struct_DOUBLE *weights2 = &(second->weights);
             DOUBLE off_xwrap = 0.0, off_ywrap = 0.0, off_zwrap = 0.0;
             if(options->periodic) {
               off_xwrap = first->xwrap[ngb];
@@ -446,7 +459,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                                                           ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
                                                           ,off_xwrap, off_ywrap, off_zwrap
                                                           ,this_rpavg,npairs
-                                                          ,this_weightavg, extra->weight_func);
+                                                          ,this_weightavg, extra->weight_method);
             /* This actually causes a race condition under OpenMP - but mostly
                I care that an error occurred - rather than the exact value of
                the error status */
@@ -562,7 +575,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
         rpavg[i] /= (DOUBLE) npairs[i] ;
       }
       if(need_weightavg) {
-        weightavg[i] /= (DOUBLE) npairs[i] ;
+        weightavg[i] /= (DOUBLE) npairs[i];
       }
     }
   }
