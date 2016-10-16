@@ -56,6 +56,11 @@ const int nthreads=1;
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
 struct config_options options;
+const double maxdiff = 1e-9;
+const double maxreldiff = 1e-6;
+
+//end global variables
+
 
 int test_periodic_DD(const char *correct_outputfile)
 {
@@ -74,21 +79,45 @@ int test_periodic_DD(const char *correct_outputfile)
         return status;
     }
 
+    int ret = EXIT_FAILURE;
     double rlow=results.rupp[0];
-    FILE *fp=my_fopen(tmpoutputfile,"w");
-    if(fp == NULL) {
-        free_results(&results);
-        return EXIT_FAILURE;
-    }
+    FILE *fp = my_fopen(correct_outputfile,"r");
     for(int i=1;i<results.nbin;i++) {
-        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
-        rlow = results.rupp[i];
+        uint64_t npairs;
+        double rpavg;
+        ret = EXIT_FAILURE;
+        int nitems = fscanf(fp,"%"SCNu64" %lf%*[^\n]", &npairs, &rpavg);
+        if(nitems != 2) {
+            ret = EXIT_FAILURE;//not required but showing intent
+            break;
+        }
+        int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
+
+        //Check for exact equality of npairs and float "equality" for rpavg
+        if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS) {
+            ret = EXIT_SUCCESS;
+        } else {
+            ret = EXIT_FAILURE;//not required but showing intent 
+            fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
+            fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n", rpavg, results.rpavg[i], floats_equal);
+            break;
+        }
+
     }
     fclose(fp);
-
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
+    
+    if(ret != EXIT_SUCCESS) {
+        fp=my_fopen(tmpoutputfile,"w");
+        if(fp == NULL) {
+            free_results(&results);
+            return EXIT_FAILURE;
+        }
+        for(int i=1;i<results.nbin;i++) {
+            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+            rlow = results.rupp[i];
+        }
+        fclose(fp);
+    }
 
     free_results(&results);
     return ret;
@@ -112,25 +141,54 @@ int test_periodic_DDrppi(const char *correct_outputfile)
         return status;
     }
 
+    int ret = EXIT_FAILURE;
     const int npibin = results.npibin;
     const double dpi = pimax/(double)results.npibin ;
-    FILE *fp=my_fopen(tmpoutputfile,"w");
-    if(fp == NULL) {
-        free_results_rp_pi(&results);
-        return EXIT_FAILURE;
-    }
+    FILE *fp = my_fopen(correct_outputfile, "r");
     for(int i=1;i<results.nbin;i++) {
-        const double logrp = log10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
-            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+            uint64_t npairs;
+            double rpavg;
+            ret = EXIT_FAILURE;
+            int nitems = fscanf(fp,"%"SCNu64" %lf%*[^\n]", &npairs, &rpavg);
+            if(nitems != 2) {
+                ret = EXIT_FAILURE;//not required but showing intent
+                i = results.nbin;
+                break;
+            }
+            int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
+            
+            //Check for exact equality of npairs and float "equality" for rpavg
+            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS) {
+                ret = EXIT_SUCCESS;
+            } else {
+                fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
+                fprintf(stderr,"True rpavg  = %20.12e Computed rpavg = %20.12e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
+                ret = EXIT_FAILURE;//not required but showing intent 
+                i = results.nbin;                
+                break;
+            }
         }
     }
     fclose(fp);
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
 
+    if(ret != EXIT_SUCCESS) {
+        fp=my_fopen(tmpoutputfile,"w");
+        if(fp == NULL) {
+            free_results_rp_pi(&results);
+            return EXIT_FAILURE;
+        }
+        for(int i=1;i<results.nbin;i++) {
+            const double logrp = log10(results.rupp[i]);
+            for(int j=0;j<npibin;j++) {
+                int index = i*(npibin+1) + j;
+                fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+            }
+        }
+        fclose(fp);
+    }
+    
     //free the result structure
     free_results_rp_pi(&results);
     return ret;
@@ -149,21 +207,48 @@ int test_wp(const char *correct_outputfile)
     if(status != EXIT_SUCCESS) {
         return status;
     }
+    int ret = EXIT_FAILURE;
     double rlow=results.rupp[0];
-    FILE *fp=my_fopen(tmpoutputfile,"w");
-    if(fp == NULL) {
-        free_results_wp(&results);
-        return EXIT_FAILURE;
-    }
-    for(int i=1;i<results.nbin;++i) {
-        fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.wp[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
-        rlow=results.rupp[i];
+    FILE *fp=my_fopen(correct_outputfile,"r");
+    for(int i=1;i<results.nbin;i++) {
+        uint64_t npairs;
+        double rpavg,wp;
+        ret = EXIT_FAILURE;
+        int nitems = fscanf(fp,"%lf %lf %*f %*f %"SCNu64"%*[^\n]", &wp, &rpavg, &npairs);//discard rlow and rupp
+        if(nitems != 3) {
+            ret = EXIT_FAILURE;//not required but showing intent
+            break;
+        }
+        int rpavg_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
+        int wp_equal = AlmostEqualRelativeAndAbs_double(wp, results.wp[i], maxdiff, maxreldiff);
+
+        //Check for exact equality of npairs and float "equality" for rpavg + wp 
+        if(npairs == results.npairs[i] && rpavg_equal == EXIT_SUCCESS && wp_equal == EXIT_SUCCESS) {
+            ret = EXIT_SUCCESS;
+        } else {
+            ret = EXIT_FAILURE;//not required but showing intent 
+            fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
+            fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. wp_equal = %d rpavg_equal = %d\n",
+                    rpavg, results.rpavg[i], wp_equal, rpavg_equal);
+            break;
+        }
     }
     fclose(fp);
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
 
+    /* Test failed. Output the results into a temporary file */
+    if(ret != EXIT_SUCCESS) {
+        fp=my_fopen(tmpoutputfile,"w");
+        if(fp == NULL) {
+            free_results_wp(&results);
+            return EXIT_FAILURE;
+        }
+        for(int i=1;i<results.nbin;++i) {
+            fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.wp[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
+            rlow=results.rupp[i];
+        }
+        fclose(fp);
+    }
+    
     //free the result structure
     free_results_wp(&results);
     return ret;
@@ -188,24 +273,55 @@ int test_vpf(const char *correct_outputfile)
         return status;
     }
 
-    FILE *fp=my_fopen(tmpoutputfile,"w");
+    int ret = EXIT_FAILURE;
+    //Output the results
+    FILE *fp=my_fopen(correct_outputfile,"r");
     if(fp == NULL) {
         free_results_countspheres(&results);
         return EXIT_FAILURE;
     }
     const double rstep = rmax/(double)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
-        const double r=(ibin+1)*rstep;
-        fprintf(fp,"%lf ", r);
-        for(int i=0;i<num_pN;i++) {
-            fprintf(fp," %10.4e", (results.pN)[ibin][i]);
+        double r;
+        int nitems = fscanf(fp, "%lf", &r);
+        if(nitems != 1) {
+            return EXIT_FAILURE;
         }
-        fprintf(fp,"\n");
+        ret = EXIT_FAILURE;
+        for(int i=0;i<num_pN;i++) {
+            double pN;
+            fscanf(fp, " %lf ", &pN);
+
+            /* Not quite sure how this is working. The correct output columns only have 4 digits printed,
+               but I am comparing here with ~1e-9 in abs. diff. The only way the comparison should work is
+               if the conversion to 4 digits during printf, round-trips during scanf. But surely there must 
+               be a lot more doubles that can be fit within those missing digits of precision.
+
+               I would have thought the comparison would require maxdiff ~ 1e-4. -- MS
+             */
+            int floats_equal = AlmostEqualRelativeAndAbs_double(pN, (results.pN)[ibin][i], maxdiff, maxreldiff);
+            if(floats_equal != EXIT_SUCCESS) {
+                ibin=results.nbin;
+                ret=EXIT_FAILURE;
+                break;
+            }
+            ret = EXIT_SUCCESS;
+        }
     }
     fclose(fp);
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
+
+    if(ret != EXIT_SUCCESS) {
+        fp=my_fopen(tmpoutputfile,"w");
+        for(int ibin=0;ibin<results.nbin;ibin++) {
+            const double r=(ibin+1)*rstep;
+            fprintf(fp,"%lf ", r);
+            for(int i=0;i<num_pN;i++) {
+                fprintf(fp," %10.4e", (results.pN)[ibin][i]);
+            }
+            fprintf(fp,"\n");
+        }
+        fclose(fp);
+    }
 
     //free the result structure
     free_results_countspheres(&results);
@@ -226,20 +342,46 @@ int test_xi(const char *correct_outputfile)
         return status;
     }
 
+    int ret=EXIT_FAILURE;
     double rlow=results.rupp[0];
-    FILE *fp=my_fopen(tmpoutputfile,"w");
-    if(fp == NULL) {
-        free_results_xi(&results);
-        return EXIT_FAILURE;
-    }
-    for(int i=1;i<results.nbin;++i) {
-        fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.ravg[i],rlow,results.rupp[i],results.npairs[i]);
-        rlow=results.rupp[i];
+    FILE *fp=my_fopen(correct_outputfile,"r");
+    for(int i=1;i<results.nbin;i++) {
+        uint64_t npairs;
+        double ravg,xi;
+        ret = EXIT_FAILURE;
+        int nitems = fscanf(fp,"%lf %lf %*f %*f %"SCNu64"%*[^\n]", &xi, &ravg, &npairs);//discard rlow and rupp
+        if(nitems != 3) {
+            ret = EXIT_FAILURE;//not required but showing intent
+            break;
+        }
+        int ravg_equal = AlmostEqualRelativeAndAbs_double(ravg, results.ravg[i], maxdiff, maxreldiff);
+        int xi_equal = AlmostEqualRelativeAndAbs_double(xi, results.xi[i], maxdiff, maxreldiff);
+
+        //Check for exact equality of npairs and float "equality" for ravg + xi 
+        if(npairs == results.npairs[i] && ravg_equal == EXIT_SUCCESS && xi_equal == EXIT_SUCCESS) {
+            ret = EXIT_SUCCESS;
+        } else {
+            ret = EXIT_FAILURE;//not required but showing intent 
+            fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
+            fprintf(stderr,"Failed. True ravg = %e Computed ravg = %e. xi_equal = %d ravg_equal = %d\n",
+                    ravg, results.ravg[i], xi_equal, ravg_equal);
+            break;
+        }
     }
     fclose(fp);
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
+
+    if(ret != EXIT_SUCCESS){
+        fp=my_fopen(tmpoutputfile,"w");
+        if(fp == NULL) {
+            free_results_xi(&results);
+            return EXIT_FAILURE;
+        }
+        for(int i=1;i<results.nbin;++i) {
+            fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.ravg[i],rlow,results.rupp[i],results.npairs[i]);
+            rlow=results.rupp[i];
+        }
+        fclose(fp);
+    }
 
     //free the result structure
     free_results_xi(&results);
