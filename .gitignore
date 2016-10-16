@@ -15,6 +15,7 @@ zz*
 *_double.[ch]
 DD
 build*
+paper/*
 dist*
 *egg*
 *_mocks
