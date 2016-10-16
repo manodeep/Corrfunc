@@ -130,6 +130,9 @@ int main(int argc, char *argv[])
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
     struct config_options options = get_config_options();
+    /* If you want to change the bin refine factors */
+    /* const int bf[] = {2, 2, 1}; */
+    /* set_bin_refine_factors(&options, bf); */
     results_countpairs_wp results;
     int status = countpairs_wp(ND1, x1, y1, z1,
                                boxsize,
@@ -157,6 +160,12 @@ int main(int argc, char *argv[])
         rlow=results.rupp[i];
     }
 
+    /* If the thread timings were requested, then print the timings to stderr and free */
+    if(options.c_cell_timer) {
+        print_thread_timings(&options);
+        free_thread_timings(&options);
+    }
+    
     //free the memory in the results struct
     free_results_wp(&results);
 

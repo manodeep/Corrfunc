@@ -95,6 +95,26 @@ def main():
 
     print("-----------------------------------------------------------")
 
+    print("\nRunning 2-D correlation function xi(rp,pi)")
+    results_DDrppi, _ = rp_pi_mocks(autocorr, cosmology, nthreads,
+                                    pimax, binfile,
+                                    ra, dec, cz,
+                                    output_rpavg=True,
+                                    xbin_refine_factor=3,
+                                    ybin_refine_factor=3,
+                                    zbin_refine_factor=2,
+                                    verbose=True)
+    print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
+          .format(numbins_to_print))
+    print("#      rmin        rmax       rpavg     pi_upper     npairs")
+    print("###########################################################")
+    for ibin in range(numbins_to_print):
+        items = results_DDrppi[ibin]
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
+              .format(items[0], items[1], items[2], items[3], items[4]))
+
+    print("-----------------------------------------------------------")
+    
     binfile = pjoin(dirname(abspath(__file__)),
                     "../tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")

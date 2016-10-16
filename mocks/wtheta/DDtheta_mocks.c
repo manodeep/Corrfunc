@@ -114,8 +114,6 @@ int main(int argc, char **argv)
     gettimeofday(&t0,NULL);
     results_countpairs_theta results;
     struct config_options options = get_config_options();
-    options.float_type = sizeof(DOUBLE);
-
     int status = countpairs_theta_mocks(ND1,phiD1,thetaD1,
                                         ND2,phiD2,thetaD2,
                                         nthreads,

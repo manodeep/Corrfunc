@@ -12,7 +12,9 @@ __all__ = ('DD', )
 
 def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        X2=None, Y2=None, Z2=None, weights2=None, verbose=False, boxsize=0.0,
-       output_ravg=False, c_api_timer=False, isa='fastest', weight_type=None):
+       output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,
+       zbin_refine_factor=1, max_cells_per_dim=100,
+       c_api_timer=False, isa='fastest', weight_type=None):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
@@ -33,12 +35,12 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         enabled during library compilation.
 
     binfile: string or an list/array of floats
-       For string input: filename specifying the ``rp`` bins for
-       ``DDrppi``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
+       For string input: filename specifying the ``r`` bins for
+       ``DD``. The file should contain white-space separated values
+       of (rpmin, rpmax)  for each ``r`` wanted. The bins do not need to be
        contiguous but must be in increasing order (smallest bins come first).
 
-       For array-like input: A sequence of ``rp`` values that provides the
+       For array-like input: A sequence of ``r`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
        input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
@@ -78,6 +80,15 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        in single-precision, ``ravg`` will suffer from numerical loss of
        precision and can not be trusted. If you need accurate ``ravg``
        values, then pass in double precision arrays for the particle positions.
+
+    (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime.
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
+       too small relative to the boxsize (and increasing helps the runtime).
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -171,7 +182,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
-      
+    else:
+        X2 = np.empty(1)
+        Y2 = np.empty(1)
+        Z2 = np.empty(1)
+        
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights1', 'weights2', 'weight_type']:
@@ -181,25 +196,19 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
-    if autocorr == 1:
-        extn_results, api_time = DD_extn(autocorr, nthreads, rbinfile,
-                                         X1, Y1, Z1,
-                                         periodic=periodic,
-                                         output_ravg=output_ravg,
-                                         verbose=verbose,
-                                         boxsize=boxsize,
-                                         c_api_timer=c_api_timer,
-                                         isa=integer_isa, **kwargs)
-    else:
-        extn_results, api_time = DD_extn(autocorr, nthreads, rbinfile,
-                                         X1, Y1, Z1,
-                                         X2=X2, Y2=Y2, Z2=Z2,
-                                         periodic=periodic,
-                                         verbose=verbose,
-                                         boxsize=boxsize,
-                                         output_ravg=output_ravg,
-                                         c_api_timer=c_api_timer,
-                                         isa=integer_isa, **kwargs)
+    extn_results, api_time = DD_extn(autocorr, nthreads, rbinfile,
+                                     X1, Y1, Z1,
+                                     X2=X2, Y2=Y2, Z2=Z2,
+                                     periodic=periodic,
+                                     verbose=verbose,
+                                     boxsize=boxsize,
+                                     output_ravg=output_ravg,
+                                     xbin_refine_factor=xbin_refine_factor,
+                                     ybin_refine_factor=ybin_refine_factor,
+                                     zbin_refine_factor=zbin_refine_factor,
+                                     max_cells_per_dim=max_cells_per_dim,
+                                     c_api_timer=c_api_timer,
+                                     isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)

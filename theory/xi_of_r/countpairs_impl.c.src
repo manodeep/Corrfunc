@@ -65,7 +65,7 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
     
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
-#ifdef __AVX__
+#ifdef __AVX__ 
     avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
     curr_offset++;
 #endif        
@@ -152,35 +152,29 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
       gettimeofday(&t0, NULL);
   }
   
-
+  
 #if defined(_OPENMP)
     omp_set_num_threads(numthreads);
 #else
     (void) numthreads;
 #endif    
   
-  int bin_refine_factor=1;
-  if(autocorr==1) {
-    bin_refine_factor=1;
-  } else {
-    bin_refine_factor=1;
+  if(options->max_cells_per_dim == 0) {
+      fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+      options->max_cells_per_dim = NLATMAX;
   }
-#if defined(_OPENMP)
-  if(numthreads > 1) {
-    //I have written it this way to maintain
-    //compatibility with the previous chunk.
-    // For instance, DR calculations might be faster
-    // for bin_refine=2...
-    if(autocorr==1) {
-      bin_refine_factor=1;//benchmarked -> gives super-scalar performance
-    } else {
-      bin_refine_factor=1;//not benchmarked -> so may be changed in the future
-    }
-  }
-#endif
-
-  options->sort_on_z = 1;
   
+  for(int i=0;i<3;i++) {
+      if(options->bin_refine_factors[i] < 1) {
+          fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                  i, options->bin_refine_factors[i]);
+          reset_bin_refine_factors(options);
+          break;/* all factors have been reset -> no point continuing with the loop */
+      }
+  }
+              
+  
+  options->sort_on_z = 1;
   /* setup interrupt handler -> mostly useful during the python execution. 
      Let's Ctrl-C abort the extension  */
   SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_DOUBLE);
@@ -214,28 +208,70 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
       fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);
     }
   }
+  const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
+  const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
+  const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
+  const DOUBLE pimax = (DOUBLE) rpmax;
+  if(options->verbose && options->periodic) {
+      fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
+      fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
+      fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+  }
+  if(get_bin_refine_scheme(options) == BINNING_DFL) {
+      if(rpmax < 0.05*xdiff) {
+          options->bin_refine_factors[0] = 1;
+      }
+      if(rpmax < 0.05*ydiff) {
+          options->bin_refine_factors[1] = 1;
+      }
+      if(pimax < 0.05*zdiff) { //pimax := rpmax. Here to prevent copy-pasting bugs 
+          options->bin_refine_factors[2] = 1;
+      }
+  }
 
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0), xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
+                                                                               xmin, xmax, ymin, ymax, zmin, zmax,
+                                                                               rpmax, rpmax, rpmax,
+                                                                               options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                                               &nmesh_x, &nmesh_y, &nmesh_z, options);
   if(lattice1 == NULL) {
     return EXIT_FAILURE;
   }
-  if(nmesh_x <= 10 && nmesh_y <= 10 && nmesh_z <= 10) {
-      fprintf(stderr,"countpairs> gridlink seems inefficient nmesh = (%d, %d, %d). Boosting bin refine factor - should lead to better performance\n", nmesh_x, nmesh_y, nmesh_z);
-      fprintf(stderr,"xmin = %lf xmax=%lf rpmax = %lf\n", xmin, xmax, rpmax);
-      bin_refine_factor *=2;
-      free_cellarray_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-      lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0), xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
-      if(lattice1 == NULL) {
-          return EXIT_FAILURE;
+
+  /* If there too few cells (THRESH_FOR_BOOST is ~10), and the number of cells can be increased, then boost bin refine factor (by 2x)*/
+  if(nmesh_x <= THRESH_FOR_BOOST && nmesh_y <= THRESH_FOR_BOOST && nmesh_z <= THRESH_FOR_BOOST && options->max_cells_per_dim >= BOOST_BIN_REF*THRESH_FOR_BOOST) {
+      if(get_bin_refine_scheme(options) == BINNING_DFL) {
+          fprintf(stderr,"%s> gridlink seems inefficient nmesh = (%d, %d, %d). Boosting bin refine factor - should lead to better performance\n", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z);
+          fprintf(stderr,"xmin = %lf xmax=%lf rpmax = %lf\n", xmin, xmax, rpmax);
+          free_cellarray_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+          for(int i=0;i<3;i++) {
+              options->bin_refine_factors[i] *= BOOST_BIN_REF;
+          }
+          lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
+                                                     xmin, xmax, ymin, ymax, zmin, zmax,
+                                                     rpmax, rpmax, rpmax,
+                                                     options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                     &nmesh_x, &nmesh_y, &nmesh_z, options);
+          if(lattice1 == NULL) {
+              return EXIT_FAILURE;
+          }
+      } else {
+          fprintf(stderr,"countpairs> gridlink seems inefficient nmesh = (%d, %d, %d), boosting bin refine factor could have helped. However, since custom bin refine factors "
+                  "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", nmesh_x, nmesh_y, nmesh_z, options->bin_refine_factors[0],
+                  options->bin_refine_factors[1], options->bin_refine_factors[2]);
       }
     }
 
-    cellarray_index_particles_DOUBLE *lattice2 = NULL;
+  cellarray_index_particles_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1), xmin, xmax, ymin, ymax, zmin, zmax, rpmax, rpmax, rpmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
+        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
+                                                   xmin, xmax, ymin, ymax, zmin, zmax,
+                                                   rpmax, rpmax, rpmax,
+                                                   options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                   &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
         if(lattice2 == NULL) {
           return EXIT_FAILURE;
         }
@@ -249,20 +285,11 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
-    const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
-    const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
-    const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
-    const DOUBLE pimax = (DOUBLE) rpmax;
-    if(options->verbose && options->periodic) {
-        fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
-        fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
-        fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
-    }
     
     //Generate the unique set of neighbouring cells to count over.
     {
         int status = assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
-                                                             bin_refine_factor, bin_refine_factor, bin_refine_factor,
+                                                             options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                                              nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff,
                                                              autocorr, options->periodic);
         if(status != EXIT_SUCCESS) {
@@ -611,6 +638,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
 
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
+    reset_bin_refine_factors(options);
     
     if(options->c_api_timer) {
         struct timeval t1;

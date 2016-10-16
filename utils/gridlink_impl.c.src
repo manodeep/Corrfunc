@@ -39,6 +39,7 @@ int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax, const DOUBLE rmax, c
     if (nmesh>max_ncells)  nmesh=max_ncells;
     *xbinsize = xdiff/nmesh;
     *nlattice = nmesh;
+
     return EXIT_SUCCESS;
 }
 
@@ -117,14 +118,34 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
 {
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
 
+    /* Input validation */
+    XRETURN(max_x_size > 0.0, NULL, "Minimum separation in X = %"REAL_FORMAT" must be > 0.0\n", max_x_size);
+    XRETURN(max_y_size > 0.0, NULL, "Minimum separation in Y = %"REAL_FORMAT" must be > 0.0\n", max_y_size);
+    XRETURN(max_z_size > 0.0, NULL, "Minimum separation in Z = %"REAL_FORMAT" must be > 0.0\n", max_z_size);
+    XRETURN((xmax-xmin) > 0.0, NULL, "All of the points can not be at the same X position. (xmax-xmin) = %"REAL_FORMAT" must be non-zero\n", (xmax-xmin));
+    XRETURN((ymax-ymin) > 0.0, NULL, "All of the points can not be at the same Y position. (ymax-ymin) = %"REAL_FORMAT" must be non-zero\n", (ymax-ymin));
+    XRETURN((zmax-zmin) > 0.0, NULL, "All of the points can not be at the same Z position. (zmax-zmin) = %"REAL_FORMAT" must be non-zero\n", (zmax-zmin));
+    XRETURN(np > 0, NULL, "Number of points =%"PRId64" must be >0\n", np);
+    XRETURN(x != NULL, NULL, "X must be a valid array \n");
+    XRETURN(y != NULL, NULL, "Y must be a valid array \n");
+    XRETURN(z != NULL, NULL, "Z must be a valid array \n");
+    XRETURN(xbin_refine_factor >= 1, NULL, "xbin refine factor = %d must be at least 1\n", xbin_refine_factor);
+    XRETURN(ybin_refine_factor >= 1, NULL, "ybin refine factor = %d must be at least 1\n", ybin_refine_factor);
+    XRETURN(zbin_refine_factor >= 1, NULL, "zbin refine factor = %d must be at least 1\n", zbin_refine_factor);
+    XRETURN(options != NULL, NULL, "Structure containing code options must be a valid address\n");
+    
+    /* Protect against accidental changes to compile-time (macro) constant */
+    XRETURN(MEMORY_INCREASE_FAC >= 1.0, NULL, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
+
+
     struct timeval t0;
     if(options->verbose) {
       gettimeofday(&t0,NULL);
     }
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
+    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
+    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
+    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
     if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
       return NULL;
     }
@@ -287,9 +308,9 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
     }
 
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, NLATMAX, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, NLATMAX, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, NLATMAX, &zbinsize, &nmesh_z, options);
+    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
+    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
+    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
     if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
       fprintf(stderr,"Received xstatus = %d ystatus = %d zstatus = %d. Error\n", xstatus, ystatus, zstatus);
       return NULL;

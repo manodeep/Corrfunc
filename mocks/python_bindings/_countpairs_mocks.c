@@ -73,7 +73,10 @@ static PyMethodDef module_methods[] = {
      "                       RA2, DEC2, CZ2,\n"
      "                       is_comoving_dist=False,\n"
      "                       verbose=False, output_rpavg=False,\n"
-     "                       fast_divide=False, c_api_timer=False, isa=-1)\n"
+     "                       fast_divide=False, xbin_refine_factor=2, \n"
+     "                       ybin_refine_factor=2, zbin_refine_factor=1, \n"
+     "                       max_cells_per_dim=100, \n"
+     "                       c_api_timer=False, isa=-1)\n"
      "\n"
      "Calculate the 2-D pair-counts, "XI_CHAR"("RP_CHAR", "PI_CHAR"), auto/cross-correlation function given two\n"
      "sets of RA1/DEC1/CZ1 and RA2/DEC2/CZ2 arrays. This module is suitable for mock catalogs that have been\n"
@@ -162,10 +165,19 @@ static PyMethodDef module_methods[] = {
      "   approximate reciprocal, followed by a Newton-Raphson step. Improves\n"
      "   runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.\n"
      "\n"
+     "(xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3]) \n"
+     "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
+     "   on runtime. \n"
+     "\n"
+     "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
+     "   Controls the maximum number of cells per dimension. Total number of cells \n"
+     "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
+     "   relative to the boxsize (and increasing helps the runtime). \n"
+     "\n"
      "c_api_timer : boolean (default false)\n"
      "   Boolean flag to measure actual time spent in the C libraries. Here\n"
-     "   to allow for benchmarking and scaling studies.\n\n"
-
+     "   to allow for benchmarking and scaling studies.\n"
+     "\n"
      "isa : integer (default -1)\n"
      "  Controls the runtime dispatch for the instruction set to use. Possible\n"
      "  options are: [-1, AVX, SSE42, FALLBACK]\n\n"
@@ -215,8 +227,9 @@ static PyMethodDef module_methods[] = {
      "                       RA2=None, DEC2=None,\n"
      "                       link_in_dec=True, link_in_ra=True,\n"
      "                       verbose=False, output_thetaavg=False,\n"
-     "                       fast_acos=False, c_api_timer=False,\n"
-     "                       isa='fastest')\n"
+     "                       fast_acos=False, ra_refine_factor=2,\n"
+     "                       dec_refine_factor=2, max_cells_per_dim=100, \n"
+     "                       c_api_timer=False, isa='fastest')\n"
      "\n"
      "Calculate the angular pair-counts, required for "OMEGA_CHAR"("THETA_CHAR"), auto/cross-correlation function given two\n"
      "sets of RA1/DEC1 and RA2/DEC2 arrays. This module is suitable for mock catalogs that have been\n"
@@ -274,7 +287,7 @@ static PyMethodDef module_methods[] = {
      "   Flag to use numerical approximation for the ``arccos`` - gives better\n"
      "   performance at the expense of some precision. Relevant only if\n"
      "   ``output_thetaavg==True``.\n"
-     " \n"
+     "\n"
      "   Developers: Two versions already coded up in ``utils/fast_acos.h``,\n"
      "   so you can choose the version you want. There are also notes on how\n"
      "   to implement faster (and less accurate) functions, particularly relevant\n"
@@ -282,6 +295,17 @@ static PyMethodDef module_methods[] = {
      "   version, then you will have to reinstall the entire Corrfunc package.\n"
      "   \n"
      "   Note that tests will fail if you run the tests with``fast_acos=True``.\n"
+     "\n"
+     "(radec)_refine_factor: integer (default (2,2) typical values in [1-3]) \n"
+     "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
+     "   on runtime. Note, only two refine factors are to be specified and these \n"
+     "   correspond to ``ra`` and ``dec`` (rather, than the usual three of \n"
+     "   ``(xyz)bin_refine_factor`` for all other correlation functions).\n"
+     "\n"
+     "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
+     "   Controls the maximum number of cells per dimension. Total number of cells \n"
+     "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
+     "   relative to the boxsize (and increasing helps the runtime). \n"
      "\n"
      "c_api_timer : boolean (default false)\n"
      "   Boolean flag to measure actual time spent in the C libraries. Here\n"
@@ -336,6 +360,8 @@ static PyMethodDef module_methods[] = {
      "                       RA, DEC, CZ,\n"
      "                       RAND_RA, RAND_DEC, RAND_CZ,\n"
      "                       verbose=False, is_comoving_dist=False,\n"
+     "                       xbin_refine_factor=2, ybin_refine_factor=2, \n"
+     "                       zbin_refine_factor=1, max_cells_per_dim=100, \n"
      "                       c_api_timer=False, isa=-1)\n"
      "\n"
      "Calculates the fraction of random spheres that contain exactly *N* points, pN(r).\n"
@@ -462,6 +488,16 @@ static PyMethodDef module_methods[] = {
      "\n"
      "verbose : boolean (default false)\n"
      "   Boolean flag to control output of informational messages\n"
+     "\n"
+     "(xyz)bin_refine_factor: integer (default (1,1,1) typical values in [1-3]) \n"
+     "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
+     "   on runtime. Note that the default values are different from the \n"
+     "   correlation function routines. \n"
+     "\n"
+     "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
+     "   Controls the maximum number of cells per dimension. Total number of cells \n"
+     "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
+     "   relative to the boxsize (and increasing helps the runtime). \n"
      "\n"
      "c_api_timer : boolean (default false)\n"
      "   Boolean flag to measure actual time spent in the C libraries. Here\n"
@@ -815,6 +851,9 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     options.periodic = 0;
     options.fast_divide=0;
     options.c_api_timer = 0;
+    int8_t xbin_ref=options.bin_refine_factors[0],
+        ybin_ref=options.bin_refine_factors[1],
+        zbin_ref=options.bin_refine_factors[2];
 
     int autocorr=1;
     int nthreads=4;
@@ -838,12 +877,16 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_rpavg",
         "fast_divide",
+        "xbin_refine_factor",
+        "ybin_refine_factor",
+        "zbin_refine_factor",
+        "max_cells_per_dim",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK (enum) */
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!bbbbbi", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!bbbbbbbhbi", kwlist,
                                        &autocorr,&cosmology,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -855,6 +898,8 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                        &(options.verbose),
                                        &(options.need_avg_sep),
                                        &(options.fast_divide),
+                                       &xbin_ref, &ybin_ref, &zbin_ref,
+                                       &(options.max_cells_per_dim),
                                        &(options.c_api_timer),
                                        &(options.instruction_set))
 
@@ -881,6 +926,14 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     /*This is for the fastest isa */
     if(options.instruction_set == -1) {
         options.instruction_set = highest_isa_mocks;
+    }
+    if(xbin_ref != options.bin_refine_factors[0] ||
+       ybin_ref != options.bin_refine_factors[1] ||
+       zbin_ref != options.bin_refine_factors[2]) {
+        options.bin_refine_factors[0] = xbin_ref;
+        options.bin_refine_factors[1] = ybin_ref;
+        options.bin_refine_factors[2] = zbin_ref;
+        set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
 
 
@@ -1044,6 +1097,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     options.link_in_ra=1;
     options.fast_acos=0;
     options.c_api_timer=0;
+    int8_t ra_bin_ref=options.bin_refine_factors[0],
+        dec_bin_ref=options.bin_refine_factors[1];
     static char *kwlist[] = {
         "autocorr",
         "nthreads",
@@ -1057,13 +1112,16 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_thetaavg",
         "fast_acos",
+        "ra_refine_factor",
+        "dec_refine_factor",
+        "max_cells_per_dim",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!bbbbbbi", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!bbbbbbbhbi", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1074,6 +1132,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                        &(options.verbose),
                                        &(options.need_avg_sep),
                                        &(options.fast_acos),
+                                       &ra_bin_ref, &dec_bin_ref, 
+                                       &(options.max_cells_per_dim),
                                        &(options.c_api_timer),
                                        &(options.instruction_set))
 
@@ -1095,9 +1155,16 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     }
     options.autocorr=autocorr;
     options.periodic=0;//doesn't matter but noting intent by setting it to 0
+
     /*This is for the fastest isa */
     if(options.instruction_set == -1) {
         options.instruction_set = highest_isa_mocks;
+    }
+    if(ra_bin_ref != options.bin_refine_factors[0] ||
+       dec_bin_ref != options.bin_refine_factors[1]) {
+        options.bin_refine_factors[0] = ra_bin_ref;
+        options.bin_refine_factors[1] = dec_bin_ref;
+        set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
 
     size_t element_size;
@@ -1246,6 +1313,15 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     options.verbose=0;
     options.instruction_set=-1;
     options.c_api_timer=0;
+
+    /* Reset the bin refine factors default (since the VPF is symmetric in XYZ, conceptually the binning should be identical in all three directions)*/
+    int bin_ref[] = {1,1,1};
+    set_bin_refine_factors(&options, bin_ref);
+
+    int8_t xbin_ref=options.bin_refine_factors[0],
+        ybin_ref=options.bin_refine_factors[1],
+        zbin_ref=options.bin_refine_factors[2];
+    
     static char *kwlist[] = {
         "rmax",
         "nbins",
@@ -1262,13 +1338,17 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
         "Z2",
         "is_comoving_dist",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
+        "xbin_refine_factor",
+        "ybin_refine_factor",
+        "zbin_refine_factor",
+        "max_cells_per_dim",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|bbbi", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|bbbbbhbi", kwlist,
                                        &rmax,&nbin,&num_spheres,&num_pN,&threshold_neighbors,&centers_file,&cosmology,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1278,6 +1358,8 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
                                        &PyArray_Type,&z2_obj,
                                        &(options.is_comoving_dist),
                                        &(options.verbose),
+                                       &xbin_ref, &ybin_ref, &zbin_ref,
+                                       &(options.max_cells_per_dim),
                                        &(options.c_api_timer),
                                        &(options.instruction_set))
 
@@ -1304,6 +1386,15 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
         options.instruction_set = highest_isa_mocks;
     }
 
+    if(xbin_ref != options.bin_refine_factors[0] ||
+       ybin_ref != options.bin_refine_factors[1] ||
+       zbin_ref != options.bin_refine_factors[2]) {
+        options.bin_refine_factors[0] = xbin_ref;
+        options.bin_refine_factors[1] = ybin_ref;
+        options.bin_refine_factors[2] = zbin_ref;
+        set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
+    }
+    
     size_t element_size;
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */

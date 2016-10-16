@@ -48,7 +48,10 @@ const int nthreads=1;
 #endif
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=0, .float_type=sizeof(double), .version=STR(VERSION)};
+struct config_options options;
+
+const double maxdiff = 1e-9;
+const double maxreldiff = 1e-6;
 //end of global variables
 
 
@@ -69,23 +72,44 @@ int test_nonperiodic_DD(const char *correct_outputfile)
         return status;
     }
 
-    double rlow=results.rupp[0];
-    FILE *fp=NULL;
-
-    fp=my_fopen(tmpoutputfile,"w");
+    int ret = EXIT_FAILURE;
+    FILE *fp=my_fopen(correct_outputfile,"r");
     if(fp == NULL) {
         free_results(&results);
         return EXIT_FAILURE;
     }
     for(int i=1;i<results.nbin;i++) {
-        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
-        rlow=results.rupp[i];
+        uint64_t npairs;
+        double rpavg;
+        ret = EXIT_FAILURE;
+        int nitems = fscanf(fp,"%"SCNu64" %lf%*[^\n]", &npairs, &rpavg);
+        if(nitems != 2) {
+            break;
+        }
+        int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
+
+        //Check for exact equality of npairs and float "equality" for rpavg
+        if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS) {
+            ret = EXIT_SUCCESS;
+        } else {
+            ret = EXIT_FAILURE;//not required but showing intent 
+            fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
+            fprintf(stderr,"True rpavg  = %e Computed rpavg = %e. floats_equal = %d\n", rpavg, results.rpavg[i], floats_equal);
+            break;
+        }
     }
     fclose(fp);
 
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
+    /* If the test failed, then write to temporary file, so a comparison can be made */
+    if(ret != EXIT_SUCCESS) {
+        fp=my_fopen(tmpoutputfile,"w"); 
+        double rlow = results.rupp[0];
+        for(int i=1;i<results.nbin;i++) {
+            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+            rlow=results.rupp[i];
+        }
+        fclose(fp);
+    }
 
     free_results(&results);
     return ret;
@@ -108,24 +132,55 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
         return status;
     }
 
+    int ret = EXIT_FAILURE;
     const int npibin = results.npibin;
     const double dpi = pimax/(double)results.npibin ;
-    FILE *fp=my_fopen(tmpoutputfile,"w");
+    FILE *fp=my_fopen(correct_outputfile,"r");
     if(fp == NULL) {
         free_results_rp_pi(&results);
         return EXIT_FAILURE;
     }
+
+    
     for(int i=1;i<results.nbin;i++) {
-        const double logrp = log10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
-            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+            uint64_t npairs;
+            double rpavg;
+            ret = EXIT_FAILURE;
+            int nitems = fscanf(fp,"%"SCNu64" %lf%*[^\n]", &npairs, &rpavg);
+            if(nitems != 2) {
+                i = results.nbin;
+                ret = EXIT_FAILURE;//not required but showing intent
+                break;
+            }
+            int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
+            
+            //Check for exact equality of npairs and float "equality" for rpavg
+            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS) {
+                ret = EXIT_SUCCESS;
+            } else {
+                fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
+                fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
+                ret = EXIT_FAILURE;//not required but showing intent 
+                i=results.nbin;
+                break;
+            }
         }
     }
     fclose(fp);
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
+
+    if(ret != EXIT_SUCCESS) {
+        fp = my_fopen(tmpoutputfile,"w");
+        for(int i=1;i<results.nbin;i++) {
+            const double logrp = log10(results.rupp[i]);
+            for(int j=0;j<npibin;j++) {
+                int index = i*(npibin+1) + j;
+                fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+            }
+        }
+        fclose(fp);
+    }
 
     //free the result structure
     free_results_rp_pi(&results);
@@ -190,10 +245,11 @@ int main(int argc, char **argv)
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
-
-#ifdef PERIODIC
-#error PERIODIC must not be defined for running non-periodic tests
-#endif
+    options = get_config_options();
+    options.need_avg_sep=1;
+    options.verbose=0;
+    options.periodic=0;
+    options.float_type=sizeof(double);
 
     gettimeofday(&tstart,NULL);
 
@@ -206,7 +262,8 @@ int main(int argc, char **argv)
 
     strncpy(current_file1,file,MAXLEN);
     strncpy(current_file2,file,MAXLEN);
-
+    reset_bin_refine_factors(&options);
+    
     int failed=0;
     int status;
 

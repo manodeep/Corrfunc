@@ -10,13 +10,13 @@
 
 #include <stdint.h>
 
+#include "macros.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "weight_functions_DOUBLE.h"
-
-#define NLATMAX   100      /* maximum grid dimension in X-Y plane */
+#include "weight_defs_DOUBLE.h"
 
 typedef struct{
   DOUBLE *x;

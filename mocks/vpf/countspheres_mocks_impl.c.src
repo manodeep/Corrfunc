@@ -36,7 +36,11 @@ void interrupt_handler_vpf_mocks_DOUBLE(int signo)
 
 
 int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const DOUBLE smin,const DOUBLE inv_rcube,const DOUBLE rmax,
-                           const int ngrid,const cellarray_DOUBLE *lattice, const int nthreshold, const int bin_refine_factor);
+                           const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                           const cellarray_DOUBLE *lattice, const int nthreshold,
+                           const int xbin_refine_factor,
+                           const int ybin_refine_factor,
+                           const int zbin_refine_factor);
 
 vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *options) 
 {
@@ -107,38 +111,42 @@ vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *o
 
 
 int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const DOUBLE smin,const DOUBLE inv_rcube,const DOUBLE rmax,
-                           const int ngrid,const cellarray_DOUBLE *lattice, const int nthreshold, const int bin_refine_factor)
+                           const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                           const cellarray_DOUBLE *lattice, const int nthreshold,
+                           const int xbin_refine_factor,
+                           const int ybin_refine_factor,
+                           const int zbin_refine_factor)
 {
     int numngb=0;
     const DOUBLE rmax_sqr = (DOUBLE) (rmax*rmax);
-    int ix = (int)(ngrid*(xcen-smin)*inv_rcube);
-    int iy = (int)(ngrid*(ycen-smin)*inv_rcube);
-    int iz = (int)(ngrid*(zcen-smin)*inv_rcube);
-    if(ix > ngrid-1) ix--;
-    if(iy > ngrid-1) iy--;
-    if(iz > ngrid-1) iz--;
+    int ix = (int)(nmesh_x*(xcen-smin)*inv_rcube);
+    int iy = (int)(nmesh_y*(ycen-smin)*inv_rcube);
+    int iz = (int)(nmesh_z*(zcen-smin)*inv_rcube);
+    if(ix > nmesh_x-1) ix--;
+    if(iy > nmesh_y-1) iy--;
+    if(iz > nmesh_z-1) iz--;
 
-    if( ix  < 0 || ix >= ngrid || iy < 0 || iy >= ngrid || iz < 0 || iz >= ngrid) {
+    if( ix  < 0 || ix >= nmesh_x || iy < 0 || iy >= nmesh_y || iz < 0 || iz >= nmesh_z) {
         fprintf(stderr,"Error in %s> Positions are outside grid. (X,Y,Z) = (%lf,%lf,%lf) should have been within the range [0.0, %lf]\n",
                 __FUNCTION__,xcen, ycen, zcen, 1.0/inv_rcube);
         return -1;
     }
 
-    const int min_ix = ix - bin_refine_factor < 0 ?             0:ix - bin_refine_factor;
-    const int max_ix = ix + bin_refine_factor > ngrid-1 ? ngrid-1:ix + bin_refine_factor;
+    const int min_ix = ix - xbin_refine_factor < 0 ?                 0:ix - xbin_refine_factor;
+    const int max_ix = ix + xbin_refine_factor > nmesh_x-1 ? nmesh_x-1:ix + xbin_refine_factor;
     for(int iix=min_ix;iix<=max_ix;iix++) {
         const DOUBLE newxpos = xcen;
-        const int min_iy = iy - bin_refine_factor < 0 ?             0:iy - bin_refine_factor;
-        const int max_iy = iy + bin_refine_factor > ngrid-1 ? ngrid-1:iy + bin_refine_factor;
+        const int min_iy = iy - ybin_refine_factor < 0 ?                 0:iy - ybin_refine_factor;
+        const int max_iy = iy + ybin_refine_factor > nmesh_y-1 ? nmesh_y-1:iy + ybin_refine_factor;
 
         for(int iiy=min_iy;iiy<=max_iy;iiy++) {
             const DOUBLE newypos = ycen;
-            const int min_iz = iz - bin_refine_factor < 0 ?             0:iz - bin_refine_factor;
-            const int max_iz = iz + bin_refine_factor > ngrid-1 ? ngrid-1:iz + bin_refine_factor;
+            const int min_iz = iz - zbin_refine_factor < 0 ?                 0:iz - zbin_refine_factor;
+            const int max_iz = iz + zbin_refine_factor > nmesh_z-1 ? nmesh_z-1:iz + zbin_refine_factor;
 
             for(int iiz=min_iz;iiz<=max_iz;iiz++) {
                 DOUBLE newzpos = zcen;
-                const int64_t index=iix*ngrid*ngrid + iiy*ngrid + iiz;
+                const int64_t index=iix*nmesh_y*nmesh_z + iiy*nmesh_z + iiz;
                 const cellarray_DOUBLE *cellstruct = &(lattice[index]);
                 DOUBLE *x2 = cellstruct->x;
                 DOUBLE *y2 = cellstruct->y;
@@ -179,7 +187,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                               struct config_options *options, struct extra_options *extra)
     
 {
-    int ngrid;
+    /* int ngrid; */
     int itry,isucceed;
     (void) extra;
 
@@ -349,30 +357,36 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
 
     /*---Construct-grid-to-speed-up-neighbor-searching----*/
     //First create the 3-d linklist
-    int bin_refine_factor=1;
-    cellarray_DOUBLE *lattice=NULL;//pointer to the full 3-d volume for galaxies
+    if(options->max_cells_per_dim == 0) {
+        fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+        options->max_cells_per_dim = NLATMAX;
+    }
+    for(int i=0;i<3;i++) {
+        if(options->bin_refine_factors[i] < 1) {
+            fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                    i, options->bin_refine_factors[i]);
+            reset_bin_refine_factors(options);
+            break;/* all factors have been reset -> no point continuing with the loop */
+        }
+    }
+    
     cellarray_DOUBLE *randoms_lattice=NULL;//pointer to the full 3-d volume for randoms
     const DOUBLE xmin=0.0,xmax=rcube;
     const DOUBLE ymin=0.0,ymax=rcube;
     const DOUBLE zmin=0.0,zmax=rcube;
     const DOUBLE smin=0.0;
-
-    {
-        //new scope -> no need for the nmesh_x/y/z variables since the data are in a cube
-        int nmesh_x,nmesh_y,nmesh_z;
-        lattice = gridlink_DOUBLE(Ngal, xgal, ygal, zgal,
-                                  xmin, xmax,
-                                  ymin, ymax,
-                                  zmin, zmax,
-                                  rmax, rmax, rmax,
-                                  bin_refine_factor, bin_refine_factor, bin_refine_factor,
-                                  &nmesh_x, &nmesh_y, &nmesh_z,
-                                  options);
-        XRETURN(nmesh_x == nmesh_y && nmesh_x == nmesh_z, EXIT_FAILURE, "The number of grid cells along each dimension should be identical. "
-                "(nx, ny, nz) = (%d, %d, %d)\n", nmesh_x, nmesh_y, nmesh_z);
-        ngrid = nmesh_x;//could have been nmesh_y/nmesh_z -> all three are equal
-        free(xgal);free(ygal);free(zgal);
-    }
+    int nmesh_x,nmesh_y,nmesh_z;    
+    cellarray_DOUBLE *lattice = gridlink_DOUBLE(Ngal, xgal, ygal, zgal,
+                                                xmin, xmax,
+                                                ymin, ymax,
+                                                zmin, zmax,
+                                                rmax, rmax, rmax,
+                                                options->bin_refine_factors[0],
+                                                options->bin_refine_factors[1],
+                                                options->bin_refine_factors[2],
+                                                &nmesh_x, &nmesh_y, &nmesh_z,
+                                                options);
+    free(xgal);free(ygal);free(zgal);
 
     if(need_randoms == 1) {
         int nran_x,nran_y,nran_z;
@@ -381,22 +395,19 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                                           ymin, ymax,
                                           zmin, zmax,
                                           rmax, rmax, rmax,
-                                          bin_refine_factor, bin_refine_factor, bin_refine_factor,
+                                          options->bin_refine_factors[0],
+                                          options->bin_refine_factors[1],
+                                          options->bin_refine_factors[2],
                                           &nran_x, &nran_y, &nran_z,
                                           options);
-        XRETURN(nran_x == nran_y && nran_x == nran_z, EXIT_FAILURE, "The number of (randoms) grid cells along each dimension should be identical. "
-                "(nx, ny, nz) = (%d, %d, %d)\n",nran_x,nran_y,nran_z);
-        XRETURN(nran_x == ngrid, EXIT_FAILURE, "The number of grid cells for randoms = %d should be identical to that in the data = %d\n", nran_x, ngrid);
+        XRETURN(nran_x == nmesh_x && nran_y == nmesh_y && nran_z == nmesh_z, EXIT_FAILURE, "The number of grid cells for randoms = (%d, %d, %d) should be identical to that in the data = (%d, %d, %d) \n", nran_x, nran_y, nran_z, nmesh_x, nmesh_y, nmesh_z);
         free(xran);free(yran);free(zran);
     }
-    const int64_t totncells = ngrid * (int64_t) ngrid * ngrid;
-
+    const int64_t totncells = nmesh_x * (int64_t) nmesh_y * nmesh_z;
+    
     /*---Prepare-radial-arrays----------------------------*/
     uint64_t *counts = my_calloc(sizeof(*counts),nbin);
     DOUBLE **pN = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), nbin, num_pN);
-
-    /* const DOUBLE rstep = rmax/(DOUBLE)nbin ; */
-    /* const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep; */
 
     vpf_mocks_func_ptr_DOUBLE vpf_mocks_function_DOUBLE = vpf_mocks_driver_DOUBLE(options);
     if(vpf_mocks_function_DOUBLE == NULL) {
@@ -423,7 +434,12 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
             xcen = xran[itry] ;
             ycen = yran[itry] ;
             zcen = zran[itry] ;
-            Nnbrs_ran = count_neighbors_DOUBLE(xcen,ycen,zcen,smin,inv_rcube,rmax,ngrid,randoms_lattice, threshold_neighbors, bin_refine_factor);
+            Nnbrs_ran = count_neighbors_DOUBLE(xcen,ycen,zcen,smin,inv_rcube,rmax,
+                                               nmesh_x, nmesh_y, nmesh_z,
+                                               randoms_lattice, threshold_neighbors,
+                                               options->bin_refine_factors[0],
+                                               options->bin_refine_factors[1],
+                                               options->bin_refine_factors[2]);
             if(Nnbrs_ran == -1) {
                 return EXIT_FAILURE;
             }
@@ -446,13 +462,13 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
 
         if(Nnbrs_ran > threshold_neighbors) {  //ignore if sphere overlaps edge
 
-            int ix = (int)(ngrid*(xcen-smin)*inv_rcube);
-            int iy = (int)(ngrid*(ycen-smin)*inv_rcube);
-            int iz = (int)(ngrid*(zcen-smin)*inv_rcube);
-            if(ix > ngrid-1) ix--;
-            if(iy > ngrid-1) iy--;
-            if(iz > ngrid-1) iz--;
-            if( ix  < 0 || ix >= ngrid || iy < 0 || iy >= ngrid || iz < 0 || iz >= ngrid) {
+            int ix = (int)(nmesh_x*(xcen-smin)*inv_rcube);
+            int iy = (int)(nmesh_y*(ycen-smin)*inv_rcube);
+            int iz = (int)(nmesh_z*(zcen-smin)*inv_rcube);
+            if(ix > nmesh_x-1) ix--;
+            if(iy > nmesh_y-1) iy--;
+            if(iz > nmesh_z-1) iz--;
+            if( ix  < 0 || ix >= nmesh_x || iy < 0 || iy >= nmesh_y || iz < 0 || iz >= nmesh_z) {
                 fprintf(stderr,"Error in %s> Positions are outside grid. (X,Y,Z) = (%lf,%lf,%lf) should have been within the range [0.0, %lf]\n",
                         __FUNCTION__,xcen, ycen, zcen, 1.0/inv_rcube);
                 return -1;
@@ -463,16 +479,16 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
             }
 
             /* Compute VPF using (xcen, ycen, zcen) with lattice */
-            const int min_ix = (ix - bin_refine_factor) < 0 ?             0:ix - bin_refine_factor;
-            const int max_ix = (ix + bin_refine_factor) > ngrid-1 ? ngrid-1:ix + bin_refine_factor;
-            const int min_iy = (iy - bin_refine_factor) < 0 ?             0:iy - bin_refine_factor;
-            const int max_iy = (iy + bin_refine_factor) > ngrid-1 ? ngrid-1:iy + bin_refine_factor;
-            const int min_iz = (iz - bin_refine_factor) < 0 ?             0:iz - bin_refine_factor;
-            const int max_iz = (iz + bin_refine_factor) > ngrid-1 ? ngrid-1:iz + bin_refine_factor;
+            const int min_ix = (ix - options->bin_refine_factors[0]) < 0 ?                     0:ix - options->bin_refine_factors[0];
+            const int max_ix = (ix + options->bin_refine_factors[0]) > nmesh_x-1 ?     nmesh_x-1:ix + options->bin_refine_factors[0];
+            const int min_iy = (iy - options->bin_refine_factors[1]) < 0 ?                     0:iy - options->bin_refine_factors[1];
+            const int max_iy = (iy + options->bin_refine_factors[1]) > nmesh_y-1 ?     nmesh_y-1:iy + options->bin_refine_factors[1];
+            const int min_iz = (iz - options->bin_refine_factors[2]) < 0 ?                     0:iz - options->bin_refine_factors[2];
+            const int max_iz = (iz + options->bin_refine_factors[2]) > nmesh_z-1 ?     nmesh_z-1:iz + options->bin_refine_factors[2];
             for(int iix=min_ix;iix<=max_ix;iix++) {
                 for(int iiy=min_iy;iiy<=max_iy;iiy++) {
                     for(int iiz=min_iz;iiz<=max_iz;iiz++){
-                        const int64_t index = iix*ngrid*ngrid + iiy*ngrid + iiz;
+                        const int64_t index = iix*nmesh_y*nmesh_z + iiy*nmesh_z + iiz;
                         const cellarray_DOUBLE *first = &(lattice[index]);
                         DOUBLE *x2 = first->x;
                         DOUBLE *y2 = first->y;
@@ -559,6 +575,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
 
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
+    reset_bin_refine_factors(options);
 
     if(options->c_api_timer) {
         struct timeval t1;

@@ -49,6 +49,7 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
         }
     }
 
+    int64_t prev_j = 0;
     for(int64_t i=0;i<N0;i++) {
       const DOUBLE xpos = *x0++;
       const DOUBLE ypos = *y0++;
@@ -58,22 +59,26 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
       const AVX_FLOATS m_y1 = AVX_SET_FLOAT(ypos);
       const AVX_FLOATS m_z1 = AVX_SET_FLOAT(zpos);
 
-      int64_t j = (same_cell == 1) ? (i+1):0;
-      if(same_cell == 0) {
-          DOUBLE *localz1 = z1;
-          while(j < N1) {
-              const DOUBLE dz = *localz1++ - zpos;
-              if(dz > -costhetamin) {
-                  break;
-              }
-              j++;
+      int64_t j;
+      if(same_cell == 1) {
+          z1++;x1++;y1++;
+          j = i+1;
+      } else {
+          for(;prev_j<N1;prev_j++) {
+              const DOUBLE dz = *z1 - zpos;
+              if(dz > -costhetamin) break;
+              z1++;x1++;y1++;
           }
+          if(prev_j == N1) {
+              i = N0;
+              break;
+          }
+          j = prev_j;
       }
-      
-      DOUBLE *localx1 = x1 + j;
-      DOUBLE *localy1 = y1 + j;
-      DOUBLE *localz1 = z1 + j;
-      
+      DOUBLE *localz1 = z1;
+      DOUBLE *localx1 = x1;
+      DOUBLE *localy1 = y1;
+     
       for(;j<=(N1-AVX_NVEC);j+=AVX_NVEC){
           union int8 {
               AVX_INTS m_ibin;
@@ -227,7 +232,8 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
             m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
         }
     }
-    
+
+    int64_t prev_j=0;
     for(int64_t i=0;i<N0;i++) {
       const DOUBLE xpos = *x0++;
       const DOUBLE ypos = *y0++;
@@ -238,19 +244,24 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
       const SSE_FLOATS m_z1 = SSE_SET_FLOAT(zpos);
       
       int64_t j = (same_cell == 1) ? (i+1):0;
-      if(same_cell == 0) {
-          DOUBLE *localz1 = z1;
-          while(j < N1) {
-              const DOUBLE dz = *localz1++ - zpos;
+      if(same_cell == 1) {
+          z1++;x1++;y1++;
+      } else {
+          for(;prev_j<N1;prev_j++) {
+              const DOUBLE dz = *z1 - zpos;
               if(dz > -costhetamin) break;
-              j++;
+              z1++;x1++;y1++;
           }
+          if(prev_j == N1) {
+              i = N0;
+              break;
+          }
+          j = prev_j;
       }
+      DOUBLE *localz1 = z1;
+      DOUBLE *localx1 = x1;
+      DOUBLE *localy1 = y1;
 
-      DOUBLE *localx1 = x1 + j;
-      DOUBLE *localy1 = y1 + j;
-      DOUBLE *localz1 = z1 + j;
-      
       for(;j<=(N1-SSE_NVEC);j+=SSE_NVEC){
           union int4 {
               SSE_INTS m_ibin;
@@ -390,27 +401,39 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             thetaavg[i] = ZERO;
         }
     }
-    
+
+    int64_t nleft=N1;
     for(int64_t i=0;i<N0;i++) {
       const DOUBLE xpos = *x0++;
       const DOUBLE ypos = *y0++;
       const DOUBLE zpos = *z0++;
 
-      int64_t j = (same_cell == 1) ? (i+1):0;
-      if(same_cell == 0) {
-          DOUBLE *localz1 = z1;
-          while(j < N1) {
-              const DOUBLE dz = *localz1++ - zpos;
+      /* If in the same cell, unique pairs are guaranteed by not including the current particle */
+      if(same_cell == 1) {
+          z1++;x1++;y1++;
+          nleft--;
+      } else {
+          /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
+          while(nleft > 0) {
+              /*Particles are sorted on 'z', in increasing order */
+              const DOUBLE dz = *z1 - zpos;
               if(dz > -costhetamin) break;
-              j++;
+              z1++;x1++;y1++;
+              nleft--;
+          }
+          /*If no particle in the second cell satisfies distance constraints on 'dz' for the current 'i'th particle in first cell, 
+            then there can be no more pairs from any particles in the first cell (since the first cell is also sorted in increasing order in 'z')
+          */
+          if(nleft == 0) {
+              i=N0;
+              break;
           }
       }
+      DOUBLE *localz1 = z1;
+      DOUBLE *localx1 = x1;
+      DOUBLE *localy1 = y1;
 
-      DOUBLE *localx1 = x1 + j;
-      DOUBLE *localy1 = y1 + j;
-      DOUBLE *localz1 = z1 + j;
-      
-      for(;j<N1;j++) {
+      for(int64_t j=0;j<nleft;j++) {
           const DOUBLE dx1_dx2 = xpos * (*localx1);
           const DOUBLE dy1_dy2 = ypos * (*localy1);
           const DOUBLE dz1_dz2 = zpos * (*localz1);

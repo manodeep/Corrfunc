@@ -41,28 +41,32 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
       rpavg[i] = ZERO;
     }
   }
-  
+
+  int64_t prev_j = 0;
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
     const DOUBLE zpos = *z0++ + off_zwrap;
 
-    DOUBLE *localz1 = (DOUBLE *) z1;
-
-    int64_t j=0;
+    int64_t j;
     if(same_cell == 1) {
-      j = i+1;
-      localz1 += j;
+        z1++;x1++;y1++;
+        j = i+1;
     } else {
-      while(j < N1){
-        const DOUBLE dz = *localz1++ - zpos;
-        if(dz > -pimax) break;
-        j++;
-      }
-      localz1--;
+        for(;prev_j<N1;prev_j++) {
+            const DOUBLE dz = *z1 - zpos;
+            if(dz > -pimax) break;
+            z1++;x1++;y1++;
+        }
+        if(prev_j == N1) {
+            i = N0;
+            break;
+        }
+        j = prev_j;
     }
-    DOUBLE *localx1 = x1 + j;
-    DOUBLE *localy1 = y1 + j;
+    DOUBLE *localz1 = z1;
+    DOUBLE *localx1 = x1;
+    DOUBLE *localy1 = y1;
 
     for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
       const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
@@ -250,38 +254,45 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
       rpavg[i] = ZERO;
     }
   }
-  
+
+  int64_t prev_j=0;
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
     const DOUBLE zpos = *z0++ + off_zwrap;
     
-    
-    DOUBLE *localz1 = z1;
-    int64_t j=0;
+    int64_t j;
     if(same_cell == 1) {
-      j = i+1;
-      localz1 += j;
+        z1++;x1++;y1++;
+        j = i+1;
     } else {
-      while(j < N1){
-        const DOUBLE dz = *localz1++ - zpos;
-        if(dz > -pimax) break;
-        j++;
-      }
-      localz1--;
+        for(;prev_j<N1;prev_j++) {
+            const DOUBLE dz = *z1 - zpos;
+            if(dz > -pimax) break;
+            z1++;x1++;y1++;
+        }
+        /* Since 'z' is sorted in increasing order for both the first and second cells, 
+           no more valid pairs can be found between these two cell pairs
+        */
+        if(prev_j == N1) {
+            i = N0;
+            break;
+        }
+        j = prev_j;
     }
-    DOUBLE *localx1 = x1 + j;
-    DOUBLE *localy1 = y1 + j;
-
-		for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
-      union int4{
-        SSE_INTS m_ibin;
-        int ibin[SSE_NVEC];
-      };
-      union float4{
-        SSE_FLOATS m_Dperp;
-        DOUBLE Dperp[SSE_NVEC];
-      };
+    DOUBLE *localz1 = z1;
+    DOUBLE *localx1 = x1;
+    DOUBLE *localy1 = y1;
+    
+    for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
+        union int4{
+            SSE_INTS m_ibin;
+            int ibin[SSE_NVEC];
+        };
+        union float4{
+            SSE_FLOATS m_Dperp;
+            DOUBLE Dperp[SSE_NVEC];
+        };
       
       union int4 union_rpbin;
       union float4 union_mDperp;
@@ -430,48 +441,57 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
   }
   
   /* naive implementation that is guaranteed to compile */
+  int64_t nleft=N1;
   for(int64_t i=0;i<N0;i++) {
-    const DOUBLE xpos = *x0++ + off_xwrap;
-    const DOUBLE ypos = *y0++ + off_ywrap;
-    const DOUBLE zpos = *z0++ + off_zwrap;
-    
-    DOUBLE *localz1 = (DOUBLE *) z1; 
-    int64_t j=0;
-    if(same_cell == 1) {
-      j = i+1;
-      localz1 += j;
-    } else {
-      while(j < N1){
-        const DOUBLE dz = *localz1++ - zpos;
-        if(dz > -pimax) break;
-        j++;
-      }
-      localz1--;
-    }
-    DOUBLE *localx1 = x1 + j; 
-    DOUBLE *localy1 = y1 + j;
-    
-    
-    for(;j<N1;j++) {
-      const DOUBLE dx = *localx1++ - xpos;
-      const DOUBLE dy = *localy1++ - ypos;
-      const DOUBLE dz = *localz1++ - zpos;
-      if(dz >=pimax) break;
-      
-      const DOUBLE r2 = dx*dx + dy*dy;
-      if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
-      const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
+      const DOUBLE xpos = *x0++ + off_xwrap;
+      const DOUBLE ypos = *y0++ + off_ywrap;
+      const DOUBLE zpos = *z0++ + off_zwrap;
 
-      for(int kbin=nbin-1;kbin>=1;kbin--){
-        if(r2 >= rupp_sqr[kbin-1]) {
-          npairs[kbin]++;
-          if(need_rpavg) {
-            rpavg[kbin] += r;
+      /* If in the same cell, unique pairs are guaranteed by not including the current particle */      
+      if(same_cell == 1) {
+          z1++;x1++;y1++;
+          nleft--;
+      } else {
+          /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
+          while(nleft > 0) {
+              /*Particles are sorted on 'z', in increasing order */
+              const DOUBLE dz = *z1 - zpos;
+              if(dz > -pimax) break;
+              z1++;x1++;y1++;
+              nleft--;
           }
-          break;
-        }
-      }//searching for kbin loop                                                               
-    }
+          /*If no particle in the second cell satisfies distance constraints on 'dz' for the current 'i'th particle in first cell, 
+            then there can be no more pairs from any particles in the first cell (since the first cell is also sorted in increasing order in 'z')
+          */
+          if(nleft == 0) {
+              i=N0;
+              break;
+          }
+      }
+      DOUBLE *localz1 = z1;
+      DOUBLE *localx1 = x1;
+      DOUBLE *localy1 = y1;
+      
+      for(int64_t j=0;j<nleft;j++) {
+          const DOUBLE dx = *localx1++ - xpos;
+          const DOUBLE dy = *localy1++ - ypos;
+          const DOUBLE dz = *localz1++ - zpos;
+          if(dz >=pimax) break;
+          
+          const DOUBLE r2 = dx*dx + dy*dy;
+          if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
+          const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
+          
+          for(int kbin=nbin-1;kbin>=1;kbin--){
+              if(r2 >= rupp_sqr[kbin-1]) {
+                  npairs[kbin]++;
+                  if(need_rpavg) {
+                      rpavg[kbin] += r;
+                  }
+                  break;
+              }
+          }//searching for kbin loop                                                               
+      }
   }
   
   for(int i=0;i<nbin;i++) {

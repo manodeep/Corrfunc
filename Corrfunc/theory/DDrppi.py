@@ -14,8 +14,11 @@ __all__ = ('DDrppi', )
 
 
 def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
-           periodic=True, X2=None, Y2=None, Z2=None, verbose=False,
-           boxsize=0.0, output_rpavg=False, c_api_timer=False, isa='fastest'):
+           periodic=True, X2=None, Y2=None, Z2=None,
+           verbose=False, boxsize=0.0, output_rpavg=False,
+           xbin_refine_factor=2, ybin_refine_factor=2,
+           zbin_refine_factor=1, max_cells_per_dim=100,
+           c_api_timer=False, isa='fastest'):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r_p, \pi)` or :math:`\\wp(r_p)`. Pairs which are
@@ -50,7 +53,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
-       ``DDrppi_mocks``. The file should contain white-space separated values
+       ``DDrppi``. The file should contain white-space separated values
        of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
        contiguous but must be in increasing order (smallest bins come first).
 
@@ -86,6 +89,15 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
        in single-precision, ``rpavg`` will suffer from numerical loss of
        precision and can not be trusted. If you need accurate ``rpavg``
        values, then pass in double precision arrays for the particle positions.
+
+    (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime.
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
+       too small relative to the boxsize (and increasing helps the runtime).
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -206,30 +218,27 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                 "computing cross-correlation"
             raise ValueError(msg)
+    else:
+        X2 = np.empty(1)
+        Y2 = np.empty(1)
+        Z2 = np.empty(1)
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
-    if autocorr == 1:
-        extn_results, api_time = DDrppi_extn(autocorr, nthreads,
-                                             pimax, rbinfile,
-                                             X1, Y1, Z1,
-                                             periodic=periodic,
-                                             output_rpavg=output_rpavg,
-                                             verbose=verbose,
-                                             boxsize=boxsize,
-                                             c_api_timer=c_api_timer,
-                                             isa=integer_isa)
-    else:
-        extn_results, api_time = DDrppi_extn(autocorr, nthreads,
-                                             pimax, rbinfile,
-                                             X1, Y1, Z1,
-                                             X2, Y2, Z2,
-                                             periodic=periodic,
-                                             verbose=verbose,
-                                             boxsize=boxsize,
-                                             output_rpavg=output_rpavg,
-                                             c_api_timer=c_api_timer,
-                                             isa=integer_isa)
+    extn_results, api_time = DDrppi_extn(autocorr, nthreads,
+                                         pimax, rbinfile,
+                                         X1, Y1, Z1,
+                                         X2, Y2, Z2,
+                                         periodic=periodic,
+                                         verbose=verbose,
+                                         boxsize=boxsize,
+                                         output_rpavg=output_rpavg,
+                                         xbin_refine_factor=xbin_refine_factor,
+                                         ybin_refine_factor=ybin_refine_factor,
+                                         zbin_refine_factor=zbin_refine_factor,
+                                         max_cells_per_dim=max_cells_per_dim,
+                                         c_api_timer=c_api_timer,
+                                         isa=integer_isa)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
