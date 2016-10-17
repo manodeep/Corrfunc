@@ -39,6 +39,10 @@ static inline AVX_FLOATS avx_pair_product_DOUBLE(const pair_struct_DOUBLE *pair)
     return AVX_MULTIPLY_FLOATS(pair->weights0[0].a, pair->weights1[0].a);
 }
 
+static inline SSE_FLOATS sse_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+    return SSE_MULTIPLY_FLOATS(pair->weights0[0].s, pair->weights1[0].s);
+}
+
 //////////////////////////////////
 // Utility functions
 //////////////////////////////////
@@ -69,7 +73,7 @@ static inline avx_weight_func_t get_avx_weight_func_by_method(const weight_metho
 static inline sse_weight_func_t get_sse_weight_func_by_method(const weight_method_t method){
     switch(method){
         case PAIR_PRODUCT:
-            return NULL;  //&sse_pair_product_DOUBLE;
+            return &sse_pair_product_DOUBLE;
         default:
         case NONE:
             return NULL;

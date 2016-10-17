@@ -37,7 +37,7 @@ install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HE
 
 countpairs_impl_double.o:countpairs_impl_double.c countpairs_impl_double.h countpairs_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_defs_double.h
 countpairs_impl_float.o:countpairs_impl_float.c countpairs_impl_float.h countpairs_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_defs_float.h
-countpairs.o:countpairs.c countpairs_impl_double.h countpairs_impl_float.h
+countpairs.o:countpairs.c countpairs_impl_double.h countpairs_impl_float.h $(INCL)
 
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) $(LIBRARY) countpairs_kernels_float.c countpairs_kernels_double.c countpairs_impl_double.[ch] countpairs_impl_float.[ch]

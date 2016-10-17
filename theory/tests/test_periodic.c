@@ -484,6 +484,7 @@ int main(int argc, char **argv)
     options.verbose=0;
     options.periodic=1;
     options.float_type=sizeof(double);
+    //options.instruction_set = SSE42;
 
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";

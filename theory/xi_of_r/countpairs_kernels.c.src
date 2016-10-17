@@ -323,9 +323,6 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
                                              DOUBLE *src_rpavg, uint64_t *src_npairs,
                                              DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
-    if(src_weightavg != NULL){
-        return EXIT_FAILURE;
-    }
   uint64_t npairs[nbin];
   for(int i=0;i<nbin;i++) {
     npairs[i] = 0;
@@ -337,30 +334,56 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
   }
 
   const int32_t need_rpavg = src_rpavg != NULL;
+  const int32_t need_weightavg = src_weightavg != NULL;
   SSE_FLOATS m_kbin[nbin];
-  DOUBLE rpavg[nbin];
-  if(need_rpavg) {
+  DOUBLE rpavg[nbin], weightavg[nbin];
+  if(need_rpavg || need_weightavg){
     for(int i=0;i<nbin;i++) {
-      m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
-      rpavg[i] = ZERO;
+        m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
+        if(need_rpavg) {
+            rpavg[i] = ZERO;
+        }
+        if(need_weightavg){
+            weightavg[i] = ZERO;
+        }
     }
   }
   
-  int64_t prev_j=0;
+  // A copy whose pointers we can advance
+  weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
+                       local_w1 = {.weights={NULL}, .num_weights=0};
+  pair_struct_DOUBLE pair = {.num_weights=0};
+  sse_weight_func_t sse_weight_func = NULL;
+  weight_func_t fallback_weight_func = NULL;
+  if(need_weightavg){
+      // Same particle list, new copy of num_weights pointers into that list
+      local_w0 = *weights0;
+      local_w1 = *weights1;
+      
+      pair.num_weights = local_w0.num_weights;
+      
+      sse_weight_func = get_sse_weight_func_by_method(weight_method);
+      fallback_weight_func = get_weight_func_by_method(weight_method);
+  }
+  
+  int64_t prev_j=0, n_off = 0;
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
     const DOUBLE zpos = *z0++ + off_zwrap;
+    for(int w = 0; w < pair.num_weights; w++){
+        pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
+    }
 
     int64_t j=0; 
     if(same_cell == 1) {
-        z1++;x1++;y1++;
+        z1++; n_off++;
         j = i+1;
     } else {
         for(;prev_j<N1;prev_j++) {
             const DOUBLE dz = *z1 - zpos;
             if(dz > -rpmax) break;
-            z1++;x1++;y1++;
+            z1++; n_off++;
         }
         if(prev_j == N1) {
             i=N0;
@@ -369,8 +392,11 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         j = prev_j;
     }
     DOUBLE *localz1 = z1;
-    DOUBLE *localx1 = x1;
-    DOUBLE *localy1 = y1;
+    DOUBLE *localx1 = x1 + n_off;
+    DOUBLE *localy1 = y1 + n_off;
+    for(int w = 0; w < local_w1.num_weights; w++){
+        local_w1.weights[w] = weights1->weights[w] + n_off;
+    }
    
     for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
       union int4{
@@ -396,16 +422,31 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
       localx1 += SSE_NVEC;
       localy1 += SSE_NVEC;
       localz1 += SSE_NVEC;
+    
+      for(int w = 0; w < pair.num_weights; w++){
+        pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+        local_w1.weights[w] += SSE_NVEC;
+      }
+
+      union float4 union_mweight;
             
       const SSE_FLOATS m_pimax = SSE_SET_FLOAT(rpmax);
       const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
       const SSE_FLOATS m_sqr_rpmin = SSE_SET_FLOAT(sqr_rpmin);
             
+      const SSE_FLOATS m_xdiff = SSE_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+      const SSE_FLOATS m_ydiff = SSE_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+      const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
             
-      const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(SSE_SUBTRACT_FLOATS(m_x1, m_xpos));
-      const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(SSE_SUBTRACT_FLOATS(m_y1, m_ypos));
-      const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);
+      const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(m_xdiff);
+      const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(m_ydiff);
       const SSE_FLOATS m_sqr_zdiff = SSE_SQUARE_FLOAT(m_zdiff);
+      
+      if(need_weightavg){
+        pair.dx.s = m_xdiff;
+        pair.dy.s = m_ydiff;
+        pair.dz.s = m_zdiff;
+      }
             
       SSE_FLOATS r2  = SSE_ADD_FLOATS(m_sqr_zdiff,SSE_ADD_FLOATS(m_sqr_xdiff, m_sqr_ydiff));
       SSE_FLOATS m_mask_left;
@@ -430,6 +471,10 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
       if(need_rpavg) {
         union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
       }
+      if(need_weightavg){
+        union_mweight.m_Dperp = sse_weight_func(&pair);
+      }
+
             
       for(int kbin=nbin-1;kbin>=1;kbin--) {
         SSE_FLOATS m1 = SSE_COMPARE_FLOATS_GE(r2,m_rupp_sqr[kbin-1]);
@@ -437,7 +482,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         m_mask_left = SSE_COMPARE_FLOATS_LT(r2,m_rupp_sqr[kbin-1]);
         int test2  = SSE_TEST_COMPARISON(m_bin_mask);
         npairs[kbin] += SSE_BIT_COUNT_INT(test2);
-        if(need_rpavg){
+        if(need_rpavg || need_weightavg){
           m_rpbin = SSE_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
         }
         int test3 = SSE_TEST_COMPARISON(m_mask_left);
@@ -446,7 +491,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         }
       }
 
-      if(need_rpavg) {
+      if(need_rpavg || need_weightavg) {
         union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
         //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
@@ -454,8 +499,15 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
 #endif
         for(int jj=0;jj<SSE_NVEC;jj++) {
           const int kbin = union_rpbin.ibin[jj];
-          const DOUBLE r = union_mDperp.Dperp[jj];
-          rpavg[kbin] += r;
+          if(need_rpavg){
+            const DOUBLE r = union_mDperp.Dperp[jj];
+            rpavg[kbin] += r;
+          }
+          if(need_weightavg){
+            const DOUBLE weight = union_mweight.Dperp[jj];
+            weightavg[kbin] += weight;
+          }
+
         }
       } //rpavg
     }			
@@ -464,10 +516,20 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
       const DOUBLE dx = *localx1++ - xpos;
       const DOUBLE dy = *localy1++ - ypos;
       const DOUBLE dz = *localz1++ - zpos;
+      for(int w = 0; w < pair.num_weights; w++){
+          pair.weights1[w].d = *local_w1.weights[w]++;
+      }
+
       if(dz >= rpmax) break;
       
       const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
       if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
+      
+      if(need_weightavg){
+        pair.dx.d = dx;
+        pair.dy.d = dy;
+        pair.dz.d = dz;
+      }
 
       DOUBLE r;
       if(need_rpavg) {
@@ -479,6 +541,9 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
           if(need_rpavg){
             rpavg[kbin] += r;
           }
+          if(need_weightavg){
+            weightavg[kbin] += fallback_weight_func(&pair);
+          }
           break;
         }
       }//searching for kbin loop
@@ -489,6 +554,9 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
     src_npairs[i] += npairs[i];
     if(need_rpavg) {
       src_rpavg[i] += rpavg[i];
+    }
+    if(need_weightavg) {
+      src_weightavg[i] += weightavg[i];
     }
   }
 
