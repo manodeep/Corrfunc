@@ -94,7 +94,7 @@ struct config_options
 
     /* Per cell timers. Keeps track of the number of particles per cell pair
        and time spent to compute the pairs. Might slow down code */
-    struct api_cell_timings *thread_timings;
+    struct api_cell_timings *cell_timings;
     int64_t totncells_timings;
     
     
@@ -295,7 +295,7 @@ static inline struct config_options get_config_options(void)
     options.totncells_timings = 0;
     /* If the API level timers are requested, then 
        this pointer will have to be allocated */
-    options.thread_timings = NULL;
+    options.cell_timings = NULL;
     
     /*Setup the binning options */
     reset_max_cells(&options);
@@ -342,27 +342,27 @@ static inline int get_extra_options(struct extra_options *extra)
     return EXIT_SUCCESS;
 }
 
-static inline void print_thread_timings(struct config_options *options)
+static inline void print_cell_timings(struct config_options *options)
 {
     fprintf(stderr,"#########################################################################\n");
     fprintf(stderr,"#  Cell_1    Cell_2          N1          N2        Time_ns     ThreadID  \n");
     fprintf(stderr,"#########################################################################\n");
     for(int64_t i=0;i<options->totncells_timings;i++) {
         fprintf(stderr,"%8d %8d %12"PRId64" %12"PRId64" %12"PRId64" %12d\n",
-                options->thread_timings[i].first_cellindex,
-                options->thread_timings[i].second_cellindex,
-                options->thread_timings[i].N1,
-                options->thread_timings[i].N2,
-                options->thread_timings[i].time_in_ns,
-                options->thread_timings[i].tid);
+                options->cell_timings[i].first_cellindex,
+                options->cell_timings[i].second_cellindex,
+                options->cell_timings[i].N1,
+                options->cell_timings[i].N2,
+                options->cell_timings[i].time_in_ns,
+                options->cell_timings[i].tid);
     }
 
 }
 
-static inline void free_thread_timings(struct config_options *options)
+static inline void free_cell_timings(struct config_options *options)
 {
-    if(options->totncells_timings > 0 && options->thread_timings != NULL) {
-        free(options->thread_timings);
+    if(options->totncells_timings > 0 && options->cell_timings != NULL) {
+        free(options->cell_timings);
     }
 }    
 
@@ -377,7 +377,50 @@ static inline void free_extra_options(struct extra_options *extra)
     w->num_weights = 0;
 }    
 
-
+static inline void assign_cell_timer(struct api_cell_timings *cell_timings, const int64_t totncells, const int max_ngb_cells, struct config_options *options)
+{
+    int64_t totncells_timings=0;
+    for(int64_t index1=0;index1<totncells;index1++) {
+        for(int ingb=0;ingb<max_ngb_cells;ingb++) {
+            int index = index1 * max_ngb_cells + ingb;
+            struct api_cell_timings *t = &(cell_timings[index]);
+            if(t->time_in_ns > 0) {
+                totncells_timings++;
+            }
+        }
+    }
+    /* Does the existing thread timings pointer have enough memory allocated ?*/
+    if(options->totncells_timings < totncells_timings) {
+        options->totncells_timings = 0;
+        
+        /* Not enough memory -> need to reallocate*/
+        free(options->cell_timings);
+        options->cell_timings = calloc(totncells_timings, sizeof(*(options->cell_timings)));
+        if(options->cell_timings == NULL) {
+            fprintf(stderr,"Warning: In %s> Could not allocate memory to store the API timings per cell. \n",
+                    __FUNCTION__);
+        } else {
+            options->totncells_timings = totncells_timings;
+        }
+    } 
+    
+    /* This looks like a repeated "if" condition but it is not. Covers the case for the calloc failure above */
+    if(options->totncells_timings >= totncells_timings) {
+        /* Okay, enough memory to assign the thread timings */
+        struct api_cell_timings *t = options->cell_timings;
+        for(int64_t index1=0;index1<totncells;index1++) {
+            for(int ingb=0;ingb<max_ngb_cells;ingb++) {
+                int index = index1 * max_ngb_cells + ingb;
+                if(cell_timings[index].time_in_ns > 0) {
+                    *t = cell_timings[index];
+                    t++;
+                }
+            }
+        }
+    }
+}
+    
+    
 #include "macros.h"
 
     

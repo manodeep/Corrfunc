@@ -162,8 +162,8 @@ int main(int argc, char *argv[])
 
     /* If the thread timings were requested, then print the timings to stderr and free */
     if(options.c_cell_timer) {
-        print_thread_timings(&options);
-        free_thread_timings(&options);
+        print_cell_timings(&options);
+        free_cell_timings(&options);
     }
     
     //free the memory in the results struct
