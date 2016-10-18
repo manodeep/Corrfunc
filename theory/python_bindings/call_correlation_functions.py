@@ -271,9 +271,9 @@ def main():
     print("-----------------------------------------------------------")
 
     print("\nRunning 2-D projected correlation function wp(rp)")
-    results_wp, _ = wp(boxsize=boxsize, pimax=pimax, nthreads=nthreads,
-                       binfile=binfile, X=x, Y=y, Z=z,
-                       verbose=True, output_rpavg=True)
+    results_wp, _, _ = wp(boxsize=boxsize, pimax=pimax, nthreads=nthreads,
+                          binfile=binfile, X=x, Y=y, Z=z,
+                          verbose=True, output_rpavg=True)
     print("\n#            ******    wp: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        wp       npairs")
