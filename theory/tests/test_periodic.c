@@ -311,7 +311,10 @@ int test_vpf(const char *correct_outputfile)
         ret = EXIT_FAILURE;
         for(int i=0;i<num_pN;i++) {
             double pN;
-            fscanf(fp, " %lf ", &pN);
+            nitems = fscanf(fp, " %lf ", &pN);
+            if(nitems != 1) {
+                return EXIT_FAILURE;
+            }
 
             /* Not quite sure how this is working. The correct output columns only have 4 digits printed,
                but I am comparing here with ~1e-9 in abs. diff. The only way the comparison should work is

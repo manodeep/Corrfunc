@@ -466,7 +466,7 @@ ifeq ($(DO_CHECKS), 1)
     # However, the variables themselves can be longer than the tab character
     # Therefore, I am going to split the variables into "small" and "long"
     # sets of variables. Ugly, but works. I get the aligned print at the end.
-    BIG_MAKEFILE_VARS := GSL_CFLAGS GSL_LINK PYTHON_CFLAGS PYTHON_LINK
+    BIG_MAKEFILE_VARS := GSL_CFLAGS GSL_LINK PYTHON_CFLAGS
     ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
       MAKEFILE_VARS += BLAS_INCLUDE BLAS_LINK
     endif

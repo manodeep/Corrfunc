@@ -335,7 +335,8 @@ static PyMethodDef module_methods[] = {
     {"countpairs_wp"         ,(PyCFunction) countpairs_countpairs_wp    ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_wp(boxsize, pimax, nthreads, binfile, X, Y, Z, verbose=False,\n"
      "              output_rpavg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
-     "              zbin_refine_factor=1, max_cells_per_dim=100, c_api_timer=False, isa=-1)\n"
+     "              zbin_refine_factor=1, max_cells_per_dim=100, c_api_timer=False,\n"
+     "              c_cell_timer=False, isa=-1)\n"
      "\n"
      "Function to compute the projected correlation function in a periodic\n"
      "cosmological box. Pairs which are separated by less than the ``"RP_CHAR"``\n"
@@ -407,6 +408,13 @@ static PyMethodDef module_methods[] = {
      "   Boolean flag to measure actual time spent in the C libraries. Here\n"
      "   to allow for benchmarking and scaling studies.\n"
      "\n"
+     "c_cell_timer : boolean (default false)\n"
+     "   Boolean flag to measure actual time spent **per cell-pair** within the C libraries.\n"
+     "   A very detailed timer that stores information about the number of particles in\n"
+     "   each cell, the thread id that processed that cell-pair and the amount of time in\n"
+     "   nano-seconds taken to process that cell pair. This timer can be used to study\n"
+     "   the instruction set efficiency, and load-balancing of the code\n"
+     "\n"
      "isa : integer (default -1)\n"
      "  Controls the runtime dispatch for the instruction set to use. Possible\n"
      "  options are: [-1, AVX, SSE42, FALLBACK]\n"
@@ -421,10 +429,11 @@ static PyMethodDef module_methods[] = {
      "  then the integer values correspond to the ``enum`` for the instruction set\n"
      "  defined in ``utils/defs.h``.\n"
      "\n"
+
      "Returns\n"
      "--------\n"
      "\n"
-     "A tuple (results, time) \n"
+     "A tuple of (results, time, per_cell_time) \n"
      "\n"
      "results : A python list\n"
      "   A python list containing [rpmin, rpmax, rpavg, wp, npairs] for each radial\n"
@@ -436,6 +445,13 @@ static PyMethodDef module_methods[] = {
      "time : if ``c_api_timer`` is set, then the return value contains the time spent\n"
      "   in the API; otherwise time is set to 0.0\n"
      "\n"
+     "per_cell_time : if ``c_cell_timer`` is set, then a Python list is returned containing\n"
+     "   detailed stats about each cell-pair visited during pair-counting, viz., number of\n"
+     "   particles in each of the cells in the pair, 1-D cell-indices for each cell in the pair,\n"
+     "   time (in nano-seconds) to process the pair and the thread-id for the thread that \n"
+     "   processed that cell-pair.\n"
+     "\n"
+
      "Example\n"
      "--------\n"
      "\n"
@@ -1430,8 +1446,9 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     options.verbose = 0;
     options.instruction_set = -1;
     options.need_avg_sep = 0;
-    options.periodic=1;
+    options.periodic = 1;
     options.c_api_timer = 0;
+    options.c_cell_timer = 0;
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
@@ -1451,11 +1468,12 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         "zbin_refine_factor",
         "max_cells_per_dim",
         "c_api_timer",
+        "c_cell_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
     
-    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|bbbbbhbi", kwlist,
+    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|bbbbbhbbi", kwlist,
                                       &boxsize,&pimax,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
@@ -1465,6 +1483,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
                                       &xbin_ref, &ybin_ref, &zbin_ref,
                                       &(options.max_cells_per_dim),
                                       &(options.c_api_timer),
+                                      &(options.c_cell_timer),
                                       &(options.instruction_set))
         
         ){
@@ -1578,7 +1597,19 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         rlow=results.rupp[i];
     }
     free_results_wp(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *c_cell_time=PyList_New(0);
+    if(options.c_cell_timer) {
+        struct api_cell_timings *t = options.cell_timings;
+        for(int i=0;i<options.totncells_timings;i++) {
+            PyObject *item = Py_BuildValue("(kkkiii)", t->N1, t->N2, t->time_in_ns, t->first_cellindex, t->second_cellindex, t->tid);
+            PyList_Append(c_cell_time, item);
+            Py_XDECREF(item);
+            t++;
+        }
+        free_cell_timings(&options);
+    }
+    return Py_BuildValue("(OdO)", ret, c_api_time, c_cell_time);
 }
 
 

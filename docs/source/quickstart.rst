@@ -58,8 +58,8 @@ Corrfunc supports three separate mechanisms to compute the clustering statistics
 
   See :ref:`commandline-interface` for details on how to use the command-line executables.
 
-Detailed Documentation of the Corrfunc interfaces 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Available Corrfunc interfaces 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
 .. toctree::
    :maxdepth: 1

@@ -18,7 +18,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        verbose=False, output_rpavg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
-       c_api_timer=False, isa='fastest'):
+       c_api_timer=False, c_cell_timer=False, isa='fastest'):
     """
     Function to compute the projected correlation function in a
     periodic cosmological box. Pairs which are separated by less
@@ -91,6 +91,14 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
 
+   c_cell_timer : boolean (default false)
+       Boolean flag to measure actual time spent **per cell-pair** within the
+       C libraries. A very detailed timer that stores information about the
+       number of particles in each cell, the thread id that processed that
+       cell-pair and the amount of time in nano-seconds taken to process that
+       cell pair. This timer can be used to study the instruction set
+       efficiency, and load-balancing of the code.
+
     isa: string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
@@ -119,6 +127,13 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        if ``c_api_timer`` is set, then the return value is a tuple containing
        (results, api_time). ``api_time`` measures only the time spent within
        the C library and ignores all python overhead.
+
+       if ``c_cell_timer`` is set, then a Python list is returned. Contains
+       detailed stats about each cell-pair visited during pair-counting,
+       viz., number of particles in each of the cells in the pair, 1-D
+       cell-indices for each cell in the pair, time (in nano-seconds) to
+       process the pair and the thread-id for the thread that processed that
+       cell-pair.
 
     Example
     --------
@@ -175,16 +190,18 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
-    extn_results, api_time = wp_extn(boxsize, pimax, nthreads, rbinfile,
-                                     X, Y, Z,
-                                     verbose=verbose,
-                                     output_rpavg=output_rpavg,
-                                     xbin_refine_factor=xbin_refine_factor,
-                                     ybin_refine_factor=ybin_refine_factor,
-                                     zbin_refine_factor=zbin_refine_factor,
-                                     max_cells_per_dim=max_cells_per_dim,
-                                     c_api_timer=c_api_timer,
-                                     isa=integer_isa)
+    extn_results, api_time, cell_time = wp_extn(boxsize, pimax, nthreads,
+                                                rbinfile,
+                                                X, Y, Z,
+                                                verbose=verbose,
+                                                output_rpavg=output_rpavg,
+                                                xbin_refine_factor=xbin_refine_factor,
+                                                ybin_refine_factor=ybin_refine_factor,
+                                                zbin_refine_factor=zbin_refine_factor,
+                                                max_cells_per_dim=max_cells_per_dim,
+                                                c_api_timer=c_api_timer,
+                                                c_cell_timer=c_cell_timer,
+                                                isa=integer_isa)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -209,10 +226,17 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         results['wp'][ii] = r[3]
         results['npairs'][ii] = r[4]
 
+    # There must be a better solution for the return !
     if not c_api_timer:
-        return results
+        if not c_cell_timer:
+            return results
+        else:
+            return results, c_cell_timer
     else:
-        return results, api_time
+        if not c_cell_timer:
+            return results, api_time
+        else:
+            return results, api_time, c_cell_timer
 
 
 if __name__ == '__main__':
