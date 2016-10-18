@@ -1488,6 +1488,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
             Py_XDECREF(item);
             t++;
         }
+        free_cell_timings(&options);
     }
     return Py_BuildValue("(OdO)", ret, c_api_time, c_cell_time);
 }
