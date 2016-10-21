@@ -59,8 +59,8 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
   weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
                        local_w1 = {.weights={NULL}, .num_weights=0};
   pair_struct_DOUBLE pair = {.num_weights=0};
-  avx_weight_func_t avx_weight_func = NULL;
-  weight_func_t fallback_weight_func = NULL;
+  avx_weight_func_t_DOUBLE avx_weight_func = NULL;
+  weight_func_t_DOUBLE fallback_weight_func = NULL;
   if(need_weightavg){
       // Same particle list, new copy of num_weights pointers into that list
       local_w0 = *weights0;
@@ -68,8 +68,8 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
       
       pair.num_weights = local_w0.num_weights;
       
-      avx_weight_func = get_avx_weight_func_by_method(weight_method);
-      fallback_weight_func = get_weight_func_by_method(weight_method);
+      avx_weight_func = get_avx_weight_func_by_method_DOUBLE(weight_method);
+      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
   }
 
   int64_t prev_j = 0, n_off = 0;
@@ -78,7 +78,10 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
     const DOUBLE ypos = *y0++ + off_ywrap;
     const DOUBLE zpos = *z0++ + off_zwrap;
     for(int w = 0; w < pair.num_weights; w++){
-        pair.weights0[w].a = AVX_SET_FLOAT(*local_w0.weights[w]++);
+        // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+        // just as x0 is a pointer into the list of x-positions.
+        // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+        pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
     }
 
     int64_t j;
@@ -139,7 +142,11 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         local_w1.weights[w] += AVX_NVEC;
       }
       
-      union float8 union_mweight;
+      union float8_weights{
+        AVX_FLOATS m_weights;
+        DOUBLE weights[NVEC];
+      };
+      union float8_weights union_mweight;
 
       const AVX_FLOATS m_pimax = AVX_SET_FLOAT(rpmax);
       const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
@@ -211,7 +218,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
       }
       if(need_weightavg){
-        union_mweight.m_Dperp = avx_weight_func(&pair);
+        union_mweight.m_weights = avx_weight_func(&pair);
       }
             
       //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
@@ -243,7 +250,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             rpavg[kbin] += r;
           }
           if(need_weightavg){
-            const DOUBLE weight = union_mweight.Dperp[jj];
+            const DOUBLE weight = union_mweight.weights[jj];
             weightavg[kbin] += weight;
           }
         }
@@ -275,9 +282,12 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         pair.dz.d = dz;
       }
             
-      DOUBLE r;
+      DOUBLE r, pairweight;
       if(need_rpavg) {
         r = SQRT(r2);
+      }
+      if(need_weightavg){
+        pairweight = fallback_weight_func(&pair);
       }
                   
       for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -287,7 +297,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             rpavg[kbin] += r;
           }
           if(need_weightavg){
-            weightavg[kbin] += fallback_weight_func(&pair);
+            weightavg[kbin] += pairweight;
           }
           break;
         }
@@ -353,8 +363,8 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
   weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
                        local_w1 = {.weights={NULL}, .num_weights=0};
   pair_struct_DOUBLE pair = {.num_weights=0};
-  sse_weight_func_t sse_weight_func = NULL;
-  weight_func_t fallback_weight_func = NULL;
+  sse_weight_func_t_DOUBLE sse_weight_func = NULL;
+  weight_func_t_DOUBLE fallback_weight_func = NULL;
   if(need_weightavg){
       // Same particle list, new copy of num_weights pointers into that list
       local_w0 = *weights0;
@@ -362,8 +372,8 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
       
       pair.num_weights = local_w0.num_weights;
       
-      sse_weight_func = get_sse_weight_func_by_method(weight_method);
-      fallback_weight_func = get_weight_func_by_method(weight_method);
+      sse_weight_func = get_sse_weight_func_by_method_DOUBLE(weight_method);
+      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
   }
   
   int64_t prev_j=0, n_off = 0;
@@ -372,6 +382,9 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
     const DOUBLE ypos = *y0++ + off_ywrap;
     const DOUBLE zpos = *z0++ + off_zwrap;
     for(int w = 0; w < pair.num_weights; w++){
+        // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+        // just as x0 is a pointer into the list of x-positions.
+        // The advancement of the local_w0.weights[w] pointer should always mirror x0.
         pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
     }
 
@@ -428,7 +441,11 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         local_w1.weights[w] += SSE_NVEC;
       }
 
-      union float4 union_mweight;
+      union float4_weights{
+        SSE_FLOATS m_weights;
+        DOUBLE weights[SSE_NVEC];
+      };
+      union float4_weights union_mweight;
             
       const SSE_FLOATS m_pimax = SSE_SET_FLOAT(rpmax);
       const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
@@ -472,7 +489,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
       }
       if(need_weightavg){
-        union_mweight.m_Dperp = sse_weight_func(&pair);
+        union_mweight.m_weights = sse_weight_func(&pair);
       }
 
             
@@ -504,7 +521,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             rpavg[kbin] += r;
           }
           if(need_weightavg){
-            const DOUBLE weight = union_mweight.Dperp[jj];
+            const DOUBLE weight = union_mweight.weights[jj];
             weightavg[kbin] += weight;
           }
 
@@ -531,10 +548,14 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         pair.dz.d = dz;
       }
 
-      DOUBLE r;
+      DOUBLE r, pairweight;
       if(need_rpavg) {
         r = SQRT(r2);
       }
+      if(need_weightavg){
+        pairweight = fallback_weight_func(&pair);
+      }
+        
       for(int kbin=nbin-1;kbin>=1;kbin--){
         if(r2 >= rupp_sqr[kbin-1]) {
           npairs[kbin]++;
@@ -542,7 +563,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             rpavg[kbin] += r;
           }
           if(need_weightavg){
-            weightavg[kbin] += fallback_weight_func(&pair);
+            weightavg[kbin] += pairweight;
           }
           break;
         }
@@ -584,10 +605,10 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
   DOUBLE rpavg[nbin], weightavg[nbin];
   for(int i=0;i<nbin;i++) {
     if(need_rpavg) {
-      rpavg[i]=0;
+      rpavg[i]=0.;
     }
     if(need_weightavg){
-      weightavg[i]=0;
+      weightavg[i]=0.;
     }
   }
   
@@ -595,7 +616,7 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
   weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
                        local_w1 = {.weights={NULL}, .num_weights=0};
   pair_struct_DOUBLE pair = {.num_weights=0};
-  weight_func_t weight_func = NULL;
+  weight_func_t_DOUBLE weight_func = NULL;
   if(need_weightavg){
       // Same particle list, new copy of num_weights pointers into that list
       local_w0 = *weights0;
@@ -603,7 +624,7 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
       
       pair.num_weights = local_w0.num_weights;
       
-      weight_func = get_weight_func_by_method(weight_method);
+      weight_func = get_weight_func_by_method_DOUBLE(weight_method);
   }
   
   /* naive implementation that is guaranteed to compile */
@@ -663,9 +684,12 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
         pair.dz.d = dz;
       }
 
-      DOUBLE r;
+      DOUBLE r, pairweight;
       if(need_rpavg) {
         r = SQRT(r2);
+      }
+      if(need_weightavg){
+        pairweight = weight_func(&pair);
       }
       
       for(int kbin=nbin-1;kbin>=1;kbin--){
@@ -675,7 +699,7 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
             rpavg[kbin] += r;
           }
           if(need_weightavg){
-            weightavg[kbin] += weight_func(&pair);
+            weightavg[kbin] += pairweight;
           }
           break;
         }

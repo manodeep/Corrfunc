@@ -340,6 +340,8 @@ static inline int get_weight_method_by_name(const char *name, weight_method_t *m
         *method = NONE;
         return EXIT_SUCCESS;
     }
+    // These should not be strncmp because we want the implicit length comparison of strcmp.
+    // It is still safe because one of the args is a string literal.
     if(strcmp(name, "pair_product") == 0 || strcmp(name, "p") == 0){
         *method = PAIR_PRODUCT;
         return EXIT_SUCCESS;

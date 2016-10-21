@@ -208,7 +208,7 @@ def main():
     results_DD, _ = DD(autocorr=autocorr,
                        nthreads=nthreads,
                        binfile=binfile,
-                       X1=x, Y1=y, Z1=z, weights1=np.ones_like(x)/2.,weight_type='pair_product',
+                       X1=x, Y1=y, Z1=z, weights1=np.ones_like(x), weight_type='pair_product',
                        periodic=periodic,
                        boxsize=boxsize,
                        verbose=True,

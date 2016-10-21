@@ -6,9 +6,6 @@
   directory at https://github.com/manodeep/Corrfunc/
 */
 
-// Presently, all tests are double precision
-#define DOUBLE_PREC
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

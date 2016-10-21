@@ -46,14 +46,15 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
 
-    X1/Y1/Z1: array-like, real (float/double)
+    X1/Y1/Z1: array_like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
         Calculations are done in the precision of the supplied arrays.
         
-    weights1: array-like, real (float/double), optional
-        An array of weights of shape (n_weights, n_positions) or (n_positions,).
+    weights1: array_like, real (float/double), optional
+        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
         `weight_type` specifies how these weights are used; results are returned
-        in the `weightavg` field.
+        in the `weightavg` field.  If only one of weights1 and weights2 is
+        specified, the other will be set to uniform weights.
 
     periodic: boolean
        Boolean flag to indicate periodic boundary conditions.
@@ -176,20 +177,26 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins
     from future.utils import bytes_to_native_str
+    
+    # Broadcast scalar weights to arrays
+    weights1 = np.atleast_1d(weights1)
+    weights2 = np.atleast_1d(weights2)
 
-    if autocorr == 0:
+    if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
-    else:
-        X2 = np.empty(1)
-        Y2 = np.empty(1)
-        Z2 = np.empty(1)
+            
+        # If only one set of points has weights, set the other to uniform weights
+        if weights1 is None and weights2 is not None:
+            weights1 = np.ones_like(weights2)
+        if weights2 is None and weights1 is not None:
+            weights2 = np.ones_like(weights1)
         
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
-    for k in ['weights1', 'weights2', 'weight_type']:
+    for k in ['weights1', 'weights2', 'weight_type', 'X2', 'Y2', 'Z2']:
         v = locals()[k]
         if v is not None:
             kwargs[k] = v
@@ -198,7 +205,6 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DD_extn(autocorr, nthreads, rbinfile,
                                      X1, Y1, Z1,
-                                     X2=X2, Y2=Y2, Z2=Z2,
                                      periodic=periodic,
                                      verbose=verbose,
                                      boxsize=boxsize,

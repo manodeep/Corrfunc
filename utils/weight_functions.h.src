@@ -4,11 +4,12 @@
 #include "weight_defs_DOUBLE.h"
 #include "avx_calls.h"
 #include "sse_calls.h"
+#include <stdint.h>
 
 typedef union {
-    DOUBLE d;
     AVX_FLOATS a;
     SSE_FLOATS s;
+    DOUBLE d;
 } weight_union_DOUBLE;
 
 // Info about a particle pair that we will pass to the weight function
@@ -20,9 +21,9 @@ typedef struct
     weight_union_DOUBLE dx, dy, dz;
 } pair_struct_DOUBLE;
 
-typedef DOUBLE (*weight_func_t)(const pair_struct_DOUBLE*);
-typedef AVX_FLOATS (*avx_weight_func_t)(const pair_struct_DOUBLE*);
-typedef SSE_FLOATS (*sse_weight_func_t)(const pair_struct_DOUBLE*);
+typedef DOUBLE (*weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
+typedef AVX_FLOATS (*avx_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
+typedef SSE_FLOATS (*sse_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
 
 //////////////////////////////////
 // Weighting functions
@@ -47,10 +48,11 @@ static inline SSE_FLOATS sse_pair_product_DOUBLE(const pair_struct_DOUBLE *pair)
 // Utility functions
 //////////////////////////////////
 
+
 /* Gives a pointer to the weight function for the given weighting method
  * and instruction set.
  */
-static inline weight_func_t get_weight_func_by_method(const weight_method_t method){
+static inline weight_func_t_DOUBLE get_weight_func_by_method_DOUBLE(const weight_method_t method){
     switch(method){
         case PAIR_PRODUCT:
             return &pair_product_DOUBLE;
@@ -60,7 +62,7 @@ static inline weight_func_t get_weight_func_by_method(const weight_method_t meth
     }
 }
 
-static inline avx_weight_func_t get_avx_weight_func_by_method(const weight_method_t method){
+static inline avx_weight_func_t_DOUBLE get_avx_weight_func_by_method_DOUBLE(const weight_method_t method){
     switch(method){
         case PAIR_PRODUCT:
             return &avx_pair_product_DOUBLE;
@@ -70,7 +72,7 @@ static inline avx_weight_func_t get_avx_weight_func_by_method(const weight_metho
     }
 }
 
-static inline sse_weight_func_t get_sse_weight_func_by_method(const weight_method_t method){
+static inline sse_weight_func_t_DOUBLE get_sse_weight_func_by_method_DOUBLE(const weight_method_t method){
     switch(method){
         case PAIR_PRODUCT:
             return &sse_pair_product_DOUBLE;

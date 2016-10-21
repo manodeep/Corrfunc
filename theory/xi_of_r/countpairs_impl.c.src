@@ -134,6 +134,8 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
   }
   
   // If no extra options were passed, create dummy options
+  // This allows us to pass arguments like "extra->weights0" below;
+  // they'll just be NULLs, which is the correct behavior
   struct extra_options dummy_extra;
   if(extra == NULL){
       weight_method_t dummy_method = NONE;

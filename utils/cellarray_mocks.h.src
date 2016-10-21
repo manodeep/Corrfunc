@@ -10,11 +10,12 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "weight_functions_DOUBLE.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "weight_defs_DOUBLE.h"
 
 #define NLATMAX   100      /* maximum grid dimension in RA-DEC-CZ plane */
 

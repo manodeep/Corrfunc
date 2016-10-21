@@ -1019,8 +1019,9 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     
     /* Ensure the weights are of the right shape (n_weights, n_particles) */
     if(weights1_obj != NULL){
+        // A numpy dimension of length -1 will be expanded to n_weights
         npy_intp dims[2] = {-1, ND1};
-        PyArray_Dims pdims = {.ptr = dims, .len = 2};
+        PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
         weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
     }
     
@@ -1077,7 +1078,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         /* Ensure the weights are of the right shape (n_weights, n_particles) */
         if(weights2_obj != NULL){
             npy_intp dims[2] = {-1, ND2};
-            PyArray_Dims pdims = {.ptr = dims, .len = 2};
+            PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
             weights2_obj = (PyArrayObject *) PyArray_Newshape(weights2_obj, &pdims, NPY_CORDER);
         }
     
@@ -1155,9 +1156,9 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     
     /* Pack the weights into extra_options */
     for(int64_t w = 0; w < extra.weights0.num_weights; w++){
-        extra.weights0.weights[w] = (uint8_t *) weights1 + w*ND1*element_size;
+        extra.weights0.weights[w] = (char *) weights1 + w*ND1*element_size;
         if(autocorr == 0){
-            extra.weights1.weights[w] = (uint8_t *) weights2 + w*ND2*element_size;
+            extra.weights1.weights[w] = (char *) weights2 + w*ND2*element_size;
         }
     }
 

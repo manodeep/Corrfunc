@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 typedef struct
 {
     DOUBLE *weights[MAX_NUM_WEIGHTS];  // This will be of shape weights[num_weights][num_particles]

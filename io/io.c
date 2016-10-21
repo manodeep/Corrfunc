@@ -28,7 +28,7 @@
 
 int64_t read_positions(const char *filename, const char *format, const size_t size, const int num_fields, ...)
 {
-    XASSERT((sizeof(void *) == sizeof(float *) && sizeof(void *) == sizeof(double *)),
+    XRETURN((sizeof(void *) == sizeof(float *) && sizeof(void *) == sizeof(double *)), -1,
             "Size of void pointer = %zu must be the same as size of float pointer = %zu and sizeof double pointers = %zu\n",
             sizeof(void *), sizeof(float *), sizeof(double *));
             
@@ -128,7 +128,7 @@ int64_t read_columns_into_array(const char *filename, const char *format, const 
         //so rewind by 4 bytes  prepare for calls to ftread
         my_fseek(fp, -4, SEEK_CUR);
         dummy /= np;
-        XASSERT((dummy == 4 || dummy == 8), "Data-type in file = %u must be either 4 byte (float) or 8 byte(double) precision", dummy);
+        XRETURN((dummy == 4 || dummy == 8), -1, "Data-type in file = %u must be either 4 byte (float) or 8 byte(double) precision", dummy);
 
         if(dummy == size) {
             for(int i=0;i<num_fields;i++) {
@@ -145,7 +145,7 @@ int64_t read_columns_into_array(const char *filename, const char *format, const 
             //First, print a warning message and then read-in correctly with the
             //requested precision
             if(dummy == 4) {
-                XASSERT(size == 8, "size = %zu should have been 8 (doubles were expected)\n", size);
+                XRETURN(size == 8, -1, "size = %zu should have been 8 (doubles were expected)\n", size);
                 float *tmp = my_malloc(dummy,np);
                 if(tmp == NULL) {
                     return -1;
@@ -164,7 +164,7 @@ int64_t read_columns_into_array(const char *filename, const char *format, const 
                 //free memory
                 free(tmp);
             } else {
-                XASSERT(size == 4, "size = %zu should have been 4 (floats were expected)\n", size);
+                XRETURN(size == 4, -1, "size = %zu should have been 4 (floats were expected)\n", size);
                 double *tmp = my_malloc(dummy,np);
                 if(tmp == NULL) {
                     return -1;

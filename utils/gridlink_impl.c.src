@@ -345,7 +345,7 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
         lattice[index].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         
         // Now do the same for the weights
-        lattice[index].weights.num_weights = weights == NULL ? 0 : weights->num_weights;
+        lattice[index].weights.num_weights = (weights == NULL) ? 0 : weights->num_weights;
         int w_alloc_status = EXIT_SUCCESS;
         for(int w = 0; w < lattice[index].weights.num_weights; w++){
           lattice[index].weights.weights[w] = (DOUBLE *) my_malloc(memsize, expected_n);
