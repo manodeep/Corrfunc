@@ -193,11 +193,7 @@ int main(int argc, char *argv[])
     struct config_options options = get_config_options();
 
     /* Pack weights into extra options */
-    struct extra_options extra;
-    int estatus = get_extra_options(&extra, weight_method);
-    if(estatus != EXIT_SUCCESS){
-      fprintf(stderr, "Failed to create extra options!  Malloc failure?\n");
-    }
+    struct extra_options extra = get_extra_options(weight_method);
     for(int w = 0; w < num_weights; w++){
         extra.weights0.weights[w] = (void *) weights1[w];
         extra.weights1.weights[w] = (void *) weights2[w];

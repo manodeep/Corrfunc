@@ -359,29 +359,21 @@ struct extra_options
     uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - 2*sizeof(weight_struct) - sizeof(weight_method_t)];
 };
 
-// Here we want to return an int because malloc may fail (unlike get_config_options)
 // weight_method determines the number of various weighting arrays that we allocate
-static inline int get_extra_options(struct extra_options *extra, const weight_method_t weight_method)
+static inline struct extra_options get_extra_options(const weight_method_t weight_method)
 {    
+    struct extra_options extra;
     ENSURE_STRUCT_SIZE(struct extra_options, EXTRA_OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
-    if(extra == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    memset(extra, 0, EXTRA_OPTIONS_HEADER_SIZE);
-    extra->weight_method = weight_method;
+    memset(&extra, 0, EXTRA_OPTIONS_HEADER_SIZE);
     
-    weight_struct *w0 = &(extra->weights0);
-    weight_struct *w1 = &(extra->weights1);
-    w0->num_weights = get_num_weights_by_method(extra->weight_method);
+    extra.weight_method = weight_method;
+    
+    weight_struct *w0 = &(extra.weights0);
+    weight_struct *w1 = &(extra.weights1);
+    w0->num_weights = get_num_weights_by_method(extra.weight_method);
     w1->num_weights = w0->num_weights;
-    
-    if(w0->weights == NULL || w1->weights == NULL) {
-        free(w0->weights); free(w1->weights);
-        return EXIT_FAILURE;
-    }
 
-    return EXIT_SUCCESS;
+    return extra;
 }
 
 static inline void print_cell_timings(struct config_options *options)
@@ -406,25 +398,6 @@ static inline void free_cell_timings(struct config_options *options)
     if(options->totncells_timings > 0 && options->cell_timings != NULL) {
         free(options->cell_timings);
     }
-}    
-
-static inline void free_extra_options(struct extra_options *extra)
-{
-    weight_struct *w0 = &(extra->weights0);
-    weight_struct *w1 = &(extra->weights1);
-    
-    // Free particle lists
-    for(int64_t i=0; i < w0->num_weights; i++) {
-        free(w0->weights[i]);
-        w0->weights[i] = NULL;  // avoid double free from aliased w0/w1
-    }
-    w0->num_weights = 0;
-  
-    for(int64_t i=0; i < w1->num_weights; i++) {
-        free(w1->weights[i]);
-        w1->weights[i] = NULL;
-    }
-    w1->num_weights = 0;
 }    
 
 static inline void assign_cell_timer(struct api_cell_timings *cell_timings, const int64_t totncells, const int max_ngb_cells, struct config_options *options)

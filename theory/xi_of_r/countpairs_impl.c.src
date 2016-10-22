@@ -139,11 +139,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
   struct extra_options dummy_extra;
   if(extra == NULL){
       weight_method_t dummy_method = NONE;
-      int estatus = get_extra_options(&dummy_extra, dummy_method);
-      if(estatus != EXIT_SUCCESS){
-        fprintf(stderr,"ERROR: In %s> Failed to create dummy extra_options. Malloc failure?\n", __FUNCTION__);
-        return EXIT_FAILURE;
-      }
+      dummy_extra = get_extra_options(dummy_method);
       extra = &dummy_extra;
   }
   

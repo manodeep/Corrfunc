@@ -70,13 +70,8 @@ int test_periodic_DD(const char *correct_outputfile)
     int autocorr = (X1==X2) ? 1:0;
     
     // Set up the weights pointers
-    struct extra_options extra;
     weight_method_t weight_method = PAIR_PRODUCT;
-    int estatus = get_extra_options(&extra, weight_method);
-    if(estatus != EXIT_SUCCESS){
-        fprintf(stderr,"ERROR: In %s> Failed to create extra_options. Malloc failure?\n", __FUNCTION__);
-        return EXIT_FAILURE;
-    }
+    struct extra_options extra = get_extra_options(weight_method);
     extra.weights0.weights[0] = weights1;
     extra.weights1.weights[0] = weights2;
 

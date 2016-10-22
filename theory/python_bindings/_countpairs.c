@@ -1035,8 +1035,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         Py_RETURN_NONE;
     }
     int found_weights = weights1_obj == NULL ? 0 : PyArray_SHAPE(weights1_obj)[0];
-    struct extra_options extra;
-    get_extra_options(&extra, weighting_method);
+    struct extra_options extra = get_extra_options(weighting_method);
     if(extra.weights0.num_weights > 0 && extra.weights0.num_weights != found_weights){
         char msg[1024];
         snprintf(msg, 1024, "ValueError: In %s: specified weighting method %s which requires %"PRId64" weight(s)-per-particle, but found %d weight(s) instead!\n",
