@@ -434,12 +434,7 @@ else:
     try:
         keys = xx['keys']
         isa = xx['isa']
-        try:
-            runtimes = xx['runtimes']
-        except KeyError:
-            # Previous versions of this script used 'all_runtimes'
-            runtimes = xx['all_runtimes']
-            
+        runtimes = xx['runtimes']
     except KeyError:
         print("Error: Invalid timings file = `{0}' passed in the "
               "command-line ".format(timings_file))
