@@ -9,6 +9,11 @@ try:
 except ImportError:
     pd = None
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+        
 from Corrfunc.io import read_catalog
 import multiprocessing
 max_threads = multiprocessing.cpu_count()
@@ -43,8 +48,8 @@ def read_file(filename):
 
 class nf(float):
     def __repr__(self):
-        str = '%.1f' % (self.__float__(),)
-        if str[-1] == '0':
+        str_repr = '%.1f' % (self.__float__(),)
+        if str_repr[-1] == '0':
             return '%.0f' % self.__float__()
         else:
             return '%.1f' % self.__float__()
@@ -54,8 +59,8 @@ def run_wp(boxsize, x, y, z, pimax, nthreads=max_threads, isa=None):
     import Corrfunc
     from Corrfunc.theory import wp
     from os.path import dirname, abspath, join as pjoin
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),                                                                                                                       
-                    "../theory/tests/", "bins")     
+    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
+                    "../theory/tests/", "bins")
     _, cell_time = wp(boxsize, pimax, nthreads, binfile,
                       x, y, z, c_cell_timer=True, isa=isa,
                       verbose=True)
@@ -65,12 +70,9 @@ def run_wp(boxsize, x, y, z, pimax, nthreads=max_threads, isa=None):
         
 def main():
     import sys
-    from numpy.lib.recfunctions import append_fields
     if len(sys.argv) == 1:
         print("Running cell timers for wp")
-        base_string = 'wp'
         all_isa = ['avx', 'sse42', 'fallback']
-        legend = ['AVX', 'SSE4.2', 'Fallback']
         x, y, z = read_catalog()
         boxsize = 420.0
         pimax = 40.0
@@ -91,36 +93,26 @@ def main():
                              nthreads=max_threads, isa=isa)
             (cell_timings[isa])[max_threads] = timings
 
-        import cPickle
         with open('wp_cell_timers.pkl', 'wb') as outfile:
-            cPickle.dump([all_isa, cell_timings, serial_timings], outfile, protocol=cPickle.HIGHEST_PROTOCOL)
+            pickle.dump([all_isa, cell_timings, serial_timings], outfile,
+                        protocol=pickle.HIGHEST_PROTOCOL)
 
     else:
-        raise NotImplementedError("Parsing the file not implemented yet")
-
+        
         timings_file = sys.argv[1]
         print("Loading benchmarks from file = {0}".format(timings_file))
-        xx = np.load(timings_file)
-        try:
-            isa = xx['isa']
-            cell_timings = xx['cell_timings']
-            nthreads = xx['nthreads']
-        except KeyError:
-            print("Error: Invalid timings file = `{0}' passed in the "
-                  "command-line ".format(timings_file))
-            raise
-
-        if min(nthreads) > 1:
-            msg = "Can not scale to equivalent serial run. Min. nthreads "\
-                  "must be set to 1"
-            raise ValueError(msg)
+        with open(timings_file, 'rb') as pkl_file:
+            all_isa, _, serial_timings = pickle.load(pkl_file)
+            
+        legend = ['AVX', 'SSE4.2', 'Fallback']
+        base_string = 'wp'
 
         all_speedup = []
-        base_timing = (all_timings[0])['time']
-        N1_parts = (all_timings[0])['N1']
-        N2_parts = (all_timings[0])['N2']
+        base_timing = (serial_timings['fallback'])[1]['time_in_ns']
+        N1_parts = (serial_timings['fallback'])[1]['N1']
+        N2_parts = (serial_timings['fallback'])[1]['N2']
         gridsize = 40
-        cb_range = [0.0, 5.0]
+        cb_range = [0.0, 3.0]
         contour_nlevels = 4
         xlimits = [0, 1000]
         ylimits = xlimits
@@ -134,7 +126,8 @@ def main():
         colors2 = cm.viridis(np.linspace(0.0, 1.0, positive_Ncolors))
         # combine them and build a new colormap
         colors = np.vstack((colors1, colors2))
-        mycmap = mcolors.LinearSegmentedColormap.from_list('my_colormap', colors)
+        mycmap = mcolors.LinearSegmentedColormap.from_list('my_colormap',
+                                                           colors)
         matplotlib.style.use('default')
         # Label levels with specially formatted floats
         if plt.rcParams["text.usetex"]:
@@ -142,10 +135,15 @@ def main():
         else:
             cntr_fmt = '%r%%'
 
-        for i in range(len(all_isa)):
-            if i == 0:
+        # Want fallback to appear first
+        all_isa.reverse()
+        legend.reverse()
+
+        for ii, isa in enumerate(all_isa):
+            if ii == 0:
                 continue
-            this_timing = (all_timings[i])['time']
+            
+            this_timing = (serial_timings[isa])[1]['time_in_ns']
             ind = (np.where((this_timing > 0.0) & (base_timing > 0.0)))[0]
             speedup = base_timing[ind] / this_timing[ind]
             all_speedup.append(speedup)
@@ -154,11 +152,11 @@ def main():
             bad = (np.where(speedup <= 1.0))[0]
             bad_timings_base = np.sum(base_timing[ind[bad]])
             bad_timings = np.sum(this_timing[ind[bad]])
-            print("Cells with slowdown  {3}({4:4.3f}%): Base takes - {0:8.3f} sec "
-                  "while {1} takes {2:8.3f} seconds".format(
-                      bad_timings_base,
-                      legend[i],
-                      bad_timings,
+            print("Cells with slowdown  {3}({4:4.3f}%): Base takes - {0:8.3f} "
+                  "sec while {1} takes {2:8.3f} seconds".format(
+                      bad_timings_base/1e9,
+                      legend[ii],
+                      bad_timings/1e9,
                       len(bad),
                       100.0 * len(bad) / len(ind)))
 
@@ -167,9 +165,9 @@ def main():
             good_timings = np.sum(this_timing[ind[good]])
             print("Cells with speedup {3}({4:4.3f}%): Base takes - {0:8.3f} sec "
                   "while {1} takes {2:8.3f} seconds".format(
-                      good_timings_base,
-                      legend[i],
-                      good_timings,
+                      good_timings_base/1e9,
+                      legend[ii],
+                      good_timings/1e9,
                       len(good),
                       100.0 * len(good) / len(ind)))
 
@@ -187,7 +185,8 @@ def main():
             axhist.hist(N1_parts[ind], gridsize, range=xlimits,
                         color='0.5')
 
-            hist_time_area = [left + figsize, bottom, figsize*top_aspect, figsize]
+            hist_time_area = [left + figsize, bottom,
+                              figsize*top_aspect, figsize]
             ax_time = plt.axes(hist_time_area)
             ax_time.autoscale(enable=True, axis="x")
             ax_time.set_ylim(ylimits)
@@ -242,7 +241,7 @@ def main():
                            vmin=cb_range[0], vmax=cb_range[1],
                            cmap=mycmap, gridsize=gridsize)
             plt.figtext(left + figsize - 0.03, bottom + figsize - 0.05,
-                        '{0}'.format(legend[i]), fontsize=16, ha='right')
+                        '{0}'.format(legend[ii]), fontsize=16, ha='right')
             cbar_offset = 0.08
             cbar_width = 0.03
             cbar_ax = fig.add_axes([left + figsize + figsize*top_aspect +
@@ -253,9 +252,23 @@ def main():
                                                 cb_diff + 1.0),
                               cax=cbar_ax)
             cb.set_label('Speedup rel. to non-vectorized code')
-            plt.savefig('{1}_Speedup_{0}.png'.format(legend[i], base_string),
+            if 'laptop' in timings_file:
+                exts = 'laptop_'
+            elif 'stampede' in timings_file:
+                exts = 'stampede_'
+            elif 'bender' in timings_file:
+                exts = 'bender_'
+            else:
+                exts = ''
+            
+            plt.savefig('{1}_{2}Speedup_{0}.png'.format(legend[ii],
+                                                        base_string,
+                                                        exts),
                         dpi=400)
-            plt.savefig('{1}_Speedup_{0}.pdf'.format(legend[i], base_string),
+            
+            plt.savefig('{1}_{2}Speedup_{0}.pdf'.format(legend[ii],
+                                                        base_string,
+                                                        exts),
                         dpi=400)
             fig.clear()
             ax.clear()
