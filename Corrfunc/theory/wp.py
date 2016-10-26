@@ -14,6 +14,45 @@ __author__ = ('Manodeep Sinha')
 __all__ = ('wp',)
 
 
+def _convert_cell_timer(cell_time_lst):
+    """
+    Converts a the cell timings list returned by the python extensions
+    into a more user-friendly numpy structured array.
+
+    The fields correspond to the C ``struct api_cell_timings`` defined
+    in ``utils/defs.h``.
+
+    Returns:
+    --------
+
+    cell_times : numpy structured array
+       The following fields are present in the ``cell_times``:
+   
+       N1 -> number of particles in cell 1
+       N2 -> number of particles in cell 2
+       time_in_ns -> time taken to compute all pairs between two cells
+                     (cellidx1, cellidx2)
+       cellidx1, cellidx2 -> the 1-D index for the two cells
+       tid -> thread-id that computed the pairs (identically 0 for
+              serial/single-threaded runs)
+
+
+    """
+    
+    import numpy as np
+    from future.utils import bytes_to_native_str
+
+    dtype = np.dtype([(bytes_to_native_str(b'N1'), np.int64),
+                      (bytes_to_native_str(b'N2'), np.int64),
+                      (bytes_to_native_str(b'time_in_ns'), np.int64),
+                      (bytes_to_native_str(b'cellidx1'), np.int32),
+                      (bytes_to_native_str(b'cellidx2'), np.int32),
+                      (bytes_to_native_str(b'tid'), np.int32)])
+
+    cell_times = np.array(cell_time_lst, dtype=dtype)
+    return cell_times
+
+
 def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        verbose=False, output_rpavg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
@@ -91,7 +130,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
 
-   c_cell_timer : boolean (default false)
+    c_cell_timer : boolean (default false)
        Boolean flag to measure actual time spent **per cell-pair** within the
        C libraries. A very detailed timer that stores information about the
        number of particles in each cell, the thread id that processed that
@@ -155,10 +194,11 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> results = wp(boxsize, pimax, nthreads, binfile, X, Y, Z)
-    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.6f} "
-    ...                         "{4:10d}".format(r['rmin'], r['rmax'],
-    ...                         r['rpavg'], r['wp'], r['npairs']))
-    ...                   # doctest: +NORMALIZE_WHITESPACE
+    >>> for r in results:
+    ...     print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.6f} {4:10d}".
+    ...           format(r['rmin'], r['rmax'],
+    ...           r['rpavg'], r['wp'], r['npairs']))
+    ...           # doctest: +NORMALIZE_WHITESPACE
     0.167536   0.238755   0.000000  66.702471         18
     0.238755   0.340251   0.000000 -15.792466         16
     0.340251   0.484892   0.000000   2.990170         42
@@ -215,28 +255,25 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
                               (bytes_to_native_str(b'rpavg'), np.float),
                               (bytes_to_native_str(b'wp'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64)])
+    results = np.array(extn_results, dtype=results_dtype)
 
-    nbin = len(extn_results)
-    results = np.zeros(nbin, dtype=results_dtype)
-
-    for ii, r in enumerate(extn_results):
-        results['rmin'][ii] = r[0]
-        results['rmax'][ii] = r[1]
-        results['rpavg'][ii] = r[2]
-        results['wp'][ii] = r[3]
-        results['npairs'][ii] = r[4]
-
-    # There must be a better solution for the return !
-    if not c_api_timer:
-        if not c_cell_timer:
-            return results
-        else:
-            return results, c_cell_timer
+    # A better solution for returning multiple values based on
+    # input parameter. Lifted straight from numpy.unique -- MS 10/26/2016
+    optional_returns = c_api_timer or c_cell_timer
+    if not optional_returns:
+        ret = results
     else:
-        if not c_cell_timer:
-            return results, api_time
-        else:
-            return results, api_time, c_cell_timer
+        ret = (results, )
+
+        if c_api_timer:
+            ret += (api_time, )
+            
+        if c_cell_timer:
+            # Convert to numpy structured array
+            np_cell_time = _convert_cell_timer(cell_time)
+            ret += (np_cell_time, )
+
+    return ret
 
 
 if __name__ == '__main__':
