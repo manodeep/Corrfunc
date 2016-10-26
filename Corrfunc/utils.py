@@ -60,7 +60,8 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
     cf : A numpy array
         The correlation function, calculated using the chosen estimator,
-        is returned
+        is returned. NAN is returned for the bins where the ``RR`` count
+        is 0.
 
 
     Example
@@ -204,8 +205,9 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
 
     wp : A numpy array
         The projected correlation function, calculated using the chosen
-        estimator, is returned
-
+        estimator, is returned. If *any* of the ``pi`` bins (in an ``rp``
+        bin) contains 0 for the ``RR`` counts, then ``NAN`` is returned
+        for that ``rp`` bin.
 
     Example
     --------
@@ -282,8 +284,8 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     npibins = len(xirppi) // nrpbins
     if ((npibins * nrpbins) != len(xirppi)):
         msg = 'Number of pi bins could not be calculated correctly.'\
-              'Expected to find that the total number of bins = {0}'\
-              'would be the product of the number of pi bins = {1}'\
+              'Expected to find that the total number of bins = {0} '\
+              'would be the product of the number of pi bins = {1} '\
               'and the number of rp bins = {2}'.format(len(xirppi),
                                                        npibins,
                                                        nrpbins)
