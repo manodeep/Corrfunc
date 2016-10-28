@@ -155,7 +155,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
 def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                D1D2, D1R2, D2R1, R1R2,
-                               nrpbins, dpi=1.0,
+                               nrpbins, pimax, dpi=1.0,
                                estimator='LS'):
     """
     Converts raw pair counts to a correlation function.
@@ -192,6 +192,9 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
 
     nrpbins : integer
         Number of bins in ``rp``
+
+    pimax : float
+        Integration distance along the line of sight direction
 
     dpi : float, default=1.0 Mpc/h
         Binsize in the line of sight direction
@@ -245,7 +248,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     >>> wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
     ...                                 DD_counts, DR_counts,
     ...                                 DR_counts, RR_counts,
-    ...                                 nrpbins)
+    ...                                 nrpbins, pimax)
     >>> for w in wp: print("{0:10.6f}".format(w))
     ...                    # doctest: +NORMALIZE_WHITESPACE
     181.595583
@@ -291,6 +294,16 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                                        nrpbins)
         raise ValueError(msg)
 
+    # Check that dpi/pimax/npibins are consistent
+    # Preventing issue #96 (https://github.com/manodeep/Corrfunc/issues/96)
+    # where npibins would be calculated incorrectly, and the summation would
+    # be wrong.
+    if (dpi*npibins != pimax):
+        msg = 'Pimax = {0} should be equal to the product of '\
+              'npibins = {1} and dpi = {2}. Check your binning scheme.'\
+              .format(pimax, npibins, dpi)
+        raise ValueError(msg)
+    
     for i in range(nrpbins):
         wp[i] = 2.0 * dpi * np.sum(xirppi[i * npibins:(i + 1) * npibins])
 
