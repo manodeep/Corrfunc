@@ -30,7 +30,8 @@ wrapper :py:mod:`Corrfunc.mocks.DDtheta_mocks`
           >>> rand_RA, rand_DEC, _ = read_catalog(random_catalog)
           
           # Setup the bins
-          >>> bins = np.linspace(0.1, 10.0, 10)
+          >>> nbins = 10
+          >>> bins = np.linspace(0.1, 10.0, nbins + 1) # note the +1 to nbins
 
           # Auto pair counts in DD
           >>> autocorr=1

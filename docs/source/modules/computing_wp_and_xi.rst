@@ -18,7 +18,8 @@ using the Natural Estimator. The relevant python wrappers are present in
           >>> boxsize = 420.0
           >>> nthreads = 2
           >>> pimax = 40.0
-          >>> bins = np.linspace(0.1, 10.0, 10)
+          >>> nbins = 10
+          >>> bins = np.linspace(0.1, 10.0, nbins + 1) # Note the + 1 to nbins
           >>> wp_counts = wp(boxsize, pimax, nthreads, bins, X, Y, Z)
           >>> xi_counts = xi(boxsize, nthreads, bins, X, Y, Z)
                 

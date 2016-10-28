@@ -100,7 +100,7 @@ clustering functions:
                >>> rmin = 0.1
                >>> rmax = 20.0
                >>> nbins = 20
-               >>> rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
+               >>> rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins + 1)
           
                # Specify the distance to integrate along line of sight
                >>> pimax = 40.0
@@ -118,7 +118,7 @@ clustering functions:
           rmin = 0.1
           rmax = 20.0
           nbins = 20
-          rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
+          rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins + 1)
           pimax = 40.0
           autocorr = 1
 
@@ -244,7 +244,7 @@ sets up the default arrays and parameters for the actual clustering calculations
           rmin = 0.1
           rmax = 20.0
           nbins = 20
-          rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
+          rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins + 1)
           
           # Specify the distance to integrate along line of sight
           pimax = 40.0
@@ -268,7 +268,7 @@ sets up the default arrays and parameters for the actual clustering calculations
           rmin = 0.1
           rmax = 20.0
           nbins = 20
-          rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
+          rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins + 1)
           pimax = 40.0
           autocorr = 1
 
