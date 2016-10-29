@@ -13,16 +13,20 @@
 #include <stdint.h>
 
 #include "function_precision.h"
+#include "utils.h"
+
+#include "weight_functions_DOUBLE.h"
 
 #if defined(__AVX__)
 #include "avx_calls.h"
 
-static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1,
-                                           DOUBLE *x2, DOUBLE *y2, DOUBLE *z2, const int64_t N2, const int same_cell,
+static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1,
+                                           DOUBLE *x2, DOUBLE *y2, DOUBLE *z2, const weight_struct_DOUBLE *weights2, const int64_t N2, const int same_cell,
                                            const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rmax,
                                            const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
                                            ,DOUBLE *src_ravg
-                                           ,uint64_t *src_npairs)
+                                           ,uint64_t *src_npairs,
+                                           DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     uint64_t npair[nbin];
     AVX_FLOATS m_rupp_sqr[nbin];
@@ -32,37 +36,71 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
     }
 
     const int32_t need_ravg = src_ravg != NULL;
-    DOUBLE ravg[nbin];
+    const int32_t need_weightavg = src_weightavg != NULL;
+    
     AVX_FLOATS m_kbin[nbin];
-    if(need_ravg) {
-        for(int i=0;i<nbin;i++) {
-            ravg[i] = ZERO;
-            m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
+    DOUBLE ravg[nbin], weightavg[nbin];
+    if(need_ravg || need_weightavg){
+      for(int i=0;i<nbin;i++) {
+        m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
+        if(need_ravg){
+          ravg[i] = ZERO;
         }
+        if(need_weightavg){
+          weightavg[i] = ZERO;
+        }
+      }
+    }
+    
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w1 = {.weights={NULL}, .num_weights=0}, 
+                       local_w2 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    avx_weight_func_t_DOUBLE avx_weight_func = NULL;
+    weight_func_t_DOUBLE fallback_weight_func = NULL;
+    if(need_weightavg){
+      // Same particle list, new copy of num_weights pointers into that list
+      local_w1 = *weights1;
+      local_w2 = *weights2;
+      
+      pair.num_weights = local_w1.num_weights;
+      
+      avx_weight_func = get_avx_weight_func_by_method_DOUBLE(weight_method);
+      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    int64_t prev_j=0;
+    int64_t prev_j=0, n_off=0;
     for(int64_t i=0;i<N1;i++) {
         const DOUBLE x1pos = *x1++ + off_xwrap;
         const DOUBLE y1pos = *y1++ + off_ywrap;
         const DOUBLE z1pos = *z1++ + off_zwrap;
+        for(int w = 0; w < pair.num_weights; w++){
+            // local_w1.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w1.weights[w] pointer should always mirror x0.
+            pair.weights0[w].a = AVX_SET_FLOAT(*(local_w1.weights[w])++);
+        }
 
         int64_t j;
         if(same_cell == 1) {
-            z2++;x2++;y2++;
+            z2++; n_off++;
             j = i+1;
         } else {
             for(;prev_j<N2;prev_j++) {
                 const DOUBLE dz = *z2 - z1pos;
                 if(dz > -rmax) break;
-                z2++;x2++;y2++;
+                z2++; n_off++;
             }
             if(prev_j==N2) break;
             j=prev_j;
         }
         DOUBLE *localz2 = z2;
-        DOUBLE *localx2 = x2;
-        DOUBLE *localy2 = y2;
+        DOUBLE *localx2 = x2 + n_off;
+        DOUBLE *localy2 = y2 + n_off;
+        for(int w = 0; w < local_w2.num_weights; w++){
+            local_w2.weights[w] = weights2->weights[w] + n_off;
+        }
+
 
         for(;j<=(N2-AVX_NVEC);j+=AVX_NVEC) {
             const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(x1pos);
@@ -88,13 +126,33 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
             localx2 += AVX_NVEC;//this might actually exceed the allocated range but we will never dereference that
             localy2 += AVX_NVEC;
             localz2 += AVX_NVEC;
+            
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w2.weights[w]);
+                local_w2.weights[w] += AVX_NVEC;
+            }
+            
+            union float8_weights{
+                AVX_FLOATS m_weights;
+                DOUBLE weights[NVEC];
+            };
+            union float8_weights union_mweight;
 
             const AVX_FLOATS m_rmax = AVX_SET_FLOAT(rmax);
             
-            const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2,m_zpos);//z2[j:j+NVEC-1] - z1
+            const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x2, m_xpos);  //(x[j] - x0)
+            const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y2, m_ypos);  //(y[j] - y0)
+            const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z2, m_zpos);  //z2[j:j+NVEC-1] - z1
+        
+            if(need_weightavg){
+                pair.dx.a = m_xdiff;
+                pair.dy.a = m_ydiff;
+                pair.dz.a = m_zdiff;
+            }
+            
+            const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
+            const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(m_ydiff);  //(y0 - y[j])^2
             const AVX_FLOATS m_sqr_zdiff = AVX_SQUARE_FLOAT(m_zdiff);
-            const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_xpos,m_x2));//(x0 - x[j])^2
-            const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(AVX_SUBTRACT_FLOATS(m_ypos,m_y2));//(y0 - y[j])^2
             AVX_FLOATS r2  = AVX_ADD_FLOATS(m_sqr_xdiff,AVX_ADD_FLOATS(m_sqr_ydiff, m_sqr_zdiff));
             
             AVX_FLOATS m_mask_left;
@@ -135,6 +193,9 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
             if(need_ravg) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
             }
+            if(need_weightavg){
+                union_mweight.m_weights = avx_weight_func(&pair);
+            }
 
             //Loop backwards through nbins. m_mask_left contains all the points that are less than rmax
             for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -142,7 +203,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
                 const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
                 npair[kbin] += AVX_BIT_COUNT_INT(test2);
-                if(need_ravg) {
+                if(need_ravg || need_weightavg) {
                     m_rbin = AVX_BLEND_FLOATS_WITH_MASK(m_rbin,m_kbin[kbin], m_bin_mask);
                 }
                 m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
@@ -152,7 +213,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 }
             }
 
-            if(need_ravg) {
+            if(need_ravg || need_weightavg) {
                 union_rbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
@@ -160,8 +221,14 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
 #endif
                 for(int jj=0;jj<AVX_NVEC;jj++) {
                     const int kbin = union_rbin.ibin[jj];
-                    const DOUBLE r = union_mDperp.Dperp[jj];
-                    ravg[kbin] += r;
+                    if(need_ravg){
+                        const DOUBLE r = union_mDperp.Dperp[jj];
+                        ravg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        const DOUBLE weight = union_mweight.weights[jj];
+                        weightavg[kbin] += weight;
+                    }
                 }
             }
         }//end of j-loop
@@ -171,6 +238,9 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
             const DOUBLE dz = *localz2++ - z1pos;
             const DOUBLE dx = *localx2++ - x1pos;
             const DOUBLE dy = *localy2++ - y1pos;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w2.weights[w]++;
+            }
 
             if(dz >= rmax) {
                 break;
@@ -181,16 +251,28 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 continue;
             }
             
-            DOUBLE r;//intentionally not initialized to 0.0 -> accidental addition will trigger test failures
+            if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+            }
+            
+            DOUBLE r, pairweight;//intentionally not initialized to 0.0 -> accidental addition will trigger test failures
             if(need_ravg) {
                 r = SQRT(r2);
             }
-            
+            if(need_weightavg){
+                pairweight = fallback_weight_func(&pair);
+            }
+
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 if(r2 >= rupp_sqr[kbin-1]) {
                     npair[kbin]++;
                     if(need_ravg) {
                         ravg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        weightavg[kbin] += pairweight;
                     }
                     break;
                 }
@@ -198,10 +280,13 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
         }//remainder loop over cellstruct second
     }//loop over cellstruct first
 
-    for(int i=0;i<nbin;i++) {
-        src_npairs[i] += npair[i];
+	for(int i=0;i<nbin;i++) {
+		src_npairs[i] += npair[i];
         if(need_ravg) {
-            src_ravg[i]  += ravg[i];
+          src_ravg[i] += ravg[i];
+        }
+        if(need_weightavg) {
+          src_weightavg[i] += weightavg[i];
         }
     }
 
@@ -214,12 +299,12 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
 #if defined (__SSE4_2__)
 #include "sse_calls.h"
 
-static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                           DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
+static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
+                                           DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell, 
                                            const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rmax,
                                            const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                           ,DOUBLE *src_ravg
-                                           ,uint64_t *src_npairs)
+                                           ,DOUBLE *src_ravg, uint64_t *src_npairs,
+                                           DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     uint64_t npairs[nbin];
     SSE_FLOATS m_rupp_sqr[nbin];
@@ -229,30 +314,60 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
     }
     
     const int32_t need_ravg = src_ravg != NULL;
-    DOUBLE ravg[nbin];
+    const int32_t need_weightavg = src_weightavg != NULL;
+    DOUBLE ravg[nbin], weightavg[nbin];
     SSE_FLOATS m_kbin[nbin];
-    if(need_ravg) {
+    if(need_ravg || need_weightavg){
         for(int i=0;i<nbin;i++) {
-            ravg[i] = ZERO;
             m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
+            if(need_ravg) {
+                ravg[i] = ZERO;
+            }
+            if(need_weightavg){
+                weightavg[i] = ZERO;
+            }
         }
     }
+    
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
+                         local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    sse_weight_func_t_DOUBLE sse_weight_func = NULL;
+    weight_func_t_DOUBLE fallback_weight_func = NULL;
+    if(need_weightavg){
+      // Same particle list, new copy of num_weights pointers into that list
+      local_w0 = *weights0;
+      local_w1 = *weights1;
+      
+      pair.num_weights = local_w0.num_weights;
+      
+      sse_weight_func = get_sse_weight_func_by_method_DOUBLE(weight_method);
+      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
+    }
 
-    int64_t prev_j=0;
+
+    int64_t prev_j=0, n_off = 0;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
         const DOUBLE zpos = *z0++ + off_zwrap;
+        for(int w = 0; w < pair.num_weights; w++){
+            // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+            pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
+        }
 
         int64_t j;
         if(same_cell == 1) {
-            z1++;x1++;y1++;
+            z1++; n_off++;
             j = i+1;
         } else {
             for(;prev_j<N1;prev_j++) {
                 const DOUBLE dz = *z1 - zpos;
                 if(dz > -rmax) break;
-                z1++;x1++;y1++;
+                z1++; n_off++;
             }
             if(prev_j == N1) {
                 i=N0;
@@ -261,8 +376,11 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             j = prev_j;
         }
         DOUBLE *localz1 = z1;
-        DOUBLE *localx1 = x1;
-        DOUBLE *localy1 = y1;
+        DOUBLE *localx1 = x1 + n_off;
+        DOUBLE *localy1 = y1 + n_off;
+        for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + n_off;
+        }
 
 		for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
             union int4{
@@ -288,16 +406,36 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 			localx1 += SSE_NVEC;
 			localy1 += SSE_NVEC;
 			localz1 += SSE_NVEC;
+            
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+                local_w1.weights[w] += SSE_NVEC;
+            }
+
+            union float4_weights{
+                SSE_FLOATS m_weights;
+                DOUBLE weights[SSE_NVEC];
+            };
+            union float4_weights union_mweight;
 
             const SSE_FLOATS m_rmax = SSE_SET_FLOAT(rmax);
 			const SSE_FLOATS m_sqr_rmax = SSE_SET_FLOAT(sqr_rmax);
 			const SSE_FLOATS m_sqr_rmin = SSE_SET_FLOAT(sqr_rmin);
 			
 
-			const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(SSE_SUBTRACT_FLOATS(m_x1, m_xpos));
-            const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(SSE_SUBTRACT_FLOATS(m_y1, m_ypos));
-            const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);
+            const SSE_FLOATS m_xdiff = SSE_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+            const SSE_FLOATS m_ydiff = SSE_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+            const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
+                
+            const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(m_xdiff);
+            const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(m_ydiff);
             const SSE_FLOATS m_sqr_zdiff = SSE_SQUARE_FLOAT(m_zdiff);
+            
+            if(need_weightavg){
+                pair.dx.s = m_xdiff;
+                pair.dy.s = m_ydiff;
+                pair.dz.s = m_zdiff;
+            }
                         
             SSE_FLOATS r2  = SSE_ADD_FLOATS(m_sqr_zdiff,SSE_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff));
             SSE_FLOATS m_mask_left;
@@ -323,6 +461,9 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
                 m_rbin = SSE_SET_FLOAT(ZERO);
             }
+            if(need_weightavg){
+                union_mweight.m_weights = sse_weight_func(&pair);
+            }
 
 			for(int kbin=nbin-1;kbin>=1;kbin--) {
 				SSE_FLOATS m1 = SSE_COMPARE_FLOATS_GE(r2,m_rupp_sqr[kbin-1]);
@@ -330,7 +471,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 				m_mask_left = SSE_COMPARE_FLOATS_LT(r2,m_rupp_sqr[kbin-1]);
 				int test2  = SSE_TEST_COMPARISON(m_bin_mask);
 				npairs[kbin] += SSE_BIT_COUNT_INT(test2);
-                if(need_ravg) {
+                if(need_ravg || need_weightavg) {
                     m_rbin = SSE_BLEND_FLOATS_WITH_MASK(m_rbin,m_kbin[kbin], m_bin_mask);
                 }
 				int test3 = SSE_TEST_COMPARISON(m_mask_left);
@@ -339,7 +480,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 				}
 			}
 
-            if(need_ravg) {
+            if(need_ravg || need_weightavg) {
                 union_rbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
@@ -347,8 +488,14 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 #endif
                 for(int jj=0;jj<SSE_NVEC;jj++) {
                     const int kbin = union_rbin.ibin[jj];
-                    const DOUBLE r = union_mDperp.Dperp[jj];
-                    ravg[kbin] += r;
+                    if(need_ravg){
+                        const DOUBLE r = union_mDperp.Dperp[jj];
+                        ravg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        const DOUBLE weight = union_mweight.weights[jj];
+                        weightavg[kbin] += weight;
+                    }
                 }
             }//need_ravg
 		}//j-loop			
@@ -357,13 +504,27 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 			const DOUBLE dx = *localx1++ - xpos;
 			const DOUBLE dy = *localy1++ - ypos;
 			const DOUBLE dz = *localz1++ - zpos;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
+            }
+
             if(dz >= rmax) break;
             
 			const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
 			if(r2 >= sqr_rmax || r2 < sqr_rmin) continue;
-            DOUBLE r;//intentionally not initialized to 0.0 -> accidental addition will trigger test failures
+            
+            if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+            }
+
+            DOUBLE r, pairweight;//intentionally not initialized to 0.0 -> accidental addition will trigger test failures
             if(need_ravg) {
                 r = SQRT(r2);
+            }
+            if(need_weightavg){
+            pairweight = fallback_weight_func(&pair);
             }
 
 			for(int kbin=nbin-1;kbin>=1;kbin--){
@@ -372,7 +533,9 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                     if(need_ravg) {
                         ravg[kbin] += r;
                     }
-                    
+                    if(need_weightavg){
+                        weightavg[kbin] += pairweight;
+                    }
 					break;
 				}
 			}//searching for kbin loop
@@ -384,6 +547,9 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
         if(need_ravg) {
             src_ravg[i] += ravg[i];
         }
+        if(need_weightavg) {
+            src_weightavg[i] += weightavg[i];
+        }
 	}
 
     return EXIT_SUCCESS;
@@ -391,12 +557,12 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 
 #endif //__SSE4_2__
 
-static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                     DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell, 
+static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
+                                     DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell, 
                                      const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rmax,
-                                     const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                     ,DOUBLE *src_ravg
-                                     ,uint64_t *src_npairs)
+                                     const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                     DOUBLE *src_ravg, uint64_t *src_npairs,
+                                     DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     /*----------------- FALLBACK CODE --------------------*/
     uint64_t npairs[nbin];
@@ -405,24 +571,46 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
     }
 
     const int32_t need_ravg = src_ravg != NULL;
-    DOUBLE ravg[nbin];
-    if(need_ravg) {
-        for(int i=0;i<nbin;i++) {
-            ravg[i]= ZERO;
+    const int32_t need_weightavg = src_weightavg != NULL;
+    DOUBLE ravg[nbin], weightavg[nbin];
+    for(int i=0;i<nbin;i++) {
+        if(need_ravg) {
+            ravg[i]=0.;
         }
+        if(need_weightavg){
+            weightavg[i]=0.;
+        }
+    }
+    
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
+                         local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    weight_func_t_DOUBLE weight_func = NULL;
+    if(need_weightavg){
+      // Same particle list, new copy of num_weights pointers into that list
+      local_w0 = *weights0;
+      local_w1 = *weights1;
+      
+      pair.num_weights = local_w0.num_weights;
+      
+      weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
 
     /* naive implementation that is guaranteed to compile */
-    int64_t nleft=N1;
+    int64_t nleft=N1, n_off = 0;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
         const DOUBLE zpos = *z0++ + off_zwrap;
+        for(int w = 0; w < pair.num_weights; w++){
+            pair.weights0[w].d = *local_w0.weights[w]++;
+        }
 
         /* If in the same cell, unique pairs are guaranteed by not including the current particle */
         if(same_cell == 1) {
-            z1++;x1++;y1++;
+            z1++; n_off++;
             nleft--;
         } else {
             /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
@@ -430,7 +618,7 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                 /*Particles are sorted on 'z', in increasing order */
                 const DOUBLE dz = *z1 - zpos;
                 if(dz > -rmax) break;
-                z1++;x1++;y1++;
+                z1++; n_off++;
                 nleft--;
             }
             /*If no particle in the second cell satisfies distance constraints on 'dz' for the current 'i'th particle in first cell, 
@@ -442,21 +630,37 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
             }
         }
         DOUBLE *localz1 = z1;
-        DOUBLE *localx1 = x1;
-        DOUBLE *localy1 = y1;
+        DOUBLE *localx1 = x1 + n_off;
+        DOUBLE *localy1 = y1 + n_off;
+        for(int w = 0; w < pair.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + n_off;
+        }
         
         for(int64_t j=0;j<nleft;j++) {
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
             const DOUBLE dz = *localz1++ - zpos;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
+            }
+
             if(dz >=rmax) break;
             
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
             if(r2 >= sqr_rmax || r2 < sqr_rmin) continue;
             
-            DOUBLE r;//intentionally not initialized to 0.0 -> accidental addition will trigger test failures (or valgrind failures)
+            if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+            }
+            
+            DOUBLE r, pairweight;//intentionally not initialized to 0.0 -> accidental addition will trigger test failures (or valgrind failures)
             if(need_ravg) {
                 r = SQRT(r2);
+            }
+            if(need_weightavg){
+                pairweight = weight_func(&pair);
             }
             
             for(int kbin=nbin-1;kbin>=1;kbin--){
@@ -464,6 +668,9 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                     npairs[kbin]++;
                     if(need_ravg) {
                         ravg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        weightavg[kbin] += pairweight;
                     }
                     break;
                 }
@@ -475,6 +682,9 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
         src_npairs[i] += npairs[i];
         if(need_ravg) {
             src_ravg[i] += ravg[i];
+        }
+        if(need_weightavg){
+            src_weightavg[i] += weightavg[i];
         }
     }
     /*----------------- FALLBACK CODE --------------------*/

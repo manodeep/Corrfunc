@@ -72,7 +72,7 @@ def main():
     print("-----------------------------------------------------------")
 
     print("\nRunning 2-D projected correlation function wp(rp)")
-    results_wp, _ = wp_extn(boxsize, pimax, nthreads,
+    results_wp, _, _ = wp_extn(boxsize, pimax, nthreads,
                             binfile, x, y, z, verbose=True)
     print("\n#            ******    wp: first {0} bins  *******         "
           .format(numbins_to_print))

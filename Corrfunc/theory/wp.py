@@ -54,7 +54,7 @@ def _convert_cell_timer(cell_time_lst):
 
 
 def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
-       verbose=False, output_rpavg=False,
+       weights=None, weight_type=None, verbose=False, output_rpavg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
        c_api_timer=False, c_cell_timer=False, isa='fastest'):
@@ -64,6 +64,9 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     than the ``rp`` bins (specified in ``binfile``) in the
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted.
+    
+    If ``weights`` are provided, the resulting correlation function
+    is weighted.  The weighting scheme depends on ``weight_type``.
 
     Note that pairs are double-counted. And if ``rpmin`` is set to
     0.0, then all the self-pairs (i'th particle with itself) are
@@ -106,6 +109,11 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        i.e., calculations will be in floating point if XYZ are single
        precision arrays (C float type); or in double-precision if XYZ
        are double precision arrays (C double type).
+       
+    weights: array_like, real (float/double), optional
+        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
+        `weight_type` specifies how these weights are used; results are returned
+        in the `weightavg` field.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -151,29 +159,33 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
+       
+   weight_type: string, optional
+        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
+
 
     Returns
     --------
 
     results: Numpy structured array
-
-       A numpy structured array containing [rpmin, rpmax, rpavg, wp, npairs]
+       A numpy structured array containing [rpmin, rpmax, rpavg, wp, npairs, weightavg]
        for each radial specified in the ``binfile``. If ``output_rpavg`` is not
-       set then ``rpavg`` will be set to 0.0 for all bins. ``wp`` contains the
-       projected correlation function while ``npairs`` contains the number of
-       unique pairs in that bin.
-
-       if ``c_api_timer`` is set, then the return value is a tuple containing
-       (results, api_time). ``api_time`` measures only the time spent within
-       the C library and ignores all python overhead.
-
-       if ``c_cell_timer`` is set, then a Python list is returned. Contains
+       set then ``rpavg`` will be set to 0.0 for all bins; similarly for ``weightavg``.
+       ``wp`` contains the projected correlation function while ``npairs`` contains the
+       number of unique pairs in that bin.
+       
+    api_time: float, optional
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent
+       within the C library and ignores all python overhead.
+       
+    cell_time: list, optional
+       Only returned if ``c_cell_timer`` is set. Contains
        detailed stats about each cell-pair visited during pair-counting,
        viz., number of particles in each of the cells in the pair, 1-D
        cell-indices for each cell in the pair, time (in nano-seconds) to
        process the pair and the thread-id for the thread that processed that
        cell-pair.
-
+       
     Example
     --------
 
@@ -227,7 +239,17 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins
-
+        
+    # Broadcast scalar weights to arrays
+    weights = np.atleast_1d(weights)
+    
+    # Passing None parameters breaks the parsing code, so avoid this
+    kwargs = {}
+    for k in ['weights', 'weight_type']:
+        v = locals()[k]
+        if v is not None:
+            kwargs[k] = v
+    
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time, cell_time = wp_extn(boxsize, pimax, nthreads,
@@ -241,7 +263,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
                                                 max_cells_per_dim=max_cells_per_dim,
                                                 c_api_timer=c_api_timer,
                                                 c_cell_timer=c_cell_timer,
-                                                isa=integer_isa)
+                                                isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -254,7 +276,8 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
                               (bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'rpavg'), np.float),
                               (bytes_to_native_str(b'wp'), np.float),
-                              (bytes_to_native_str(b'npairs'), np.uint64)])
+                              (bytes_to_native_str(b'npairs'), np.uint64),
+                              (bytes_to_native_str(b'weightavg'), np.float)])
     results = np.array(extn_results, dtype=results_dtype)
 
     # A better solution for returning multiple values based on

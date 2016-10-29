@@ -22,10 +22,10 @@ INCL   := countpairs_kernels_float.c countpairs_kernels_double.c countpairs_kern
           $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
           $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray.h.src \
           $(UTILS_DIR)/function_precision.h  $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
-	      $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
+          $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
           $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/progressbar.h \
-		  $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_functions.h.src \
-		  $(UTILS_DIR)/weight_defs_double.h $(UTILS_DIR)/weight_defs_float.h $(UTILS_DIR)/weight_defs.h.src
+          $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_functions.h.src \
+          $(UTILS_DIR)/weight_defs_double.h $(UTILS_DIR)/weight_defs_float.h $(UTILS_DIR)/weight_defs.h.src
 
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)

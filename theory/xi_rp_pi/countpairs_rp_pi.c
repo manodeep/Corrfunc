@@ -22,6 +22,7 @@ void free_results_rp_pi(results_countpairs_rp_pi *results)
     free(results->npairs);
     free(results->rupp);
     free(results->rpavg);
+    free(results->weightavg);
 }
 
 

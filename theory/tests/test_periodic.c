@@ -103,7 +103,7 @@ int test_periodic_DD(const char *correct_outputfile)
         }
         int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
         int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
-
+        
         //Check for exact equality of npairs and float "equality" for rpavg
         if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
             ret = EXIT_SUCCESS;
@@ -139,6 +139,12 @@ int test_periodic_DD(const char *correct_outputfile)
 int test_periodic_DDrppi(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
+    
+    // Set up the weights pointers
+    weight_method_t weight_method = PAIR_PRODUCT;
+    struct extra_options extra = get_extra_options(weight_method);
+    extra.weights0.weights[0] = weights1;
+    extra.weights1.weights[0] = weights2;
 
     results_countpairs_rp_pi results;
     int status = countpairs_rp_pi(ND1,X1,Y1,Z1,
@@ -148,8 +154,8 @@ int test_periodic_DDrppi(const char *correct_outputfile)
                                   binfile,
                                   pimax,
                                   &results,
-                                  &options, NULL);
-
+                                  &options,
+                                  &extra);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -162,22 +168,25 @@ int test_periodic_DDrppi(const char *correct_outputfile)
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
             uint64_t npairs;
-            double rpavg;
+            double rpavg, weightavg;
             ret = EXIT_FAILURE;
-            int nitems = fscanf(fp,"%"SCNu64" %lf%*[^\n]", &npairs, &rpavg);
-            if(nitems != 2) {
+            int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &rpavg, &weightavg);
+            if(nitems != 3) {
                 ret = EXIT_FAILURE;//not required but showing intent
                 i = results.nbin;
                 break;
             }
             int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
+            int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
             
             //Check for exact equality of npairs and float "equality" for rpavg
-            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS) {
+            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
             } else {
                 fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
                 fprintf(stderr,"True rpavg  = %20.12e Computed rpavg = %20.12e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
+                fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
+
                 ret = EXIT_FAILURE;//not required but showing intent 
                 i = results.nbin;                
                 break;
@@ -196,7 +205,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
             const double logrp = log10(results.rupp[i]);
             for(int j=0;j<npibin;j++) {
                 int index = i*(npibin+1) + j;
-                fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+                fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf\n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi, results.weightavg[index]);
             }
         }
         fclose(fp);
@@ -209,6 +218,12 @@ int test_periodic_DDrppi(const char *correct_outputfile)
 
 int test_wp(const char *correct_outputfile)
 {
+    
+    // Set up the weights pointers
+    weight_method_t weight_method = PAIR_PRODUCT;
+    struct extra_options extra = get_extra_options(weight_method);
+    extra.weights0.weights[0] = weights1;
+
     results_countpairs_wp results;
     int status = countpairs_wp(ND1,X1,Y1,Z1,
                                boxsize,
@@ -216,7 +231,8 @@ int test_wp(const char *correct_outputfile)
                                binfile,
                                pimax,
                                &results,
-                               &options, NULL);
+                               &options,
+                               &extra);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -225,24 +241,29 @@ int test_wp(const char *correct_outputfile)
     FILE *fp=my_fopen(correct_outputfile,"r");
     for(int i=1;i<results.nbin;i++) {
         uint64_t npairs;
-        double rpavg,wp;
+        double rpavg,wp,weightavg;
         ret = EXIT_FAILURE;
-        int nitems = fscanf(fp,"%lf %lf %*f %*f %"SCNu64"%*[^\n]", &wp, &rpavg, &npairs);//discard rlow and rupp
-        if(nitems != 3) {
+        int nitems = fscanf(fp,"%lf %lf %*f %*f %"SCNu64" %lf%*[^\n]", &wp, &rpavg, &npairs, &weightavg);//discard rlow and rupp
+        if(nitems != 4) {
             ret = EXIT_FAILURE;//not required but showing intent
             break;
         }
         int rpavg_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
+        int weightavg_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
         int wp_equal = AlmostEqualRelativeAndAbs_double(wp, results.wp[i], maxdiff, maxreldiff);
 
         //Check for exact equality of npairs and float "equality" for rpavg + wp 
-        if(npairs == results.npairs[i] && rpavg_equal == EXIT_SUCCESS && wp_equal == EXIT_SUCCESS) {
+        if(npairs == results.npairs[i] && rpavg_equal == EXIT_SUCCESS && wp_equal == EXIT_SUCCESS && weightavg_equal == EXIT_SUCCESS) {
             ret = EXIT_SUCCESS;
         } else {
             ret = EXIT_FAILURE;//not required but showing intent 
             fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
-            fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. wp_equal = %d rpavg_equal = %d\n",
-                    rpavg, results.rpavg[i], wp_equal, rpavg_equal);
+            fprintf(stderr,"Failed. True wp = %e Computed results wp = %e\n", wp, results.wp[i]);
+            fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e.\n",
+                    rpavg, results.rpavg[i]);
+            fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e.\n",
+                    weightavg, results.weightavg[i]);
+            fprintf(stderr," wp_equal = %d rpavg_equal = %d weightavg_equal = %d\n", wp_equal, rpavg_equal, weightavg_equal);
             break;
         }
     }
@@ -256,7 +277,7 @@ int test_wp(const char *correct_outputfile)
             return EXIT_FAILURE;
         }
         for(int i=1;i<results.nbin;++i) {
-            fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.wp[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i]);
+            fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64"\t%e \n",results.wp[i],results.rpavg[i],rlow,results.rupp[i],results.npairs[i], results.weightavg[i]);
             rlow=results.rupp[i];
         }
         fclose(fp);
@@ -347,13 +368,19 @@ int test_vpf(const char *correct_outputfile)
 int test_xi(const char *correct_outputfile)
 {
 
+    // Set up the weights pointers
+    weight_method_t weight_method = PAIR_PRODUCT;
+    struct extra_options extra = get_extra_options(weight_method);
+    extra.weights0.weights[0] = weights1;
+
     results_countpairs_xi results;
     int status = countpairs_xi(ND1,X1,Y1,Z1,
                                boxsize,
                                nthreads,
                                binfile,
                                &results,
-                               &options, NULL);
+                               &options,
+                               &extra);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -363,24 +390,29 @@ int test_xi(const char *correct_outputfile)
     FILE *fp=my_fopen(correct_outputfile,"r");
     for(int i=1;i<results.nbin;i++) {
         uint64_t npairs;
-        double ravg,xi;
+        double ravg,xi,weightavg;
         ret = EXIT_FAILURE;
-        int nitems = fscanf(fp,"%lf %lf %*f %*f %"SCNu64"%*[^\n]", &xi, &ravg, &npairs);//discard rlow and rupp
-        if(nitems != 3) {
+        int nitems = fscanf(fp,"%lf %lf %*f %*f %"SCNu64"%lf%*[^\n]", &xi, &ravg, &npairs, &weightavg);//discard rlow and rupp
+        if(nitems != 3) {  // 4
             ret = EXIT_FAILURE;//not required but showing intent
             break;
         }
         int ravg_equal = AlmostEqualRelativeAndAbs_double(ravg, results.ravg[i], maxdiff, maxreldiff);
+        int weightavg_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
         int xi_equal = AlmostEqualRelativeAndAbs_double(xi, results.xi[i], maxdiff, maxreldiff);
 
         //Check for exact equality of npairs and float "equality" for ravg + xi 
-        if(npairs == results.npairs[i] && ravg_equal == EXIT_SUCCESS && xi_equal == EXIT_SUCCESS) {
+        if(npairs == results.npairs[i] && ravg_equal == EXIT_SUCCESS && xi_equal == EXIT_SUCCESS && weightavg_equal == EXIT_SUCCESS) {
             ret = EXIT_SUCCESS;
         } else {
             ret = EXIT_FAILURE;//not required but showing intent 
             fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
-            fprintf(stderr,"Failed. True ravg = %e Computed ravg = %e. xi_equal = %d ravg_equal = %d\n",
-                    ravg, results.ravg[i], xi_equal, ravg_equal);
+            fprintf(stderr,"Failed. True xi = %e Computed results xi = %e\n", xi, results.xi[i]);
+            fprintf(stderr,"Failed. True ravg = %e Computed ravg = %e.\n",
+                    ravg, results.ravg[i]);
+            fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e.\n",
+                    weightavg, results.weightavg[i]);
+            fprintf(stderr," xi_equal = %d ravg_equal = %d weightavg_equal = %d\n", xi_equal, ravg_equal, weightavg_equal);
             break;
         }
     }
@@ -393,7 +425,7 @@ int test_xi(const char *correct_outputfile)
             return EXIT_FAILURE;
         }
         for(int i=1;i<results.nbin;++i) {
-            fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64" \n",results.xi[i],results.ravg[i],rlow,results.rupp[i],results.npairs[i]);
+            fprintf(fp,"%e\t%e\t%e\t%e\t%12"PRIu64"\t%e \n",results.xi[i],results.ravg[i],rlow,results.rupp[i],results.npairs[i], results.weightavg[i]);
             rlow=results.rupp[i];
         }
         fclose(fp);
@@ -479,7 +511,7 @@ int main(int argc, char **argv)
     options.verbose=0;
     options.periodic=1;
     options.float_type=sizeof(double);
-    //options.instruction_set = SSE42;
+    options.instruction_set = AVX;
 
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";

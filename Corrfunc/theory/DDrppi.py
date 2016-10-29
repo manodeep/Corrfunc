@@ -13,18 +13,21 @@ __author__ = ('Manodeep Sinha')
 __all__ = ('DDrppi', )
 
 
-def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
-           periodic=True, X2=None, Y2=None, Z2=None,
+def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
+           periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
            verbose=False, boxsize=0.0, output_rpavg=False,
            xbin_refine_factor=2, ybin_refine_factor=2,
            zbin_refine_factor=1, max_cells_per_dim=100,
-           c_api_timer=False, isa='fastest'):
+           c_api_timer=False, isa='fastest', weight_type=None):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r_p, \pi)` or :math:`\\wp(r_p)`. Pairs which are
     separated by less than the ``rp`` bins (specified in ``binfile``) in the
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted.
+    
+    If ``weights`` are provided, the resulting pair counts are weighted.  The
+    weighting scheme depends on ``weight_type``.
 
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\xi(r_p, \pi)`. See the
@@ -66,10 +69,20 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     X1/Y1/Z1: array-like, real (float/double)
        The array of X/Y/Z positions for the first set of points.
        Calculations are done in the precision of the supplied arrays.
+       
+    weights1: array_like, real (float/double), optional
+        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
+        `weight_type` specifies how these weights are used; results are returned
+        in the `weightavg` field.  If only one of weights1 and weights2 is
+        specified, the other will be set to uniform weights.
+
 
     X2/Y2/Z2: array-like, real (float/double)
        Array of XYZ positions for the second set of points. *Must* be the same
        precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
+       
+    weights2: array-like, real (float/double), optional
+        Same as weights1, but for the second set of positions
 
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
@@ -116,21 +129,23 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
+       
+   weight_type: string, optional
+        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
 
     Returns
     --------
 
     results: Numpy structured array
-
-       A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs]
+       A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs, weightavg]
        for each radial bin specified in the ``binfile``. If ``output_rpavg``
-       is not set, then ``rpavg`` will be set to 0.0 for all bins. ``npairs``
-       contains the number of pairs in that bin and can be used to compute
-       :math:`\\xi(r_p, \pi)` by combining with (DR, RR) counts.
+       is not set, then ``rpavg`` will be set to 0.0 for all bins; similarly for
+       ``weightavg``. ``npairs`` contains the number of pairs in that bin and can
+       be used to compute :math:`\\xi(r_p, \pi)` by combining with (DR, RR) counts.
 
-       if ``c_api_timer`` is set, then the return value is a tuple containing
-       (results, api_time). ``api_time`` measures only the time spent within
-       the C library and ignores all python overhead.
+    api_time: float, optional
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
+       spent within the C library and ignores all python overhead.
 
     Example
     --------
@@ -212,23 +227,40 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins
     from future.utils import bytes_to_native_str
+    
+    # Broadcast scalar weights to arrays
+    weights1 = np.atleast_1d(weights1)
+    weights2 = np.atleast_1d(weights2)
 
-    if autocorr == 0:
+    if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                 "computing cross-correlation"
             raise ValueError(msg)
+        
+        # If only one set of points has weights, set the other to uniform weights
+        if weights1 is None and weights2 is not None:
+            weights1 = np.ones_like(weights2)
+        if weights2 is None and weights1 is not None:
+            weights2 = np.ones_like(weights1)
+
     else:
         X2 = np.empty(1)
         Y2 = np.empty(1)
         Z2 = np.empty(1)
+        
+    # Passing None parameters breaks the parsing code, so avoid this
+    kwargs = {}
+    for k in ['weights1', 'weights2', 'weight_type', 'X2', 'Y2', 'Z2']:
+        v = locals()[k]
+        if v is not None:
+            kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DDrppi_extn(autocorr, nthreads,
                                          pimax, rbinfile,
                                          X1, Y1, Z1,
-                                         X2, Y2, Z2,
                                          periodic=periodic,
                                          verbose=verbose,
                                          boxsize=boxsize,
@@ -238,7 +270,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
                                          zbin_refine_factor=zbin_refine_factor,
                                          max_cells_per_dim=max_cells_per_dim,
                                          c_api_timer=c_api_timer,
-                                         isa=integer_isa)
+                                         isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -251,7 +283,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
                               (bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'rpavg'), np.float),
                               (bytes_to_native_str(b'pimax'), np.float),
-                              (bytes_to_native_str(b'npairs'), np.uint64)])
+                              (bytes_to_native_str(b'npairs'), np.uint64),
+                              (bytes_to_native_str(b'weightavg'), np.float),])
 
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
@@ -261,6 +294,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1,
         results['rpavg'][ii] = r[2]
         results['pimax'][ii] = r[3]
         results['npairs'][ii] = r[4]
+        results['weightavg'][ii] = r[5]
 
     if not c_api_timer:
         return results

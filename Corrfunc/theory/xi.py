@@ -16,7 +16,7 @@ __all__ = ('xi',)
 
 
 def xi(boxsize, nthreads, binfile, X, Y, Z,
-       verbose=False, output_ravg=False,
+       weights=None, weight_type=None, verbose=False, output_ravg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
        c_api_timer=False, isa='fastest'):
@@ -24,6 +24,9 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
     Function to compute the projected correlation function in a
     periodic cosmological box. Pairs which are separated by less
     than the ``r`` bins (specified in ``binfile``) in 3-D real space.
+    
+    If ``weights`` are provided, the resulting correlation function
+    is weighted.  The weighting scheme depends on ``weight_type``.
 
     Note that pairs are double-counted. And if ``rmin`` is set to
     0.0, then all the self-pairs (i'th particle with itself) are
@@ -61,6 +64,11 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        i.e., calculations will be in floating point if XYZ are single
        precision arrays (C float type); or in double-precision if XYZ
        are double precision arrays (C double type).
+       
+    weights: array_like, real (float/double), optional
+        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
+        `weight_type` specifies how these weights are used; results are returned
+        in the `weightavg` field.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -98,21 +106,24 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
+       
+    weight_type: string, optional
+        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
+
 
     Returns
     --------
 
     results: Numpy structured array
-
-       A numpy structured array containing [rmin, rmax, ravg, xi, npairs] for
+       A numpy structured array containing [rmin, rmax, ravg, xi, npairs, weightavg] for
        each radial specified in the ``binfile``. If ``output_ravg`` is not
-       set then ``ravg`` will be set to 0.0 for all bins. ``xi`` contains the
-       correlation function while ``npairs`` contains the number of
+       set then ``ravg`` will be set to 0.0 for all bins; similarly for ``weightavg``.
+       ``xi`` contains the correlation function while ``npairs`` contains the number of
        pairs in that bin.
 
-       if ``c_api_timer`` is set, then the return value is a tuple containing
-       (results, api_time). ``api_time`` measures only the time spent within
-       the C library and ignores all python overhead.
+   api_time: float, optional
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent
+       within the C library and ignores all python overhead.
 
     Example
     --------
@@ -165,6 +176,16 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins
+        
+    # Broadcast scalar weights to arrays
+    weights = np.atleast_1d(weights)
+    
+    # Passing None parameters breaks the parsing code, so avoid this
+    kwargs = {}
+    for k in ['weights', 'weight_type']:
+        v = locals()[k]
+        if v is not None:
+            kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
@@ -177,7 +198,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
                                      zbin_refine_factor=zbin_refine_factor,
                                      max_cells_per_dim=max_cells_per_dim,
                                      c_api_timer=c_api_timer,
-                                     isa=integer_isa)
+                                     isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -190,7 +211,8 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
                               (bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'ravg'), np.float),
                               (bytes_to_native_str(b'xi'), np.float),
-                              (bytes_to_native_str(b'npairs'), np.uint64)])
+                              (bytes_to_native_str(b'npairs'), np.uint64),
+                              (bytes_to_native_str(b'weightavg'), np.float)])
 
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
@@ -201,6 +223,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
         results['ravg'][ii] = r[2]
         results['xi'][ii] = r[3]
         results['npairs'][ii] = r[4]
+        results['weightavg'][ii] = r[5]
 
     if not c_api_timer:
         return results

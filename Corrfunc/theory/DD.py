@@ -18,6 +18,9 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
+    
+    If ``weights`` are provided, the resulting pair counts are weighted.  The
+    weighting scheme depends on ``weight_type``.
 
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\xi(r)`. See the ``mocks/wtheta/wtheta.c``
@@ -110,7 +113,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        ``enum`` for the instruction set defined in ``utils/defs.h``.
     
     weight_type: string, optional
-        The type of weighting to apply.  Default: None.
+        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
 
     Returns
     --------
@@ -119,13 +122,12 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        A numpy structured array containing [rmin, rmax, ravg, npairs, weightavg]
        for each radial bin specified in the ``binfile``. If ``output_ravg`` is
        not set, then ``ravg`` will be set to 0.0 for all bins; similarly for
-       `weightavg`. ``npairs`` contains the number of pairs in that bin and can
+       ``weightavg``. ``npairs`` contains the number of pairs in that bin and can
        be used to compute the actual :math:`\\xi(r)` by combining with (DR, RR) counts.
 
     api_time: float, optional
-       If ``c_api_timer`` is set, then the return value is a tuple containing
-       (results, api_time). ``api_time`` measures only the time spent within
-       the C library and ignores all python overhead.
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
+       spent within the C library and ignores all python overhead.
 
     Example
     --------

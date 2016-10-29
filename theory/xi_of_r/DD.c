@@ -271,9 +271,9 @@ void Printhelp(void)
     fprintf(stderr,"     * weights_format2 = name of file containing the weights corresponding to the second data file\n");
     fprintf(stderr,"   ---OUTPUT:\n") ;
 #ifdef OUTPUT_RPAVG
-    fprintf(stderr,"     > DDfile        = name of output file <npairs rpavg rmin rmax weightavg>\n") ;
+    fprintf(stderr,"     > DDfile        = name of output file <rmin rmax rpavg npairs weightavg>\n") ;
 #else
-    fprintf(stderr,"     > DDfile        = name of output file <npairs  0.0  rmin rmax weightavg>\n") ;
+    fprintf(stderr,"     > DDfile        = name of output file <rmin rmax rpavg=0.0 npairs weightavg>\n") ;
 #endif
     fprintf(stderr,"\n\tCompile options: \n");
 #ifdef PERIODIC

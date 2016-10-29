@@ -195,12 +195,12 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
   xmin=1e10;ymin=1e10;zmin=1e10;
   xmax=0.0;ymax=0.0;zmax=0.0;
   get_max_min_DOUBLE(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
-
-  if(options->verbose) {
-    fprintf(stderr,"ND1 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
-  }
   
   if(autocorr==0) {
+    if(options->verbose) {
+        fprintf(stderr,"ND1 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
+    }
+
     get_max_min_DOUBLE(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
     if(options->verbose) {
       fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);
