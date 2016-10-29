@@ -28,7 +28,8 @@ wrapper :py:mod:`Corrfunc.theory.DD`
           >>> rand_Z = np.random.uniform(0, boxsize, rand_N)
 
           # Setup the bins
-          >>> bins = np.linspace(0.1, 10.0, 10)
+          >>> nbins = 10
+          >>> bins = np.linspace(0.1, 10.0, nbins + 1) # note that +1 to nbins
               
           # Auto pair counts in DD
           >>> autocorr=1

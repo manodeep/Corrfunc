@@ -85,7 +85,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
     >>> rmin = 0.1
     >>> rmax = 15.0
     >>> nbins = 10
-    >>> bins = np.linspace(rmin, rmax, nbins)
+    >>> bins = np.linspace(rmin, rmax, nbins + 1)
     >>> autocorr = 1
     >>> DD_counts = DD(autocorr, nthreads, bins, X, Y, Z)
     >>> autocorr = 0
@@ -99,15 +99,16 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
     ...                              DR_counts, RR_counts)
     >>> for xi in cf: print("{0:10.6f}".format(xi))
     ...                    # doctest: +NORMALIZE_WHITESPACE
-    18.737938
-    3.007926
-    1.392979
-    0.857290
-    0.590195
-    0.436621
-    0.338937
-    0.265153
-    0.209904
+    22.769019
+     3.612709
+     1.621372
+     1.000969
+     0.691646
+     0.511819
+     0.398872
+     0.318815
+     0.255643
+     0.207759
 
     """
 
@@ -155,7 +156,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
 def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                D1D2, D1R2, D2R1, R1R2,
-                               nrpbins, dpi=1.0,
+                               nrpbins, pimax, dpi=1.0,
                                estimator='LS'):
     """
     Converts raw pair counts to a correlation function.
@@ -192,6 +193,9 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
 
     nrpbins : integer
         Number of bins in ``rp``
+
+    pimax : float
+        Integration distance along the line of sight direction
 
     dpi : float, default=1.0 Mpc/h
         Binsize in the line of sight direction
@@ -231,7 +235,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     >>> nrpbins = 20
     >>> rpmin = 0.1
     >>> rpmax = 10.0
-    >>> bins = np.linspace(rpmin, rpmax, nrpbins)
+    >>> bins = np.linspace(rpmin, rpmax, nrpbins + 1)
     >>> autocorr = 1
     >>> DD_counts = DDrppi(autocorr, nthreads, pimax, bins,
     ...                    X, Y, Z)
@@ -245,29 +249,29 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     >>> wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
     ...                                 DD_counts, DR_counts,
     ...                                 DR_counts, RR_counts,
-    ...                                 nrpbins)
+    ...                                 nrpbins, pimax)
     >>> for w in wp: print("{0:10.6f}".format(w))
     ...                    # doctest: +NORMALIZE_WHITESPACE
-    181.595583
-    79.433954
-    50.906305
-    38.617981
-    32.004716
-    27.873267
-    24.922330
-    22.517251
-    20.609248
-    19.071534
-    17.537370
-    16.129591
-    15.042474
-    13.992861
-    12.963111
-    12.005260
-    11.215819
-    10.598148
-    10.019164
-    9.631157
+    187.592199
+     83.059181
+     53.200599
+     40.389354
+     33.356371
+     29.045476
+     26.088133
+     23.628340
+     21.703961
+     20.153125
+     18.724781
+     17.433235
+     16.287183
+     15.443230
+     14.436193
+     13.592727
+     12.921226
+     12.330074
+     11.696364
+     11.208365
 
     """
     
@@ -291,6 +295,16 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                                        nrpbins)
         raise ValueError(msg)
 
+    # Check that dpi/pimax/npibins are consistent
+    # Preventing issue #96 (https://github.com/manodeep/Corrfunc/issues/96)
+    # where npibins would be calculated incorrectly, and the summation would
+    # be wrong.
+    if (dpi*npibins != pimax):
+        msg = 'Pimax = {0} should be equal to the product of '\
+              'npibins = {1} and dpi = {2}. Check your binning scheme.'\
+              .format(pimax, npibins, dpi)
+        raise ValueError(msg)
+    
     for i in range(nrpbins):
         wp[i] = 2.0 * dpi * np.sum(xirppi[i * npibins:(i + 1) * npibins])
 
