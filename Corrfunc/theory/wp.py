@@ -140,7 +140,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
     >>> boxsize = 420.0
     >>> pimax = 40.0
     >>> nthreads = 4
-    >>> verbose = 0
+    >>> verbose = 1
     >>> best, _ = find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile,
     ...                                    X, Y, Z, maxbinref=2, nrepeats=3,
     ...                                    verbose=verbose,
@@ -169,7 +169,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
-    bin_refs = np.linspace(1, maxbinref, maxbinref, dtype=np.int)
+    bin_refs = np.arange(1, maxbinref + 1)
     bin_ref_perms = itertools.product(bin_refs, bin_refs, bin_refs)
     dtype = np.dtype([(bytes_to_native_str(b'nx'), np.int),
                       (bytes_to_native_str(b'ny'), np.int),
