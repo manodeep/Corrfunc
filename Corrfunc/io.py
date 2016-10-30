@@ -239,7 +239,7 @@ def read_ascii_catalog(filename, return_dtype=None):
     return x, y, z
 
 
-def read_catalog(filebase=None):
+def read_catalog(filebase=None, return_dtype=np.float):
     """
     Reads a galaxy/randoms catalog and returns 3 XYZ arrays.
 
@@ -249,6 +249,10 @@ def read_catalog(filebase=None):
     filebase: string (optional)
         The fully qualified path to the file. If omitted, reads the
         theory galaxy catalog under ../theory/tests/data/
+
+    return_dtype: numpy dtype for returned arrays. Default ``numpy.float``
+        Specifies the datatype for the returned arrays. Must be in
+        {np.float, np.float32}
 
     Returns
     --------
@@ -286,7 +290,7 @@ def read_catalog(filebase=None):
             f = read_fastfood_catalog if '.ff' in extension else read_ascii_catalog
 
             # default return is double
-            x, y, z = f(filebase, np.float)
+            x, y, z = f(filebase, return_dtype)
             return x, y, z
 
         raise IOError("Could not locate file {0}".format(filebase))

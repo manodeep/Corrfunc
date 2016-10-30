@@ -11,7 +11,234 @@ from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
 __author__ = ('Manodeep Sinha')
-__all__ = ('wp',)
+__all__ = ('wp', 'find_fastest_wp_bin_refs', )
+
+
+def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
+                             verbose=False, output_rpavg=False,
+                             max_cells_per_dim=100,
+                             isa='fastest',
+                             maxbinref=3, nrepeats=3,
+                             return_runtimes=False):
+
+    """
+    Finds the combination of ``bin refine factors`` that produces the
+    fastest computation for the given dataset and ``rp`` limits.
+
+    Parameters
+    -----------
+
+    boxsize: double
+       A double-precision value for the boxsize of the simulation
+       in same units as the particle positions and the ``rp`` bins.
+
+    pimax: double
+       A double-precision value for the maximum separation along
+       the Z-dimension. Note that only pairs with ``0 <= dz < pimax``
+       are counted (no equality).
+
+    nthreads: integer
+       Number of threads to use.
+
+    somethinghere: integer
+       testing reload
+
+    binfile: string or an list/array of floats
+       For string input: filename specifying the ``rp`` bins for
+       ``DDrppi_mocks``. The file should contain white-space separated values
+       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
+       contiguous but must be in increasing order (smallest bins come first).
+
+       For array-like input: A sequence of ``rp`` values that provides the
+       bin-edges. For example,
+       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
+       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
+       array does not need to be sorted.
+
+    X/Y/Z: arraytype, real (float/double)
+       Particle positions in the 3 axes. Must be within [0, boxsize]
+       and specified in the same units as ``rp_bins`` and boxsize. All
+       3 arrays must be of the same floating-point type.
+
+       Calculations will be done in the same precision as these arrays,
+       i.e., calculations will be in floating point if XYZ are single
+       precision arrays (C float type); or in double-precision if XYZ
+       are double precision arrays (C double type).
+
+    verbose: boolean (default false)
+       Boolean flag to control output of informational messages
+
+    output_rpavg: boolean (default false)
+       Boolean flag to output the average ``rp`` for each bin. Code will
+       run slower if you set this flag. Also, note, if you are calculating
+       in single-precision, ``rpavg`` will suffer from numerical loss of
+       precision and can not be trusted. If you need accurate ``rpavg``
+       values, then pass in double precision arrays for ``XYZ``.
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
+       too small relative to the boxsize (and increasing helps the runtime).
+
+    isa: string (default ``fastest``)
+       Controls the runtime dispatch for the instruction set to use. Possible
+       options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
+
+       Setting isa to ``fastest`` will pick the fastest available instruction
+       set on the current computer. However, if you set ``isa`` to, say,
+       ``avx`` and ``avx`` is not available on the computer, then the code will
+       revert to using ``fallback`` (even though ``sse42`` might be available).
+
+       Unless you are benchmarking the different instruction sets, you should
+       always leave ``isa`` to the default value. And if you *are*
+       benchmarking, then the string supplied here gets translated into an
+       ``enum`` for the instruction set defined in ``utils/defs.h``.
+
+    maxbinref: integer (default 3)
+       The maximum ``bin refine factor`` to use along each dimension. From
+       experience, values larger than 3 do not improve ``wp`` runtime.
+       
+       Runtime of module scales as ``maxbinref^3``, so change the value of
+       ``maxbinref`` with caution.
+
+    nrepeats: integer (default 3)
+       Number of times to repeat the timing for an individual run. Accounts
+       for the dispersion in runtimes on computers with multiple user
+       processes.
+
+    return_runtimes: boolean (default ``false``)
+       If set, also returns the array of runtimes.
+    
+    Returns
+    --------
+    (nx, ny, nz) : tuple of integers
+       The combination of ``bin refine factors`` along each dimension that
+       produces the fastest code.
+
+    runtimes: numpy structured array
+
+       if ``return_runtimes`` is set, then the return value is a tuple
+       containing ((nx, ny, nz), runtimes). ``runtimes`` is a ``numpy``
+       structured array containing the fields, [``nx``, ``ny``, ``nz``,
+       ``avg_runtime``, ``sigma_time``]. Here, ``avg_runtime`` is the
+       average time, measured over ``nrepeats`` invocations, spent in
+       the python extension. ``sigma_time`` is the dispersion of the
+       run times across those ``nrepeats`` invocations.
+
+    Example
+    --------
+
+    >>> from __future__ import print_function
+    >>> import numpy as np
+    >>> from os.path import dirname, abspath, join as pjoin
+    >>> import Corrfunc
+    >>> from Corrfunc.io import read_catalog
+    >>> from Corrfunc.theory.wp import find_fastest_wp_bin_refs
+    >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
+    ...                 "../theory/tests/", "bins")
+    >>> X, Y, Z = read_catalog(return_dtype=np.float32)
+    >>> boxsize = 420.0
+    >>> pimax = 40.0
+    >>> nthreads = 4
+    >>> verbose = 0
+    >>> best, _ = find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile,
+    ...                                    X, Y, Z, maxbinref=2, nrepeats=3,
+    ...                                    verbose=verbose,
+    ...                                    return_runtimes=True)
+    >>> print(best) # doctest:+SKIP
+    (2, 2, 1)
+
+    **Note** Since the result might change depending on the computer, doctest
+    is skipped for this function.
+
+    """
+    try:
+        from Corrfunc._countpairs import countpairs_wp as wp_extn
+    except ImportError:
+        msg = "Could not import the C extension for the projected "\
+              "correlation function."
+        raise ImportError(msg)
+
+    from Corrfunc.utils import translate_isa_string_to_enum,\
+        return_file_with_rbins
+
+    import itertools
+    import numpy as np
+    from future.utils import bytes_to_native_str
+    import time
+
+    integer_isa = translate_isa_string_to_enum(isa)
+    rbinfile, delete_after_use = return_file_with_rbins(binfile)
+    bin_refs = np.linspace(1, maxbinref, maxbinref, dtype=np.int)
+    bin_ref_perms = itertools.product(bin_refs, bin_refs, bin_refs)
+    dtype = np.dtype([(bytes_to_native_str(b'nx'), np.int),
+                      (bytes_to_native_str(b'ny'), np.int),
+                      (bytes_to_native_str(b'nz'), np.int),
+                      (bytes_to_native_str(b'avg_time'), np.float),
+                      (bytes_to_native_str(b'sigma_time'), np.float)])
+    all_runtimes = np.zeros(maxbinref**3, dtype=dtype)
+    all_runtimes[:] = np.inf
+
+    for ii, (nx, ny, nz) in enumerate(bin_ref_perms):
+        total_runtime = 0.0
+        total_sqr_runtime = 0.0
+        
+        for _ in range(nrepeats):
+            t0 = time.time()
+            extn_results, _, _ = wp_extn(boxsize, pimax, nthreads,
+                                         rbinfile,
+                                         X, Y, Z,
+                                         verbose=verbose,
+                                         output_rpavg=output_rpavg,
+                                         xbin_refine_factor=nx,
+                                         ybin_refine_factor=ny,
+                                         zbin_refine_factor=nz,
+                                         max_cells_per_dim=max_cells_per_dim,
+                                         isa=integer_isa)
+            t1 = time.time()
+
+            if extn_results is None:
+                msg = "RuntimeError occurred with perms = ({0}, {1}, {2})".\
+                                                          format(nx, ny, nz)
+                print(msg)
+                print("Continuing...")
+                continue
+                
+            dt = (t1 - t0)
+            total_runtime += dt
+            total_sqr_runtime += dt*dt
+        
+        avg_runtime = total_runtime/nrepeats
+
+        # variance = E(X^2) - E^2(X)
+        # disp = sqrt(variance)
+        runtime_disp = np.sqrt(total_sqr_runtime/nrepeats -
+                               avg_runtime*avg_runtime)
+
+        all_runtimes[ii]['nx'] = nx
+        all_runtimes[ii]['ny'] = ny
+        all_runtimes[ii]['nz'] = nz
+        all_runtimes[ii]['avg_time'] = avg_runtime
+        all_runtimes[ii]['sigma_time'] = runtime_disp
+
+    if delete_after_use:
+        import os
+        os.remove(rbinfile)
+
+    all_runtimes.sort(order=('avg_time', 'sigma_time'))
+    results = (all_runtimes[0]['nx'],
+               all_runtimes[0]['ny'],
+               all_runtimes[0]['nz'])
+               
+    optional_returns = return_runtimes
+    if not optional_returns:
+        ret = results
+    else:
+        ret = (results, )
+        if return_runtimes:
+            ret += (all_runtimes, )
+    
+    return ret
 
 
 def _convert_cell_timer(cell_time_lst):
