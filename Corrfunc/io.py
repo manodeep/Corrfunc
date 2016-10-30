@@ -268,7 +268,6 @@ def read_catalog(filebase=None, return_dtype=np.float):
     if filebase is None:
         filename = pjoin(dirname(abspath(__file__)),
                          "../theory/tests/data/", "gals_Mr19")
-        dtype = np.float
         allowed_exts = {'.ff': read_fastfood_catalog,
                         '.txt': read_ascii_catalog,
                         '.dat': read_ascii_catalog,
@@ -278,7 +277,7 @@ def read_catalog(filebase=None, return_dtype=np.float):
         for e in allowed_exts:
             if file_exists(filename + e):
                 f = allowed_exts[e]
-                x, y, z = f(filename + e, dtype)
+                x, y, z = f(filename + e, return_dtype)
                 return x, y, z
 
         raise IOError("Could not locate {0} with any of these extensions \
