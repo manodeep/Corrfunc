@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     gettimeofday(&t1,NULL);
     read_time += ADD_DIFF_TIME(t0,t1);
 
-    //check that theee positions are within limits
+    //check that the positions are within limits
     for(int i=0;i<ND1;i++) {
         assert(x1[i] >= 0.0 && x1[i] <= boxsize && "xpos is within limits [0, boxsize]");
         assert(y1[i] >= 0.0 && y1[i] <= boxsize && "ypos is within limits [0, boxsize]");
@@ -130,6 +130,7 @@ int main(int argc, char *argv[])
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
     struct config_options options = get_config_options();
+    options.verbose=0;
     /* If you want to change the bin refine factors */
     /* const int bf[] = {2, 2, 1}; */
     /* set_bin_refine_factors(&options, bf); */

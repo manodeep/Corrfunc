@@ -289,8 +289,8 @@ equations from `Zehavi et al. 2002 <http://adsabs.harvard.edu/abs/2002ApJ...571.
    
    \mathbf{s} &= \mathbf{v_1} - \mathbf{v_2}, \\
    \mathbf{l} &= \frac{1}{2}\left(\mathbf{v_1} + \mathbf{v_2}\right), \\
-   \pi &= \left(\mathbf{s} \cdot \mathbf{l}\right)/\mathbf{l}, \\
-   r_p &= \mathbf{s} \cdot \mathbf{s} - \pi^2
+   \pi &= \left(\mathbf{s} \cdot \mathbf{l}\right)/\Vert\mathbf{l}\Vert, \\
+   r_p^2 &= \mathbf{s} \cdot \mathbf{s} - \pi^2
    
 where, :math:`\mathbf{v_1}` and :math:`\mathbf{v_2}` are the vectors for the
 two points under consideration. 
