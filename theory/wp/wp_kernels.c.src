@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include "utils.h"
 
 #ifdef __AVX__
 #include "avx_calls.h"
@@ -22,7 +23,11 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                                            ,DOUBLE *src_rpavg
                                            ,uint64_t *src_npairs)
 {
-  uint64_t npairs[nbin];
+    struct timespec tcell_start;
+    current_utc_time(&tcell_start);
+    uint64_t serial_npairs = 0, vectorized_npairs=0;
+    
+    uint64_t npairs[nbin];
   for(int i=0;i<nbin;i++) {
     npairs[i] = 0;
   }
@@ -69,6 +74,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
     DOUBLE *localy1 = y1;
 
     for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
+
       const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
       const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
       const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(zpos);
@@ -87,7 +93,8 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
       const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
       const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
       const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
-            
+
+      vectorized_npairs += AVX_NVEC;
       localx1 += AVX_NVEC;//this might actually exceed the allocated range but we will never dereference that
       localy1 += AVX_NVEC;
       localz1 += AVX_NVEC;
@@ -186,7 +193,8 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
         
     //remainder loop 
     for(;j<N1;j++){
-      const DOUBLE dz = *localz1++ - zpos;
+        serial_npairs++;
+        const DOUBLE dz = *localz1++ - zpos;
       const DOUBLE dx = *localx1++ - xpos;
       const DOUBLE dy = *localy1++ - ypos;
 
@@ -212,13 +220,19 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
     }//remainder loop over second set of particles
   }//loop over first set of particles
 
+  uint64_t npairs_found = 0;
   for(int i=0;i<nbin;i++) {
+      npairs_found += npairs[i];
     src_npairs[i] += npairs[i];
     if(need_rpavg) {
       src_rpavg[i]  += rpavg[i];
     }
   }
-
+  struct timespec tcell_end;
+  current_utc_time(&tcell_end);
+  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+  /* fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
+  
   return EXIT_SUCCESS;
 }
 #endif //__AVX__
@@ -235,6 +249,10 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                                            ,DOUBLE *src_rpavg
                                            ,uint64_t *src_npairs)
 {
+    struct timespec tcell_start;
+    current_utc_time(&tcell_start);
+    uint64_t vectorized_npairs=0, serial_npairs=0;
+
   const int32_t need_rpavg = src_rpavg != NULL;
   uint64_t npairs[nbin];
   for(int i=0;i<nbin;i++) {
@@ -305,6 +323,7 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
       const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
       const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
 
+      vectorized_npairs += SSE_NVEC;
       localx1 += SSE_NVEC;
       localy1 += SSE_NVEC;
       localz1 += SSE_NVEC;
@@ -386,10 +405,11 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 		}//j loop over N1, increments of SSE_NVEC			
 
 		for(;j<N1;j++) {
+            serial_npairs++;
 			const DOUBLE dx = *localx1++ - xpos;
 			const DOUBLE dy = *localy1++ - ypos;
 			const DOUBLE dz = *localz1++ - zpos;
-      if(dz >= pimax) break;
+            if(dz >= pimax) break;
             
 			const DOUBLE r2 = dx*dx + dy*dy;
 			if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
@@ -405,13 +425,18 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 			}//searching for kbin loop
 		}
   }
-
-	for(int i=0;i<nbin;i++) {
-		src_npairs[i] += npairs[i];
-    if(need_rpavg) {
-      src_rpavg[i] += rpavg[i];
-    }
-	}
+  uint64_t npairs_found = 0;
+  for(int i=0;i<nbin;i++) {
+      src_npairs[i] += npairs[i];
+      npairs_found += npairs[i];
+      if(need_rpavg) {
+          src_rpavg[i] += rpavg[i];
+      }
+  }
+  struct timespec tcell_end;
+  current_utc_time(&tcell_end);
+  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+  /* fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
 
   return EXIT_SUCCESS;
 }
@@ -429,6 +454,11 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
                                      ,uint64_t *src_npairs)
 {
 
+    struct timespec tcell_start;
+    current_utc_time(&tcell_start);
+    uint64_t serial_npairs=0;
+    const uint64_t vectorized_npairs=0;
+    
   /*----------------- FALLBACK CODE --------------------*/
   uint64_t npairs[nbin];
   DOUBLE rpavg[nbin];
@@ -473,6 +503,7 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
       DOUBLE *localy1 = y1;
       
       for(int64_t j=0;j<nleft;j++) {
+          serial_npairs++;
           const DOUBLE dx = *localx1++ - xpos;
           const DOUBLE dy = *localy1++ - ypos;
           const DOUBLE dz = *localz1++ - zpos;
@@ -494,12 +525,18 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const i
       }
   }
   
+  uint64_t npairs_found = 0;
   for(int i=0;i<nbin;i++) {
     src_npairs[i] += npairs[i];
+    npairs_found += npairs[i];
     if(need_rpavg) {
       src_rpavg[i] += rpavg[i];
     }
   }
+  struct timespec tcell_end;
+  current_utc_time(&tcell_end);
+  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+  /* fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
   
   return EXIT_SUCCESS;
     /*----------------- FALLBACK CODE --------------------*/
