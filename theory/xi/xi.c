@@ -7,17 +7,19 @@
 */
 
 /* PROGRAM xi
-   --- xi boxsize file format binfile Nthreads [weight_method weights_file weights_format] > xifile
-   --- Measure the auto-correlation function xi(r) for a single periodic box
-   * boxsize      = BoxSize (in same units as X/Y/Z of the data)
-   * file         = name of data file
-   * format       = format of data file  (a=ascii, c=csv, f=fast-food)
-   * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)
-   * numthreads   = number of threads to use (only if USE_OMP is enabled)
-   * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
-   * weights_file = name of file containing the weights corresponding to the data file
-   * weights_format = name of file containing the weights corresponding to the data file
-   > xifile         = name of output file. Contains <xi [ravg=0.0] rmin rmax npairs>
+--- xi boxsize file format binfile Nthreads [weight_method weights_file weights_format] > xifile
+--- Measure the auto-correlation function xi(r) for a single periodic box
+ * boxsize      = BoxSize (in same units as X/Y/Z of the data)
+ * file         = name of data file
+ * format       = format of data file  (a=ascii, c=csv, f=fast-food)
+ * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)
+ * Nthreads    = number of threads to use
+--- OPTIONAL ARGS:
+ * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
+ * weights_file = name of file containing the weights corresponding to the data file
+ * weights_format = format of file containing the weights corresponding to the data file
+---OUTPUT:
+ > xifile        = name of output file. Contains <rmin rmax rpavg=0.0 npairs xi weightavg>
    ----------------------------------------------------------------------
 */
 
@@ -242,7 +244,7 @@ void Printhelp(void)
     fprintf(stderr,"   --- OPTIONAL ARGS:\n");
     fprintf(stderr,"     * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.\n");
     fprintf(stderr,"     * weights_file = name of file containing the weights corresponding to the data file\n");
-    fprintf(stderr,"     * weights_format = name of file containing the weights corresponding to the data file\n");
+    fprintf(stderr,"     * weights_format = format of file containing the weights corresponding to the data file\n");
     fprintf(stderr,"   ---OUTPUT:\n") ;
 #ifdef OUTPUT_RPAVG
     fprintf(stderr,"     > xifile        = name of output file. Contains <rmin rmax rpavg npairs xi weightavg>\n") ;

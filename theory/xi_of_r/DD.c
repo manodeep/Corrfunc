@@ -4,6 +4,25 @@
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
+  
+--- DD file1 format1 file2 format2 binfile numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
+--- Measure the cross-correlation function DD(r) for two different
+   data files (or autocorrelation if file1=file2).
+ * file1         = name of first data file
+ * format1       = format of first data file  (a=ascii, c=csv, f=fast-food)
+ * file2         = name of second data file
+ * format2       = format of second data file (a=ascii, c=csv, f=fast-food)
+ * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
+ * numthreads    = number of threads to use
+--- OPTIONAL ARGS:
+ * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
+ * weights_file1 = name of file containing the weights corresponding to the first data file
+ * weights_format1 = format of file containing the weights corresponding to the first data file
+ * weights_file2 = name of file containing the weights corresponding to the second data file
+ * weights_format2 = format of file containing the weights corresponding to the second data file
+---OUTPUT:
+ > DDfile        = name of output file <rmin rmax rpavg=0.0 npairs weightavg>
+
 */
 
 #include <stdio.h>
@@ -266,9 +285,9 @@ void Printhelp(void)
     fprintf(stderr,"   --- OPTIONAL ARGS:\n");
     fprintf(stderr,"     * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.\n");
     fprintf(stderr,"     * weights_file1 = name of file containing the weights corresponding to the first data file\n");
-    fprintf(stderr,"     * weights_format1 = name of file containing the weights corresponding to the first data file\n");
+    fprintf(stderr,"     * weights_format1 = format of file containing the weights corresponding to the first data file\n");
     fprintf(stderr,"     * weights_file2 = name of file containing the weights corresponding to the second data file\n");
-    fprintf(stderr,"     * weights_format2 = name of file containing the weights corresponding to the second data file\n");
+    fprintf(stderr,"     * weights_format2 = format of file containing the weights corresponding to the second data file\n");
     fprintf(stderr,"   ---OUTPUT:\n") ;
 #ifdef OUTPUT_RPAVG
     fprintf(stderr,"     > DDfile        = name of output file <rmin rmax rpavg npairs weightavg>\n") ;

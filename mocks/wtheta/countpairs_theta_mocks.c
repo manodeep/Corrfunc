@@ -22,6 +22,7 @@ void free_results_countpairs_theta(results_countpairs_theta *results)
     free(results->theta_upp);
     free(results->npairs);
     free(results->theta_avg);
+    free(results->weightavg);
 }
 
 

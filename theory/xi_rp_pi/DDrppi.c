@@ -8,17 +8,24 @@
 
 /* PROGRAM DDrppi
 
-   --- DDrppi rpmin rpmax nrpbin data1 data2 [pimax] > DDfile
-   --- Measure the cross-correlation function xi(rp,pi) for two different
-   data files (or autocorrelation if data1=data2).
-
-   * rpmin   = inner radius of smallest bin (in Mpc/h)
-   * rpmax   = outer radius of largest bin
-   * nrpbin  = number of bins (logarithmically spaced in r)
-   * data1   = name of first data file
-   * data2   = name of second data file
-   *[pimax]  = maximum value of line-of-sight separation (default=40 Mpc/h)
-   > DDfile  = name of output file <logrp log(<rp>) pi pairs>
+--- DDrppi file1 format1 file2 format2 binfile pimax numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
+--- Measure the cross-correlation function xi(rp,pi) for two different
+   data files (or autocorrelation if file1=file1).
+ * file1         = name of first data file
+ * format1       = format of first data file  (a=ascii, c=csv, f=fast-food)
+ * file2         = name of second data file
+ * format2       = format of second data file (a=ascii, c=csv, f=fast-food)
+ * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
+ * pimax         = maximum line-of-sight-separation
+ * numthreads    = number of threads to use
+--- OPTIONAL ARGS:
+ * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
+ * weights_file1 = name of file containing the weights corresponding to the first data file
+ * weights_format1 = format of file containing the weights corresponding to the first data file
+ * weights_file2 = name of file containing the weights corresponding to the second data file
+ * weights_format2 = format of file containing the weights corresponding to the second data file
+---OUTPUT:
+ > DDfile        = name of output file <logrp pi rpavg npairs weightavg>
    ----------------------------------------------------------------------
 */
 
@@ -103,7 +110,6 @@ int main(int argc, char *argv[])
                 fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
         }
         return EXIT_FAILURE;
-
     }
 
     file1=argv[1];
@@ -184,7 +190,6 @@ int main(int argc, char *argv[])
         }
     }
 
-
     if (autocorr==0) {
         /*---Read-data2-file----------------------------------*/
         ND2=read_positions(file2,fileformat2,sizeof(DOUBLE), 3, &x2, &y2, &z2);
@@ -253,7 +258,6 @@ int main(int argc, char *argv[])
         return status;
     }
 
-
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
 
@@ -280,17 +284,17 @@ int main(int argc, char *argv[])
 void Printhelp(void)
 {
     fprintf(stderr,"=========================================================================\n") ;
-    #if defined(USE_OMP) && defined(_OPENMP)
-    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 pimax binfile numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
+#if defined(USE_OMP) && defined(_OPENMP)
+    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
 #else
-    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 pimax binfile [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
+    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
 #endif
 
     fprintf(stderr,"   --- Measure the cross-correlation function xi(rp,pi) for two different\n") ;
     fprintf(stderr,"       data files (or autocorrelation if data1=data2).\n") ;
-    fprintf(stderr,"     * data1         = name of first data file\n") ;
+    fprintf(stderr,"     * file1         = name of first data file\n") ;
     fprintf(stderr,"     * format1       = format of first data file  (a=ascii, c=csv, f=fast-food)\n") ;
-    fprintf(stderr,"     * data2         = name of second data file\n") ;
+    fprintf(stderr,"     * file2         = name of second data file\n") ;
     fprintf(stderr,"     * format2       = format of second data file (a=ascii, c=csv, f=fast-food)\n") ;
     fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
     fprintf(stderr,"     * pimax         = maximum line-of-sight-separation\n") ;
@@ -300,9 +304,9 @@ void Printhelp(void)
     fprintf(stderr,"   --- OPTIONAL ARGS:\n");
     fprintf(stderr,"     * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.\n");
     fprintf(stderr,"     * weights_file1 = name of file containing the weights corresponding to the first data file\n");
-    fprintf(stderr,"     * weights_format1 = name of file containing the weights corresponding to the first data file\n");
+    fprintf(stderr,"     * weights_format1 = format of file containing the weights corresponding to the first data file\n");
     fprintf(stderr,"     * weights_file2 = name of file containing the weights corresponding to the second data file\n");
-    fprintf(stderr,"     * weights_format2 = name of file containing the weights corresponding to the second data file\n");
+    fprintf(stderr,"     * weights_format2 = format of file containing the weights corresponding to the second data file\n");
     fprintf(stderr,"   ---OUTPUT:\n") ;
 #ifdef OUTPUT_RPAVG
     fprintf(stderr,"     > DDfile        = name of output file <logrp pi rpavg npairs weightavg>\n") ;

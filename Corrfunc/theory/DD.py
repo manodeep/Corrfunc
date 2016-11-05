@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 Python wrapper around the C extension for the pair counter in
 ``theory/xi_of_r``. This wrapper is in :py:mod:`Corrfunc.theory.DD`
@@ -148,24 +151,25 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-    >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, output_ravg=True)
-    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d}".
+    >>> weights = np.ones_like(X)
+    >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, weights1=weights, weight_type='pair_product', output_ravg=True)
+    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['rmin'], r['rmax'], r['ravg'],
-    ...                         r['npairs'])) # doctest: +NORMALIZE_WHITESPACE
-    0.167536   0.238755   0.000000          0
-    0.238755   0.340251   0.000000          0
-    0.340251   0.484892   0.000000          0
-    0.484892   0.691021   0.000000          0
-    0.691021   0.984777   0.945372          2
-    0.984777   1.403410   1.340525         10
-    1.403410   2.000000   1.732968         36
-    2.000000   2.850200   2.558878         54
-    2.850200   4.061840   3.564959        208
-    4.061840   5.788530   4.999278        674
-    5.788530   8.249250   7.126673       2154
-    8.249250  11.756000  10.201834       5996
-    11.756000  16.753600  14.517830      17746
-    16.753600  23.875500  20.716017      50252
+    ...                         r['npairs'], r['weightavg'])) # doctest: +NORMALIZE_WHITESPACE
+      0.167536   0.238755   0.000000          0   0.000000
+      0.238755   0.340251   0.000000          0   0.000000
+      0.340251   0.484892   0.000000          0   0.000000
+      0.484892   0.691021   0.000000          0   0.000000
+      0.691021   0.984777   0.945372          2   1.000000
+      0.984777   1.403410   1.340525         10   1.000000
+      1.403410   2.000000   1.732968         36   1.000000
+      2.000000   2.850200   2.558878         54   1.000000
+      2.850200   4.061840   3.564959        208   1.000000
+      4.061840   5.788530   4.999278        674   1.000000
+      5.788530   8.249250   7.126673       2154   1.000000
+      8.249250  11.756000  10.201834       5996   1.000000
+     11.756000  16.753600  14.517830      17746   1.000000
+     16.753600  23.875500  20.716017      50252   1.000000
 
     """
     try:
@@ -181,8 +185,10 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     from future.utils import bytes_to_native_str
     
     # Broadcast scalar weights to arrays
-    weights1 = np.atleast_1d(weights1)
-    weights2 = np.atleast_1d(weights2)
+    if weights1 is not None:
+        weights1 = np.atleast_1d(weights1)
+    if weights2 is not None:
+        weights2 = np.atleast_1d(weights2)
 
     if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:

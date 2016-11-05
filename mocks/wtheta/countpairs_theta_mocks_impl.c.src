@@ -146,6 +146,19 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
     }
     function = allfunctions[function_dispatch];
     old_isa = options->instruction_set;
+    
+    if(options->verbose){
+        // This must be first (AVX/SSE may be aliased to fallback)
+        if(function_dispatch == fallback_offset){
+            printf("Using fallback kernel\n");
+        } else if(function_dispatch == avx_offset){
+            printf("Using AVX kernel\n");
+        } else if(function_dispatch == sse_offset){
+            printf("Using SSE kernel\n");
+        } else {
+            printf("Unknown kernel!\n");
+        }
+    }
         
     return function;
 }
@@ -164,7 +177,18 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
-    (void) extra;
+    
+    // If no extra options were passed, create dummy options
+    // This allows us to pass arguments like "extra->weights0" below;
+    // they'll just be NULLs, which is the correct behavior
+    struct extra_options dummy_extra;
+    if(extra == NULL){
+      weight_method_t dummy_method = NONE;
+      dummy_extra = get_extra_options(dummy_method);
+      extra = &dummy_extra;
+    }
+    
+    int need_weightavg = extra->weight_method != NONE;
     
     /* Always print a message saying "brute-force" is running*/
     fprintf(stderr,"Running brute force algorithm\n");
@@ -183,16 +207,23 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
 #if defined(_OPENMP)
     uint64_t all_npairs[numthreads][nthetabin];
     DOUBLE all_thetaavg[numthreads][nthetabin];
+    DOUBLE all_weightavg[numthreads][nthetabin];
     memset(all_npairs, 0, sizeof(DOUBLE)*numthreads*nthetabin);
     if(options->need_avg_sep) {
         memset(all_thetaavg, 0, sizeof(DOUBLE)*numthreads*nthetabin);
     }
+    if(need_weightavg) {
+        memset(all_weightavg, 0, sizeof(DOUBLE)*numthreads*nthetabin);
+    }
 #else
     uint64_t npairs[nthetabin];
     for(int i=0;i<nthetabin;i++) npairs[i]=0;
-    DOUBLE thetaavg[nthetabin];
+    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
     if(options->need_avg_sep) {
         for(int i=0;i<nthetabin;i++) thetaavg[i] = ZERO;
+    }
+    if(need_weightavg) {
+        for(int i=0;i<nthetabin;i++) weightavg[i] = ZERO;
     }
 #endif
     
@@ -214,11 +245,14 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     {
         int tid = omp_get_thread_num();
         uint64_t npairs[nthetabin];
-        DOUBLE thetaavg[nthetabin];
+        DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
         for(int i=0;i<nthetabin;i++) {
             npairs[i] = 0;
             if(options->need_avg_sep) {
                 thetaavg[i] = ZERO;
+            }
+            if(need_weightavg) {
+                weightavg[i] = ZERO;
             }
         }
 
@@ -250,14 +284,25 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
                 for(int64_t j=0;j<N1;j+=block_size) {
                     const int64_t block_size2 = (N1-j) > block_size ? block_size:(N1-j);
                     DOUBLE *this_thetaavg = need_thetaavg ? thetaavg:NULL;
-                    int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i],
-                                                                        block_size2, &x1[j], &y1[j], &z1[j],
+                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+                    
+                    // Make thread-local copies of the weights structs so we can
+                    // advance the pointers
+                    weight_struct_DOUBLE this_weights0 = {.num_weights = extra->weights0.num_weights};
+                    weight_struct_DOUBLE this_weights1 = {.num_weights = extra->weights1.num_weights};
+                    for(int w = 0; w < this_weights0.num_weights; w++){
+                        this_weights0.weights[w] = (DOUBLE *) extra->weights0.weights[w] + i;
+                        this_weights1.weights[w] = (DOUBLE *) extra->weights0.weights[w] + i;
+                    }
+                    
+                    int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i], &this_weights0,
+                                                                        block_size2, &x1[j], &y1[j], &z1[j], &this_weights1,
                                                                         same_cell,
                                                                         options->fast_acos,
                                                                         costhetamax, costhetamin, nthetabin,
                                                                         costheta_upp,
                                                                         this_thetaavg,
-                                                                        npairs);
+                                                                        npairs, this_weightavg, extra->weight_method);
                     abort_status |= status;
                 } //N1 loop
             } //abort_status condition
@@ -268,6 +313,9 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
             all_npairs[tid][j] = npairs[j];
             if(options->need_avg_sep) {
                 all_thetaavg[tid][j] = thetaavg[j];
+            }
+            if(need_weightavg) {
+                all_weightavg[tid][j] = weightavg[j];
             }
         }
     }//close the omp parallel region
@@ -283,11 +331,14 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
 
 #if defined(_OPENMP)
     uint64_t npairs[nthetabin];
-    DOUBLE thetaavg[nthetabin];
+    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
     for(int i=0;i<nthetabin;i++) {
         npairs[i] = 0;
         if(options->need_avg_sep) {
             thetaavg[i] = ZERO;
+        }
+        if(need_weightavg) {
+            weightavg[i] = ZERO;
         }
     }
     for(int i=0;i<numthreads;i++) {
@@ -296,14 +347,20 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
             if(options->need_avg_sep) {
                 thetaavg[j] += all_thetaavg[i][j];
             }
+            if(need_weightavg) {
+                weightavg[j] += all_weightavg[i][j];
+            }
         }
     }
 #endif//USE_OMP
 
-    if(options->need_avg_sep) {
-        for(int i=1;i<nthetabin;i++) {
-            if(npairs[i] > 0) {
-                thetaavg[i] /= (DOUBLE) npairs[i];
+    for(int i=1;i<nthetabin;i++) {
+        if(npairs[i] > 0) {
+            if(options->need_avg_sep) {
+                thetaavg[i] /= (DOUBLE) npairs[i] ;
+            }
+            if(need_weightavg) {
+                weightavg[i] /= (DOUBLE) npairs[i];
             }
         }
     }
@@ -315,6 +372,7 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     results->npairs = my_malloc(sizeof(*(results->npairs)), nthetabin);
     results->theta_upp = my_malloc(sizeof(*(results->theta_upp))  , nthetabin);
     results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
+    results->weightavg = my_malloc(sizeof(*(results->weightavg))  , nthetabin);
 
     for(int i=0;i<nthetabin;i++) {
         results->npairs[i] = npairs[i];
@@ -322,6 +380,9 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
         results->theta_avg[i] = ZERO;
         if(options->need_avg_sep) {
             results->theta_avg[i] = thetaavg[i];
+        }
+        if(need_weightavg) {
+            results->weightavg[i] = weightavg[i];
         }
     }
     if(options->c_api_timer) {
@@ -351,17 +412,30 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         if(results != NULL) {
             results->npairs = NULL;
             results->theta_avg = NULL;
+            results->weightavg = NULL;
             results->theta_upp = NULL;
         }
         return EXIT_SUCCESS;
     }
-    (void) extra;
 
     if(options->float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
+    
+    // If no extra options were passed, create dummy options
+    // This allows us to pass arguments like "extra->weights0" below;
+    // they'll just be NULLs, which is the correct behavior
+    struct extra_options dummy_extra;
+    if(extra == NULL){
+      weight_method_t dummy_method = NONE;
+      dummy_extra = get_extra_options(dummy_method);
+      extra = &dummy_extra;
+    }
+    
+    int need_weightavg = extra->weight_method != NONE;
+
     struct timeval t0;
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);
@@ -501,7 +575,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     int64_t totncells;
     if(options->link_in_ra) {
         int *nmesh_grid_ra=NULL;
-        lattice1 = gridlink_mocks_theta_ra_dec_DOUBLE(ND1, ra1, dec1, X1, Y1, Z1,
+        lattice1 = gridlink_mocks_theta_ra_dec_DOUBLE(ND1, ra1, dec1, X1, Y1, Z1, &(extra->weights0),
                                                       ra_min, ra_max,
                                                       dec_min, dec_max,
                                                       options->max_cells_per_dim,
@@ -521,7 +595,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 int64_t totncells2;
                 int nmesh_dec2, max_nmesh_ra2;
                 int *nmesh_grid_ra2=NULL;
-                lattice2 = gridlink_mocks_theta_ra_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
+                lattice2 = gridlink_mocks_theta_ra_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2, &(extra->weights1),
                                                               ra_min, ra_max,
                                                               dec_min, dec_max,
                                                               options->max_cells_per_dim, options->max_cells_per_dim,
@@ -590,7 +664,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
     } else {
         /* Only link in declination */
-        lattice1 = gridlink_mocks_theta_dec_DOUBLE(ND1,ra1,dec1,X1,Y1,Z1,
+        lattice1 = gridlink_mocks_theta_dec_DOUBLE(ND1,ra1,dec1,X1,Y1,Z1, &(extra->weights0),
                                                    dec_min, dec_max,
                                                    options->max_cells_per_dim,
                                                    options->bin_refine_factors[1],
@@ -603,7 +677,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             lattice2 = lattice1;
             if(autocorr == 0) {
                 int64_t totncells_2=0;
-                lattice2 = gridlink_mocks_theta_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2,
+                lattice2 = gridlink_mocks_theta_dec_DOUBLE(ND2, ra2, dec2, X2, Y2, Z2, &(extra->weights1),
                                                            dec_min, dec_max,
                                                            options->max_cells_per_dim,
                                                            options->bin_refine_factors[1],
@@ -696,12 +770,21 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     if(options->need_avg_sep) {
         all_thetaavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nthetabin);
     }
+    DOUBLE **all_weightavg = NULL;
+    if(need_weightavg) {
+      all_weightavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nthetabin);
+    }
 #else
     uint64_t npairs[nthetabin];
-    for(int i=0;i<nthetabin;i++) npairs[i]=0;
-    DOUBLE thetaavg[nthetabin];
-    if(options->need_avg_sep) {
-        for(int i=0;i<nthetabin;i++) thetaavg[i] = ZERO;
+    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
+    for(int i=0; i <nthetabin;i++) {
+        npairs[i] = 0;
+        if(options->need_avg_sep) {
+            thetaavg[i] = ZERO;
+        }
+        if(need_weightavg) {
+            weightavg[i] = ZERO;
+        }
     }
 #endif
 
@@ -716,11 +799,14 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     {
         int tid = omp_get_thread_num();
         uint64_t npairs[nthetabin];
-        DOUBLE thetaavg[nthetabin];
+        DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
         for(int i=0;i<nthetabin;i++) {
             npairs[i] = 0;
             if(options->need_avg_sep) {
                 thetaavg[i] = ZERO;
+            }
+            if(need_weightavg) {
+                weightavg[i] = ZERO;
             }
         }
 
@@ -758,20 +844,23 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 DOUBLE *x1 = first->x;
                 DOUBLE *y1 = first->y;
                 DOUBLE *z1 = first->z;
-
+                const weight_struct_DOUBLE *weights1 = &(first->weights);
+                
                 if(autocorr == 1) {
                     int same_cell = 1;
                     DOUBLE *this_thetaavg = NULL;
                     if(options->need_avg_sep) {
                         this_thetaavg = thetaavg;
                     }
-                    const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1,
-                                                                              N1, x1, y1, z1,
+                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+                    const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                                              N1, x1, y1, z1, weights1,
                                                                               same_cell,
                                                                               options->fast_acos,
                                                                               costhetamax, costhetamin, nthetabin,
                                                                               costheta_upp,
-                                                                              this_thetaavg, npairs);
+                                                                              this_thetaavg, npairs, 
+                                                                              this_weightavg, extra->weight_method);
 
                     /* This actually causes a race condition under OpenMP - but mostly
                        I care that an error occurred - rather than the exact value of
@@ -788,18 +877,21 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                     DOUBLE *x2 = second->x;
                     DOUBLE *y2 = second->y;
                     DOUBLE *z2 = second->z;
+                    const weight_struct_DOUBLE *weights2 = &(second->weights);
                     int same_cell=0;
                     DOUBLE *this_thetaavg = NULL;
                     if(options->need_avg_sep) {
                         this_thetaavg = thetaavg;
                     }
-                    const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1,
-                                                                              N2, x2, y2, z2,
+                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+                    const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                                              N2, x2, y2, z2, weights2,
                                                                               same_cell,
                                                                               options->fast_acos,
                                                                               costhetamax, costhetamin, nthetabin,
                                                                               costheta_upp,
-                                                                              this_thetaavg, npairs);
+                                                                              this_thetaavg, npairs,
+                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
                        I care that an error occurred - rather than the exact value of
                        the error status */
@@ -813,6 +905,9 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             all_npairs[tid][j] = npairs[j];
             if(options->need_avg_sep) {
                 all_thetaavg[tid][j] = thetaavg[j];
+            }
+            if(need_weightavg) {
+                all_weightavg[tid][j] = weightavg[j];
             }
         }
     }//close the omp parallel region
@@ -831,6 +926,9 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         if(options->need_avg_sep) {
             matrix_free((void **) all_thetaavg, numthreads);
         }
+        if(need_weightavg) {
+            matrix_free((void **) all_weightavg, numthreads);
+        }
 #endif
         return EXIT_FAILURE;
     }
@@ -842,11 +940,14 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
 #if defined(_OPENMP)
     uint64_t npairs[nthetabin];
-    DOUBLE thetaavg[nthetabin];
+    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
     for(int i=0;i<nthetabin;i++) {
         npairs[i] = 0;
         if(options->need_avg_sep) {
             thetaavg[i] = ZERO;
+        }
+        if(need_weightavg) {
+            weightavg[i] = ZERO;
         }
     }
     for(int i=0;i<numthreads;i++) {
@@ -855,11 +956,17 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             if(options->need_avg_sep) {
                 thetaavg[j] += all_thetaavg[i][j];
             }
+            if(need_weightavg) {
+                weightavg[j] += all_weightavg[i][j];
+            }
         }
     }
     matrix_free((void **) all_npairs, numthreads);
     if(options->need_avg_sep) {
         matrix_free((void **) all_thetaavg, numthreads);
+    }
+    if(need_weightavg) {
+        matrix_free((void **) all_weightavg, numthreads);
     }
 #endif//USE_OMP
 
@@ -873,13 +980,19 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             if(options->need_avg_sep) {
                 thetaavg[i] *= dbl_fac;
             }
+            if(need_weightavg) {
+                weightavg[i] *= dbl_fac;
+            }
         }
     }
 
-    if(options->need_avg_sep) {
-        for(int i=1;i<nthetabin;i++) {
-            if(npairs[i] > 0) {
-                thetaavg[i] /= (DOUBLE) npairs[i];
+    for(int i=1;i<nthetabin;i++) {
+        if(npairs[i] > 0) {
+            if(options->need_avg_sep) {
+                thetaavg[i] /= (DOUBLE) npairs[i] ;
+            }
+            if(need_weightavg) {
+                weightavg[i] /= (DOUBLE) npairs[i];
             }
         }
     }
@@ -890,7 +1003,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     results->npairs = my_malloc(sizeof(*(results->npairs)), nthetabin);
     results->theta_upp = my_malloc(sizeof(*(results->theta_upp))  , nthetabin);
     results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
-    if(results->npairs == NULL || results->theta_upp == NULL || results->theta_avg == NULL) {
+    results->weightavg  = my_calloc(sizeof(*(results->weightavg))  , nthetabin);
+    if(results->npairs == NULL || results->theta_upp == NULL || results->theta_avg == NULL || results->weightavg == NULL) {
         free_results_countpairs_theta(results);
         free(theta_upp);
         return EXIT_FAILURE;
@@ -900,8 +1014,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         results->npairs[i] = npairs[i];
         results->theta_upp[i] = theta_upp[i];
         results->theta_avg[i] = ZERO;
+        results->weightavg[i] = ZERO;
         if(options->need_avg_sep) {
             results->theta_avg[i] = thetaavg[i];
+        }
+        if(need_weightavg) {
+            results->weightavg[i] = weightavg[i];
         }
     }
     free(theta_upp);

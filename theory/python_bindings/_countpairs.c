@@ -186,7 +186,7 @@ static PyMethodDef module_methods[] = {
     "results : A python list\n"
     "   A python list containing [rmin, rmax, ravg, npairs, weight_avg] for each radial bin\n"
     "   specified in the ``binfile``. If ``output_ravg`` is not set, then ``ravg``\n"
-    "   will be set to 0.0 for all bins. ``npairs`` contains the number of pairs\n"
+    "   will be set to 0.0 for all bins; similarly for ``weight_avg``. ``npairs`` contains the number of pairs\n"
     "   in that bin and can be used to compute the actual "XI_CHAR"(r) by\n"
     "   combining with (DR, RR) counts.\n\n"
 

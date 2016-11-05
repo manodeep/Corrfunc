@@ -560,6 +560,24 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
            a cross-correlation with two identical datasets 
            produces the same result as the auto-correlation  */
         npairs[1] += ND; //npairs[1] contains the first valid bin.
+        
+      // Increasing npairs affects rpavg and weightavg.
+      // We don't need to add anything to rpavg; all the self-pairs have 0 separation!
+      // The self-pairs have non-zero weight, though.  So, fix that here.
+      if(need_weightavg){
+        // Keep in mind this is an autocorrelation (i.e. only one particle set to consider)
+        weight_func_t_DOUBLE weight_func = get_weight_func_by_method_DOUBLE(extra->weight_method);
+        pair_struct_DOUBLE pair = {.num_weights = extra->weights0.num_weights,
+                                   .dx.d=0., .dy.d=0., .dz.d=0.,  // always 0 separation
+                                   .parx.d=0., .pary.d=0., .parz.d=0.};
+        for(int j = 0; j < ND; j++){
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights0[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
+                pair.weights1[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
+            }
+            weightavg[1] += weight_func(&pair);
+        }
+      }
     }
 
     
@@ -596,37 +614,37 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     // return the weighted xi
     DOUBLE *weights = extra->weights0.weights[0];  // pair_product only uses the first weights field
     if(need_weightavg && extra->weight_method == PAIR_PRODUCT) {
-        weightsum = 0., weight_sqr_sum = 0.;
+        weightsum = 0;
         for(int64_t j = 0; j < ND; j++){
             weightsum += weights[j];
             weight_sqr_sum += weights[j]*weights[j];
         }
     }
-    // The correction term of -weight_sqr_sum is needed for autocorrelations
-    const DOUBLE prefac_density_DD=(weightsum*weightsum - weight_sqr_sum)/(boxsize*boxsize*boxsize);
+    
+    // The RR term is the expected pair counts for a random particle set, all with the mean weight
+    // The negative term is needed for autocorrelations
+    const DOUBLE prefac_density_DD = weightsum*(weightsum - weightsum/ND)/(boxsize*boxsize*boxsize);
 
-    DOUBLE rlow=0.0 ;
+    DOUBLE rlow = 0.0;
     DOUBLE twice_pimax = 2.0*pimax;
 
+    //The first bin contains junk
     for(int i=0;i<nrpbins;i++) {
         results->npairs[i] = npairs[i];
         results->rupp[i] = rupp[i];
-        results->rpavg[i] = 0.0;
-        results->weightavg[i] = 0.0;
-        if(options->need_avg_sep) {
-            results->rpavg[i] = rpavg[i];
-        }
-        if(need_weightavg) {
-            results->weightavg[i] = weightavg[i];
-        }
-        const DOUBLE weight0 = (DOUBLE) results->npairs[i];
+        results->rpavg[i] = options->need_avg_sep ? rpavg[i] : 0.0;
+        results->weightavg[i] = need_weightavg ? weightavg[i] : 0.0;
+        
         /* compute xi, dividing summed weight by that expected for a random set */
+        DOUBLE weight0 = (DOUBLE) results->npairs[i];
+        if(need_weightavg && extra->weight_method == PAIR_PRODUCT) {
+            weight0 *= results->weightavg[i];
+        }
         const DOUBLE vol=M_PI*(results->rupp[i]*results->rupp[i]-rlow*rlow)*twice_pimax;
         if(vol > 0.0) {
-            const DOUBLE weightrandom = prefac_density_DD*vol;
-            if(weightrandom <= 0.0) {
-                fprintf(stderr,"Weight for randoms = %lf must be positive. Volume = %lf\n", weightrandom, vol);
-                return EXIT_FAILURE;
+            DOUBLE weightrandom = prefac_density_DD*vol;
+            if(rlow <= 0.){
+                weightrandom += weight_sqr_sum;  // Bins that start at 0 include self-pairs
             }
             results->wp[i] = (weight0/weightrandom-1)*twice_pimax;
         } else {

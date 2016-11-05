@@ -163,12 +163,6 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
             AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
 
-            if(need_weightavg){
-                pair.dx.a = m_xdiff;
-                pair.dy.a = m_ydiff;
-                pair.dz.a = m_zdiff;
-            }
-
             const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
             const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(m_ydiff);  //(y0 - y[j])^2
             AVX_FLOATS r2  = AVX_ADD_FLOATS(m_sqr_xdiff, m_sqr_ydiff);
@@ -211,6 +205,10 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
+                pair.dx.a = m_xdiff;
+                pair.dy.a = m_ydiff;
+                pair.dz.a = m_zdiff;
+
                 union_mweight.m_weights = avx_weight_func(&pair);
             }
             
@@ -268,17 +266,15 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 continue;
             }
             
-            if(need_weightavg){
-                pair.dx.d = dx;
-                pair.dy.d = dy;
-                pair.dz.d = dz;
-            }
-
             DOUBLE r, pairweight;
             if(need_rpavg) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+
                 pairweight = fallback_weight_func(&pair);
             }
 
@@ -466,12 +462,6 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 
             const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(m_xdiff);
             const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(m_ydiff);
-
-            if(need_weightavg){
-                pair.dx.s = m_xdiff;
-                pair.dy.s = m_ydiff;
-                pair.dz.s = m_zdiff;
-            }
             
             SSE_FLOATS r2  = SSE_ADD_FLOATS(m_sqr_xdiff, m_sqr_ydiff);
             m_zdiff = SSE_MAX_FLOATS(m_zdiff,SSE_SUBTRACT_FLOATS(m_zero,m_zdiff));//dz = fabs(dz) => dz = max(dz, -dz);
@@ -513,6 +503,10 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
+                pair.dx.s = m_xdiff;
+                pair.dy.s = m_ydiff;
+                pair.dz.s = m_zdiff;
+                
                 union_mweight.m_weights = sse_weight_func(&pair);
             }
 
@@ -566,17 +560,15 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
             const DOUBLE r2 = dx*dx + dy*dy;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
             
-            if(need_weightavg){
-                pair.dx.d = dx;
-                pair.dy.d = dy;
-                pair.dz.d = dz;
-            }
-            
             DOUBLE r, pairweight;
             if(need_rpavg) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+
                 pairweight = fallback_weight_func(&pair);
             }
 

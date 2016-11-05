@@ -392,15 +392,15 @@ int test_xi(const char *correct_outputfile)
         uint64_t npairs;
         double ravg,xi,weightavg;
         ret = EXIT_FAILURE;
-        int nitems = fscanf(fp,"%lf %lf %*f %*f %"SCNu64"%lf%*[^\n]", &xi, &ravg, &npairs, &weightavg);//discard rlow and rupp
-        if(nitems != 3) {  // 4
+        int nitems = fscanf(fp,"%lf %lf %*f %*f %"SCNu64" %lf[^\n]", &xi, &ravg, &npairs, &weightavg); //discard rlow and rupp
+        if(nitems != 4) {
             ret = EXIT_FAILURE;//not required but showing intent
             break;
         }
         int ravg_equal = AlmostEqualRelativeAndAbs_double(ravg, results.ravg[i], maxdiff, maxreldiff);
         int weightavg_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
         int xi_equal = AlmostEqualRelativeAndAbs_double(xi, results.xi[i], maxdiff, maxreldiff);
-
+        
         //Check for exact equality of npairs and float "equality" for ravg + xi 
         if(npairs == results.npairs[i] && ravg_equal == EXIT_SUCCESS && xi_equal == EXIT_SUCCESS && weightavg_equal == EXIT_SUCCESS) {
             ret = EXIT_SUCCESS;
@@ -511,7 +511,7 @@ int main(int argc, char **argv)
     options.verbose=0;
     options.periodic=1;
     options.float_type=sizeof(double);
-    options.instruction_set = AVX;
+    //options.instruction_set = FALLBACK;
 
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";

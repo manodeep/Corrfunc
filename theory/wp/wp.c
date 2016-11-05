@@ -7,18 +7,20 @@
 */
 
 /* PROGRAM wp
-   --- wp boxsize file format binfile pimax Nthreads [weight_method weights_file weights_format] > wpfile
-   --- Measure the projected auto-correlation function wp(rp) for a single periodic box
-   * boxsize      = BoxSize (in same units as X/Y/Z of the data)
-   * file         = name of first data file
-   * format       = format of first data file  (a=ascii, c=csv, f=fast-food)
-   * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)
-   * pimax        = maximum line-of-sight-separation
-   * numthreads   = number of threads to use (only if USE_OMP is enabled)
-   * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
-   * weights_file = name of file containing the weights corresponding to the data file
-   * weights_format = name of file containing the weights corresponding to the data file
-   > wpfile         = name of output file. Contains <wp [rpavg=0.0] rmin rmax npairs>
+--- wp boxsize file format binfile pimax Nthreads [weight_method weights_file weights_format] > wpfile
+--- Measure the projected auto-correlation function wp(rp) for a single periodic box
+ * boxsize      = BoxSize (in same units as X/Y/Z of the data)
+ * file         = name of data file
+ * format       = format of data file  (a=ascii, c=csv, f=fast-food)
+ * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
+ * pimax         = maximum line-of-sight-separation
+ * Nthreads    = number of threads to use
+--- OPTIONAL ARGS:
+ * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
+ * weights_file = name of file containing the weights corresponding to the data file
+ * weights_format = format of file containing the weights corresponding to the data file
+---OUTPUT:
+ > wpfile        = name of output file. Contains <rmin rmax rpavg=0.0 npairs wp weightavg>
    ----------------------------------------------------------------------
 */
 
@@ -265,7 +267,7 @@ void Printhelp(void)
     fprintf(stderr,"   --- OPTIONAL ARGS:\n");
     fprintf(stderr,"     * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.\n");
     fprintf(stderr,"     * weights_file = name of file containing the weights corresponding to the data file\n");
-    fprintf(stderr,"     * weights_format = name of file containing the weights corresponding to the data file\n");
+    fprintf(stderr,"     * weights_format = format of file containing the weights corresponding to the data file\n");
     fprintf(stderr,"   ---OUTPUT:\n") ;
 #ifdef OUTPUT_RPAVG
     fprintf(stderr,"     > wpfile        = name of output file. Contains <rmin rmax rpavg npairs wp weightavg>\n") ;

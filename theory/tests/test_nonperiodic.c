@@ -287,6 +287,7 @@ int main(int argc, char **argv)
     options.verbose=0;
     options.periodic=0;
     options.float_type=sizeof(double);
+    //options.instruction_set = FALLBACK;
 
     gettimeofday(&tstart,NULL);
 
