@@ -37,8 +37,7 @@ int test_DDrppi_mocks(const char *correct_outputfile);
 int test_wtheta_mocks(const char *correct_outputfile);
 int test_vpf_mocks(const char *correct_outputfile);
 
-void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat, const char *firstweightsfilename, const char *firstweightsfileformat,
-                               const char *secondweightsfilename, const char *secondweightsfileformat);
+void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
 
 //Global variables
 int ND1;
@@ -308,9 +307,7 @@ int test_vpf_mocks(const char *correct_outputfile)
 }
 
 
-void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat,
-                               const char *firstweightsfilename, const char *firstweightsfileformat,
-                               const char *secondweightsfilename, const char *secondweightsfileformat)
+void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat)
 {
     int free_RA2=0;
     if(RA2 != NULL && RA2 != RA1) {
@@ -331,13 +328,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
                 weights2 = NULL;
             }
         }
-        ND1 = read_positions(firstfilename,firstformat, sizeof(double), 3, &RA1, &DEC1, &CZ1);
-        strncpy(current_file1,firstfilename,MAXLEN);
-        int64_t wND1 = read_columns_into_array(firstweightsfilename, firstweightsfileformat, sizeof(double), 1, (void **) &weights1);
-        if(wND1 != ND1){
-            fprintf(stderr, "Error: number of weights read from %s did not match number of positions read from %s\n", firstweightsfilename, firstfilename);
-            return;
-        }
+        ND1 = read_positions(firstfilename,firstformat, sizeof(double), 4, &RA1, &DEC1, &CZ1, &weights1);
     }
 
     //first check if only one unique file is asked for
@@ -365,13 +356,8 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
             free(RA2);free(DEC2);free(CZ2);free(weights2);
         }
         /* fprintf(stderr,"Second data-set is different -- reading in the new data-set from `%s'\n",secondfilename); */
-        ND2 = read_positions(secondfilename,secondformat, sizeof(double), 3, &RA2, &DEC2, &CZ2);
+        ND2 = read_positions(secondfilename,secondformat, sizeof(double), 4, &RA2, &DEC2, &CZ2, &weights2);
         strncpy(current_file2,secondfilename,MAXLEN);
-        int64_t wND2 = read_columns_into_array(secondweightsfilename, secondweightsfileformat, sizeof(double), 1, (void **) &weights2);
-        if(wND2 != ND2){
-            fprintf(stderr,"Error: number of weights read from %s did not match number of positions read from %s\n", secondweightsfilename, secondfilename);
-            return;
-        }
     }
 }
 
@@ -381,9 +367,6 @@ int main(int argc, char **argv)
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/Mr19_mock_northonly.rdcz.dat";
     char fileformat[]="a";
-    
-    char weights_file[] = "../tests/data/Mr19_mock_northonly.rdcz.random.dat";
-    char weights_fileformat[] = "a";
     
     options = get_config_options();
     options.need_avg_sep=1;
@@ -401,9 +384,7 @@ int main(int argc, char **argv)
     gettimeofday(&tstart,NULL);
 
     //set the globals.
-    ND1 = read_positions(file,fileformat, sizeof(double), 3, &RA1, &DEC1, &CZ1);
-    int wND1 = read_columns_into_array(weights_file, weights_fileformat, sizeof(double), 1, (void **) &weights1);
-    XASSERT(wND1 == ND1, "Error: number of weights %d read from %s did not match number of positions %d read from %s\n", wND1, weights_file, ND1, file);
+    ND1 = read_positions(file,fileformat, sizeof(double), 4, &RA1, &DEC1, &CZ1, &weights1);
     
     ND2 = ND1;
     RA2 = RA1;
@@ -443,21 +424,6 @@ int main(int argc, char **argv)
                                            "../tests/data/Mr19_randoms_northonly.rdcz.ff"};
     const char secondfiletype[][MAXLEN] = {"a","a","a","a","a","f"};
     
-    const char firstweightsfilename[][MAXLEN] = {"../tests/data/Mr19_mock_northonly.rdcz.random.dat",
-                                          "../tests/data/Mr19_mock_northonly.rdcz.random.dat",
-                                          "../tests/data/Mr19_mock_northonly.rdcz.random.dat",
-                                          "../tests/data/Mr19_randoms_northonly.rdcz.random.dat",
-                                          "../tests/data/Mr19_randoms_northonly.rdcz.random.dat",
-                                          "../tests/data/Mr19_randoms_northonly.rdcz.random.dat"};
-    const char firstweightsfiletype[][MAXLEN]  = {"a","a","a","a","a","a"};
-    const char secondweightsfilename[][MAXLEN] = {"../tests/data/Mr19_mock_northonly.rdcz.random.dat",
-                                           "../tests/data/Mr19_mock_northonly.rdcz.random.dat",
-                                           "../tests/data/Mr19_mock_northonly.rdcz.random.dat",
-                                           "../tests/data/Mr19_mock_northonly.rdcz.random.dat",
-                                           "../tests/data/Mr19_mock_northonly.rdcz.random.dat",
-                                           "../tests/data/Mr19_randoms_northonly.rdcz.random.dat"};
-    const char secondweightsfiletype[][MAXLEN] = {"a","a","a","a","a","a"};
-    
     const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0};
 
     int (*allfunctions[]) (const char *) = {test_DDrppi_mocks,test_wtheta_mocks,test_vpf_mocks};
@@ -471,13 +437,13 @@ int main(int argc, char **argv)
             int function_index = function_pointer_index[i];
             assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
             const char *testname = alltests_names[i];
-            int skip_test=test_all_files_present(4,firstfilename[i],secondfilename[i], firstweightsfilename[i],secondweightsfilename[i]);
+            int skip_test=test_all_files_present(2,firstfilename[i],secondfilename[i]);
             if(skip_test != 0) {
                 fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". Test data-file(s) (`%s',`%s') not found\n", testname, firstfilename[i], secondfilename[i]);
                 skipped++;
                 continue;
             }
-            read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i],firstweightsfilename[i], firstweightsfiletype[i], secondweightsfilename[i], secondweightsfiletype[i]);
+            read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
             pimax=allpimax[i];
             gettimeofday(&t0,NULL);
             status = (*allfunctions[function_index])(correct_outputfiles[i]);
@@ -507,7 +473,7 @@ int main(int argc, char **argv)
                 int function_index = function_pointer_index[this_test_num];
                 assert(function_index >= 0 && function_index < numfunctions && "Function index is within range");
                 const char *testname = alltests_names[this_test_num];
-                int skip_test=test_all_files_present(4,firstfilename[this_test_num],secondfilename[this_test_num], firstweightsfilename[this_test_num],secondweightsfilename[this_test_num]);
+                int skip_test=test_all_files_present(2,firstfilename[this_test_num],secondfilename[this_test_num]);
                 if(skip_test != 0) {
                     fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". Test data-file(s) (`%s',`%s') not found\n", testname, firstfilename[this_test_num], secondfilename[this_test_num]);
                     skipped++;
@@ -515,7 +481,7 @@ int main(int argc, char **argv)
                 }
 
                 total_tests++;
-                read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num],firstweightsfilename[i], firstweightsfiletype[i], secondweightsfilename[i], secondweightsfiletype[i]);
+                read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
                 pimax=allpimax[this_test_num];
                 gettimeofday(&t0,NULL);
                 status = (*allfunctions[function_index])(correct_outputfiles[this_test_num]);
