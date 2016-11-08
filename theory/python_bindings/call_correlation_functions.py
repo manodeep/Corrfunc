@@ -62,8 +62,6 @@ def read_catalog(filebase=None):
     supply the full filename.
     """
 
-    import numpy as np
-
     def read_ascii_catalog(filename, return_dtype=None):
         if return_dtype is None:
             msg = 'Return data-type must be set and a valid numpy data-type'
