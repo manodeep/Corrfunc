@@ -87,7 +87,8 @@ def read_catalog(filebase=None):
             z = np.asarray(df[2], dtype=return_dtype)
 
         else:
-            x, y, z = np.genfromtxt(filename, dtype=return_dtype, unpack=True)
+            x, y, z, _ = np.genfromtxt(filename, dtype=return_dtype,
+                                       unpack=True)
 
         return x, y, z
 
@@ -206,7 +207,8 @@ def main():
     results_DD, _ = DD(autocorr=autocorr,
                        nthreads=nthreads,
                        binfile=binfile,
-                       X1=x, Y1=y, Z1=z, weights1=np.ones_like(x), weight_type='pair_product',
+                       X1=x, Y1=y, Z1=z, weights1=np.ones_like(x),
+                       weight_type='pair_product',
                        periodic=periodic,
                        boxsize=boxsize,
                        verbose=True,
@@ -247,7 +249,7 @@ def main():
               .format(items[0], items[1], items[2], items[3]))
     print("------------------------------------------------")
 
-    
+
     print("\nRunning 2-D correlation function DD(rp,pi)")
     results_DDrppi, _ = DDrppi(autocorr=autocorr,
                                nthreads=nthreads,
@@ -271,9 +273,11 @@ def main():
               .format(items[0], items[1], items[2], items[3], items[4], items[5]))
     print("-------------------------------------------------------------------------")
 
+
     print("\nRunning 2-D projected correlation function wp(rp)")
     results_wp, _, _ = wp(boxsize=boxsize, pimax=pimax, nthreads=nthreads,
-                          binfile=binfile, X=x, Y=y, Z=z, weights=np.ones_like(x), weight_type='pair_product',
+                          binfile=binfile, X=x, Y=y, Z=z,
+                          weights=np.ones_like(x), weight_type='pair_product',
                           verbose=True, output_rpavg=True)
     print("\n#            ******    wp: first {0} bins  *******         "
           .format(numbins_to_print))
@@ -285,9 +289,12 @@ def main():
               .format(items[0], items[1], items[2], items[3], items[4], items[5]))
     print("-------------------------------------------------------------------------")
 
+
     print("\nRunning 3-D auto-correlation function xi(r)")
     results_xi, _ = xi(boxsize=boxsize, nthreads=nthreads, binfile=binfile,
-                       X=x, Y=y, Z=z, weights=np.ones_like(x), weight_type='pair_product', verbose=True, output_ravg=True)
+                       X=x, Y=y, Z=z, weights=np.ones_like(x),
+                       weight_type='pair_product',
+                       verbose=True, output_ravg=True)
     print("\n#            ******    xi: first {0} bins  *******         "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg        xi       npairs    weight_avg")
@@ -298,6 +305,7 @@ def main():
               .format(items[0], items[1], items[2], items[3], items[4], items[5]))
     print("------------------------------------------------------------------------")
     print("Done with all four correlation calculations.")
+
 
     print("\nRunning VPF pN(r)")
     rmax = 10.0

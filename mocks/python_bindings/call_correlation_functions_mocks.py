@@ -60,8 +60,10 @@ def main():
         ra = np.asarray(df[0], dtype=dtype)
         dec = np.asarray(df[1], dtype=dtype)
         cz = np.asarray(df[2], dtype=dtype)
+        weights = np.asarray(df[3], dtype=dtype)
     else:
-        ra, dec, cz = np.genfromtxt(filename, dtype=dtype, unpack=True)
+        ra, dec, cz, weights = np.genfromtxt(filename, dtype=dtype,
+                                             unpack=True)
 
     t1 = time.time()
     print("RA min  = {0} max = {1}".format(np.min(ra), np.max(ra)))
@@ -82,8 +84,9 @@ def main():
     print("\nRunning 2-D correlation function xi(rp,pi)")
     results_DDrppi, _ = rp_pi_mocks(autocorr, cosmology, nthreads,
                                     pimax, binfile,
-                                    ra, dec, cz, weights1=np.ones_like(ra),
-                                    output_rpavg=True, verbose=True, weight_type='pair_product')
+                                    ra, dec, cz, weights1=weights,
+                                    output_rpavg=True, verbose=True,
+                                    weight_type='pair_product')
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
     print("#      rmin        rmax       rpavg     pi_upper     npairs     weight_avg")
@@ -119,8 +122,8 @@ def main():
                     "../tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")
     results_wtheta, _ = theta_mocks(autocorr, nthreads, binfile,
-                                    ra, dec, weights1=np.ones_like(ra),
-                                    RA2=ra, DEC2=dec, weights2=np.ones_like(ra),
+                                    ra, dec, weights1=weights,
+                                    RA2=ra, DEC2=dec, weights2=weights,
                                     output_thetaavg=True, fast_acos=True,
                                     verbose=1, weight_type='pair_product')
     print("\n#         ******  wtheta: first {0} bins  *******        "
