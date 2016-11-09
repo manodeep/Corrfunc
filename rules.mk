@@ -7,6 +7,10 @@ gridlink_mocks_impl_double.o:gridlink_mocks_impl_double.c gridlink_mocks_impl_do
 gridlink_mocks_impl_float.o:gridlink_mocks_impl_float.c gridlink_mocks_impl_float.h 
 gridlink_impl_double.h:cellarray_double.h
 gridlink_impl_float.h:cellarray_float.h
+cellarray_double.h:weight_functions_double.h
+cellarray_float.h:weight_functions_float.h
+weight_functions_double.h:weight_defs_double.h
+weight_functions_float.h:weight_defs_float.h
 gridlink_mocks_impl_double.h:cellarray_mocks_double.h
 gridlink_mocks_impl_float.h:cellarray_mocks_float.h
 

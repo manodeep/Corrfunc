@@ -47,6 +47,7 @@ extern void* my_calloc(size_t size,int64_t N);
 extern void my_free(void ** x);
 extern void **matrix_malloc(size_t size,int64_t nx,int64_t ny);
 extern void **matrix_calloc(size_t size,int64_t nx,int64_t ny);
+extern int matrix_realloc(void **matrix, size_t size, int64_t nrow, int64_t ncol);
 extern void matrix_free(void **m,int64_t ny);
 
 void *** volume_malloc(size_t size,int64_t nrow,int64_t ncol,int64_t nframe);

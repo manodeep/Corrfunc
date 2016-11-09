@@ -100,13 +100,26 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
     }
     function = allfunctions[function_dispatch];
     old_isa = options->instruction_set;
+    
+    if(options->verbose){
+        // This must be first (AVX/SSE may be aliased to fallback)
+        if(function_dispatch == fallback_offset){
+            printf("Using fallback kernel\n");
+        } else if(function_dispatch == avx_offset){
+            printf("Using AVX kernel\n");
+        } else if(function_dispatch == sse_offset){
+            printf("Using SSE kernel\n");
+        } else {
+            printf("Unknown kernel!\n");
+        }
+    }
 
     return function;
 }
 
 
-int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
-                      const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE  *Z2,
+int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
+                      const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE *Z2,
                       const int numthreads,
                       const int autocorr,
                       const char *binfile,
@@ -119,7 +132,18 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
             __FUNCTION__, sizeof(DOUBLE), options->float_type);
     return EXIT_FAILURE;
   }
-  (void) extra;/* silencing compiler for now*/
+  
+  // If no extra options were passed, create dummy options
+  // This allows us to pass arguments like "extra->weights0" below;
+  // they'll just be NULLs, which is the correct behavior
+  struct extra_options dummy_extra;
+  if(extra == NULL){
+      weight_method_t dummy_method = NONE;
+      dummy_extra = get_extra_options(dummy_method);
+      extra = &dummy_extra;
+  }
+  
+  int need_weightavg = extra->weight_method != NONE;
   
   struct timeval t0;
   if(options->c_api_timer) {
@@ -154,7 +178,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
   SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_DOUBLE);
 
   /***********************
-   *initializing the  bins
+   *initializing the bins
    ************************/
   double *rupp=NULL;
   int nrpbin ;
@@ -171,11 +195,12 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
   xmin=1e10;ymin=1e10;zmin=1e10;
   xmax=0.0;ymax=0.0;zmax=0.0;
   get_max_min_DOUBLE(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
-
+  
   if(autocorr==0) {
     if(options->verbose) {
-      fprintf(stderr,"ND1 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
+        fprintf(stderr,"ND1 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
     }
+
     get_max_min_DOUBLE(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
     if(options->verbose) {
       fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);
@@ -204,7 +229,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
 
   /*---Create 3-D lattice--------------------------------------*/
   int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1,
+  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                                                xmin, xmax, ymin, ymax, zmin, zmax,
                                                                                rpmax, rpmax, rpmax,
                                                                                options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
@@ -222,7 +247,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
           for(int i=0;i<3;i++) {
               options->bin_refine_factors[i] *= BOOST_BIN_REF;
           }
-          lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1,
+          lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                      xmin, xmax, ymin, ymax, zmin, zmax,
                                                      rpmax, rpmax, rpmax,
                                                      options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
@@ -240,7 +265,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
   cellarray_index_particles_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2,
+        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
                                                    xmin, xmax, ymin, ymax, zmin, zmax,
                                                    rpmax, rpmax, rpmax,
                                                    options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
@@ -289,11 +314,20 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbin);
+    
     DOUBLE **all_rpavg = NULL;
     if(options->need_avg_sep) {
       all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nrpbin);
     }
-    if(all_npairs == NULL || (options->need_avg_sep && all_rpavg == NULL)) {
+    
+    DOUBLE **all_weightavg = NULL;
+    if(need_weightavg) {
+      all_weightavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nrpbin);
+    }
+    
+    if(all_npairs == NULL ||
+       (options->need_avg_sep && all_rpavg == NULL) ||
+       (need_weightavg && all_weightavg == NULL)) {
         free_cellarray_index_particles_DOUBLE(lattice1, totncells);
         if(autocorr == 0) {
             free_cellarray_index_particles_DOUBLE(lattice2, totncells);
@@ -302,16 +336,24 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
         if(options->need_avg_sep) {
             matrix_free((void **)all_rpavg, numthreads);
         }
+        if(need_weightavg) {
+            matrix_free((void**) all_weightavg, numthreads);
+        }
         free(rupp);
         return EXIT_FAILURE;
     }
 #else
     uint64_t npairs[nrpbin];
     DOUBLE rpavg[nrpbin];
-    for(int i=0; i < nrpbin;i++) {
+    DOUBLE weightavg[nrpbin];
+    
+    for(int i=0;i<nrpbin;i++) {
       npairs[i] = 0;
       if(options->need_avg_sep) {
-          rpavg[i] = (DOUBLE) 0.0;
+        rpavg[i] = 0.0;
+      }
+      if(need_weightavg) {
+        weightavg[i] = 0.0;
       }
     }
 #endif
@@ -337,11 +379,16 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
     {
       int tid = omp_get_thread_num();
       uint64_t npairs[nrpbin];
-      DOUBLE rpavg[nrpbin];//thread-level, stored on stack
+      DOUBLE rpavg[nrpbin]; //thread-level, stored on stack
+      DOUBLE weightavg[nrpbin];
+      
       for(int i=0;i<nrpbin;i++) {
         npairs[i] = 0;
         if(options->need_avg_sep) {
           rpavg[i] = 0.0;
+        }
+        if(need_weightavg) {
+          weightavg[i] = 0.0;
         }
       }
 
@@ -377,19 +424,25 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
           DOUBLE *x1 = first->x;
           DOUBLE *y1 = first->y;
           DOUBLE *z1 = first->z;
+          const weight_struct_DOUBLE *weights1 = &(first->weights);
           const int64_t N1 = first->nelements;
           if(autocorr == 1) {
               int same_cell = 1;
               DOUBLE *this_rpavg = NULL;
+              DOUBLE *this_weightavg = NULL;
               if(options->need_avg_sep) {
                   this_rpavg = rpavg;
               }
-              const int status = countpairs_function_DOUBLE(N1, x1, y1, z1,
-                                                            N1, x1, y1, z1,
+              if(need_weightavg) {
+                  this_weightavg = weightavg;
+              }
+              const int status = countpairs_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                            N1, x1, y1, z1, weights1,
                                                             same_cell,
                                                             sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
                                                             ZERO, ZERO, ZERO,
-                                                            this_rpavg, npairs);
+                                                            this_rpavg, npairs,
+                                                            this_weightavg, extra->weight_method);
               /* This actually causes a race condition under OpenMP - but mostly
                  I care that an error occurred - rather than the exact value of
                  the error status */
@@ -409,6 +462,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
             DOUBLE *x2 = second->x;
             DOUBLE *y2 = second->y;
             DOUBLE *z2 = second->z;
+            const weight_struct_DOUBLE *weights2 = &(second->weights);
             DOUBLE off_xwrap = 0.0, off_ywrap = 0.0, off_zwrap = 0.0;
             if(options->periodic) {
               off_xwrap = first->xwrap[ngb];
@@ -417,16 +471,20 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
             }
             const int64_t N2 = second->nelements;
             DOUBLE *this_rpavg = NULL;
+            DOUBLE *this_weightavg = NULL;
             if(options->need_avg_sep) {
                 this_rpavg = rpavg;
             }
-            const int status = countpairs_function_DOUBLE(N1, x1, y1, z1,
-                                                          N2, x2, y2, z2,
+            if(need_weightavg) {
+                this_weightavg = weightavg;
+            }
+            const int status = countpairs_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                          N2, x2, y2, z2, weights2,
                                                           same_cell
                                                           ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
                                                           ,off_xwrap, off_ywrap, off_zwrap
-                                                          ,this_rpavg
-                                                          ,npairs);
+                                                          ,this_rpavg,npairs
+                                                          ,this_weightavg, extra->weight_method);
             /* This actually causes a race condition under OpenMP - but mostly
                I care that an error occurred - rather than the exact value of
                the error status */
@@ -441,6 +499,9 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
         all_npairs[tid][j] = npairs[j];
         if(options->need_avg_sep) {
           all_rpavg[tid][j] = rpavg[j];
+        }
+        if(need_weightavg) {
+          all_weightavg[tid][j] = weightavg[j];
         }
       }
     }//close the omp parallel region
@@ -458,6 +519,9 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
       if(options->need_avg_sep) {
         matrix_free((void **) all_rpavg, numthreads);
       }
+      if(need_weightavg) {
+        matrix_free((void **) all_weightavg, numthreads);
+      }
 #endif
       return EXIT_FAILURE;
     }
@@ -469,10 +533,15 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
 #if defined(_OPENMP)
     uint64_t npairs[nrpbin];
     DOUBLE rpavg[nrpbin];
+    DOUBLE weightavg[nrpbin];
+    
     for(int i=0;i<nrpbin;i++) {
       npairs[i] = 0;
       if(options->need_avg_sep) {
         rpavg[i] = 0.0;
+      }
+      if(need_weightavg) {
+        weightavg[i] = 0.0;
       }
     }
 
@@ -482,11 +551,17 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
         if(options->need_avg_sep) {
           rpavg[j] += all_rpavg[i][j];
         }
+        if(need_weightavg) {
+          weightavg[j] += all_weightavg[i][j];
+        }
       }
     }
     matrix_free((void **) all_npairs, numthreads);
     if(options->need_avg_sep) {
       matrix_free((void **) all_rpavg, numthreads);
+    }
+    if(need_weightavg) {
+      matrix_free((void **) all_weightavg, numthreads);
     }
 #endif
 
@@ -502,6 +577,9 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
         if(options->need_avg_sep) {
           rpavg[i] *= dbl_fac;
         }
+        if(need_weightavg) {
+          weightavg[i] *= dbl_fac;
+        }
       }
 
       /* Is the min. requested separation 0.0 ?*/
@@ -512,25 +590,47 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
              a cross-correlation with two identical datasets 
              produces the same result as the auto-correlation  */
           npairs[1] += ND1; //npairs[1] contains the first valid bin.
+          
+          // Increasing npairs affects rpavg and weightavg.
+          // We don't need to add anything to rpavg; all the self-pairs have 0 separation!
+          // The self-pairs have non-zero weight, though.  So, fix that here.
+          if(need_weightavg){
+            // Keep in mind this is an autocorrelation (i.e. only one particle set to consider)
+            weight_func_t_DOUBLE weight_func = get_weight_func_by_method_DOUBLE(extra->weight_method);
+            pair_struct_DOUBLE pair = {.num_weights = extra->weights0.num_weights,
+                                       .dx.d=0., .dy.d=0., .dz.d=0.,  // always 0 separation
+                                       .parx.d=0., .pary.d=0., .parz.d=0.};
+            for(int j = 0; j < ND1; j++){
+                for(int w = 0; w < pair.num_weights; w++){
+                    pair.weights0[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
+                    pair.weights1[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
+                }
+                weightavg[1] += weight_func(&pair);
+            }
+          }
       }
     }
     
 
-    if(options->need_avg_sep) {
-      for(int i=0;i<nrpbin;i++) {
-        if(npairs[i] > 0) {
-          rpavg[i] /= (DOUBLE) npairs[i] ;
-        }
+  for(int i=0;i<nrpbin;i++) {
+    if(npairs[i] > 0) {
+      if(options->need_avg_sep) {
+        rpavg[i] /= (DOUBLE) npairs[i] ;
+      }
+      if(need_weightavg) {
+        weightavg[i] /= (DOUBLE) npairs[i];
       }
     }
+  }
 
     //Pack in the results
     results->nbin = nrpbin;
     results->npairs = my_malloc(sizeof(*(results->npairs)), nrpbin);
     results->rupp   = my_malloc(sizeof(*(results->rupp))  , nrpbin);
     results->rpavg  = my_calloc(sizeof(*(results->rpavg))  , nrpbin);
+    results->weightavg  = my_calloc(sizeof(*(results->weightavg))  , nrpbin);
     if(results->npairs == NULL || results->rupp == NULL ||
-       results->rpavg == NULL) {
+       results->rpavg == NULL || results->weightavg == NULL) {
         free_results(results);
         free(rupp);
         return EXIT_FAILURE;
@@ -540,8 +640,12 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
       results->npairs[i] = npairs[i];
       results->rupp[i] = rupp[i];
       results->rpavg[i] = 0.0;
+      results->weightavg[i] = 0.0;
       if(options->need_avg_sep) {
         results->rpavg[i] = rpavg[i];
+      }
+      if(need_weightavg) {
+        results->weightavg[i] = weightavg[i];
       }
     }
 
@@ -557,7 +661,6 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE  *Z1,
         gettimeofday(&t1, NULL);
         options->c_api_time = ADD_DIFF_TIME(t0, t1);
     }
-
     
     return EXIT_SUCCESS;
 

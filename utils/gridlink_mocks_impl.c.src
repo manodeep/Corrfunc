@@ -33,6 +33,9 @@ void free_cellarray_mocks_index_particles_DOUBLE(cellarray_mocks_index_particles
         free(lattice[i].y);
         free(lattice[i].z);
         free(lattice[i].cz);
+        for(int w = 0; w < lattice[i].weights.num_weights; w++){
+            free(lattice[i].weights.weights[w]);
+        }
 
         /* Might be NULL but free(NULL) is fine*/
         free(lattice[i].ngb_cells);
@@ -49,7 +52,9 @@ void free_cellarray_mocks_index_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBL
         free(lattice[i].x);
         free(lattice[i].y);
         free(lattice[i].z);
-
+        for(int w = 0; w < lattice[i].weights.num_weights; w++){
+            free(lattice[i].weights.weights[w]);
+        }
         /* Might be NULL but free(NULL) is fine*/
         free(lattice[i].ngb_cells);
     }
@@ -118,7 +123,7 @@ void get_max_min_ra_dec_DOUBLE(const int64_t ND1, const DOUBLE *RA, const DOUBLE
 
 
 cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(const int64_t np,
-                                                                               const DOUBLE *x, const DOUBLE *y, const DOUBLE *z, const DOUBLE *cz, 
+                                                                               const DOUBLE *x, const DOUBLE *y, const DOUBLE *z, const DOUBLE *cz, const weight_struct *weights,
                                                                                const DOUBLE xmin, const DOUBLE xmax,
                                                                                const DOUBLE ymin, const DOUBLE ymax,
                                                                                const DOUBLE zmin, const DOUBLE zmax,
@@ -176,10 +181,24 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
         lattice[index].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
         lattice[index].cz = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+        
+        // Now do the same for the weights
+        lattice[index].weights.num_weights = (weights == NULL) ? 0 : weights->num_weights;
+        int w_alloc_status = EXIT_SUCCESS;
+        for(int w = 0; w < lattice[index].weights.num_weights; w++){
+          lattice[index].weights.weights[w] = (DOUBLE *) my_malloc(memsize, expected_n);
+          if(lattice[index].weights.weights[w] == NULL){
+            w_alloc_status = EXIT_FAILURE;
+          }
+        }
+
         if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL ||
-           lattice[index].cz == NULL) {
+           lattice[index].cz == NULL || w_alloc_status == EXIT_FAILURE) {
             for(int64_t i=index;i>=0;i--) {
                 free(lattice[index].x);free(lattice[index].y);free(lattice[index].z);free(lattice[index].cz);
+                for(int w = 0; w < lattice[index].weights.num_weights; w++){
+                    free(lattice[index].weights.weights[w]);
+                }
                 return NULL;
             }
         }
@@ -227,22 +246,35 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
 
             const size_t memsize=sizeof(DOUBLE);
             DOUBLE *posx=NULL, *posy=NULL, *posz=NULL, *poscz=NULL;
+            int w_alloc_status;
             do{
                 posx = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
                 posy = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
                 posz = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
                 poscz = my_realloc(lattice[index].cz ,memsize,expected_n,"lattice.cz");
-                if(posx == NULL || posy == NULL || posz == NULL || poscz == NULL) {
-                    expected_n--;
-                }
+                
                 lattice[index].x  = (posx == NULL)  ? lattice[index].x:posx;
                 lattice[index].y  = (posy == NULL)  ? lattice[index].y:posy;
                 lattice[index].z  = (posz == NULL)  ? lattice[index].z:posz;
                 lattice[index].cz = (poscz == NULL) ? lattice[index].cz:poscz;
+                
+                w_alloc_status = EXIT_SUCCESS;
+                for(int w = 0; w < lattice[index].weights.num_weights; w++){
+                  DOUBLE *newweights = (DOUBLE *) my_realloc(lattice[index].weights.weights[w], memsize, expected_n, "lattice.weights");
+                  if(newweights == NULL){
+                    w_alloc_status = EXIT_FAILURE;
+                  } else {
+                    lattice[index].weights.weights[w] = newweights;
+                  }
+                }
+
+                if(posx == NULL || posy == NULL || posz == NULL || poscz == NULL || w_alloc_status == EXIT_FAILURE) {
+                    expected_n--;
+                }                
             } while(expected_n > nallocated[index] && (posx == NULL ||
                                                        posy == NULL ||
                                                        posz == NULL ||
-                                                       poscz == NULL));
+                                                       poscz == NULL || w_alloc_status == EXIT_FAILURE));
 
             if(expected_n == nallocated[index]) {
                 /*realloc failed. free memory and return */
@@ -264,6 +296,10 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
         lattice[index].y[ipos] = y[i];
         lattice[index].z[ipos] = z[i];
         lattice[index].cz[ipos] = cz[i];
+        for(int w = 0; w < lattice[index].weights.num_weights; w++){
+            lattice[index].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
+        }
+
         lattice[index].nelements++;
     }
     free(nallocated);
@@ -277,7 +313,11 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
 #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,X,i,j); \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Y,i,j);           \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Z,i,j);           \
-                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,CZ,i,j) }
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,CZ,i,j);          \
+                for(int w = 0; w < first->weights.num_weights; w++){ \
+                    SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->weights.weights[w],i,j);\
+                }\
+            }
             
             const cellarray_mocks_index_particles_DOUBLE *first=&(lattice[icell]);
             if(first->nelements == 0) continue; 
@@ -374,7 +414,7 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
 
 cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int64_t np,
                                                                       const DOUBLE *ra, const DOUBLE *dec,
-                                                                      const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, 
+                                                                      const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, const weight_struct *weights,
                                                                       const DOUBLE dec_min,const DOUBLE dec_max,
                                                                       const DOUBLE max_dec_size,
                                                                       const int dec_refine_factor,
@@ -432,9 +472,23 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
         lattice[j].x = my_malloc(memsize,expected_n);
         lattice[j].y = my_malloc(memsize,expected_n);
         lattice[j].z = my_malloc(memsize,expected_n);
-        if(lattice[j].x == NULL || lattice[j].y == NULL || lattice[j].z == NULL) {
+        
+        // Now do the same for the weights
+        lattice[j].weights.num_weights = (weights == NULL) ? 0 : weights->num_weights;
+        int w_alloc_status = EXIT_SUCCESS;
+        for(int w = 0; w < lattice[j].weights.num_weights; w++){
+          lattice[j].weights.weights[w] = (DOUBLE *) my_malloc(memsize, expected_n);
+          if(lattice[j].weights.weights[w] == NULL){
+            w_alloc_status = EXIT_FAILURE;
+          }
+        }
+        
+        if(lattice[j].x == NULL || lattice[j].y == NULL || lattice[j].z == NULL || w_alloc_status == EXIT_FAILURE) {
             for(int k=j;k>=0;k--) {
                 free(lattice[k].x);free(lattice[k].y);free(lattice[k].z);
+            }
+            for(int w = 0; w < lattice[j].weights.num_weights; w++){
+                free(lattice[j].weights.weights[w]);
             }
             free(lattice);
             return NULL;
@@ -459,19 +513,33 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
 
             const size_t memsize = sizeof(DOUBLE);
             DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
+            int w_alloc_status;
             do {
                 posx = my_realloc(lattice[idec].x,memsize,expected_n,"lattice.x");
                 posy = my_realloc(lattice[idec].y,memsize,expected_n,"lattice.y");
                 posz = my_realloc(lattice[idec].z,memsize,expected_n,"lattice.z");
-                if(posx == NULL || posy == NULL || posz == NULL) {
-                    expected_n--;
-                }
+                
                 lattice[idec].x = (posx == NULL) ? lattice[idec].x:posx;
                 lattice[idec].y = (posy == NULL) ? lattice[idec].y:posy;
                 lattice[idec].z = (posz == NULL) ? lattice[idec].z:posz;
+                
+                w_alloc_status = EXIT_SUCCESS;
+                for(int w = 0; w < lattice[idec].weights.num_weights; w++){
+                  DOUBLE *newweights = (DOUBLE *) my_realloc(lattice[idec].weights.weights[w], memsize, expected_n, "lattice.weights");
+                  if(newweights == NULL){
+                    w_alloc_status = EXIT_FAILURE;
+                  } else {
+                    lattice[idec].weights.weights[w] = newweights;
+                  }
+                }
+                
+                if(posx == NULL || posy == NULL || posz == NULL || w_alloc_status == EXIT_FAILURE) {
+                    expected_n--;
+                }
             } while(expected_n > nallocated[idec] && (posx == NULL ||
                                                        posy == NULL ||
-                                                       posz == NULL));
+                                                       posz == NULL || 
+                                                       w_alloc_status == EXIT_FAILURE));
             
             if(expected_n == nallocated[idec]) {
                 /*realloc failed. free memory and return */
@@ -493,6 +561,9 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
         lattice[idec].x[ipos]  = X[i];
         lattice[idec].y[ipos]  = Y[i];
         lattice[idec].z[ipos]  = Z[i];
+        for(int w = 0; w < lattice[idec].weights.num_weights; w++){
+            lattice[idec].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
+        }
         lattice[idec].nelements++;
     }
     free(nallocated);
@@ -503,7 +574,11 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
             if(first->nelements == 0) continue;
 #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);           \
-                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);       }
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);\
+                for(int w = 0; w < first->weights.num_weights; w++){ \
+                    SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->weights.weights[w],i,j);\
+                }\
+            }
             
                 DOUBLE *x = first->x;
                 DOUBLE *y = first->y;
@@ -562,7 +637,7 @@ int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE
 
 cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t np,
                                                                          const DOUBLE *ra, const DOUBLE *dec,
-                                                                         const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, 
+                                                                         const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, const weight_struct *weights,
                                                                          const DOUBLE ra_min,const DOUBLE ra_max,
                                                                          const DOUBLE dec_min, const DOUBLE dec_max,
                                                                          const int max_ra_size,
@@ -709,7 +784,18 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
             lattice[index].x = my_malloc(memsize,expected_n);
             lattice[index].y = my_malloc(memsize,expected_n);
             lattice[index].z = my_malloc(memsize,expected_n);
-            if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL) {
+            
+            // Now do the same for the weights
+            lattice[index].weights.num_weights = (weights == NULL) ? 0 : weights->num_weights;
+            int w_alloc_status = EXIT_SUCCESS;
+            for(int w = 0; w < lattice[index].weights.num_weights; w++){
+              lattice[index].weights.weights[w] = (DOUBLE *) my_malloc(memsize, expected_n);
+              if(lattice[index].weights.weights[w] == NULL){
+                w_alloc_status = EXIT_FAILURE;
+              }
+            }
+        
+            if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL || w_alloc_status == EXIT_FAILURE) {
                 /* Since all the x/y/z/ngb_cells are initialized to NULL, 
                    I can call the helper routine directly */
                 free_cellarray_mocks_index_wtheta_DOUBLE(lattice, totncells);
@@ -750,19 +836,33 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
 
             const size_t memsize=sizeof(DOUBLE);
             DOUBLE *posx=NULL, *posy=NULL, *posz = NULL;
+            int w_alloc_status;
             do {
                 posx = my_realloc(lattice[index].x ,memsize,expected_n,"lattice.x");
                 posy = my_realloc(lattice[index].y ,memsize,expected_n,"lattice.y");
                 posz = my_realloc(lattice[index].z ,memsize,expected_n,"lattice.z");
-                if(posx == NULL || posy == NULL || posz == NULL) {
-                    expected_n--;
-                }
+                
                 lattice[index].x = (posx == NULL) ? lattice[index].x:posx;
                 lattice[index].y = (posy == NULL) ? lattice[index].y:posy;
                 lattice[index].z = (posz == NULL) ? lattice[index].z:posz;
+                
+                w_alloc_status = EXIT_SUCCESS;
+                for(int w = 0; w < lattice[index].weights.num_weights; w++){
+                  DOUBLE *newweights = (DOUBLE *) my_realloc(lattice[index].weights.weights[w], memsize, expected_n, "lattice.weights");
+                  if(newweights == NULL){
+                    w_alloc_status = EXIT_FAILURE;
+                  } else {
+                    lattice[index].weights.weights[w] = newweights;
+                  }
+                }
+                
+                if(posx == NULL || posy == NULL || posz == NULL || w_alloc_status == EXIT_FAILURE) {
+                    expected_n--;
+                }
             } while(expected_n > nallocated[index] && (posx == NULL ||
                                                        posy == NULL ||
-                                                       posz == NULL));
+                                                       posz == NULL ||
+                                                       w_alloc_status == EXIT_FAILURE));
             
             if(expected_n == nallocated[index]) {
                 /*realloc failed. free memory and return */
@@ -785,6 +885,9 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
         lattice[index].x[ipos]  = X[i];
         lattice[index].y[ipos]  = Y[i];
         lattice[index].z[ipos]  = Z[i];
+        for(int w = 0; w < lattice[index].weights.num_weights; w++){
+            lattice[index].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
+        }
         lattice[index].nelements++;
     }
     free(nallocated);
@@ -794,7 +897,11 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
             if(first->nelements == 0) continue;
 #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);           \
-                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);       }
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j); \
+                for(int w = 0; w < first->weights.num_weights; w++){ \
+                    SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->weights.weights[w],i,j);\
+                }\
+            }
             
                 DOUBLE *x = first->x;
                 DOUBLE *y = first->y;

@@ -22,6 +22,7 @@ extern "C" {
         double *xi;
         double *rupp;
         double *ravg;
+        double *weightavg;
         int nbin;
     } results_countpairs_xi;
 

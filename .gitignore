@@ -14,6 +14,7 @@ zz*
 *_float.[ch]
 *_double.[ch]
 DD
+wtheta
 build*
 paper/*
 dist*

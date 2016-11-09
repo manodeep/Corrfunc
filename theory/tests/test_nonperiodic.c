@@ -33,10 +33,10 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 //Global variables
 int ND1;
-double *X1=NULL,*Y1=NULL,*Z1=NULL;
+double *X1=NULL,*Y1=NULL,*Z1=NULL,*weights1=NULL;
 
 int ND2;
-double *X2=NULL,*Y2=NULL,*Z2=NULL;
+double *X2=NULL,*Y2=NULL,*Z2=NULL,*weights2=NULL;
 
 char binfile[]="bins";
 double pimax=40.0;
@@ -54,10 +54,15 @@ const double maxdiff = 1e-9;
 const double maxreldiff = 1e-6;
 //end of global variables
 
-
 int test_nonperiodic_DD(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
+    
+    // Set up the weights pointers
+    weight_method_t weight_method = PAIR_PRODUCT;
+    struct extra_options extra = get_extra_options(weight_method);
+    extra.weights0.weights[0] = weights1;
+    extra.weights1.weights[0] = weights2;
 
     //Do the straight-up DD counts
     results_countpairs results;
@@ -67,7 +72,8 @@ int test_nonperiodic_DD(const char *correct_outputfile)
                             autocorr,
                             binfile,
                             &results,
-                            &options, NULL);
+                            &options,
+                            &extra);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -80,21 +86,23 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     }
     for(int i=1;i<results.nbin;i++) {
         uint64_t npairs;
-        double rpavg;
+        double rpavg, weightavg;
         ret = EXIT_FAILURE;
-        int nitems = fscanf(fp,"%"SCNu64" %lf%*[^\n]", &npairs, &rpavg);
-        if(nitems != 2) {
+        int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &rpavg, &weightavg);
+        if(nitems != 3) {
             break;
         }
         int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
+        int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
 
         //Check for exact equality of npairs and float "equality" for rpavg
-        if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS) {
+        if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
             ret = EXIT_SUCCESS;
         } else {
             ret = EXIT_FAILURE;//not required but showing intent 
             fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
             fprintf(stderr,"True rpavg  = %e Computed rpavg = %e. floats_equal = %d\n", rpavg, results.rpavg[i], floats_equal);
+            fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
             break;
         }
     }
@@ -105,12 +113,11 @@ int test_nonperiodic_DD(const char *correct_outputfile)
         fp=my_fopen(tmpoutputfile,"w"); 
         double rlow = results.rupp[0];
         for(int i=1;i<results.nbin;i++) {
-            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i], results.weightavg[i]);
             rlow=results.rupp[i];
         }
         fclose(fp);
     }
-
 
     free_results(&results);
     return ret;
@@ -119,6 +126,12 @@ int test_nonperiodic_DD(const char *correct_outputfile)
 int test_nonperiodic_DDrppi(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
+    
+    // Set up the weights pointers
+    weight_method_t weight_method = PAIR_PRODUCT;
+    struct extra_options extra = get_extra_options(weight_method);
+    extra.weights0.weights[0] = weights1;
+    extra.weights1.weights[0] = weights2;
 
     results_countpairs_rp_pi results;
     int status = countpairs_rp_pi(ND1,X1,Y1,Z1,
@@ -128,7 +141,8 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
                                   binfile,
                                   pimax,
                                   &results,
-                                  &options, NULL);
+                                  &options,
+                                  &extra);
     if(status != EXIT_SUCCESS) {
         return status;
     }
@@ -147,22 +161,24 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
             uint64_t npairs;
-            double rpavg;
+            double rpavg, weightavg;
             ret = EXIT_FAILURE;
-            int nitems = fscanf(fp,"%"SCNu64" %lf%*[^\n]", &npairs, &rpavg);
-            if(nitems != 2) {
+            int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &rpavg, &weightavg);
+            if(nitems != 3) {
                 i = results.nbin;
                 ret = EXIT_FAILURE;//not required but showing intent
                 break;
             }
             int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
+            int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
             
             //Check for exact equality of npairs and float "equality" for rpavg
-            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS) {
+            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
             } else {
                 fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
                 fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
+                fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
                 ret = EXIT_FAILURE;//not required but showing intent 
                 i=results.nbin;
                 break;
@@ -177,7 +193,7 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
             const double logrp = log10(results.rupp[i]);
             for(int j=0;j<npibin;j++) {
                 int index = i*(npibin+1) + j;
-                fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+                fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf %20.8lf\n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi, results.weightavg[index]);
             }
         }
         fclose(fp);
@@ -200,7 +216,7 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
     if (strncmp(current_file1,firstfilename,strlen(current_file1)) != 0) {
         //replace the data-set
         if(X1 != NULL) {
-            free(X1);free(Y1);free(Z1);
+            free(X1);free(Y1);free(Z1);free(weights1);
         }
 
         //Since X2 was pointing to X1, need to signal that the memory location is no longer valid
@@ -208,8 +224,9 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
             X2 = NULL;
             Y2 = NULL;
             Z2 = NULL;
+            weights2 = NULL;
         }
-        ND1 = read_positions(firstfilename,firstformat, sizeof(double), 3, &X1, &Y1, &Z1);
+        ND1 = read_positions(firstfilename,firstformat, sizeof(double), 4, &X1, &Y1, &Z1, &weights1);
         strncpy(current_file1,firstfilename,MAXLEN);
     }
 
@@ -217,12 +234,13 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
     if(strncmp(firstfilename,secondfilename,strlen(firstfilename))==0) {
         //But X2 might have read-in a different file->avoid a memory-leak
         if(free_X2 == 1) {
-            free(X2);free(Y2);free(Z2);
+            free(X2);free(Y2);free(Z2);free(weights2);
             free_X2 = 0;//not essential since the code returns after this section
         }
         X2=X1;
         Y2=Y1;
         Z2=Z1;
+        weights2=weights1;
         ND2=ND1;
         strncpy(current_file2,secondfilename,MAXLEN);
         return;
@@ -233,9 +251,9 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
     if (strncmp(current_file2,secondfilename,strlen(current_file2)) != 0 || X2 == NULL) {
         //replace the data-set
         if(free_X2 == 1) {
-            free(X2);free(Y2);free(Z2);
+            free(X2);free(Y2);free(Z2);free(weights2);
         }
-        ND2 = read_positions(secondfilename,secondformat, sizeof(double), 3, &X2, &Y2, &Z2);
+        ND2 = read_positions(secondfilename,secondformat, sizeof(double), 4, &X2, &Y2, &Z2, &weights2);
         strncpy(current_file2,secondfilename,MAXLEN);
     }
 }
@@ -246,20 +264,24 @@ int main(int argc, char **argv)
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
+    
     options = get_config_options();
     options.need_avg_sep=1;
     options.verbose=0;
     options.periodic=0;
     options.float_type=sizeof(double);
+    //options.instruction_set = FALLBACK;
 
     gettimeofday(&tstart,NULL);
 
     //set the globals
-    ND1 = read_positions(file,fileformat, sizeof(double), 3, &X1, &Y1, &Z1);
+    ND1 = read_positions(file,fileformat, sizeof(double), 4, &X1, &Y1, &Z1, &weights1);
+    
     ND2 = ND1;
     X2 = X1;
     Y2 = Y1;
     Z2 = Z1;
+    weights2 = weights1;
 
     strncpy(current_file1,file,MAXLEN);
     strncpy(current_file2,file,MAXLEN);
@@ -277,6 +299,7 @@ int main(int argc, char **argv)
     const char firstfiletype[][MAXLEN] = {"f","f","f"};
     const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/random_Zspace.ff"};
     const char secondfiletype[][MAXLEN] = {"f","f","f"};
+    
     const double allpimax[]             = {40.0,40.0,80.0};
 
     int (*allfunctions[]) (const char *) = {test_nonperiodic_DD,test_nonperiodic_DDrppi};
@@ -292,7 +315,8 @@ int main(int argc, char **argv)
             const char *testname = alltests_names[i];
             int skip_test=test_all_files_present(2,firstfilename[i],secondfilename[i]);
             if(skip_test != 0) {
-                fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". Test data-file(s) (`%s',`%s') not found\n", testname, firstfilename[i], secondfilename[i]);
+                fprintf(stderr,ANSI_COLOR_YELLOW "SKIPPED: " ANSI_COLOR_MAGENTA "%s"  ANSI_COLOR_RESET ". Test data-file(s) (`%s',`%s') not found\n",
+                        testname, firstfilename[i], secondfilename[i]);
                 skipped++;
                 continue;
             }
@@ -370,8 +394,8 @@ int main(int argc, char **argv)
     }
 
     if(X2 != X1) {
-        free(X2);free(Y2);free(Z2);
+        free(X2);free(Y2);free(Z2);free(weights2);
     }
-    free(X1);free(Y1);free(Z1);
+    free(X1);free(Y1);free(Z1);free(weights1);
     return failed;
 }

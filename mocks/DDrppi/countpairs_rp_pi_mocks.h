@@ -12,7 +12,6 @@
 extern "C" {
 #endif
 
-
 #include "defs.h"
 #include <stdint.h> //for uint64_t
 
@@ -21,6 +20,7 @@ extern "C" {
         uint64_t *npairs;
         double *rupp;
         double *rpavg;
+        double *weightavg;
         double pimax;
         int nbin;
         int npibin;

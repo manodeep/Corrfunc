@@ -22,9 +22,11 @@ INCL   := countpairs_rp_pi_kernels_float.c countpairs_rp_pi_kernels_double.c cou
           countpairs_rp_pi.h countpairs_rp_pi_impl_double.h countpairs_rp_pi_impl_float.h \
           $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
           $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray.h.src \
-	  $(UTILS_DIR)/function_precision.h  $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
-	  $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
-          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/progressbar.h 
+          $(UTILS_DIR)/function_precision.h  $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
+          $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
+          $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/progressbar.h \
+          $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_functions.h.src \
+		  $(UTILS_DIR)/weight_defs_double.h $(UTILS_DIR)/weight_defs_float.h $(UTILS_DIR)/weight_defs.h.src
 
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
@@ -35,7 +37,7 @@ wprp: $(WPRPSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 
 countpairs_rp_pi_impl_double.o:countpairs_rp_pi_impl_double.c countpairs_rp_pi_impl_double.h countpairs_rp_pi_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
 countpairs_rp_pi_impl_float.o:countpairs_rp_pi_impl_float.c countpairs_rp_pi_impl_float.h countpairs_rp_pi_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h  $(UTILS_DIR)/cellarray_float.h
-countpairs_rp_pi.o:countpairs_rp_pi.c countpairs_rp_pi_impl_double.h countpairs_rp_pi_impl_float.h
+countpairs_rp_pi.o:countpairs_rp_pi.c countpairs_rp_pi_impl_double.h countpairs_rp_pi_impl_float.h $(INCL)
 
 libs: lib
 lib:  $(LIBRARY)

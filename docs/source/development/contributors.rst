@@ -18,6 +18,7 @@ Core package contributors
 ==========================
 
 * Manodeep Sinha
+* Lehman Garrison
 
 Other credits
 =============

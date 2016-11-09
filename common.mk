@@ -162,7 +162,7 @@ ifeq ($(DO_CHECKS), 1)
   INCLUDE:=-I../../io -I../../utils
   ### The POSIX_SOURCE flag is required to get the definition of strtok_r
   CFLAGS += -DVERSION=\"${VERSION}\" -DUSE_UNICODE
-  CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE=200809L -D_GNU_SOURCE -D_DARWIN_C_SOURCE -O3 
+  CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE=200809L -D_GNU_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
   GSL_FOUND := $(shell gsl-config --version)
   ifndef GSL_FOUND
     $(error $(ccred) GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION) $(ccreset))
