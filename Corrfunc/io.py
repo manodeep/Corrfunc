@@ -234,7 +234,7 @@ def read_ascii_catalog(filename, return_dtype=None):
         z = np.asarray(df[2], dtype=return_dtype)
 
     else:
-        x, y, z = np.genfromtxt(filename, dtype=return_dtype, unpack=True)
+        x, y, z, _ = np.genfromtxt(filename, dtype=return_dtype, unpack=True)
 
     return x, y, z
 
