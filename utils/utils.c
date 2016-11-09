@@ -583,9 +583,28 @@ void **matrix_calloc(size_t size,int64_t nrow,int64_t ncol)
 }
 
 
+// Resize a matrix.  Returns EXIT_SUCCESS or EXIT_FAILURE.
+// Presently only resizing the last dimension is supported, due to
+// potential memory leaks when shrinking the first dimension
+int matrix_realloc(void **matrix, size_t size, int64_t nrow, int64_t ncol){
+    void *tmp;
+    for(int i = 0; i < nrow; i++){
+        tmp = my_realloc(matrix[i], size, ncol, "matrix_realloc");
+        if(tmp == NULL){
+            return EXIT_FAILURE;
+        }
+        matrix[i] = tmp;
+    }
+    
+    return EXIT_SUCCESS;
+}
+
 
 void matrix_free(void **m,int64_t nrow)
 {
+    if(m == NULL)
+        return;
+    
     for(int i=0;i<nrow;i++)
         free(m[i]);
 

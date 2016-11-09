@@ -24,6 +24,7 @@ void free_results_wp(results_countpairs_wp *results)
     free(results->rupp);
     free(results->wp);
     free(results->rpavg);
+    free(results->weightavg);
 }
 
 int countpairs_wp(const int64_t ND, void * restrict X, void * restrict Y, void * restrict Z,

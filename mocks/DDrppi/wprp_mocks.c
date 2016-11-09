@@ -8,22 +8,21 @@
 
 /* PROGRAM wprp
 
-   --- wprp nrbin ND1 ND2 NR1 NR2 D1D2 D1R2 D2R1 R1R2 [pimax] > wpfile
-   --- Measure the cross-correlation function wp(rp) for two different
+--- wprp nrbin ND1 ND2 NR1 NR2 D1D2 D1R2 D2R1 R1R2 [pimax] > wpfile
+--- Measure the cross-correlation function wp(rp) for two different
    data and random files (or autocorrelation if D1=D2 and R1=R2).
    Uses the Szalay estimator: xi(rp,pi) = (D1D2 - D1R2 - D2R1 - R1R2)/RR2
-
-   * nrpbin = number of bins (logarithmically spaced in r)
-   * ND1    = number of data points in data1
-   * ND2    = number of data points in data2
-   * NR1    = number of random points in random1
-   * NR2    = number of random points in random2
-   * D1D2   = data1-data2 pairs (output of corrfunc.c)
-   * D1R2   = data1-random2 pairs (output of corrfunc.c)
-   * D2R1   = data2-random1 pairs (output of corrfunc.c)
-   * R1R2   = random1-random2 pairs (output of corrfunc.c)
-   *[pimax] = maximum pi in integral to compute wp(rp) (default = 40 Mpc/h)
-   > wpfile = name of output file <logrp rpavg wp(rp)>
+  * nrpbin = number of bins (logarithmically spaced in r)
+  * ND1    = number of data points in data1
+  * ND2    = number of data points in data2
+  * NR1    = number of random points in random1
+  * NR2    = number of random points in random2
+  * D1D2   = data1-data2 pairs (output of corrfunc.c)
+  * D1R2   = data1-random2 pairs (output of corrfunc.c)
+  * D2R1   = data2-random1 pairs (output of corrfunc.c)
+  * R1R2   = random1-random2 pairs (output of corrfunc.c)
+  *[pimax] = maximum pi in integral to compute wp(rp) (default = 40 Mpc/h)
+  > wpfile = name of output file <rpmin rpmax rpavg logrp wp(rp) DDtot>
    ----------------------------------------------------------------------
 */
 
@@ -225,6 +224,6 @@ void Printhelp(void)
     fprintf(stderr,"      * D2R1   = data2-random1 pairs (output of corrfunc.c)\n") ;
     fprintf(stderr,"      * R1R2   = random1-random2 pairs (output of corrfunc.c)\n") ;
     fprintf(stderr,"      *[pimax] = maximum pi in integral to compute wp(rp) (default = 40 Mpc/h)\n") ;
-    fprintf(stderr,"      > wpfile = name of output file <logrp wp(rp)>\n") ;
+    fprintf(stderr,"      > wpfile = name of output file <rpmin rpmax rpavg logrp wp(rp) DDtot>\n") ;
     fprintf(stderr,"=========================================================================\n") ;
 }

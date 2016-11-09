@@ -25,7 +25,9 @@ INCL     := countpairs_rp_pi_mocks_kernels_float.c countpairs_rp_pi_mocks_kernel
             $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/gridlink_mocks_impl_float.h $(UTILS_DIR)/gridlink_mocks_impl.h.src \
             $(UTILS_DIR)/cellarray_mocks_float.h $(UTILS_DIR)/cellarray_mocks_double.h $(UTILS_DIR)/cellarray_mocks.h.src \
 	    $(UTILS_DIR)/set_cosmo_dist.h $(UTILS_DIR)/cosmology_params.h  $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h \
-	    $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/defs.h
+	    $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/defs.h \
+        $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_functions.h.src \
+		  $(UTILS_DIR)/weight_defs_double.h $(UTILS_DIR)/weight_defs_float.h $(UTILS_DIR)/weight_defs.h.src
 
 TARGETOBJS:=$(TARGETSRC:.c=.o)
 LIBOBJS:=$(LIBSRC:.c=.o) 
@@ -37,7 +39,7 @@ EXTRA_LINK:=$(GSL_LINK)
 
 countpairs_rp_pi_mocks_impl_double.o:countpairs_rp_pi_mocks_impl_double.c countpairs_rp_pi_mocks_impl_double.h countpairs_rp_pi_mocks_kernels_double.c $(UTILS_DIR)/gridlink_mocks_impl_double.h $(UTILS_DIR)/cellarray_mocks_double.h
 countpairs_rp_pi_mocks_impl_float.o:countpairs_rp_pi_mocks_impl_float.c countpairs_rp_pi_mocks_impl_float.h countpairs_rp_pi_mocks_kernels_float.c $(UTILS_DIR)/gridlink_mocks_impl_float.h $(UTILS_DIR)/cellarray_mocks_float.h
-countpairs_rp_pi_mocks.o:countpairs_rp_pi_mocks.c countpairs_rp_pi_mocks_impl_double.h countpairs_rp_pi_mocks_impl_float.h
+countpairs_rp_pi_mocks.o:countpairs_rp_pi_mocks.c countpairs_rp_pi_mocks_impl_double.h countpairs_rp_pi_mocks_impl_float.h $(INCL)
 
 
 wprp_mocks: wprp_mocks.c $(UTILS_DIR)/utils.c 

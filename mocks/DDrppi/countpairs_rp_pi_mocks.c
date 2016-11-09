@@ -22,6 +22,7 @@ void free_results_mocks(results_countpairs_mocks *results)
     free(results->npairs);
     free(results->rupp);
     free(results->rpavg);
+    free(results->weightavg);
 }
 
 

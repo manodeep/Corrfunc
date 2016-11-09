@@ -48,34 +48,38 @@ def main():
     results_DDrppi, _ = rp_pi_mocks_extn(autocorr, cosmology, nthreads,
                                          pimax, binfile,
                                          ra, dec, cz,
+                                         weights1=np.ones_like(ra), weight_type='pair_product',
                                          output_rpavg=True, verbose=True)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
-    print("#      rmin        rmax       rpavg     pi_upper     npairs")
-    print("###########################################################")
+    print("#      rmin        rmax       rpavg     pi_upper     npairs    weightavg")
+    print("########################################################################")
     for ibin in range(numbins_to_print):
         items = results_DDrppi[ibin]
-        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
-              .format(items[0], items[1], items[2], items[3], items[4]))
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:10.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4], items[5]))
 
-    print("-----------------------------------------------------------")
+    print("------------------------------------------------------------------------")
 
     binfile = pjoin(dirname(abspath(__file__)),
                     "../mocks/tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")
     results_wtheta, _ = theta_mocks_extn(autocorr, nthreads, binfile,
-                                         ra, dec, ra, dec,
+                                         ra, dec, RA2=ra, DEC2=dec,
+                                         weights1=np.ones_like(ra),
+                                         weights2=np.ones_like(ra),
+                                         weight_type='pair_product',
                                          output_thetaavg=True, fast_acos=True,
                                          verbose=1)
     print("\n#         ******  wtheta: first {0} bins  *******        "
           .format(numbins_to_print))
-    print("#      thetamin        thetamax       thetaavg      npairs")
-    print("##########################################################")
+    print("#      thetamin        thetamax       thetaavg      npairs    weightavg")
+    print("#######################################################################")
     for ibin in range(numbins_to_print):
         items = results_wtheta[ibin]
-        print("{0:14.4f} {1:14.4f} {2:14.4f} {3:14d}"
-              .format(items[0], items[1], items[2], items[3]))
-    print("-----------------------------------------------------------")
+        print("{0:14.4f} {1:14.4f} {2:14.4f} {3:14d} {4:14.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4]))
+    print("-----------------------------------------------------------------------")
 
     print("Beginning the VPF")
     # Max. sphere radius of 10 Mpc

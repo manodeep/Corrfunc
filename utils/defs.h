@@ -59,7 +59,7 @@ struct api_cell_timings
     int tid;/* Thread-id, 0 for serial case, wastes 4 bytes, since thread id is 4bytes integer and not 8 bytes */
 };
     
-    
+
 #define OPTIONS_HEADER_SIZE     (1024)
 struct config_options
 {
@@ -238,11 +238,11 @@ static inline struct config_options get_config_options(void)
     
     memset(&options, 0, OPTIONS_HEADER_SIZE);
     snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", API_VERSION);
-#ifdef DOUBLE_PREC    
+#ifdef DOUBLE_PREC
     options.float_type = sizeof(double);
 #else
     options.float_type = sizeof(float);
-#endif    
+#endif 
 #ifndef SILENT
     options.verbose = 1;
 #endif
@@ -304,42 +304,76 @@ static inline struct config_options get_config_options(void)
 }
 
 
-
 #define EXTRA_OPTIONS_HEADER_SIZE     (1024)
+
+#define MAX_NUM_WEIGHTS 10
 
 typedef struct
 {
-    void **weights;
-    uint64_t num_weights;
+    void *weights[MAX_NUM_WEIGHTS];  // This will be of shape weights[num_weights][num_particles]
+    int64_t num_weights;
 } weight_struct;
 
+typedef enum {
+  NONE=-42, /* default */
+  PAIR_PRODUCT=0,
+  NUM_WEIGHT_TYPE 
+} weight_method_t; // type of weighting to apply
 
+/* Gives the number of weight arrays required by the given weighting method
+ */
+static inline int get_num_weights_by_method(const weight_method_t method){
+    switch(method){
+        case PAIR_PRODUCT:
+            return 1;
+        default:
+        case NONE:
+            return 0;
+    }
+}
+
+/* Maps a name to weighting method
+   `method` will be set on return.
+ */
+static inline int get_weight_method_by_name(const char *name, weight_method_t *method){
+    if(name == NULL || strcmp(name, "") == 0){
+        *method = NONE;
+        return EXIT_SUCCESS;
+    }
+    // These should not be strncmp because we want the implicit length comparison of strcmp.
+    // It is still safe because one of the args is a string literal.
+    if(strcmp(name, "pair_product") == 0 || strcmp(name, "p") == 0){
+        *method = PAIR_PRODUCT;
+        return EXIT_SUCCESS;
+    }
+        
+    return EXIT_FAILURE;
+}
     
 struct extra_options
 {
-    weight_struct weights;
-    uint64_t weighting_func_type;//way to type-cast the generic weightfunc into the actual
-                                //function. 
-    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - sizeof(weight_struct) - sizeof(uint64_t)];
+    // Two possible weight_structs (at most we will have two loaded sets of particles)
+    weight_struct weights0;
+    weight_struct weights1;
+    weight_method_t weight_method; // the function that will get called to give the weight of a particle pair
+    uint8_t reserved[EXTRA_OPTIONS_HEADER_SIZE - 2*sizeof(weight_struct) - sizeof(weight_method_t)];
 };
 
-static inline int get_extra_options(struct extra_options *extra)
+// weight_method determines the number of various weighting arrays that we allocate
+static inline struct extra_options get_extra_options(const weight_method_t weight_method)
 {    
+    struct extra_options extra;
     ENSURE_STRUCT_SIZE(struct extra_options, EXTRA_OPTIONS_HEADER_SIZE);//compile-time check for making sure struct is correct size
-    if(extra == NULL) {
-        return EXIT_FAILURE;
-    }
+    memset(&extra, 0, EXTRA_OPTIONS_HEADER_SIZE);
+    
+    extra.weight_method = weight_method;
+    
+    weight_struct *w0 = &(extra.weights0);
+    weight_struct *w1 = &(extra.weights1);
+    w0->num_weights = get_num_weights_by_method(extra.weight_method);
+    w1->num_weights = w0->num_weights;
 
-    memset(extra, 0, EXTRA_OPTIONS_HEADER_SIZE);
-    /*Pre-allocate space for 2 sets of weights array pointers */
-    weight_struct *w = &(extra->weights);
-    w->num_weights = 2;
-    w->weights = malloc(sizeof(*(w->weights)) * w->num_weights);
-    if(w->weights == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
+    return extra;
 }
 
 static inline void print_cell_timings(struct config_options *options)
@@ -364,17 +398,6 @@ static inline void free_cell_timings(struct config_options *options)
     if(options->totncells_timings > 0 && options->cell_timings != NULL) {
         free(options->cell_timings);
     }
-}    
-
-static inline void free_extra_options(struct extra_options *extra)
-{
-    weight_struct *w = &(extra->weights);
-    for(uint64_t i=0;i<w->num_weights;i++) {
-        free(w->weights[i]);
-    }
-    free(w->weights);
-    w->weights = NULL;
-    w->num_weights = 0;
 }    
 
 static inline void assign_cell_timer(struct api_cell_timings *cell_timings, const int64_t totncells, const int max_ngb_cells, struct config_options *options)

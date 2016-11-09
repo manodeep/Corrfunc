@@ -20,6 +20,7 @@ extern "C" {
         uint64_t *npairs;
         double *theta_upp;
         double *theta_avg;
+        double *weightavg;
         int nbin;
     } results_countpairs_theta;
 

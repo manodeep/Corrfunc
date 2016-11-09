@@ -21,6 +21,7 @@ extern "C" {
     uint64_t *npairs;
     double *rupp;
     double *rpavg;
+    double *weightavg;
     int nbin;
   } results_countpairs;
   

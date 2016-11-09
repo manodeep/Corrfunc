@@ -167,6 +167,19 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
     }
     function = allfunctions[function_dispatch];
     old_isa = options->instruction_set;
+    
+    if(options->verbose){
+        // This must be first (AVX/SSE may be aliased to fallback)
+        if(function_dispatch == fallback_offset){
+            printf("Using fallback kernel\n");
+        } else if(function_dispatch == avx_offset){
+            printf("Using AVX kernel\n");
+        } else if(function_dispatch == sse_offset){
+            printf("Using SSE kernel\n");
+        } else {
+            printf("Unknown kernel!\n");
+        }
+    }
 
     return function;
 }
@@ -188,7 +201,18 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
-    (void) extra;
+    
+    // If no extra options were passed, create dummy options
+    // This allows us to pass arguments like "extra->weights0" below;
+    // they'll just be NULLs, which is the correct behavior
+    struct extra_options dummy_extra;
+    if(extra == NULL){
+      weight_method_t dummy_method = NONE;
+      dummy_extra = get_extra_options(dummy_method);
+      extra = &dummy_extra;
+    }
+    
+    int need_weightavg = extra->weight_method != NONE;
 
     options->sort_on_z = 1;
     struct timeval t0;
@@ -196,7 +220,6 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         gettimeofday(&t0, NULL);
     }
 
-    
     //Check inputs
     if(ND1 == 0 || (autocorr == 0 && ND2 == 0)) {
         return EXIT_SUCCESS;
@@ -380,7 +403,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1,
+    cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
                                                                                              xmin, xmax,
                                                                                              ymin, ymax,
                                                                                              zmin, zmax,
@@ -402,7 +425,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                 options->bin_refine_factors[i] *=BOOST_BIN_REF;
             }
             free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-            lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1,
+            lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
                                                              xmin, xmax,
                                                              ymin, ymax,
                                                              zmin, zmax,
@@ -425,7 +448,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     cellarray_mocks_index_particles_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_mocks_index_particles_DOUBLE(ND2, X2, Y2, Z2, D2,
+        lattice2 = gridlink_mocks_index_particles_DOUBLE(ND2, X2, Y2, Z2, D2, &(extra->weights1),
                                                          xmin, xmax,
                                                          ymin, ymax,
                                                          zmin, zmax,
@@ -482,14 +505,22 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     if(options->need_avg_sep){
         all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
     }
+    DOUBLE **all_weightavg = NULL;
+    if(need_weightavg) {
+      all_weightavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
+    }
+
 #else //USE_OMP
     uint64_t npairs[totnbins];
-    DOUBLE rpavg[totnbins];
+    DOUBLE rpavg[totnbins], weightavg[totnbins];
 
     for(int i=0; i <totnbins;i++) {
         npairs[i] = 0;
         if(options->need_avg_sep) {
             rpavg[i] = ZERO;
+        }
+        if(need_weightavg) {
+            weightavg[i] = ZERO;
         }
     }
 #endif //USE_OMP
@@ -511,10 +542,15 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     {
         const int tid = omp_get_thread_num();
         uint64_t npairs[totnbins];
-        for(int i=0;i<totnbins;i++) npairs[i] = 0;
-        DOUBLE rpavg[totnbins];
-        if(options->need_avg_sep) {
-            for(int i=0;i<totnbins;i++) rpavg[i] = ZERO;
+        DOUBLE rpavg[totnbins], weightavg[totnbins];
+        for(int i=0;i<totnbins;i++) {
+            npairs[i] = 0;
+            if(options->need_avg_sep) {
+                rpavg[i] = ZERO;
+            }
+            if(need_weightavg) {
+                weightavg[i] = ZERO;
+            }
         }
 
 #pragma omp for  schedule(dynamic)
@@ -550,17 +586,20 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                 DOUBLE *y1 = first->y;
                 DOUBLE *z1 = first->z;
                 DOUBLE *d1 = first->cz;
+                const weight_struct_DOUBLE *weights1 = &(first->weights);
                 const int64_t N1 = first->nelements;
 
                 if(autocorr == 1) {
                     int same_cell = 1;
                     DOUBLE *this_rpavg = options->need_avg_sep ? &(rpavg[0]):NULL;
-                    const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1,
-                                                                              N1, x1, y1, z1, d1,
+                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+                    const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
+                                                                              N1, x1, y1, z1, d1, weights1,
                                                                               same_cell,
                                                                               sqr_rpmax, sqr_rpmin, nrpbin,
                                                                               npibin, rupp_sqr, pimax,max_sep,
-                                                                              this_rpavg, npairs);
+                                                                              this_rpavg, npairs,
+                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
                        I care that an error occurred - rather than the exact value of
                        the error status */
@@ -577,14 +616,17 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                     DOUBLE *y2 = second->y;
                     DOUBLE *z2 = second->z;
                     DOUBLE *d2 = second->cz;
+                    const weight_struct_DOUBLE *weights2 = &(second->weights);
                     const int64_t N2 = second->nelements;
                     DOUBLE *this_rpavg = options->need_avg_sep ? &(rpavg[0]):NULL;
-                    const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1,
-                                                                              N2, x2, y2, z2, d2,
+                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+                    const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
+                                                                              N2, x2, y2, z2, d2, weights2,
                                                                               same_cell,
                                                                               sqr_rpmax, sqr_rpmin, nrpbin,
                                                                               npibin, rupp_sqr, pimax,max_sep,
-                                                                              this_rpavg, npairs);
+                                                                              this_rpavg, npairs,
+                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
                        I care that an error occurred - rather than the exact value of
                        the error status */
@@ -593,13 +635,15 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
             }//abort_status check
         }//i loop over ND1 particles
 #if defined(_OPENMP)
-            for(int i=0;i<totnbins;i++) {
-                all_npairs[tid][i] = npairs[i];
-                if(options->need_avg_sep) {
-                    all_rpavg[tid][i] = rpavg[i];
+        for(int i=0;i<totnbins;i++) {
+            all_npairs[tid][i] = npairs[i];
+            if(options->need_avg_sep) {
+                all_rpavg[tid][i] = rpavg[i];
+            }
+            if(need_weightavg) {
+                all_weightavg[tid][i] = weightavg[i];
             }
         }
-
     }//close the omp parallel region
 #endif//USE_OMP
 
@@ -616,6 +660,9 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         if(options->need_avg_sep) {
             matrix_free((void **) all_rpavg, numthreads);
         }
+        if(need_weightavg) {
+            matrix_free((void **) all_weightavg, numthreads);
+        }
 #endif
         return EXIT_FAILURE;
     }
@@ -628,11 +675,14 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     
 #if defined(_OPENMP)
     uint64_t npairs[totnbins];
-    DOUBLE rpavg[totnbins];
+    DOUBLE rpavg[totnbins], weightavg[totnbins];
     for(int i=0;i<totnbins;i++) {
         npairs[i] = 0;
         if(options->need_avg_sep) {
             rpavg[i] = ZERO;
+        }
+        if(need_weightavg) {
+            weightavg[i] = ZERO;
         }
     }
 
@@ -642,11 +692,17 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
             if(options->need_avg_sep) {
                 rpavg[j] += all_rpavg[i][j];
             }
+            if(need_weightavg) {
+                weightavg[j] += all_weightavg[i][j];
+            }
         }
     }
     matrix_free((void **) all_npairs, numthreads);
     if(options->need_avg_sep) {
         matrix_free((void **) all_rpavg, numthreads);
+    }
+    if(need_weightavg) {
+        matrix_free((void **) all_weightavg, numthreads);
     }
 #endif //USE_OMP
 
@@ -660,13 +716,19 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
             if(options->need_avg_sep) {
                 rpavg[i] *= dbl_fac;
             }
+            if(need_weightavg) {
+                weightavg[i] *= dbl_fac;
+            }
         }
     }
 
-    if(options->need_avg_sep) {
-        for(int i=0;i<totnbins;i++){
-            if(npairs[i] > 0) {
-                rpavg[i] /= ((DOUBLE) npairs[i] );
+    for(int i=0;i<totnbins;i++) {
+        if(npairs[i] > 0) {
+            if(options->need_avg_sep) {
+                rpavg[i] /= (DOUBLE) npairs[i] ;
+            }
+            if(need_weightavg) {
+                weightavg[i] /= (DOUBLE) npairs[i];
             }
         }
     }
@@ -677,7 +739,8 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     results->npairs = my_malloc(sizeof(*(results->npairs)), totnbins);
     results->rupp   = my_malloc(sizeof(*(results->rupp))  , nrpbin);
     results->rpavg  = my_malloc(sizeof(*(results->rpavg)) , totnbins);
-    if(results->npairs == NULL || results->rupp == NULL || results->rpavg == NULL) {
+    results->weightavg  = my_calloc(sizeof(double)  , totnbins);
+    if(results->npairs == NULL || results->rupp == NULL || results->rpavg == NULL || results->weightavg == NULL) {
         free_results_mocks(results);
         free(rupp);
         return EXIT_FAILURE;
@@ -695,8 +758,12 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
             }
             results->npairs[index] = npairs[index];
             results->rpavg[index] = 0.0;
+            results->weightavg[index] = 0.0;
             if(options->need_avg_sep) {
                 results->rpavg[index] = rpavg[index];
+            }
+            if(need_weightavg) {
+                results->weightavg[index] = weightavg[index];
             }
         }
     }

@@ -14,14 +14,14 @@ __all__ = ('DDrppi_mocks', )
 
 
 def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
-                 RA1, DEC1, CZ1,
-                 RA2=None, DEC2=None, CZ2=None,
+                 RA1, DEC1, CZ1, weights1=None,
+                 RA2=None, DEC2=None, CZ2=None, weights2=None,
                  is_comoving_dist=False,
                  verbose=False, output_rpavg=False,
                  fast_divide=False, xbin_refine_factor=2,
                  ybin_refine_factor=2, zbin_refine_factor=1,
                  max_cells_per_dim=100,
-                 c_api_timer=False, isa='fastest'):
+                 c_api_timer=False, isa='fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
     function, :math:`\\xi(r_p, \pi)`. Pairs which are separated by less
@@ -30,7 +30,9 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     counted. The input positions are expected to be on-sky co-ordinates.
     This module is suitable for calculating correlation functions for mock
     catalogs.
-
+    
+    If ``weights`` are provided, the resulting pair counts are weighted.  The
+    weighting scheme depends on ``weight_type``.
 
     Returns a numpy structured array containing the pair counts for the
     specified bins.
@@ -110,6 +112,12 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
        If is_comoving_dist is set, then ``CZ1`` is interpreted as the
        co-moving distance, rather than `cz`.
+       
+   weights1: array_like, real (float/double), optional
+        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
+        `weight_type` specifies how these weights are used; results are returned
+        in the `weightavg` field.  If only one of weights1 and weights2 is
+        specified, the other will be set to uniform weights.
 
     RA2: array-like, real (float/double)
         The array of Right Ascensions for the second set of points. RA's
@@ -136,6 +144,9 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         co-moving distance, rather than `cz`.
 
         Must be of same precision type as RA1/DEC1/CZ1.
+        
+    weights2: array-like, real (float/double), optional
+        Same as weights1, but for the second set of positions
 
     is_comoving_dist: boolean (default false)
         Boolean flag to indicate that ``cz`` values have already been
@@ -185,22 +196,26 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         always leave ``isa`` to the default value. And if you *are*
         benchmarking, then the string supplied here gets translated into an
         ``enum`` for the instruction set defined in ``utils/defs.h``.
+        
+    weight_type: string, optional
+        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
 
     Returns
     --------
 
     results: Numpy structured array
 
-       A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs]
+       A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs, weightavg]
        for each radial bin specified in the ``binfile``. If ``output_ravg`` is
-       not set, then ``rpavg`` will be set to 0.0 for all bins. ``npairs``
+       not set, then ``rpavg`` will be set to 0.0 for all bins; similarly for
+       ``weightavg``. ``npairs``
        contains the number of pairs in that bin and can be used to compute the
        actual :math:`\\xi(r_p, \pi)` or :math:`wp(rp)` by combining with
        (DR, RR) counts.
 
-       if ``c_api_timer`` is set, then the return value is a tuple containing
-       (results, api_time). ``api_time`` measures only the time spent within
-       the C library and ignores all python overhead.
+    api_time: float, optional
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
+       spent within the C library and ignores all python overhead.
 
     Example
     --------
@@ -220,6 +235,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     >>> X = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
     >>> Y = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
     >>> Z = np.random.uniform(-0.5*boxsize, 0.5*boxsize, N)
+    >>> weights = np.ones_like(X)
     >>> CZ = np.sqrt(X*X + Y*Y + Z*Z)
     >>> inv_cz = 1.0/CZ
     >>> X *= inv_cz
@@ -233,52 +249,53 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     >>> pimax = 40.0
     >>> results = DDrppi_mocks(autocorr, cosmology, nthreads,
     ...                        pimax, binfile, RA, DEC, CZ,
+    ...                        weights1=weights, weight_type='pair_product',
     ...                        output_rpavg=True, is_comoving_dist=True)
     >>> for r in results[519:]: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.1f}"
-    ...                               " {4:10d}".format(r['rmin'], r['rmax'],
-    ...                               r['rpavg'], r['pimax'], r['npairs']))
+    ...                               " {4:10d} {5:10.6f}".format(r['rmin'], r['rmax'],
+    ...                               r['rpavg'], r['pimax'], r['npairs'], r['weightavg']))
     ...                         # doctest: +NORMALIZE_WHITESPACE
-    11.359969  16.852277  14.285169       40.0     104850
-    16.852277  25.000000  21.181246        1.0     274144
-    16.852277  25.000000  21.190844        2.0     272876
-    16.852277  25.000000  21.183321        3.0     272294
-    16.852277  25.000000  21.188486        4.0     272506
-    16.852277  25.000000  21.170832        5.0     272100
-    16.852277  25.000000  21.165379        6.0     271788
-    16.852277  25.000000  21.175246        7.0     270040
-    16.852277  25.000000  21.187417        8.0     269492
-    16.852277  25.000000  21.172066        9.0     269682
-    16.852277  25.000000  21.182460       10.0     268266
-    16.852277  25.000000  21.170594       11.0     268744
-    16.852277  25.000000  21.178608       12.0     266820
-    16.852277  25.000000  21.187184       13.0     266510
-    16.852277  25.000000  21.184937       14.0     265484
-    16.852277  25.000000  21.180184       15.0     265258
-    16.852277  25.000000  21.191504       16.0     262952
-    16.852277  25.000000  21.187746       17.0     262602
-    16.852277  25.000000  21.189778       18.0     260206
-    16.852277  25.000000  21.188882       19.0     259410
-    16.852277  25.000000  21.185684       20.0     256806
-    16.852277  25.000000  21.194036       21.0     255574
-    16.852277  25.000000  21.184115       22.0     255406
-    16.852277  25.000000  21.178255       23.0     252394
-    16.852277  25.000000  21.184644       24.0     252220
-    16.852277  25.000000  21.187020       25.0     251668
-    16.852277  25.000000  21.183827       26.0     249648
-    16.852277  25.000000  21.183121       27.0     247160
-    16.852277  25.000000  21.180872       28.0     246238
-    16.852277  25.000000  21.185251       29.0     246030
-    16.852277  25.000000  21.183488       30.0     242124
-    16.852277  25.000000  21.194538       31.0     242426
-    16.852277  25.000000  21.190702       32.0     239778
-    16.852277  25.000000  21.188985       33.0     239046
-    16.852277  25.000000  21.187092       34.0     237640
-    16.852277  25.000000  21.185515       35.0     236256
-    16.852277  25.000000  21.190278       36.0     233536
-    16.852277  25.000000  21.183240       37.0     233274
-    16.852277  25.000000  21.183796       38.0     231628
-    16.852277  25.000000  21.200668       39.0     230378
-    16.852277  25.000000  21.181153       40.0     229006
+     11.359969  16.852277  14.285169       40.0     104850   1.000000
+     16.852277  25.000000  21.181246        1.0     274144   1.000000
+     16.852277  25.000000  21.190844        2.0     272876   1.000000
+     16.852277  25.000000  21.183321        3.0     272294   1.000000
+     16.852277  25.000000  21.188486        4.0     272506   1.000000
+     16.852277  25.000000  21.170832        5.0     272100   1.000000
+     16.852277  25.000000  21.165379        6.0     271788   1.000000
+     16.852277  25.000000  21.175246        7.0     270040   1.000000
+     16.852277  25.000000  21.187417        8.0     269492   1.000000
+     16.852277  25.000000  21.172066        9.0     269682   1.000000
+     16.852277  25.000000  21.182460       10.0     268266   1.000000
+     16.852277  25.000000  21.170594       11.0     268744   1.000000
+     16.852277  25.000000  21.178608       12.0     266820   1.000000
+     16.852277  25.000000  21.187184       13.0     266510   1.000000
+     16.852277  25.000000  21.184937       14.0     265484   1.000000
+     16.852277  25.000000  21.180184       15.0     265258   1.000000
+     16.852277  25.000000  21.191504       16.0     262952   1.000000
+     16.852277  25.000000  21.187746       17.0     262602   1.000000
+     16.852277  25.000000  21.189778       18.0     260206   1.000000
+     16.852277  25.000000  21.188882       19.0     259410   1.000000
+     16.852277  25.000000  21.185684       20.0     256806   1.000000
+     16.852277  25.000000  21.194036       21.0     255574   1.000000
+     16.852277  25.000000  21.184115       22.0     255406   1.000000
+     16.852277  25.000000  21.178255       23.0     252394   1.000000
+     16.852277  25.000000  21.184644       24.0     252220   1.000000
+     16.852277  25.000000  21.187020       25.0     251668   1.000000
+     16.852277  25.000000  21.183827       26.0     249648   1.000000
+     16.852277  25.000000  21.183121       27.0     247160   1.000000
+     16.852277  25.000000  21.180872       28.0     246238   1.000000
+     16.852277  25.000000  21.185251       29.0     246030   1.000000
+     16.852277  25.000000  21.183488       30.0     242124   1.000000
+     16.852277  25.000000  21.194538       31.0     242426   1.000000
+     16.852277  25.000000  21.190702       32.0     239778   1.000000
+     16.852277  25.000000  21.188985       33.0     239046   1.000000
+     16.852277  25.000000  21.187092       34.0     237640   1.000000
+     16.852277  25.000000  21.185515       35.0     236256   1.000000
+     16.852277  25.000000  21.190278       36.0     233536   1.000000
+     16.852277  25.000000  21.183240       37.0     233274   1.000000
+     16.852277  25.000000  21.183796       38.0     231628   1.000000
+     16.852277  25.000000  21.200668       39.0     230378   1.000000
+     16.852277  25.000000  21.181153       40.0     229006   1.000000
 
     """
     try:
@@ -293,12 +310,25 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins
     from future.utils import bytes_to_native_str
+    
+    # Broadcast scalar weights to arrays
+    if weights1 is not None:
+        weights1 = np.atleast_1d(weights1)
+    if weights2 is not None:
+        weights2 = np.atleast_1d(weights2)
 
-    if autocorr == 0:
+    if not autocorr:
         if RA2 is None or DEC2 is None or CZ2 is None:
             msg = "Must pass valid arrays for RA2/DEC2/CZ2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
+            
+        # If only one set of points has weights, set the other to uniform weights
+        if weights1 is None and weights2 is not None:
+            weights1 = np.ones_like(weights2)
+        if weights2 is None and weights1 is not None:
+            weights2 = np.ones_like(weights1)
+
     else:
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
@@ -307,13 +337,19 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     fix_ra_dec(RA1, DEC1)
     if autocorr == 0:
         fix_ra_dec(RA2, DEC2)
+        
+    # Passing None parameters breaks the parsing code, so avoid this
+    kwargs = {}
+    for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2', 'CZ2']:
+        v = locals()[k]
+        if v is not None:
+            kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DDrppi_extn(autocorr, cosmology, nthreads,
                                          pimax, rbinfile,
                                          RA1, DEC1, CZ1,
-                                         RA2, DEC2, CZ2,
                                          is_comoving_dist=is_comoving_dist,
                                          verbose=verbose,
                                          output_rpavg=output_rpavg,
@@ -323,7 +359,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                                          zbin_refine_factor=zbin_refine_factor,
                                          max_cells_per_dim=max_cells_per_dim,
                                          c_api_timer=c_api_timer,
-                                         isa=integer_isa)
+                                         isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -336,7 +372,8 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                               (bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'rpavg'), np.float),
                               (bytes_to_native_str(b'pimax'), np.float),
-                              (bytes_to_native_str(b'npairs'), np.uint64)])
+                              (bytes_to_native_str(b'npairs'), np.uint64),
+                              (bytes_to_native_str(b'weightavg'), np.float)])
 
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
@@ -346,6 +383,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         results['rpavg'][ii] = r[2]
         results['pimax'][ii] = r[3]
         results['npairs'][ii] = r[4]
+        results['weightavg'][ii] = r[5]
 
     if not c_api_timer:
         return results

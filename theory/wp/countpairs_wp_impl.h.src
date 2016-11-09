@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 #include "defs.h"
+#include "weight_defs_DOUBLE.h"
 #include <inttypes.h>
 
 #include "countpairs_wp.h"  
@@ -21,12 +22,12 @@ extern "C" {
     extern void interrupt_handler_countpairs_wp_DOUBLE(int signo);
 
 
-    typedef int (*wp_func_ptr_DOUBLE)(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const int64_t N0,
-                                      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const int64_t N1, const int same_cell,
+    typedef int (*wp_func_ptr_DOUBLE)(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
+                                      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell,
                                       const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
-                                      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                      ,DOUBLE *src_rpavg
-                                      ,uint64_t *src_npairs);
+                                      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                      DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                      DOUBLE *src_weightavg, const weight_method_t weight_method);
     
     extern wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
     
