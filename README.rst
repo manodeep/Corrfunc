@@ -9,15 +9,17 @@ or on a mock (RA, DEC, CZ). Also, contains the associated paper to be
 published in Astronomy & Computing Journal (at some point). Read the
 documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_. 
 
-
 Why Should You Use it
 ======================
 
 1. **Fast** Theory pair-counting is **7x** faster than ``SciPy cKDTree``, and at least **2x** faster than all existing public codes.
 2. **OpenMP Parallel** All pair-counting codes can be done in parallel (with strong scaling efficiency >~ 95% up to 10 cores)
 3. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
-4. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
-5. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
+4. **Weights** All correlation functions now support weights for individual points (in ``master`` branch, upcoming in `v2.0.0 <https://github.com/manodeep/Corrfunc/releases/tag/2.0.0>`_)
+5. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
+6. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
+
+*If you use the codes for your analysis, please star this repo -- that helps us keep track of the number of users.*
 
 Benchmark against Existing Codes
 ================================
