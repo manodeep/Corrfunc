@@ -26,13 +26,14 @@ typedef union {
 // Info about a particle pair that we will pass to the weight function
 typedef struct
 {
-    int64_t num_weights;
     weight_union_DOUBLE weights0[MAX_NUM_WEIGHTS];
     weight_union_DOUBLE weights1[MAX_NUM_WEIGHTS];
     weight_union_DOUBLE dx, dy, dz;
     
     // These will only be present for mock catalogs
     weight_union_DOUBLE parx, pary, parz;
+    
+    int64_t num_weights;
 } pair_struct_DOUBLE;
 
 typedef DOUBLE (*weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
