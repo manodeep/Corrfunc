@@ -9,6 +9,8 @@ or on a mock (RA, DEC, CZ). Also, contains the associated paper to be
 published in Astronomy & Computing Journal (at some point). Read the
 documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_. 
 
+**NOTE** ``v2.0`` is a significant update in terms of capability and is currently *only* available by directly ``cloning`` the repo and not through ``PyPI`` (documentation on ``rtfd.io`` corresponds to ``v2.0``).
+
 Why Should You Use it
 ======================
 
