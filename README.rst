@@ -1,4 +1,4 @@
-|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |RTD| |Landscape|
+|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |RTD| |Landscape| |Gitter|
 
 Description
 ===========
@@ -377,7 +377,6 @@ Project URL
    :target: https://landscape.io/github/manodeep/Corrfunc/master
    :alt: Code Health
 
-
-.. image:: https://badges.gitter.im/Corrfunc/Lobby.svg
+.. |Gitter| image:: https://badges.gitter.im/Corrfunc/Lobby.svg
    :alt: Join the chat at https://gitter.im/Corrfunc/Lobby
    :target: https://gitter.im/Corrfunc/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
