@@ -39,19 +39,14 @@ ABI_COMPAT_VERSION:=$(MAJOR).0
 # this ':' should be replaced by '?'
 CONDA_BUILD :=0
 DO_CHECKS := 1
-ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
+
+CLEAN_CMDS := celan celna clean clena distclean realclean
+ifneq ($(filter $(CLEAN_CMDS),$(MAKECMDGOALS)),)
   DO_CHECKS := 0
 endif
 
-ifeq (distclean,$(findstring distclean,$(MAKECMDGOALS)))
-  DO_CHECKS := 0
-endif
 
-ifeq (realclean,$(findstring realclean,$(MAKECMDGOALS)))
-  DO_CHECKS := 0
-endif
-
-## Only set everything if the command is not "make clean"
+## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
   UNAME := $(shell uname)
   ## Colored text output
