@@ -756,8 +756,15 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     expected_n=(int64_t)( (np/(DOUBLE) (ngrid_dec*max_nmesh_phi)) *MEMORY_INCREASE_FAC);
     expected_n = expected_n < 2 ? 2:expected_n;
 
+    int64_t *ra_offset_for_dec = my_malloc(sizeof(*ra_offset_for_dec), ngrid_dec);
+    int64_t offset = 0;
+    for(int idec=0;idec<ngrid_dec;idec++) {
+        ra_offset_for_dec[idec] = offset;
+        offset += ngrid_ra[idec];
+    }
+    
     /*---Allocate-and-initialize-grid-arrays----------*/
-    const int64_t totncells = ngrid_dec * (int64_t) max_nmesh_phi;
+    const int64_t totncells = offset;
     *ncells = totncells;
     cellarray_mocks_index_wtheta_DOUBLE *lattice = my_calloc(sizeof(*lattice), totncells);
     int64_t *nallocated = my_malloc(sizeof(*nallocated), totncells);
@@ -780,7 +787,8 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     for(int idec=0;idec<ngrid_dec;idec++) {
         const int nmesh_ra = ngrid_ra[idec];
         for(int ira=0;ira<nmesh_ra;ira++) {
-            const int64_t index = idec * max_nmesh_phi + ira;
+            const int64_t ra_base = ra_offset_for_dec[idec];
+            const int64_t index = ra_base + ira;
             const size_t memsize=sizeof(DOUBLE);
             lattice[index].x = my_malloc(memsize,expected_n);
             lattice[index].y = my_malloc(memsize,expected_n);
@@ -825,7 +833,8 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
                 "RA index for particle position = %d must be within [0, %d) for declination bin = %d\n",
                 idec, ngrid_ra[idec], idec);
 
-        const int64_t index = idec*max_nmesh_phi + ira;
+        const int64_t ra_base = ra_offset_for_dec[idec];
+        const int64_t index = ra_base + ira;
         lattice[index].ra_min = ra[i] < lattice[index].ra_min ? ra[i]:lattice[index].ra_min;
         lattice[index].ra_max = ra[i] > lattice[index].ra_max ? ra[i]:lattice[index].ra_max;
         
@@ -892,6 +901,8 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
         lattice[index].nelements++;
     }
     free(nallocated);
+    free(ra_offset_for_dec);
+        
     if(options->sort_on_z) {
         for(int64_t icell=0;icell<totncells;icell++) {
             cellarray_mocks_index_wtheta_DOUBLE *first = &lattice[icell];
@@ -936,13 +947,29 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
     const int max_ra_ngb = 2*ra_refine_factor + 1;
     const int max_ngb_cells = max_dec_ngb * (max_ra_ngb + 2);//Two additional cells on either end for cases where RA position changes between first and second cells
     const DOUBLE inv_ra_diff = 1.0/ra_diff;
-    XRETURN( totncells == max_nmesh_ra*nmesh_dec, EXIT_FAILURE,
-             "Total number of cells = %"PRId64" should equal the product of max RA cells = %d and the number of DEC cells = %d\n",
+    XRETURN( totncells <= max_nmesh_ra*nmesh_dec, EXIT_FAILURE,
+             "Total number of cells = %"PRId64" can be at most the product of max RA cells = %d and the number of DEC cells = %d\n",
              totncells, max_nmesh_ra, nmesh_dec);
+    
+    int64_t *ra_offset_for_dec = my_malloc(sizeof(*ra_offset_for_dec), nmesh_dec);
+    if(ra_offset_for_dec == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    int64_t offset = 0;
+    for(int idec=0;idec<nmesh_dec;idec++) {
+        ra_offset_for_dec[idec] = offset;
+        offset += nmesh_grid_ra[idec];
+    }
+    XRETURN( totncells == offset, EXIT_FAILURE,
+             "Total number of cells = %"PRId64" must be exactly equal to the sum of number of RA cells over all declinations = %"PRId64"\n",
+             totncells, offset);
+     
     
     for(int idec=0;idec<nmesh_dec;idec++) {
         for(int ira=0;ira<nmesh_grid_ra[idec];ira++) {
-            const int64_t icell = idec * max_nmesh_ra + ira;
+            const int64_t ra_base = ra_offset_for_dec[idec];
+            const int64_t icell = ra_base + ira;
             struct cellarray_mocks_index_wtheta_DOUBLE *first = &(lattice1[icell]);
             if(first->nelements == 0) continue;
             
@@ -976,7 +1003,8 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                     /* Note this is iira -> which maps the range of RA values the original particle from first could 
                        have in this new declination+RA bin  */
                     const int this_ra = (iira + nmesh_grid_ra[this_dec]) % nmesh_grid_ra[this_dec];
-                    const int64_t icell2 = this_dec * max_nmesh_ra + this_ra;
+                    const int64_t this_ra_base = ra_offset_for_dec[this_dec];
+                    const int64_t icell2 = this_ra_base + this_ra;
                     XRETURN(icell2 < totncells, EXIT_FAILURE,
                             "index for ngb cell = %"PRId64" should be less total number of cells = %"PRId64"\n",
                             icell2, totncells);
@@ -999,7 +1027,7 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
             }//loop over neighbouring DEC cells
         }//loop over all RA cells contained in this DEC bin
     }//loop over all DEC cells
-  
+    free(ra_offset_for_dec);
     return EXIT_SUCCESS;
 }
 
