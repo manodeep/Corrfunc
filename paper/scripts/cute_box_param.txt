@@ -1,0 +1,15 @@
+#input information
+data_filename= cute_box_data.dat
+num_lines= all
+input_format= 0
+output_filename= cute_box_out.txt
+box_size= 1100.
+
+#tree stuff
+use_tree= 0
+max_tree_order= 6
+max_tree_nparts= 100
+
+#irrelevant yet
+use_pm= 0
+n_grid_side= 256
