@@ -1,3 +1,4 @@
+// # -*- mode: c -*-
 /* File: gridlink_mocks.c */
 /*
   This file is a part of the Corrfunc package
@@ -980,10 +981,11 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                             "index for ngb cell = %"PRId64" should be less total number of cells = %"PRId64"\n",
                             icell2, totncells);
                     
-                    //For cases where we are not double-counting (i.e., wp and xi), the same-cell
+                    //For cases where we are not double-counting (i.e., auto-corrs), the same-cell
                     //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
                     //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
                     //kernels in that case!
+                    //The second condition essentially halves the number of cell-pairs in auto-corr calculations
                     if(lattice2[icell2].nelements==0 || (autocorr==1 && icell2 >= icell)) {
                         continue;
                     }
