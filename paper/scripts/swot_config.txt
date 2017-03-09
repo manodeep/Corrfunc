@@ -1,0 +1,52 @@
+# Configuration file for swot
+# ---------------------------------------------------------- #
+# Input catalogues                                           #
+# ---------------------------------------------------------- #
+data1          swot_test_data.txt  # input data catalogue #1
+cols1          1,2,3	  # Column ids for data1
+#data2          swot_test_data.txt  # input data catalogue #2
+#cols2          1,2	  # Column ids for data2
+ran1           swot_test_data.txt	  # input random catalogue #1
+rancols1       1,2,3	  # Column ids for ran1
+#ran2           swot_test_ran2.txt	  # input random catalogue #2
+#rancols2       1,2	  # Column ids for ran2
+fits           no	  # input files in fits format? [auto,yes,no(ascii)].
+# ---------------------------------------------------------- #
+# Correlation options                                        #
+# ---------------------------------------------------------- #
+corr           auto_3D	 # Type of correlation:
+                   	 # [auto,cross,gglens,auto_wp,cross_wp,auto_3D,cross_3D,number]
+est            nat	 # Estimator [ls,nat,ham,peebles]
+range          .01,.90	 # Correlation range. Dimension same as "proj":
+nbins          19	 # Number of bins
+nbins_pi       100	 # Number of bins for pi (for wp)
+log            no	 # Logarithmic bins [yes,no]
+err            jackknife # Resampling method [bootstrap,jackknife,subsample]
+                         # or [bootstrap2D,jackknife2D]
+nsub           0	 # Number of subvolumes for resampling (power of 2)
+nsamples       0	 # Number of samples for resampling (= nsub for jackknife)
+seed           time	 # random seed for bootstrap
+OA             no	 # Open angle for approximation (value or "no") 
+calib          no	 # Calibration factor [yes,no] (for lensing). Replace e1 by 1+m or c.
+RR_in          no	 # file for pre-computed RR pairs (only for clustering) 
+RR_out         no	 # file for saving RR pairs (only for clustering) 
+# ---------------------------------------------------------- #
+# Cosmology (for gal-gal correlations, w(R) and xi(rp,PI))   #
+# ---------------------------------------------------------- #
+H0             72	 # Hubble parameter
+Omega_M        0.258	 # Relative matter density
+Omega_L        0.742	 # Relative energy density (Lambda)
+deltaz         0.03	 # For gg lensing: Zsource > Zlens + deltaz
+pi_max         40	 # For wp: limit for pi integration
+# ---------------------------------------------------------- #
+# Output options                                             #
+# ---------------------------------------------------------- #
+#proj           como	 # Axis projection [theta, como, phys]
+                    	 # for auto, cross: default: theta (deg)
+                    	 # for auto_[3d,wp], cross_[3d,wp], gglens: default: como (Mpc)
+out            swot_corr.out	 # Output file in ascii format
+cov            no	 # Covariance matrix of errors [yes,no] (in "out".cov)
+xi             no	 # xi(rp, pi) for auto_wp [yes,no] (in "out".xi)
+printTree      no	 # Output tree in "out".data[1,2]_tree.[ascii,fits]
+printTreeAndExit no	 # Same as above but exits after
+printSamples   no	 # Ouput samples in "out".samples
