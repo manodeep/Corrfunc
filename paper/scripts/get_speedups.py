@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import print_function, division
 import numpy as np
 import matplotlib
@@ -59,8 +60,9 @@ def run_wp(boxsize, x, y, z, pimax, nthreads=max_threads, isa=None):
     import Corrfunc
     from Corrfunc.theory import wp
     from os.path import dirname, abspath, join as pjoin
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../theory/tests/", "bins")
+    #binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
+    #                "../theory/tests/", "bins")
+    binfile = './bins'
     _, cell_time = wp(boxsize, pimax, nthreads, binfile,
                       x, y, z, c_cell_timer=True, isa=isa,
                       verbose=True)
@@ -73,9 +75,19 @@ def main():
     if len(sys.argv) == 1:
         print("Running cell timers for wp")
         all_isa = ['avx', 'sse42', 'fallback']
-        x, y, z = read_catalog()
-        boxsize = 420.0
-        pimax = 40.0
+        #x, y, z = read_catalog()
+        boxsize = 1100.0
+        pimax = 45.0
+        
+        points = np.loadtxt('halos_emulator_1100box_Neff3_00.txt')
+        numpart = int(1.*len(points))
+        assert (points >= 0).all() and (points < 1100.).all()
+        dtype = points.dtype  # float64
+        points = points.reshape(-1).view(dtype=[('x',dtype,3)])
+        subsample = np.random.choice(points, numpart, replace=False)
+        subsample = subsample.view(dtype=dtype).reshape(-1,3)
+        x, y, z = subsample.T
+        
         cell_timings = dict()
         serial_timings = dict()
         for isa in all_isa:
@@ -112,14 +124,16 @@ def main():
         N1_parts = (serial_timings['fallback'])[1]['N1']
         N2_parts = (serial_timings['fallback'])[1]['N2']
         gridsize = 40
-        cb_range = [0.0, 3.0]
+        cb_range = [0.0, 3.0e-5]
         contour_nlevels = 4
-        xlimits = [0, 1000]
+        xlimits = [0, 40]
         ylimits = xlimits
         xlabel = 'Number of points in a cell'
         ylabel = xlabel
 
+        
         cb_diff = (cb_range[1] - cb_range[0])
+        '''
         positive_Ncolors = int((cb_range[1] - 1.0) / cb_diff * 256)
         negative_Ncolors = 256 - positive_Ncolors
         colors1 = cm.OrRd(np.linspace(0.0, 1.0, negative_Ncolors))
@@ -128,6 +142,8 @@ def main():
         colors = np.vstack((colors1, colors2))
         mycmap = mcolors.LinearSegmentedColormap.from_list('my_colormap',
                                                            colors)
+        '''
+        mycmap = 'viridis'
         matplotlib.style.use('default')
         # Label levels with specially formatted floats
         if plt.rcParams["text.usetex"]:
@@ -237,7 +253,10 @@ def main():
                       inline=True, fontsize=10)
 
             # Now plot the image for the speedup
-            im = ax.hexbin(N1_parts[ind], N2_parts[ind], C=speedup[ind],
+            normalized_this_timing = this_timing/this_timing.sum()
+            im = ax.hexbin(N1_parts[ind], N2_parts[ind],
+                           #C=speedup[ind],
+                           C=normalized_this_timing[ind],
                            vmin=cb_range[0], vmax=cb_range[1],
                            cmap=mycmap, gridsize=gridsize)
             plt.figtext(left + figsize - 0.03, bottom + figsize - 0.05,

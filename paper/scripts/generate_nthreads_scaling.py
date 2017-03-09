@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 from __future__ import print_function
 import numpy as np
@@ -5,6 +6,7 @@ import numpy as np
 import Corrfunc
 
 from Corrfunc.io import read_catalog
+import os.path as path
 from os.path import join as pjoin, abspath, dirname
 import time
 import sys
@@ -55,7 +57,7 @@ def _get_times(filename='stderr.txt'):
     # Once for dataset1, and once for dataset2
     with open(filename, 'r') as f:
         for l in f:
-            if 'gridlink' in l:
+            if 'gridlink' in l and 'inefficient' not in l:
                 splits = l.split()
                 serial_time += np.float(splits[-2])
 
@@ -72,7 +74,8 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
                                  isa=None):
 
     from Corrfunc.theory import DD, DDrppi, wp, xi
-    allkeys = ['DDrppi', 'DD', 'wp', 'xi']
+    allkeys = [#'DDrppi', 'DD',
+                'wp', 'xi']
     allisa = ['avx', 'sse42', 'fallback']
     if keys is None:
         keys = allkeys
@@ -95,7 +98,7 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
     print("Benchmarking theory routines = {0} with isa = {1}".format(keys,
                                                                      isa))
     x, y, z = read_catalog()
-    rmax = 15.0
+    rmax = 42.0
     rmin = 0.1
     nbins = 20
     bins = np.logspace(np.log10(rmin),
@@ -212,8 +215,8 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                                 keys=None,
                                 isa=None):
     from Corrfunc.mocks import DDrppi_mocks, DDtheta_mocks
-    allkeys = ['DDrppi (DD)',
-               'DDtheta (DD)',
+    allkeys = [#'DDrppi (DD)',
+               #'DDtheta (DD)',
                'DDrppi (DR)',
                'DDtheta (DR)']
     allisa = ['avx', 'sse42', 'fallback']
@@ -246,7 +249,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
     cosmology = 1
     nbins = 20
     rmin = 0.1
-    rmax = 20.0
+    rmax = 42.0
     angmax = 10.0
     rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
 
@@ -376,20 +379,21 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
     return keys, isa, runtimes
 
 if len(sys.argv) == 1:
-    print("Running theory benchmarks")
-    keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=5)
-    np.savez('theory_scaling_nthreads.npz', keys=keys, isa=isa,
-             runtimes=runtimes)
-    print("Theory: runtimes = {0}".format(runtimes))
+    #print("Running theory benchmarks")
+    #keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=3)
+    #np.savez('theory_scaling_nthreads.npz', keys=keys, isa=isa,
+    #         runtimes=runtimes)
+    #print("Theory: runtimes = {0}".format(runtimes))
 
     print("Running mocks benchmarks")
-    keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=5)
+    keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=3)
     np.savez('mocks_scaling_nthreads.npz', keys=keys, isa=isa,
              runtimes=runtimes)
     print("Mocks: runtimes = {0}".format(runtimes))
     
 else:
     timings_file = sys.argv[1]
+    mock = 'mock' in timings_file
     print("Loading benchmarks from file = {0}".format(timings_file))
     xx = np.load(timings_file)
     try:
@@ -406,18 +410,20 @@ else:
               "command-line ".format(timings_file))
         raise
     
-    nthreads = set(nthreads for nthreads in runtimes['nthreads'])
+    nthreads = list(set(nthreads for nthreads in runtimes['nthreads']))
+    #nthreads = filter(lambda x: x <= 20, nthreads)
+    nthreads = np.array(nthreads)
     if min(nthreads) > 1:
         msg = "Can not scale to equivalent serial run. Min. nthreads "\
               "must be set to 1"
         raise ValueError(msg)
 
-    if 'theory' in timings_file:
-        output_file = pjoin(dirname(__file__), '../tables/',
-                            'timings_Mr19_openmp_theory.tex')
-    else:
+    if mock:
         output_file = pjoin(dirname(__file__), '../tables/',
                             'timings_Mr19_openmp_mocks.tex')
+    else:
+        output_file = pjoin(dirname(__file__), '../tables/',
+                            'timings_Mr19_openmp_theory.tex')
 
     with open(output_file, 'w') as f:
 
@@ -456,8 +462,8 @@ else:
                     # and ignoring the total runtime ~ pair_time + serial_time
                     # For the mocks, serial_time (~0.08 sec) *is* the limiting
                     # factor in efficiency.
-                    serial_avg = np.mean(runtimes['pair_time'][s_ind])
-                    para_avg = np.mean(runtimes['pair_time'][ind])
+                    serial_avg = np.mean(runtimes['runtime'][s_ind])
+                    para_avg = np.mean(runtimes['runtime'][ind])
 
                     # If you want the Amdahl's law limited max. effiency,
                     # uncomment the following lines.
@@ -479,4 +485,70 @@ else:
 
             print("")
             print("\\\\", file=f)
+    
+    # Begin plotting
+    plt_scaling = False  # plot scalings or raw times
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+    import seaborn
+    seaborn.set_style('ticks')
+    seaborn.set_style({"xtick.direction": "in","ytick.direction": "in", 'xtick.top':True, 'ytick.right':True})
+    seaborn.set_context('paper')
+    seaborn.set_palette('Dark2')
+    
+    assert len(keys) == 2
+    fig, axes = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, squeeze=False, figsize=(5,2.5))
+    for ax in axes.T:
+        ax[-1].set_xlabel(r'$N_\mathrm{threads}$')
+    for ax in axes:
+        ax[0].set_ylabel(r'Scaling efficiency' if plt_scaling else 'Runtime [sec]')
+    fig.subplots_adjust(hspace=0, wspace=0)
+    axes = axes.reshape(-1)
+    plt_isa = {'avx':'AVX', 'sse42':'SSE 4.2', 'fallback':'Fallback'}
+    plt_mod = {'DDrppi':r'$\mathrm{DD}(r_p,\pi)$', 'DD':r'$\mathrm{DD}(r)$', 'wp':r'$w_p(r_p)$', 'xi':r'$\xi(r)$',
+               'DDrppi (DD)':r'$\mathrm{DD}(r_p,\pi)$', 'DDtheta (DD)':r'$\mathrm{DD}(\theta)$',
+               'DDrppi (DR)':r'$\mathrm{DR}(r_p,\pi)$', 'DDtheta (DR)':r'$\mathrm{DR}(\theta)$'}
+               
+    if mock:
+        axes[0].set_ylim(1e0,4e2)
+    else:
+        axes[0].set_ylim(3e-1,2e2)
+    
+    for mod,ax in zip(keys,axes):
+        ax.set_title(plt_mod[mod], position=(0.9,0.8), loc='right')
+        ax.set_xlim(1,max(nthreads))
+        ax.set_xscale('log'); ax.set_yscale('log')
+        for run_isa in isa:
+            rt = []
+            s_ind = (runtimes['nthreads'] == 1) & \
+                    (runtimes['name'] == mod) & \
+                    (runtimes['isa'] == run_isa)
+            serial_avg = np.mean(runtimes['pair_time'][s_ind])
+            
+            for it in nthreads:
+                ind = (runtimes['nthreads'] == it) & \
+                      (runtimes['name'] == mod) & \
+                      (runtimes['isa'] == run_isa)
+                para_avg = np.mean(runtimes['runtime'][ind])
+                rt += [serial_avg/it/para_avg if plt_scaling else para_avg]
+            
+            ax.plot(nthreads, rt, label=plt_isa[run_isa])
+            
+            if 'avx' in run_isa:
+                pltx = nthreads.astype(float)
+                plty = .4*rt[-1]*(pltx/pltx[-1])**-1.
+                ax.loglog(pltx, plty, ':', c='k')
+    
+    if mock:
+        axes[0].annotate(r'$\propto N_\mathrm{threads}^{-1}$', xy=(.45, .3), xycoords='axes fraction')
+    else:
+        axes[1].legend(loc='lower left')
+        axes[0].annotate(r'$\propto N_\mathrm{threads}^{-1}$', xy=(.45, .15), xycoords='axes fraction')
+    axes[0].get_xaxis().set_major_locator(plt.FixedLocator([1,10,20,24]))
+    axes[0].get_xaxis().set_major_formatter(mpl.ticker.FixedFormatter(['1','10','','24']))
+    
+    
+    fig_fn = '{}.pdf'.format('.'.join(path.basename(timings_file).split('.')[:-1]))
+    fig.tight_layout()
+    fig.savefig(fig_fn)
     
