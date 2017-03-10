@@ -96,7 +96,7 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
           j = i+1;
       } else {
           for(;prev_j<N1;prev_j++) {
-              const DOUBLE dz = *z1 - zpos;
+              const DOUBLE dz = (*z1) * zpos;
               if(dz > -costhetamin) break;
               z1++; n_off++;
           }
@@ -372,7 +372,7 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
           z1++; n_off++;
       } else {
           for(;prev_j<N1;prev_j++) {
-              const DOUBLE dz = *z1 - zpos;
+              const DOUBLE dz = (*z1) * zpos;
               if(dz > -costhetamin) break;
               z1++; n_off++;
           }
@@ -624,7 +624,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
           /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
           while(nleft > 0) {
               /*Particles are sorted on 'z', in increasing order */
-              const DOUBLE dz = *z1 - zpos;
+              const DOUBLE dz = (*z1) * zpos;
               if(dz > -costhetamin) break;
               z1++; n_off++;
               nleft--;

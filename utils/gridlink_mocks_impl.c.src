@@ -656,7 +656,7 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     size_t totnbytes=0;
     const DOUBLE dec_diff = dec_max - dec_min;
     const DOUBLE ra_diff = ra_max - ra_min;
-    
+
     /* Input validation */
     XRETURN(thetamax > 0.0, NULL, "Minimum angular separation = %"REAL_FORMAT" must be positive\n", thetamax);
     XRETURN(np > 0, NULL, "Number of points =%"PRId64" must be >0\n", np);
@@ -707,35 +707,62 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     int *ngrid_ra = *ngrid_phi;
 
     const DOUBLE costhetamax=COSD(thetamax);
+    const DOUBLE sin_half_thetamax=SIND(0.5*thetamax);
+    
     const DOUBLE max_phi_cell = ra_diff/(2*ra_refine_factor + 1);
     int max_nmesh_phi=2*ra_refine_factor + 1;//there will be at least 2*ra_refine_factor + 1 cells in RA
     for(int idec=0;idec<ngrid_dec;idec++) {
-
         DOUBLE this_min_dec;
-        DOUBLE this_dec = dec_min + idec*dec_binsize;
-        if(this_dec > 0) {
-            int max_idec = idec + dec_refine_factor >= ngrid_dec ? ngrid_dec-1:idec+dec_refine_factor;
-            this_min_dec = dec_min + (max_idec+1)*dec_binsize;//upper limit for that dec-bin
-        } else {
-            int max_idec = idec - dec_refine_factor < 0 ? 0:idec-dec_refine_factor;
-            this_min_dec = dec_min + max_idec*dec_binsize;//lower limit for that dec-bin
+#if 0
+        {
+            DOUBLE this_dec = dec_min + idec*dec_binsize;
+            if(this_dec > 0) {
+                int max_idec = idec + dec_refine_factor >= ngrid_dec ? ngrid_dec-1:idec+dec_refine_factor;
+                this_min_dec = dec_min + (max_idec+1)*dec_binsize;//upper limit for that dec-bin
+            } else {
+                int max_idec = idec - dec_refine_factor < 0 ? 0:idec-dec_refine_factor;
+                this_min_dec = dec_min + max_idec*dec_binsize;//lower limit for that dec-bin
+            }
         }
-
+#endif        
+        
+        const DOUBLE dec_lower = dec_min + idec*dec_binsize;
+        const DOUBLE dec_upper = dec_lower + dec_binsize;
+        const DOUBLE cos_dec_upper = COSD(dec_upper);
+        const DOUBLE cos_dec_lower = COSD(dec_lower);
+        DOUBLE cos_min_dec;
+        if(cos_dec_lower < cos_dec_upper) {
+            this_min_dec = dec_lower;
+            cos_min_dec = cos_dec_lower;
+        } else {
+            this_min_dec = dec_upper;
+            cos_min_dec = cos_dec_upper;
+        }
+        //Use the Haversine approx. (https://en.wikipedia.org/wiki/Great-circle_distance)
+        // Since phi1 == phi2 = this_min_dec
+        // \delta\sigma = 2 asin (  sqrt( cos (phi1) * cos (phi2) * sin^2( max-ra-diff/2.0)) )
+        // => \thetamax = 2 asin (  sqrt( cos_min_dec^2 * sin^2( max-ra-diff/2.0)) )
+        // => \thetamax = 2.0 asin( cos_min_dec * sin(max-ra-diff/2.0)
+        // => sin (\thetamax/2.0) = cos_min_dec * sin(max-ra-diff/2.0)
+        // => sin(max-ra-diff/2.0) = sin (\thetamax/2.0)/cos_min_dec
+        // => max-ra-diff = 2.0 * asin(  (  sin(\thetamax/2.0)/cos_min_dec ) )
+        
         DOUBLE phi_cell = max_phi_cell;
         if( (90.0 - ABS(this_min_dec) ) > 1.0) { //make sure min_dec is not close to the pole (within 1 degree)-> divide by zero happens the cosine term
-            DOUBLE sin_min_dec = SIND(this_min_dec),cos_min_dec=COSD(this_min_dec);
-            DOUBLE cos_phi_cell = (costhetamax - sin_min_dec*sin_min_dec)/(cos_min_dec*cos_min_dec);
-            phi_cell = ACOS(cos_phi_cell)*INV_PI_OVER_180;
+            /* DOUBLE sin_min_dec = SIND(this_min_dec); */
+            /* DOUBLE cos_phi_cell = (costhetamax - sin_min_dec*sin_min_dec)/(cos_min_dec*cos_min_dec); */
+            /* phi_cell = ACOS(cos_phi_cell)*INV_PI_OVER_180; */
+            phi_cell = 2.0 * ASIN( sin_half_thetamax/cos_min_dec ) * INV_PI_OVER_180 * 1.01;
             if(phi_cell <= ZERO) {
                 phi_cell = max_phi_cell;
             }
             if( ! (phi_cell > ZERO) ) {
                 fprintf(stderr,"Error: Encountered invalid binsize for RA bins = %"REAL_FORMAT" for declination bin = %d\n", phi_cell, idec);
                 fprintf(stderr,"min(declination in bin) = %"REAL_FORMAT" (min_dec)\n", this_min_dec);
-                fprintf(stderr,"costhetamax = %"REAL_FORMAT" sin(min_dec) = %"REAL_FORMAT" cos(min_dec) = %"REAL_FORMAT"\n",
-                        costhetamax, sin_min_dec, cos_min_dec);
-                fprintf(stderr,"cos(phi_cell) = %"REAL_FORMAT" := numerator/denom. numerator = %"REAL_FORMAT" denom = %"REAL_FORMAT"\n",
-                        cos_phi_cell, (costhetamax - sin_min_dec*sin_min_dec), (cos_min_dec*cos_min_dec));
+                fprintf(stderr,"costhetamax = %"REAL_FORMAT" sin(thetamax/2.0) = %"REAL_FORMAT" cos(min_dec) = %"REAL_FORMAT" \n",
+                        costhetamax, sin_half_thetamax, cos_min_dec);
+                /* fprintf(stderr,"cos(phi_cell) = %"REAL_FORMAT" := numerator/denom. numerator = %"REAL_FORMAT" denom = %"REAL_FORMAT"\n", */
+                /*         cos_phi_cell, (costhetamax - sin_min_dec*sin_min_dec), (cos_min_dec*cos_min_dec)); */
             }
         }
         XRETURN(phi_cell > ZERO, NULL, "Please remove LINK_IN_RA from compile options "

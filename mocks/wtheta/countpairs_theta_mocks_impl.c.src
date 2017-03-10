@@ -151,13 +151,13 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
     if(options->verbose){
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
-            printf("Using fallback kernel\n");
+            fprintf(stderr,"Using fallback kernel\n");
         } else if(function_dispatch == avx_offset){
-            printf("Using AVX kernel\n");
+            fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
-            printf("Using SSE kernel\n");
+            fprintf(stderr,"Using SSE kernel\n");
         } else {
-            printf("Unknown kernel!\n");
+            fprintf(stderr,"Unknown kernel!\n");
         }
     }
         
@@ -293,7 +293,7 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
                     weight_struct_DOUBLE this_weights1 = {.num_weights = extra->weights1.num_weights};
                     for(int w = 0; w < this_weights0.num_weights; w++){
                         this_weights0.weights[w] = (DOUBLE *) extra->weights0.weights[w] + i;
-                        this_weights1.weights[w] = (DOUBLE *) extra->weights0.weights[w] + i;
+                        this_weights1.weights[w] = (DOUBLE *) extra->weights1.weights[w] + j;
                     }
                     
                     int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i], &this_weights0,
