@@ -42,9 +42,7 @@ Pre-requisites
    ``theory.options`` and ``mocks.options``. You might need to ask your
    sys-admin for system-wide installs of the compiler; if you prefer to
    install your own then ``conda install gcc`` (MAC/linux) or
-   ``(sudo) port install gcc5`` (on MAC) should work. *Note ``gcc`` on
-   macports defaults to ``gcc48`` and the portfile is currently broken
-   on ``El Capitan``*.
+   ``(sudo) port install gcc5`` (on MAC) should work. 
 3. ``gsl``. Use either
    ``conda install -c https://conda.anaconda.org/asmeurer gsl``
    (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl``
@@ -52,14 +50,8 @@ Pre-requisites
 4. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions.
 5. ``numpy>=1.7`` for compiling the C extensions.
 
-*If python and/or numpy are not available, then the C extensions will
-not be compiled.*
-
-*Default compiler on MAC is set to* ``clang``, *if you want to specify a
-different compiler, you will have to call* ``make CC=yourcompiler``
-
-Preferred Method
-----------------
+Preferred Install Method
+-------------------------
 
 ::
 
@@ -77,10 +69,20 @@ python C extensions in your environment, then
 interested in the ``python`` interface, you can condense all of the steps
 by using ``python setup.py install CC=yourcompiler (--user)`` after ``git clone``.
 
-Alternative
------------
+Compilation Notes
+------------------
 
-The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Not recommended unless you are desperate (i.e., `email me <mailto:manodeep@gmail.com>`__ if you are having install issues). 
+- If python and/or numpy are not available, then the C extensions will
+not be compiled.
+
+- Default compiler on MAC is set to ``clang``, if you want to specify a
+different compiler, you will have to call ``make CC=yourcompiler``
+
+
+Alternate Install Method
+-------------------------
+
+The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Installing via `pip` is **not** recommended, please open an install issue on this repo first; doing so helps improve the code-base and saves future users from running into similar install issues. 
 
 Installation notes
 ------------------
@@ -94,7 +96,7 @@ While I have tried to ensure that the package compiles and runs out of
 the box, cross-platform compatibility turns out to be incredibly hard.
 If you run into any issues during compilation and you have all of the
 pre-requisites, please see the `FAQ <FAQ>`__ or `email
-me <mailto:manodeep@gmail.com>`__. Also, feel free to create a new issue
+the Corrfunc mailing list <mailto:corrfunc@googlegroups.com>`__. Also, feel free to create a new issue
 with the ``Installation`` label.
 
 Clustering Measures on a Cosmological box
@@ -309,11 +311,11 @@ Common Code options for both Mocks and Cosmological Boxes
    the ``*_kernels.c`` and edit the runtime dispatch code to call this new
    kernel. 
 
-Author
-======
+Author & Maintainers 
+=====================
 
-Corrfunc is written/maintained by Manodeep Sinha. Please contact the
-`author <mailto:manodeep@gmail.com>`__ in case of any issues.
+Corrfunc was designed by Manodeep Sinha and is currently maintained by
+`Lehman Garrison <https://github.com/lgarrison>`_ and `Manodeep Sinha <https://github.com/manodeep>`_
 
 Citing
 ======
