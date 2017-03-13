@@ -382,6 +382,7 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
         if(options->need_avg_sep) {
             results->theta_avg[i] = thetaavg[i];
         }
+        results->weightavg[i] = ZERO;
         if(need_weightavg) {
             results->weightavg[i] = weightavg[i];
         }

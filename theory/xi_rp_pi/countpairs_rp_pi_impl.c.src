@@ -640,8 +640,8 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
             }
 
             results->npairs[index] = npairs[index];
-            results->rpavg[index] = 0.0;
-            results->weightavg[index] = 0.0;
+            results->rpavg[index] = ZERO;
+            results->weightavg[index] = ZERO;
             if(options->need_avg_sep){
                 results->rpavg[index] = rpavg[index];
             }
