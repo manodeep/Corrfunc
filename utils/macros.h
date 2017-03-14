@@ -2,8 +2,9 @@
 
 #define NLATMAX           100
 
-#define THRESH_FOR_BOOST   10
-#define BOOST_BIN_REF       2
+#define BOOST_CELL_THRESH   10
+#define BOOST_NUMPART_THRESH 250
+#define BOOST_BIN_REF       1
 
 #define ADD_DIFF_TIME(t0,t1)            ((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
 #define REALTIME_ELAPSED_NS(t0, t1)     ((t1.tv_sec - t0.tv_sec)*1000000000.0 + (t1.tv_nsec - t0.tv_nsec))
