@@ -151,13 +151,13 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
     if(options->verbose){
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
-            printf("Using fallback kernel\n");
+            fprintf(stderr,"Using fallback kernel\n");
         } else if(function_dispatch == avx_offset){
-            printf("Using AVX kernel\n");
+            fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
-            printf("Using SSE kernel\n");
+            fprintf(stderr,"Using SSE kernel\n");
         } else {
-            printf("Unknown kernel!\n");
+            fprintf(stderr,"Unknown kernel!\n");
         }
     }
         
@@ -538,6 +538,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             X2[i] = COSD(dec2[i])*COSD(ra2[i]) ;
             Y2[i] = COSD(dec2[i])*SIND(ra2[i]) ;
             Z2[i] = SIND(dec2[i]);
+        }
+    } else {
+        // We might call the brute-force pair couter, which knows nothing about autocorrelations
+        // so set up the weight pointers for the second set of particles
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            extra->weights1.weights[w] = extra->weights0.weights[w];
         }
     }
 
