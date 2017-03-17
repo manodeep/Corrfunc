@@ -57,6 +57,9 @@ extern "C" {
 //Max
 #define SSE_MAX_FLOATS(X,Y)               _mm_max_ps(X,Y)
 
+#define SSE_ABS_FLOAT(X)                  _mm_max_ps(_mm_sub_ps(_mm_setzero_ps(), X), X)
+  
+  
 #ifdef  __INTEL_COMPILER
 #define SSE_ARC_COSINE(X, order)                 _mm_acos_ps(X)
 #else
@@ -108,6 +111,7 @@ extern "C" {
 #endif
 
 #define SSE_MAX_FLOATS(X,Y)               _mm_max_pd(X,Y)
+#define SSE_ABS_FLOAT(X)                  _mm_max_pd(_mm_sub_pd(_mm_setzero_pd(), X), X)
 
 #endif
 

@@ -84,6 +84,10 @@ extern "C" {
     //Max
 #define AVX_MAX_FLOATS(X,Y)               _mm256_max_ps(X,Y)
 
+
+  //Absolute value
+#define AVX_ABS_FLOAT(X)                  _mm256_max_ps(_mm256_sub_ps(_mm256_setzero_ps(), X), X)
+  
     //Casting (does not actual convert between types)
 #define AVX_CAST_FLOAT_TO_INT(X)          _mm256_castps_si256(X)
 #define AVX_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_ps(X)
@@ -140,6 +144,9 @@ extern "C" {
     //Max
 #define AVX_MAX_FLOATS(X,Y)               _mm256_max_pd(X,Y)
 
+  //Absolute value
+#define AVX_ABS_FLOAT(X)                  _mm256_max_pd(_mm256_sub_pd(_mm256_setzero_pd(), X), X)
+  
     //Casting (does not actual convert between types)
 #define AVX_CAST_FLOAT_TO_INT(X)          _mm256_castpd_si256(X)
 #define AVX_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_pd(X)
