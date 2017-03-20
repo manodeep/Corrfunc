@@ -72,11 +72,9 @@ by using ``python setup.py install CC=yourcompiler (--user)`` after ``git clone`
 Compilation Notes
 ------------------
 
-- If python and/or numpy are not available, then the C extensions will
-not be compiled.
+- If python and/or numpy are not available, then the C extensions will not be compiled.
 
-- Default compiler on MAC is set to ``clang``, if you want to specify a
-different compiler, you will have to call ``make CC=yourcompiler``
+- Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``
 
 
 Alternate Install Method
