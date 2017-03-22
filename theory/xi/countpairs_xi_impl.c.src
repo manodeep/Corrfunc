@@ -104,11 +104,11 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     if(options->verbose){
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
-            printf("Using fallback kernel\n");
+            fprintf(stderr,"Using fallback kernel\n");
         } else if(function_dispatch == avx_offset){
-            printf("Using AVX kernel\n");
+            fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
-            printf("Using SSE kernel\n");
+            fprintf(stderr,"Using SSE kernel\n");
         } else {
             printf("Unknown kernel!\n");
         }

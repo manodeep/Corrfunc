@@ -172,11 +172,11 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
     if(options->verbose){
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
-            printf("Using fallback kernel\n");
+            fprintf(stderr,"Using fallback kernel\n");
         } else if(function_dispatch == avx_offset){
-            printf("Using AVX kernel\n");
+            fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
-            printf("Using SSE kernel\n");
+            fprintf(stderr,"Using SSE kernel\n");
         } else {
             printf("Unknown kernel!\n");
         }
