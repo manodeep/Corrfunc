@@ -37,7 +37,7 @@ Pre-requisites
 --------------
 
 1. ``make >= 3.80``
-2. OpenMP capable compiler like ``icc``, ``gcc`` or ``clang >= 3.7``. If
+2. OpenMP capable compiler like ``icc``, ``gcc>=4.6`` or ``clang >= 3.7``. If
    not available, please disable ``USE_OMP`` option option in
    ``theory.options`` and ``mocks.options``. You might need to ask your
    sys-admin for system-wide installs of the compiler; if you prefer to
