@@ -62,7 +62,14 @@ const double maxdiff = 1e-9;
 const double maxreldiff = 1e-6;
 
 struct config_options options;
-const isa instruction_sets[] = {FALLBACK, SSE42, AVX};
+const isa instruction_sets[] = {FALLBACK
+#if defined(__SSE4_2__)                                
+                                , SSE42
+#endif
+#if defined(__AVX__)
+                                , AVX
+#endif                                
+};
 const int num_isets = sizeof(instruction_sets)/sizeof(instruction_sets[0]);
 //end of global variables
 
@@ -157,30 +164,29 @@ int test_wtheta_mocks(const char *correct_outputfile)
     int autocorr = (RA1==RA2) ? 1:0;
     int ret = EXIT_FAILURE;
     results_countpairs_theta results;
-
-#define DEVELOPER_TESTS
+    const isa old_isa = options.instruction_set;
+    const int min_bin_ref = 1, max_bin_ref = 3;
     
 #ifdef DEVELOPER_TESTS
     //wtheta has 3 implementations (brute-force, link-in-dec and link-in-dec + link-in-ra)
     //For developer testing, multiple bin refine factors are tested as well as the
     //all three of the linking logic.
 
-    for(int bf=2;bf<=2;bf++) {
-        options.bin_refine_factors[0] = bf;
-        options.bin_refine_factors[1] = bf;
-        options.bin_refine_factors[2] = bf;
-        
-        // (dec_link, ra_link) == (0, 0) -> brute-force
-        // (dec_link, ra_link) == (1, 0) -> dec-linking only
-        // (dec_link, ra_link) == (1, 1) -> dec + ra linking
-        for(int dec_link=1;dec_link<=1;dec_link++) {
-            for(int ra_link=0;ra_link <= dec_link; ra_link++) {
-                options.link_in_dec=dec_link;
-                options.link_in_ra=ra_link;
+    // (dec_link, ra_link) == (0, 0) -> brute-force
+    // (dec_link, ra_link) == (1, 0) -> dec-linking only
+    // (dec_link, ra_link) == (1, 1) -> dec + ra linking
+    for(int dec_link=0;dec_link<=1;dec_link++) {
+        for(int ra_link=0;ra_link <= dec_link; ra_link++) {
+            options.link_in_dec=dec_link;
+            options.link_in_ra=ra_link;
+            for(int bf=min_bin_ref;bf<=max_bin_ref;bf++) {
+                if((dec_link + ra_link) == 0 && bf > min_bin_ref) continue;//bin refine factor has no impact on brute-force
+                options.bin_refine_factors[0] = bf;
+                options.bin_refine_factors[1] = bf;
+                options.bin_refine_factors[2] = bf;
 
                 // Check the specific implementations for each instruction set
                 for(int iset=0;iset<num_isets;iset++) {
-                    if((dec_link + ra_link) == 0 && iset >= 1) continue;//there is no AVX/SSE code-path for brute-force. can only test fallback
                     options.instruction_set = instruction_sets[iset];
                     struct timeval t0;
                     gettimeofday(&t0, NULL);
@@ -260,6 +266,8 @@ int test_wtheta_mocks(const char *correct_outputfile)
         }
     }
 #endif
+
+    options.instruction_set = old_isa;
     
     //free the result structure
     free_results_countpairs_theta(&results);

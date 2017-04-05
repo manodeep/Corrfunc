@@ -22,8 +22,9 @@
 #include <omp.h>
 #endif
 
+#ifndef MEMORY_INCREASE_FAC
 #define MEMORY_INCREASE_FAC   1.1
-
+#endif
 
 void free_cellarray_mocks_index_particles_DOUBLE(cellarray_mocks_index_particles_DOUBLE *lattice, const int64_t totncells)
 {
@@ -636,6 +637,54 @@ int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE
     return EXIT_SUCCESS;
 }
 
+
+
+DOUBLE get_max_ra_diff_two_cells_DOUBLE(const DOUBLE first_dec_vals[2], const DOUBLE second_dec_vals[2], const DOUBLE thetamax)
+{
+    DOUBLE max_ra_diff = -1e10;
+    const DOUBLE sin_half_thetamax = SIND(0.5 * thetamax);
+    const DOUBLE sin_sqr_half_thetamax = sin_half_thetamax * sin_half_thetamax;
+    for(int i=0;i<2;i++) {
+        for(int j=0;j<2;j++) {
+            DOUBLE ra_diff = 0.0;
+            //sin^2 (1/2 thetamax)    = sin^2 (1/2 (dec1 - dec2)) + cos(dec1) * cos(dec2) * sin^2(1/2 (max-ra-diff))
+            //sin^2 (1/2 max-ra-diff) = [sin^2(1/2 thetamax) - sin^2(1/2 (dec1 - dec2))]/(cos(dec1) * cos(dec2))
+            //sin^2 (1/2 max-ra-diff) = first_term/second_term
+            //max-ra-diff = 2.0 * ASIN(SQRT(first_term/second_term))
+            const DOUBLE half_dec_diff = 0.5*(first_dec_vals[i] - second_dec_vals[j]);
+            const DOUBLE sin_half_dec_diff = SIND(half_dec_diff);
+            const DOUBLE first_term = sin_sqr_half_thetamax - sin_half_dec_diff * sin_half_dec_diff;
+            const DOUBLE second_term = COSD(first_dec_vals[i]) * COSD(second_dec_vals[j]);
+            const DOUBLE _tmp = first_term/second_term;
+            const DOUBLE sqr_sin_ra_diff = (_tmp > 1.0) ? 1.0:(_tmp < ZERO ? ZERO:_tmp);//make sure numerical precision does not cause impossible values
+            ra_diff = 2.0*ASIN(SQRT(sqr_sin_ra_diff));//in radians
+            if (ra_diff > max_ra_diff) max_ra_diff = ra_diff;
+        }
+    }
+
+    return max_ra_diff * INV_PI_OVER_180;
+}
+
+
+
+
+int check_if_two_cells_are_within_ra_range_DOUBLE(DOUBLE first_ra_vals[2], DOUBLE second_ra_vals[2], const DOUBLE max_ra_diff)
+{
+    for(int i=0;i<2;i++) {
+        for(int j=0;j<2;j++) {
+            DOUBLE diff = first_ra_vals[i] - second_ra_vals[j];
+            if(diff >= (DOUBLE) 180.0)  diff -= (DOUBLE) 360.0;
+            if(diff < (DOUBLE) -180.0) diff += (DOUBLE) 360.0;
+
+            diff = FABS(diff);
+            if(diff <= max_ra_diff) return 1;
+        }
+    }
+
+    return 0;
+}
+
+
 cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t np,
                                                                          const DOUBLE *ra, const DOUBLE *dec,
                                                                          const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, const weight_struct *weights,
@@ -648,7 +697,7 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
                                                                          const DOUBLE thetamax,
                                                                          int64_t *ncells,
                                                                          int *ngrid_declination,
-                                                                         int *max_nmesh_ra,
+                                                                         int *max_nmesh_ra,//not really required - serves as additional checking mechanism
                                                                          int **ngrid_phi,//ngrid in ra, updates on caller -> hence the pointer to pointer
                                                                          const struct config_options *options)
 {
@@ -691,11 +740,7 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     int ngrid_dec = this_ngrid_dec > max_dec_size ? max_dec_size:(int) this_ngrid_dec;
     ngrid_dec = ngrid_dec < 1 ? 1:ngrid_dec;
     *ngrid_declination=ngrid_dec;
-
     DOUBLE dec_binsize=dec_diff/ngrid_dec;
-    XRETURN(max_dec_size >= (2*ra_refine_factor + 1), NULL, 
-            "max_dec_size = %d needs to be larger than the minimum required number of ra cells = %d\n",
-            max_dec_size, 2*ra_refine_factor + 1);
 
     *ngrid_phi = my_malloc(sizeof(**ngrid_phi), ngrid_dec);
     if(*ngrid_phi == NULL) {
@@ -709,23 +754,12 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     const DOUBLE costhetamax=COSD(thetamax);
     const DOUBLE sin_half_thetamax=SIND(0.5*thetamax);
     
-    const DOUBLE max_phi_cell = ra_diff/(2*ra_refine_factor + 1);
-    int max_nmesh_phi=2*ra_refine_factor + 1;//there will be at least 2*ra_refine_factor + 1 cells in RA
+
+    //Just make sure that the assign_ngb does not keep adding the same cell over and over
+    int max_nmesh_phi = 1;//at least one cell (at the poles, there might be only one cell).
+    const DOUBLE max_phi_cell = ra_diff;//must have at least one cell -> max ra binsize := ra_diff/1.0;
     for(int idec=0;idec<ngrid_dec;idec++) {
         DOUBLE this_min_dec;
-#if 0
-        {
-            DOUBLE this_dec = dec_min + idec*dec_binsize;
-            if(this_dec > 0) {
-                int max_idec = idec + dec_refine_factor >= ngrid_dec ? ngrid_dec-1:idec+dec_refine_factor;
-                this_min_dec = dec_min + (max_idec+1)*dec_binsize;//upper limit for that dec-bin
-            } else {
-                int max_idec = idec - dec_refine_factor < 0 ? 0:idec-dec_refine_factor;
-                this_min_dec = dec_min + max_idec*dec_binsize;//lower limit for that dec-bin
-            }
-        }
-#endif        
-        
         const DOUBLE dec_lower = dec_min + idec*dec_binsize;
         const DOUBLE dec_upper = dec_lower + dec_binsize;
         const DOUBLE cos_dec_upper = COSD(dec_upper);
@@ -738,42 +772,53 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
             this_min_dec = dec_upper;
             cos_min_dec = cos_dec_upper;
         }
+        
+
         //Use the Haversine approx. (https://en.wikipedia.org/wiki/Great-circle_distance)
-        // Since phi1 == phi2 = this_min_dec
-        // \delta\sigma = 2 asin (  sqrt( cos (phi1) * cos (phi2) * sin^2( max-ra-diff/2.0)) )
-        // => \thetamax = 2 asin (  sqrt( cos_min_dec^2 * sin^2( max-ra-diff/2.0)) )
-        // => \thetamax = 2.0 asin( cos_min_dec * sin(max-ra-diff/2.0)
-        // => sin (\thetamax/2.0) = cos_min_dec * sin(max-ra-diff/2.0)
-        // => sin(max-ra-diff/2.0) = sin (\thetamax/2.0)/cos_min_dec
-        // => max-ra-diff = 2.0 * asin(  (  sin(\thetamax/2.0)/cos_min_dec ) )
+        // \delta\sigma = 2 asin ( sqrt ( sin^2( 1/2 (phi1 - phi2)) + cos(phi1) * cos(phi2) * sin^2( 1/2 max-ra-diff)) )
+        // Since phi1 == phi2 = this_min_dec; cos(this_min_dec) := cos_min_dec
+        // => \thetamax = 2 asin (  sqrt( cos_min_dec^2 * sin^2( 1/2 max-ra-diff)) )
+        // => \thetamax = 2 asin( cos_min_dec * sin(1/2 max-ra-diff)
+        // => sin (1/2 \thetamax) = cos_min_dec * sin(1/2 max-ra-diff)
+        // => sin(1/2 max-ra-diff) = sin (1/2 \thetamax)/cos_min_dec
+        // => max-ra-diff = 2 * asin( sin(1/2 \thetamax)/cos_min_dec )
         
         DOUBLE phi_cell = max_phi_cell;
         if( (90.0 - ABS(this_min_dec) ) > 1.0) { //make sure min_dec is not close to the pole (within 1 degree)-> divide by zero happens the cosine term
-            /* DOUBLE sin_min_dec = SIND(this_min_dec); */
-            /* DOUBLE cos_phi_cell = (costhetamax - sin_min_dec*sin_min_dec)/(cos_min_dec*cos_min_dec); */
-            /* phi_cell = ACOS(cos_phi_cell)*INV_PI_OVER_180; */
-            phi_cell = 2.0 * ASIN( sin_half_thetamax/cos_min_dec ) * INV_PI_OVER_180 * 1.01;
+            //Haversine formula but numerical precision issues might cause
+            //sin_half_thetamax/cos_min_dec > 1.0 or sin_half_thetamax/cos_min_dec < -1.0
+            //at which point arcsin() will barf. Therefore, a two-step process to limit
+            //the possible values.
+            //Sorry about the pythonic naming convention + the names themselves - MS 3rd April, 2017
+            const DOUBLE _tmp = sin_half_thetamax/cos_min_dec;// sin(1/2 thetamax) > 0, cos(min_dec) >= 0 ( -90 <= declination <= 90, thetamax > 0)
+            const DOUBLE _tmp1 = _tmp < ZERO ? ZERO:(_tmp > 1.0 ? 1.0:_tmp);
+            phi_cell = 2.0 * ASIN( _tmp1 ) * INV_PI_OVER_180;
+
+            //I don't think this condition can trigger any more, now that the 
+            //previous phi_cell calculation is split up into two steps - MS 3rd April, 2017
             if(phi_cell <= ZERO) {
                 phi_cell = max_phi_cell;
             }
+
+            //NAN's might trigger this condition ?
             if( ! (phi_cell > ZERO) ) {
                 fprintf(stderr,"Error: Encountered invalid binsize for RA bins = %"REAL_FORMAT" for declination bin = %d\n", phi_cell, idec);
                 fprintf(stderr,"min(declination in bin) = %"REAL_FORMAT" (min_dec)\n", this_min_dec);
                 fprintf(stderr,"costhetamax = %"REAL_FORMAT" sin(thetamax/2.0) = %"REAL_FORMAT" cos(min_dec) = %"REAL_FORMAT" \n",
                         costhetamax, sin_half_thetamax, cos_min_dec);
-                /* fprintf(stderr,"cos(phi_cell) = %"REAL_FORMAT" := numerator/denom. numerator = %"REAL_FORMAT" denom = %"REAL_FORMAT"\n", */
-                /*         cos_phi_cell, (costhetamax - sin_min_dec*sin_min_dec), (cos_min_dec*cos_min_dec)); */
             }
         }
         XRETURN(phi_cell > ZERO, NULL, "Please remove LINK_IN_RA from compile options "
                 "(or from the code config options)\n");
 
         phi_cell = phi_cell > max_phi_cell ? max_phi_cell:phi_cell;
-        const DOUBLE this_nmesh_ra = ra_diff*ra_refine_factor/phi_cell;
-        int nmesh_ra = this_nmesh_ra > max_ra_size ? max_ra_size:(int) this_nmesh_ra;
-        if(nmesh_ra < (2*ra_refine_factor + 1)) {
-            nmesh_ra = 2*ra_refine_factor + 1;
-            fprintf(stderr,"%s> Using sub-optimal RA binning to ensure correct functioning of the code\n",__FUNCTION__);
+        const DOUBLE this_nmesh_ra = ra_diff/phi_cell;
+        const int this_nmesh_ra_int = ((int) this_nmesh_ra) * ra_refine_factor;
+        int nmesh_ra = this_nmesh_ra_int > max_ra_size ? max_ra_size:this_nmesh_ra_int;
+
+        //at least one ra bin
+        if(nmesh_ra < 1) {
+            nmesh_ra = 1;
         }
         
         if(nmesh_ra > max_nmesh_phi) max_nmesh_phi = nmesh_ra;
@@ -806,21 +851,37 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
         lattice[icell].x = NULL;
         lattice[icell].y = NULL;
         lattice[icell].z = NULL;
-        lattice[icell].ngb_cells = NULL;
-        lattice[icell].ra_max=0.0;
+        lattice[icell].ra_max=-1e10;
         lattice[icell].ra_min=1e10;
+        lattice[icell].dec_max=1e10;
+        lattice[icell].dec_min=-1e10;
+        lattice[icell].ngb_cells = NULL;
         lattice[icell].nelements=0;
     }
     for(int idec=0;idec<ngrid_dec;idec++) {
+        DOUBLE this_min_dec;
+        const DOUBLE dec_lower = dec_min + idec*dec_binsize;
+        const DOUBLE dec_upper = dec_lower + dec_binsize;
+        const DOUBLE cos_dec_upper = COSD(dec_upper);
+        const DOUBLE cos_dec_lower = COSD(dec_lower);
+        DOUBLE cos_min_dec;
+        if(cos_dec_lower < cos_dec_upper) {
+            this_min_dec = dec_lower;
+            cos_min_dec = cos_dec_lower;
+        } else {
+            this_min_dec = dec_upper;
+            cos_min_dec = cos_dec_upper;
+        }
         const int nmesh_ra = ngrid_ra[idec];
         for(int ira=0;ira<nmesh_ra;ira++) {
             const int64_t ra_base = ra_offset_for_dec[idec];
             const int64_t index = ra_base + ira;
             const size_t memsize=sizeof(DOUBLE);
+            
             lattice[index].x = my_malloc(memsize,expected_n);
             lattice[index].y = my_malloc(memsize,expected_n);
             lattice[index].z = my_malloc(memsize,expected_n);
-            
+
             // Now do the same for the weights
             lattice[index].weights.num_weights = (weights == NULL) ? 0 : weights->num_weights;
             int w_alloc_status = EXIT_SUCCESS;
@@ -862,9 +923,6 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
 
         const int64_t ra_base = ra_offset_for_dec[idec];
         const int64_t index = ra_base + ira;
-        lattice[index].ra_min = ra[i] < lattice[index].ra_min ? ra[i]:lattice[index].ra_min;
-        lattice[index].ra_max = ra[i] > lattice[index].ra_max ? ra[i]:lattice[index].ra_max;
-        
         if(lattice[index].nelements == nallocated[index]) {
             expected_n = nallocated[index]*MEMORY_INCREASE_FAC;
             while(expected_n <= lattice[index].nelements){
@@ -926,6 +984,12 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
             lattice[index].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
         }
         lattice[index].nelements++;
+
+        lattice[index].dec_min = dec[i] < lattice[index].dec_min ? dec[i]:lattice[index].dec_min;
+        lattice[index].dec_max = dec[i] > lattice[index].dec_max ? dec[i]:lattice[index].dec_max;
+
+        lattice[index].ra_min = ra[i] < lattice[index].ra_min ? ra[i]:lattice[index].ra_min;
+        lattice[index].ra_max = ra[i] > lattice[index].ra_max ? ra[i]:lattice[index].ra_max;
     }
     free(nallocated);
     free(ra_offset_for_dec);
@@ -945,7 +1009,8 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
                 DOUBLE *x = first->x;
                 DOUBLE *y = first->y;
                 DOUBLE *z = first->z;
-                
+
+                //Sorting on z -> equivalent to sorting on declination (since z := sin(dec) is a monotonic mapping in -90 <= dec <= 90, the domain for dec)
                 SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
             
@@ -961,23 +1026,51 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     return lattice;
 }
 
+#if 0
+int64_t check_any_points_in_range_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *first, cellarray_mocks_index_wtheta_DOUBLE *second, const DOUBLE thetamax)
+{
+    DOUBLE *x1 = first->x;
+    DOUBLE *y1 = first->y;
+    DOUBLE *z1 = first->z;
+    int64_t found = 0;
+    const DOUBLE costhetamax = COSD(thetamax);
+    for(int64_t i=0;i<first->nelements;i++) {
+        DOUBLE *x2 = second->x;
+        DOUBLE *y2 = second->y;
+        DOUBLE *z2 = second->z;
+        for(int64_t j=0;j<second->nelements;j++) {
+            const DOUBLE costheta = x1[i]*x2[j] + y1[i]*y2[j] + z1[i]*z2[j];
+            if(costheta >= costhetamax) {
+                found++;
+            }
+        }
+    }
+
+    return found;
+}
+#endif
 
 int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
-                                                const int64_t totncells,
+                                                const int64_t totncells, const DOUBLE thetamax,
                                                 const int ra_refine_factor, const int dec_refine_factor,
                                                 const int nmesh_dec, const int max_nmesh_ra,
                                                 const DOUBLE ra_min, const DOUBLE ra_diff, 
-                                                const int *nmesh_grid_ra,
+                                                const int *ngrid_ra,
                                                 const int autocorr)
 {
     const int max_dec_ngb = 2*dec_refine_factor + 1;
-    const int max_ra_ngb = 2*ra_refine_factor + 1;
-    const int max_ngb_cells = max_dec_ngb * (max_ra_ngb + 2);//Two additional cells on either end for cases where RA position changes between first and second cells
+    const int max_ra_ngb  = 2*ra_refine_factor + 1;
+    const int max_ngb_cells = max_dec_ngb * (max_ra_ngb + 2);//Typically two additional cells on either end for cases where RA position changes between first and second cells
     const DOUBLE inv_ra_diff = 1.0/ra_diff;
     XRETURN( totncells <= max_nmesh_ra*nmesh_dec, EXIT_FAILURE,
              "Total number of cells = %"PRId64" can be at most the product of max RA cells = %d and the number of DEC cells = %d\n",
              totncells, max_nmesh_ra, nmesh_dec);
-    
+
+    /* Since lattice1 is a single dimension array containing dec + ra bins, where the number
+       of ra bins per dec bin varies, I need to have the offset (array index, **NOT* pointer offset) 
+       for the starting ra cell for each dec bin. 
+       Note: lattice2 *must* be of the exact same shape and there the same offsets apply to both lattices
+    */
     int64_t *ra_offset_for_dec = my_malloc(sizeof(*ra_offset_for_dec), nmesh_dec);
     if(ra_offset_for_dec == NULL) {
         return EXIT_FAILURE;
@@ -986,7 +1079,7 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
     int64_t offset = 0;
     for(int idec=0;idec<nmesh_dec;idec++) {
         ra_offset_for_dec[idec] = offset;
-        offset += nmesh_grid_ra[idec];
+        offset += ngrid_ra[idec];
     }
     XRETURN( totncells == offset, EXIT_FAILURE,
              "Total number of cells = %"PRId64" must be exactly equal to the sum of number of RA cells over all declinations = %"PRId64"\n",
@@ -994,7 +1087,7 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
      
     
     for(int idec=0;idec<nmesh_dec;idec++) {
-        for(int ira=0;ira<nmesh_grid_ra[idec];ira++) {
+        for(int ira=0;ira<ngrid_ra[idec];ira++) {
             const int64_t ra_base = ra_offset_for_dec[idec];
             const int64_t icell = ra_base + ira;
             struct cellarray_mocks_index_wtheta_DOUBLE *first = &(lattice1[icell]);
@@ -1002,9 +1095,10 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
             
             first->num_ngb = 0;
             first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
-            if(first->ngb_cells == NULL) {
-                return EXIT_FAILURE;
-            }
+            XRETURN(first->ngb_cells != NULL, EXIT_FAILURE,
+                    "Error: Could not allocate for %d neighbour cells for ra+dec linking. Total memory requested was %zu bytes\n",
+                    max_ngb_cells, sizeof(*(first->ngb_cells)) * max_ngb_cells);
+            first->ngb_allocated = max_ngb_cells;
             
             for(int i=-dec_refine_factor;i<=dec_refine_factor;i++){
                 const int this_dec = idec + i;
@@ -1012,42 +1106,94 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
 
                 /* Figure out what is the min and max RA cell that any particle in "first" cell could be in 
                    if the "first" cell particle had a declination for this_dec (rather than idec) */
-                const int max_ra_this_dec = (int) (nmesh_grid_ra[this_dec] * (first->ra_max - ra_min) * inv_ra_diff);
-                const int min_ra_this_dec = (int) (nmesh_grid_ra[this_dec] * (first->ra_min - ra_min) * inv_ra_diff);
 
+                //include one additional cell -> will get pruned if the separation is too large *and* never be duplicated
+                //brute force approach would be to simply loop from 0 to ngrid_ra[this_dec] and prune away.
+                const int max_ra_this_dec = (int) (ngrid_ra[this_dec] * (first->ra_max - ra_min) * inv_ra_diff) + 1;
+                const int min_ra_this_dec = (int) (ngrid_ra[this_dec] * (first->ra_min - ra_min) * inv_ra_diff) - 1;
                 for(int iira=min_ra_this_dec-ra_refine_factor;iira<=max_ra_this_dec+ra_refine_factor;iira++){
-                    /* Note we have to compare with the number of RA bins in the second cell dec index 
-                       i.e., the comparison is against nmesh_grid_ra[this_dec] and NOT nmesh_grid_ra[idec]
-                    */
-                    
-                    /* RA is periodic. The gridlinking code has already ensured there wont be double counting in RA 
-                       as would be the case in num_ra_bins were < 2*ra_refine_factor + 1. But check again. 
-                    */
-                    XRETURN(nmesh_grid_ra[this_dec] >= 2*ra_refine_factor + 1, EXIT_FAILURE,
-                            "Number of RA cells (for declination bin = %d) = %d should be at least %d. Bug in gridlink_mocks\n",
-                            this_dec, nmesh_grid_ra[this_dec], 2*ra_refine_factor + 1);
-                    
-                    /* Note this is iira -> which maps the range of RA values the original particle from first could 
-                       have in this new declination+RA bin  */
-                    const int this_ra = (iira + nmesh_grid_ra[this_dec]) % nmesh_grid_ra[this_dec];
+                    const int this_ra = (iira + ngrid_ra[this_dec]) % ngrid_ra[this_dec];
                     const int64_t this_ra_base = ra_offset_for_dec[this_dec];
                     const int64_t icell2 = this_ra_base + this_ra;
                     XRETURN(icell2 < totncells, EXIT_FAILURE,
                             "index for ngb cell = %"PRId64" should be less total number of cells = %"PRId64"\n",
                             icell2, totncells);
-                    
+
+                    struct cellarray_mocks_index_wtheta_DOUBLE *second = &(lattice2[icell2]);
                     //For cases where we are not double-counting (i.e., auto-corrs), the same-cell
                     //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
                     //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
                     //kernels in that case!
                     //The second condition essentially halves the number of cell-pairs in auto-corr calculations
-                    if(lattice2[icell2].nelements==0 || (autocorr==1 && icell2 >= icell)) {
+                    if(second->nelements==0 || (autocorr==1 && icell2 >= icell)) {
                         continue;
                     }
+
+                    
+                    const DOUBLE first_dec_limits[2]  = {first->dec_min, first->dec_max};
+                    const DOUBLE second_dec_limits[2] = {second->dec_min, second->dec_max};
+                    const DOUBLE max_ra_diff = get_max_ra_diff_two_cells_DOUBLE(first_dec_limits, second_dec_limits, thetamax);
+
+                    DOUBLE first_ra_limits[2] = {first->ra_min, first->ra_max};
+                    DOUBLE second_ra_limits[2] = {second->ra_min, second->ra_max};
+                    
+                    const int within_range = check_if_two_cells_are_within_ra_range_DOUBLE(first_ra_limits, second_ra_limits, max_ra_diff);
+                    if( ! within_range) {
+#if 0                        
+                        int64_t check = check_any_points_in_range_DOUBLE(first, second, thetamax, max_ra_diff);
+                        if(check > 0) {
+                            fprintf(stderr,"Cell pair -- (%3d, %3d), (%3d, %3d) "
+                                    "max ra diff = %0.6lf (%0.6lf, %0.6lf) - (%0.6lf, %0.6lf) within_range = %1d num found = %"PRId64"\n",
+                                    idec, ira, this_dec, this_ra,
+                                    max_ra_diff,
+                                    first_ra_limits[0], first_ra_limits[1],
+                                    second_ra_limits[0], second_ra_limits[1],
+                                    within_range,check);
+                        }
+#endif                        
+                        continue;
+                    }
+                    int duplicate_flag = 0;
                     const int64_t ngb_index = first->num_ngb;
-                    struct cellarray_mocks_index_wtheta_DOUBLE *second = &(lattice2[icell2]);
-                    XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
-                            "ngb index = %"PRId64" should be less than max_ngb = %d\n", ngb_index, max_ngb_cells);
+                    for(int jj=0;jj<ngb_index;jj++) {
+                        if ( second == first->ngb_cells[jj]) {
+                            duplicate_flag = 1;
+                            break;
+                        }
+                    }
+
+                    if(duplicate_flag == 1) {
+                        continue;
+                    }
+
+                    if(ngb_index == first->ngb_allocated) {
+                        int expected_n = first->ngb_allocated*MEMORY_INCREASE_FAC;
+                        while(expected_n <= first->num_ngb){
+                            expected_n++;
+                        }
+
+                        cellarray_mocks_index_wtheta_DOUBLE **ngb;
+                        do{
+                            ngb = my_realloc(first->ngb_cells, sizeof(*(first->ngb_cells)), expected_n,"lattice.ngb_cells");
+                            first->ngb_cells = (ngb == NULL) ? first->ngb_cells:ngb;
+                            if(ngb == NULL) {
+                                expected_n--;
+                            }
+                        } while(expected_n > first->ngb_allocated && ngb == NULL);
+
+                        if(expected_n == first->num_ngb) {
+                            /*realloc failed. free memory and return */
+                            fprintf(stderr,"In %s> Reallocation for neighbour cells failed. Please reduce ``ra/dec_refine_factors`` "
+                                    "by either setting ``struct config_options->bin_refine_factors[0:1] = 1`` or passing the bin "
+                                    "(ra/dec) refine factors as parameters. Current (ra, dec) refine factors are: (%d, %d)\n",
+                                    __FUNCTION__, ra_refine_factor, dec_refine_factor);
+                            return EXIT_FAILURE;
+                        }
+                        first->ngb_allocated = expected_n;
+                    }
+                    XRETURN(ngb_index < first->ngb_allocated, EXIT_FAILURE,
+                            "ngb index = %"PRId64" should be less than number of ngb cells allocated = %d\n", ngb_index, first->ngb_allocated);
+                    
                     first->ngb_cells[ngb_index] = second;
                     first->num_ngb++;
                 }//loop over possible range of RA values in this dec bin for the original RA bin in first
@@ -1055,6 +1201,7 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
         }//loop over all RA cells contained in this DEC bin
     }//loop over all DEC cells
     free(ra_offset_for_dec);
+    
     return EXIT_SUCCESS;
 }
 
