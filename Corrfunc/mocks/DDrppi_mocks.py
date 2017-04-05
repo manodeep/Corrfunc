@@ -374,16 +374,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                               (bytes_to_native_str(b'pimax'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64),
                               (bytes_to_native_str(b'weightavg'), np.float)])
-
-    nbin = len(extn_results)
-    results = np.zeros(nbin, dtype=results_dtype)
-    for ii, r in enumerate(extn_results):
-        results['rmin'][ii] = r[0]
-        results['rmax'][ii] = r[1]
-        results['rpavg'][ii] = r[2]
-        results['pimax'][ii] = r[3]
-        results['npairs'][ii] = r[4]
-        results['weightavg'][ii] = r[5]
+    results = np.array(extn_results, dtype=results_dtype)
 
     if not c_api_timer:
         return results

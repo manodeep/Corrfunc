@@ -236,17 +236,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
                               (bytes_to_native_str(b'ravg'), np.float),
                               (bytes_to_native_str(b'npairs'), np.uint64),
                               (bytes_to_native_str(b'weightavg'), np.float)])
-
-    nbin = len(extn_results)
-    results = np.zeros(nbin, dtype=results_dtype)
-
-    for ii, r in enumerate(extn_results):
-        results['rmin'][ii] = r[0]
-        results['rmax'][ii] = r[1]
-        results['ravg'][ii] = r[2]
-        results['npairs'][ii] = r[3]
-        results['weightavg'][ii] = r[4]
-
+    results = np.array(extn_results, dtype=results_dtype)
     if not c_api_timer:
         return results
     else:
