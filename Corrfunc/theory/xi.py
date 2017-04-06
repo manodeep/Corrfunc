@@ -19,7 +19,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        weights=None, weight_type=None, verbose=False, output_ravg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
-       c_api_timer=False, isa='fastest'):
+       c_api_timer=False, isa=r'fastest'):
     """
     Function to compute the projected correlation function in a
     periodic cosmological box. Pairs which are separated by less
