@@ -678,5 +678,3 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
     return EXIT_SUCCESS;
 }
 #endif //SSE4.2
-
-

@@ -638,8 +638,8 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     for(int i=0;i<nrpbins;i++) {
         results->npairs[i] = npairs[i];
         results->rupp[i] = rupp[i];
-        results->rpavg[i] = options->need_avg_sep ? rpavg[i] : 0.0;
-        results->weightavg[i] = need_weightavg ? weightavg[i] : 0.0;
+        results->rpavg[i] = options->need_avg_sep ? rpavg[i] : ZERO;
+        results->weightavg[i] = need_weightavg ? weightavg[i] : ZERO;
         
         /* compute xi, dividing summed weight by that expected for a random set */
         DOUBLE weight0 = (DOUBLE) results->npairs[i];
