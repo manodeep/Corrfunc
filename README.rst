@@ -1,4 +1,4 @@
-|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |RTD| |Landscape| |Gitter|
+|Release| |PyPI| |MIT licensed| |DOI| |ASCL| |Travis Build| |Issues| |RTD| |Landscape| |Gitter|
 
 Description
 ===========
@@ -37,7 +37,7 @@ Pre-requisites
 --------------
 
 1. ``make >= 3.80``
-2. OpenMP capable compiler like ``icc``, ``gcc`` or ``clang >= 3.7``. If
+2. OpenMP capable compiler like ``icc``, ``gcc>=4.6`` or ``clang >= 3.7``. If
    not available, please disable ``USE_OMP`` option option in
    ``theory.options`` and ``mocks.options``. You might need to ask your
    sys-admin for system-wide installs of the compiler; if you prefer to
@@ -72,11 +72,9 @@ by using ``python setup.py install CC=yourcompiler (--user)`` after ``git clone`
 Compilation Notes
 ------------------
 
-- If python and/or numpy are not available, then the C extensions will
-not be compiled.
+- If python and/or numpy are not available, then the C extensions will not be compiled.
 
-- Default compiler on MAC is set to ``clang``, if you want to specify a
-different compiler, you will have to call ``make CC=yourcompiler``
+- Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``
 
 
 Alternate Install Method
@@ -366,6 +364,9 @@ Project URL
 .. |DOI| image:: https://zenodo.org/badge/19184/manodeep/Corrfunc.svg
    :target: https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc
    :alt: Zenodo DOI
+.. |ASCL| image:: https://img.shields.io/badge/ascl-1703.003-blue.svg?colorB=262255
+   :target: http://ascl.net/1703.003
+   :alt: ascl:1703.003
 .. |Travis Build| image:: https://travis-ci.org/manodeep/Corrfunc.svg?branch=master
    :target: https://travis-ci.org/manodeep/Corrfunc
    :alt: Build Status

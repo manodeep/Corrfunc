@@ -232,7 +232,6 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
       const AVX_FLOATS m_y1 = AVX_SET_FLOAT(ypos);
       const AVX_FLOATS m_z1 = AVX_SET_FLOAT(zpos);
 
-
       int64_t j = (same_cell == 1) ? (i + 1):0;
       DOUBLE *localz1 = z1 + j;
       DOUBLE *localx1 = x1 + j;
@@ -679,6 +678,3 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
     return EXIT_SUCCESS;
 }
 #endif //SSE4.2
-
-
-
