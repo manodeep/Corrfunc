@@ -40,9 +40,6 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
     nthreads: integer
        Number of threads to use.
 
-    somethinghere: integer
-       testing reload
-
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
        ``DDrppi_mocks``. The file should contain white-space separated values
@@ -387,8 +384,8 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-   weight_type: string, optional
-        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
+    weight_type: string, optional
+         The type of weighting to apply.  One of ["pair_product", None].  Default: None.
 
 
     Returns

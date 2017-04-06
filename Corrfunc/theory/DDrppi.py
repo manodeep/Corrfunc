@@ -130,8 +130,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-   weight_type: string, optional
-        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
+    weight_type: string, optional
+       The type of weighting to apply.  One of ["pair_product", None].  Default: None.
 
     Returns
     --------

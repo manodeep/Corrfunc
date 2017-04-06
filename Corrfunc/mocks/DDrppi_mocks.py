@@ -113,11 +113,11 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
        If is_comoving_dist is set, then ``CZ1`` is interpreted as the
        co-moving distance, rather than `cz`.
        
-   weights1: array_like, real (float/double), optional
-        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
-        `weight_type` specifies how these weights are used; results are returned
-        in the `weightavg` field.  If only one of weights1 and weights2 is
-        specified, the other will be set to uniform weights.
+    weights1: array_like, real (float/double), optional
+       A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
+       `weight_type` specifies how these weights are used; results are returned
+       in the `weightavg` field.  If only one of weights1 and weights2 is
+       specified, the other will be set to uniform weights.
 
     RA2: array-like, real (float/double)
         The array of Right Ascensions for the second set of points. RA's
