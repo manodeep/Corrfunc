@@ -77,7 +77,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        exist but either ``rmax`` is too small or there are not enough centers
        then the file will be overwritten.
 
-       Note: If the centers file has to be written, the code will take
+       *Note*: If the centers file has to be written, the code will take
        significantly longer to finish. However, subsequent runs can re-use
        that centers file and will be faster.
 
@@ -144,7 +144,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the
        co-moving distance, rather than ``(Speed Of Light * Redshift)``.
 
-       *NOTE*: RAND_RA, RAND_DEC and RAND_CZ are only used when the
+       *Note*: RAND_RA, RAND_DEC and RAND_CZ are only used when the
           ``centers_file``  needs to be written out. In that case, the
           RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.
 
@@ -249,16 +249,16 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     ...         print("{0:10.3f} ".format(pn), end="")
     ...         # doctest: +NORMALIZE_WHITESPACE
     ...     print("") # doctest: +NORMALIZE_WHITESPACE
-    1.0      0.999      0.001      0.000      0.000      0.000      0.000
-    2.0      0.992      0.007      0.001      0.000      0.000      0.000
-    3.0      0.982      0.009      0.005      0.002      0.001      0.000
-    4.0      0.975      0.006      0.006      0.005      0.003      0.003
-    5.0      0.971      0.004      0.003      0.003      0.004      0.003
-    6.0      0.967      0.003      0.003      0.001      0.003      0.002
-    7.0      0.962      0.004      0.002      0.003      0.002      0.001
-    8.0      0.958      0.004      0.002      0.003      0.001      0.002
-    9.0      0.953      0.003      0.003      0.002      0.003      0.001
-    10.0      0.950      0.003      0.002      0.002      0.001      0.002
+       1.0      0.999      0.001      0.000      0.000      0.000      0.000
+       2.0      0.992      0.007      0.001      0.000      0.000      0.000
+       3.0      0.982      0.009      0.005      0.002      0.001      0.000
+       4.0      0.975      0.006      0.006      0.005      0.003      0.003
+       5.0      0.971      0.004      0.003      0.003      0.004      0.003
+       6.0      0.967      0.003      0.003      0.001      0.003      0.002
+       7.0      0.962      0.004      0.002      0.003      0.002      0.001
+       8.0      0.958      0.004      0.002      0.003      0.001      0.002
+       9.0      0.953      0.003      0.003      0.002      0.003      0.001
+      10.0      0.950      0.003      0.002      0.002      0.001      0.002
 
     """
 

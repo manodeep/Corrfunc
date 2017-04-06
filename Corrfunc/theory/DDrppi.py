@@ -76,7 +76,6 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         in the `weightavg` field.  If only one of weights1 and weights2 is
         specified, the other will be set to uniform weights.
 
-
     X2/Y2/Z2: array-like, real (float/double)
        Array of XYZ positions for the second set of points. *Must* be the same
        precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
