@@ -212,7 +212,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     ...                         RA, DEC, output_thetaavg=True, 
     ...                         weights1=weights, weight_type='pair_product',
     ...                         link_in_dec=link_in_dec, link_in_ra=link_in_ra, 
-    ...                         isa=isa)
+    ...                         isa=isa, verbose=True)
     >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['thetamin'], r['thetamax'],
     ...                         r['thetaavg'], r['npairs'], r['weightavg']))
