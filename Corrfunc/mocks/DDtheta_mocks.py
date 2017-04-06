@@ -74,11 +74,11 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        DEC's in [-90.0, 90.0].
        Must be of same precision type as RA1.
        
-   weights1: array_like, real (float/double), optional
-        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
-        `weight_type` specifies how these weights are used; results are returned
-        in the `weightavg` field.  If only one of weights1 and weights2 is
-        specified, the other will be set to uniform weights.
+    weights1: array_like, real (float/double), optional
+       A scalar, or an array of weights of shape (n_weights, n_positions) or 
+       (n_positions,). `weight_type` specifies how these weights are used; 
+       results are returned in the `weightavg` field.  If only one of weights1 
+       and weights2 is specified, the other will be set to uniform weights.
 
     RA2: array-like, real (float/double)
        The array of Right Ascensions for the second set of points. RA's
@@ -94,8 +94,8 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        DEC's in [-90.0, 90.0].
        Must be of same precision type as RA1/DEC1.
        
-   weights2: array-like, real (float/double), optional
-        Same as weights1, but for the second set of positions
+    weights2: array-like, real (float/double), optional
+       Same as weights1, but for the second set of positions
 
     link_in_dec: boolean (default True)
        Boolean flag to create lattice in Declination. Code runs faster with

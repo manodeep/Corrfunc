@@ -4,7 +4,7 @@
 """
 Python wrapper around the C extension for the theoretical 3-D
 real-space correlation function, :math:`\\xi(r)`. Corresponding
-C routines are in ``theory/xi/``, python interface is
+C routines are in ``theory/xi/``, python interface is 
 :py:mod:`Corrfunc.theory.xi`.
 """
 
@@ -30,8 +30,8 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
 
     Note that pairs are double-counted. And if ``rmin`` is set to
     0.0, then all the self-pairs (i'th particle with itself) are
-    added to the first bin => minimum number of pairs in the first bin
-    is the total number of particles.
+    added to the first bin. (Thus, in such a case the minimum 
+    number of pairs in the first bin is the total number of particles.)
 
     Parameters
     -----------
@@ -66,9 +66,9 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        are double precision arrays (C double type).
        
     weights: array_like, real (float/double), optional
-        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
-        `weight_type` specifies how these weights are used; results are returned
-        in the `weightavg` field.
+        A scalar, or an array of weights of shape (n_weights, n_positions) or 
+        (n_positions,). `weight_type` specifies how these weights are used; 
+        results are returned in the `weightavg` field.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -107,8 +107,8 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-    weight_type: string, optional
-        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
+    weight_type: string, optional, Default: None.
+        The type of weighting to apply.  One of ["pair_product", None].  
 
 
     Returns
@@ -121,9 +121,9 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        ``xi`` contains the correlation function while ``npairs`` contains the number of
        pairs in that bin.
 
-   api_time: float, optional
-       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent
-       within the C library and ignores all python overhead.
+    api_time: float, optional
+        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent
+        within the C library and ignores all python overhead.
 
     Example
     --------
