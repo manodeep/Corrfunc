@@ -165,9 +165,10 @@ int test_wtheta_mocks(const char *correct_outputfile)
     int ret = EXIT_FAILURE;
     results_countpairs_theta results;
     const isa old_isa = options.instruction_set;
-    const int min_bin_ref = 1, max_bin_ref = 3;
     
 #ifdef DEVELOPER_TESTS
+    const int min_bin_ref = 1, max_bin_ref = 3;
+        
     //wtheta has 3 implementations (brute-force, link-in-dec and link-in-dec + link-in-ra)
     //For developer testing, multiple bin refine factors are tested as well as the
     //all three of the linking logic.
