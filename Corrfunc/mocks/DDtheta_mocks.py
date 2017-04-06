@@ -21,7 +21,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
                   verbose=False, output_thetaavg=False,
                   fast_acos=False, ra_refine_factor=2,
                   dec_refine_factor=2, max_cells_per_dim=100,
-                  c_api_timer=False, isa='fastest', weight_type=None):
+                  c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Function to compute the angular correlation function for points on
     the sky (i.e., mock catalogs or observed galaxies).

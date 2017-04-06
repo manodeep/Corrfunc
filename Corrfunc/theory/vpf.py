@@ -19,7 +19,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         verbose=False, periodic=True, boxsize=0.0,
         xbin_refine_factor=1, ybin_refine_factor=1,
         zbin_refine_factor=1, max_cells_per_dim=100,
-        c_api_timer=False, isa='fastest'):
+        c_api_timer=False, isa=r'fastest'):
     """
     Function to compute the counts-in-cells on 3-D real-space points.
 

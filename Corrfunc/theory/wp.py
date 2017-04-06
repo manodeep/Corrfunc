@@ -17,7 +17,7 @@ __all__ = ('wp', 'find_fastest_wp_bin_refs', )
 def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
                              verbose=False, output_rpavg=False,
                              max_cells_per_dim=100,
-                             isa='fastest',
+                             isa=r'fastest',
                              maxbinref=3, nrepeats=3,
                              return_runtimes=False):
 
