@@ -90,10 +90,10 @@ extern "C" {
                                                                                     const struct config_options *options)__attribute__((warn_unused_result));
 
     extern int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
-                                                           const int64_t totncells, const DOUBLE thetamax,
+                                                           const int64_t totncells, 
                                                            const int ra_refine_factor, const int dec_refine_factor,
                                                            const int nmesh_dec, const int max_nmesh_ra,
-                                                           const DOUBLE ra_min, const DOUBLE ra_diff, 
+                                                           const DOUBLE ra_min, const DOUBLE ra_diff,
                                                            const int *nmesh_grid_ra,
                                                            const int autocorr);
     

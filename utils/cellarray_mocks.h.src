@@ -44,8 +44,6 @@ extern "C" {
         weight_struct_DOUBLE weights;
         DOUBLE ra_min;
         DOUBLE ra_max;
-        DOUBLE dec_min;
-        DOUBLE dec_max;
         int num_ngb;
         int ngb_allocated;
         cellarray_mocks_index_wtheta_DOUBLE **ngb_cells;

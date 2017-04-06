@@ -425,6 +425,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
+
     
     // If no extra options were passed, create dummy options
     // This allows us to pass arguments like "extra->weights0" below;
@@ -543,6 +544,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             Y2[i] = COSD(dec2[i])*SIND(ra2[i]) ;
             Z2[i] = SIND(dec2[i]);
         }
+    } else {
+        // We might call the brute-force pair couter, which knows nothing about autocorrelations
+        // so set up the weight pointers for the second set of particles
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            extra->weights1.weights[w] = extra->weights0.weights[w];
+        }
     }
 
     if(options->link_in_dec==0 && options->link_in_ra==0) {
@@ -646,7 +653,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         if(status == EXIT_SUCCESS) {
             const DOUBLE ra_diff = ra_max - ra_min;
             /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
-            status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells, thetamax,
+            status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells, 
                                                                  options->bin_refine_factors[0], options->bin_refine_factors[1],
                                                                  nmesh_dec, max_nmesh_ra,
                                                                  ra_min, ra_diff,
