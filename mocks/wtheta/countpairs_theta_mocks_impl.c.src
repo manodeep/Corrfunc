@@ -382,6 +382,7 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
         if(options->need_avg_sep) {
             results->theta_avg[i] = thetaavg[i];
         }
+        results->weightavg[i] = ZERO;
         if(need_weightavg) {
             results->weightavg[i] = weightavg[i];
         }
@@ -424,6 +425,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
+
     
     // If no extra options were passed, create dummy options
     // This allows us to pass arguments like "extra->weights0" below;
@@ -474,21 +476,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     int nthetabin;
     DOUBLE thetamin,thetamax;
     setup_bins_DOUBLE(binfile,&thetamin,&thetamax,&nthetabin,&theta_upp);
-    if( ! (thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax <= 180.0 && nthetabin > 0) ) {
+    if( ! (thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax <= 180.0 && nthetabin >= 1) ) {
         fprintf(stderr,"Error: Could not setup with theta bins correctly. (thetamin = %lf, thetamax = %lf, with nbins = %d). Expected non-zero rmin/rmax with thetamax > "
                 "thetamin and nbins >=1 \n",thetamin, thetamax, nthetabin);
         return EXIT_FAILURE;
     }
-    if(thetamax >= 45.0) {
-        fprintf(stderr,"Max. angular separation requested = %e "
-                "is so large that linking in RA will make "
-                "no difference (but might crash the code). "
-                "Only linking in declination and disabling "
-                " `link in ra' \n", thetamax);
-        options->link_in_ra = 0;
-        options->link_in_dec = 0;
-    }
-    
+
 #if defined(_OPENMP)
     if((options->link_in_ra == 0) &&
        (options->bin_refine_factors[1] < numthreads) &&
@@ -523,6 +516,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     Y1 = my_malloc(sizeof(*Y1),ND1);
     Z1 = my_malloc(sizeof(*Z1),ND1);
 
+    if(X1 == NULL || Y1 == NULL || Z1 == NULL) {
+        fprintf(stderr,"Error: Could not allocate memory for %"PRId64" particles in dataset #1. Required memory = %"PRIu64" bytes\n",
+                ND1, sizeof(DOUBLE)*ND1);
+        return EXIT_FAILURE;
+    }
+    
     for(int i=0;i<ND1;i++) {
         X1[i] = COSD(dec1[i])*COSD(ra1[i]) ;
         Y1[i] = COSD(dec1[i])*SIND(ra1[i]) ;
@@ -534,6 +533,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         X2=my_malloc(sizeof(*X2),ND2);
         Y2=my_malloc(sizeof(*Y2),ND2);
         Z2=my_malloc(sizeof(*Z2),ND2);
+        if(X2 == NULL || Y2 == NULL || Z2 == NULL) {
+            fprintf(stderr,"Error: Could not allocate memory for %"PRId64" particles in dataset #2. Required memory = %"PRIu64" bytes\n",
+                    ND2, sizeof(DOUBLE)*ND2);
+            return EXIT_FAILURE;
+        }
+        
         for(int64_t i=0;i<ND2;i++) {
             X2[i] = COSD(dec2[i])*COSD(ra2[i]) ;
             Y2[i] = COSD(dec2[i])*SIND(ra2[i]) ;
@@ -568,8 +573,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
 
     //Create the lattices
-    DOUBLE ra_min=0.0,dec_min=1e10;
-    DOUBLE ra_max=360.0,dec_max=-1e10;
+    DOUBLE ra_min=1e10,dec_min=1e10;
+    DOUBLE ra_max=-1e10,dec_max=-1e10;
     get_max_min_ra_dec_DOUBLE(ND1, ra1, dec1, &ra_min, &dec_min, &ra_max, &dec_max);
 
     if(autocorr==0) {
@@ -645,10 +650,10 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
 
         /* lattice1 and lattice2 should have been assigned. Might be NULL though */
-        if(status == EXIT_SUCCESS) { 
+        if(status == EXIT_SUCCESS) {
             const DOUBLE ra_diff = ra_max - ra_min;
             /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
-            status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells,
+            status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells, 
                                                                  options->bin_refine_factors[0], options->bin_refine_factors[1],
                                                                  nmesh_dec, max_nmesh_ra,
                                                                  ra_min, ra_diff,

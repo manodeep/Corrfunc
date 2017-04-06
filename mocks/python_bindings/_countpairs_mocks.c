@@ -1267,8 +1267,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                        &PyArray_Type,&x2_obj,//optional parameters -> if autocorr == 1, not checked; required if autocorr=0
                                        &PyArray_Type,&y2_obj,
                                        &PyArray_Type,&weights2_obj,
-                                       &(options.link_in_ra),
                                        &(options.link_in_dec),
+                                       &(options.link_in_ra),
                                        &(options.verbose),
                                        &(options.need_avg_sep),
                                        &(options.fast_acos),
@@ -1308,6 +1308,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
 
+    
     size_t element_size;
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */

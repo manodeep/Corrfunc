@@ -28,6 +28,9 @@ extern "C" {
     
     extern void get_max_min_ra_dec_DOUBLE(const int64_t ND1, const DOUBLE *ra, const DOUBLE *dec,
                                           DOUBLE *ra_min, DOUBLE *dec_min, DOUBLE *ra_max, DOUBLE *dec_max);
+
+    extern DOUBLE get_max_ra_diff_two_cells_DOUBLE(const DOUBLE first_dec_vals[2], const DOUBLE second_dec_vals[2], const DOUBLE thetamax)  __attribute__((warn_unused_result));
+    extern int check_if_two_cells_are_within_ra_range_DOUBLE(DOUBLE first_ra_vals[2], DOUBLE second_ra_vals[2], const DOUBLE max_ra_diff) __attribute__((warn_unused_result));
     
     /* Functions related to DDrppi_mocks */
     extern cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(const int64_t np,
@@ -87,10 +90,10 @@ extern "C" {
                                                                                     const struct config_options *options)__attribute__((warn_unused_result));
 
     extern int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
-                                                           const int64_t totncells,
+                                                           const int64_t totncells, 
                                                            const int ra_refine_factor, const int dec_refine_factor,
                                                            const int nmesh_dec, const int max_nmesh_ra,
-                                                           const DOUBLE ra_min, const DOUBLE ra_diff, 
+                                                           const DOUBLE ra_min, const DOUBLE ra_diff,
                                                            const int *nmesh_grid_ra,
                                                            const int autocorr);
     

@@ -205,8 +205,14 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     >>> DEC = 90.0 - np.arccos(cos_theta)*180.0/pi
     >>> weights = np.ones_like(RA)
     >>> autocorr = 1
-    >>> results = DDtheta_mocks(autocorr, nthreads, binfile,
-    ...                         RA, DEC, output_thetaavg=True, weights1=weights, weight_type='pair_product')
+    >>> for isa in ['AVX', 'SSE42', 'FALLBACK']:
+    ...     for link_in_dec in [False, True]:
+    ...         for link_in_ra in [False, True]:
+    ...             results = DDtheta_mocks(autocorr, nthreads, binfile,
+    ...                         RA, DEC, output_thetaavg=True, 
+    ...                         weights1=weights, weight_type='pair_product',
+    ...                         link_in_dec=link_in_dec, link_in_ra=link_in_ra, 
+    ...                         isa=isa)
     >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['thetamin'], r['thetamax'],
     ...                         r['thetaavg'], r['npairs'], r['weightavg']))
@@ -222,15 +228,15 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
       0.158489   0.223872   0.192967      19098   1.000000
       0.223872   0.316228   0.272673      37848   1.000000
       0.316228   0.446684   0.385344      75520   1.000000
-      0.446684   0.630957   0.543973     150934   1.000000
-      0.630957   0.891251   0.768405     301840   1.000000
-      0.891251   1.258925   1.085275     599866   1.000000
-      1.258925   1.778279   1.533458    1200122   1.000000
-      1.778279   2.511886   2.166002    2395808   1.000000
-      2.511886   3.548134   3.059139    4773238   1.000000
-      3.548134   5.011872   4.321381    9525106   1.000000
-      5.011872   7.079458   6.104042   18972498   1.000000
-      7.079458  10.000000   8.621911   37727488   1.000000
+      0.446684   0.630957   0.543973     150938   1.000000
+      0.630957   0.891251   0.768406     301854   1.000000
+      0.891251   1.258925   1.085273     599896   1.000000
+      1.258925   1.778279   1.533461    1200238   1.000000
+      1.778279   2.511886   2.166009    2396338   1.000000
+      2.511886   3.548134   3.059159    4775162   1.000000
+      3.548134   5.011872   4.321445    9532582   1.000000
+      5.011872   7.079458   6.104214   19001930   1.000000
+      7.079458  10.000000   8.622400   37842502   1.000000
 
     """
 

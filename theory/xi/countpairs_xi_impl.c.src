@@ -592,8 +592,8 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     for(int i=0;i<nbins;i++) {
         results->npairs[i] = npairs[i];
         results->rupp[i]   = rupp[i];
-        results->ravg[i] = 0.0;
-        results->weightavg[i] = 0.0;
+        results->ravg[i] = ZERO;
+        results->weightavg[i] = ZERO;
         if(options->need_avg_sep) {
             results->ravg[i] = ravg[i];
         } 

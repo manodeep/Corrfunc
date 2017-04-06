@@ -765,8 +765,8 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                 return EXIT_FAILURE;
             }
             results->npairs[index] = npairs[index];
-            results->rpavg[index] = 0.0;
-            results->weightavg[index] = 0.0;
+            results->rpavg[index] = ZERO;
+            results->weightavg[index] = ZERO;
             if(options->need_avg_sep) {
                 results->rpavg[index] = rpavg[index];
             }
