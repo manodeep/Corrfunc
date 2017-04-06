@@ -1,0 +1,15 @@
+# corrfunc config for landscape.io code quality check
+
+doc-warnings: true
+test-warnings: false
+strictness: veryhigh
+max-line-length: 120
+
+ignore-paths:
+  - docs
+  - paper
+
+python-targets:
+  - 2
+  - 3
+  
