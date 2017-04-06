@@ -11,6 +11,7 @@ notifications:
 env:
   global:
     - NUMPY_VERSION=1.9
+    - DOCTEST=false
 
 addons: 
   apt:
@@ -56,7 +57,7 @@ matrix:
     - os: osx
       osx_image: xcode8
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=true
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -188,7 +189,7 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=3.5
+      env: COMPILER=gcc PYTHON_VERSION=3.5 DOCTEST=true
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -204,5 +205,7 @@ install:
         
 script:
   - make tests CC=$COMPILER
+
+after_success:
   - cd docs && make html && cd ../
-  - cd docs && make doctest && cd ../
+  - if [[ "$DOCTEST" == "true" ]]; cd docs && make doctest && cd ../
