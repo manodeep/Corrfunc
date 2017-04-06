@@ -32,7 +32,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     If ``weights`` are provided, the resulting pair counts are weighted.  The
     weighting scheme depends on ``weight_type``.
 
-    Note, that this module only returns pair counts and not the actual
+    Note that this module only returns pair counts and not the actual
     correlation function :math:`\\omega(\theta)`. See the
     ``mocks/wtheta/wtheta`` for computing :math:`\\omega(\theta)` from
     the pair counts returned.
@@ -124,7 +124,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        precision and can not be trusted. If you need accurate ``thetaavg``
        values, then pass in double precision arrays for ``RA/DEC``.
 
-       **NOTE** Code will run significantly slower if you enable this option.
+       *Note*: Code will run significantly slower if you enable this option.
        Use ``fast_acos`` if you can tolerate some loss of precision.
 
     fast_acos: boolean (default false)
