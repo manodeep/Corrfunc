@@ -67,6 +67,7 @@ Available Corrfunc interfaces
    python-interface
    staticlibrary-interface
    commandline-interface
+   all-interfaces
 
 
 
