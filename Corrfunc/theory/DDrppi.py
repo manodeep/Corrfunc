@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``theory/xi_rp_pi``. This wrapper is in :py:mod:`Corrfunc.theory.DDrppi`
+``theory/DDrppi/``. This wrapper is in :py:mod:`Corrfunc.theory.DDrppi`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -31,8 +31,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
     Note, that this module only returns pair counts and not the actual
     correlation function :math:`\\xi(r_p, \pi)`. See the
-    ``theory/xi_rp_pi/wprp.c`` for computing :math:`wp(r_p)` from
-    the pair counts returned.
+    ``Corrfunc.utils.convert_rp_pi_counts_to_wp`` for 
+    computing :math:`wp(r_p)` from the pair counts returned.
 
     Parameters
     -----------

@@ -3,7 +3,8 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``mocks/DDrppi``. This python wrapper is :py:mod:`Corrfunc.mocks.DDrppi_mocks`
+``mocks/DDrppi_mocks/``. This python wrapper is 
+:py:mod:`Corrfunc.mocks.DDrppi_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,

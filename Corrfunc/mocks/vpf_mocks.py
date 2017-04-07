@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the counts-in-cells
-for positions on the sky. Corresponding C codes are in ``mocks/vpf``
+for positions on the sky. Corresponding C codes are in ``mocks/vpf_mocks/``
 while the python wrapper is in :py:mod:`Corrfunc.mocks.vpf_mocks`
 """
 

@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``theory/xi_of_r``. This wrapper is in :py:mod:`Corrfunc.theory.DD`
+``theory/DD/``. This wrapper is in :py:mod:`Corrfunc.theory.DD`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -26,7 +26,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     weighting scheme depends on ``weight_type``.
 
     Note, that this module only returns pair counts and not the actual
-    correlation function :math:`\\xi(r)`. See the ``mocks/wtheta/wtheta.c``
+    correlation function :math:`\\xi(r)`. See 
+    ``Corrfunc.utils.convert_3d_counts_to_cf`` for computing 
     for computing :math:`\\xi(r)` from the pair counts returned.
 
     Parameters

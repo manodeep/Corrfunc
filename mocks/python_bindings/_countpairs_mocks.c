@@ -217,7 +217,7 @@ static PyMethodDef module_methods[] = {
      "considered in that ("RP_CHAR", "PI_CHAR") bin. ``npairs``contains the number of pairs\n"
      "in that bin and can be used to compute the actual "XI_CHAR"("RP_CHAR", "PI_CHAR") by\n"
      "combining with RR counts. The C struct is identical to the one in \n"
-     "`theory/xi_rp_pi/countpairs_rp_pi.h`)\n"
+     "`theory/DDrppi/countpairs_rp_pi.h`)\n"
      "\n"
      "Example\n"
      "-------\n"
