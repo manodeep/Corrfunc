@@ -119,7 +119,8 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        each radial specified in the ``binfile``. If ``output_ravg`` is not
        set then ``ravg`` will be set to 0.0 for all bins; similarly for ``weightavg``.
        ``xi`` contains the correlation function while ``npairs`` contains the number of
-       pairs in that bin.
+       pairs in that bin.  If using weights, ``xi`` will be weighted while ``npairs``
+       will not be.
 
     api_time: float, optional
         Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent
