@@ -40,7 +40,7 @@ The steps are:
     }
     #endif
     
-    See ``utils/avx_calls.h`` and ``utils/sse_calls.h`` for the lists of available vector instructions.
+See ``utils/avx_calls.h`` and ``utils/sse_calls.h`` for the lists of available vector instructions.
 
 5. For each function you wrote in the last step, add a case to the switch-case block in the appropriate dispatch function in ``utils/weight_functions.h.src``.  If you wrote a weighting function for all three instruction sets, then you'll need to add the corresponding function to ``get_weight_func_by_method_DOUBLE()``, ``get_avx_weight_func_by_method_DOUBLE()``, and  ``get_sse_weight_func_by_method_DOUBLE()``.
 
