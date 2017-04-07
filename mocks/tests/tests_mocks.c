@@ -27,9 +27,9 @@
 #include "utils.h"
 #include "cosmology_params.h"
 
-#include "../DDrppi/countpairs_rp_pi_mocks.h"
-#include "../wtheta/countpairs_theta_mocks.h"
-#include "../vpf/countspheres_mocks.h"
+#include "../DDrppi_mocks/countpairs_rp_pi_mocks.h"
+#include "../DDtheta_mocks/countpairs_theta_mocks.h"
+#include "../vpf_mocks/countspheres_mocks.h"
 
 char tmpoutputfile[]="../tests/tests_mocks_output.txt";
 

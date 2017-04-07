@@ -25,6 +25,14 @@ Creating a file with bins for the clustering statistics
 
    generate_bins
 
+Chosing the correlation function to use
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. toctree::
+   :maxdepth: 1
+
+   which_corrfunc
+   
 
 Calculating Correlation Functions on Simulations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

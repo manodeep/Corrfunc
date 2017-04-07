@@ -53,7 +53,7 @@ clean:
 	$(RM) -R vpf_mocks.dSYM
 
 tests: 
-	$(MAKE) -C ../tests vpf
+	$(MAKE) -C ../tests vpf_mocks
 
 
 include $(ROOT_DIR)/rules.mk

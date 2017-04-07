@@ -51,7 +51,7 @@ lib: $(LIBRARY)
 install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_BIN_DIR)/wtheta $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
 tests:
-	$(MAKE) -C ../tests wtheta
+	$(MAKE) -C ../tests DDtheta_mocks
 
 clean:
 	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY) countpairs_theta_mocks_kernels_float.c countpairs_theta_mocks_kernels_double.c countpairs_theta_mocks_impl_double.[ch] countpairs_theta_mocks_impl_float.[ch]

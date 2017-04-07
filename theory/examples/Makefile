@@ -6,8 +6,8 @@ LIB_DIR := $(ROOT_DIR)/lib
 DATA_DIR := ../tests/data
 
 THEORY_DIR := $(ROOT_DIR)/theory
-DD_DIR := $(THEORY_DIR)/xi_of_r
-DDrppi_DIR := $(THEORY_DIR)/xi_rp_pi
+DD_DIR := $(THEORY_DIR)/DD
+DDrppi_DIR := $(THEORY_DIR)/DDrppi
 WP_DIR := $(THEORY_DIR)/wp
 XI_DIR := $(THEORY_DIR)/xi
 VPF_DIR := $(THEORY_DIR)/vpf
