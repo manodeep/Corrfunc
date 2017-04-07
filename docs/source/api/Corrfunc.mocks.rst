@@ -1,5 +1,5 @@
-Corrfunc\.mocks package
-=======================
+Corrfunc.mocks package
+======================
 
 .. automodule:: Corrfunc.mocks
     :members:
@@ -9,24 +9,24 @@ Corrfunc\.mocks package
 Submodules
 ----------
 
-Corrfunc\.mocks\.DDrppi\_mocks module
--------------------------------------
+Corrfunc.mocks.DDrppi_mocks module
+----------------------------------
 
 .. automodule:: Corrfunc.mocks.DDrppi_mocks
     :members:
     :undoc-members:
     :show-inheritance:
 
-Corrfunc\.mocks\.DDtheta\_mocks module
---------------------------------------
+Corrfunc.mocks.DDtheta_mocks module
+-----------------------------------
 
 .. automodule:: Corrfunc.mocks.DDtheta_mocks
     :members:
     :undoc-members:
     :show-inheritance:
 
-Corrfunc\.mocks\.vpf\_mocks module
-----------------------------------
+Corrfunc.mocks.vpf_mocks module
+-------------------------------
 
 .. automodule:: Corrfunc.mocks.vpf_mocks
     :members:

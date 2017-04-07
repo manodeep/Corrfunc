@@ -9,7 +9,7 @@ First, we have to compute the relevant pair counts using the python
 wrapper :py:mod:`Corrfunc.mocks.DDtheta_mocks`
 
 
-::
+.. code-block:: python
 
           >>> from os.path import dirname, abspath, join as pjoin
           >>> import Corrfunc
