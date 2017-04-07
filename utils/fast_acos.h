@@ -73,17 +73,18 @@ static inline DOUBLE FAST_ACOS(const DOUBLE x)
 #define GTE_C_ACOS_DEG8_C7 -4.1160981058965262e-03
 #define GTE_C_ACOS_DEG8_C8 +7.1796493341480527e-04
 #define GTE_C_ACOS_DEG8_MAX_ERROR 3.6340015129032732e-9
+    const DOUBLE xa = FABS(x);
     DOUBLE one = (DOUBLE) 1.0;
     poly = (DOUBLE)GTE_C_ACOS_DEG8_C8;
-    poly = (DOUBLE)GTE_C_ACOS_DEG8_C7 + poly * x;
-    poly = (DOUBLE)GTE_C_ACOS_DEG8_C6 + poly * x;
-    poly = (DOUBLE)GTE_C_ACOS_DEG8_C5 + poly * x;
-    poly = (DOUBLE)GTE_C_ACOS_DEG8_C4 + poly * x;
-    poly = (DOUBLE)GTE_C_ACOS_DEG8_C3 + poly * x;
-    poly = (DOUBLE)GTE_C_ACOS_DEG8_C2 + poly * x;
-    poly = (DOUBLE)GTE_C_ACOS_DEG8_C1 + poly * x;
-    poly = (DOUBLE)GTE_C_ACOS_DEG8_C0 + poly * x;
-    poly = poly * SQRT(one - x);
+    poly = (DOUBLE)GTE_C_ACOS_DEG8_C7 + poly * xa;
+    poly = (DOUBLE)GTE_C_ACOS_DEG8_C6 + poly * xa;
+    poly = (DOUBLE)GTE_C_ACOS_DEG8_C5 + poly * xa;
+    poly = (DOUBLE)GTE_C_ACOS_DEG8_C4 + poly * xa;
+    poly = (DOUBLE)GTE_C_ACOS_DEG8_C3 + poly * xa;
+    poly = (DOUBLE)GTE_C_ACOS_DEG8_C2 + poly * xa;
+    poly = (DOUBLE)GTE_C_ACOS_DEG8_C1 + poly * xa;
+    poly = (DOUBLE)GTE_C_ACOS_DEG8_C0 + poly * xa;
+    poly = poly * SQRT(one - xa);
 
 #undef GTE_C_ACOS_DEG8_C0 
 #undef GTE_C_ACOS_DEG8_C1 
@@ -95,7 +96,8 @@ static inline DOUBLE FAST_ACOS(const DOUBLE x)
 #undef GTE_C_ACOS_DEG8_C7 
 #undef GTE_C_ACOS_DEG8_C8 
 #undef GTE_C_ACOS_DEG8_MAX_ERROR 
-    return poly;
+
+    return (x < ZERO) ? (M_PI - poly) : poly;
 }
 
 #endif

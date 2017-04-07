@@ -21,8 +21,8 @@
 #include "io.h"
 #include "utils.h"
 
-#include "../xi_of_r/countpairs.h"
-#include "../xi_rp_pi/countpairs_rp_pi.h"
+#include "../DD/countpairs.h"
+#include "../DDrppi/countpairs_rp_pi.h"
 #include "../wp/countpairs_wp.h"
 #include "../xi/countpairs_xi.h"
 #include "../vpf/countspheres.h"

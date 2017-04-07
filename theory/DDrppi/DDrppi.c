@@ -1,18 +1,22 @@
-/* File: DD.c */
+/* File: DDrppi.c */
 /*
   This file is a part of the Corrfunc package
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
-  
---- DD file1 format1 file2 format2 binfile numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
---- Measure the cross-correlation function DD(r) for two different
-   data files (or autocorrelation if file1=file2).
+*/
+
+/* PROGRAM DDrppi
+
+--- DDrppi file1 format1 file2 format2 binfile pimax numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
+--- Measure the cross-correlation function xi(rp,pi) for two different
+   data files (or autocorrelation if file1=file1).
  * file1         = name of first data file
  * format1       = format of first data file  (a=ascii, c=csv, f=fast-food)
  * file2         = name of second data file
  * format2       = format of second data file (a=ascii, c=csv, f=fast-food)
  * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
+ * pimax         = maximum line-of-sight-separation
  * numthreads    = number of threads to use
 --- OPTIONAL ARGS:
  * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
@@ -21,47 +25,49 @@
  * weights_file2 = name of file containing the weights corresponding to the second data file
  * weights_format2 = format of file containing the weights corresponding to the second data file
 ---OUTPUT:
- > DDfile        = name of output file <rmin rmax rpavg=0.0 npairs weightavg>
-
+ > DDfile        = name of output file <logrp pi rpavg npairs weightavg>
+   ----------------------------------------------------------------------
 */
 
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
+#include <math.h>
 #include <inttypes.h>
 
 #include "defs.h" //for ADD_DIFF_TIME
 #include "function_precision.h" //definition of DOUBLE
-#include "countpairs.h" //function proto-type for countpairs
+#include "countpairs_rp_pi.h" //function proto-type for countpairs
 #include "io.h" //function proto-type for file input
 #include "utils.h" //general utilities
+
 
 void Printhelp(void);
 
 int main(int argc, char *argv[])
 {
 
-    /*---Data-variables--------------------*/
-    int64_t ND1,ND2 ;
-
-    DOUBLE *x1=NULL,*y1=NULL,*z1=NULL,*weights1[MAX_NUM_WEIGHTS]={NULL};
-    DOUBLE *x2=NULL,*y2=NULL,*z2=NULL,*weights2[MAX_NUM_WEIGHTS]={NULL};
-
+    /*---Arguments-------------------------*/
     char *file1=NULL,*file2=NULL,*weights_file1=NULL,*weights_file2=NULL;
     char *fileformat1=NULL,*fileformat2=NULL,*weights_fileformat1=NULL,*weights_fileformat2=NULL;
     char *binfile=NULL;
     char *weight_method_str=NULL;
-    
+    DOUBLE pimax ;
+
     weight_method_t weight_method = NONE;
     int num_weights = 0;
 
+    /*---Data-variables--------------------*/
+    int64_t ND1=0,ND2=0;
+
+    DOUBLE *x1=NULL,*y1=NULL,*z1=NULL,*weights1[MAX_NUM_WEIGHTS]={NULL};
+    DOUBLE *x2=NULL,*y2=NULL,*z2=NULL,*weights2[MAX_NUM_WEIGHTS]={NULL};//will point to x1/y1/z1 in case of auto-corr
+
+    int nthreads=1;
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
-    const int nthreads=1;
-    const char argnames[][30]={"file1","format1","file2","format2","binfile"};
+    const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax"};
 #else
-    int nthreads=2;
-    const char argnames[][30]={"file1","format1","file2","format2","binfile","Nthreads"};
+    const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","Nthreads"};
 #endif
     const char optargnames[][30]={"weight_method", "weights_file1","weights_format1","weights_file2","weights_format2"};
     
@@ -70,7 +76,6 @@ int main(int argc, char *argv[])
 
     struct timeval t_end,t_start,t0,t1;
     double read_time=0.0;
-
     gettimeofday(&t_start,NULL);
 
     /*---Read-arguments-----------------------------------*/
@@ -91,7 +96,7 @@ int main(int argc, char *argv[])
             fprintf(stderr,"\t\t %s = `?'\n",argnames[i-1]);
         return EXIT_FAILURE;
     }
-  
+    
     /* Validate optional arguments */
     int noptargs_given = argc - (nargs + 1);
     if(noptargs_given != 0 && noptargs_given != 3 && noptargs_given != 5){
@@ -105,7 +110,6 @@ int main(int argc, char *argv[])
                 fprintf(stderr,"\t\t <> = `%s' \n",argv[i]);
         }
         return EXIT_FAILURE;
-
     }
 
     file1=argv[1];
@@ -114,14 +118,22 @@ int main(int argc, char *argv[])
     fileformat2=argv[4];
     binfile=argv[5];
 
-#if defined(USE_OMP) && defined(_OPENMP)
-    nthreads=atoi(argv[6]);
-    if(nthreads < 1) {
-        fprintf(stderr,"Error: Nthreads must be at least 1...returning\n");
+    pimax=40.0;
+#ifdef DOUBLE_PREC
+    sscanf(argv[6],"%lf",&pimax) ;
+#else
+    sscanf(argv[6],"%f",&pimax) ;
+#endif
+
+
+#if defined(_OPENMP)
+    nthreads=atoi(argv[7]);
+    if(nthreads < 1 ) {
+        fprintf(stderr, "Nthreads = %d must be at least 1. Exiting...\n", nthreads);
         return EXIT_FAILURE;
     }
 #endif
-  
+
     if(noptargs_given >= 3){
        weight_method_str = argv[nargs + 1];
        int wstatus = get_weight_method_by_name(weight_method_str, &weight_method);
@@ -139,6 +151,11 @@ int main(int argc, char *argv[])
        weights_fileformat2 = argv[nargs + 5];
     }
 
+    int autocorr=0;
+    if(strcmp(file1,file2)==0) {
+        autocorr=1;
+    }
+
     fprintf(stderr,"Running `%s' with the parameters \n",argv[0]);
     fprintf(stderr,"\n\t\t -------------------------------------\n");
     for(int i=1;i<argc;i++) {
@@ -153,18 +170,13 @@ int main(int argc, char *argv[])
     fprintf(stderr,"\t\t -------------------------------------\n");
 
 
-
-    /*---Read-data1-file----------------------------------*/
     gettimeofday(&t0,NULL);
-    ND1=read_positions(file1,fileformat1, sizeof(DOUBLE), 3, &x1, &y1, &z1);
+    /*---Read-data1-file----------------------------------*/
+    ND1=read_positions(file1,fileformat1,sizeof(DOUBLE), 3, &x1, &y1, &z1);
     gettimeofday(&t1,NULL);
     read_time += ADD_DIFF_TIME(t0,t1);
-
-    int autocorr=0;
-    if( strcmp(file1,file2)==0) {
-        autocorr=1;
-    }
-  
+    gettimeofday(&t0,NULL);
+    
     /* Read weights file 1 */
     if(weights_file1 != NULL){
         gettimeofday(&t0,NULL);
@@ -178,14 +190,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    gettimeofday(&t0,NULL);
     if (autocorr==0) {
         /*---Read-data2-file----------------------------------*/
-        ND2=read_positions(file2,fileformat2, sizeof(DOUBLE), 3, &x2, &y2, &z2);
+        ND2=read_positions(file2,fileformat2,sizeof(DOUBLE), 3, &x2, &y2, &z2);
         gettimeofday(&t1,NULL);
         read_time += ADD_DIFF_TIME(t0,t1);
-      
-        /* Read weights file 2 */
+
         if(weights_file2 != NULL){
             gettimeofday(&t0,NULL);
             int64_t wND2 = read_columns_into_array(weights_file2,weights_fileformat2, sizeof(DOUBLE), num_weights, (void **) weights2);
@@ -198,6 +208,7 @@ int main(int argc, char *argv[])
             }
         }
     } else {
+        //None of these are required. But I prefer to preserve the possibility
         ND2 = ND1;
         x2 = x1;
         y2 = y1;
@@ -209,8 +220,9 @@ int main(int argc, char *argv[])
 
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
+    results_countpairs_rp_pi results;
     struct config_options options = get_config_options();
-
+    
     /* Pack weights into extra options */
     struct extra_options extra = get_extra_options(weight_method);
     for(int w = 0; w < num_weights; w++){
@@ -221,17 +233,16 @@ int main(int argc, char *argv[])
     /* If you want to change the bin refine factors */
     /* const int bf[] = {2, 2, 1}; */
     /* set_bin_refine_factors(&options, bf); */
-    results_countpairs results;
-    int status = countpairs(ND1,x1,y1,z1,
-                            ND2,x2,y2,z2,
-                            nthreads,
-                            autocorr,
-                            binfile,
-                            &results,
-                            &options,
-                            &extra);/* This is for ABI compatibility */
+    int status = countpairs_rp_pi(ND1,x1,y1,z1,
+                                  ND2,x2,y2,z2,
+                                  nthreads,
+                                  autocorr,
+                                  binfile,
+                                  pimax,
+                                  &results,
+                                  &options,
+                                  &extra);
 
-    
     free(x1);free(y1);free(z1);
     for(int w = 0; w < num_weights; w++){
         free(weights1[w]);
@@ -242,23 +253,29 @@ int main(int argc, char *argv[])
           free(weights2[w]);
         }
     }
+
     if(status != EXIT_SUCCESS) {
-      return status;
+        return status;
     }
-    
+
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
 
-    DOUBLE rlow=results.rupp[0];
+    const double dpi = pimax/(double)results.npibin ;
+    const int npibin = results.npibin;
     for(int i=1;i<results.nbin;i++) {
-        fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\t%e\n",rlow, results.rupp[i], results.rpavg[i],results.npairs[i],results.weightavg[i]);
-        rlow=results.rupp[i];
+        const double logrp = LOG10(results.rupp[i]);
+        for(int j=0;j<npibin;j++) {
+            int index = i*(npibin+1) + j;
+            fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\t%e\n",logrp, (j+1)*dpi, results.rpavg[index], results.npairs[index], results.weightavg[index]);
+        }
     }
 
-    //free the memory in the results struct
-    free_results(&results);
+    //free memory in results struct
+    free_results_rp_pi(&results);
+
     gettimeofday(&t_end,NULL);
-    fprintf(stderr,"xi_of_r> Done -  ND1=%"PRId64" ND2=%"PRId64". Time taken = %6.2lf seconds. read-in time = %6.2lf seconds sec pair-counting time = %6.2lf sec\n",
+    fprintf(stderr,"DDrppi> Done -  ND1=%12"PRId64" ND2=%12"PRId64". Time taken = %6.2lf seconds. read-in time = %6.2lf seconds pair-counting time = %6.2lf sec\n",
             ND1,ND2,ADD_DIFF_TIME(t_start,t_end),read_time,pair_time);
     return EXIT_SUCCESS;
 }
@@ -268,17 +285,19 @@ void Printhelp(void)
 {
     fprintf(stderr,"=========================================================================\n") ;
 #if defined(USE_OMP) && defined(_OPENMP)
-    fprintf(stderr,"   --- DD file1 format1 file2 format2 binfile numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
+    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
 #else
-    fprintf(stderr,"   --- DD file1 format1 file2 format2 binfile [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
+    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
 #endif
-    fprintf(stderr,"   --- Measure the cross-correlation function DD(r) for two different\n") ;
-    fprintf(stderr,"       data files (or autocorrelation if file1=file2).\n") ;
+
+    fprintf(stderr,"   --- Measure the cross-correlation function xi(rp,pi) for two different\n") ;
+    fprintf(stderr,"       data files (or autocorrelation if data1=data2).\n") ;
     fprintf(stderr,"     * file1         = name of first data file\n") ;
     fprintf(stderr,"     * format1       = format of first data file  (a=ascii, c=csv, f=fast-food)\n") ;
     fprintf(stderr,"     * file2         = name of second data file\n") ;
     fprintf(stderr,"     * format2       = format of second data file (a=ascii, c=csv, f=fast-food)\n") ;
     fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
+    fprintf(stderr,"     * pimax         = maximum line-of-sight-separation\n") ;
 #if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif
@@ -290,9 +309,9 @@ void Printhelp(void)
     fprintf(stderr,"     * weights_format2 = format of file containing the weights corresponding to the second data file\n");
     fprintf(stderr,"   ---OUTPUT:\n") ;
 #ifdef OUTPUT_RPAVG
-    fprintf(stderr,"     > DDfile        = name of output file <rmin rmax rpavg npairs weightavg>\n") ;
+    fprintf(stderr,"     > DDfile        = name of output file <logrp pi rpavg npairs weightavg>\n") ;
 #else
-    fprintf(stderr,"     > DDfile        = name of output file <rmin rmax rpavg=0.0 npairs weightavg>\n") ;
+    fprintf(stderr,"     > DDfile        = name of output file <logrp pi rpavg npairs weightavg>\n") ;
 #endif
     fprintf(stderr,"\n\tCompile options: \n");
 #ifdef PERIODIC
@@ -326,5 +345,4 @@ void Printhelp(void)
 #endif
 
     fprintf(stderr,"=========================================================================\n") ;
-
 }

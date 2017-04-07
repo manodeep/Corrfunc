@@ -8,12 +8,12 @@ INSTALL_LIB_DIR := $(ROOT_DIR)/lib
 INSTALL_BIN_DIR := $(ROOT_DIR)/bin
 
 MOCKS_DIR := $(ROOT_DIR)/mocks
-DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi
-WTHETA_DIR := $(MOCKS_DIR)/wtheta
-VPF_mocks_DIR := $(MOCKS_DIR)/vpf
+DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi_mocks
+DDtheta_mocks_DIR := $(MOCKS_DIR)/DDtheta_mocks
+VPF_mocks_DIR := $(MOCKS_DIR)/vpf_mocks
 
 DDrppi_mocks_LIB := countpairs_rp_pi_mocks
-WTHETA_LIB := countpairs_theta_mocks
+DDtheta_mocks_LIB := countpairs_theta_mocks
 VPF_mocks_LIB := countspheres_mocks
 
 include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
@@ -22,15 +22,15 @@ PROJECT := _countpairs_mocks
 PYTHON_EXTN := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 SOURCES := $(PROJECT).c
 OBJECTS := $(SOURCES:.c=.o)
-C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(WTHETA_DIR)/lib$(WTHETA_LIB).a $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a
-INCL :=	$(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h \
+C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(DDtheta_mocks_DIR)/lib$(DDtheta_mocks_LIB).a $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a
+INCL :=	$(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(DDtheta_mocks_DIR)/$(DDtheta_mocks_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h \
         $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
         $(UTILS_DIR)/utils.h \
 	$(UTILS_DIR)/function_precision.h \
         $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cosmology_params.h \
         $(UTILS_DIR)/cpu_features.h $(UTILS_DIR)/macros.h
 
-LIB_INCLUDE:=-I$(DDrppi_mocks_DIR) -I$(WTHETA_DIR) -I$(VPF_mocks_DIR)
+LIB_INCLUDE:=-I$(DDrppi_mocks_DIR) -I$(DDtheta_mocks_DIR) -I$(VPF_mocks_DIR)
 
 all: sharedlib $(LIBRARY) $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile 
 
@@ -50,8 +50,8 @@ $(PYTHON_EXTN): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/
 $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/*.c $(DDrppi_mocks_DIR)/*.c.src $(DDrppi_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_mocks_DIR) libs
 
-$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(WTHETA_DIR)/*.c $(WTHETA_DIR)/*.c.src $(WTHETA_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
-	$(MAKE) -C $(WTHETA_DIR) libs
+$(DDtheta_mocks_DIR)/lib$(DDtheta_mocks_LIB).a: $(DDtheta_mocks_DIR)/*.c $(DDtheta_mocks_DIR)/*.c.src $(DDtheta_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(DDtheta_mocks_DIR) libs
 
 $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/*.c $(VPF_mocks_DIR)/*.c.src $(VPF_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(VPF_mocks_DIR) libs

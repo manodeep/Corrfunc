@@ -53,7 +53,7 @@ distclean:clean
 	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 tests: 
-	$(MAKE) -C ../tests xi_rp_pi
+	$(MAKE) -C ../tests DDrppi
 
 include $(ROOT_DIR)/rules.mk
 
