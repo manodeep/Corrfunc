@@ -23,7 +23,7 @@ type of data, **and** the desired correlation function you want, the following t
 +-------------------+---------------+-----------------+-----------------------------------------+-------------------------------+---------------------------------------+
 | ra, dec, cz       | False         | Arbitrary       | :math:`\xi(r_p, \pi)`                   | Pair-counts in 2-D            |:py:mod:`Corrfunc.mocks.DDrppi_mocks`  |
 +-------------------+---------------+-----------------+-----------------------------------------+-------------------------------+---------------------------------------+
-| ra, dec           |               |                 | :math:`\omega(\theta)`                  | Pair-counts in angular space  |:py:mod:`Corrfunc.mocks.DDtheta_mocks` |
+| ra, dec           | False         | Arbitrary       | :math:`\omega(\theta)`                  | Pair-counts in angular space  |:py:mod:`Corrfunc.mocks.DDtheta_mocks` |
 +-------------------+---------------+-----------------+-----------------------------------------+-------------------------------+---------------------------------------+
 
 In all cases where only pair-counts are returned (e.g., all of the `mocks` routines), you will need to compute at least
