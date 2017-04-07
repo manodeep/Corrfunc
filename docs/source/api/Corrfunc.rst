@@ -17,40 +17,40 @@ Subpackages
 Submodules
 ----------
 
-Corrfunc\.call\_correlation\_functions module
----------------------------------------------
+Corrfunc.call_correlation_functions module
+------------------------------------------
 
 .. automodule:: Corrfunc.call_correlation_functions
     :members:
     :undoc-members:
     :show-inheritance:
 
-Corrfunc\.call\_correlation\_functions\_mocks module
-----------------------------------------------------
+Corrfunc.call_correlation_functions_mocks module
+------------------------------------------------
 
 .. automodule:: Corrfunc.call_correlation_functions_mocks
     :members:
     :undoc-members:
     :show-inheritance:
 
-Corrfunc\.io module
--------------------
+Corrfunc.io module
+------------------
 
 .. automodule:: Corrfunc.io
     :members:
     :undoc-members:
     :show-inheritance:
 
-Corrfunc\.tests module
-----------------------
+Corrfunc.tests module
+---------------------
 
 .. automodule:: Corrfunc.tests
     :members:
     :undoc-members:
     :show-inheritance:
 
-Corrfunc\.utils module
-----------------------
+Corrfunc.utils module
+---------------------
 
 .. automodule:: Corrfunc.utils
     :members:

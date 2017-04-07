@@ -8,7 +8,7 @@ by using the helper function :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp`
 First, we have to compute the relevant pair counts using the python
 wrapper :py:mod:`Corrfunc.mocks.DDrppi_mocks`
 
-::
+.. code-block:: python
 
           >>> import numpy as np
           >>> from os.path import dirname, abspath, join as pjoin          
