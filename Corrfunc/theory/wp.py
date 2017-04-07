@@ -396,7 +396,8 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        for each radial specified in the ``binfile``. If ``output_rpavg`` is not
        set then ``rpavg`` will be set to 0.0 for all bins; similarly for ``weightavg``.
        ``wp`` contains the projected correlation function while ``npairs`` contains the
-       number of unique pairs in that bin.
+       number of unique pairs in that bin.  If using weights, ``wp`` will be weighted
+       while ``npairs`` will not be.
        
     api_time: float, optional
        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent

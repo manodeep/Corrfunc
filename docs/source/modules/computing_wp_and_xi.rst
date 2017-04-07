@@ -6,7 +6,8 @@ Directly Computing :math:`\xi(r)` and :math:`wp(rp)`
 For a periodic cosmological box, the 3-d auto correlation, :math:`\xi(r)`, and
 the projected auto correlation function, :math:`wp(rp)`, can be directly computed
 using the Natural Estimator. The relevant python wrappers are present in
-:py:mod:`Corrfunc.theory.xi` and :py:mod:`Corrfunc.theory.wp`
+:py:mod:`Corrfunc.theory.xi` and :py:mod:`Corrfunc.theory.wp`.  See :ref:`rr_autocorrelations`
+for details on how the Natural Estimator is computed.
 
 ::
 
@@ -25,6 +26,3 @@ using the Natural Estimator. The relevant python wrappers are present in
                 
 
 See the complete reference here :py:mod:`Corrfunc`.
-
-   
-                   
