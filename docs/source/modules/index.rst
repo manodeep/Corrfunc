@@ -25,8 +25,8 @@ Creating a file with bins for the clustering statistics
 
    generate_bins
 
-Chosing the correlation function to use
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Choosing the correlation function 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. toctree::
    :maxdepth: 1
