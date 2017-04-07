@@ -49,3 +49,4 @@ Clustering Statistic     Python Interface                        Static library 
 ======================   ======================================  =====================================================    =====================================
                                                                   
                                                                  
+If you are not sure which correlation function to use, then please also see :ref:`which_corrfunc`.
