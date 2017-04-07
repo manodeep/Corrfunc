@@ -12,24 +12,11 @@ logbins: logbins.c
 
 .PHONY: $(TARGETS) libs install tests distclean realclean distclena realclena clean celna 
 
-DD:
-	$(MAKE) -C xi_of_r
-
-DDrppi:
-	$(MAKE) -C xi_rp_pi
-
-wp:
-	$(MAKE) -C wp
-
-xi:
-	$(MAKE) -C xi
-
-vpf:
-	$(MAKE) -C vpf
+DD DDrppi xi vpf:
+	$(MAKE) -C $@
 
 python_bindings: libs
-
-	$(MAKE) -C python_bindings
+	$(MAKE) -C $@
 
 ### Must create the libraries first before making the examples.
 examples: examples/run_correlations 
@@ -45,8 +32,8 @@ realclena:realclean
 realclean: 
 	$(RM) $(ROOT_DIR)/bin/logbins
 	$(RM) -R *.dSYM
-	$(MAKE) -C xi_of_r distclean
-	$(MAKE) -C xi_rp_pi distclean
+	$(MAKE) -C DD distclean
+	$(MAKE) -C DDrppi distclean
 	$(MAKE) -C wp distclean
 	$(MAKE) -C xi distclean
 	$(MAKE) -C vpf distclean
@@ -56,8 +43,8 @@ realclean:
 clean:
 	$(RM) logbins
 	$(RM) -R *.dSYM
-	$(MAKE) -C xi_of_r clean
-	$(MAKE) -C xi_rp_pi clean
+	$(MAKE) -C DD clean
+	$(MAKE) -C DDrppi clean
 	$(MAKE) -C wp clean
 	$(MAKE) -C xi clean
 	$(MAKE) -C vpf clean
@@ -68,8 +55,8 @@ clean:
 	$(MAKE) -C ../utils clean
 
 install: $(ROOT_DIR)/bin/logbins examples $(TARGETS) $(PYTHON_EXT_DIR) 
-	$(MAKE) -C xi_of_r install
-	$(MAKE) -C xi_rp_pi install
+	$(MAKE) -C DD install
+	$(MAKE) -C DDrppi install
 	$(MAKE) -C wp install
 	$(MAKE) -C xi install
 	$(MAKE) -C vpf install
@@ -81,8 +68,8 @@ $(ROOT_DIR)/bin/logbins: logbins
 lib: libs
 
 libs: 
-	$(MAKE) -C xi_of_r lib
-	$(MAKE) -C xi_rp_pi lib
+	$(MAKE) -C DD lib
+	$(MAKE) -C DDrppi lib
 	$(MAKE) -C wp lib
 	$(MAKE) -C xi lib
 	$(MAKE) -C vpf lib	
