@@ -102,7 +102,7 @@ All codes that work on cosmological boxes with co-moving positions are
 located in the ``theory`` directory. The various clustering measures
 are:
 
-1. ``xi_of_r`` -- Measures auto/cross-correlations between two boxes.
+1. ``DD`` -- Measures auto/cross-correlations between two boxes.
    The boxes do not need to be cubes.
 
 2. ``xi`` -- Measures 3-d auto-correlation in a cubic cosmological box.
@@ -111,7 +111,7 @@ are:
 3. ``wp`` -- Measures auto 2-d point projected correlation function in a
    cubic cosmological box. Assumes PERIODIC boundary conditions.
 
-4. ``xi_rp_pi`` -- Measures the auto/cross correlation function between
+4. ``DDrppi`` -- Measures the auto/cross correlation function between
    two boxes. The boxes do not need to be cubes.
 
 5. ``vpf`` -- Measures the void probability function + counts-in-cells.
@@ -122,15 +122,15 @@ Clustering measures on a Mock
 All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 ``mocks`` directory. The various clustering measures are:
 
-1. ``DDrppi`` -- The standard auto/cross correlation between two data
+1. ``DDrppi_mocks`` -- The standard auto/cross correlation between two data
    sets. The outputs, DD, DR and RR can be combined using ``wprp`` to
    produce the Landy-Szalay estimator for `wp(rp)`.
 
-2. ``wtheta`` -- Computes angular correlation function between two data
+2. ``DDtheta_mocks`` -- Computes angular correlation function between two data
    sets. The outputs from ``DDtheta_mocks`` need to be combined with
    ``wtheta`` to get the full `\omega(\theta)`
 
-3. ``vpf`` -- Computes the void probability function on mocks.
+3. ``vpf_mocks`` -- Computes the void probability function on mocks.
 
 Science options
 ===============
