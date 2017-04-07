@@ -12,6 +12,9 @@ from os.path import dirname, abspath, splitext, exists as file_exists,\
 import numpy as np
 
 
+__all__ = ('read_fastfood_catalog', 'read_ascii_catalog', 'read_catalog')
+
+
 def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
     """
     Read a galaxy catalog from a fast-food binary file.
@@ -91,7 +94,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
         print("\n\tPlease run python setup.py install before using "
               "the 'Corrfunc' package\n")
         raise
-    
+
     with open(filename, "rb") as f:
         skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
         idat = struct.unpack(bytes_to_native_str(b'@iiiii'),
