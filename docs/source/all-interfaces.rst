@@ -41,7 +41,7 @@ The list of clustering statistics supported on mock catalogs and the associated
 command-line executables are:
 
 ======================   ======================================  =====================================================    =====================================
-Clustering Statistic     Python Interface                        Static library                                           Full path to executable              
+Clustering Statistic     Python Interface                        Static library                                           Command-line (executable name)
 ======================   ======================================  =====================================================    =====================================
 :math:`\xi(r_p,\pi)`     :py:mod:`Corrfunc.mocks.DDrppi_mocks`    ``mocks/DDrppi_mocks/libcountpairs_rp_pi_mocks.a``      ``mocks/DDrppi_mocks/DDrppi_mocks``  
 :math:`\omega(\theta)`   :py:mod:`Corrfunc.mocks.DDtheta_mocks`   ``mocks/DDtheta_mocks/libcountpairs_theta_mocks.a``     ``mocks/DDtheta_mocks/DDtheta_mocks``
