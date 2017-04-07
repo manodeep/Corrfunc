@@ -22,8 +22,8 @@
 #include "io.h"
 #include "ftread.h"
 
-#include "../xi_of_r/countpairs.h"
-#include "../xi_rp_pi/countpairs_rp_pi.h"
+#include "../DD/countpairs.h"
+#include "../DDrppi/countpairs_rp_pi.h"
 
 char tmpoutputfile[]="./test_nonperiodic_output.txt";
 

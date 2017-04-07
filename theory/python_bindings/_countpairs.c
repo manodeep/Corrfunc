@@ -217,7 +217,7 @@ static PyMethodDef module_methods[] = {
      "less than ``pimax`` in the Z-dimension are counted.\n\n"
 
      "Note, that this module only returns pair counts and not the actual\n"
-     "correlation function "XI_CHAR"("RP_CHAR", "PI_CHAR"). See ``theory/xi_rp_pi/wprp.c``\n"
+     "correlation function "XI_CHAR"("RP_CHAR", "PI_CHAR"). See ``theory/DDrppi/wprp.c``\n"
      "for computing wp("RP_CHAR") from the pair counts returned by this module.\n"
      "Also note that the python wrapper for this extension: `Corrfunc.theory.DDrppi`\n"
      "is more user-friendly.\n"

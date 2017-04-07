@@ -5,13 +5,14 @@ INSTALL_BIN_DIR := $(ROOT_DIR)/bin
 UTILS_DIR := $(ROOT_DIR)/utils
 IO_DIR := $(ROOT_DIR)/io
 
+
 MOCKS_DIR := $(ROOT_DIR)/mocks
-DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi
-WTHETA_DIR := $(MOCKS_DIR)/wtheta
-VPF_mocks_DIR := $(MOCKS_DIR)/vpf
+DDrppi_mocks_DIR := $(MOCKS_DIR)/DDrppi_mocks
+DDtheta_mocks_DIR := $(MOCKS_DIR)/DDtheta_mocks
+VPF_mocks_DIR := $(MOCKS_DIR)/vpf_mocks
 
 DDrppi_mocks_LIB := countpairs_rp_pi_mocks
-WTHETA_LIB := countpairs_theta_mocks
+DDtheta_mocks_LIB := countpairs_theta_mocks
 VPF_mocks_LIB := countspheres_mocks
 
 include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
@@ -26,12 +27,12 @@ endif
 
 TARGETSRC   := tests_mocks.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(UTILS_DIR)/utils.c $(UTILS_DIR)/cosmology_params.c
 TARGETOBJS  := $(TARGETSRC:.c=.o)
-C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(WTHETA_DIR)/lib$(WTHETA_LIB).a \
+C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(DDtheta_mocks_DIR)/lib$(DDtheta_mocks_LIB).a \
              $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a
 INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h \
-          $(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(WTHETA_DIR)/$(WTHETA_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h
+          $(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(DDtheta_mocks_DIR)/$(DDtheta_mocks_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h
 
-EXTRA_INCL:=-DDOUBLE_PREC -I$(DDrppi_mocks_DIR) -I$(WTHETA_DIR) -I$(VPF_mocks_DIR) $(GSL_CFLAGS)
+EXTRA_INCL:=-DDOUBLE_PREC -I$(DDrppi_mocks_DIR) -I$(DDtheta_mocks_DIR) -I$(VPF_mocks_DIR) $(GSL_CFLAGS)
 EXTRA_LINK := $(GSL_LINK)
 
 OPT := 
@@ -44,8 +45,8 @@ UTILS_SRC := $(UTILS_DIR)/*.[ch] $(UTILS_DIR)/*.c.src $(UTILS_DIR)/*.h.src
 $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a: $(DDrppi_mocks_DIR)/*.c $(DDrppi_mocks_DIR)/*.c.src $(DDrppi_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk $(UTILS_SRC)
 	$(MAKE) -C $(DDrppi_mocks_DIR) libs
 
-$(WTHETA_DIR)/lib$(WTHETA_LIB).a: $(WTHETA_DIR)/*.c $(WTHETA_DIR)/*.c.src $(WTHETA_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk $(UTILS_SRC)
-	$(MAKE) -C $(WTHETA_DIR) libs
+$(DDtheta_mocks_DIR)/lib$(DDtheta_mocks_LIB).a: $(DDtheta_mocks_DIR)/*.c $(DDtheta_mocks_DIR)/*.c.src $(DDtheta_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk $(UTILS_SRC)
+	$(MAKE) -C $(DDtheta_mocks_DIR) libs
 
 $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/*.c $(VPF_mocks_DIR)/*.c.src $(VPF_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk $(UTILS_SRC)
 	$(MAKE) -C $(VPF_mocks_DIR) libs
@@ -67,13 +68,13 @@ uncompress: | data
 		done ;\
 		cd ..; \
 	}
-DDrppi: $(TARGET)
+DDrppi_mocks: $(TARGET)
 	./$(TARGET) 0 3  
 
-wtheta: tests_mocks
+DDtheta_mocks: tests_mocks
 	./$(TARGET) 1 4 
 
-vpf: tests_mocks
+vpf_mocks: tests_mocks
 	./$(TARGET) 2 5
 
 clean:

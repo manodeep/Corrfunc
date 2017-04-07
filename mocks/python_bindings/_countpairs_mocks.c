@@ -138,7 +138,7 @@ static PyMethodDef module_methods[] = {
      "    The redshift multiplied by speed of light for the galaxies. The code will\n"
      "    checks that cz has been supplied by comparing with a threshold (currently\n"
      "    set to 10, defined in function check_ra_dec_cz in file\n"
-     "    `DDrppi/countpairs_rp_pi_mocks_impl.c.src`) and multiplies by the speed of light if\n"
+     "    `DDrppi_mocks/countpairs_rp_pi_mocks_impl.c.src`) and multiplies by the speed of light if\n"
      "    max z is less than that threshold. If you really want to change the speed\n"
      "    of light, then edit the macro in `ROOT/utils/set_cosmo_dist.h`.\n"
      "\n"
