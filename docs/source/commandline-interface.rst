@@ -16,15 +16,15 @@ counts-in-cells. The easiest way to get help on the command-line is by calling
 the executables without any input parameters. Here is the list of executables
 associated with each type of clustering statistic:
 
-======================  ========================
+======================  ==========================
 Clustering Statistic    Full path to executable
-======================  ========================
-:math:`DD(r)`            ``theory/xi_of_r/DD``
-:math:`DD(r_p,\pi)`      ``theory/xi_rp_pi/DDrppi``
+======================  ==========================
+:math:`DD(r)`            ``theory/DD/DD``
+:math:`DD(r_p,\pi)`      ``theory/DDrppi/DDrppi``
 :math:`w_p(r_p)`         ``theory/wp/wp``
 :math:`\xi(r)`           ``theory/xi/xi``
 :math:`pN(n)`            ``theory/vpf/vpf``
-======================  ========================      
+======================  ==========================      
       
 
 Calculating clustering statistics in mock catalogs
@@ -32,12 +32,12 @@ Calculating clustering statistics in mock catalogs
 The list of clustering statistics supported on mock catalogs and the associated
 command-line executables are:
 
-======================  ========================
+======================  =======================================
 Clustering Statistic    Full path to executable
-======================  ========================
-:math:`DD(r_p,\pi)`      ``mocks/DDrppi/DDrppi_mocks``
-:math:`DD(\theta)`       ``mocks/wtheta/DDtheta_mocks``
-:math:`pN(n)`            ``mocks/vpf/vpf_mocks``
-======================  ========================      
+======================  =======================================
+:math:`DD(r_p,\pi)`      ``mocks/DDrppi_mocks/DDrppi_mocks``
+:math:`DD(\theta)`       ``mocks/DDtheta_mocks/DDtheta_mocks``
+:math:`pN(n)`            ``mocks/vpf_mocks/vpf_mocks``
+======================  =======================================      
 
 

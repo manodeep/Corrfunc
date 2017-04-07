@@ -3,8 +3,9 @@
 
 """
 Python wrapper around the C extension for the angular correlation function
-:math:`\\omega(\\theta)`. Corresponding C routines are in ``mocks/wtheta/``,
-python interface is :py:mod:`Corrfunc.mocks.DDtheta_mocks`
+:math:`\\omega(\\theta)`. Corresponding C routines are in 
+``mocks/DDtheta_mocks/``, while the python interface is 
+:py:mod:`Corrfunc.mocks.DDtheta_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -33,9 +34,9 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     weighting scheme depends on ``weight_type``.
 
     Note that this module only returns pair counts and not the actual
-    correlation function :math:`\\omega(\theta)`. See the
-    ``mocks/wtheta/wtheta`` for computing :math:`\\omega(\theta)` from
-    the pair counts returned.
+    correlation function :math:`\\omega(\theta)`. See 
+    ``Corrfunc.utils.convert_3d_counts_to_cf`` for computing 
+    :math:`\\omega(\theta)` from the pair counts returned.
 
     Parameters
     -----------
