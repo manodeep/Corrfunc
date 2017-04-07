@@ -28,7 +28,7 @@ associated with each type of clustering statistic:
 Clustering Statistic      Python Interface                  Static library                            Command-line  (executable name)
 ======================    ================================  ========================================  ====================================
 :math:`\xi(r)`            :py:mod:`Corrfunc.theory.DD`       ``theory/DD/libcountpairs.a``            ``theory/DD/DD``             
-:math:`\xi(r_p,\pi)`      :py:mod:`Corrfunc.theory.DDrppi`   ``theory/DDrppi/libcountpairs_rppi.a``   ``theory/DDrppi/DDrppi``        
+:math:`\xi(r_p,\pi)`      :py:mod:`Corrfunc.theory.DDrppi`   ``theory/DDrppi/libcountpairs_rp_pi.a``   ``theory/DDrppi/DDrppi``        
 :math:`w_p(r_p)`          :py:mod:`Corrfunc.theory.wp`       ``theory/wp/libcountpairs_wp.a``         ``theory/wp/wp``         
 :math:`\xi(r)`            :py:mod:`Corrfunc.theory.xi`       ``theory/xi/libcountpairs_xi.a``         ``theory/xi/xi``         
 :math:`pN(n)`             :py:mod:`Corrfunc.theory.vpf`      ``theory/vpf/libcountspheres.a``         ``theory/vpf/vpf``       
