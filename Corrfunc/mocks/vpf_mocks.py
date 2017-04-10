@@ -60,7 +60,10 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
             4      p0      p1     p2     p3
          ======   ==========================
 
-       and so on...(note that p0 is the vpf).
+       and so on...
+
+
+    .. note:: p0 is the vpf
 
     threshold_ngb: integer
        Minimum number of random points needed in a ``rmax`` sphere such that it
@@ -77,7 +80,8 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        exist but either ``rmax`` is too small or there are not enough centers
        then the file will be overwritten.
 
-       *Note*: If the centers file has to be written, the code will take
+    
+    .. note:: If the centers file has to be written, the code will take
        significantly longer to finish. However, subsequent runs can re-use
        that centers file and will be faster.
 
@@ -144,7 +148,8 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the
        co-moving distance, rather than ``(Speed Of Light * Redshift)``.
 
-       *Note*: RAND_RA, RAND_DEC and RAND_CZ are only used when the
+     
+    .. note:: RAND_RA, RAND_DEC and RAND_CZ are only used when the
           ``centers_file``  needs to be written out. In that case, the
           RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.
 
@@ -158,7 +163,10 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
     (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
-       on runtime. Note, since the counts in spheres calculation is symmetric
+       on runtime. 
+
+
+    .. note:: Since the counts in spheres calculation is symmetric
        in all 3 dimensions, the defaults are different from the clustering
        routines.
 
