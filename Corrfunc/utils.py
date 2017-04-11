@@ -836,7 +836,7 @@ def gridlink_sphere(thetamax,
     sphere_grid = np.zeros(totncells, dtype=grid_dtype)
     ra_binsizes = ra_diff/num_ra_cells
 
-    start = 0L
+    start = 0
     for idec in xrange(ngrid_dec):
         assert start + num_ra_cells[idec] <= totncells
         source_sel = np.s_[start:start+num_ra_cells[idec]]
