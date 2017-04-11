@@ -272,7 +272,7 @@ use the C extensions directly. Here are a few examples:
     nbins = 20
     
     # Create the bins
-    rbins = np.logspace(np.log10(0.1), np.log10(rmax), nbins)
+    rbins = np.logspace(np.log10(0.1), np.log10(rmax), nbins + 1)
 
     # Call wp
     wp_results = wp(boxsize, pimax, nthreads, rbins, x, y, z, verbose=True, output_rpavg=True)
