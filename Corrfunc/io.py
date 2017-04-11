@@ -263,9 +263,11 @@ def read_catalog(filebase=None, return_dtype=np.float):
     ``x y z`` - Unpacked numpy arrays compatible with the installed
     version of ``Corrfunc``.
 
-    **Note** If the filename is omitted, then first the fast-food file
-    is searched for, and then the ascii file. End-users should always
-    supply the full filename.
+
+    .. note:: If the filename is omitted, then first the fast-food file
+        is searched for, and then the ascii file. End-users should always
+        supply the full filename.
+
     """
 
     if filebase is None:

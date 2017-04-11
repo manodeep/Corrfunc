@@ -28,10 +28,11 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
     If ``weights`` are provided, the resulting correlation function
     is weighted.  The weighting scheme depends on ``weight_type``.
 
-    Note that pairs are double-counted. And if ``rmin`` is set to
-    0.0, then all the self-pairs (i'th particle with itself) are
-    added to the first bin. (Thus, in such a case the minimum 
-    number of pairs in the first bin is the total number of particles.)
+
+    .. note:: Pairs are double-counted. And if ``rmin`` is set to
+       0.0, then all the self-pairs (i'th particle with itself) are
+       added to the first bin => minimum number of pairs in the first bin
+       is the total number of particles.
 
     Parameters
     -----------
@@ -75,10 +76,13 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
 
     output_ravg: boolean (default false)
        Boolean flag to output the average ``r`` for each bin. Code will
-       run slower if you set this flag. Also, note, if you are calculating
-       in single-precision, ``ravg`` will suffer from numerical loss of
-       precision and can not be trusted. If you need accurate ``ravg``
-       values, then pass in double precision arrays for ``XYZ``.
+       run slower if you set this flag. 
+
+
+    .. note:: If you are calculating in single-precision, ``rpavg`` will 
+        suffer from numerical loss of precision and can not be trusted. If 
+        you need accurate ``rpavg`` values, then pass in double precision 
+        arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
