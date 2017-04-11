@@ -38,10 +38,13 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     Returns a numpy structured array containing the pair counts for the
     specified bins.
 
-    Note, that this module only returns pair counts and not the actual
-    correlation function :math:`\\xi(r_p, \pi)`. See the
-    ``mocks/DDrppi/wprp_mocks.c`` for computing :math:`wp(r_p)` from
-    the pair counts returned.
+
+    .. note:: that this module only returns pair counts and not the actual
+       correlation function :math:`\\xi(r_p, \pi)` or :math:`wp(r_p)`. See the
+       utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` and
+       :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp` for computing 
+       :math:`\\xi(r_p, \pi)` and :math:`wp(r_p)` respectively from the 
+       pair counts.
 
     Parameters
     -----------
@@ -71,12 +74,14 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
     pimax: double
         A double-precision value for the maximum separation along
-        the Z-dimension. Note that only pairs with ``0 <= dz < pimax``
-        are counted (no equality).
+        the Z-dimension. 
 
         Distances along the :math:`\\pi` direction are binned with unit
         depth. For instance, if ``pimax=40``, then 40 bins will be created
         along the ``pi`` direction.
+
+
+    .. note:: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
@@ -159,11 +164,13 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
     output_rpavg: boolean (default false)
         Boolean flag to output the average ``rp`` for each bin. Code will
-        run slower if you set this flag. Also, note, if you are calculating
-        in single-precision, ``rpavg`` will suffer from numerical loss of
-        precision and can not be trusted. If you need accurate ``rpavg``
-        values, then pass in double precision arrays for the particle
-        positions.
+        run slower if you set this flag. Also, 
+
+
+    .. note:: If you are calculating in single-precision, ``rpavg`` will 
+        suffer from numerical loss of precision and can not be trusted. If 
+        you need accurate ``rpavg`` values, then pass in double precision 
+        arrays for the particle positions.
 
     fast_divide: boolean (default false)
         Boolean flag to replace the division in ``AVX`` implementation with an

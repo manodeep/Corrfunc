@@ -25,10 +25,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     If ``weights`` are provided, the resulting pair counts are weighted.  The
     weighting scheme depends on ``weight_type``.
 
-    Note, that this module only returns pair counts and not the actual
-    correlation function :math:`\\xi(r)`. See 
-    ``Corrfunc.utils.convert_3d_counts_to_cf`` for computing 
-    for computing :math:`\\xi(r)` from the pair counts returned.
+
+    .. note:: This module only returns pair counts and not the actual
+       correlation function :math:`\\xi(r)`. See 
+       :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` for computing 
+       for computing :math:`\\xi(r)` from the pair counts returned.
 
     Parameters
     -----------
@@ -84,10 +85,13 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     output_ravg: boolean (default false)
        Boolean flag to output the average ``r`` for each bin. Code will
-       run slower if you set this flag. Also, note, if you are calculating
-       in single-precision, ``ravg`` will suffer from numerical loss of
-       precision and can not be trusted. If you need accurate ``ravg``
-       values, then pass in double precision arrays for the particle positions.
+       run slower if you set this flag. 
+
+
+    .. note:: If you are calculating in single-precision, ``ravg`` will 
+       suffer from numerical loss of precision and can not be trusted. 
+       If you need accurate ``ravg`` values, then pass in double precision 
+       arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

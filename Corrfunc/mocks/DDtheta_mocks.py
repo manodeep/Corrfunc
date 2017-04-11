@@ -33,10 +33,11 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     If ``weights`` are provided, the resulting pair counts are weighted.  The
     weighting scheme depends on ``weight_type``.
 
-    Note that this module only returns pair counts and not the actual
-    correlation function :math:`\\omega(\theta)`. See 
-    ``Corrfunc.utils.convert_3d_counts_to_cf`` for computing 
-    :math:`\\omega(\theta)` from the pair counts returned.
+
+    .. note:: This module only returns pair counts and not the actual
+       correlation function :math:`\\omega(\theta)`. See 
+       :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` for computing 
+       :math:`\\omega(\theta)` from the pair counts returned.
 
     Parameters
     -----------
@@ -110,23 +111,29 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        implies ``link_in_dec=True``. Similar considerations as ``link_in_dec``
        described above.
 
-       *Note*: If you disable both ``link_in_dec`` and ``link_in_ra``, then
+
+    .. note:: If you disable both ``link_in_dec`` and ``link_in_ra``, then
        the code reduces to a brute-force pair counter. No lattices are created
-       at all. For very small angular separations, that might be the most
-       numerically stable method.
+       at all. For very small angular separations, the brute-force method 
+       might be the most numerically stable method.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
 
     output_thetaavg: boolean (default false)
        Boolean flag to output the average ``\theta`` for each bin. Code will
-       run slower if you set this flag. Also, note, if you are calculating
-       in single-precision, ``thetaavg`` will suffer from numerical loss of
-       precision and can not be trusted. If you need accurate ``thetaavg``
-       values, then pass in double precision arrays for ``RA/DEC``.
+       run slower if you set this flag. 
 
-       *Note*: Code will run significantly slower if you enable this option.
-       Use ``fast_acos`` if you can tolerate some loss of precision.
+    
+    .. note:: If you are calculating in single-precision, ``thetaavg`` will 
+       suffer from numerical loss of precision and can not be trusted. If you 
+       need accurate ``thetaavg`` values, then pass in double precision arrays 
+       for ``RA/DEC``.
+
+
+    .. note:: Code will run significantly slower if you enable this option.
+       Use the keyword ``fast_acos`` if you can tolerate some loss of 
+       precision.
 
     fast_acos: boolean (default false)
        Flag to use numerical approximation for the ``arccos`` - gives better
@@ -139,11 +146,15 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        if you know your ``theta`` range is limited. If you implement a new
        version, then you will have to reinstall the entire Corrfunc package.
 
-       Note that tests will fail if you run the tests with``fast_acos=True``.
+
+    .. note:: Tests will fail if you run the tests with``fast_acos=True``.
 
     (radec)_refine_factor: integer, default is (2,2); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
-       on runtime. Note, only two refine factors are to be specified and these
+       on runtime. 
+
+
+    .. note:: Only two refine factors are to be specified and these
        correspond to ``ra`` and ``dec`` (rather, than the usual three of
        ``(xyz)bin_refine_factor`` for all other correlation functions).
 

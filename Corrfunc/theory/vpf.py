@@ -57,7 +57,10 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
             4      p0      p1     p2     p3
          ======   ==========================
 
-       and so on...(note that p0 is the vpf).
+       and so on...
+
+    
+    .. note:: p0 is the vpf
 
     seed: unsigned integer
        Random number seed for the underlying GSL random number generator. Used
@@ -87,7 +90,10 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
 
     (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
-       on runtime. Note, since the counts in spheres calculation is symmetric
+       on runtime. 
+
+
+    .. note:: Since the counts in spheres calculation is symmetric
        in all 3 dimensions, the defaults are different from the clustering
        routines.
 
