@@ -160,16 +160,18 @@ ifeq ($(DO_CHECKS), 1)
   CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE=200809L -D_GNU_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
 
   # Is this running on TRAVIS or some other CI provider?
+  # TRAVIS sets both the CI and TRAVIS variables
   ON_CI := false
-  ifeq ($(CI),"true")
+  ifeq ($(CI), true)
     ON_CI := true
   endif
 
-  ifeq ($(TRAVIS),"true")
+  ifeq ($(TRAVIS), true)
     ON_CI := true
   endif
 
-  ifeq ($(ON_CI), "true")
+  # Add the -Werror flag if running on some continuous integration provider
+  ifeq ($(ON_CI), true)
     CFLAGS += -Werror
   endif
 
