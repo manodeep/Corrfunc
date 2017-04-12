@@ -172,7 +172,7 @@ ifeq ($(DO_CHECKS), 1)
 
   # Add the -Werror flag if running on some continuous integration provider
   ifeq ($(ON_CI), true)
-    CFLAGS += -Werror
+    CFLAGS += -Werror -Wno-unknown-warning-option
   endif
 
   GSL_FOUND := $(shell gsl-config --version)
