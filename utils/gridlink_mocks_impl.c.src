@@ -889,19 +889,6 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
         lattice[icell].num_ngb=0;
     }
     for(int idec=0;idec<ngrid_dec;idec++) {
-        DOUBLE this_min_dec;
-        const DOUBLE dec_lower = dec_min + idec*dec_binsize;
-        const DOUBLE dec_upper = dec_lower + dec_binsize;
-        const DOUBLE cos_dec_upper = COSD(dec_upper);
-        const DOUBLE cos_dec_lower = COSD(dec_lower);
-        DOUBLE cos_min_dec;
-        if(cos_dec_lower < cos_dec_upper) {
-            this_min_dec = dec_lower;
-            cos_min_dec = cos_dec_lower;
-        } else {
-            this_min_dec = dec_upper;
-            cos_min_dec = cos_dec_upper;
-        }
         const int nmesh_ra = ngrid_ra[idec];
         for(int ira=0;ira<nmesh_ra;ira++) {
             const int64_t ra_base = ra_offset_for_dec[idec];
