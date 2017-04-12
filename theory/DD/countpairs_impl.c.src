@@ -1,0 +1,680 @@
+// # -*- mode: c -*-
+/* File: countpairs_impl.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+
+#include "countpairs_impl_DOUBLE.h" //function proto-type
+#include "countpairs_kernels_DOUBLE.c"
+
+#include "defs.h"
+#include "utils.h" //all of the utilities
+#include "progressbar.h" //for the progressbar
+#include "cpu_features.h" //prototype instrset_detect required for runtime dispatch
+
+#include "cellarray_DOUBLE.h" //definition of struct cellarray*
+#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
+
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
+int interrupt_status_DOUBLE=EXIT_SUCCESS;
+
+void interrupt_handler_countpairs_DOUBLE(int signo)
+{
+    fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
+    interrupt_status_DOUBLE = EXIT_FAILURE;
+}    
+
+
+countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options *options)
+{
+    static countpairs_func_ptr_DOUBLE function = NULL;
+    static isa old_isa=-1;
+    if(old_isa == options->instruction_set) {
+        return function;
+    } 
+  
+
+    /* Array of function pointers */
+    countpairs_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX__
+        countpairs_avx_intrinsics_DOUBLE,
+#endif			 
+#ifdef __SSE4_2__
+        countpairs_sse_intrinsics_DOUBLE,
+#endif
+        countpairs_fallback_DOUBLE
+    };
+    
+    const int num_functions = sizeof(allfunctions)/sizeof(void *);
+    const int fallback_offset = num_functions - 1;
+#if defined(__AVX__) || defined __SSE4_2__    
+    const int highest_isa = instrset_detect();
+#endif    
+    int curr_offset = 0;
+    
+    /* Now check if AVX is supported by the CPU */
+    int avx_offset = fallback_offset;
+#ifdef __AVX__ 
+    avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif        
+    
+    /* Is the SSE function supported at runtime and enabled at compile-time?*/
+    int sse_offset = fallback_offset;
+#ifdef __SSE4_2__
+    sse_offset = highest_isa >= 6 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+    if( curr_offset != fallback_offset) {
+      fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
+              curr_offset, fallback_offset);
+      return NULL;
+    } 
+    
+    int function_dispatch=0;//Set default to fastest available
+    /* Check that cpu supports feature */
+    if(options->instruction_set >= 0) {
+        switch(options->instruction_set) {
+        case(AVX512F):
+        case(AVX2):
+        case(AVX):function_dispatch=avx_offset;break;
+        case(SSE42):function_dispatch=sse_offset;break;
+        default:function_dispatch=fallback_offset;break;
+        }
+    }
+    if(function_dispatch >= num_functions) {
+      fprintf(stderr,"In %s> ERROR: Could not resolve the correct function.\n Function index = %d must lie between [0, %d)\n",
+              __FUNCTION__, function_dispatch, num_functions);
+      return NULL;
+    }
+    function = allfunctions[function_dispatch];
+    old_isa = options->instruction_set;
+    
+    if(options->verbose){
+        // This must be first (AVX/SSE may be aliased to fallback)
+        if(function_dispatch == fallback_offset){
+            fprintf(stderr,"Using fallback kernel\n");
+        } else if(function_dispatch == avx_offset){
+            fprintf(stderr,"Using AVX kernel\n");
+        } else if(function_dispatch == sse_offset){
+            fprintf(stderr,"Using SSE kernel\n");
+        } else {
+            printf("Unknown kernel!\n");
+        }
+    }
+
+    return function;
+}
+
+
+int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
+                      const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE *Z2,
+                      const int numthreads,
+                      const int autocorr,
+                      const char *binfile,
+                      results_countpairs *results,
+                      struct config_options *options,
+                      struct extra_options *extra)
+{
+  if(options->float_type != sizeof(DOUBLE)) {
+    fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
+            __FUNCTION__, sizeof(DOUBLE), options->float_type);
+    return EXIT_FAILURE;
+  }
+  
+  // If no extra options were passed, create dummy options
+  // This allows us to pass arguments like "extra->weights0" below;
+  // they'll just be NULLs, which is the correct behavior
+  struct extra_options dummy_extra;
+  if(extra == NULL){
+      weight_method_t dummy_method = NONE;
+      dummy_extra = get_extra_options(dummy_method);
+      extra = &dummy_extra;
+  }
+  
+  int need_weightavg = extra->weight_method != NONE;
+  
+  struct timeval t0;
+  if(options->c_api_timer) {
+      gettimeofday(&t0, NULL);
+  }
+  
+  
+#if defined(_OPENMP)
+    omp_set_num_threads(numthreads);
+#else
+    (void) numthreads;
+#endif    
+  
+  if(options->max_cells_per_dim == 0) {
+      fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+      options->max_cells_per_dim = NLATMAX;
+  }
+  
+  for(int i=0;i<3;i++) {
+      if(options->bin_refine_factors[i] < 1) {
+          fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                  i, options->bin_refine_factors[i]);
+          reset_bin_refine_factors(options);
+          break;/* all factors have been reset -> no point continuing with the loop */
+      }
+  }
+              
+  
+  options->sort_on_z = 1;
+  /* setup interrupt handler -> mostly useful during the python execution. 
+     Let's Ctrl-C abort the extension  */
+  SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_DOUBLE);
+
+  /***********************
+   *initializing the bins
+   ************************/
+  double *rupp=NULL;
+  int nrpbin ;
+  double rpmin,rpmax;
+  setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
+  if( ! (rpmin >=0.0 && rpmax > 0.0 && rpmin < rpmax && nrpbin > 0)) {
+    fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
+            rpmin, rpmax, nrpbin);
+    return EXIT_FAILURE;
+  }
+    
+  //Find the min/max of the data
+  DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
+  xmin=1e10;ymin=1e10;zmin=1e10;
+  xmax=0.0;ymax=0.0;zmax=0.0;
+  get_max_min_DOUBLE(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
+  
+  if(autocorr==0) {
+    if(options->verbose) {
+        fprintf(stderr,"ND1 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND1,xmin,ymin,zmin,xmax,ymax,zmax);
+    }
+
+    get_max_min_DOUBLE(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
+    if(options->verbose) {
+      fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);
+    }
+  }
+  const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
+  const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
+  const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
+  const DOUBLE pimax = (DOUBLE) rpmax;
+  if(options->verbose && options->periodic) {
+      fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
+      fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
+      fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+  }
+  if(get_bin_refine_scheme(options) == BINNING_DFL) {
+      if(rpmax < 0.05*xdiff) {
+          options->bin_refine_factors[0] = 1;
+      }
+      if(rpmax < 0.05*ydiff) {
+          options->bin_refine_factors[1] = 1;
+      }
+      if(pimax < 0.05*zdiff) { //pimax := rpmax. Here to prevent copy-pasting bugs 
+          options->bin_refine_factors[2] = 1;
+      }
+  }
+
+  /*---Create 3-D lattice--------------------------------------*/
+  int nmesh_x=0,nmesh_y=0,nmesh_z=0;
+  cellarray_index_particles_DOUBLE *lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
+                                                                               xmin, xmax, ymin, ymax, zmin, zmax,
+                                                                               rpmax, rpmax, rpmax,
+                                                                               options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                                               &nmesh_x, &nmesh_y, &nmesh_z, options);
+  if(lattice1 == NULL) {
+    return EXIT_FAILURE;
+  }
+
+  /* If there too few cells (BOOST_CELL_THRESH is ~10), and the number of cells can be increased, then boost bin refine factor by ~1*/
+  const double avg_np = ((double)ND1)/(nmesh_x*nmesh_y*nmesh_z);
+  const int8_t max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
+  if((max_nmesh <= BOOST_CELL_THRESH || avg_np >= BOOST_NUMPART_THRESH)
+        && max_nmesh < options->max_cells_per_dim) {
+      fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
+      if(get_bin_refine_scheme(options) == BINNING_DFL) {
+          fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
+          fprintf(stderr,"xmin = %lf xmax=%lf rpmax = %lf\n", xmin, xmax, rpmax);
+          free_cellarray_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+          // Only boost the first two dimensions.  Prevents excessive refinement.
+          for(int i=0;i<2;i++) {
+              options->bin_refine_factors[i] += BOOST_BIN_REF;
+          }
+          lattice1 = gridlink_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
+                                                     xmin, xmax, ymin, ymax, zmin, zmax,
+                                                     rpmax, rpmax, rpmax,
+                                                     options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                     &nmesh_x, &nmesh_y, &nmesh_z, options);
+          if(lattice1 == NULL) {
+              return EXIT_FAILURE;
+          }
+      } else {
+          fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
+                  "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
+                  options->bin_refine_factors[1], options->bin_refine_factors[2]);
+      }
+  }
+
+  cellarray_index_particles_DOUBLE *lattice2 = NULL;
+    if(autocorr==0) {
+        int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
+        lattice2 = gridlink_index_particles_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
+                                                   xmin, xmax, ymin, ymax, zmin, zmax,
+                                                   rpmax, rpmax, rpmax,
+                                                   options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                   &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
+        if(lattice2 == NULL) {
+          return EXIT_FAILURE;
+        }
+        if( ! (nmesh_x == ngrid2_x && nmesh_y == ngrid2_y && nmesh_z == ngrid2_z) ) {
+          fprintf(stderr,"Error: The two sets of 3-D lattices do not have identical bins. First has dims (%d, %d, %d) while second has (%d, %d, %d)\n",
+                  nmesh_x, nmesh_y, nmesh_z, ngrid2_x, ngrid2_y, ngrid2_z);
+          return EXIT_FAILURE;
+        }
+    } else {
+        lattice2 = lattice1;
+    }
+    const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
+
+    
+    //Generate the unique set of neighbouring cells to count over.
+    {
+        int status = assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
+                                                             options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                             nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff,
+                                                             autocorr, options->periodic);
+        if(status != EXIT_SUCCESS) {
+            free_cellarray_index_particles_DOUBLE(lattice1, totncells);
+            if(autocorr == 0) {
+                free_cellarray_index_particles_DOUBLE(lattice2, totncells);
+            }
+            free(rupp);
+            return status;
+        }
+    }
+
+    /* runtime dispatch - get the function pointer */
+    countpairs_func_ptr_DOUBLE countpairs_function_DOUBLE = countpairs_driver_DOUBLE(options);
+    if(countpairs_function_DOUBLE == NULL) {
+        free_cellarray_index_particles_DOUBLE(lattice1, totncells);
+        if(autocorr == 0) {
+            free_cellarray_index_particles_DOUBLE(lattice2, totncells);
+        }
+        free(rupp);
+        return EXIT_FAILURE;
+    }
+
+    
+#if defined(_OPENMP)
+    uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nrpbin);
+    
+    DOUBLE **all_rpavg = NULL;
+    if(options->need_avg_sep) {
+      all_rpavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nrpbin);
+    }
+    
+    DOUBLE **all_weightavg = NULL;
+    if(need_weightavg) {
+      all_weightavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nrpbin);
+    }
+    
+    if(all_npairs == NULL ||
+       (options->need_avg_sep && all_rpavg == NULL) ||
+       (need_weightavg && all_weightavg == NULL)) {
+        free_cellarray_index_particles_DOUBLE(lattice1, totncells);
+        if(autocorr == 0) {
+            free_cellarray_index_particles_DOUBLE(lattice2, totncells);
+        }
+        matrix_free((void **)all_npairs, numthreads);
+        if(options->need_avg_sep) {
+            matrix_free((void **)all_rpavg, numthreads);
+        }
+        if(need_weightavg) {
+            matrix_free((void**) all_weightavg, numthreads);
+        }
+        free(rupp);
+        return EXIT_FAILURE;
+    }
+#else
+    uint64_t npairs[nrpbin];
+    DOUBLE rpavg[nrpbin];
+    DOUBLE weightavg[nrpbin];
+    
+    for(int i=0;i<nrpbin;i++) {
+      npairs[i] = 0;
+      if(options->need_avg_sep) {
+        rpavg[i] = 0.0;
+      }
+      if(need_weightavg) {
+        weightavg[i] = 0.0;
+      }
+    }
+#endif
+
+    DOUBLE rupp_sqr[nrpbin];
+    for(int i=0; i < nrpbin;i++) {
+      rupp_sqr[i] = rupp[i]*rupp[i];
+    }
+
+    DOUBLE sqr_rpmax=rupp_sqr[nrpbin-1];
+    DOUBLE sqr_rpmin=rupp_sqr[0];
+
+    int abort_status = EXIT_SUCCESS;
+    int interrupted=0;
+    int64_t numdone=0;
+    if(options->verbose) {
+      init_my_progressbar(totncells,&interrupted);
+    }
+
+    /*---Loop-over-Data1-particles--------------------*/
+#if defined(_OPENMP)
+#pragma omp parallel shared(numdone, abort_status, interrupt_status_DOUBLE)
+    {
+      int tid = omp_get_thread_num();
+      uint64_t npairs[nrpbin];
+      DOUBLE rpavg[nrpbin]; //thread-level, stored on stack
+      DOUBLE weightavg[nrpbin];
+      
+      for(int i=0;i<nrpbin;i++) {
+        npairs[i] = 0;
+        if(options->need_avg_sep) {
+          rpavg[i] = 0.0;
+        }
+        if(need_weightavg) {
+          weightavg[i] = 0.0;
+        }
+      }
+
+
+#pragma omp for  schedule(dynamic) nowait
+#endif//openmp
+      for(int64_t index1=0;index1<totncells;index1++) {
+
+#if defined(_OPENMP)
+#pragma omp flush (abort_status, interrupt_status_DOUBLE)
+#endif
+        if(abort_status == EXIT_SUCCESS && interrupt_status_DOUBLE == EXIT_SUCCESS) { 
+            //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
+            /* If the verbose option is not enabled, avoid outputting anything unnecessary*/            
+          if(options->verbose) {
+#if defined(_OPENMP)
+            if (omp_get_thread_num() == 0)
+#endif
+              my_progressbar(numdone,&interrupted);
+              
+
+#if defined(_OPENMP)
+#pragma omp atomic
+#endif
+            numdone++;
+          }
+            
+          /* Calculate over all ngb cells */
+          const cellarray_index_particles_DOUBLE *first  = &(lattice1[index1]);
+          if(first->nelements == 0) {
+            continue;
+          }
+          DOUBLE *x1 = first->x;
+          DOUBLE *y1 = first->y;
+          DOUBLE *z1 = first->z;
+          const weight_struct_DOUBLE *weights1 = &(first->weights);
+          const int64_t N1 = first->nelements;
+          if(autocorr == 1) {
+              int same_cell = 1;
+              DOUBLE *this_rpavg = NULL;
+              DOUBLE *this_weightavg = NULL;
+              if(options->need_avg_sep) {
+                  this_rpavg = rpavg;
+              }
+              if(need_weightavg) {
+                  this_weightavg = weightavg;
+              }
+              const int status = countpairs_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                            N1, x1, y1, z1, weights1,
+                                                            same_cell,
+                                                            sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
+                                                            ZERO, ZERO, ZERO,
+                                                            this_rpavg, npairs,
+                                                            this_weightavg, extra->weight_method);
+              /* This actually causes a race condition under OpenMP - but mostly
+                 I care that an error occurred - rather than the exact value of
+                 the error status */
+              abort_status |= status;
+          }
+
+          /* struct timeval t0,t1; */
+          /* int64_t ngb_part = 0; */
+          /* gettimeofday(&t0, NULL); */
+          for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
+            const cellarray_index_particles_DOUBLE *second = first->ngb_cells[ngb];
+            if(second->nelements == 0) {
+              continue;
+            }
+            const int same_cell = 0;
+            /* ngb_part += second->nelements; */
+            DOUBLE *x2 = second->x;
+            DOUBLE *y2 = second->y;
+            DOUBLE *z2 = second->z;
+            const weight_struct_DOUBLE *weights2 = &(second->weights);
+            DOUBLE off_xwrap = 0.0, off_ywrap = 0.0, off_zwrap = 0.0;
+            if(options->periodic) {
+              off_xwrap = first->xwrap[ngb];
+              off_ywrap = first->ywrap[ngb];
+              off_zwrap = first->zwrap[ngb];
+            }
+            const int64_t N2 = second->nelements;
+            DOUBLE *this_rpavg = NULL;
+            DOUBLE *this_weightavg = NULL;
+            if(options->need_avg_sep) {
+                this_rpavg = rpavg;
+            }
+            if(need_weightavg) {
+                this_weightavg = weightavg;
+            }
+            const int status = countpairs_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                          N2, x2, y2, z2, weights2,
+                                                          same_cell
+                                                          ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
+                                                          ,off_xwrap, off_ywrap, off_zwrap
+                                                          ,this_rpavg,npairs
+                                                          ,this_weightavg, extra->weight_method);
+            /* This actually causes a race condition under OpenMP - but mostly
+               I care that an error occurred - rather than the exact value of
+               the error status */
+            abort_status |= status;
+          }//loop over ngb cells
+          /* gettimeofday(&t1, NULL); */
+          /* fprintf(stderr,"%7"PRId64" %4"PRId64" %6"PRId64" %14.6lf %10"PRId64"\n",index1, first->num_ngb, first->nelements, ADD_DIFF_TIME(t0,t1), ngb_part); */
+          
+          // This helps in theory but not in practice
+          /*posix_madvise(first->x, sizeof(DOUBLE)*N1, MADV_DONTNEED);
+          posix_madvise(first->y, sizeof(DOUBLE)*N1, MADV_DONTNEED);
+          posix_madvise(first->z, sizeof(DOUBLE)*N1, MADV_DONTNEED);*/
+        }//abort-status
+          
+      }//index1 loop over totncells
+        
+#if defined(_OPENMP)
+      for(int j=0;j<nrpbin;j++) {
+        all_npairs[tid][j] = npairs[j];
+        if(options->need_avg_sep) {
+          all_rpavg[tid][j] = rpavg[j];
+        }
+        if(need_weightavg) {
+          all_weightavg[tid][j] = weightavg[j];
+        }
+      }
+    }//close the omp parallel region
+#endif
+
+    free_cellarray_index_particles_DOUBLE(lattice1, totncells);
+    if(autocorr==0) {
+      free_cellarray_index_particles_DOUBLE(lattice2, totncells);
+    }
+    if(abort_status != EXIT_SUCCESS || interrupt_status_DOUBLE != EXIT_SUCCESS) {
+      /* Cleanup memory here if aborting */
+      free(rupp);
+#if defined(_OPENMP)
+      matrix_free((void **) all_npairs, numthreads);
+      if(options->need_avg_sep) {
+        matrix_free((void **) all_rpavg, numthreads);
+      }
+      if(need_weightavg) {
+        matrix_free((void **) all_weightavg, numthreads);
+      }
+#endif
+      return EXIT_FAILURE;
+    }
+    
+    if(options->verbose) {
+      finish_myprogressbar(&interrupted);
+    }
+    
+#if defined(_OPENMP)
+    uint64_t npairs[nrpbin];
+    DOUBLE rpavg[nrpbin];
+    DOUBLE weightavg[nrpbin];
+    
+    for(int i=0;i<nrpbin;i++) {
+      npairs[i] = 0;
+      if(options->need_avg_sep) {
+        rpavg[i] = 0.0;
+      }
+      if(need_weightavg) {
+        weightavg[i] = 0.0;
+      }
+    }
+
+    for(int i=0;i<numthreads;i++) {
+      for(int j=0;j<nrpbin;j++) {
+        npairs[j] += all_npairs[i][j];
+        if(options->need_avg_sep) {
+          rpavg[j] += all_rpavg[i][j];
+        }
+        if(need_weightavg) {
+          weightavg[j] += all_weightavg[i][j];
+        }
+      }
+    }
+    matrix_free((void **) all_npairs, numthreads);
+    if(options->need_avg_sep) {
+      matrix_free((void **) all_rpavg, numthreads);
+    }
+    if(need_weightavg) {
+      matrix_free((void **) all_weightavg, numthreads);
+    }
+#endif
+
+
+    //The code does not double count for autocorrelations
+    //which means the npairs and rpavg values need to be doubled;
+    if(autocorr == 1) {
+      const uint64_t int_fac = 2;
+      const DOUBLE dbl_fac = (DOUBLE) 2.0;
+
+      for(int i=0;i<nrpbin;i++) {
+        npairs[i] *= int_fac;
+        if(options->need_avg_sep) {
+          rpavg[i] *= dbl_fac;
+        }
+        if(need_weightavg) {
+          weightavg[i] *= dbl_fac;
+        }
+      }
+
+      /* Is the min. requested separation 0.0 ?*/
+      /* The comparison is '<=' rather than '==' only to silence
+         the compiler  */
+      if(rupp[0] <= 0.0) {
+          /* Then, add all the self-pairs. This ensures that 
+             a cross-correlation with two identical datasets 
+             produces the same result as the auto-correlation  */
+          npairs[1] += ND1; //npairs[1] contains the first valid bin.
+          
+          // Increasing npairs affects rpavg and weightavg.
+          // We don't need to add anything to rpavg; all the self-pairs have 0 separation!
+          // The self-pairs have non-zero weight, though.  So, fix that here.
+          if(need_weightavg){
+            // Keep in mind this is an autocorrelation (i.e. only one particle set to consider)
+            weight_func_t_DOUBLE weight_func = get_weight_func_by_method_DOUBLE(extra->weight_method);
+            pair_struct_DOUBLE pair = {.num_weights = extra->weights0.num_weights,
+                                       .dx.d=0., .dy.d=0., .dz.d=0.,  // always 0 separation
+                                       .parx.d=0., .pary.d=0., .parz.d=0.};
+            for(int j = 0; j < ND1; j++){
+                for(int w = 0; w < pair.num_weights; w++){
+                    pair.weights0[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
+                    pair.weights1[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
+                }
+                weightavg[1] += weight_func(&pair);
+            }
+          }
+      }
+    }
+    
+
+  for(int i=0;i<nrpbin;i++) {
+    if(npairs[i] > 0) {
+      if(options->need_avg_sep) {
+        rpavg[i] /= (DOUBLE) npairs[i] ;
+      }
+      if(need_weightavg) {
+        weightavg[i] /= (DOUBLE) npairs[i];
+      }
+    }
+  }
+
+    //Pack in the results
+    results->nbin = nrpbin;
+    results->npairs = my_malloc(sizeof(*(results->npairs)), nrpbin);
+    results->rupp   = my_malloc(sizeof(*(results->rupp))  , nrpbin);
+    results->rpavg  = my_calloc(sizeof(*(results->rpavg))  , nrpbin);
+    results->weightavg  = my_calloc(sizeof(*(results->weightavg))  , nrpbin);
+    if(results->npairs == NULL || results->rupp == NULL ||
+       results->rpavg == NULL || results->weightavg == NULL) {
+        free_results(results);
+        free(rupp);
+        return EXIT_FAILURE;
+    }
+
+    for(int i=0;i<nrpbin;i++) {
+      results->npairs[i] = npairs[i];
+      results->rupp[i] = rupp[i];
+      results->rpavg[i] = ZERO;
+      results->weightavg[i] = ZERO;
+      if(options->need_avg_sep) {
+        results->rpavg[i] = rpavg[i];
+      }
+      if(need_weightavg) {
+        results->weightavg[i] = weightavg[i];
+      }
+    }
+
+    /* only the rupp is left to be freed */
+    free(rupp);
+
+    /* reset interrupt handlers to default */
+    RESET_INTERRUPT_HANDLERS();
+    reset_bin_refine_factors(options);
+    
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
+    
+    return EXIT_SUCCESS;
+
+}

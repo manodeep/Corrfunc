@@ -3,8 +3,8 @@
 
 """
 Python wrapper around the C extension for the counts-in-cells
-for 3-D real space. Corresponding C codes are in `theory/vpf`
-while the python wrapper is in `~Corrfunc.theory.vpf`
+for 3-D real space. Corresponding C codes are in ``theory/vpf``
+while the python wrapper is in :py:mod:`Corrfunc.theory.vpf`.
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -17,7 +17,9 @@ __all__ = ('vpf', )
 def vpf(rmax, nbins, nspheres, numpN, seed,
         X, Y, Z,
         verbose=False, periodic=True, boxsize=0.0,
-        c_api_timer=False, isa='fastest'):
+        xbin_refine_factor=1, ybin_refine_factor=1,
+        zbin_refine_factor=1, max_cells_per_dim=100,
+        c_api_timer=False, isa=r'fastest'):
     """
     Function to compute the counts-in-cells on 3-D real-space points.
 
@@ -40,15 +42,25 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
        pN's.
 
     numpN: integer (>= 1)
-       Governs how many unique pN's are to returned. If ``numpN` is set to 1,
+       Governs how many unique pN's are to returned. If ``numpN`` is set to 1,
        then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
        returned.
 
        More explicitly, the columns in the results look like the following:
-         numpN = 1 -> p0
-         numpN = 2 -> p0 p1
-         numpN = 3 -> p0 p1 p2
-         and so on...(note that p0 is the vpf).
+
+         ======   ==========================
+         numpN    Columns in output
+         ======   ==========================
+            1      p0
+            2      p0      p1
+            3      p0      p1     p2
+            4      p0      p1     p2     p3
+         ======   ==========================
+
+       and so on...
+
+    
+    .. note:: p0 is the vpf
 
     seed: unsigned integer
        Random number seed for the underlying GSL random number generator. Used
@@ -75,6 +87,20 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
+
+    (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime. 
+
+
+    .. note:: Since the counts in spheres calculation is symmetric
+       in all 3 dimensions, the defaults are different from the clustering
+       routines.
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
+       too small relative to the boxsize (and increasing helps the runtime).
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -191,6 +217,10 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
                                       verbose=verbose,
                                       periodic=periodic,
                                       boxsize=boxsize,
+                                      xbin_refine_factor=xbin_refine_factor,
+                                      ybin_refine_factor=ybin_refine_factor,
+                                      zbin_refine_factor=zbin_refine_factor,
+                                      max_cells_per_dim=max_cells_per_dim,
                                       c_api_timer=c_api_timer,
                                       isa=integer_isa)
 

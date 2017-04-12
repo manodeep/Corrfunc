@@ -4,9 +4,9 @@ Converting :math:`(r_p, \pi)` pairs into a projected correlation function
 ==========================================================================
 
 Pair counts in :math:`(r_p, \pi)` can be converted into a projected correlation function
-by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
+by using the helper function :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp`.
 
-::
+.. code-block:: python
 
           >>> from Corrfunc.theory import DDrppi
           >>> from Corrfunc.io import read_catalog
@@ -26,7 +26,7 @@ by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
 
           # Setup the bins
           >>> nrpbins = 10
-          >>> bins = np.linspace(0.1, 10.0, nrpbins)
+          >>> bins = np.linspace(0.1, 10.0, nrpbins + 1)
 
           # Auto pair counts in DD          
           >>> autocorr=1
@@ -45,9 +45,9 @@ by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
           ...                   periodic=False, verbose=True)
 
           # All the pair counts are done, get the correlation function          
-          >>> wp = convert_rp_pi_counts_to_cf(N, N, rand_N, rand_N,
-          ...                                DD_counts, DR_counts,
-          ...                                DR_counts, RR_counts, nrpbins)
+          >>> wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
+          ...                                 DD_counts, DR_counts,
+          ...                                 DR_counts, RR_counts, nrpbins, pimax)
 
 See the complete reference here :py:mod:`Corrfunc`.  
 

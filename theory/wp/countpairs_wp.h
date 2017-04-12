@@ -22,6 +22,7 @@ extern "C" {
         double *wp;
         double *rupp;
         double *rpavg;
+        double *weightavg;
         double pimax;
         int nbin;
     } results_countpairs_wp;

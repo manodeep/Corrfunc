@@ -1,0 +1,10 @@
+// # -*- mode: c -*-
+#pragma once
+
+#include <stdint.h>
+
+typedef struct
+{
+    DOUBLE *weights[MAX_NUM_WEIGHTS];  // This will be of shape weights[num_weights][num_particles]
+    int64_t num_weights;
+} weight_struct_DOUBLE;

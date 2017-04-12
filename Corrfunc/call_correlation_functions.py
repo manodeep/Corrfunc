@@ -2,19 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-Example python code to call the theory correlation function
-extensions from python. (The codes are written in C)
-
-Author: Manodeep Sinha <manodeep@gmail.com>
-
-Requires: numpy
-
+Example python code to call the theory clustering functions
+from python. This script calls the python extensions directly;
+however the recommended use is via the wrappers provided
+in :py:mod:`Corrfunc.theory`.
 """
+
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from os.path import dirname, abspath, join as pjoin
 import time
+import numpy as np
 
 import Corrfunc
 from Corrfunc.io import read_catalog
@@ -47,58 +46,64 @@ def main():
 
     print("Running 3-D correlation function DD(r)")
     results_DD, _ = DD_extn(autocorr, nthreads, binfile, x, y, z,
+                            weights1=np.ones_like(x), weight_type='pair_product',
                             verbose=True, periodic=periodic, boxsize=boxsize)
     print("\n#      **** DD(r): first {0} bins  *******       "
           .format(numbins_to_print))
-    print("#      rmin        rmax       rpavg       npairs")
-    print("################################################")
+    print("#      rmin        rmax       rpavg       npairs    weightavg")
+    print("#############################################################")
     for ibin in range(numbins_to_print):
         items = results_DD[ibin]
-        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10d}"
-              .format(items[0], items[1], items[2], items[3]))
-    print("------------------------------------------------")
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10d} {4:10.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4]))
+    print("-------------------------------------------------------------")
 
     print("\nRunning 2-D correlation function DD(rp,pi)")
     results_DDrppi, _ = DDrppi_extn(autocorr, nthreads, pimax,
                                     binfile, x, y, z,
+                                    weights1=np.ones_like(x), weight_type='pair_product',
                                     verbose=True, periodic=periodic,
                                     boxsize=boxsize)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
-    print("#      rmin        rmax       rpavg     pi_upper     npairs")
-    print("###########################################################")
+    print("#      rmin        rmax       rpavg     pi_upper     npairs    weightavg")
+    print("########################################################################")
     for ibin in range(numbins_to_print):
         items = results_DDrppi[ibin]
-        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
-              .format(items[0], items[1], items[2], items[3], items[4]))
-    print("-----------------------------------------------------------")
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:10.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4], items[5]))
+    print("------------------------------------------------------------------------")
 
     print("\nRunning 2-D projected correlation function wp(rp)")
-    results_wp, _ = wp_extn(boxsize, pimax, nthreads,
-                            binfile, x, y, z, verbose=True)
+    results_wp, _, _ = wp_extn(boxsize, pimax, nthreads,
+                            binfile, x, y, z,
+                            weights=np.ones_like(x), weight_type='pair_product',
+                            verbose=True)
     print("\n#            ******    wp: first {0} bins  *******         "
           .format(numbins_to_print))
-    print("#      rmin        rmax       rpavg        wp       npairs")
-    print("##########################################################")
+    print("#      rmin        rmax       rpavg        wp       npairs    weightavg")
+    print("#######################################################################")
     for ibin in range(numbins_to_print):
         items = results_wp[ibin]
-        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
-              .format(items[0], items[1], items[2], items[3], items[4]))
-    print("-----------------------------------------------------------")
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:10.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4], items[5]))
+    print("-----------------------------------------------------------------------")
 
     print("\nRunning 3-D auto-correlation function xi(r)")
     results_xi, _ = xi_extn(boxsize, nthreads, binfile,
-                            x, y, z, verbose=True)
+                            x, y, z,
+                            weights=np.ones_like(x), weight_type='pair_product',
+                            verbose=True)
 
     print("\n#            ******    xi: first {0} bins  *******         "
           .format(numbins_to_print))
-    print("#      rmin        rmax       rpavg        xi       npairs")
-    print("##########################################################")
+    print("#      rmin        rmax       rpavg        xi       npairs    weightavg")
+    print("#######################################################################")
     for ibin in range(numbins_to_print):
         items = results_xi[ibin]
-        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
-              .format(items[0], items[1], items[2], items[3], items[4]))
-    print("-----------------------------------------------------------")
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:10.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4], items[5]))
+    print("-----------------------------------------------------------------------")
     print("Done with all four correlation calculations.")
 
     print("\nRunning VPF pN(r)")

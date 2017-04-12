@@ -135,10 +135,10 @@ int main(int argc, char **argv)
         gettimeofday(&t0,NULL);
 #if defined(_OPENMP)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf %d'" ANSI_COLOR_RESET "\n",
-                "../xi_rp_pi/DDrppi",file,fileformat,file,fileformat,binfile,pimax,nthreads);
+                "../DDrppi/DDrppi",file,fileformat,file,fileformat,binfile,pimax,nthreads);
 #else
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(rp,pi) calculation would be:\n `%s %s %s %s %s %s %lf'" ANSI_COLOR_RESET "\n",
-                "../xi_rp_pi/DDrppi",file,fileformat,file,fileformat,binfile,pimax);
+                "../DDrppi/DDrppi",file,fileformat,file,fileformat,binfile,pimax);
 #endif
 
         results_countpairs_rp_pi results;
@@ -180,10 +180,10 @@ int main(int argc, char **argv)
         gettimeofday(&t0,NULL);
 #if defined(_OPENMP)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
-                "../xi_of_r/DD",file,fileformat,file,fileformat,binfile,nthreads);
+                "../DD/DD",file,fileformat,file,fileformat,binfile,nthreads);
 #else
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s'" ANSI_COLOR_RESET "\n",
-                "../xi_of_r/DD",file,fileformat,file,fileformat,binfile);
+                "../DD/DD",file,fileformat,file,fileformat,binfile);
 #endif
         
         results_countpairs results;

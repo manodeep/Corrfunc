@@ -1,0 +1,111 @@
+// # -*- mode: c -*-
+#pragma once
+
+#include "defs.h"
+#include "weight_defs_DOUBLE.h"
+
+#ifdef __AVX__
+#include "avx_calls.h"
+#endif
+
+#ifdef __SSE4_2__
+#include "sse_calls.h"
+#endif
+
+#include <stdint.h>
+
+typedef union {
+#ifdef __AVX__
+    AVX_FLOATS a;
+#endif
+#ifdef __SSE4_2__
+    SSE_FLOATS s;
+#endif
+    DOUBLE d;
+} weight_union_DOUBLE;
+
+// Info about a particle pair that we will pass to the weight function
+typedef struct
+{
+    weight_union_DOUBLE weights0[MAX_NUM_WEIGHTS];
+    weight_union_DOUBLE weights1[MAX_NUM_WEIGHTS];
+    weight_union_DOUBLE dx, dy, dz;
+    
+    // These will only be present for mock catalogs
+    weight_union_DOUBLE parx, pary, parz;
+    
+    int64_t num_weights;
+} pair_struct_DOUBLE;
+
+typedef DOUBLE (*weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
+#ifdef __AVX__
+typedef AVX_FLOATS (*avx_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
+#endif
+#ifdef __SSE4_2__
+typedef SSE_FLOATS (*sse_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
+#endif
+
+//////////////////////////////////
+// Weighting functions
+//////////////////////////////////
+
+/*
+ * The pair weight is the product of the particle weights
+ */
+static inline DOUBLE pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+    return pair->weights0[0].d*pair->weights1[0].d;
+}
+
+#ifdef __AVX__
+static inline AVX_FLOATS avx_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+    return AVX_MULTIPLY_FLOATS(pair->weights0[0].a, pair->weights1[0].a);
+}
+#endif
+
+#ifdef __SSE4_2__
+static inline SSE_FLOATS sse_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+    return SSE_MULTIPLY_FLOATS(pair->weights0[0].s, pair->weights1[0].s);
+}
+#endif
+
+//////////////////////////////////
+// Utility functions
+//////////////////////////////////
+
+
+/* Gives a pointer to the weight function for the given weighting method
+ * and instruction set.
+ */
+static inline weight_func_t_DOUBLE get_weight_func_by_method_DOUBLE(const weight_method_t method){
+    switch(method){
+        case PAIR_PRODUCT:
+            return &pair_product_DOUBLE;
+        default:
+        case NONE:
+            return NULL;
+    }
+}
+
+#ifdef __AVX__
+static inline avx_weight_func_t_DOUBLE get_avx_weight_func_by_method_DOUBLE(const weight_method_t method){
+    switch(method){
+        case PAIR_PRODUCT:
+            return &avx_pair_product_DOUBLE;
+        default:
+        case NONE:
+            return NULL;
+    }
+}
+#endif
+
+#ifdef __SSE4_2__
+static inline sse_weight_func_t_DOUBLE get_sse_weight_func_by_method_DOUBLE(const weight_method_t method){
+    switch(method){
+        case PAIR_PRODUCT:
+            return &sse_pair_product_DOUBLE;
+        default:
+        case NONE:
+            return NULL;
+    }
+}
+#endif

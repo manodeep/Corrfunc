@@ -12,6 +12,9 @@ from os.path import dirname, abspath, splitext, exists as file_exists,\
 import numpy as np
 
 
+__all__ = ('read_fastfood_catalog', 'read_ascii_catalog', 'read_catalog')
+
+
 def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
     """
     Read a galaxy catalog from a fast-food binary file.
@@ -91,7 +94,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
         print("\n\tPlease run python setup.py install before using "
               "the 'Corrfunc' package\n")
         raise
-    
+
     with open(filename, "rb") as f:
         skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
         idat = struct.unpack(bytes_to_native_str(b'@iiiii'),
@@ -234,12 +237,12 @@ def read_ascii_catalog(filename, return_dtype=None):
         z = np.asarray(df[2], dtype=return_dtype)
 
     else:
-        x, y, z = np.genfromtxt(filename, dtype=return_dtype, unpack=True)
+        x, y, z, _ = np.genfromtxt(filename, dtype=return_dtype, unpack=True)
 
     return x, y, z
 
 
-def read_catalog(filebase=None):
+def read_catalog(filebase=None, return_dtype=np.float):
     """
     Reads a galaxy/randoms catalog and returns 3 XYZ arrays.
 
@@ -250,21 +253,26 @@ def read_catalog(filebase=None):
         The fully qualified path to the file. If omitted, reads the
         theory galaxy catalog under ../theory/tests/data/
 
+    return_dtype: numpy dtype for returned arrays. Default ``numpy.float``
+        Specifies the datatype for the returned arrays. Must be in
+        {np.float, np.float32}
+
     Returns
     --------
 
     ``x y z`` - Unpacked numpy arrays compatible with the installed
     version of ``Corrfunc``.
 
-    **Note** If the filename is omitted, then first the fast-food file
-    is searched for, and then the ascii file. End-users should always
-    supply the full filename.
+
+    .. note:: If the filename is omitted, then first the fast-food file
+        is searched for, and then the ascii file. End-users should always
+        supply the full filename.
+
     """
 
     if filebase is None:
         filename = pjoin(dirname(abspath(__file__)),
                          "../theory/tests/data/", "gals_Mr19")
-        dtype = np.float
         allowed_exts = {'.ff': read_fastfood_catalog,
                         '.txt': read_ascii_catalog,
                         '.dat': read_ascii_catalog,
@@ -274,7 +282,7 @@ def read_catalog(filebase=None):
         for e in allowed_exts:
             if file_exists(filename + e):
                 f = allowed_exts[e]
-                x, y, z = f(filename + e, dtype)
+                x, y, z = f(filename + e, return_dtype)
                 return x, y, z
 
         raise IOError("Could not locate {0} with any of these extensions \
@@ -286,7 +294,7 @@ def read_catalog(filebase=None):
             f = read_fastfood_catalog if '.ff' in extension else read_ascii_catalog
 
             # default return is double
-            x, y, z = f(filebase, np.float)
+            x, y, z = f(filebase, return_dtype)
             return x, y, z
 
         raise IOError("Could not locate file {0}".format(filebase))

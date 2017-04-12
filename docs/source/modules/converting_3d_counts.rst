@@ -4,11 +4,11 @@ Converting 3D pair counts into a correlation function
 ======================================================
 
 3D pair counts can be converted into a correlation function
-by using the helper function `Corrfunc.utils.convert_3d_counts_to_cf`.
+by using the helper function :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf`.
 First, we have to compute the relevant pair counts using the python
-wrapper `Corrfunc.theory.DD`
+wrapper :py:mod:`Corrfunc.theory.DD`
 
-::
+.. code-block:: python
 
           >>> import numpy as np
           >>> from os.path import dirname, abspath, join as pjoin
@@ -28,7 +28,8 @@ wrapper `Corrfunc.theory.DD`
           >>> rand_Z = np.random.uniform(0, boxsize, rand_N)
 
           # Setup the bins
-          >>> bins = np.linspace(0.1, 10.0, 10)
+          >>> nbins = 10
+          >>> bins = np.linspace(0.1, 10.0, nbins + 1) # note that +1 to nbins
               
           # Auto pair counts in DD
           >>> autocorr=1

@@ -4,12 +4,12 @@ Calculating the angular correlation function, :math:`\omega(\theta)`
 ====================================================================
 
 Angular pair counts can be converted into a :math:`\omega(\theta)`
-by using the helper function `Corrfunc.utils.convert_3d_counts_to_cf`.
+by using the helper function :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf`.
 First, we have to compute the relevant pair counts using the python
-wrapper `Corrfunc.mocks.DDtheta_mocks`
+wrapper :py:mod:`Corrfunc.mocks.DDtheta_mocks`
 
 
-::
+.. code-block:: python
 
           >>> from os.path import dirname, abspath, join as pjoin
           >>> import Corrfunc
@@ -30,7 +30,8 @@ wrapper `Corrfunc.mocks.DDtheta_mocks`
           >>> rand_RA, rand_DEC, _ = read_catalog(random_catalog)
           
           # Setup the bins
-          >>> bins = np.linspace(0.1, 10.0, 10)
+          >>> nbins = 10
+          >>> bins = np.linspace(0.1, 10.0, nbins + 1) # note the +1 to nbins
 
           # Auto pair counts in DD
           >>> autocorr=1

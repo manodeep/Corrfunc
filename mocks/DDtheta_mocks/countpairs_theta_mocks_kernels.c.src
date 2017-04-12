@@ -1,0 +1,680 @@
+// # -*- mode: c -*-
+/* File: countpairs_theta_mocks_kernels.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <inttypes.h>
+
+#include "defs.h"
+#include "function_precision.h"
+#include "fast_acos.h"
+#include "utils.h"
+
+#include "weight_functions_DOUBLE.h"
+
+
+
+static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                         const int same_cell,
+                                                         const int order,
+                                                         const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
+                                                         const DOUBLE *costheta_upp, 
+                                                         DOUBLE *src_rpavg,
+                                                         uint64_t *src_npairs,
+                                                         DOUBLE *src_weightavg, const weight_method_t weight_method)
+{
+    if(N0 == 0 || N1 == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        if(need_rpavg) {
+            thetaavg[i] = ZERO;
+        }
+        if(need_weightavg){
+            weightavg[i]=ZERO;
+        }
+    }
+
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
+                         local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    weight_func_t_DOUBLE weight_func = NULL;
+    if(need_weightavg){
+        // Same particle list, new copy of num_weights pointers into that list
+        local_w0 = *weights0;
+        local_w1 = *weights1;
+
+        pair.num_weights = local_w0.num_weights;
+
+        weight_func = get_weight_func_by_method_DOUBLE(weight_method);
+    }
+
+    for(int64_t i=0;i<N0;i++) {
+      const DOUBLE xpos = *x0++;
+      const DOUBLE ypos = *y0++;
+      const DOUBLE zpos = *z0++;
+      for(int w = 0; w < pair.num_weights; w++){
+          pair.weights0[w].d = *local_w0.weights[w]++;
+      }
+
+      int64_t j = (same_cell == 1) ? (i+1):0;
+      DOUBLE *localz1 = z1 + j;
+      DOUBLE *localx1 = x1 + j;
+      DOUBLE *localy1 = y1 + j;
+      for(int w = 0; w < pair.num_weights; w++){
+          local_w1.weights[w] = weights1->weights[w] + j;
+      }
+
+      for(;j<N1;j++) {
+          const DOUBLE x2 = *localx1++;
+          const DOUBLE y2 = *localy1++;
+          const DOUBLE z2 = *localz1++;
+          
+          const DOUBLE dx1_dx2 = xpos * x2;
+          const DOUBLE dy1_dy2 = ypos * y2;
+          const DOUBLE dz1_dz2 = zpos * z2;
+          
+          for(int w = 0; w < pair.num_weights; w++){
+              pair.weights1[w].d = *local_w1.weights[w]++;
+          }
+
+          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
+          if(costheta > costhetamin || costheta <= costhetamax) {
+              continue;
+          }
+          DOUBLE theta, pairweight;
+          if(need_rpavg) {
+              if(order) {
+                  theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
+              } else {
+                  theta =  INV_PI_OVER_180*ACOS(costheta);                
+              }
+          }
+          if(need_weightavg){
+              // These are only used for passing to weights
+              // Too expensive?
+          
+              // perpx
+              pair.dx.d = xpos - x2;
+              pair.dy.d = ypos - y2;
+              pair.dz.d = zpos - z2;
+              
+              // parx
+              pair.parx.d = xpos + x2;
+              pair.pary.d = ypos + y2;
+              pair.parz.d = zpos + z2;
+                                
+              pairweight = weight_func(&pair);
+          }
+          
+          for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+              if(costheta <= costheta_upp[ibin-1]) {
+                  npairs[ibin]++;
+                  if(need_rpavg) {
+                      thetaavg[ibin] += theta;
+                  }
+                  if(need_weightavg){
+                      weightavg[ibin] += pairweight;
+                  }
+                  break;
+              }
+          }//ibin loop
+      }//end of j-loop
+    }//i loop
+
+    for(int i=0;i<nthetabin;i++) {
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i] += thetaavg[i];
+        }
+        if(need_weightavg){
+            src_weightavg[i] += weightavg[i];
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+
+#if defined(__AVX__)
+#include "avx_calls.h"
+
+static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                                const int same_cell, 
+                                                                const int order,
+                                                                const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
+                                                                const DOUBLE *costheta_upp, 
+                                                                DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                                                DOUBLE *src_weightavg, const weight_method_t weight_method)
+{
+    if(N0 == 0 || N1 == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    if(N1 < 2*AVX_NVEC) {
+      return countpairs_theta_mocks_fallback_DOUBLE(N0, x0, y0, z0, weights0,
+                                                    N1, x1, y1, z1, weights1,
+                                                    same_cell, order, costhetamax, costhetamin, nthetabin,
+                                                    costheta_upp, src_rpavg, src_npairs, src_weightavg, weight_method);
+    }
+
+    
+    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
+    AVX_FLOATS m_kbin[nthetabin];
+    AVX_FLOATS m_costheta_upp[nthetabin] ;
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        m_costheta_upp[i] = AVX_SET_FLOAT(costheta_upp[i]);
+        m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
+        if(need_rpavg) {
+            thetaavg[i] = ZERO;
+        }
+        if(need_weightavg){
+            weightavg[i] = ZERO;
+        }
+    }
+    
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
+                         local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    avx_weight_func_t_DOUBLE avx_weight_func = NULL;
+    weight_func_t_DOUBLE fallback_weight_func = NULL;
+    if(need_weightavg){
+        // Same particle list, new copy of num_weights pointers into that list
+        local_w0 = *weights0;
+        local_w1 = *weights1;
+
+        pair.num_weights = local_w0.num_weights;
+
+        avx_weight_func = get_avx_weight_func_by_method_DOUBLE(weight_method);
+        fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
+    }
+
+    for(int64_t i=0;i<N0;i++) {
+      const DOUBLE xpos = *x0++;
+      const DOUBLE ypos = *y0++;
+      const DOUBLE zpos = *z0++;
+      for(int w = 0; w < pair.num_weights; w++){
+            // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+            pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
+      }
+      
+      const AVX_FLOATS m_x1 = AVX_SET_FLOAT(xpos);
+      const AVX_FLOATS m_y1 = AVX_SET_FLOAT(ypos);
+      const AVX_FLOATS m_z1 = AVX_SET_FLOAT(zpos);
+
+      int64_t j = (same_cell == 1) ? (i + 1):0;
+      DOUBLE *localz1 = z1 + j;
+      DOUBLE *localx1 = x1 + j;
+      DOUBLE *localy1 = y1 + j;
+      for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + j;
+      }
+     
+      for(;j<=(N1-AVX_NVEC);j+=AVX_NVEC){
+          union int8 {
+              AVX_INTS m_ibin;
+              int ibin[NVEC];
+          };
+          union int8 union_rpbin;
+          
+          union float8{
+              AVX_FLOATS m_Dperp;
+              DOUBLE Dperp[NVEC];
+          };
+          union float8 union_mDperp;
+
+          const AVX_FLOATS m_costhetamax=AVX_SET_FLOAT(costhetamax);
+          const AVX_FLOATS m_costhetamin = AVX_SET_FLOAT(costhetamin);
+              
+          const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
+          const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
+          const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
+
+          localx1 += AVX_NVEC;
+          localy1 += AVX_NVEC;
+          localz1 += AVX_NVEC;
+          
+          for(int w = 0; w < pair.num_weights; w++){
+              pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+              local_w1.weights[w] += AVX_NVEC;
+          }
+           
+          union float8_weights{
+              AVX_FLOATS m_weights;
+              DOUBLE weights[NVEC];
+          };
+          union float8_weights union_mweight;
+
+          const AVX_FLOATS m_tmp1 = AVX_MULTIPLY_FLOATS(m_x2,m_x1);
+          const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_y2,m_y1);
+          const AVX_FLOATS m_tmp3 = AVX_MULTIPLY_FLOATS(m_z2,m_z1);
+          const AVX_FLOATS m_costheta = AVX_ADD_FLOATS(m_tmp1,AVX_ADD_FLOATS(m_tmp2,m_tmp3));
+          
+          AVX_FLOATS m_mask_left = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_costheta,m_costhetamax,_CMP_GT_OS),
+                                                   AVX_COMPARE_FLOATS(m_costheta,m_costhetamin,_CMP_LE_OS));
+          if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+              continue;
+          }
+          
+          AVX_FLOATS m_thetabin;
+          if(need_rpavg || need_weightavg) {
+              m_thetabin = AVX_SET_FLOAT((DOUBLE) 0.0);
+          }
+          if(need_rpavg){
+              //first do the acos to get the actual angles
+              const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
+              const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta, order);
+              union_mDperp.m_Dperp = AVX_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
+              
+          }
+          
+          if(need_weightavg){
+              // These are only used for passing to weights
+              // Too expensive?
+
+              // perpx
+              pair.dx.a = AVX_SUBTRACT_FLOATS(m_x1,m_x2);
+              pair.dy.a = AVX_SUBTRACT_FLOATS(m_y1,m_y2);
+              pair.dz.a = AVX_SUBTRACT_FLOATS(m_z1,m_z2);
+              
+              // parx
+              pair.parx.a = AVX_ADD_FLOATS(m_x2,m_x1);
+              pair.pary.a = AVX_ADD_FLOATS(m_y2,m_y1);
+              pair.parz.a = AVX_ADD_FLOATS(m_z2,m_z1);
+
+              union_mweight.m_weights = avx_weight_func(&pair);
+          }
+          
+          
+          for(int kbin=nthetabin-1;kbin>=1;kbin--) {
+              const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OS);
+              const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+              const int test = AVX_TEST_COMPARISON(m_bin_mask);
+              if(need_rpavg || need_weightavg) {
+                  m_thetabin = AVX_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
+              }
+              
+              npairs[kbin] += AVX_BIT_COUNT_INT(test);
+              m_mask_left = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_GT_OS);
+              if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+                  break;
+              }
+          }
+          
+          if(need_rpavg || need_weightavg) {
+              union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_thetabin);
+#if  __INTEL_COMPILER
+#pragma unroll(AVX_NVEC)
+#endif
+              for(int jj=0;jj<AVX_NVEC;jj++) {
+                  const int kbin = union_rpbin.ibin[jj];
+                  if(need_rpavg){
+                      const DOUBLE theta = union_mDperp.Dperp[jj];
+                      thetaavg[kbin] += theta;
+                  }
+                  if(need_weightavg){
+                      const DOUBLE weight = union_mweight.weights[jj];
+                      weightavg[kbin] += weight;
+                  }
+              }
+          }
+      }//AVX_NVEC loop
+
+      //Take care of the remainder
+      for(;j<N1;j++) {
+          const DOUBLE x2 = *localx1++;
+          const DOUBLE y2 = *localy1++;
+          const DOUBLE z2 = *localz1++;
+          
+          const DOUBLE dx1_dx2 = xpos * x2;
+          const DOUBLE dy1_dy2 = ypos * y2;
+          const DOUBLE dz1_dz2 = zpos * z2;
+          for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
+          }
+          
+          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
+          if(costheta > costhetamin || costheta <= costhetamax) {
+              continue;
+          }
+          DOUBLE theta, pairweight;
+          if(need_rpavg) {
+              if(order) {
+                  theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
+              } else {
+                  theta =  INV_PI_OVER_180*ACOS(costheta) ;
+              }
+          }
+          if(need_weightavg){
+                pair.dx.d = xpos - x2;
+                pair.dy.d = ypos - y2;
+                pair.dz.d = zpos - z2;
+                
+                pair.parx.d = xpos + x2;
+                pair.pary.d = ypos + y2;
+                pair.parz.d = zpos + z2;
+
+                pairweight = fallback_weight_func(&pair);
+            }
+          
+          for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+              if(costheta <= costheta_upp[ibin-1]) {
+                  npairs[ibin]++;
+                  if(need_rpavg) {
+                      thetaavg[ibin] += theta;
+                  }
+                  if(need_weightavg){
+                      weightavg[ibin] += pairweight;
+                  }
+                  break;
+              }
+          }
+      }//end of remainder loop
+    }//i loop
+    
+    for(int i=0;i<nthetabin;i++) {
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i] += thetaavg[i];
+        }
+        if(need_weightavg) {
+            src_weightavg[i] += weightavg[i];
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+#endif //AVX
+
+
+#if defined(__SSE4_2__)
+#include "sse_calls.h"
+
+static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                                const int same_cell,
+                                                                const int order,
+                                                                const DOUBLE costhetamax, const DOUBLE costhetamin,  const int nthetabin,
+                                                                const DOUBLE *costheta_upp, 
+                                                                DOUBLE *src_rpavg,
+                                                                uint64_t *src_npairs,
+                                                                DOUBLE *src_weightavg, const weight_method_t weight_method)
+{
+    if(N0 == 0 || N1 == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+
+
+    if(N1 < 2*SSE_NVEC) {
+      return countpairs_theta_mocks_fallback_DOUBLE(N0, x0, y0, z0, weights0,
+                                                    N1, x1, y1, z1, weights1,
+                                                    same_cell, order, costhetamax, costhetamin, nthetabin,
+                                                    costheta_upp, src_rpavg, src_npairs, src_weightavg, weight_method);
+    }
+    
+    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
+    uint64_t npairs[nthetabin];
+    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
+    SSE_FLOATS m_costheta_upp[nthetabin] ;
+    for(int i=0;i<nthetabin;i++) {
+        npairs[i] = 0;
+        m_costheta_upp[i] = SSE_SET_FLOAT(costheta_upp[i]);
+    }
+
+    SSE_FLOATS m_kbin[nthetabin];
+    if(need_rpavg || need_weightavg) {
+        for(int i=0;i<nthetabin;i++) {
+            m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
+            if(need_rpavg){
+                thetaavg[i] = ZERO;
+            }
+            if(need_weightavg){
+                weightavg[i] = ZERO;
+            }
+        }
+    }
+    
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
+                         local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    sse_weight_func_t_DOUBLE sse_weight_func = NULL;
+    weight_func_t_DOUBLE fallback_weight_func = NULL;
+    if(need_weightavg){
+      // Same particle list, new copy of num_weights pointers into that list
+      local_w0 = *weights0;
+      local_w1 = *weights1;
+      
+      pair.num_weights = local_w0.num_weights;
+      
+      sse_weight_func = get_sse_weight_func_by_method_DOUBLE(weight_method);
+      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
+    }
+
+    for(int64_t i=0;i<N0;i++) {
+      const DOUBLE xpos = *x0++;
+      const DOUBLE ypos = *y0++;
+      const DOUBLE zpos = *z0++;
+      for(int w = 0; w < pair.num_weights; w++){
+            // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+            pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
+      }
+      
+      const SSE_FLOATS m_x1 = SSE_SET_FLOAT(xpos);
+      const SSE_FLOATS m_y1 = SSE_SET_FLOAT(ypos);
+      const SSE_FLOATS m_z1 = SSE_SET_FLOAT(zpos);
+      
+      int64_t j = (same_cell == 1) ? (i+1):0;
+      DOUBLE *localz1 = z1 + j;
+      DOUBLE *localx1 = x1 + j;
+      DOUBLE *localy1 = y1 + j;
+      for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + j;
+        }
+
+      for(;j<=(N1-SSE_NVEC);j+=SSE_NVEC){
+          union int4 {
+              SSE_INTS m_ibin;
+              int ibin[NVEC];
+          };
+          union int4 union_rpbin;
+          
+          union float4{
+              SSE_FLOATS m_Dperp;
+              DOUBLE Dperp[NVEC];
+          };
+          union float4 union_mDperp;
+
+          const SSE_FLOATS m_costhetamax=SSE_SET_FLOAT(costhetamax);
+          const SSE_FLOATS m_costhetamin=SSE_SET_FLOAT(costhetamin);
+          
+          const SSE_FLOATS m_x2 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
+          const SSE_FLOATS m_y2 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
+          const SSE_FLOATS m_z2 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
+          
+          localx1 += SSE_NVEC;localy1 += SSE_NVEC;localz1 += SSE_NVEC;
+          
+          for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+                local_w1.weights[w] += SSE_NVEC;
+          }
+          
+          union float4_weights{
+                SSE_FLOATS m_weights;
+                DOUBLE weights[SSE_NVEC];
+            };
+          union float4_weights union_mweight;
+          
+          const SSE_FLOATS m_tmp1 = SSE_MULTIPLY_FLOATS(m_x2,m_x1);
+          const SSE_FLOATS m_tmp2 = SSE_MULTIPLY_FLOATS(m_y2,m_y1);
+          const SSE_FLOATS m_tmp3 = SSE_MULTIPLY_FLOATS(m_z2,m_z1);
+          const SSE_FLOATS m_costheta = SSE_ADD_FLOATS(m_tmp1,SSE_ADD_FLOATS(m_tmp2,m_tmp3));
+          SSE_FLOATS m_mask_left = SSE_BITWISE_AND(SSE_COMPARE_FLOATS_GT(m_costheta,m_costhetamax),
+                                                   SSE_COMPARE_FLOATS_LE(m_costheta,m_costhetamin));
+          if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
+              continue;
+          }
+          
+          SSE_FLOATS m_thetabin;
+          if(need_rpavg || need_weightavg){
+              m_thetabin = SSE_SET_FLOAT((DOUBLE) 0.0);
+          }
+          if(need_rpavg) {
+              //first do the acos to get the actual angles
+              const SSE_FLOATS m_inv_pi_over_180 = SSE_SET_FLOAT(INV_PI_OVER_180);
+              const SSE_FLOATS m_theta = SSE_ARC_COSINE(m_costheta, order);
+              union_mDperp.m_Dperp = SSE_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
+          }
+          if(need_weightavg){
+              // These are only used for passing to weights
+              // Too expensive?
+
+              // perpx
+              pair.dx.s = SSE_SUBTRACT_FLOATS(m_x1,m_x2);
+              pair.dy.s = SSE_SUBTRACT_FLOATS(m_y1,m_y2);
+              pair.dz.s = SSE_SUBTRACT_FLOATS(m_z1,m_z2);
+              
+              // parx
+              pair.parx.s = SSE_ADD_FLOATS(m_x2,m_x1);
+              pair.pary.s = SSE_ADD_FLOATS(m_y2,m_y1);
+              pair.parz.s = SSE_ADD_FLOATS(m_z2,m_z1);
+
+              union_mweight.m_weights = sse_weight_func(&pair);
+          }
+          
+          for(int kbin=nthetabin-1;kbin>=1;kbin--) {
+              const SSE_FLOATS m1 = SSE_COMPARE_FLOATS_LE(m_costheta,m_costheta_upp[kbin-1]);
+              const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m1,m_mask_left);
+              const int test = SSE_TEST_COMPARISON(m_bin_mask);
+              if(need_rpavg || need_weightavg) {
+                  m_thetabin = SSE_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
+              }
+              
+              npairs[kbin] += SSE_BIT_COUNT_INT(test);
+              m_mask_left = SSE_COMPARE_FLOATS_GT(m_costheta,m_costheta_upp[kbin-1]);
+              if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
+                  break;
+              }
+          }
+          
+          if(need_rpavg || need_weightavg) {
+              union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_thetabin);
+#if  __INTEL_COMPILER
+#pragma unroll(SSE_NVEC)
+#endif
+              for(int jj=0;jj<SSE_NVEC;jj++) {
+                  const int kbin = union_rpbin.ibin[jj];
+                  if(need_rpavg){
+                      const DOUBLE theta = union_mDperp.Dperp[jj];
+                      thetaavg[kbin] += theta;
+                  }
+                  if(need_weightavg){
+                      const DOUBLE weight = union_mweight.weights[jj];
+                      weightavg[kbin] += weight;
+                  }
+              }
+          }
+      }//SSE_NVEC loop
+        
+      //Take care of the remainder
+      for(;j<N1;j++) {
+          const DOUBLE x2 = *localx1++;
+          const DOUBLE y2 = *localy1++;
+          const DOUBLE z2 = *localz1++;
+          for(int w = 0; w < pair.num_weights; w++){
+              pair.weights1[w].d = *local_w1.weights[w]++;
+          }
+          
+          const DOUBLE dx1_dx2 = xpos * x2;
+          const DOUBLE dy1_dy2 = ypos * y2;
+          const DOUBLE dz1_dz2 = zpos * z2;
+          
+          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
+          if(costheta > costhetamin || costheta <= costhetamax) {
+              continue;
+          }
+          DOUBLE theta, pairweight;
+          if(need_rpavg) {
+              if(order) {
+                theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
+              } else {
+                theta =  INV_PI_OVER_180*ACOS(costheta) ;
+              }
+          }
+          if(need_weightavg){
+              pair.dx.d = xpos - x2;
+              pair.dy.d = ypos - y2;
+              pair.dz.d = zpos - z2;
+                
+              pair.parx.d = xpos + x2;
+              pair.pary.d = ypos + y2;
+              pair.parz.d = zpos + z2;
+
+              pairweight = fallback_weight_func(&pair);
+          }
+
+          
+          for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+              if(costheta <= costheta_upp[ibin-1]) {
+                  npairs[ibin]++;
+                  if(need_rpavg) {
+                      thetaavg[ibin] += theta;
+                  }
+                  if(need_weightavg){
+                      weightavg[ibin] += pairweight;
+                  }
+                  break;
+              }
+          }
+      }//end of remainder loop
+    }//i loop
+    
+    for(int i=0;i<nthetabin;i++) {
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i] += thetaavg[i];
+        }
+        if(need_weightavg) {
+            src_weightavg[i] += weightavg[i];
+        }
+    }
+    return EXIT_SUCCESS;
+}
+#endif //SSE4.2

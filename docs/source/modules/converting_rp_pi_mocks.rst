@@ -3,12 +3,12 @@
 Calculating the projected correlation function, :math:`wp(rp)`
 ==============================================================
 
-Angular pair counts can be converted into a :math:`wp(rp)`
-by using the helper function `Corrfunc.utils.convert_rp_pi_counts_to_wp`.
+2-D Pair counts can be converted into a :math:`wp(rp)`
+by using the helper function :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp`.
 First, we have to compute the relevant pair counts using the python
-wrapper `Corrfunc.mocks.DDrppi_mocks`
+wrapper :py:mod:`Corrfunc.mocks.DDrppi_mocks`
 
-::
+.. code-block:: python
 
           >>> import numpy as np
           >>> from os.path import dirname, abspath, join as pjoin          
@@ -32,7 +32,7 @@ wrapper `Corrfunc.mocks.DDrppi_mocks`
           
           # Setup the bins
           >>> nbins = 10
-          >>> bins = np.linspace(0.1, 20.0, nbins)
+          >>> bins = np.linspace(0.1, 20.0, nbins + 1)
           >>> pimax = 40.0
 
           >>> cosmology = 1
@@ -58,8 +58,8 @@ wrapper `Corrfunc.mocks.DDrppi_mocks`
 
           # All the pair counts are done, get the angular correlation function
           >>> wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
-          ...                                DD_counts, DR_counts,
-          ...                                DR_counts, RR_counts, nbins)
+          ...                                 DD_counts, DR_counts,
+          ...                                 DR_counts, RR_counts, nbins, pimax)
 
 See the complete reference here :py:mod:`Corrfunc`.
    

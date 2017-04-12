@@ -27,29 +27,26 @@ PYTHON_CONFIG_EXE:=
 ## Set OpenMP for both theory and mocks
 OPT += -DUSE_OMP
 
-CONDA_BUILD ?=0
 
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=2
 MINOR:=0
-PATCHLEVEL:=0
+PATCHLEVEL:=1
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 ABI_COMPAT_VERSION:=$(MAJOR).0
+# Whenever conda needs to be checked again
+# this ':' should be replaced by '?'
+CONDA_BUILD :=0
 DO_CHECKS := 1
-ifeq (clean,$(findstring clean,$(MAKECMDGOALS)))
+
+CLEAN_CMDS := celan celna clean clena distclean realclean
+ifneq ($(filter $(CLEAN_CMDS),$(MAKECMDGOALS)),)
   DO_CHECKS := 0
 endif
 
-ifeq (distclean,$(findstring distclean,$(MAKECMDGOALS)))
-  DO_CHECKS := 0
-endif
 
-ifeq (realclean,$(findstring realclean,$(MAKECMDGOALS)))
-  DO_CHECKS := 0
-endif
-
-## Only set everything if the command is not "make clean"
+## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
   UNAME := $(shell uname)
   ## Colored text output
@@ -62,6 +59,10 @@ ifeq ($(DO_CHECKS), 1)
   ifeq ($(TRAVIS_OS_NAME), linux)
     ECHO_COMMAND := echo
   endif 
+
+  ifneq ($(UNAME), Darwin)
+    CLINK += -lrt # need real time library for the nano-second timers. Not required on OSX
+  endif
 
   ccred:=$(shell $(ECHO_COMMAND) "\033[0;31m")
   ccmagenta:=$(shell $(ECHO_COMMAND) "\033[0;35m")
@@ -380,32 +381,35 @@ ifeq ($(DO_CHECKS), 1)
       export PYTHON_CFLAGS := $(PYTHON_CONFIG_INCL) $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print('-isystem ' + numpy.__path__[0] + '/core/include/numpy/')")
       export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
       export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
-      export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+      export PYTHON_LINK :=
+      # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
+      # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
       SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))")
-      ifndef SOABI
-        PYTHON_SOABI = 
-      else
-        PYTHON_SOABI = .$(SOABI)
+      export PYTHON_SOABI := 
+      ifdef SOABI
+        ifneq ($(SOABI), None)
+          PYTHON_SOABI = .$(SOABI)
+        endif
       endif
       export PYTHON_SOABI
-      export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
+      # export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
 
       ### Check if conda is being used on OSX - then we need to fix python link libraries
       export FIX_PYTHON_LINK := 0
-      ifeq ($(CONDA_BUILD), 0)
-        ## Check if conda build is under progress -> do nothing in that case. Let conda handle it
-        ifeq ($(UNAME), Darwin)
-          PATH_TO_PYTHON := $(shell which python)
-          ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
-	    FIX_PYTHON_LINK := 1
-          endif
-        endif
-      endif
+      # ifeq ($(CONDA_BUILD), 0)
+      #   ## Check if conda build is under progress -> do nothing in that case. Let conda handle it
+      #   ifeq ($(UNAME), Darwin)
+      #     PATH_TO_PYTHON := $(shell which python)
+      #     ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
+      # 	    FIX_PYTHON_LINK := 1
+      #     endif
+      #   endif
+      # endif
       ifeq ($(UNAME), Darwin)
-        PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
-        PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
-        PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
-        PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(ABI_COMPAT_VERSION) -Wl,-current_version,$(VERSION)
+        # PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
+        # PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
+        # PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
+        PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(ABI_COMPAT_VERSION) -Wl,-current_version,$(VERSION) -undefined dynamic_lookup
         PYTHON_LINK += -headerpad_max_install_names
 
         ### Another check for stack-size. travis ci chokes on this with gcc
@@ -457,7 +461,7 @@ ifeq ($(DO_CHECKS), 1)
     # However, the variables themselves can be longer than the tab character
     # Therefore, I am going to split the variables into "small" and "long"
     # sets of variables. Ugly, but works. I get the aligned print at the end.
-    BIG_MAKEFILE_VARS := GSL_CFLAGS GSL_LINK PYTHON_CFLAGS PYTHON_LINK
+    BIG_MAKEFILE_VARS := GSL_CFLAGS GSL_LINK PYTHON_CFLAGS
     ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
       MAKEFILE_VARS += BLAS_INCLUDE BLAS_LINK
     endif

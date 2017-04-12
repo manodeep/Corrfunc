@@ -96,7 +96,6 @@ def get_dict_from_buffer(buf, keys=['DISTNAME', 'MAJOR',
 
     """
 
-    import re
 
     pairs = dict()
     if keys is None:

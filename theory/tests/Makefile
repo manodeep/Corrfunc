@@ -6,8 +6,8 @@ UTILS_DIR := $(ROOT_DIR)/utils
 IO_DIR := $(ROOT_DIR)/io
 
 THEORY_DIR := $(ROOT_DIR)/theory
-DD_DIR := $(THEORY_DIR)/xi_of_r
-DDrppi_DIR := $(THEORY_DIR)/xi_rp_pi
+DD_DIR := $(THEORY_DIR)/DD
+DDrppi_DIR := $(THEORY_DIR)/DDrppi
 WP_DIR := $(THEORY_DIR)/wp
 XI_DIR := $(THEORY_DIR)/xi
 VPF_DIR := $(THEORY_DIR)/vpf
@@ -85,12 +85,12 @@ uncompress: | data
 wp: test_periodic
 	./test_periodic 2
 
-xi_rp_pi: test_periodic test_nonperiodic
-	./test_periodic 1 5 6 7
+DDrppi: test_periodic test_nonperiodic
+	./test_periodic 0 5 6 7
 	./test_nonperiodic 1 2 
 
-xi_of_r: test_periodic test_nonperiodic
-	./test_periodic 0
+DD: test_periodic test_nonperiodic
+	./test_periodic 1
 	./test_nonperiodic 0
 
 vpf: test_periodic
