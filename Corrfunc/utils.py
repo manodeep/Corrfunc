@@ -10,11 +10,20 @@ from os.path import exists as file_exists
 
 __all__ = ['convert_3d_counts_to_cf', 'convert_rp_pi_counts_to_wp',
            'translate_isa_string_to_enum', 'return_file_with_rbins',
-           'fix_ra_dec', 'fix_cz', ]
+           'fix_ra_dec', 'fix_cz', 'compute_nbins', 'gridlink_sphere', ]
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
 
+try:
+    xrange
+except NameError:
+    xrange = range
 
+try:
+    long
+except NameError:
+    long = int
+    
 def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
                             D1D2, D1R2, D2R1, R1R2,
                             estimator='LS'):
@@ -60,7 +69,8 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
     cf : A numpy array
         The correlation function, calculated using the chosen estimator,
-        is returned
+        is returned. NAN is returned for the bins where the ``RR`` count
+        is 0.
 
 
     Example
@@ -84,7 +94,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
     >>> rmin = 0.1
     >>> rmax = 15.0
     >>> nbins = 10
-    >>> bins = np.linspace(rmin, rmax, nbins)
+    >>> bins = np.linspace(rmin, rmax, nbins + 1)
     >>> autocorr = 1
     >>> DD_counts = DD(autocorr, nthreads, bins, X, Y, Z)
     >>> autocorr = 0
@@ -98,15 +108,16 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
     ...                              DR_counts, RR_counts)
     >>> for xi in cf: print("{0:10.6f}".format(xi))
     ...                    # doctest: +NORMALIZE_WHITESPACE
-    18.737938
-    3.007926
-    1.392979
-    0.857290
-    0.590195
-    0.436621
-    0.338937
-    0.265153
-    0.209904
+    22.769019
+     3.612709
+     1.621372
+     1.000969
+     0.691646
+     0.511819
+     0.398872
+     0.318815
+     0.255643
+     0.207759
 
     """
 
@@ -154,7 +165,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
 def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                D1D2, D1R2, D2R1, R1R2,
-                               nrpbins, dpi=1.0,
+                               nrpbins, pimax, dpi=1.0,
                                estimator='LS'):
     """
     Converts raw pair counts to a correlation function.
@@ -192,6 +203,9 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     nrpbins : integer
         Number of bins in ``rp``
 
+    pimax : float
+        Integration distance along the line of sight direction
+
     dpi : float, default=1.0 Mpc/h
         Binsize in the line of sight direction
 
@@ -204,8 +218,9 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
 
     wp : A numpy array
         The projected correlation function, calculated using the chosen
-        estimator, is returned
-
+        estimator, is returned. If *any* of the ``pi`` bins (in an ``rp``
+        bin) contains 0 for the ``RR`` counts, then ``NAN`` is returned
+        for that ``rp`` bin.
 
     Example
     --------
@@ -229,7 +244,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     >>> nrpbins = 20
     >>> rpmin = 0.1
     >>> rpmax = 10.0
-    >>> bins = np.linspace(rpmin, rpmax, nrpbins)
+    >>> bins = np.linspace(rpmin, rpmax, nrpbins + 1)
     >>> autocorr = 1
     >>> DD_counts = DDrppi(autocorr, nthreads, pimax, bins,
     ...                    X, Y, Z)
@@ -243,29 +258,29 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     >>> wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
     ...                                 DD_counts, DR_counts,
     ...                                 DR_counts, RR_counts,
-    ...                                 nrpbins)
+    ...                                 nrpbins, pimax)
     >>> for w in wp: print("{0:10.6f}".format(w))
     ...                    # doctest: +NORMALIZE_WHITESPACE
-    181.595583
-    79.433954
-    50.906305
-    38.617981
-    32.004716
-    27.873267
-    24.922330
-    22.517251
-    20.609248
-    19.071534
-    17.537370
-    16.129591
-    15.042474
-    13.992861
-    12.963111
-    12.005260
-    11.215819
-    10.598148
-    10.019164
-    9.631157
+    187.592199
+     83.059181
+     53.200599
+     40.389354
+     33.356371
+     29.045476
+     26.088133
+     23.628340
+     21.703961
+     20.153125
+     18.724781
+     17.433235
+     16.287183
+     15.443230
+     14.436193
+     13.592727
+     12.921226
+     12.330074
+     11.696364
+     11.208365
 
     """
     
@@ -282,13 +297,23 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     npibins = len(xirppi) // nrpbins
     if ((npibins * nrpbins) != len(xirppi)):
         msg = 'Number of pi bins could not be calculated correctly.'\
-              'Expected to find that the total number of bins = {0}'\
-              'would be the product of the number of pi bins = {1}'\
+              'Expected to find that the total number of bins = {0} '\
+              'would be the product of the number of pi bins = {1} '\
               'and the number of rp bins = {2}'.format(len(xirppi),
                                                        npibins,
                                                        nrpbins)
         raise ValueError(msg)
 
+    # Check that dpi/pimax/npibins are consistent
+    # Preventing issue #96 (https://github.com/manodeep/Corrfunc/issues/96)
+    # where npibins would be calculated incorrectly, and the summation would
+    # be wrong.
+    if (dpi*npibins != pimax):
+        msg = 'Pimax = {0} should be equal to the product of '\
+              'npibins = {1} and dpi = {2}. Check your binning scheme.'\
+              .format(pimax, npibins, dpi)
+        raise ValueError(msg)
+    
     for i in range(nrpbins):
         wp[i] = 2.0 * dpi * np.sum(xirppi[i * npibins:(i + 1) * npibins])
 
@@ -491,6 +516,342 @@ def translate_isa_string_to_enum(isa):
         print("Valid instructions are {0}".format(enums.keys()))
         raise
 
+
+def compute_nbins(max_diff, binsize,
+                 refine_factor=1,
+                 max_nbins=None):
+    """
+    Helper utility to find the number of bins for
+    that satisfies the constraints of (binsize, refine_factor, and max_nbins).
+      
+    Parameters
+    ------------
+
+    max_diff : double
+       Max. difference (spatial or angular) to be spanned,
+       (i.e., range of allowed domain values)
+
+    binsize : double
+       Min. allowed binsize (spatial or angular) 
+
+    refine_factor : integer, default 1
+       How many times to refine the bins. The refinements occurs
+       after ``nbins`` has already been determined (with ``refine_factor-1``).
+       Thus, the number of bins will be **exactly** higher by 
+       ``refine_factor`` compared to the base case of ``refine_factor=1``
+
+    max_nbins : integer, default None
+       Max number of allowed cells
+
+    Returns 
+    ---------
+
+    nbins: integer, >= 1
+       Number of bins that satisfies the constraints of 
+       bin size >= ``binsize``, the refinement factor 
+       and nbins <= ``max_nbins``.
+
+    Example
+    ---------
+    
+    >>> from Corrfunc.utils import compute_nbins
+    >>> max_diff = 180
+    >>> binsize = 10
+    >>> compute_nbins(max_diff, binsize)
+    18
+    >>> refine_factor=2
+    >>> max_nbins = 20
+    >>> compute_nbins(max_diff, binsize, refine_factor=refine_factor, 
+    ...              max_nbins=max_nbins)
+    20
+
+    """
+
+    if max_diff <= 0 or binsize <= 0:
+        msg = 'Error: Invalid value for max_diff = {0} or binsize = {1}. '\
+              'Both must be positive'.format(max_diff, binsize)
+        raise ValueError(msg)
+    if max_nbins < 1:
+        msg = 'Error: Invalid for the max. number of bins allowed = {0}.'\
+              'Max. nbins must be >= 1'.format(max_nbins)
+        raise ValueError(msg)
+
+    if refine_factor < 1:
+        msg = 'Error: Refine factor must be >=1. Found refine_factor = '\
+              '{0}'.format(refine_factor)
+        raise ValueError(msg)
+
+    # At least 1 bin
+    ngrid = max(1, long(max_diff/binsize))
+
+    # Then refine
+    ngrid *= refine_factor
+
+    # But don't exceed max number of bins
+    # (if passed as a parameter)
+    if max_nbins:
+        ngrid = min(max_nbins, ngrid)
+
+    return ngrid             
+                     
+    
+def gridlink_sphere(thetamax,
+                    ra_limits=None,
+                    dec_limits=None,
+                    link_in_ra=True,
+                    ra_refine_factor=1, dec_refine_factor=1,
+                    max_ra_cells=100, max_dec_cells=200,
+                    return_num_ra_cells=False,
+                    input_in_degrees=True):
+    """
+    A method to optimally partition spherical regions such that pairs of 
+    points within a certain angular separation, ``thetamax``, can be quickly
+    computed. 
+
+    Generates the  binning scheme used in :py:mod:`Corrfunc.mocks.DDtheta_mocks` 
+    for a spherical region in Right Ascension (RA), Declination (DEC) 
+    and a maximum angular separation. 
+
+    For a given ``thetamax``, regions on the sphere are divided into bands
+    in DEC bands, with the width in DEC equal to ``thetamax``. If 
+    ``link_in_ra`` is set, then these DEC bands are further sub-divided 
+    into RA cells. 
+
+    Parameters
+    ----------
+
+    thetamax : double
+       Max. angular separation of pairs. Expected to be in degrees 
+       unless ``input_in_degrees`` is set to ``False``.
+
+    ra_limits : array of 2 doubles. Default [0.0, 2*pi]
+       Range of Righ Ascension (longitude) for the spherical region
+
+    dec_limits : array of 2 doubles. Default [-pi/2, pi/2]
+       Range of Declination (latitude) values for the spherical region
+
+    link_in_ra : Boolean. Default True
+       Whether linking in RA is done (in addition to linking in DEC)
+
+    ra_refine_factor : integer, >= 1. Default 1
+       Controls the sub-division of the RA cells. For a large number of 
+       particles, higher `ra_refine_factor` typically results in a faster
+       runtime
+
+    dec_refine_factor : integer, >= 1. Default 1
+       Controls the sub-division of the DEC cells. For a large number of 
+       particles, higher `dec_refine_factor` typically results in a faster
+       runtime
+
+    max_ra_cells : integer, >= 1. Default 100
+       The max. number of RA cells **per DEC band**.
+
+    max_dec_cells : integer >= 1. Default 200
+       The max. number of total DEC bands 
+
+    return_num_ra_cells: bool, default False
+       Flag to return the number of RA cells per DEC band
+
+    input_in_degrees : Boolean. Default True
+       Flag to show if the input quantities are in degrees. If set to 
+       False, all angle inputs will be taken to be in radians.
+
+    Returns
+    ---------
+
+    sphere_grid : A numpy compound array 
+       A numpy compound array with fields ``dec_limit`` and ``ra_limit`` of 
+       size 2 each. These arrays contain the beginning and end of DEC 
+       and RA regions for the cell. 
+    
+
+    .. note:: If ``link_in_ra=False``, then there is effectively one RA bin
+       per DEC band. The  'ra_limit' field will show the range of allowed 
+       RA values.
+
+    .. seealso:: :py:mod:`Corrfunc.mocks.DDtheta_mocks`
+
+    Example
+    --------
+
+    >>> from Corrfunc.utils import gridlink_sphere
+    >>> thetamax=30
+    >>> gridlink_sphere(thetamax)
+    array([([-1.57079633, -1.04719755], [ 0.        ,  3.14159265]),
+       ([-1.57079633, -1.04719755], [ 3.14159265,  6.28318531]),
+       ([-1.04719755, -0.52359878], [ 0.        ,  3.14159265]),
+       ([-1.04719755, -0.52359878], [ 3.14159265,  6.28318531]),
+       ([-0.52359878,  0.        ], [ 0.        ,  1.25663706]),
+       ([-0.52359878,  0.        ], [ 1.25663706,  2.51327412]),
+       ([-0.52359878,  0.        ], [ 2.51327412,  3.76991118]),
+       ([-0.52359878,  0.        ], [ 3.76991118,  5.02654825]),
+       ([-0.52359878,  0.        ], [ 5.02654825,  6.28318531]),
+       ([ 0.        ,  0.52359878], [ 0.        ,  1.25663706]),
+       ([ 0.        ,  0.52359878], [ 1.25663706,  2.51327412]),
+       ([ 0.        ,  0.52359878], [ 2.51327412,  3.76991118]),
+       ([ 0.        ,  0.52359878], [ 3.76991118,  5.02654825]),
+       ([ 0.        ,  0.52359878], [ 5.02654825,  6.28318531]),
+       ([ 0.52359878,  1.04719755], [ 0.        ,  3.14159265]),
+       ([ 0.52359878,  1.04719755], [ 3.14159265,  6.28318531]),
+       ([ 1.04719755,  1.57079633], [ 0.        ,  3.14159265]),
+       ([ 1.04719755,  1.57079633], [ 3.14159265,  6.28318531])], 
+      dtype=[(u'dec_limit', '<f8', (2,)), (u'ra_limit', '<f8', (2,))])
+    >>> gridlink_sphere(60, dec_refine_factor=3, ra_refine_factor=2)
+    array([([-1.57079633, -1.22173048], [ 0.        ,  1.57079633]),
+           ([-1.57079633, -1.22173048], [ 1.57079633,  3.14159265]),
+           ([-1.57079633, -1.22173048], [ 3.14159265,  4.71238898]),
+           ([-1.57079633, -1.22173048], [ 4.71238898,  6.28318531]),
+           ([-1.22173048, -0.87266463], [ 0.        ,  1.57079633]),
+           ([-1.22173048, -0.87266463], [ 1.57079633,  3.14159265]),
+           ([-1.22173048, -0.87266463], [ 3.14159265,  4.71238898]),
+           ([-1.22173048, -0.87266463], [ 4.71238898,  6.28318531]),
+           ([-0.87266463, -0.52359878], [ 0.        ,  1.57079633]),
+           ([-0.87266463, -0.52359878], [ 1.57079633,  3.14159265]),
+           ([-0.87266463, -0.52359878], [ 3.14159265,  4.71238898]),
+           ([-0.87266463, -0.52359878], [ 4.71238898,  6.28318531]),
+           ([-0.52359878, -0.17453293], [ 0.        ,  1.57079633]),
+           ([-0.52359878, -0.17453293], [ 1.57079633,  3.14159265]),
+           ([-0.52359878, -0.17453293], [ 3.14159265,  4.71238898]),
+           ([-0.52359878, -0.17453293], [ 4.71238898,  6.28318531]),
+           ([-0.17453293,  0.17453293], [ 0.        ,  1.57079633]),
+           ([-0.17453293,  0.17453293], [ 1.57079633,  3.14159265]),
+           ([-0.17453293,  0.17453293], [ 3.14159265,  4.71238898]),
+           ([-0.17453293,  0.17453293], [ 4.71238898,  6.28318531]),
+           ([ 0.17453293,  0.52359878], [ 0.        ,  1.57079633]),
+           ([ 0.17453293,  0.52359878], [ 1.57079633,  3.14159265]),
+           ([ 0.17453293,  0.52359878], [ 3.14159265,  4.71238898]),
+           ([ 0.17453293,  0.52359878], [ 4.71238898,  6.28318531]),
+           ([ 0.52359878,  0.87266463], [ 0.        ,  1.57079633]),
+           ([ 0.52359878,  0.87266463], [ 1.57079633,  3.14159265]),
+           ([ 0.52359878,  0.87266463], [ 3.14159265,  4.71238898]),
+           ([ 0.52359878,  0.87266463], [ 4.71238898,  6.28318531]),
+           ([ 0.87266463,  1.22173048], [ 0.        ,  1.57079633]),
+           ([ 0.87266463,  1.22173048], [ 1.57079633,  3.14159265]),
+           ([ 0.87266463,  1.22173048], [ 3.14159265,  4.71238898]),
+           ([ 0.87266463,  1.22173048], [ 4.71238898,  6.28318531]),
+           ([ 1.22173048,  1.57079633], [ 0.        ,  1.57079633]),
+           ([ 1.22173048,  1.57079633], [ 1.57079633,  3.14159265]),
+           ([ 1.22173048,  1.57079633], [ 3.14159265,  4.71238898]),
+           ([ 1.22173048,  1.57079633], [ 4.71238898,  6.28318531])], 
+          dtype=[(u'dec_limit', '<f8', (2,)), (u'ra_limit', '<f8', (2,))])
+
+    """
+
+    from math import radians, pi
+    import numpy as np
+    
+
+    if input_in_degrees:
+        thetamax = radians(thetamax)
+        for x in [ra_limits, dec_limits]:
+            if x:
+                x = radians(x)
+            
+    if not ra_limits:
+        ra_limits = [0.0, 2.0*pi]
+        
+    if not dec_limits:
+        dec_limits = [-0.5*pi, 0.5*pi]
+
+    if dec_limits[0] >= dec_limits[1]:
+        msg = 'Declination limits should be sorted in increasing '\
+              'order. However, dec_limits = [{0}, {1}] is not'.\
+              format(dec_limits[0], dec_limits[1])
+        raise ValueError(msg)
+
+    if ra_limits[0] >= ra_limits[1]:
+        msg = 'Declination limits should be sorted in increasing '\
+              'order. However, ra_limits = [{0}, {1}] is not'.\
+              format(ra_limits)
+        raise ValueError(msg)
+
+    if dec_limits[0] < -0.5*pi or dec_limits[1] > 0.5*pi:
+        msg = 'Valid range of values for declination are [-pi/2, +pi/2] deg. '\
+              'However, dec_limits = [{0}, {1}] does not fall within that '\
+              'range'.format(dec_limits)
+        raise ValueError(msg)
+    
+    if ra_limits[0] < 0.0 or ra_limits[1] > 2.0*pi:
+        msg = 'Valid range of values for declination are [0.0, 2*pi] deg. '\
+              'However, ra_limits = [{0}, {1}] does not fall within that '\
+              'range'.format(ra_limits)
+        raise ValueError(msg)
+    
+    dec_diff = abs(dec_limits[1] - dec_limits[0])
+    ngrid_dec = compute_nbins(dec_diff, thetamax,
+                             refine_factor=dec_refine_factor,
+                             max_nbins=max_dec_cells)
+    
+    dec_binsize = dec_diff/ngrid_dec
+
+    # Upper and lower limits of the declination bands
+    grid_dtype= np.dtype({'names':['dec_limit','ra_limit'],
+                          'formats':[(np.float, (2, )), (np.float, (2, ))]
+    })
+    if not link_in_ra:
+        sphere_grid = np.zeros(ngrid_dec, dtype=grid_dtype)
+        for i, r in enumerate(sphere_grid['dec_limit']):
+            r[0] = dec_limits[0] + i*dec_binsize
+            r[1] = dec_limits[0] + (i+1)*dec_binsize
+
+        for r in sphere_grid['ra_limit']:
+            r[0] = ra_limits[0]
+            r[1] = ra_limits[1]
+
+        return sphere_grid
+
+    # RA linking is requested
+    ra_diff = ra_limits[1] - ra_limits[0]
+    sin_half_thetamax = np.sin(thetamax)
+    costhetamax = np.cos(thetamax)
+    max_nmesh_ra = 1
+
+    totncells = 0
+    num_ra_cells = np.zeros(ngrid_dec, dtype=np.int64)
+    num_ra_cells[:] = ra_refine_factor
+    # xrange is replaced by range for python3
+    # by using a try/except at the top
+    for idec in xrange(ngrid_dec):
+        dec_min = dec_limits[0] + idec*dec_binsize
+        dec_max = dec_min + dec_binsize
+
+        cos_dec_min = np.cos(dec_min)
+        cos_dec_max = np.cos(dec_max)
+
+        if cos_dec_min < cos_dec_max:
+            min_cos = cos_dec_min
+        else:
+            min_cos = cos_dec_max
+
+        if min_cos > 0:
+            _tmp = sin_half_thetamax/min_cos
+            # clamp to range [0.0, 1.0]
+            _tmp = max(min(_tmp, 1.0), 0.0)
+            ra_binsize = min(2.0 * np.arcsin(_tmp), ra_diff)
+            num_ra_cells[idec] = compute_nbins(ra_diff, ra_binsize,
+                                              refine_factor=ra_refine_factor,
+                                              max_nbins=max_ra_cells)
+            
+    totncells = num_ra_cells.sum()
+    sphere_grid = np.zeros(totncells, dtype=grid_dtype)
+    ra_binsizes = ra_diff/num_ra_cells
+
+    start = 0
+    for idec in xrange(ngrid_dec):
+        assert start + num_ra_cells[idec] <= totncells
+        source_sel = np.s_[start:start+num_ra_cells[idec]]
+        for ira, r in enumerate(sphere_grid[source_sel]):
+            r['dec_limit'][0] = dec_limits[0] + dec_binsize*idec
+            r['dec_limit'][1] = dec_limits[0] + dec_binsize*(idec + 1)
+            r['ra_limit'][0] = ra_limits[0] + ra_binsizes[idec] * ira
+            r['ra_limit'][1] = ra_limits[0] + ra_binsizes[idec] * (ira + 1)
+            
+        start += num_ra_cells[idec]
+
+    if return_num_ra_cells:
+        return sphere_grid, num_ra_cells
+    else:
+        return sphere_grid
 
 if __name__ == '__main__':
     import doctest

@@ -8,16 +8,16 @@
 
 /* PROGRAM VPF
 
-   --- vpf rmax nbin nc seed [ivel] [zstep] < particle distribution > vpf
-   --- compute void probability function
-   * rmax = maximum radius (in h^-1 Mpc)
-   * nbin = number of radial bins (evenly spaced in r)
-   * nc = number of centers to place
-   * num_pN = how many particles/spheres to report
-   * file = file name containing the particles
-   * file_format = format for the input file in the previous line (a-> ascii, f->fastfood)
-   * seed = random number seed
-   * > output <r P0 P1 P2 ....Pnum_pN-1>
+--- vpf rmax nbins ncentres num_pN file format seed > VPFfile
+--- Measures the counts-in-spheres in a simulation box
+ * rmax         = size of the biggest sphere
+ * nbins        = number of bins to use for the counts-in-spheres
+ * ncentres     = number of random spheres to place on the cube
+ * num_pN        = number of counts-in-spheres to output. [num_pN=1-> P0, num_pN=2->P0,P1, num_pN=3->P0,P1,P2...
+ * file         = name of data file
+ * format       = format of data file  (a=ascii, c=csv, f=fast-food)
+ * seed         = seed for random number generator
+ > VPFfile      = name of output file <r P0 P1 P2 ...>
    */
 
 #include <stdio.h>
@@ -104,6 +104,9 @@ int main(int argc, char *argv[])
 
     results_countspheres results;
     struct config_options options = get_config_options();
+    /* If you want to change the bin refine factors */
+    /* const int bf[] = {2, 2, 1}; */
+    /* set_bin_refine_factors(&options, bf); */
     int status = countspheres(np, x, y, z,
                               rmax, nbin, nc,
                               num_pN,

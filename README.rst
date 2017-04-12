@@ -1,4 +1,4 @@
-|Release| |PyPI| |MIT licensed| |DOI| |Travis Build| |Issues| |Coverity| |RTD|
+|Release| |PyPI| |MIT licensed| |DOI| |ASCL| |Travis Build| |Issues| |RTD| |Landscape| |Gitter|
 
 Description
 ===========
@@ -9,14 +9,17 @@ or on a mock (RA, DEC, CZ). Also, contains the associated paper to be
 published in Astronomy & Computing Journal (at some point). Read the
 documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_. 
 
-
 Why Should You Use it
 ======================
 
 1. **Fast** Theory pair-counting is **7x** faster than ``SciPy cKDTree``, and at least **2x** faster than all existing public codes.
-2. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
-3. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
-4. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
+2. **OpenMP Parallel** All pair-counting codes can be done in parallel (with strong scaling efficiency >~ 95% up to 10 cores)
+3. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
+4. **Weights** All correlation functions now support weights for individual points (in ``master`` branch, upcoming in `v2.0.0 <https://github.com/manodeep/Corrfunc/releases/tag/2.0.0>`_)
+5. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
+6. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
+
+*If you use the codes for your analysis, please star this repo -- that helps us keep track of the number of users.*
 
 Benchmark against Existing Codes
 ================================
@@ -32,14 +35,12 @@ Pre-requisites
 --------------
 
 1. ``make >= 3.80``
-2. OpenMP capable compiler like ``icc``, ``gcc`` or ``clang >= 3.7``. If
+2. OpenMP capable compiler like ``icc``, ``gcc>=4.6`` or ``clang >= 3.7``. If
    not available, please disable ``USE_OMP`` option option in
    ``theory.options`` and ``mocks.options``. You might need to ask your
    sys-admin for system-wide installs of the compiler; if you prefer to
    install your own then ``conda install gcc`` (MAC/linux) or
-   ``(sudo) port install gcc5`` (on MAC) should work. *Note ``gcc`` on
-   macports defaults to ``gcc48`` and the portfile is currently broken
-   on ``El Capitan``*.
+   ``(sudo) port install gcc5`` (on MAC) should work. 
 3. ``gsl``. Use either
    ``conda install -c https://conda.anaconda.org/asmeurer gsl``
    (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl``
@@ -47,14 +48,8 @@ Pre-requisites
 4. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions.
 5. ``numpy>=1.7`` for compiling the C extensions.
 
-*If python and/or numpy are not available, then the C extensions will
-not be compiled.*
-
-*Default compiler on MAC is set to* ``clang``, *if you want to specify a
-different compiler, you will have to call* ``make CC=yourcompiler``
-
-Preferred Method
-----------------
+Preferred Install Method
+-------------------------
 
 ::
 
@@ -72,10 +67,18 @@ python C extensions in your environment, then
 interested in the ``python`` interface, you can condense all of the steps
 by using ``python setup.py install CC=yourcompiler (--user)`` after ``git clone``.
 
-Alternative
------------
+Compilation Notes
+------------------
 
-The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Not recommended unless you are desperate (i.e., `email me <mailto:manodeep@gmail.com>`__ if you are having install issues). 
+- If python and/or numpy are not available, then the C extensions will not be compiled.
+
+- Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``
+
+
+Alternate Install Method
+-------------------------
+
+The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Installing via `pip` is **not** recommended, please open an install issue on this repo first; doing so helps improve the code-base and saves future users from running into similar install issues. 
 
 Installation notes
 ------------------
@@ -89,7 +92,7 @@ While I have tried to ensure that the package compiles and runs out of
 the box, cross-platform compatibility turns out to be incredibly hard.
 If you run into any issues during compilation and you have all of the
 pre-requisites, please see the `FAQ <FAQ>`__ or `email
-me <mailto:manodeep@gmail.com>`__. Also, feel free to create a new issue
+the Corrfunc mailing list <mailto:corrfunc@googlegroups.com>`__. Also, feel free to create a new issue
 with the ``Installation`` label.
 
 Clustering Measures on a Cosmological box
@@ -99,7 +102,7 @@ All codes that work on cosmological boxes with co-moving positions are
 located in the ``theory`` directory. The various clustering measures
 are:
 
-1. ``xi_of_r`` -- Measures auto/cross-correlations between two boxes.
+1. ``DD`` -- Measures auto/cross-correlations between two boxes.
    The boxes do not need to be cubes.
 
 2. ``xi`` -- Measures 3-d auto-correlation in a cubic cosmological box.
@@ -108,7 +111,7 @@ are:
 3. ``wp`` -- Measures auto 2-d point projected correlation function in a
    cubic cosmological box. Assumes PERIODIC boundary conditions.
 
-4. ``xi_rp_pi`` -- Measures the auto/cross correlation function between
+4. ``DDrppi`` -- Measures the auto/cross correlation function between
    two boxes. The boxes do not need to be cubes.
 
 5. ``vpf`` -- Measures the void probability function + counts-in-cells.
@@ -119,15 +122,15 @@ Clustering measures on a Mock
 All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 ``mocks`` directory. The various clustering measures are:
 
-1. ``DDrppi`` -- The standard auto/cross correlation between two data
+1. ``DDrppi_mocks`` -- The standard auto/cross correlation between two data
    sets. The outputs, DD, DR and RR can be combined using ``wprp`` to
    produce the Landy-Szalay estimator for `wp(rp)`.
 
-2. ``wtheta`` -- Computes angular correlation function between two data
+2. ``DDtheta_mocks`` -- Computes angular correlation function between two data
    sets. The outputs from ``DDtheta_mocks`` need to be combined with
    ``wtheta`` to get the full `\omega(\theta)`
 
-3. ``vpf`` -- Computes the void probability function on mocks.
+3. ``vpf_mocks`` -- Computes the void probability function on mocks.
 
 Science options
 ===============
@@ -269,7 +272,7 @@ use the C extensions directly. Here are a few examples:
     nbins = 20
     
     # Create the bins
-    rbins = np.logspace(np.log10(0.1), np.log10(rmax), nbins)
+    rbins = np.logspace(np.log10(0.1), np.log10(rmax), nbins + 1)
 
     # Call wp
     wp_results = wp(boxsize, pimax, nthreads, rbins, x, y, z, verbose=True, output_rpavg=True)
@@ -304,11 +307,11 @@ Common Code options for both Mocks and Cosmological Boxes
    the ``*_kernels.c`` and edit the runtime dispatch code to call this new
    kernel. 
 
-Author
-======
+Author & Maintainers 
+=====================
 
-Corrfunc is written/maintained by Manodeep Sinha. Please contact the
-`author <mailto:manodeep@gmail.com>`__ in case of any issues.
+Corrfunc was designed by Manodeep Sinha and is currently maintained by
+`Lehman Garrison <https://github.com/lgarrison>`_ and `Manodeep Sinha <https://github.com/manodeep>`_
 
 Citing
 ======
@@ -359,15 +362,22 @@ Project URL
 .. |DOI| image:: https://zenodo.org/badge/19184/manodeep/Corrfunc.svg
    :target: https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc
    :alt: Zenodo DOI
+.. |ASCL| image:: https://img.shields.io/badge/ascl-1703.003-blue.svg?colorB=262255
+   :target: http://ascl.net/1703.003
+   :alt: ascl:1703.003
 .. |Travis Build| image:: https://travis-ci.org/manodeep/Corrfunc.svg?branch=master
    :target: https://travis-ci.org/manodeep/Corrfunc
    :alt: Build Status
 .. |Issues| image:: https://img.shields.io/github/issues/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/issues
    :alt: Open Issues
-.. |Coverity| image:: https://img.shields.io/coverity/scan/6982.svg
-   :target: https://scan.coverity.com/projects/manodeep-corrfunc
-   :alt: Code Health
 .. |RTD| image:: https://readthedocs.org/projects/corrfunc/badge/?version=master
    :target: http://corrfunc.readthedocs.io/en/master/?badge=master
    :alt: Documentation Status
+.. |Landscape| image:: https://landscape.io/github/manodeep/Corrfunc/master/landscape.svg?style=flat
+   :target: https://landscape.io/github/manodeep/Corrfunc/master
+   :alt: Code Health
+
+.. |Gitter| image:: https://badges.gitter.im/Corrfunc/Lobby.svg
+   :alt: Join the chat at https://gitter.im/Corrfunc/Lobby
+   :target: https://gitter.im/Corrfunc/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge

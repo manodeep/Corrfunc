@@ -23,10 +23,6 @@ addons:
 matrix:
   fast_finish: true
 
-  ### let osx fail for the time being, while I figure out the details
-  allow_failures:
-    os: osx
-
   include:
     #### osx with clang doesn't use openmp -> so they are the slowest. Run them first
     # - os: osx
@@ -208,5 +204,9 @@ install:
         
 script:
   - make tests CC=$COMPILER
+
+after_success:
   - cd docs && make html && cd ../
   - cd docs && make doctest && cd ../
+
+  

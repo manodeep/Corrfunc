@@ -1,0 +1,47 @@
+// # -*- mode: c -*-
+/* File: countpairs_rp_pi_impl.h.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "defs.h" //for struct config_options 
+#include "weight_defs_DOUBLE.h"
+#include <inttypes.h> //for uint64_t
+
+#include "countpairs_rp_pi.h"//for struct results_countpairs_rp_pi
+
+    extern void interrupt_handler_countpairs_rp_pi_DOUBLE(int signo);
+    
+    typedef int (*countpairs_rp_pi_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                    const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int same_cell,
+                                                    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
+                                                    const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                                    DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                                    DOUBLE *src_weightavg, const weight_method_t weight_method);
+
+    
+    extern countpairs_rp_pi_func_ptr_DOUBLE countpairs_rp_pi_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
+
+    extern int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
+                                       const int64_t ND2, DOUBLE *X2, DOUBLE *Y2, DOUBLE *Z2,
+                                       const int numthreads,
+                                       const int autocorr,
+                                       const char *binfile,
+                                       const DOUBLE pimax,
+                                       results_countpairs_rp_pi *results,
+                                       struct config_options *options,
+                                       struct extra_options *extra);
+
+#ifdef __cplusplus
+}
+#endif

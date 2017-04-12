@@ -36,7 +36,7 @@ Common setup code for the simulation C routines
 In this code section, we will setup the arrays and the overall common inputs
 required by the C static libraries. 
 
-::
+.. code-block:: c
 
           #include "io.h"
           
@@ -73,7 +73,7 @@ separation, :math:`r_p` is calculated in the X-Y plane while the line-of-sight
 separation, :math:`\pi` is calculated in the Z plane. Only pairs with
 :math:`\pi` separation less than :math:`\pi_{max}` are counted.
 
-::
+.. code-block:: c
 
           #include "countpairs_wp.h"
           
@@ -121,7 +121,7 @@ Common setup code for the mocks C routines
 In this code section, we will setup the arrays and the overall common inputs
 required by the C static libraries. 
 
-::
+.. code-block:: c
 
    #include "io.h"   //for read_positions function
           
@@ -162,36 +162,36 @@ al 2002 <http://adsabs.harvard.edu/abs/2002ApJ...571..172Z>`_:
    
    \mathbf{s} &= \mathbf{v_1} - \mathbf{v_2}, \\
    \mathbf{l} &= \frac{1}{2}\left(\mathbf{v_1} + \mathbf{v_2}\right), \\
-   \pi &= \left(\mathbf{s} \cdot \mathbf{l}\right)/\mathbf{l}, \\
-   r_p &= \mathbf{s} \cdot \mathbf{s} - \pi^2
+   \pi &= \left(\mathbf{s} \cdot \mathbf{l}\right)/\Vert\mathbf{l}\Vert, \\
+   r_p^2 &= \mathbf{s} \cdot \mathbf{s} - \pi^2
 
 where, :math:`\mathbf{v_1}` and :math:`\mathbf{v_2}` are the vectors for the
 two points under consideration. Here is the C code for calling ``DDrppi_mocks``:
 
-::
+.. code-block:: c
 
-   #include "countpairs_rp_pi_mocks.h"
+                #include "countpairs_rp_pi_mocks.h"
 
-   results_countpairs_mocks results;
-   int status = countpairs_mocks(ND1,ra1,dec1,cz1,
-                                 ND2,ra2,dec2,cz2,
-                                 nthreads,
-                                 autocorr,
-                                 binfile,
-                                 pimax,
-                                 cosmology,
-                                 &results,
-                                 &options, NULL);
+                results_countpairs_mocks results;
+                int status = countpairs_mocks(ND1,ra1,dec1,cz1,
+                                              ND2,ra2,dec2,cz2,
+                                              nthreads,
+                                              autocorr,
+                                              binfile,
+                                              pimax,
+                                              cosmology,
+                                              &results,
+                                              &options, NULL);
 
-   const double dpi = pimax/(double)results.npibin ;
-   const int npibin = results.npibin;
-   for(int i=1;i<results.nbin;i++) {
-       const double logrp = LOG10(results.rupp[i]);
-       for(int j=0;j<npibin;j++) {
-           int index = i*(npibin+1) + j;
-           fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
-       }
-   }
+                const double dpi = pimax/(double)results.npibin ;
+                const int npibin = results.npibin;
+                for(int i=1;i<results.nbin;i++) {
+                    const double logrp = LOG10(results.rupp[i]);
+                    for(int j=0;j<npibin;j++) {
+                        int index = i*(npibin+1) + j;
+                        fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+                    }
+                }
 
 This is the generic pattern for using all of the correlation function. Look in
 ``mocks/examples/run_correlations_mocks.c`` for details on how to use all of the available

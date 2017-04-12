@@ -6,8 +6,8 @@ INSTALL_LIB_DIR := $(ROOT_DIR)/lib
 INSTALL_BIN_DIR := $(ROOT_DIR)/bin
 
 THEORY_DIR := $(ROOT_DIR)/theory
-DD_DIR := $(THEORY_DIR)/xi_of_r
-DDrppi_DIR := $(THEORY_DIR)/xi_rp_pi
+DD_DIR := $(THEORY_DIR)/DD
+DDrppi_DIR := $(THEORY_DIR)/DDrppi
 WP_DIR := $(THEORY_DIR)/wp
 XI_DIR := $(THEORY_DIR)/xi
 VPF_DIR := $(THEORY_DIR)/vpf
@@ -94,6 +94,7 @@ clean:
 
 distclean:clean
 	cd $(INSTALL_LIB_DIR) && $(RM) $(PYTHON_EXTN) $(PROJECT).so
+	cd ../../Corrfunc && $(RM) $(PROJECT).so
 
 include $(ROOT_DIR)/rules.mk
 

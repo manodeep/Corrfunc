@@ -1,0 +1,588 @@
+// # -*- mode: c -*-
+/* File: countspheres_mocks_impl.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <signal.h>
+#include <unistd.h>
+#include <gsl/gsl_interp.h>
+
+#include "defs.h"
+#include "cellarray_DOUBLE.h" //definition of struct cellarray* (NOTE theory versions of cellarray header)
+#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink (NOTE we are getting the theory gridlink)
+#include "cpu_features.h"
+#include "set_cosmo_dist.h"//cosmological distance calculations
+#include "cosmology_params.h"//init_cosmology
+#include "utils.h" //all of the utilities
+#include "progressbar.h" //for the progressbar
+
+#include "countspheres_mocks_impl_DOUBLE.h" //function proto-type
+
+#include "vpf_mocks_kernels_DOUBLE.c"
+
+int interrupt_status_vpf_mocks_DOUBLE=EXIT_SUCCESS;
+
+void interrupt_handler_vpf_mocks_DOUBLE(int signo)
+{
+    fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
+    interrupt_status_vpf_mocks_DOUBLE = EXIT_FAILURE;
+}    
+
+
+int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const DOUBLE smin,const DOUBLE inv_rcube,const DOUBLE rmax,
+                           const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                           const cellarray_DOUBLE *lattice, const int nthreshold,
+                           const int xbin_refine_factor,
+                           const int ybin_refine_factor,
+                           const int zbin_refine_factor);
+
+vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *options) 
+{
+    static vpf_mocks_func_ptr_DOUBLE function = NULL;
+    static isa old_isa=-1;
+    if(old_isa == options->instruction_set) {
+        return function;
+    } 
+
+    //Seriously this is the declaration for the function pointers...here be dragons.
+    vpf_mocks_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX__
+      vpf_mocks_avx_intrinsics_DOUBLE,
+#endif			 
+#ifdef __SSE4_2__
+      vpf_mocks_sse_intrinsics_DOUBLE,
+#endif
+      vpf_mocks_fallback_DOUBLE
+    };
+    const int num_functions = sizeof(allfunctions)/sizeof(void *);
+    const int fallback_offset = num_functions - 1;
+#if defined(__AVX__) || defined __SSE4_2__
+    const int highest_isa = instrset_detect();
+#endif    
+    int curr_offset = 0;
+    
+    /* Now check if AVX is supported by the CPU */
+    int avx_offset = fallback_offset;
+#ifdef __AVX__
+    avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif        
+    
+    /* Is the SSE function supported at runtime and enabled at compile-time?*/
+    int sse_offset = fallback_offset;
+#ifdef __SSE4_2__
+    sse_offset = highest_isa >= 6 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+    if( curr_offset != fallback_offset) {
+      fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
+              curr_offset, fallback_offset);
+      return NULL;
+    } 
+    
+    int function_dispatch=0;
+    /* Check that cpu supports feature */
+    if(options->instruction_set >= 0) {
+        switch(options->instruction_set) {
+        case(AVX512F):
+        case(AVX2):
+        case(AVX): function_dispatch=avx_offset;break;
+        case(SSE42):function_dispatch=sse_offset;break;
+        default:function_dispatch=fallback_offset;break;
+        }
+    }
+
+    if(function_dispatch >= num_functions) {
+      fprintf(stderr,"In %s> ERROR: Could not resolve the correct function.\n Function index = %d must lie between [0, %d)\n",
+              __FUNCTION__, function_dispatch, num_functions);
+      return NULL;
+    }
+    function = allfunctions[function_dispatch];
+    old_isa = options->instruction_set;
+
+    return function;
+}
+
+
+int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const DOUBLE smin,const DOUBLE inv_rcube,const DOUBLE rmax,
+                           const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                           const cellarray_DOUBLE *lattice, const int nthreshold,
+                           const int xbin_refine_factor,
+                           const int ybin_refine_factor,
+                           const int zbin_refine_factor)
+{
+    int numngb=0;
+    const DOUBLE rmax_sqr = (DOUBLE) (rmax*rmax);
+    int ix = (int)(nmesh_x*(xcen-smin)*inv_rcube);
+    int iy = (int)(nmesh_y*(ycen-smin)*inv_rcube);
+    int iz = (int)(nmesh_z*(zcen-smin)*inv_rcube);
+    if(ix > nmesh_x-1) ix--;
+    if(iy > nmesh_y-1) iy--;
+    if(iz > nmesh_z-1) iz--;
+
+    if( ix  < 0 || ix >= nmesh_x || iy < 0 || iy >= nmesh_y || iz < 0 || iz >= nmesh_z) {
+        fprintf(stderr,"Error in %s> Positions are outside grid. (X,Y,Z) = (%lf,%lf,%lf) should have been within the range [0.0, %lf]\n",
+                __FUNCTION__,xcen, ycen, zcen, 1.0/inv_rcube);
+        return -1;
+    }
+
+    const int min_ix = ix - xbin_refine_factor < 0 ?                 0:ix - xbin_refine_factor;
+    const int max_ix = ix + xbin_refine_factor > nmesh_x-1 ? nmesh_x-1:ix + xbin_refine_factor;
+    for(int iix=min_ix;iix<=max_ix;iix++) {
+        const DOUBLE newxpos = xcen;
+        const int min_iy = iy - ybin_refine_factor < 0 ?                 0:iy - ybin_refine_factor;
+        const int max_iy = iy + ybin_refine_factor > nmesh_y-1 ? nmesh_y-1:iy + ybin_refine_factor;
+
+        for(int iiy=min_iy;iiy<=max_iy;iiy++) {
+            const DOUBLE newypos = ycen;
+            const int min_iz = iz - zbin_refine_factor < 0 ?                 0:iz - zbin_refine_factor;
+            const int max_iz = iz + zbin_refine_factor > nmesh_z-1 ? nmesh_z-1:iz + zbin_refine_factor;
+
+            for(int iiz=min_iz;iiz<=max_iz;iiz++) {
+                DOUBLE newzpos = zcen;
+                const int64_t index=iix*nmesh_y*nmesh_z + iiy*nmesh_z + iiz;
+                const cellarray_DOUBLE *cellstruct = &(lattice[index]);
+                DOUBLE *x2 = cellstruct->x;
+                DOUBLE *y2 = cellstruct->y;
+                DOUBLE *z2 = cellstruct->z;
+
+                for(int i=0;i<cellstruct->nelements;i+=NVEC) {
+                    int block_size = cellstruct->nelements - i ;
+                    if(block_size > NVEC) block_size = NVEC;
+                    for(int ii=0;ii<block_size;ii++) {
+                        const DOUBLE dx=x2[ii]-newxpos;
+                        const DOUBLE dy=y2[ii]-newypos;
+                        const DOUBLE dz=z2[ii]-newzpos;
+                        const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
+                        if (r2 < rmax_sqr) numngb++;
+                    }
+                    if(numngb > nthreshold) return numngb;
+
+                    x2 += NVEC;
+                    y2 += NVEC;
+                    z2 += NVEC;
+
+                }
+            }
+        }
+    }
+    return numngb;
+}
+
+
+int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBLE *CZ,
+                              const int64_t Nran, DOUBLE *RAND_RA, DOUBLE *RAND_DEC, DOUBLE *RAND_CZ,
+                              const int threshold_neighbors,
+                              const DOUBLE rmax, const int nbin, const int nc,
+                              const int num_pN,
+                              const char *centers_file,
+                              const int cosmology,
+                              results_countspheres_mocks *results,
+                              struct config_options *options, struct extra_options *extra)
+    
+{
+    /* int ngrid; */
+    int itry,isucceed;
+    (void) extra;
+
+    //Input validation
+    XRETURN(rmax > 0.0, EXIT_FAILURE, "rmax=%lf has to be positive", rmax);
+    XRETURN(nbin >=1, EXIT_FAILURE,"Number of bins=%d has to be at least 1", nbin);
+    XRETURN(nc >=1,EXIT_FAILURE,"Number of spheres=%d has to be at least 1", nc);
+    XRETURN(num_pN >= 1, EXIT_FAILURE,"Number of pN's=%d requested must be at least 1", num_pN);
+
+    /* Start cosmology */
+    {
+        // Declared in separate scope so I can call the variable status;
+        int status = init_cosmology(cosmology);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
+    options->periodic = 0;
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
+
+    /* setup interrupt handler -> mostly useful during the python execution. 
+       Let's Ctrl-C abort the extension  */
+    SETUP_INTERRUPT_HANDLERS(interrupt_handler_vpf_mocks_DOUBLE);
+    
+    int need_randoms=0;
+    int64_t num_centers_in_file=0;
+    FILE *fpcen = fopen(centers_file,"r");
+    if(fpcen != NULL) {
+        double rr = 0.0;
+        int num_read = fscanf(fpcen,"%*f %*f %*f %lf",&rr);
+        XRETURN(num_read == 1,EXIT_FAILURE, "Could not read max. sphere radius from the centers file");
+        num_centers_in_file = getnumlines(centers_file,'#');
+        if( rr >= rmax && num_centers_in_file >= nc) {
+            need_randoms = 0;
+            rewind(fpcen);
+        } else {
+            fclose(fpcen);
+            num_centers_in_file = 0;
+            need_randoms = 1;
+        }
+    } else {
+        num_centers_in_file = 0;
+        need_randoms = 1;
+    }
+    if(need_randoms==1) {
+        fpcen = my_fopen(centers_file,"w");
+        if(fpcen == NULL) {
+            return EXIT_FAILURE;
+        }
+    }
+    if(options->verbose) {
+        fprintf(stderr,"%s> found %"PRId64" centers (need %d centers) - need randoms = %d\n",__FUNCTION__,num_centers_in_file,nc,need_randoms);
+    }
+
+    DOUBLE rcube=0.0;
+    double *redshifts=NULL,*comoving_distance=NULL;
+    gsl_interp *interpolation=NULL;
+    gsl_interp_accel *accelerator=NULL;
+    const DOUBLE inv_speed_of_light=1.0/SPEED_OF_LIGHT;
+    if(options->is_comoving_dist == 0) {
+        DOUBLE czmax = 0.0;
+        get_max_DOUBLE(Ngal, CZ, &czmax);
+        if(need_randoms == 1) {
+            get_max_DOUBLE(Nran, RAND_CZ, &czmax);
+        }
+        const double zmax = czmax * inv_speed_of_light + 0.01; 
+            
+        //set up the interpolation for comoving distances
+        const int workspace_size = 10000;
+        redshifts=my_malloc(sizeof(*redshifts),workspace_size);
+        comoving_distance=my_malloc(sizeof(*comoving_distance),workspace_size);
+        if(redshifts == NULL || comoving_distance == NULL) {
+            free(comoving_distance);free(redshifts);
+            return EXIT_FAILURE;
+        }
+        
+        int Nzdc = set_cosmo_dist(zmax, workspace_size, redshifts, comoving_distance, cosmology);
+        if(Nzdc < 0) {
+            free(comoving_distance);free(redshifts);
+            return EXIT_FAILURE;
+        }
+
+        interpolation = gsl_interp_alloc (gsl_interp_linear,Nzdc);
+        accelerator =  gsl_interp_accel_alloc();
+        gsl_interp_init(interpolation, redshifts, comoving_distance, Nzdc);
+    }
+
+    DOUBLE *xgal = my_malloc(sizeof(*xgal), Ngal);
+    DOUBLE *ygal = my_malloc(sizeof(*ygal), Ngal);
+    DOUBLE *zgal = my_malloc(sizeof(*zgal), Ngal);
+    for(int64_t i=0;i<Ngal;i++) {
+        const DOUBLE new_phi   = RA[i];
+        const DOUBLE new_theta = DEC[i];
+        const DOUBLE new_cz    = CZ[i];
+        DOUBLE dc;
+        if(options->is_comoving_dist == 0) {
+            dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
+        } else {
+            dc = new_cz;
+        }
+        if(dc>rcube) rcube = dc;
+            
+        xgal[i] = dc*COSD(new_theta)*COSD(new_phi) ;
+        ygal[i] = dc*COSD(new_theta)*SIND(new_phi) ;
+        zgal[i] = dc*SIND(new_theta) ;
+    }
+
+    DOUBLE *xran = NULL;
+    DOUBLE *yran = NULL;
+    DOUBLE *zran = NULL;
+    
+    if (need_randoms == 1) {
+        xran = my_malloc(sizeof(*xran), Nran);
+        yran = my_malloc(sizeof(*yran), Nran);
+        zran = my_malloc(sizeof(*zran), Nran);
+        for(int64_t i=0;i<Nran;i++) {
+            const DOUBLE new_phi   = RAND_RA[i];
+            const DOUBLE new_theta = RAND_DEC[i];
+            const DOUBLE new_cz    = RAND_CZ[i];
+            DOUBLE dc;
+            if(options->is_comoving_dist == 0) {
+                dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
+            } else {
+                dc = new_cz;
+            }
+                
+            xran[i] = dc*COSD(new_theta)*COSD(new_phi) ;
+            yran[i] = dc*COSD(new_theta)*SIND(new_phi) ;
+            zran[i] = dc*SIND(new_theta);
+        }
+    }
+
+    if(options->is_comoving_dist == 0) {
+        free(redshifts);free(comoving_distance);
+        gsl_interp_free(interpolation);
+        gsl_interp_accel_free(accelerator);
+    }
+    
+    /*---Shift-coordinates--------------------------------*/
+    if(options->verbose) {
+        fprintf(stderr,"%s> maximum distance = %f. ",__FUNCTION__,rcube) ;
+    }
+
+    rcube = rcube + 1. ; //add buffer
+    for(int i=0;i<Ngal;i++) {
+        xgal[i] += rcube ;
+        ygal[i] += rcube ;
+        zgal[i] += rcube ;
+    }
+
+    if(need_randoms == 1) {
+        for(int i=0;i<Nran;i++) {
+            xran[i] += rcube ;
+            yran[i] += rcube ;
+            zran[i] += rcube ;
+        }
+    }
+    rcube = 2.0*rcube ;
+    const DOUBLE inv_rcube = 1.0/rcube;
+
+    if(options->verbose) {
+        fprintf(stderr," Bounding cube size = %f\n",rcube) ;
+    }
+
+    /*---Construct-grid-to-speed-up-neighbor-searching----*/
+    //First create the 3-d linklist
+    if(options->max_cells_per_dim == 0) {
+        fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+        options->max_cells_per_dim = NLATMAX;
+    }
+    for(int i=0;i<3;i++) {
+        if(options->bin_refine_factors[i] < 1) {
+            fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                    i, options->bin_refine_factors[i]);
+            reset_bin_refine_factors(options);
+            break;/* all factors have been reset -> no point continuing with the loop */
+        }
+    }
+    
+    cellarray_DOUBLE *randoms_lattice=NULL;//pointer to the full 3-d volume for randoms
+    const DOUBLE xmin=0.0,xmax=rcube;
+    const DOUBLE ymin=0.0,ymax=rcube;
+    const DOUBLE zmin=0.0,zmax=rcube;
+    const DOUBLE smin=0.0;
+    int nmesh_x,nmesh_y,nmesh_z;    
+    cellarray_DOUBLE *lattice = gridlink_DOUBLE(Ngal, xgal, ygal, zgal,
+                                                xmin, xmax,
+                                                ymin, ymax,
+                                                zmin, zmax,
+                                                rmax, rmax, rmax,
+                                                options->bin_refine_factors[0],
+                                                options->bin_refine_factors[1],
+                                                options->bin_refine_factors[2],
+                                                &nmesh_x, &nmesh_y, &nmesh_z,
+                                                options);
+    free(xgal);free(ygal);free(zgal);
+
+    if(need_randoms == 1) {
+        int nran_x,nran_y,nran_z;
+        randoms_lattice = gridlink_DOUBLE(Nran, xran, yran, zran,
+                                          xmin, xmax,
+                                          ymin, ymax,
+                                          zmin, zmax,
+                                          rmax, rmax, rmax,
+                                          options->bin_refine_factors[0],
+                                          options->bin_refine_factors[1],
+                                          options->bin_refine_factors[2],
+                                          &nran_x, &nran_y, &nran_z,
+                                          options);
+        XRETURN(nran_x == nmesh_x && nran_y == nmesh_y && nran_z == nmesh_z, EXIT_FAILURE, "The number of grid cells for randoms = (%d, %d, %d) should be identical to that in the data = (%d, %d, %d) \n", nran_x, nran_y, nran_z, nmesh_x, nmesh_y, nmesh_z);
+        free(xran);free(yran);free(zran);
+    }
+    const int64_t totncells = nmesh_x * (int64_t) nmesh_y * nmesh_z;
+    
+    /*---Prepare-radial-arrays----------------------------*/
+    uint64_t *counts = my_calloc(sizeof(*counts),nbin);
+    DOUBLE **pN = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), nbin, num_pN);
+
+    vpf_mocks_func_ptr_DOUBLE vpf_mocks_function_DOUBLE = vpf_mocks_driver_DOUBLE(options);
+    if(vpf_mocks_function_DOUBLE == NULL) {
+        return EXIT_FAILURE;
+    }
+    
+    itry=0 ;
+    isucceed=0 ;
+    int ncenters_written=0;
+    int interrupted=0;
+    if(options->verbose) {
+        init_my_progressbar(nc, &interrupted);
+    }
+    
+    while(isucceed < nc && itry < Nran && interrupt_status_vpf_mocks_DOUBLE == EXIT_SUCCESS) {
+        
+        if(options->verbose){
+            my_progressbar(isucceed,&interrupted);
+        }
+
+        DOUBLE xcen,ycen,zcen;
+        int Nnbrs_ran=0;
+        if((need_randoms == 1 && isucceed > num_centers_in_file) || num_centers_in_file == 0) {
+            xcen = xran[itry] ;
+            ycen = yran[itry] ;
+            zcen = zran[itry] ;
+            Nnbrs_ran = count_neighbors_DOUBLE(xcen,ycen,zcen,smin,inv_rcube,rmax,
+                                               nmesh_x, nmesh_y, nmesh_z,
+                                               randoms_lattice, threshold_neighbors,
+                                               options->bin_refine_factors[0],
+                                               options->bin_refine_factors[1],
+                                               options->bin_refine_factors[2]);
+            if(Nnbrs_ran == -1) {
+                return EXIT_FAILURE;
+            }
+        } else {
+            double rr=0.0;
+            const int MAXBUFSIZE=10000;
+            char buffer[MAXBUFSIZE];
+            XRETURN( fgets(buffer,MAXBUFSIZE,fpcen) != NULL, EXIT_FAILURE,
+                     "ERROR: Could not read-in co-ordinates for the centers of the randoms spheres from file %s\n",centers_file);
+            int nitems = sscanf(buffer,"%"REAL_FORMAT" %"REAL_FORMAT" %"REAL_FORMAT" %lf",&xcen,&ycen,&zcen,&rr);
+            if(nitems != 4) {
+                fprintf(stderr,"ERROR in parsing centers file: nitems = %d xcen = %lf ycen = %lf zcen %lf rr = %lf\n",
+                        nitems,xcen,ycen,zcen,rr);
+                fprintf(stderr,"buffer = `%s' \n",buffer);
+            }
+            XRETURN(nitems == 4, EXIT_FAILURE, "Read the centers from the centers file (3 positions and 1 radius)");
+            XRETURN(rr >= rmax,EXIT_FAILURE, "Rmax from the center file is >= rmax");
+            Nnbrs_ran = threshold_neighbors + 1;
+        }
+
+        if(Nnbrs_ran > threshold_neighbors) {  //ignore if sphere overlaps edge
+
+            int ix = (int)(nmesh_x*(xcen-smin)*inv_rcube);
+            int iy = (int)(nmesh_y*(ycen-smin)*inv_rcube);
+            int iz = (int)(nmesh_z*(zcen-smin)*inv_rcube);
+            if(ix > nmesh_x-1) ix--;
+            if(iy > nmesh_y-1) iy--;
+            if(iz > nmesh_z-1) iz--;
+            if( ix  < 0 || ix >= nmesh_x || iy < 0 || iy >= nmesh_y || iz < 0 || iz >= nmesh_z) {
+                fprintf(stderr,"Error in %s> Positions are outside grid. (X,Y,Z) = (%lf,%lf,%lf) should have been within the range [0.0, %lf]\n",
+                        __FUNCTION__,xcen, ycen, zcen, 1.0/inv_rcube);
+                return -1;
+            }
+
+            for(int k=0;k<nbin;k++) {  //initialize counts
+                counts[k] = 0 ;
+            }
+
+            /* Compute VPF using (xcen, ycen, zcen) with lattice */
+            const int min_ix = (ix - options->bin_refine_factors[0]) < 0 ?                     0:ix - options->bin_refine_factors[0];
+            const int max_ix = (ix + options->bin_refine_factors[0]) > nmesh_x-1 ?     nmesh_x-1:ix + options->bin_refine_factors[0];
+            const int min_iy = (iy - options->bin_refine_factors[1]) < 0 ?                     0:iy - options->bin_refine_factors[1];
+            const int max_iy = (iy + options->bin_refine_factors[1]) > nmesh_y-1 ?     nmesh_y-1:iy + options->bin_refine_factors[1];
+            const int min_iz = (iz - options->bin_refine_factors[2]) < 0 ?                     0:iz - options->bin_refine_factors[2];
+            const int max_iz = (iz + options->bin_refine_factors[2]) > nmesh_z-1 ?     nmesh_z-1:iz + options->bin_refine_factors[2];
+            for(int iix=min_ix;iix<=max_ix;iix++) {
+                for(int iiy=min_iy;iiy<=max_iy;iiy++) {
+                    for(int iiz=min_iz;iiz<=max_iz;iiz++){
+                        const int64_t index = iix*nmesh_y*nmesh_z + iiy*nmesh_z + iiz;
+                        const cellarray_DOUBLE *first = &(lattice[index]);
+                        DOUBLE *x2 = first->x;
+                        DOUBLE *y2 = first->y;
+                        DOUBLE *z2 = first->z;
+                        int status = vpf_mocks_function_DOUBLE(first->nelements, x2, y2, z2,
+                                                               xcen, ycen, zcen,
+                                                               rmax, nbin, 
+                                                               counts);
+                        if(status != EXIT_SUCCESS) {
+                            matrix_free((void **) pN, nbin);
+                            return status;
+                        }
+                    }
+                }
+            }
+
+            
+            
+            //Output the center into the file -> either
+            if((need_randoms == 1 && isucceed > num_centers_in_file) || num_centers_in_file == 0) {
+                fprintf(fpcen,"%lf \t %lf \t %lf \t %lf\n",xcen,ycen,zcen,rmax);
+                ncenters_written++;
+            }
+
+
+            /* compute cumulative counts, i.e. n1 changes from the number of galaxies
+               in shell ibin to  the number of galaxies in shell ibin or any smaller shell */
+            for(int ibin=1;ibin<nbin;ibin++){
+                counts[ibin]+=counts[ibin-1];
+            }
+
+            for(int ibin=0;ibin<nbin;ibin++) { //compute statistics
+                for(int i=0;i<num_pN;i++) {
+                    if(counts[ibin] == (uint64_t) i) {
+                        pN[ibin][i] += (DOUBLE) 1.0;
+                    }
+                }
+            }
+            isucceed++ ;
+        }
+        itry++ ;
+    }
+    fclose(fpcen);
+    free(counts);
+    free_cellarray_DOUBLE(lattice, totncells);
+    if(need_randoms == 1) {
+        free_cellarray_DOUBLE(randoms_lattice, totncells);
+    }
+    if(interrupt_status_vpf_mocks_DOUBLE != EXIT_SUCCESS) {
+        matrix_free((void **) pN, nbin);
+        return EXIT_FAILURE;
+    }
+    
+    if(options->verbose) {
+        finish_myprogressbar(&interrupted);
+        fprintf(stderr,"%s> Placed %d centers out of %d trials.\n",__FUNCTION__,isucceed,itry);
+        fprintf(stderr,"%s> num_centers_in_file = %"PRId64" ncenters_written = %d\n",__FUNCTION__,num_centers_in_file,ncenters_written);
+    }
+
+    if(isucceed <= 0) {
+        fprintf(stderr,"ERROR: Could not place even a single sphere within the volume. Please reduce the radius of the sphere (currently set to %lf)\n", rmax);
+        return EXIT_FAILURE;
+    } else if(isucceed < nc) {
+        fprintf(stderr,"WARNING: Could only place `%d' out of requested `%d' spheres. Increase the random-sample size might improve the situation\n",isucceed,nc);
+    }
+
+    //prepare the results
+    results->rmax = rmax;
+    results->nbin = nbin;
+    results->nc   = nc;
+    results->num_pN = num_pN;
+    results->pN = (double **) matrix_malloc(sizeof(double), nbin, num_pN);
+    if(results->pN == NULL) {
+        matrix_free((void **) pN, nbin);
+        return EXIT_FAILURE;
+    }
+    const DOUBLE inv_nc = ((DOUBLE) 1.0)/(DOUBLE) isucceed;//actual number of spheres placed
+    for(int i=0;i<num_pN;i++) {
+        for(int ibin=0;ibin<nbin;ibin++) {
+            results->pN[ibin][i] = pN[ibin][i] * inv_nc;
+        }
+    }
+    matrix_free((void **) pN, nbin);
+
+    /* reset interrupt handlers to default */
+    RESET_INTERRUPT_HANDLERS();
+    reset_bin_refine_factors(options);
+
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
+
+    return EXIT_SUCCESS;
+}

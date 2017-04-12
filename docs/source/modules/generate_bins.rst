@@ -57,5 +57,5 @@ to be continuous (unlike the preceeding case).
           rmin = 0.1
           rmax = 10.0
           nbins = 20
-          rbins = np.linspace(rmin, rmax, nbins)
-          log_rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins)
+          rbins = np.linspace(rmin, rmax, nbins + 1)
+          log_rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins + 1)

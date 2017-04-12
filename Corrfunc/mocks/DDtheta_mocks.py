@@ -3,8 +3,9 @@
 
 """
 Python wrapper around the C extension for the angular correlation function
-:math:`\\omega(\theta)`. Corresponding C routines are in mocks/wtheta/,
-python interface is `~Corrfunc.mocks.DDtheta_mocks`
+:math:`\\omega(\\theta)`. Corresponding C routines are in 
+``mocks/DDtheta_mocks/``, while the python interface is 
+:py:mod:`Corrfunc.mocks.DDtheta_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -15,23 +16,28 @@ __all__ = ('DDtheta_mocks',)
 
 
 def DDtheta_mocks(autocorr, nthreads, binfile,
-                  RA1, DEC1,
-                  RA2=None, DEC2=None,
+                  RA1, DEC1, weights1=None,
+                  RA2=None, DEC2=None, weights2=None,
                   link_in_dec=True, link_in_ra=True,
                   verbose=False, output_thetaavg=False,
-                  fast_acos=False, c_api_timer=False,
-                  isa='fastest'):
+                  fast_acos=False, ra_refine_factor=2,
+                  dec_refine_factor=2, max_cells_per_dim=100,
+                  c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Function to compute the angular correlation function for points on
     the sky (i.e., mock catalogs or observed galaxies).
 
     Returns a numpy structured array containing the pair counts for the
     specified angular bins.
+    
+    If ``weights`` are provided, the resulting pair counts are weighted.  The
+    weighting scheme depends on ``weight_type``.
 
-    Note, that this module only returns pair counts and not the actual
-    correlation function :math:`\\omega(\theta)`. See the
-    ``mocks/wtheta/wtheta`` for computing :math:`\\omega(\theta)` from
-    the pair counts returned.
+
+    .. note:: This module only returns pair counts and not the actual
+       correlation function :math:`\\omega(\theta)`. See 
+       :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` for computing 
+       :math:`\\omega(\theta)` from the pair counts returned.
 
     Parameters
     -----------
@@ -68,24 +74,30 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        to be in the [-90.0, 90.0], but the code will try to fix cases where
        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
        DEC's in [-90.0, 90.0].
-
        Must be of same precision type as RA1.
+       
+    weights1: array_like, real (float/double), optional
+       A scalar, or an array of weights of shape (n_weights, n_positions) or 
+       (n_positions,). `weight_type` specifies how these weights are used; 
+       results are returned in the `weightavg` field.  If only one of weights1 
+       and weights2 is specified, the other will be set to uniform weights.
 
     RA2: array-like, real (float/double)
        The array of Right Ascensions for the second set of points. RA's
        are expected to be in [0.0, 360.0], but the code will try to fix cases
        where the RA's are in [-180, 180.0]. For peace of mind, always supply
        RA's in [0.0, 360.0].
-
-        Must be of same precision type as RA1/DEC1.
+       Must be of same precision type as RA1/DEC1.
 
     DEC2: array-like, real (float/double)
        Array of Declinations for the second set of points. DEC's are expected
        to be in the [-90.0, 90.0], but the code will try to fix cases where
        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
        DEC's in [-90.0, 90.0].
-
        Must be of same precision type as RA1/DEC1.
+       
+    weights2: array-like, real (float/double), optional
+       Same as weights1, but for the second set of positions
 
     link_in_dec: boolean (default True)
        Boolean flag to create lattice in Declination. Code runs faster with
@@ -99,23 +111,29 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        implies ``link_in_dec=True``. Similar considerations as ``link_in_dec``
        described above.
 
-       *Note*: If you disable both ``link_in_dec`` and ``link_in_ra``, then
+
+    .. note:: If you disable both ``link_in_dec`` and ``link_in_ra``, then
        the code reduces to a brute-force pair counter. No lattices are created
-       at all. For very small angular separations, that might be the most
-       numerically stable method.
+       at all. For very small angular separations, the brute-force method 
+       might be the most numerically stable method.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
 
     output_thetaavg: boolean (default false)
        Boolean flag to output the average ``\theta`` for each bin. Code will
-       run slower if you set this flag. Also, note, if you are calculating
-       in single-precision, ``thetaavg`` will suffer from numerical loss of
-       precision and can not be trusted. If you need accurate ``thetaavg``
-       values, then pass in double precision arrays for ``RA/DEC``.
+       run slower if you set this flag. 
 
-       **NOTE** Code will run significantly slower if you enable this option.
-       Use ``fast_acos`` if you can tolerate some loss of precision.
+    
+    .. note:: If you are calculating in single-precision, ``thetaavg`` will 
+       suffer from numerical loss of precision and can not be trusted. If you 
+       need accurate ``thetaavg`` values, then pass in double precision arrays 
+       for ``RA/DEC``.
+
+
+    .. note:: Code will run significantly slower if you enable this option.
+       Use the keyword ``fast_acos`` if you can tolerate some loss of 
+       precision.
 
     fast_acos: boolean (default false)
        Flag to use numerical approximation for the ``arccos`` - gives better
@@ -128,7 +146,22 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        if you know your ``theta`` range is limited. If you implement a new
        version, then you will have to reinstall the entire Corrfunc package.
 
-       Note that tests will fail if you run the tests with``fast_acos=True``.
+
+    .. note:: Tests will fail if you run the tests with``fast_acos=True``.
+
+    (radec)_refine_factor: integer, default is (2,2); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime. 
+
+
+    .. note:: Only two refine factors are to be specified and these
+       correspond to ``ra`` and ``dec`` (rather, than the usual three of
+       ``(xyz)bin_refine_factor`` for all other correlation functions).
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``thetamax``
+       is too small relative to the boxsize (and increasing helps the runtime).
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -153,14 +186,15 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     results: Numpy structured array
 
-       A numpy structured array containing [thetamin, thetamaxax, thetaavg,
-       npairs] for each angular bin specified in the ``binfile``. If
+       A numpy structured array containing [thetamin, thetamax, thetaavg,
+       npairs, weightavg] for each angular bin specified in the ``binfile``. If
        ``output_thetaavg`` is not set then ``thetavg`` will be set to 0.0 for
-       all bins. ``npairs`` contains the number of pairs in that bin.
+       all bins; similarly for
+       ``weightavg``. ``npairs`` contains the number of pairs in that bin.
 
-       if ``c_api_timer`` is set, then the return value is a tuple containing
-       (results, api_time). ``api_time`` measures only the time spent within
-       the C library and ignores all python overhead.
+    api_time: float, optional
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
+       spent within the C library and ignores all python overhead.
 
     Example
     --------
@@ -181,33 +215,40 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     >>> RA = np.random.uniform(0.0, 2.0*pi, N)*180.0/pi
     >>> cos_theta = np.random.uniform(-1.0, 1.0, N)
     >>> DEC = 90.0 - np.arccos(cos_theta)*180.0/pi
+    >>> weights = np.ones_like(RA)
     >>> autocorr = 1
-    >>> results = DDtheta_mocks(autocorr, nthreads, binfile,
-    ...                         RA, DEC)
-    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d}".
+    >>> for isa in ['AVX', 'SSE42', 'FALLBACK']:
+    ...     for link_in_dec in [False, True]:
+    ...         for link_in_ra in [False, True]:
+    ...             results = DDtheta_mocks(autocorr, nthreads, binfile,
+    ...                         RA, DEC, output_thetaavg=True, 
+    ...                         weights1=weights, weight_type='pair_product',
+    ...                         link_in_dec=link_in_dec, link_in_ra=link_in_ra, 
+    ...                         isa=isa, verbose=True)
+    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['thetamin'], r['thetamax'],
-    ...                         r['thetaavg'], r['npairs']))
+    ...                         r['thetaavg'], r['npairs'], r['weightavg']))
     ...                         # doctest: +NORMALIZE_WHITESPACE
-    0.010000   0.014125   0.000000         62
-    0.014125   0.019953   0.000000        172
-    0.019953   0.028184   0.000000        298
-    0.028184   0.039811   0.000000        598
-    0.039811   0.056234   0.000000       1164
-    0.056234   0.079433   0.000000       2438
-    0.079433   0.112202   0.000000       4658
-    0.112202   0.158489   0.000000       9414
-    0.158489   0.223872   0.000000      19098
-    0.223872   0.316228   0.000000      37848
-    0.316228   0.446684   0.000000      75520
-    0.446684   0.630957   0.000000     150934
-    0.630957   0.891251   0.000000     301840
-    0.891251   1.258925   0.000000     599866
-    1.258925   1.778279   0.000000    1200122
-    1.778279   2.511886   0.000000    2395808
-    2.511886   3.548134   0.000000    4773238
-    3.548134   5.011872   0.000000    9525106
-    5.011872   7.079458   0.000000   18972498
-    7.079458  10.000000   0.000000   37727488
+      0.010000   0.014125   0.012272         62   1.000000
+      0.014125   0.019953   0.016978        172   1.000000
+      0.019953   0.028184   0.024380        298   1.000000
+      0.028184   0.039811   0.034321        598   1.000000
+      0.039811   0.056234   0.048535       1164   1.000000
+      0.056234   0.079433   0.068385       2438   1.000000
+      0.079433   0.112202   0.096631       4658   1.000000
+      0.112202   0.158489   0.136834       9414   1.000000
+      0.158489   0.223872   0.192967      19098   1.000000
+      0.223872   0.316228   0.272673      37848   1.000000
+      0.316228   0.446684   0.385344      75520   1.000000
+      0.446684   0.630957   0.543973     150938   1.000000
+      0.630957   0.891251   0.768406     301854   1.000000
+      0.891251   1.258925   1.085273     599896   1.000000
+      1.258925   1.778279   1.533461    1200238   1.000000
+      1.778279   2.511886   2.166009    2396338   1.000000
+      2.511886   3.548134   3.059159    4775162   1.000000
+      3.548134   5.011872   4.321445    9532582   1.000000
+      5.011872   7.079458   6.104214   19001930   1.000000
+      7.079458  10.000000   8.622400   37842502   1.000000
 
     """
 
@@ -223,12 +264,24 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins
     from future.utils import bytes_to_native_str
+    
+    # Broadcast scalar weights to arrays
+    if weights1 is not None:
+        weights1 = np.atleast_1d(weights1)
+    if weights2 is not None:
+        weights2 = np.atleast_1d(weights2)
 
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
             msg = "Must pass valid arrays for RA2/DEC2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
+            
+        # If only one set of points has weights, set the other to uniform weights
+        if weights1 is None and weights2 is not None:
+            weights1 = np.ones_like(weights2)
+        if weights2 is None and weights1 is not None:
+            weights2 = np.ones_like(weights1)
     else:
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
@@ -239,19 +292,28 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     if link_in_ra is True:
         link_in_dec = True
+        
+    # Passing None parameters breaks the parsing code, so avoid this
+    kwargs = {}
+    for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2']:
+        v = locals()[k]
+        if v is not None:
+            kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
                                                 RA1, DEC1,
-                                                RA2, DEC2,
                                                 verbose=verbose,
                                                 link_in_dec=link_in_dec,
                                                 link_in_ra=link_in_ra,
                                                 output_thetaavg=output_thetaavg,
-                                                c_api_timer=c_api_timer,
                                                 fast_acos=fast_acos,
-                                                isa=integer_isa)
+                                                ra_refine_factor=ra_refine_factor,
+                                                dec_refine_factor=dec_refine_factor,
+                                                max_cells_per_dim=max_cells_per_dim,
+                                                c_api_timer=c_api_timer,
+                                                isa=integer_isa, **kwargs)
 
     if extn_results is None:
         msg = "RuntimeError occurred"
@@ -264,16 +326,9 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     results_dtype = np.dtype([(bytes_to_native_str(b'thetamin'), np.float),
                               (bytes_to_native_str(b'thetamax'), np.float),
                               (bytes_to_native_str(b'thetaavg'), np.float),
-                              (bytes_to_native_str(b'npairs'), np.uint64)])
-
-    nbin = len(extn_results)
-    results = np.zeros(nbin, dtype=results_dtype)
-
-    for ii, r in enumerate(extn_results):
-        results['thetamin'][ii] = r[0]
-        results['thetamax'][ii] = r[1]
-        results['thetaavg'][ii] = r[2]
-        results['npairs'][ii] = r[3]
+                              (bytes_to_native_str(b'npairs'), np.uint64),
+                              (bytes_to_native_str(b'weightavg'), np.float)])
+    results = np.array(extn_results, dtype=results_dtype)
 
     if not c_api_timer:
         return results
@@ -282,37 +337,6 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
 
 if __name__ == '__main__':
-    import numpy as np
-    import time
-    from math import pi
-    from os.path import dirname, abspath, join as pjoin
-    import Corrfunc
-    print("\nRunning angular correlation function w(theta)")
-
-    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-                    "../mocks/tests/", "angular_bins")
-
-    N = 100000
-    nthreads = 4
-    t0 = time.time()
-    seed = 42
-    np.random.seed(seed)
-
-    # Faster way of generating random RA's and DEC's
-    RA = np.random.uniform(0.0, 2.0 * pi, N) * 180.0 / pi
-    cos_theta = np.random.uniform(-1.0, 1.0, N)
-    DEC = 90.0 - np.arccos(cos_theta) * 180.0 / pi
-
-    autocorr = 1
-    results, api_time = DDtheta_mocks(autocorr, nthreads, binfile,
-                                      RA, DEC,
-                                      output_thetaavg=False,
-                                      c_api_timer=True,
-                                      verbose=True)
-
-    t1 = time.time()
-    print("Results from DDtheta_mocks (Npts = {0}): API time = {1:0.3f} sec "
-          "python overhead = {2:0.3f} sec".format(N, api_time,
-                                                  (t1 - t0) - api_time))
-    for r in results:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()
+    

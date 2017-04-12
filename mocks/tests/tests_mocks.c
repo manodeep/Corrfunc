@@ -23,14 +23,13 @@
 
 
 #include "defs.h"
-#include "function_precision.h"
 #include "io.h"
 #include "utils.h"
 #include "cosmology_params.h"
 
-#include "../DDrppi/countpairs_rp_pi_mocks.h"
-#include "../wtheta/countpairs_theta_mocks.h"
-#include "../vpf/countspheres_mocks.h"
+#include "../DDrppi_mocks/countpairs_rp_pi_mocks.h"
+#include "../DDtheta_mocks/countpairs_theta_mocks.h"
+#include "../vpf_mocks/countspheres_mocks.h"
 
 char tmpoutputfile[]="../tests/tests_mocks_output.txt";
 
@@ -42,14 +41,14 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 //Global variables
 int ND1;
-DOUBLE *RA1=NULL,*DEC1=NULL,*CZ1=NULL;
+double *RA1=NULL,*DEC1=NULL,*CZ1=NULL,*weights1=NULL;
 
 int ND2;
-DOUBLE *RA2=NULL,*DEC2=NULL,*CZ2=NULL;
+double *RA2=NULL,*DEC2=NULL,*CZ2=NULL,*weights2=NULL;
 
 char binfile[]="../tests/bins";
 char angular_binfile[]="../tests/angular_bins";
-DOUBLE pimax=40.0;
+double pimax=40.0;
 double boxsize=420.0;
 #if defined(_OPENMP)
 const int nthreads=4;
@@ -59,13 +58,31 @@ const int nthreads=1;
 const int cosmology_flag=1;
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
-struct config_options options = {.need_avg_sep=1, .verbose=0, .periodic=1, .float_type=sizeof(double), .fast_divide=0, .fast_acos=0, .version=STR(VERSION)};
+const double maxdiff = 1e-9;
+const double maxreldiff = 1e-6;
+
+struct config_options options;
+const isa instruction_sets[] = {FALLBACK
+#if defined(__SSE4_2__)                                
+                                , SSE42
+#endif
+#if defined(__AVX__)
+                                , AVX
+#endif                                
+};
+const int num_isets = sizeof(instruction_sets)/sizeof(instruction_sets[0]);
 //end of global variables
 
 int test_DDrppi_mocks(const char *correct_outputfile)
 {
     assert(RA1 != NULL && DEC1 != NULL && CZ1 != NULL && "ERROR: In test suite for DDrppi ra/dec/cz can not be NULL pointers");
     int autocorr = (RA1==RA2) ? 1:0;
+    
+    // Set up the weights pointers
+    weight_method_t weight_method = PAIR_PRODUCT;
+    struct extra_options extra = get_extra_options(weight_method);
+    extra.weights0.weights[0] = weights1;
+    extra.weights1.weights[0] = weights2;
 
     //Do DD(rp,pi) counts
     results_countpairs_mocks results;
@@ -77,30 +94,66 @@ int test_DDrppi_mocks(const char *correct_outputfile)
                                   pimax,
                                   cosmology_flag,
                                   &results,
-                                  &options, NULL);
+                                  &options,
+                                  &extra);
     if(status != EXIT_SUCCESS) {
         return status;
     }
 
-    FILE *fp=my_fopen(tmpoutputfile,"w");
+    int ret = EXIT_FAILURE;
+    FILE *fp=my_fopen(correct_outputfile,"r");
     if(fp == NULL) {
         free_results_mocks(&results);
         return EXIT_FAILURE;
     }
-    const DOUBLE dpi = pimax/(DOUBLE)results.npibin ;
+    const double dpi = pimax/(double)results.npibin ;
     const int npibin = results.npibin;
     for(int i=1;i<results.nbin;i++) {
-        const double logrp = LOG10(results.rupp[i]);
         for(int j=0;j<npibin;j++) {
             int index = i*(npibin+1) + j;
-            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi);
+            uint64_t npairs;
+            double rpavg, weightavg;
+            ret = EXIT_FAILURE;
+            int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &rpavg, &weightavg);
+            if(nitems != 3) {
+                ret = EXIT_FAILURE;//not required but showing intent
+                i = results.nbin;
+                break;
+            }
+            int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
+            int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
+            
+            //Check for exact equality of npairs and float "equality" for rpavg
+            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
+                ret = EXIT_SUCCESS;
+            } else {
+                fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
+                fprintf(stderr,"True rpavg  = %20.12e Computed rpavg = %20.12e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
+                fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
+                ret = EXIT_FAILURE;//not required but showing intent 
+                i = results.nbin;
+                break;
+            }
         }
     }
     fclose(fp);
-
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
+    
+    /* If the test failed, then write the output into a temporary file */
+    if(ret != EXIT_SUCCESS) {
+        fp=my_fopen(tmpoutputfile,"w");
+        if(fp == NULL) {
+            free_results_mocks(&results);
+            return EXIT_FAILURE;
+        }
+        for(int i=1;i<results.nbin;i++) {
+            const double logrp = log10(results.rupp[i]);
+            for(int j=0;j<npibin;j++) {
+                int index = i*(npibin+1) + j;
+                fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf %20.8lf \n",results.npairs[index],results.rpavg[index],logrp,(j+1)*dpi, results.weightavg[index]);
+            }
+        }
+        fclose(fp);
+    }
 
     free_results_mocks(&results);
     return ret;
@@ -111,50 +164,126 @@ int test_wtheta_mocks(const char *correct_outputfile)
     int autocorr = (RA1==RA2) ? 1:0;
     int ret = EXIT_FAILURE;
     results_countpairs_theta results;
-    options.link_in_dec=1;
-    options.link_in_ra=1;
-    int status = countpairs_theta_mocks(ND1,RA1,DEC1,
-                                        ND2,RA2,DEC2,
-                                        nthreads,
-                                        autocorr,
-                                        angular_binfile,
-                                        &results,
-                                        &options, NULL);
+    const isa old_isa = options.instruction_set;
     
-    if(status != EXIT_SUCCESS) {
-        return status;
-    }
-    
-    /*---Output-Pairs-------------------------------------*/
-    FILE *fp=my_fopen(tmpoutputfile,"w");
-    if(fp == NULL) {
-        free_results_countpairs_theta(&results);
-        return EXIT_FAILURE;
-    }
-    DOUBLE theta_low = results.theta_upp[0];
-    for(int i=1;i<results.nbin;i++) {
-        fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i]);
-        theta_low=results.theta_upp[i];
-    }
-    fclose(fp);
+#ifdef DEVELOPER_TESTS
+    const int min_bin_ref = 1, max_bin_ref = 3;
         
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    ret=system(execstring);
+    //wtheta has 3 implementations (brute-force, link-in-dec and link-in-dec + link-in-ra)
+    //For developer testing, multiple bin refine factors are tested as well as the
+    //all three of the linking logic.
+
+    // (dec_link, ra_link) == (0, 0) -> brute-force
+    // (dec_link, ra_link) == (1, 0) -> dec-linking only
+    // (dec_link, ra_link) == (1, 1) -> dec + ra linking
+    for(int dec_link=0;dec_link<=1;dec_link++) {
+        for(int ra_link=0;ra_link <= dec_link; ra_link++) {
+            options.link_in_dec=dec_link;
+            options.link_in_ra=ra_link;
+            for(int bf=min_bin_ref;bf<=max_bin_ref;bf++) {
+                if((dec_link + ra_link) == 0 && bf > min_bin_ref) continue;//bin refine factor has no impact on brute-force
+                options.bin_refine_factors[0] = bf;
+                options.bin_refine_factors[1] = bf;
+                options.bin_refine_factors[2] = bf;
+
+                // Check the specific implementations for each instruction set
+                for(int iset=0;iset<num_isets;iset++) {
+                    options.instruction_set = instruction_sets[iset];
+                    struct timeval t0;
+                    gettimeofday(&t0, NULL);
+#else
+                    options.link_in_dec = 1;
+                    options.link_in_ra = 1;
+#endif
+                
+                    // Set up the weights pointers
+                    weight_method_t weight_method = PAIR_PRODUCT;
+                    struct extra_options extra = get_extra_options(weight_method);
+                    extra.weights0.weights[0] = weights1;
+                    extra.weights1.weights[0] = weights2;
+                    int status = countpairs_theta_mocks(ND1,RA1,DEC1,
+                                                        ND2,RA2,DEC2,
+                                                        nthreads,
+                                                        autocorr,
+                                                        angular_binfile,
+                                                        &results,
+                                                        &options,
+                                                        &extra);
+#ifdef DEVELOPER_TESTS    
+                    struct timeval t1;
+                    gettimeofday(&t1, NULL);
+                    fprintf(stderr,"bf = %d dec = %d ra = %d (iset, isa) = (%d,%d) status = %d. Time taken = %0.3g sec\n",
+                            bf, dec_link, ra_link, iset, instruction_sets[iset], status, ADD_DIFF_TIME(t0, t1));
+#endif
+                    
+                    if(status != EXIT_SUCCESS) {
+                        return status;
+                    }
+                    
+                    /*---Output-Pairs-------------------------------------*/
+                    FILE *fp=my_fopen(correct_outputfile,"r");
+                    if(fp == NULL) {
+                        free_results_countpairs_theta(&results);
+                        return EXIT_FAILURE;
+                    }
+                    for(int i=1;i<results.nbin;i++) {
+                        uint64_t npairs;
+                        double theta_avg, weightavg;
+                        ret = EXIT_FAILURE;
+                        int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &theta_avg, &weightavg);
+                        if(nitems != 3) {
+                            ret = EXIT_FAILURE;//not required but showing intent
+                            break;
+                        }
+                        int floats_equal = AlmostEqualRelativeAndAbs_double(theta_avg, results.theta_avg[i], maxdiff, maxreldiff);
+                        int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
+                        
+                        //Check for exact equality of npairs and float "equality" for theta_avg
+                        if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
+                            ret = EXIT_SUCCESS;
+                        } else {
+                            ret = EXIT_FAILURE;//not required but showing intent 
+                            fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
+                            fprintf(stderr,"Failed. True thetaavg = %e Computed thetaavg = %e. floats_equal = %d\n", theta_avg, results.theta_avg[i], floats_equal);
+                            fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. floats_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
+                            break;
+                        }
+                    }
+                    fclose(fp);
+                    
+                    if(ret != EXIT_SUCCESS) {
+                        fp=my_fopen(tmpoutputfile,"w"); 
+                        double theta_low = results.theta_upp[0];
+                        for(int i=1;i<results.nbin;i++) {
+                            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf\n",
+                                    results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i], results.weightavg[i]);
+                            theta_low=results.theta_upp[i];
+                        }
+                        fclose(fp);
+                    }
+#ifdef DEVELOPER_TESTS
+                }
+            }
+        }
+    }
+#endif
+
+    options.instruction_set = old_isa;
     
     //free the result structure
     free_results_countpairs_theta(&results);
     return ret;
+    
 }
-
+    
 int test_vpf_mocks(const char *correct_outputfile)
 {
-    const double rmax=10.0;
+                const double rmax=10.0;
     const int nbin=10;
     const int nc=10000;
     const int num_pN=6;
     const int64_t Nran=nc;//Hack. Need to set it to nc so that the loop runs
-    DOUBLE *xran=NULL,*yran=NULL,*zran=NULL;
+    double *xran=NULL,*yran=NULL,*zran=NULL;
     const int threshold_neighbors=1;
     const char centers_file[]="../tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt";
 
@@ -172,26 +301,58 @@ int test_vpf_mocks(const char *correct_outputfile)
         return status;
     }
 
+    int ret = EXIT_FAILURE;
     //Output the results
-    FILE *fp=my_fopen(tmpoutputfile,"w");
+    FILE *fp=my_fopen(correct_outputfile,"r");
     if(fp == NULL) {
         free_results_countspheres_mocks(&results);
         return EXIT_FAILURE;
     }
     const double rstep = rmax/(double)nbin ;
     for(int ibin=0;ibin<results.nbin;ibin++) {
-        const double r=(ibin+1)*rstep;
-        fprintf(fp,"%10.2"REAL_FORMAT" ", r);
-        for(int i=0;i<num_pN;i++) {
-            fprintf(fp," %10.4e", (results.pN)[ibin][i]);
+        double r;
+        int nitems = fscanf(fp, "%lf", &r);
+        if(nitems != 1) {
+            return EXIT_FAILURE;
         }
-        fprintf(fp,"\n");
+        ret = EXIT_FAILURE;
+        for(int i=0;i<num_pN;i++) {
+            double pN;
+            nitems = fscanf(fp, " %lf ", &pN);
+            if(nitems != 1) {
+                return EXIT_FAILURE;
+            }
+
+            /* Not quite sure how this is working. The correct output columns only have 4 digits printed,
+               but I am comparing here with ~1e-9 in abs. diff. The only way the comparison should work is
+               if the conversion to 4 digits during printf, round-trips during scanf. But surely there must 
+               be a lot more doubles that can be fit within those missing digits of precision.
+
+               I would have thought the comparison would require maxdiff ~ 1e-4. -- MS
+             */
+            int floats_equal = AlmostEqualRelativeAndAbs_double(pN, (results.pN)[ibin][i], maxdiff, maxreldiff);
+            if(floats_equal != EXIT_SUCCESS) {
+                ibin=results.nbin;
+                ret=EXIT_FAILURE;
+                break;
+            }
+            ret = EXIT_SUCCESS;
+        }
     }
     fclose(fp);
 
-    char execstring[MAXLEN];
-    my_snprintf(execstring,MAXLEN,"diff -q %s %s &>/dev/null",correct_outputfile,tmpoutputfile);
-    int ret=system(execstring);
+    if(ret != EXIT_SUCCESS) {
+        fp=my_fopen(tmpoutputfile,"w");
+        for(int ibin=0;ibin<results.nbin;ibin++) {
+            const double r=(ibin+1)*rstep;
+            fprintf(fp,"%10.2lf ", r);
+            for(int i=0;i<num_pN;i++) {
+                fprintf(fp," %10.4e", (results.pN)[ibin][i]);
+            }
+            fprintf(fp,"\n");
+        }
+        fclose(fp);
+    }
 
     //free the result structure
     free_results_countspheres_mocks(&results);
@@ -212,28 +373,29 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
         /* fprintf(stderr,"Freeing the first data-set and replacing with data from file `%s'\n",firstfilename); */
         //replace the data-set
         if(RA1 != NULL) {
-            free(RA1);free(DEC1);free(CZ1);
+            free(RA1);free(DEC1);free(CZ1);free(weights1);
             if(free_RA2 == 0) {
                 RA2  = NULL;
                 DEC2 = NULL;
                 CZ2  = NULL;
+                weights2 = NULL;
             }
         }
-        ND1 = read_positions(firstfilename,firstformat, sizeof(DOUBLE), 3, &RA1, &DEC1, &CZ1);
-        strncpy(current_file1,firstfilename,MAXLEN);
+        ND1 = read_positions(firstfilename,firstformat, sizeof(double), 4, &RA1, &DEC1, &CZ1, &weights1);
     }
 
     //first check if only one unique file is asked for
     if(strncmp(firstfilename,secondfilename,strlen(firstfilename))==0) {
         //But RA2 might have read-in a different file->avoid a memory-leak
         if(free_RA2 == 1) {
-            free(RA2);free(DEC2);free(CZ2);
+            free(RA2);free(DEC2);free(CZ2);free(weights2);
             free_RA2 = 0;//not essential since the code returns after this section
         }
         /* fprintf(stderr,"Second data-set is the same as the first data-set. First file = `%s' and second file = `%s'\n",firstfilename,secondfilename); */
         RA2=RA1;
         DEC2=DEC1;
         CZ2=CZ1;
+        weights2=weights1;
         ND2=ND1;
         strncpy(current_file2,secondfilename,MAXLEN);
         return;
@@ -244,10 +406,10 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
     if (strncmp(current_file2,secondfilename,strlen(current_file2)) != 0 || RA2 == NULL) {
         //replace the data-set
         if(free_RA2 == 1) {
-            free(RA2);free(DEC2);free(CZ2);
+            free(RA2);free(DEC2);free(CZ2);free(weights2);
         }
         /* fprintf(stderr,"Second data-set is different -- reading in the new data-set from `%s'\n",secondfilename); */
-        ND2 = read_positions(secondfilename,secondformat, sizeof(DOUBLE), 3, &RA2, &DEC2, &CZ2);
+        ND2 = read_positions(secondfilename,secondformat, sizeof(double), 4, &RA2, &DEC2, &CZ2, &weights2);
         strncpy(current_file2,secondfilename,MAXLEN);
     }
 }
@@ -258,7 +420,16 @@ int main(int argc, char **argv)
     struct timeval tstart,t0,t1;
     char file[]="../tests/data/Mr19_mock_northonly.rdcz.dat";
     char fileformat[]="a";
-
+    
+    options = get_config_options();
+    options.need_avg_sep=1;
+    options.verbose=0;
+    options.periodic=0;
+    options.float_type=sizeof(double);
+    options.fast_divide=0;
+    options.fast_acos=0;
+    //options.instruction_set = FALLBACK;
+    
     int status = init_cosmology(cosmology_flag);
     if(status != EXIT_SUCCESS) {
         return EXIT_FAILURE;
@@ -266,15 +437,18 @@ int main(int argc, char **argv)
     gettimeofday(&tstart,NULL);
 
     //set the globals.
-    ND1 = read_positions(file,fileformat, sizeof(DOUBLE), 3, &RA1, &DEC1, &CZ1);
+    ND1 = read_positions(file,fileformat, sizeof(double), 4, &RA1, &DEC1, &CZ1, &weights1);
+    
     ND2 = ND1;
     RA2 = RA1;
     DEC2 = DEC1;
     CZ2 = CZ1;
+    weights2 = weights1;
 
     strncpy(current_file1,file,MAXLEN);
     strncpy(current_file2,file,MAXLEN);
-
+    reset_bin_refine_factors(&options);
+    
     int failed=0;
 
     const char alltests_names[][MAXLEN] = {"Mr19 mocks DDrppi (DD)","Mr19 mocks wtheta (DD)","Mr19 mocks vpf (data)","Mr19 mocks DDrppi (DR)", "Mr19 mocks wtheta (DR)","Mr19 mocks vpf (randoms)"};
@@ -302,7 +476,8 @@ int main(int argc, char **argv)
                                            "../tests/data/Mr19_mock_northonly.rdcz.dat",
                                            "../tests/data/Mr19_randoms_northonly.rdcz.ff"};
     const char secondfiletype[][MAXLEN] = {"a","a","a","a","a","f"};
-    const DOUBLE allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0};
+    
+    const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0};
 
     int (*allfunctions[]) (const char *) = {test_DDrppi_mocks,test_wtheta_mocks,test_vpf_mocks};
     const int numfunctions=3;//3 functions total

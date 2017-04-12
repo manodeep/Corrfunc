@@ -24,6 +24,7 @@ void free_results_xi(results_countpairs_xi *results)
     free(results->xi);
     free(results->npairs);
     free(results->ravg);
+    free(results->weightavg);
 }
 
 

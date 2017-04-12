@@ -1,3 +1,4 @@
+// # -*- mode: c -*-
 /* File: countspheres_impl.c.src */
 /*
   This file is a part of the Corrfunc package
@@ -79,13 +80,14 @@ vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options)
     
     int function_dispatch=0;
     /* Check that cpu supports feature */
-    if(options->instruction_set != 0) {
-      switch(options->instruction_set) {
-      case(AVX):
-        function_dispatch=avx_offset;break;
-      case(SSE42):function_dispatch=sse_offset;break;
-      default:function_dispatch=fallback_offset;break;
-      }
+    if(options->instruction_set >= 0) {
+        switch(options->instruction_set) {
+        case(AVX512F):
+        case(AVX2):
+        case(AVX):function_dispatch=avx_offset;break;
+        case(SSE42):function_dispatch=sse_offset;break;
+        default:function_dispatch=fallback_offset;break;
+        }
     }
 
     if(function_dispatch >= num_functions) {
@@ -129,7 +131,18 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);
     }
-    int bin_refine_factor=1;
+    if(options->max_cells_per_dim == 0) {
+        fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+        options->max_cells_per_dim = NLATMAX;
+    }
+    for(int i=0;i<3;i++) {
+        if(options->bin_refine_factors[i] < 1) {
+            fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                    i, options->bin_refine_factors[i]);
+            reset_bin_refine_factors(options);
+            break;/* all factors have been reset -> no point continuing with the loop */
+        }
+    }
 
     /* setup interrupt handler -> mostly useful during the python execution. 
        Let's Ctrl-C abort the extension  */
@@ -152,7 +165,11 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
 
     //First create the 3-d linklist
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_DOUBLE *lattice = gridlink_DOUBLE(np, X, Y, Z, xmin, xmax, ymin, ymax, zmin, zmax, rmax, rmax, rmax, bin_refine_factor, bin_refine_factor, bin_refine_factor, &nmesh_x, &nmesh_y, &nmesh_z, options);
+    cellarray_DOUBLE *lattice = gridlink_DOUBLE(np, X, Y, Z,
+                                                xmin, xmax, ymin, ymax, zmin, zmax,
+                                                rmax, rmax, rmax,
+                                                options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                &nmesh_x, &nmesh_y, &nmesh_z, options);
     if(lattice == NULL) {
         return EXIT_FAILURE;
     }
@@ -233,7 +250,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         }
         
         /* gettimeofday(&t0,NULL); */
-        for(int iix=-bin_refine_factor;iix<=bin_refine_factor;iix++) {
+        for(int8_t iix=-options->bin_refine_factors[0];iix<=options->bin_refine_factors[0];iix++) {
             int iiix;
             DOUBLE off_xwrap=0.0;
             if(options->periodic) {
@@ -251,7 +268,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
             }
             const DOUBLE newxpos = xc + off_xwrap;
 
-            for(int iiy=-bin_refine_factor;iiy<=bin_refine_factor;iiy++) {
+            for(int8_t iiy=-options->bin_refine_factors[1];iiy<=options->bin_refine_factors[1];iiy++) {
                 int iiiy;
                 DOUBLE off_ywrap = 0.0;
                 if(options->periodic) {
@@ -269,7 +286,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                 }
                 const DOUBLE newypos = yc + off_ywrap;
 
-                for(int iiz=-bin_refine_factor;iiz<=bin_refine_factor;iiz++) {
+                for(int8_t iiz=-options->bin_refine_factors[2];iiz<=options->bin_refine_factors[2];iiz++) {
                     int iiiz;
                     DOUBLE off_zwrap = 0.0;
                     if(options->periodic) {
@@ -365,6 +382,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
 
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
+    reset_bin_refine_factors(options);
 
     if(options->c_api_timer) {
         struct timeval t1;

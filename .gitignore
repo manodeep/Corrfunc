@@ -7,13 +7,16 @@
 xx*
 yy*
 zz*
+*.txt.*
 *dSYM*
 .DS_Store
 *.pyc
 *_float.[ch]
 *_double.[ch]
 DD
+wtheta
 build*
+paper/*
 dist*
 *egg*
 *_mocks

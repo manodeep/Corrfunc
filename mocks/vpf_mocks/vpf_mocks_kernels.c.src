@@ -1,0 +1,246 @@
+// # -*- mode: c -*-
+/* File: countspheres_mocks_kernels.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "defs.h"
+#include "function_precision.h"
+
+#ifdef __AVX__
+#include "avx_calls.h"
+
+static inline int vpf_mocks_avx_intrinsics_DOUBLE(const int64_t np, DOUBLE *X, DOUBLE *Y, DOUBLE *Z,
+                                                  const DOUBLE xcen, const DOUBLE ycen, const DOUBLE zcen,
+                                                  const DOUBLE rmax, const int nbin,
+                                                  uint64_t *src_counts)
+{
+    if(np == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_counts == NULL) {
+        return EXIT_FAILURE;
+    }
+    
+    uint64_t counts[nbin];
+    for(int i=0;i<nbin;i++) {
+        counts[i] = 0;
+    }
+    const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+    const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep;
+    const DOUBLE rmax_sqr = rmax*rmax;
+
+    AVX_FLOATS m_rmax_sqr = AVX_SET_FLOAT(rmax_sqr);
+    AVX_FLOATS m_rupp_sqr[nbin];
+    for(int k=0;k<nbin;k++) {
+        m_rupp_sqr[k] = AVX_SET_FLOAT((k+1)*rstep*rstep*(k+1));
+    }
+    const AVX_FLOATS m_xc    = AVX_SET_FLOAT(xcen);
+    const AVX_FLOATS m_yc    = AVX_SET_FLOAT(ycen);
+    const AVX_FLOATS m_zc    = AVX_SET_FLOAT(zcen);
+    
+    DOUBLE *localx2 = (DOUBLE *) X;
+    DOUBLE *localy2 = (DOUBLE *) Y;
+    DOUBLE *localz2 = (DOUBLE *) Z;
+    
+    int64_t j;
+    for(j=0;j<=(np-AVX_NVEC);j+=AVX_NVEC) {
+        
+        const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx2);
+        const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy2);
+        const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(localz2);
+        
+        localx2 += AVX_NVEC;
+        localy2 += AVX_NVEC;
+        localz2 += AVX_NVEC;
+        
+        const AVX_FLOATS m_dx = AVX_SUBTRACT_FLOATS(m_xc,m_x1);
+        const AVX_FLOATS m_dy = AVX_SUBTRACT_FLOATS(m_yc,m_y1);
+        const AVX_FLOATS m_dz = AVX_SUBTRACT_FLOATS(m_zc,m_z1);
+        
+        const AVX_FLOATS m_r2 = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_dx),AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_dy),AVX_SQUARE_FLOAT(m_dz)));
+        const AVX_FLOATS m_mask = AVX_COMPARE_FLOATS(m_r2,m_rmax_sqr,_CMP_LT_OS);
+        if(AVX_TEST_COMPARISON(m_mask) == 0) {
+            continue;
+        }
+        
+        for(int k=nbin-1;k>=1;k--){
+            AVX_FLOATS m_mask1 = AVX_COMPARE_FLOATS(m_r2,m_rupp_sqr[k],_CMP_LT_OS);
+            AVX_FLOATS m_mask2 = AVX_COMPARE_FLOATS(m_r2,m_rupp_sqr[k-1],_CMP_GE_OS);
+            AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask1,m_mask2);
+            int test2 = AVX_TEST_COMPARISON(m_bin_mask);
+            counts[k] += AVX_BIT_COUNT_INT(test2);
+            AVX_FLOATS m_mask_left = AVX_COMPARE_FLOATS(m_r2,m_rupp_sqr[k-1],_CMP_LT_OS);
+            int test3 = AVX_TEST_COMPARISON(m_mask_left);
+            if(test3 == 0) {
+                break;
+            } else if(k==1){
+                counts[0] += AVX_BIT_COUNT_INT(test3);
+            }
+        }
+    }
+    
+    
+    //Take care of the rest
+    for(;j<np;j++) {
+        const DOUBLE dx = *localx2++ - xcen;
+        const DOUBLE dy = *localy2++ - ycen;
+        const DOUBLE dz = *localz2++ - zcen;
+        const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
+        if(r2 >= rmax_sqr) continue;
+        const int ibin = (int) (SQRT(r2)*inv_rstep);
+        if(ibin < nbin) counts[ibin]++;
+    }
+
+    for(int i=0;i<nbin;i++) {
+        src_counts[i] += counts[i];
+    }
+
+    return EXIT_SUCCESS;
+}
+#endif
+
+
+
+#ifdef __SSE4_2__
+#include "sse_calls.h"
+
+static inline int vpf_mocks_sse_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
+                                                  const DOUBLE xcen, const DOUBLE ycen, const DOUBLE zcen,
+                                                  const DOUBLE rmax, const int nbin,
+                                                  uint64_t *src_counts)
+{
+
+    if(np == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_counts == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    uint64_t counts[nbin];
+    for(int i=0;i<nbin;i++) {
+        counts[i] = 0;
+    }
+    const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+    const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep;
+    const DOUBLE rmax_sqr = rmax*rmax;
+
+    SSE_FLOATS m_rmax_sqr = SSE_SET_FLOAT(rmax_sqr);
+    SSE_FLOATS m_rupp_sqr[nbin];
+    for(int k=0;k<nbin;k++) {
+        m_rupp_sqr[k] = SSE_SET_FLOAT((k+1)*rstep*rstep*(k+1));
+    }
+    const SSE_FLOATS m_xc    = SSE_SET_FLOAT(xcen);
+    const SSE_FLOATS m_yc    = SSE_SET_FLOAT(ycen);
+    const SSE_FLOATS m_zc    = SSE_SET_FLOAT(zcen);
+    
+    DOUBLE *localx2 = (DOUBLE *) X;
+    DOUBLE *localy2 = (DOUBLE *) Y;
+    DOUBLE *localz2 = (DOUBLE *) Z;
+    
+    int64_t j;
+    for(j=0;j<=(np-SSE_NVEC);j+=SSE_NVEC) {
+        
+        const SSE_FLOATS m_x1 = SSE_LOAD_FLOATS_UNALIGNED(localx2);
+        const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy2);
+        const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz2);
+        
+        localx2 += SSE_NVEC;
+        localy2 += SSE_NVEC;
+        localz2 += SSE_NVEC;
+        
+        const SSE_FLOATS m_dx = SSE_SUBTRACT_FLOATS(m_xc,m_x1);
+        const SSE_FLOATS m_dy = SSE_SUBTRACT_FLOATS(m_yc,m_y1);
+        const SSE_FLOATS m_dz = SSE_SUBTRACT_FLOATS(m_zc,m_z1);
+        
+        const SSE_FLOATS m_r2 = SSE_ADD_FLOATS(SSE_SQUARE_FLOAT(m_dx),SSE_ADD_FLOATS(SSE_SQUARE_FLOAT(m_dy),SSE_SQUARE_FLOAT(m_dz)));
+        const SSE_FLOATS m_mask = SSE_COMPARE_FLOATS_LT(m_r2,m_rmax_sqr);
+        if(SSE_TEST_COMPARISON(m_mask) == 0) {
+            continue;
+        }
+        
+        for(int k=nbin-1;k>=1;k--){
+            SSE_FLOATS m_mask1 = SSE_COMPARE_FLOATS_LT(m_r2,m_rupp_sqr[k]);
+            SSE_FLOATS m_mask2 = SSE_COMPARE_FLOATS_GE(m_r2,m_rupp_sqr[k-1]);
+            SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m_mask1,m_mask2);
+            int test2 = SSE_TEST_COMPARISON(m_bin_mask);
+            counts[k] += SSE_BIT_COUNT_INT(test2);
+            SSE_FLOATS m_mask_left = SSE_COMPARE_FLOATS_LT(m_r2,m_rupp_sqr[k-1]);
+            int test3 = SSE_TEST_COMPARISON(m_mask_left);
+            if(test3 == 0) {
+                break;
+            } else if(k==1){
+                counts[0] += SSE_BIT_COUNT_INT(test3);
+            }
+        }
+    }
+    
+    
+    //Take care of the rest
+    for(;j<np;j++) {
+        const DOUBLE dx = *localx2++ - xcen;
+        const DOUBLE dy = *localy2++ - ycen;
+        const DOUBLE dz = *localz2++ - zcen;
+        const DOUBLE r2 = (dx*dx + dy*dy + dz*dz);
+        if(r2 >= rmax_sqr) continue;
+        const int ibin = (int) (SQRT(r2)*inv_rstep);
+        if(ibin < nbin) counts[ibin]++;
+    }
+
+    for(int i=0;i<nbin;i++) {
+        src_counts[i] += counts[i];
+    }
+
+    return EXIT_SUCCESS;
+}    
+#endif //SSE4.2
+
+
+static inline int vpf_mocks_fallback_DOUBLE(const int64_t np, DOUBLE *X, DOUBLE *Y, DOUBLE *Z,
+                                            const DOUBLE xcen, const DOUBLE ycen, const DOUBLE zcen,
+                                            const DOUBLE rmax, const int nbin,
+                                            uint64_t *src_counts)
+{
+
+    if(np == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_counts == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    uint64_t counts[nbin];
+    for(int i=0;i<nbin;i++) {
+        counts[i]=0;
+    }
+
+    const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+    const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep;
+    const DOUBLE rmax_sqr = rmax*rmax;
+
+    for(int64_t j=0;j<np;j++) {
+        const DOUBLE dx = X[j] - xcen;
+        const DOUBLE dy = Y[j] - ycen;
+        const DOUBLE dz = Z[j] - zcen;
+        const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
+        if(r2 >= rmax_sqr) continue;
+        const int ibin = (int) (SQRT(r2)*inv_rstep);
+        if(ibin < nbin) counts[ibin]++;
+    }
+
+    for(int i=0;i<nbin;i++) {
+        src_counts[i] += counts[i];
+    }
+    
+    return EXIT_SUCCESS;
+}    

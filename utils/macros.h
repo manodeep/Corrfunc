@@ -1,5 +1,42 @@
 #pragma once
 
+#define NLATMAX           100
+
+#define BOOST_CELL_THRESH   10
+#define BOOST_NUMPART_THRESH 250
+#define BOOST_BIN_REF       1
+
+#define ADD_DIFF_TIME(t0,t1)            ((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
+#define REALTIME_ELAPSED_NS(t0, t1)     ((t1.tv_sec - t0.tv_sec)*1000000000.0 + (t1.tv_nsec - t0.tv_nsec))
+    
+#define ALIGNMENT                32
+
+#define STRINGIFY(x)   #x
+#define STR(x) STRINGIFY(x)
+
+
+#define ASSIGN_CELL_TIMINGS(thread_timings, nx1, nx2, timediff, tid, first_cellid, second_cellid) \
+    {                                                                   \
+        thread_timings->N1 = nx1;                                       \
+        thread_timings->N2 = nx2;                                       \
+        thread_timings->time_in_ns = timediff;                          \
+        thread_timings->tid = tid;                                      \
+        thread_timings->first_cellindex = first_cellid;                 \
+        thread_timings->second_cellindex = second_cellid;               \
+    }
+
+/* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
+   which is in turn taken from the linux kernel */
+/* #define BUILD_BUG_OR_ZERO(e) (sizeof(struct{ int:-!!(e);})) */
+/* #define ENSURE_STRUCT_SIZE(e, size)  BUILD_BUG_OR_ZERO(sizeof(e) != size) */
+/* However, the previous one gives me an unused-value warning and I do not want 
+   to turn that compiler warning off. Therefore, this version, which results in 
+   an unused local typedef warning is used. I turn off the corresponding warning 
+   in common.mk (-Wno-unused-local-typedefs) via CFLAGS
+*/
+#define BUILD_BUG_OR_ZERO(cond, msg) typedef volatile char assertion_on_##msg[( !!(cond) )*2-1 ] 
+#define ENSURE_STRUCT_SIZE(e, size)                 BUILD_BUG_OR_ZERO(sizeof(e) == size, sizeof_struct_config_options)
+
 /* Macro Constants */
 //Just to output some colors
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -92,7 +129,7 @@ the ROOT DIRECTORY of ``Corrfunc`` and re-install the entire packge.\n"
          }                                                              \
      } while (0)
 #endif
-   
+
 #define SETUP_INTERRUPT_HANDLERS(handler_name)                          \
      const int interrupt_signals[] = {SIGTERM, SIGINT, SIGHUP};         \
      const size_t nsig = sizeof(interrupt_signals)/sizeof(interrupt_signals[0]); \

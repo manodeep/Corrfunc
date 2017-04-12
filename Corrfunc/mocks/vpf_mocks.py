@@ -3,8 +3,8 @@
 
 """
 Python wrapper around the C extension for the counts-in-cells
-for positions on the sky. Corresponding C codes are in `mocks/vpf`
-while the python wrapper is in `~Corrfunc.mocks.vpf_mocks`
+for positions on the sky. Corresponding C codes are in ``mocks/vpf_mocks/``
+while the python wrapper is in :py:mod:`Corrfunc.mocks.vpf_mocks`
 """
 
 from __future__ import (division, print_function, absolute_import,
@@ -19,7 +19,9 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
               RA, DEC, CZ,
               RAND_RA, RAND_DEC, RAND_CZ,
               verbose=False, is_comoving_dist=False,
-              c_api_timer=False, isa='fastest'):
+              xbin_refine_factor=1, ybin_refine_factor=1,
+              zbin_refine_factor=1, max_cells_per_dim=100,
+              c_api_timer=False, isa=r'fastest'):
     """
     Function to compute the counts-in-cells on points on the sky. Suitable
     for mock catalogs and observed galaxies.
@@ -48,10 +50,20 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        returned.
 
        More explicitly, the columns in the results look like the following:
-         numpN = 1 -> p0
-         numpN = 2 -> p0 p1
-         numpN = 3 -> p0 p1 p2
-         and so on...(note that p0 is the vpf).
+
+         ======   ==========================
+         numpN    Columns in output
+         ======   ==========================
+            1      p0
+            2      p0      p1
+            3      p0      p1     p2
+            4      p0      p1     p2     p3
+         ======   ==========================
+
+       and so on...
+
+
+    .. note:: p0 is the vpf
 
     threshold_ngb: integer
        Minimum number of random points needed in a ``rmax`` sphere such that it
@@ -68,23 +80,25 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        exist but either ``rmax`` is too small or there are not enough centers
        then the file will be overwritten.
 
-       Note: If the centers file has to be written, the code will take
+    
+    .. note:: If the centers file has to be written, the code will take
        significantly longer to finish. However, subsequent runs can re-use
        that centers file and will be faster.
 
     cosmology: integer, required
-       Integer choice for setting cosmology. Valid values are 1->LasDamas
-       cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
-       easiest way is to convert the ``CZ`` values into co-moving distance,
-       based on your preferred cosmology. Set ``is_comoving_dist=True``, to
-       indicate that the co-moving distance conversion has already been done.
+        Integer choice for setting cosmology. Valid values are 1->LasDamas
+        cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
+        easiest way is to convert the ``CZ`` values into co-moving distance,
+        based on your preferred cosmology. Set ``is_comoving_dist=True``, to
+        indicate that the co-moving distance conversion has already been done.
 
-       Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75
-                2 -> Planck   cosmology. Om=0.302, Ol=0.698
+        Choices:
+                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\Lambda=0.75`
+                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\Lambda=0.698`
 
-       To setup a new cosmology, add an entry to the function,
-       ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
-       the entire package.
+        To setup a new cosmology, add an entry to the function,
+        ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
+        the entire package.
 
     RA: array-like, real (float/double)
        The array of Right Ascensions for the first set of points. RA's
@@ -110,7 +124,6 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        If ``is_comoving_dist`` is set, then ``CZ`` is interpreted as the
        co-moving distance, rather than (Speed Of Light * Redshift).
 
-
     RAND_RA: array-like, real (float/double)
        The array of Right Ascensions for the randoms. RA's are expected to be
        in [0.0, 360.0], but the code will try to fix cases where the RA's are
@@ -135,7 +148,8 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the
        co-moving distance, rather than ``(Speed Of Light * Redshift)``.
 
-       *NOTE*: RAND_RA, RAND_DEC and RAND_CZ are only used when the
+     
+    .. note:: RAND_RA, RAND_DEC and RAND_CZ are only used when the
           ``centers_file``  needs to be written out. In that case, the
           RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.
 
@@ -146,6 +160,20 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        Boolean flag to indicate that ``cz`` values have already been
        converted into co-moving distances. This flag allows arbitrary
        cosmologies to be used in ``Corrfunc``.
+
+    (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
+       Controls the refinement on the cell sizes. Can have up to a 20% impact
+       on runtime. 
+
+
+    .. note:: Since the counts in spheres calculation is symmetric
+       in all 3 dimensions, the defaults are different from the clustering
+       routines.
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+       Controls the maximum number of cells per dimension. Total number of
+       cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
+       too small relative to the boxsize (and increasing helps the runtime).
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -229,16 +257,16 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     ...         print("{0:10.3f} ".format(pn), end="")
     ...         # doctest: +NORMALIZE_WHITESPACE
     ...     print("") # doctest: +NORMALIZE_WHITESPACE
-    1.0      0.999      0.001      0.000      0.000      0.000      0.000
-    2.0      0.992      0.007      0.001      0.000      0.000      0.000
-    3.0      0.982      0.009      0.005      0.002      0.001      0.000
-    4.0      0.975      0.006      0.006      0.005      0.003      0.003
-    5.0      0.971      0.004      0.003      0.003      0.004      0.003
-    6.0      0.967      0.003      0.003      0.001      0.003      0.002
-    7.0      0.962      0.004      0.002      0.003      0.002      0.001
-    8.0      0.958      0.004      0.002      0.003      0.001      0.002
-    9.0      0.953      0.003      0.003      0.002      0.003      0.001
-    10.0      0.950      0.003      0.002      0.002      0.001      0.002
+       1.0      0.999      0.001      0.000      0.000      0.000      0.000
+       2.0      0.992      0.007      0.001      0.000      0.000      0.000
+       3.0      0.982      0.009      0.005      0.002      0.001      0.000
+       4.0      0.975      0.006      0.006      0.005      0.003      0.003
+       5.0      0.971      0.004      0.003      0.003      0.004      0.003
+       6.0      0.967      0.003      0.003      0.001      0.003      0.002
+       7.0      0.962      0.004      0.002      0.003      0.002      0.001
+       8.0      0.958      0.004      0.002      0.003      0.001      0.002
+       9.0      0.953      0.003      0.003      0.002      0.003      0.001
+      10.0      0.950      0.003      0.002      0.002      0.001      0.002
 
     """
 
@@ -262,6 +290,10 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
                                       RAND_RA, RAND_DEC, RAND_CZ,
                                       verbose=verbose,
                                       is_comoving_dist=is_comoving_dist,
+                                      xbin_refine_factor=xbin_refine_factor,
+                                      ybin_refine_factor=ybin_refine_factor,
+                                      zbin_refine_factor=zbin_refine_factor,
+                                      max_cells_per_dim=max_cells_per_dim,
                                       c_api_timer=c_api_timer,
                                       isa=integer_isa)
 
@@ -290,55 +322,5 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
 
 if __name__ == '__main__':
-    import numpy as np
-    import time
-    import Corrfunc
-    from os.path import dirname, abspath, join as pjoin
-    print("\nRunning VPF for mocks")
-    rmax = 10.0
-    nbins = 10
-    numbins_to_print = nbins
-    nspheres = 10000
-    numpN = 6
-    threshold_ngb = 1  # does not matter since we have the centers
-    cosmology = 1  # LasDamas cosmology
-
-    # file containing the centers of random spheres
-    centers_file = pjoin(dirname(abspath(Corrfunc.__file__)),
-                         "../mocks/tests/data/",
-                         "Mr19_centers_xyz_forVPF_rmax_10Mpc.txt")
-
-    N = 100000
-    boxsize = 420.0
-    X = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-    Y = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-    Z = np.random.uniform(-0.5 * boxsize, 0.5 * boxsize, N)
-
-    # Convert XYZ into RA/DEC/CZ
-    CZ = np.sqrt(X * X + Y * Y + Z * Z)
-    inv_cz = 1.0 / CZ
-
-    # Convert to unit sphere
-    X *= inv_cz
-    Y *= inv_cz
-    Z *= inv_cz
-
-    import math
-    DEC = 90.0 - np.arccos(Z) * 180.0 / math.pi
-    RA = (np.arctan2(Y, X) * 180.0 / math.pi) + 180.0
-
-    t0 = time.time()
-    results, api_time = vpf_mocks(rmax, nbins, nspheres, numpN,
-                                  threshold_ngb, centers_file, cosmology,
-                                  RA, DEC, CZ,
-                                  RA, DEC, CZ,
-                                  verbose=True,
-                                  c_api_timer=True,
-                                  is_comoving_dist=True)
-
-    t1 = time.time()
-    print("Results from vpf_mocks (Npts = {0}): Time taken = {1:0.3f} sec "
-          "Python time = {2:0.3f} sec".format(N, api_time, t1 - t0))
-
-    for r in results:
-        print("{0}".format(r))
+    import doctest
+    doctest.testmod()
