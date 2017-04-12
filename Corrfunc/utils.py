@@ -762,19 +762,19 @@ def gridlink_sphere(thetamax,
     if ra_limits[0] >= ra_limits[1]:
         msg = 'Declination limits should be sorted in increasing '\
               'order. However, ra_limits = [{0}, {1}] is not'.\
-              format(ra_limits)
+              format(ra_limits[0], ra_limits[1])
         raise ValueError(msg)
 
     if dec_limits[0] < -0.5*pi or dec_limits[1] > 0.5*pi:
         msg = 'Valid range of values for declination are [-pi/2, +pi/2] deg. '\
               'However, dec_limits = [{0}, {1}] does not fall within that '\
-              'range'.format(dec_limits)
+              'range'.format(dec_limits[0], dec_limits[1])
         raise ValueError(msg)
     
     if ra_limits[0] < 0.0 or ra_limits[1] > 2.0*pi:
         msg = 'Valid range of values for declination are [0.0, 2*pi] deg. '\
               'However, ra_limits = [{0}, {1}] does not fall within that '\
-              'range'.format(ra_limits)
+              'range'.format(ra_limits[0], ra_limits[1])
         raise ValueError(msg)
     
     dec_diff = abs(dec_limits[1] - dec_limits[0])
