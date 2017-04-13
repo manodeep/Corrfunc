@@ -23,8 +23,9 @@ Here are the basic steps to get your statistic into the Corrfunc package:
   documented but not necessary.
 * Add a call to this new *extension* in the
   ``python_bindings/call_correlation_functions*.py`` script.
-  
-  **NOTE**: Different from corresponding script in ``Corrfunc/`` directory.
+
+.. note:: Different from corresponding script in ``Corrfunc/`` directory.
+
 * Add a python wrapper for the previous python extension. This wrapper should
   exist in ``Corrfunc/theory/`` or ``Corrfunc/mocks/``. Wrapper **must** have
   inline API docs.
@@ -34,19 +35,19 @@ Here are the basic steps to get your statistic into the Corrfunc package:
   ``Corrfunc/call_correlation_functions.py`` or
   ``Corrfunc/call_correlation_functions_mocks.py`` for simulations and mocks
   respectively.
-
-  **NOTE**: Different from corresponding script in ``python_bindings`` directory.
+  
+.. note:: Different from corresponding script in ``python_bindings`` directory.
+          
 * Add the new wrapper to the API docs within
   ``ROOT_DIR/docs/source/theory_functions.rst`` or
   ``ROOT_DIR/docs/source/mocks_functions.rst``. 
 * Add to the contributors list under
   ``ROOT_DIR/docs/source/development/contributors.rst``.
 *  Submit pull request
+   
 
-**NOTE**: Please feel free to email the `author <mailto:manodeep@gmail.com>`_ or
-the `Corrfunc Google Groups
-<https://groups.google.com/forum/#!forum/corrfunc>`_ if you need help at any
-stage. 
+.. note:: Please feel free to email the `author <mailto:manodeep@gmail.com>`_ or
+          the `Corrfunc Google Groups <https://groups.google.com/forum/#!forum/corrfunc>`_ if you need help at any stage. 
 
 
 Corrfunc Design
@@ -60,10 +61,13 @@ All of the algorithms in Corrfunc have the following components:
   lattice grids up the particle distribution on cell-sizes of ``rmax`` (the
   maximum search radius).
 
-  **NOTE**: The current lattice code duplicates the particle memory. If you
+  
+.. note:: The current lattice code duplicates the particle memory. If you
   need a lattice that does not duplicate the particle memory, then please email
   the `author <mailto:manodeep@gmail.com>`_. Relevant code existed in Corrfunc
   but has been removed in the current incarnation.
+
+  
 * Setting up the OpenMP sections such that threads have local copies of
   histogram arrays. If OpenMP is not enabled, then this section should not
   produce any compilable code.
@@ -105,17 +109,17 @@ C guidelines
 Code contents
 -------------
 
-* **Always** check for error conditions
+* **Always** check for error conditions when calling a function
 * If an error condition occurs when making an kernel/external library call,
   first call ``perror`` and then return the error status. If calling a wrapper
   from within Corrfunc, assume that ``perror`` has already been called and
   simply return the status. Clean up memory before returning status.
-* Declare variables in the smallest possible scope. Add ``const`` qualifiers
-  liberally
+* Declare variables in the smallest possible scope.
+* Add ``const`` qualifiers liberally
 * There **must** not be any compiler warnings (with ``gcc6.0``) under the given set of Warnings
   already enabled within ``common.mk``. If the warning can not be avoided
   because of logic issues, then suppress the warning but note why that
-  suppression is required.
+  suppression is required. Warnings are treated as errors on the continuous integration platform (TRAVIS)
 * Valgrind should not report any fixable memory or file leaks (memory
   leaks in OpenMP library, e.g., ``libgomp``, are fine)
 

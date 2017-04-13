@@ -40,8 +40,7 @@ Using ``numpy.genfromtxt``
           X, Y, Z = np.genfromtxt(fname, dtype=dtype, unpack=True)
 
 
-**Note** ``Corrfunc.read_catalog`` uses this exact code-snippet
-to read in ASCII files in python. 
+.. note:: :py:mod:`Corrfunc.read_catalog` uses this exact code-snippet to read in ASCII files in python. 
 
 
 Reading from fast-food files
@@ -54,10 +53,10 @@ ASCII and fast-food formats (for description of fast-food binaries, see
 read both these types of files.      
 
 
-Using utility: ``Corrfunc.io.read_catalog``
---------------------------------------------
+Using utility: :py:mod:`Corrfunc.io.read_catalog`
+-------------------------------------------------
 
-``Corrfunc.io.read_catalog`` can directly read ASCII files or fast-food binary
+:py:mod:`Corrfunc.io.read_catalog` can directly read ASCII files or fast-food binary
 files. 
 
 .. code:: python
