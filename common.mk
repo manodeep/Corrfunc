@@ -1,5 +1,14 @@
 ### Set the default compiler -- options are icc/gcc/clang.
-CC:=gcc
+### If you leave this empty, gcc will be used on linux
+### and clang-omp (if available) or clang will be used
+### on OSX.
+### If you want to set the compiler on the command-line,
+### do make CC=yourcompiler, but remember you will have to
+### specify the compiler for every make invocation. Might be
+### less effort to do so here.
+### *NOTE* Does not honour environment variable CC, since that
+### is typically set to really outdated fail-safe compiler, /usr/bin/cc
+CC := 
 
 #### Add any compiler specific flags you want
 CFLAGS:=
@@ -64,6 +73,12 @@ ifeq ($(DO_CHECKS), 1)
     CLINK += -lrt # need real time library for the nano-second timers. Not required on OSX
   endif
 
+  ## Broadly speaking, here's the color convention (not strictly adhered to yet):
+  ## green - shell commands
+  ## red - error messages
+  ## magenta - general highlight
+  ## blue - related to code/compile option
+  ## bold - only used with printing out compilation options
   ccred:=$(shell $(ECHO_COMMAND) "\033[0;31m")
   ccmagenta:=$(shell $(ECHO_COMMAND) "\033[0;35m")
   ccgreen:=$(shell $(ECHO_COMMAND) "\033[0;32m")
@@ -75,28 +90,47 @@ ifeq ($(DO_CHECKS), 1)
   ## First check make version. Versions of make older than 3.80 will crash
   ifneq (3.80,$(firstword $(sort $(MAKE_VERSION) 3.80)))
     ## Order-only attributes were added to make version 3.80
-    $(warning $(ccmagenta)Please upgrade $(ccblue)make$(ccreset))
+    $(warning $(ccmagenta)Please upgrade $(ccgreen)make$(ccreset))
     ifeq ($(UNAME), Darwin)
-      $(info on Mac+homebrew, use $(ccmagenta)"brew outdated xctool || brew upgrade xctool"$(ccreset))
-      $(info Otherwise, install XCode command-line tools$ directly: $(ccmagenta)"xcode-select --install"$(ccreset))
+      $(info on Mac+homebrew, use $(ccgreen)"brew outdated xctool || brew upgrade xctool"$(ccreset))
+      $(info Otherwise, install XCode command-line tools$ directly: $(ccgreen)"xcode-select --install"$(ccreset))
       $(info This link: $(ccmagenta)"http://railsapps.github.io/xcode-command-line-tools.html"$(ccreset) has some more details)
     else
-      $(info On Linux: Try some variant of $(ccmagenta)"sudo apt-get update && sudo apt-get upgrade"$(ccreset))
+      $(info On Linux: Try some variant of $(ccgreen)"sudo apt-get update && sudo apt-get upgrade"$(ccreset))
     endif
     $(error $(ccred)Project requires make >= 3.80 to compile.$(ccreset))
   endif
   #end of checks for make. 
 
-  ## Make clang the default compiler on Mac
-  ## But first check for clang-omp, use that if available
-  ifeq ($(UNAME), Darwin)
-    CLANG_OMP_FOUND := $(shell clang-omp --version 2>/dev/null)
-    ifndef CLANG_OMP_FOUND
-      CC := clang
+
+  ## Set the C compiler if not set
+  ifeq ($(CC),)
+    ## Make clang the default compiler on Mac
+    ## But first check for clang-omp, use that if available
+    ## clang/clang-omp is default on OSX
+    ifeq ($(UNAME), Darwin)
+      CLANG_OMP_FOUND := $(shell clang-omp --version 2>/dev/null)
+      ifndef CLANG_OMP_FOUND
+        CC := clang
+      else
+        CC := clang-omp
+      endif
     else
-      CC := clang-omp
+      ## gcc is default on linux
+      CC := gcc
     endif
+  else
+    export CMDLINE_CC_INFO_PRINTED ?= 0
+    ifeq ($(CMDLINE_CC_INFO_PRINTED), 0)    
+      $(info If you want to permanently set the default compiler to $(ccmagenta)$(CC)$(ccreset) for all future compilations, please update the $(ccblue)"CC"$(ccreset) variable in $(ccmagenta)"common.mk"$(ccreset))
+      export CMDLINE_CC_INFO_PRINTED := 1
+    endif  
   endif
+
+  ifeq ($(CC),)
+    $(error $(ccred)Error:$(ccreset) Could not set compiler. Please either set $(ccblue)"CC"$(ccreset) in $(ccmagenta)"common.mk"$(ccreset) or via the command-line, $(ccgreen)"make CC=yourcompiler"$(ccreset))
+  endif
+
 
   # # Check if CPU supports AVX -> this trumps everything. For instance, compiler might
   # # support AVX but the cpu might not. Then compilation will work fine but there will
@@ -124,14 +158,17 @@ ifeq ($(DO_CHECKS), 1)
   #   OPT:=$(filter-out -DUSE_AVX,$(OPT))
   # endif
   # # end of checking if CPU supports AVX      
-
+  ## This entire AVX section is now commented out because the code has runtime-dispatch based on the CPU capabilities and picks the latest instruction set by default
 
   # Now check if gcc is set to be the compiler but if clang is really under the hood.
   export CC_IS_CLANG ?= -1
   ifeq ($(CC_IS_CLANG), -1)
     CC_VERSION := $(shell $(CC) --version 2>/dev/null)
     ifndef CC_VERSION
-      $(error $(ccred)Could not find $$CC = ${CC}$(ccreset))
+      $(info $(ccred)Error:$(ccreset) Could find compiler = $(ccred)${CC}$(ccreset))
+      $(info Please either set $(ccblue)"CC"$(ccreset) in $(ccmagenta)"common.mk"$(ccreset) or via the command-line, $(ccgreen)"make CC=yourcompiler"$(ccreset))
+      $(info And please check that the specified compiler is in your $(ccmagenta)"$$PATH"$(ccreset) variable$)
+      $(error )
     endif
     ifeq (clang,$(findstring clang,$(CC_VERSION)))
       export CC_IS_CLANG := 1
@@ -177,7 +214,7 @@ ifeq ($(DO_CHECKS), 1)
 
   GSL_FOUND := $(shell gsl-config --version)
   ifndef GSL_FOUND
-    $(error $(ccred) GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION) $(ccreset))
+    $(error $(ccred)Error:$(ccreset) GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION) $(ccreset))
   endif
   GSL_CFLAGS := $(shell gsl-config --cflags)
   GSL_LIBDIR := $(shell gsl-config --prefix)/lib
