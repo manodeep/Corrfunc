@@ -74,15 +74,15 @@ Compilation Notes
 
 - ``make install`` simply copies files into the ``lib/bin/include`` sub-directories. You do not need ``root`` permissions
 
-- Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler`` and ``make install CC=yourcompiler``
+- Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``,  ``make install CC=yourcompiler``, ``make tests CC=yourcompiler`` etc. If you want to permanently change the default compiler, then please edit the ``common.mk`` file in the base directory.
 
-- If you are only interested in the python extensions, you can directly run ``python setup.py install (CC=yourcompiler) (--user)``. Please run a ``make distclean`` beforehand, especially if switching compilers.
+- If you are directly using ``python setup.py install CC=yourcompiler (--user)``, please run a ``make distclean`` beforehand (especially if switching compilers)
 
 
 Alternate Install Method
 -------------------------
 
-The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Installing via `pip` is **not** recommended, please open an install issue on this repo first; doing so helps improve the code-base and saves future users from running into similar install issues. 
+The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Installing via ``pip`` is **not** recommended, please open an install issue on this repo first; doing so helps improve the code-base and saves future users from running into similar install issues. 
 
 Installation notes
 ------------------
