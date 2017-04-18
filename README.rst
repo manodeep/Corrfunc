@@ -1,13 +1,11 @@
-|Release| |PyPI| |MIT licensed| |DOI| |ASCL| |Travis Build| |Issues| |RTD| |Landscape| |Gitter|
+|Release| |PyPI| |MIT licensed| |ASCL| |Travis Build| |Issues| |RTD| |Landscape|
 
 Description
 ===========
 
-This repo contains a set of codes to measure the following OpenMP
-parallelized clustering measures in a cosmological box (co-moving XYZ)
-or on a mock (RA, DEC, CZ). Also, contains the associated paper to be
-published in Astronomy & Computing Journal (at some point). Read the
-documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_. 
+This repo contains a set of codes to calculate correlation functions and 
+other clustering statistics in a cosmological box (co-moving XYZ)
+or on a mock (RA, DEC, CZ). Read the documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_. 
 
 Why Should You Use it
 ======================
@@ -320,20 +318,24 @@ Corrfunc was designed by Manodeep Sinha and is currently maintained by
 Citing
 ======
 
-If you use the code, please cite using the Zenodo DOI. The BibTex entry
-for the code is
+If you use the code, please cite using the `ascl entry <http://ascl.net/1703.003>`_ as indexed by `ADS <http://adsabs.harvard.edu/abs/2017ascl.soft03003S>`_. The BibTex entry for the code is
 
 ::
 
-      @misc{manodeep_sinha_2016_61511,
-         author       = {Manodeep Sinha},
-         title        = {Corrfunc: Corrfunc-2.0.0},
-         month        = sep,
-         year         = 2016,
-         doi          = {10.5281/zenodo.61511},
-         url          = {http://dx.doi.org/10.5281/zenodo.61511}
+      @misc{2017ascl.soft03003S,
+         author = {{Sinha}, M. and {Garrison}, L.},
+         title = "{Corrfunc: Blazing fast correlation functions on the CPU}",
+         keywords = {Software},
+         howpublished = {Astrophysics Source Code Library},
+         year = 2017,
+         month = mar,
+         archivePrefix = "ascl",
+         eprint = {1703.003},
+         adsurl = {http://adsabs.harvard.edu/abs/2017ascl.soft03003S},
+         adsnote = {Provided by the SAO/NASA Astrophysics Data System}
       }
-       
+
+
 Mailing list
 ============
 
@@ -356,16 +358,12 @@ Project URL
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
    :alt: Latest Release
-
 .. |PyPI| image:: https://img.shields.io/pypi/v/Corrfunc.svg
    :target: https://pypi.python.org/pypi/Corrfunc
    :alt: PyPI Release
 .. |MIT licensed| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE
    :alt: MIT License
-.. |DOI| image:: https://zenodo.org/badge/19184/manodeep/Corrfunc.svg
-   :target: https://zenodo.org/badge/latestdoi/19184/manodeep/Corrfunc
-   :alt: Zenodo DOI
 .. |ASCL| image:: https://img.shields.io/badge/ascl-1703.003-blue.svg?colorB=262255
    :target: http://ascl.net/1703.003
    :alt: ascl:1703.003
@@ -381,7 +379,3 @@ Project URL
 .. |Landscape| image:: https://landscape.io/github/manodeep/Corrfunc/master/landscape.svg?style=flat
    :target: https://landscape.io/github/manodeep/Corrfunc/master
    :alt: Code Health
-
-.. |Gitter| image:: https://badges.gitter.im/Corrfunc/Lobby.svg
-   :alt: Join the chat at https://gitter.im/Corrfunc/Lobby
-   :target: https://gitter.im/Corrfunc/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
