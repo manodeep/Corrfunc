@@ -23,7 +23,8 @@ extern "C" {
     
     typedef int (*countpairs_mocks_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
                                                     const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
-                                                    const int same_cell, 
+                                                    const int same_cell,
+                                                    const int fast_divide,
                                                     const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin,
                                                     const int npibin, const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep, 
                                                     DOUBLE *src_rpavg, uint64_t *src_npairs,
