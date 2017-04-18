@@ -122,7 +122,7 @@ struct config_options
     uint8_t link_in_ra; /* relevant for DDtheta_mocks.*/
 
     /* Replaces the divide in DDrppi_mocks in AVX mode by a reciprocal and a Newton-Raphson step. */
-    uint8_t fast_divide;
+    uint8_t fast_divide;//Only used in AVX
 
     /* Fast arccos for wtheta (effective only when OUTPUT_THETAAVG is enabled) */
     uint8_t fast_acos;
