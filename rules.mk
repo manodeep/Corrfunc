@@ -27,28 +27,28 @@ $(TARGET).o: $(TARGET).c $(ROOT_DIR)/common.mk Makefile $(ROOT_DIR)/theory.optio
 	@echo "#ifdef DOUBLE_PREC" >> $@
 	@echo "#undef DOUBLE_PREC" >> $@
 	@echo "#endif" >> $@
-	sed -e "s/DOUBLE/float/g" $< >> $@
+	sed -e "/DOUBLE_PREC/!s/DOUBLE/float/g" $< >> $@
 
 %_float.h: %.h.src Makefile
 	@echo "/* This file is auto-generated from $(notdir $<) */" > $@
 	@echo "#ifdef DOUBLE_PREC" >> $@
 	@echo "#undef DOUBLE_PREC" >> $@
 	@echo "#endif" >> $@
-	sed -e "s/DOUBLE/float/g"  $< >> $@
+	sed -e "/DOUBLE_PREC/!s/DOUBLE/float/g"  $< >> $@
 
 %_double.c: %.c.src Makefile
 	@echo "/* This file is auto-generated from $(notdir $<) */" > $@
 	@echo "#ifndef DOUBLE_PREC" >> $@
 	@echo "#define DOUBLE_PREC" >> $@
 	@echo "#endif" >> $@
-	sed -e "s/DOUBLE/double/g"  $< >> $@
+	sed -e "/DOUBLE_PREC/!s/DOUBLE/double/g"  $< >> $@
 
 %_double.h: %.h.src Makefile
 	@echo "/* This file is auto-generated from $(notdir $<) */" > $@
 	@echo "#ifndef DOUBLE_PREC" >> $@
 	@echo "#define DOUBLE_PREC" >> $@
 	@echo "#endif" >> $@
-	sed -e "s/DOUBLE/double/g"  $< >> $@
+	sed -e "/DOUBLE_PREC/!s/DOUBLE/double/g"  $< >> $@
 
 %_double.o: %_double.c
 	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@

@@ -222,18 +222,16 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                     //but doubles do not. So, we have to 'fake' an approximate reciprocal for doubles by converting to float
                     //taking the approximate reciprocal, and then convert back to double
 #ifndef DOUBLE_PREC
-                    //Taken from Intel's site: https://software.intel.com/en-us/articles/wiener-filtering-using-intel-advanced-vector-extensions
-                    // (which has bugs in it, just FYI). Plus, https://techblog.lankes.org/2014/06/16/avx-isnt-always-faster-then-see/
-                    __m256 rc  = _mm256_rcp_ps(m_sqr_norm_l);//intrinsic for 256 bit approximate reciprocal -> should not be set to avx_floats 
-                                                             //(as I learnt after breaking tests on the master branch -- MS 18/04/2017)
+                    const AVX_FLOATS rc  = _mm256_rcp_ps(m_sqr_norm_l);//intrinsic for 256 bit approximate reciprocal
 #else
                     //we have to do this for doubles now.
                     //if the vrcpps instruction is not generated, there will
                     //be a ~70 cycle performance hit from switching between
                     //AVX and SSE modes.
-                    __m128 float_tmp1 =  _mm256_cvtpd_ps(m_sqr_norm_l);//convert double to float -> not avx_floats := _m256d (convert 4 doubles into 4 floats -> use half of available 256 bit SIMD registers)
+                    const __m128 float_tmp1 =  _mm256_cvtpd_ps(m_sqr_norm_l);//convert double to float -> not avx_floats := _m256d 
+                                                                             //(convert 4 doubles into 4 floats -> use half of available 256 bit SIMD registers)
                     __m128 float_inv_tmp1 = _mm_rcp_ps(float_tmp1);//intrinsic for 128 bit float approximate reciprocal
-                    AVX_FLOATS rc = _mm256_cvtps_pd(float_inv_tmp1);//convert back to double
+                    const AVX_FLOATS rc = _mm256_cvtps_pd(float_inv_tmp1);//convert back to double
 #endif//DOUBLE_PREC
 
                     //We have the double->float->approx. reciprocal->double process done.
