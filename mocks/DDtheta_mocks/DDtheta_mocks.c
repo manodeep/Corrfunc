@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 void Printhelp(void)
 {
     fprintf(stderr,"========================================================================================\n") ;
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     fprintf(stderr,"   --- DDtheta file1 format1 file2 format2 binfile numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > Thetafile\n") ;
 #else
     fprintf(stderr,"   --- DDtheta file1 format1 file2 format2 binfile [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > Thetafile\n") ;
@@ -271,7 +271,7 @@ void Printhelp(void)
     fprintf(stderr,"     * file2       = name of second data file\n") ;
     fprintf(stderr,"     * format2     = format of second data file\n") ;
     fprintf(stderr,"     * binfile     = name of ascii file containing the theta-bins (thetamin thetamax for each bin)\n") ;
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     fprintf(stderr,"     * numthreads  = number of threads to use\n");
 #endif
     fprintf(stderr,"   --- OPTIONAL ARGS:\n");
@@ -294,19 +294,47 @@ void Printhelp(void)
     fprintf(stderr,"Output THETAAVG = False\n");
 #endif
 
+/* #OPT += -DOUTPUT_THETAAVG */
+/* OPT += -DLINK_IN_RA #link_in_dec must be enabled before link_in_ra */
+/* #OPT += -DFAST_ACOS ## replaces acos by an 8th order REMEZ polynomial. Results are approximate (max. absolute error 3.6e-9) ~50% boost, but obviously approximate */
+
+#ifdef LINK_IN_DEC
+    fprintf(stderr,"Linking in declination = True\n");
+#else
+    fprintf(stderr,"Linking in declination = False\n");
+#endif    
+
+#ifdef LINK_IN_DEC
+    //RA linking only works when dec linking is enabled
+#ifdef LINK_IN_RA
+    fprintf(stderr,"Linking in right ascension  = True\n");
+#else
+    fprintf(stderr,"Linking in right ascension  = False\n");
+#endif//ra
+#endif//dec
+
+#ifdef OUTPUT_THETAAVG
+    //Only makes sense when <theta> is requested
+#ifdef FAST_ACOS
+    fprintf(stderr,"Fast (approx) arc-cosine  = True\n");
+#else
+    fprintf(stderr,"Fast (approx) arc-cosine  = False\n");
+#endif//fast acos    
+#endif//thetaavg    
+    
 #ifdef DOUBLE_PREC
     fprintf(stderr,"Precision = double\n");
 #else
     fprintf(stderr,"Precision = float\n");
 #endif
 
-#if defined(USE_AVX) && defined(__AVX__)
+#if defined(__AVX__)
     fprintf(stderr,"Use AVX = True\n");
 #else
     fprintf(stderr,"Use AVX = False\n");
 #endif
 
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     fprintf(stderr,"Use OMP = True\n");
 #else
     fprintf(stderr,"Use OMP = False\n");
