@@ -224,7 +224,8 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
 #ifndef DOUBLE_PREC
                     //Taken from Intel's site: https://software.intel.com/en-us/articles/wiener-filtering-using-intel-advanced-vector-extensions
                     // (which has bugs in it, just FYI). Plus, https://techblog.lankes.org/2014/06/16/avx-isnt-always-faster-then-see/
-                    AVX_FLOATS rc  = _mm256_rcp_ps(m_sqr_norm_l);//intrinsic for 256 bit approximate reciprocal
+                    __m256 rc  = _mm256_rcp_ps(m_sqr_norm_l);//intrinsic for 256 bit approximate reciprocal -> should not be set to avx_floats 
+                                                             //(as I learnt after breaking tests on the master branch -- MS 18/04/2017)
 #else
                     //we have to do this for doubles now.
                     //if the vrcpps instruction is not generated, there will
