@@ -51,7 +51,7 @@ lib: $(LIBRARY)
 install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_BIN_DIR)/wprp_mocks $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
 tests: 
-	$(MAKE) -C ../tests DDrppi
+	$(MAKE) -C ../tests DDrppi_mocks
 
 clean:
 	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY) countpairs_rp_pi_mocks_impl_float.[ch] countpairs_rp_pi_mocks_impl_double.[ch] countpairs_rp_pi_mocks_kernels_double.c countpairs_rp_pi_mocks_kernels_float.c 
