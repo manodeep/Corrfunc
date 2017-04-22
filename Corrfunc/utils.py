@@ -745,9 +745,10 @@ def gridlink_sphere(thetamax,
 
     if input_in_degrees:
         thetamax = radians(thetamax)
-        for x in [ra_limits, dec_limits]:
-            if x:
-                x = radians(x)
+        if ra_limits:
+            ra_limits = [radians(x) for x in ra_limits]
+        if dec_limits:
+            dec_limits = [radians(x) for x in dec_limits]
             
     if not ra_limits:
         ra_limits = [0.0, 2.0*pi]

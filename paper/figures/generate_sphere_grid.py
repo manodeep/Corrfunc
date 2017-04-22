@@ -54,74 +54,67 @@ def lcm(arr):
     return reduce(lambda x, y: _lcm(x, y), arr)    
 
 
-def generate_meshgrid_from_sphere(sphere, num_ra_cells,
-                                  min_ra_cells_per_band=200):
-    
-    ndec = num_ra_cells.size
-    ncells = sphere.size
+def spherical_meshgrid(sphere, num_ra, max_dec_cells=200):
+    import numpy as np
 
-    # Find the lowest common multiple of the
-    # number of RA cells in any dec band
-    ra_cells = lcm(num_ra_cells)
-
-    # But make sure there are at least min_ra_cells_per_band
-    fac = long(min_ra_cells_per_band // ra_cells) + 1
-    ra_cells *= fac
-
-    assert ra_cells > min_ra_cells_per_band
-    
-    ## Now create a mesh grid that goes from the min to max
-    ## ra and dec
-    dec = np.zeros((ndec + 1, ra_cells))
-    ra = np.zeros((ndec + 1, ra_cells))
-    scalars = np.zeros((ndec + 1, ra_cells))
-
-    dec_start = 0
+    ndec = num_ra.size
+    grid_ndec_refine = max_dec_cells // ndec + 1
+    dec_bands = []
+    off = 0
     for idec in xrange(ndec):
-        dec[idec, :] = sphere['dec_limit'][dec_start][0]
-        scalars[idec, :] = idec
-        refine = ra_cells // num_ra_cells[idec]
-        assert refine > 1
-        for ira in xrange(num_ra_cells[idec]):
-            this_ra = sphere['ra_limit'][dec_start + ira]
-            last_cell = True if ira == num_ra_cells[idec] - 1 else False
-            
-            if last_cell:
-                this_refine = refine - 1
-            else:
-                this_refine = refine
+        d = sphere['dec_limit'][off]
+        dec_bands.extend([d[0]])
+        off += num_ra[idec]
 
-            ra_binsize = (this_ra[1] - this_ra[0])/this_refine
-            refined_ra = np.array([this_ra[0] + d*ra_binsize for d in xrange(this_refine)])
-            start = ira*refine
-            dest_sel = np.s_[start:start + this_refine]
-            ra[idec, dest_sel] = refined_ra
-            if last_cell:
-                ra[idec, -1] = this_ra[1]
-            
-        dec_start += num_ra_cells[idec]
+    # Take the declination in the last cell; tuple of (d[0], d[1])
+    # and then take the upper limit -> d[1] 
+    dec_bands.extend([sphere['dec_limit'][-1][1]])
 
-    dec[ndec, :] = sphere['dec_limit'][dec_start - num_ra_cells[ndec-1]][1]
-    scalars[ndec, :] = ndec
-    ra[ndec, :] = ra[ndec-1, :]
+    # Now find the RA max/min
+    r = []
+    for a in sphere['ra_limit'][0:num_ra[0]]:
+        r.extend(a)
         
-    return dec, ra, scalars
+    ra_limits = [min(r), max(r)]
+    dec_cells = np.linspace(dec_bands[0], dec_bands[-1],
+                            num=ndec*grid_ndec_refine)
+    ra_cells = np.linspace(ra_limits[0], ra_limits[1],
+                           num=ndec*grid_ndec_refine)
+    dec, ra = np.meshgrid(dec_cells, ra_cells, indexing='ij')
+    scalars = np.zeros_like(dec)
+    start = 0
+    for idec in xrange(ndec):
+        scalars[idec*grid_ndec_refine:(idec + 1)*grid_ndec_refine, :] = idec
+    
+    return dec, ra, dec_bands, scalars
 
 
-def main(thetamax=30, link_in_ra=True,
+def main(thetamax=None, link_in_ra=True,
          dec_refine_factor=1, ra_refine_factor=1):
 
+    from math import radians
+    
+    if not thetamax:
+        thetamax = 30
+    ra_limits = [0.0, 360.0]
+    dec_limits = [-90.0, 90.0]
     sphere, num_ra = gridlink_sphere(thetamax,
                                      link_in_ra=link_in_ra,
                                      dec_refine_factor=dec_refine_factor,
                                      ra_refine_factor=ra_refine_factor,
+                                     ra_limits=ra_limits,
+                                     dec_limits=dec_limits,
                                      return_num_ra_cells=True)
 
+    ra_limits = [radians(a) for a in ra_limits]
+    dec_limits = [radians(a) for a in dec_limits]
+    
     ndec = num_ra.size
     ncells = sphere.size
     
-    dec, ra, scalars = generate_meshgrid_from_sphere(sphere,
+    dec, ra, dec_bands, scalars = spherical_meshgrid(sphere,
                                                      num_ra)
+
     x = cos(dec) * cos(ra)
     y = cos(dec) * sin(ra)
     z = sin(dec)
@@ -136,55 +129,47 @@ def main(thetamax=30, link_in_ra=True,
 
 
     # Mark the declination bands
-    phi = np.linspace(0, 2 * np.pi, 100)
-
-    # Draw the equator
-    xx = np.cos(phi)
-    yy = np.sin(phi)
-    zz = np.zeros_like(phi)
-    mlab.plot3d(xx, yy, zz, color=(1, 1, 1),
-                opacity=1.0, tube_radius=0.01)
-
-    # Lower limits of the dec-bands, except for the two poles
-    dec_bands = [d[0] for d in sphere['dec_limit'] if d[0] != -0.5*np.pi  or d[1] != 0.5 * np.pi]
+    phi = np.linspace(ra_limits[0], ra_limits[1], 100)
     for angle in dec_bands:
-
+        # Lower limits of the dec-bands, except for the two poles
+        if angle == -0.5*np.pi or angle == 0.5*np.pi:
+            continue
+        
         # Draw the declination band
         xx = np.cos(phi) * np.cos(angle)
         yy = np.sin(phi) * np.cos(angle)
         zz = np.ones_like(phi) * np.sin(angle)
 
         mlab.plot3d(xx, yy, zz, color=(1, 1, 1),
-                    opacity=0.2, tube_radius=None)
+                    opacity=0.5, tube_radius=None)
 
-    # Now draw the ra cells. Need to extend to the poles
-
-    # Note, includes last element unlike when we
-    # generated the declination band-lines
-    dec_bands = []
-    off = 0
-    for idec in xrange(ndec):
-        d = sphere['dec_limit'][off]
-        dec_bands.extend([d[0]])
-        off += num_ra[idec]
-
-    # Take the declination in the last cell; tuple of (d[0], d[1])
-    # -> then take d[1]
-    dec_bands.extend([sphere['dec_limit'][-1][1]]) 
+    # Now draw the ra cells. 
     from itertools import izip, count
-
     off = 0
     for idec, dec_low, dec_hi in izip(count(), dec_bands[0:-1], dec_bands[1:]):
+        dodgerblue = (0.1167315175, 0.5625, 1.0)
+        white = (1.0, 1.0, 1.0)
+        gray = (0.5, 0.5, 0.5)
         for ira in xrange(num_ra[idec]):
-            phi = sphere['ra_limit'][off][0]
+            phi = sphere['ra_limit'][off]
+            color, tube_radius = (dodgerblue, 0.01) if ira == 0 else (white, None)
             theta = np.linspace(dec_low, dec_hi, 100)
-            xx = np.cos(theta) * np.cos(phi) 
-            yy = np.cos(theta) * np.sin(phi)
+            xx = np.cos(theta) * np.cos(phi[0]) 
+            yy = np.cos(theta) * np.sin(phi[0])
             zz = np.sin(theta)
-            mlab.plot3d(xx, yy, zz, color=(1, 1, 1),
-                        opacity=0.5, tube_radius=None)
+            mlab.plot3d(xx, yy, zz, color=color,
+                        opacity=0.5, tube_radius=tube_radius)
             
             off += 1
+
+        theta = np.linspace(dec_low, dec_hi, 100)
+        xx = np.cos(theta) * np.cos(phi[1]) 
+        yy = np.cos(theta) * np.sin(phi[1])
+        zz = np.sin(theta)
+        mlab.plot3d(xx, yy, zz, color=dodgerblue,
+                    opacity=0.5, tube_radius=0.01)
+        
+        
     mlab.show()
     
 
@@ -192,6 +177,62 @@ def main(thetamax=30, link_in_ra=True,
 if __name__ == '__main__':
     main()
 
+    
+# def generate_meshgrid_from_sphere(sphere, num_ra_cells,
+#                                   min_ra_cells_per_band=200):
+    
+#     ndec = num_ra_cells.size
+#     ncells = sphere.size
+
+#     # Find the lowest common multiple of the
+#     # number of RA cells in any dec band
+#     ra_cells = lcm(num_ra_cells)
+
+#     # But make sure there are at least min_ra_cells_per_band
+#     fac = long(min_ra_cells_per_band // ra_cells) + 1
+#     ra_cells *= fac
+
+#     assert ra_cells > min_ra_cells_per_band
+    
+#     ## Now create a mesh grid that goes from the min to max
+#     ## ra and dec
+#     dec = np.zeros((ndec + 1, ra_cells))
+#     ra = np.zeros((ndec + 1, ra_cells))
+#     scalars = np.zeros((ndec + 1, ra_cells))
+
+#     dec_start = 0
+#     for idec in xrange(ndec):
+#         dec[idec, :] = sphere['dec_limit'][dec_start][0]
+#         scalars[idec, :] = idec
+#         refine = ra_cells // num_ra_cells[idec]
+#         assert refine > 1
+#         for ira in xrange(num_ra_cells[idec]):
+#             this_ra = sphere['ra_limit'][dec_start + ira]
+#             last_cell = True if ira == num_ra_cells[idec] - 1 else False
+            
+#             if last_cell:
+#                 this_refine = refine - 1
+#             else:
+#                 this_refine = refine
+
+#             ra_binsize = (this_ra[1] - this_ra[0])/this_refine
+#             refined_ra = np.array([this_ra[0] + d*ra_binsize for d in xrange(this_refine)])
+#             start = ira*refine
+#             dest_sel = np.s_[start:start + this_refine]
+#             ra[idec, dest_sel] = refined_ra
+#             if last_cell:
+#                 ra[idec, -1] = this_ra[1]
+            
+#         dec_start += num_ra_cells[idec]
+
+#     dec[ndec, :] = sphere['dec_limit'][dec_start - num_ra_cells[ndec-1]][1]
+#     scalars[ndec, :] = ndec
+#     ra[ndec, :] = ra[ndec-1, :]
+        
+#     return dec, ra, scalars
+
+
+    
 # def smooth_ra_dec(this_ra, this_dec,
 #                   RA_subdivide_factor=10):
 
