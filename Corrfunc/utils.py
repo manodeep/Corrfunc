@@ -659,11 +659,13 @@ def gridlink_sphere(thetamax,
     Returns
     ---------
 
-    sphere_grid : A numpy compound array 
+    sphere_grid : A numpy compound array, shape (ncells, 2) 
        A numpy compound array with fields ``dec_limit`` and ``ra_limit`` of 
        size 2 each. These arrays contain the beginning and end of DEC 
        and RA regions for the cell. 
-    
+
+    num_ra_cells: numpy array, returned if ``return_num_ra_cells`` is set
+       A numpy array containing the number of RA cells per declination band
 
     .. note:: If ``link_in_ra=False``, then there is effectively one RA bin
        per DEC band. The  'ra_limit' field will show the range of allowed 
