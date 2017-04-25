@@ -62,6 +62,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     
     .. note:: p0 is the vpf
 
+
     seed: unsigned integer
        Random number seed for the underlying GSL random number generator. Used
        to draw centers of the spheres.
@@ -96,6 +97,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     .. note:: Since the counts in spheres calculation is symmetric
        in all 3 dimensions, the defaults are different from the clustering
        routines.
+
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of

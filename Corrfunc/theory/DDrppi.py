@@ -60,6 +60,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
     .. note:: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
+
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
        ``DDrppi``. The file should contain white-space separated values
@@ -110,6 +111,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         suffer from numerical loss of precision and can not be trusted. If 
         you need accurate ``rpavg`` values, then pass in double precision 
         arrays for the particle positions.
+
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

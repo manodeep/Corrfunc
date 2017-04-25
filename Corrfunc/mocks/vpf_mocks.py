@@ -65,6 +65,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
     .. note:: p0 is the vpf
 
+
     threshold_ngb: integer
        Minimum number of random points needed in a ``rmax`` sphere such that it
        is considered to be entirely within the mock footprint. The
@@ -84,6 +85,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     .. note:: If the centers file has to be written, the code will take
        significantly longer to finish. However, subsequent runs can re-use
        that centers file and will be faster.
+
 
     cosmology: integer, required
         Integer choice for setting cosmology. Valid values are 1->LasDamas
@@ -153,6 +155,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
           ``centers_file``  needs to be written out. In that case, the
           RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.
 
+
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
 
@@ -169,6 +172,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     .. note:: Since the counts in spheres calculation is symmetric
        in all 3 dimensions, the defaults are different from the clustering
        routines.
+
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of

@@ -34,6 +34,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        added to the first bin => minimum number of pairs in the first bin
        is the total number of particles.
 
+
     Parameters
     -----------
 
@@ -83,6 +84,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
         suffer from numerical loss of precision and can not be trusted. If 
         you need accurate ``rpavg`` values, then pass in double precision 
         arrays for the particle positions.
+
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

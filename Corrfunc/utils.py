@@ -667,9 +667,11 @@ def gridlink_sphere(thetamax,
     num_ra_cells: numpy array, returned if ``return_num_ra_cells`` is set
        A numpy array containing the number of RA cells per declination band
 
+
     .. note:: If ``link_in_ra=False``, then there is effectively one RA bin
        per DEC band. The  'ra_limit' field will show the range of allowed 
        RA values.
+
 
     .. seealso:: :py:mod:`Corrfunc.mocks.DDtheta_mocks`
 
