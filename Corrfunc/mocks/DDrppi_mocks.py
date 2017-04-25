@@ -86,13 +86,13 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
        ``DDrppi_mocks``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+       of (rpmin, rpmax)  for each ``rp`` wanted. The bins need to be
+       contiguous and sorted in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``rp`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
+       input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
 
     RA1: array-like, real (float/double)
