@@ -21,7 +21,7 @@ def main():
         countpairs_rp_pi_mocks as rp_pi_mocks_extn,\
         countpairs_s_mu_mocks as s_mu_mocks_extn,\
         countpairs_theta_mocks as theta_mocks_extn,\
-        countspheres_vpf_mocks as vpf_mocks_extn \
+        countspheres_vpf_mocks as vpf_mocks_extn
 
     tstart = time.time()
     filename = pjoin(dirname(abspath(Corrfunc.__file__)),
