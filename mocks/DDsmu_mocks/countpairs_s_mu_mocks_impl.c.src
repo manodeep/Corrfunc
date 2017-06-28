@@ -1,0 +1,789 @@
+/* File: countpairs_s_mu_mocks_impl.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+#include <gsl/gsl_interp.h>
+
+
+#include "countpairs_s_mu_mocks_impl_DOUBLE.h"
+#include "countpairs_s_mu_mocks_kernels_DOUBLE.c"
+#include "cellarray_mocks_DOUBLE.h"
+#include "gridlink_mocks_impl_DOUBLE.h"
+
+#include "defs.h"
+#include "utils.h"
+#include "cosmology_params.h"
+#include "set_cosmo_dist.h"
+#include "cpu_features.h"
+#include "progressbar.h"
+
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
+int interrupt_status_DDsmu_mocks_DOUBLE=EXIT_SUCCESS;
+
+void interrupt_handler_countpairs_s_mu_mocks_DOUBLE(int signo)
+{
+    fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
+    interrupt_status_DDsmu_mocks_DOUBLE = EXIT_FAILURE;
+}
+
+
+int check_ra_dec_cz_s_mu_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz)
+{
+
+    if(N==0) {
+        return EXIT_SUCCESS;
+    }
+    if(phi == NULL || theta == NULL || cz == NULL) {
+        fprintf(stderr,"Input arrays can not be NULL. Have RA = %p DEC = %p cz = %p\n", phi, theta, cz);
+        return EXIT_FAILURE;
+    }
+
+    int fix_cz  = 0;
+    int fix_ra  = 0;
+    int fix_dec = 0;
+
+    const DOUBLE max_cz_threshold = 10.0;//if I find that max cz is smaller than this threshold, then I will assume z has been supplied rather than cz
+    DOUBLE max_cz = 0.0;
+    //Check input cz -> ensure that cz contains cz and not z
+    for(int64_t i=0;i<N;i++) {
+        if(cz[i] > max_cz) max_cz = cz[i];
+        if(phi[i] < 0.0) {
+            fix_ra = 1;
+        }
+        if(theta[i] > 90.0) {
+            fix_dec = 1;
+        }
+        if(theta[i] > 180) {
+            fprintf(stderr,"theta[%"PRId64"] = %"REAL_FORMAT"should be less than 180 deg\n", i, theta[i]);
+            return EXIT_FAILURE;
+        }
+    }
+    if(max_cz < max_cz_threshold) fix_cz = 1;
+
+    //Only run the loop if something needs to be fixed
+    if(fix_cz==1 || fix_ra == 1 || fix_dec == 1) {
+        if(fix_ra == 1) {
+            fprintf(stderr,"%s> Out of range values found for ra. Expected ra to be in the range [0.0,360.0]. Found ra values in [-180,180] -- fixing that\n", __FUNCTION__);
+        }
+        if(fix_dec == 1) {
+            fprintf(stderr,"%s> Out of range values found for dec. Expected dec to be in the range [-90.0,90.0]. Found dec values in [0,180] -- fixing that\n", __FUNCTION__);
+        }
+        if(fix_cz == 1)  {
+            fprintf(stderr,"%s> Out of range values found for cz. Expected input to be `cz' but found `z' instead. max_cz (found in input) = %"REAL_FORMAT" threshold "
+                    "= %"REAL_FORMAT"\n",__FUNCTION__,max_cz,max_cz_threshold);
+        }
+
+        for(int64_t i=0;i<N;i++) {
+            if(fix_ra==1) {
+                phi[i] += (DOUBLE) 180.0;
+            }
+            if(fix_dec==1) {
+                theta[i] -= (DOUBLE) 90.0;
+            }
+            if(fix_cz == 1) {
+                cz[i] *= (DOUBLE) SPEED_OF_LIGHT;//input was z -> convert to cz
+            }
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+
+countpairs_mocks_func_ptr_DOUBLE countpairs_s_mu_mocks_driver_DOUBLE(const struct config_options *options)
+{
+
+    static countpairs_mocks_func_ptr_DOUBLE function = NULL;
+    static isa old_isa=-1;
+    if(old_isa == options->instruction_set) {
+        return function;
+    }
+
+    /* Array of function pointers */
+    countpairs_mocks_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX__
+        countpairs_s_mu_mocks_avx_intrinsics_DOUBLE,
+#endif
+#ifdef __SSE4_2__
+      countpairs_s_mu_mocks_sse_intrinsics_DOUBLE,
+#endif
+      countpairs_s_mu_mocks_fallback_DOUBLE
+    };
+
+    const int num_functions = sizeof(allfunctions)/sizeof(void *);
+    const int fallback_offset = num_functions - 1;
+#if defined(__AVX__) || defined __SSE4_2__
+    const int highest_isa = instrset_detect();
+#endif
+    int curr_offset = 0;
+
+    /* Now check if AVX is supported by the CPU */
+    int avx_offset = fallback_offset;
+#ifdef __AVX__
+    avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+
+    /* Is the SSE function supported at runtime and enabled at compile-time?*/
+    int sse_offset = fallback_offset;
+#ifdef __SSE4_2__
+    sse_offset = highest_isa >= 6 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+    if( curr_offset != fallback_offset) {
+      fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
+              curr_offset, fallback_offset);
+      return NULL;
+    }
+
+    int function_dispatch=0;
+    /* Check that cpu supports feature */
+    if(options->instruction_set >= 0) {
+        switch(options->instruction_set) {
+        case(AVX512F):
+        case(AVX2):
+        case(AVX):function_dispatch=avx_offset;break;
+        case(SSE42): function_dispatch=sse_offset;break;
+        default:function_dispatch=fallback_offset;break;
+        }
+    }
+
+    if(function_dispatch >= num_functions) {
+      fprintf(stderr,"In %s> ERROR: Could not resolve the correct function.\n Function index = %d must lie between [0, %d)\n",
+              __FUNCTION__, function_dispatch, num_functions);
+      return NULL;
+    }
+    function = allfunctions[function_dispatch];
+    old_isa = options->instruction_set;
+
+    if(options->verbose){
+        // This must be first (AVX/SSE may be aliased to fallback)
+        if(function_dispatch == fallback_offset){
+            fprintf(stderr,"Using fallback kernel\n");
+        } else if(function_dispatch == avx_offset){
+            fprintf(stderr,"Using AVX kernel\n");
+        } else if(function_dispatch == sse_offset){
+            fprintf(stderr,"Using SSE kernel\n");
+        } else {
+            printf("Unknown kernel!\n");
+        }
+    }
+
+    return function;
+}
+
+
+int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE *czD1,
+                            const int64_t ND2, DOUBLE *ra2, DOUBLE *dec2, DOUBLE *czD2,
+                            const int numthreads,
+                            const int autocorr,
+                            const char *binfile,
+                            const int Nmu,
+                            const int cosmology,
+                            results_countpairs_mocks_s_mu *results,
+                            struct config_options *options, struct extra_options *extra)
+{
+
+    if(options->float_type != sizeof(DOUBLE)) {
+        fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
+                __FUNCTION__, sizeof(DOUBLE), options->float_type);
+        return EXIT_FAILURE;
+    }
+
+    // If no extra options were passed, create dummy options
+    // This allows us to pass arguments like "extra->weights0" below;
+    // they'll just be NULLs, which is the correct behavior
+    struct extra_options dummy_extra;
+    if(extra == NULL){
+      weight_method_t dummy_method = NONE;
+      dummy_extra = get_extra_options(dummy_method);
+      extra = &dummy_extra;
+    }
+
+    int need_weightavg = extra->weight_method != NONE;
+
+    options->sort_on_z = 1;
+    struct timeval t0;
+    if(options->c_api_timer) {
+        gettimeofday(&t0, NULL);
+    }
+
+    //Check inputs
+    if(ND1 == 0 || (autocorr == 0 && ND2 == 0)) {
+        return EXIT_SUCCESS;
+    }
+
+    //Check inputs
+    int status1 = check_ra_dec_cz_s_mu_DOUBLE(ND1, ra1, dec1, czD1);
+    if(status1 != EXIT_SUCCESS) {
+        return status1;
+    }
+    if(autocorr==0) {
+        int status2 = check_ra_dec_cz_s_mu_DOUBLE(ND2, ra2, dec2, czD2);
+        if(status2 != EXIT_SUCCESS) {
+            return status2;
+        }
+    }
+
+#if defined(_OPENMP)
+    omp_set_num_threads(numthreads);
+#else
+    (void) numthreads;
+#endif
+
+    if(options->max_cells_per_dim == 0) {
+        fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
+        options->max_cells_per_dim = NLATMAX;
+    }
+    for(int i=0;i<3;i++) {
+        if(options->bin_refine_factors[i] < 1) {
+            fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
+                    i, options->bin_refine_factors[i]);
+            reset_bin_refine_factors(options);
+            break;/* all factors have been reset -> no point continuing with the loop */
+        }
+    }
+
+    const int nmubin = Nmu;
+
+    /* setup interrupt handler -> mostly useful during the python execution.
+       Let's Ctrl-C abort the extension  */
+    SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_s_mu_mocks_DOUBLE);
+
+    //Try to initialize cosmology - code will exit if comoslogy is not implemented.
+    //Putting in a different scope so I can call the variable status
+    {
+        int status = init_cosmology(cosmology);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
+
+    /***********************
+     *initializing the  bins
+     ************************/
+    double *rupp;
+    int nsbin ;
+    double smin,smax;
+    setup_bins(binfile,&smin,&smax,&nsbin,&rupp);
+    if( ! (smin > 0.0 && smax > 0.0 && smin < smax && nsbin > 0)) {
+        fprintf(stderr,"Error: Could not setup with R bins correctly. (smin = %lf, smax = %lf, with nbins = %d). Expected non-zero smin/smax with smax > smin and nbins >=1 \n",
+                smin, smax, nsbin);
+        return EXIT_FAILURE;
+    }
+    const DOUBLE max_sep = smax;
+
+    //Change cz into co-moving distance
+    DOUBLE *D1 = NULL, *D2 = NULL;
+    if(options->is_comoving_dist == 0) {
+        D1 = my_malloc(sizeof(*D1),ND1);
+        D2 = autocorr == 0 ? my_malloc(sizeof(*D2),ND2):D1;
+    } else {
+        D1 = czD1;
+        D2 = autocorr == 0 ? czD2:czD1;
+    }
+
+    if(D1 == NULL || D2 == NULL) {
+        free(D1);free(D2);
+        return EXIT_FAILURE;
+    }
+
+
+    if(options->is_comoving_dist == 0) {
+        //Setup variables to do the cz->comoving distance
+        DOUBLE czmax = 0.0;
+        const DOUBLE inv_speed_of_light = 1.0/SPEED_OF_LIGHT;
+        get_max_DOUBLE(ND1, czD1, &czmax);
+        if(autocorr == 0) {
+            get_max_DOUBLE(ND2, czD2, &czmax);
+        }
+        const double zmax = czmax * inv_speed_of_light + 0.01;
+
+        const int workspace_size = 10000;
+        double *interp_redshift  = my_calloc(sizeof(*interp_redshift), workspace_size);//the interpolation is done in 'z' and not in 'cz'
+        double *interp_comoving_dist = my_calloc(sizeof(*interp_comoving_dist),workspace_size);
+        int Nzdc = set_cosmo_dist(zmax, workspace_size, interp_redshift, interp_comoving_dist, cosmology);
+        if(Nzdc < 0) {
+            free(interp_redshift);free(interp_comoving_dist);
+            return EXIT_FAILURE;
+        }
+
+        gsl_interp *interpolation;
+        gsl_interp_accel *accelerator;
+        accelerator =  gsl_interp_accel_alloc();
+        interpolation = gsl_interp_alloc (gsl_interp_linear,Nzdc);
+        gsl_interp_init(interpolation, interp_redshift, interp_comoving_dist, Nzdc);
+        for(int64_t i=0;i<ND1;i++) {
+            D1[i] = gsl_interp_eval(interpolation, interp_redshift, interp_comoving_dist, czD1[i]*inv_speed_of_light, accelerator);
+        }
+
+        if(autocorr==0) {
+            for(int64_t i=0;i<ND2;i++) {
+                D2[i] = gsl_interp_eval(interpolation, interp_redshift, interp_comoving_dist, czD2[i]*inv_speed_of_light, accelerator);
+            }
+        }
+        free(interp_redshift);free(interp_comoving_dist);
+        gsl_interp_free(interpolation);
+        gsl_interp_accel_free(accelerator);
+    }
+
+    DOUBLE *X1 = my_malloc(sizeof(*X1), ND1);
+    DOUBLE *Y1 = my_malloc(sizeof(*Y1), ND1);
+    DOUBLE *Z1 = my_malloc(sizeof(*Z1), ND1);
+    if(X1 == NULL || Y1 == NULL || Z1 == NULL) {
+        free(X1);free(Y1);free(Z1);
+        return EXIT_FAILURE;
+    }
+    for(int64_t i=0;i<ND1;i++) {
+        X1[i] = D1[i]*COSD(dec1[i])*COSD(ra1[i]);
+        Y1[i] = D1[i]*COSD(dec1[i])*SIND(ra1[i]);
+        Z1[i] = D1[i]*SIND(dec1[i]);
+    }
+
+    DOUBLE *X2,*Y2,*Z2;
+    if(autocorr==0) {
+        X2 = my_malloc(sizeof(*X2), ND2);
+        Y2 = my_malloc(sizeof(*Y2), ND2);
+        Z2 = my_malloc(sizeof(*Z2), ND2);
+        for(int64_t i=0;i<ND2;i++) {
+            X2[i] = D2[i]*COSD(dec2[i])*COSD(ra2[i]);
+            Y2[i] = D2[i]*COSD(dec2[i])*SIND(ra2[i]);
+            Z2[i] = D2[i]*SIND(dec2[i]);
+        }
+    } else {
+        X2 = X1;
+        Y2 = Y1;
+        Z2 = Z1;
+    }
+    DOUBLE sqr_smin = smin*smin;
+    DOUBLE sqr_smax = smax*smax;
+
+    DOUBLE rupp_sqr[nsbin];
+    rupp_sqr[0] = sqr_smin;
+    for(int i=0;i<nsbin;i++) {
+        rupp_sqr[i] = rupp[i]*rupp[i];
+    }
+
+    DOUBLE xmin=1e10,ymin=1e10,zmin=1e10;
+    DOUBLE xmax=-1e10,ymax=-1e10,zmax=-1e10;
+    get_max_min_data_DOUBLE(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
+
+    if(autocorr==0) {
+        get_max_min_data_DOUBLE(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
+    }
+
+    const DOUBLE xdiff = xmax-xmin;
+    const DOUBLE ydiff = ymax-ymin;
+    const DOUBLE zdiff = zmax-zmin;
+    if(get_bin_refine_scheme(options) == BINNING_DFL) {
+        if(max_sep < 0.05*xdiff) {
+            options->bin_refine_factors[0] = 1;
+      }
+        if(max_sep < 0.05*ydiff) {
+            options->bin_refine_factors[1] = 1;
+        }
+        if(max_sep < 0.05*zdiff) {
+            options->bin_refine_factors[2] = 1;
+        }
+    }
+
+    /*---Create 3-D lattice--------------------------------------*/
+    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
+    cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
+                                                                                             xmin, xmax,
+                                                                                             ymin, ymax,
+                                                                                             zmin, zmax,
+                                                                                             max_sep, max_sep, max_sep,
+                                                                                             options->bin_refine_factors[0],
+                                                                                             options->bin_refine_factors[1],
+                                                                                             options->bin_refine_factors[2],
+                                                                                             &nmesh_x, &nmesh_y, &nmesh_z,
+                                                                                             options);
+    if(lattice1 == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    /* If there too few cells (BOOST_CELL_THRESH is ~10), and the number of cells can be increased, then boost bin refine factor by ~1*/
+    const double avg_np = ((double)ND1)/(nmesh_x*nmesh_y*nmesh_z);
+    const int8_t max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
+    if((max_nmesh <= BOOST_CELL_THRESH || avg_np >= BOOST_NUMPART_THRESH)
+        && max_nmesh < options->max_cells_per_dim) {
+      fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
+      if(get_bin_refine_scheme(options) == BINNING_DFL) {
+            fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
+            // Only boost the first two dimensions.  Prevents excessive refinement.
+            for(int i=0;i<2;i++) {
+              options->bin_refine_factors[i] += BOOST_BIN_REF;
+            }
+
+            free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+            lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
+                                                             xmin, xmax,
+                                                             ymin, ymax,
+                                                             zmin, zmax,
+                                                             max_sep, max_sep, max_sep,
+                                                             options->bin_refine_factors[0],
+                                                             options->bin_refine_factors[1],
+                                                             options->bin_refine_factors[2],
+                                                             &nmesh_x, &nmesh_y, &nmesh_z,
+                                                             options);
+            if(lattice1 == NULL) {
+                return EXIT_FAILURE;
+            }
+        } else {
+            fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
+                  "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
+                  options->bin_refine_factors[1], options->bin_refine_factors[2]);
+
+        }
+    }
+
+    cellarray_mocks_index_particles_DOUBLE *lattice2 = NULL;
+    if(autocorr==0) {
+        int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
+        lattice2 = gridlink_mocks_index_particles_DOUBLE(ND2, X2, Y2, Z2, D2, &(extra->weights1),
+                                                         xmin, xmax,
+                                                         ymin, ymax,
+                                                         zmin, zmax,
+                                                         max_sep, max_sep, max_sep,
+                                                         options->bin_refine_factors[0],
+                                                         options->bin_refine_factors[1],
+                                                         options->bin_refine_factors[2],
+                                                         &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
+        if(lattice2 == NULL) {
+            return EXIT_FAILURE;
+        }
+        if( ! (nmesh_x == ngrid2_x && nmesh_y == ngrid2_y && nmesh_z == ngrid2_z) ) {
+            fprintf(stderr,"Error: The two sets of 3-D lattices do not have identical bins. First has dims (%d, %d, %d) while second has (%d, %d, %d)\n",
+                    nmesh_x, nmesh_y, nmesh_z, ngrid2_x, ngrid2_y, ngrid2_z);
+            return EXIT_FAILURE;
+        }
+    } else {
+        lattice2 = lattice1;
+    }
+    free(X1);free(Y1);free(Z1);
+    if(autocorr == 0) {
+        free(X2);free(Y2);free(Z2);
+    }
+
+    if(options->is_comoving_dist == 0) {
+        free(D1);
+        if(autocorr == 0) {
+            free(D2);
+        }
+    }
+
+
+
+    const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
+    {
+        int status = assign_ngb_cells_mocks_index_particles_DOUBLE(lattice1, lattice2, totncells,
+                                                                   options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                                   nmesh_x, nmesh_y, nmesh_z,
+                                                                   autocorr);
+        if(status != EXIT_SUCCESS) {
+            free_cellarray_mocks_index_particles_DOUBLE(lattice1, totncells);
+            if(autocorr == 0) {
+                free_cellarray_mocks_index_particles_DOUBLE(lattice2, totncells);
+            }
+            free(rupp);
+            return EXIT_FAILURE;
+        }
+    }
+    /*---Gridlink-variables----------------*/
+    const int totnbins = (nsbin+1)*(nsbin+1);
+#if defined(_OPENMP)
+    uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, totnbins);
+    DOUBLE **all_savg = NULL;
+    if(options->need_avg_sep){
+        all_savg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
+    }
+    DOUBLE **all_weightavg = NULL;
+    if(need_weightavg) {
+      all_weightavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
+    }
+
+#else //USE_OMP
+    uint64_t npairs[totnbins];
+    DOUBLE savg[totnbins], weightavg[totnbins];
+
+    for(int i=0; i <totnbins;i++) {
+        npairs[i] = 0;
+        if(options->need_avg_sep) {
+            savg[i] = ZERO;
+        }
+        if(need_weightavg) {
+            weightavg[i] = ZERO;
+        }
+    }
+#endif //USE_OMP
+
+    /* runtime dispatch - get the function pointer */
+    countpairs_mocks_func_ptr_DOUBLE countpairs_s_mu_mocks_function_DOUBLE = countpairs_s_mu_mocks_driver_DOUBLE(options);
+    if(countpairs_s_mu_mocks_function_DOUBLE == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    int interrupted=0,numdone=0, abort_status=EXIT_SUCCESS;
+    if(options->verbose) {
+        init_my_progressbar(totncells,&interrupted);
+    }
+
+
+#if defined(_OPENMP)
+#pragma omp parallel shared(numdone, abort_status, interrupt_status_DDsmu_mocks_DOUBLE)
+    {
+        const int tid = omp_get_thread_num();
+        uint64_t npairs[totnbins];
+        DOUBLE savg[totnbins], weightavg[totnbins];
+        for(int i=0;i<totnbins;i++) {
+            npairs[i] = 0;
+            if(options->need_avg_sep) {
+                savg[i] = ZERO;
+            }
+            if(need_weightavg) {
+                weightavg[i] = ZERO;
+            }
+        }
+
+#pragma omp for  schedule(dynamic)
+#endif//USE_OMP
+
+        /*---Loop-over-Data1-particles--------------------*/
+        for(int64_t index1=0;index1<totncells;index1++) {
+
+#if defined(_OPENMP)
+#pragma omp flush (abort_status, interrupt_status_DDsmu_mocks_DOUBLE)
+#endif
+            if(abort_status == EXIT_SUCCESS && interrupt_status_DDsmu_mocks_DOUBLE == EXIT_SUCCESS) {
+                //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
+                /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
+                if(options->verbose) {
+#if defined(_OPENMP)
+                    if (omp_get_thread_num() == 0)
+#endif
+                        my_progressbar(numdone,&interrupted);
+
+
+#if defined(_OPENMP)
+#pragma omp atomic
+#endif
+                    numdone++;
+                }
+
+                const cellarray_mocks_index_particles_DOUBLE *first  = &(lattice1[index1]);
+                if(first->nelements == 0) {
+                    continue;
+                }
+                DOUBLE *x1 = first->x;
+                DOUBLE *y1 = first->y;
+                DOUBLE *z1 = first->z;
+                DOUBLE *d1 = first->cz;
+                const weight_struct_DOUBLE *weights1 = &(first->weights);
+                const int64_t N1 = first->nelements;
+
+                if(autocorr == 1) {
+                    int same_cell = 1;
+                    DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
+                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+                    const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
+                                                                              N1, x1, y1, z1, d1, weights1,
+                                                                              same_cell,
+                                                                              options->fast_divide,
+                                                                              sqr_smax, sqr_smin, nsbin,
+                                                                              nmubin, rupp_sqr, max_sep,
+                                                                              this_savg, npairs,
+                                                                              this_weightavg, extra->weight_method);
+                    /* This actually causes a race condition under OpenMP - but mostly
+                       I care that an error occurred - rather than the exact value of
+                       the error status */
+                    abort_status |= status;
+                }
+
+                for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
+                    const cellarray_mocks_index_particles_DOUBLE *second = first->ngb_cells[ngb];
+                    if(second->nelements == 0) {
+                        continue;
+                    }
+                    const int same_cell = 0;
+                    DOUBLE *x2 = second->x;
+                    DOUBLE *y2 = second->y;
+                    DOUBLE *z2 = second->z;
+                    DOUBLE *d2 = second->cz;
+                    const weight_struct_DOUBLE *weights2 = &(second->weights);
+                    const int64_t N2 = second->nelements;
+                    DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
+                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+                    const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
+                                                                              N2, x2, y2, z2, d2, weights2,
+                                                                              same_cell,
+                                                                              options->fast_divide,
+                                                                              sqr_smax, sqr_smin, nsbin,
+                                                                              nmubin, rupp_sqr, max_sep,
+                                                                              this_savg, npairs,
+                                                                              this_weightavg, extra->weight_method);
+                    /* This actually causes a race condition under OpenMP - but mostly
+                       I care that an error occurred - rather than the exact value of
+                       the error status */
+                    abort_status |= status;
+                }//loop over ngb cells
+            }//abort_status check
+        }//i loop over ND1 particles
+#if defined(_OPENMP)
+        for(int i=0;i<totnbins;i++) {
+            all_npairs[tid][i] = npairs[i];
+            if(options->need_avg_sep) {
+                all_savg[tid][i] = savg[i];
+            }
+            if(need_weightavg) {
+                all_weightavg[tid][i] = weightavg[i];
+            }
+        }
+    }//close the omp parallel region
+#endif//USE_OMP
+
+    free_cellarray_mocks_index_particles_DOUBLE(lattice1,totncells);
+    if(autocorr == 0) {
+        free_cellarray_mocks_index_particles_DOUBLE(lattice2,totncells);
+    }
+
+    if(abort_status != EXIT_SUCCESS || interrupt_status_DDsmu_mocks_DOUBLE != EXIT_SUCCESS) {
+        /* Cleanup memory here if aborting */
+        free(rupp);
+#if defined(_OPENMP)
+        matrix_free((void **) all_npairs, numthreads);
+        if(options->need_avg_sep) {
+            matrix_free((void **) all_savg, numthreads);
+        }
+        if(need_weightavg) {
+            matrix_free((void **) all_weightavg, numthreads);
+        }
+#endif
+        return EXIT_FAILURE;
+    }
+
+    if(options->verbose) {
+        finish_myprogressbar(&interrupted);
+    }
+
+
+
+#if defined(_OPENMP)
+    uint64_t npairs[totnbins];
+    DOUBLE savg[totnbins], weightavg[totnbins];
+    for(int i=0;i<totnbins;i++) {
+        npairs[i] = 0;
+        if(options->need_avg_sep) {
+            savg[i] = ZERO;
+        }
+        if(need_weightavg) {
+            weightavg[i] = ZERO;
+        }
+    }
+
+    for(int i=0;i<numthreads;i++) {
+        for(int j=0;j<totnbins;j++) {
+            npairs[j] += all_npairs[i][j];
+            if(options->need_avg_sep) {
+                savg[j] += all_savg[i][j];
+            }
+            if(need_weightavg) {
+                weightavg[j] += all_weightavg[i][j];
+            }
+        }
+    }
+    matrix_free((void **) all_npairs, numthreads);
+    if(options->need_avg_sep) {
+        matrix_free((void **) all_savg, numthreads);
+    }
+    if(need_weightavg) {
+        matrix_free((void **) all_weightavg, numthreads);
+    }
+#endif //USE_OMP
+
+    //The code does not double count for autocorrelations
+    //which means the npairs and savg values need to be doubled;
+    if(autocorr == 1) {
+        const uint64_t int_fac = 2;
+        const DOUBLE dbl_fac = (DOUBLE) 2.0;
+        for(int i=0;i<totnbins;i++) {
+            npairs[i] *= int_fac;
+            if(options->need_avg_sep) {
+                savg[i] *= dbl_fac;
+            }
+            if(need_weightavg) {
+                weightavg[i] *= dbl_fac;
+            }
+        }
+    }
+
+    for(int i=0;i<totnbins;i++) {
+        if(npairs[i] > 0) {
+            if(options->need_avg_sep) {
+                savg[i] /= (DOUBLE) npairs[i] ;
+            }
+            if(need_weightavg) {
+                weightavg[i] /= (DOUBLE) npairs[i];
+            }
+        }
+    }
+
+    results->nbin   = nsbin;
+    results->nmubin = nmubin;
+    results->npairs = my_malloc(sizeof(*(results->npairs)), totnbins);
+    results->rupp   = my_malloc(sizeof(*(results->rupp))  , nsbin);
+    results->savg  = my_malloc(sizeof(*(results->savg)) , totnbins);
+    results->weightavg  = my_calloc(sizeof(double)  , totnbins);
+    if(results->npairs == NULL || results->rupp == NULL || results->savg == NULL || results->weightavg == NULL) {
+        free_results_mocks_s_mu(results);
+        free(rupp);
+        return EXIT_FAILURE;
+    }
+
+    for(int i=0;i<nsbin;i++) {
+        results->rupp[i] = rupp[i];
+        for(int j=0;j<nmubin;j++) {
+            const int index = i*(nmubin+1) + j;
+            if( index >= totnbins ) {
+                fprintf(stderr, "ERROR: In %s> index = %d must be in range [0, %d)\n", __FUNCTION__, index, totnbins);
+                free_results_mocks_s_mu(results);
+                free(rupp);
+                return EXIT_FAILURE;
+            }
+            results->npairs[index] = npairs[index];
+            results->savg[index] = 0.0;
+            results->weightavg[index] = 0.0;
+            if(options->need_avg_sep) {
+                results->savg[index] = savg[index];
+            }
+            if(need_weightavg) {
+                results->weightavg[index] = weightavg[index];
+            }
+        }
+    }
+    free(rupp);
+
+    /* reset interrupt handlers to default */
+    RESET_INTERRUPT_HANDLERS();
+    reset_bin_refine_factors(options);
+
+    if(options->c_api_timer) {
+        struct timeval t1;
+        gettimeofday(&t1, NULL);
+        options->c_api_time = ADD_DIFF_TIME(t0, t1);
+    }
+
+    return EXIT_SUCCESS;
+}
