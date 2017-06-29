@@ -9,7 +9,7 @@ Python wrapper around the C extension for the pair counter in
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
-__author__ = ('Manodeep Sinha')
+__author__ = ('Manodeep Sinha', 'Nick Hand')
 __all__ = ('DDsmu_mocks', )
 
 
