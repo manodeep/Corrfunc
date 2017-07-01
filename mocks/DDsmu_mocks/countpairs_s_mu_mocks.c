@@ -20,21 +20,23 @@ void free_results_mocks_s_mu(results_countpairs_mocks_s_mu *results)
         return;
 
     free(results->npairs);
-    free(results->rupp);
+    free(results->supp);
     free(results->savg);
     free(results->weightavg);
 }
 
 
 int countpairs_mocks_s_mu(const int64_t ND1, void *phi1, void *theta1, void *czD1,
-                     const int64_t ND2, void *phi2, void *theta2, void *czD2,
-                     const int numthreads,
-                     const int autocorr,
-                     const char *binfile,
-                     const int Nmu,
-                     const int cosmology,
-                     results_countpairs_mocks_s_mu *results,
-                     struct config_options *options, struct extra_options *extra)
+                          const int64_t ND2, void *phi2, void *theta2, void *czD2,
+                          const int numthreads,
+                          const int autocorr,
+                          const char *sbinfile,
+                          const double mu_max,
+                          const int nmu_bins,
+                          const int cosmology,
+                          results_countpairs_mocks_s_mu *results,
+                          struct config_options *options,
+                          struct extra_options *extra)
 {
     if( ! (options->float_type == sizeof(float) || options->float_type == sizeof(double))){
         fprintf(stderr,"ERROR: In %s> Can only handle doubles or floats. Got an array of size = %zu\n",
@@ -46,28 +48,30 @@ int countpairs_mocks_s_mu(const int64_t ND1, void *phi1, void *theta1, void *czD
         fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;
     }
-    
+
     if(options->float_type == sizeof(float)) {
         return countpairs_mocks_s_mu_float(ND1, (float *) phi1, (float *) theta1, (float *) czD1,
-                                      ND2, (float *) phi2, (float *) theta2, (float *) czD2,
-                                      numthreads,
-                                      autocorr,
-                                      binfile,
-                                      Nmu,
-                                      cosmology,
-                                      results,
-                                      options,
-                                      extra);
+                                           ND2, (float *) phi2, (float *) theta2, (float *) czD2,
+                                           numthreads,
+                                           autocorr,
+                                           sbinfile,
+                                           mu_max,
+                                           nmu_bins,
+                                           cosmology,
+                                           results,
+                                           options,
+                                           extra);
     } else {
         return countpairs_mocks_s_mu_double(ND1, (double *) phi1, (double *) theta1, (double *) czD1,
-                                       ND2, (double *) phi2, (double *) theta2, (double *) czD2,
-                                       numthreads,
-                                       autocorr,
-                                       binfile,
-                                       Nmu,
-                                       cosmology,
-                                       results,
-                                       options,
-                                       extra);
+                                            ND2, (double *) phi2, (double *) theta2, (double *) czD2,
+                                            numthreads,
+                                            autocorr,
+                                            sbinfile,
+                                            mu_max,
+                                            nmu_bins,
+                                            cosmology,
+                                            results,
+                                            options,
+                                            extra);
     }
 }

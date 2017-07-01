@@ -237,7 +237,7 @@ static PyMethodDef module_methods[] = {
      "\n"
     },
     {"countpairs_s_mu_mocks"       ,(PyCFunction) countpairs_countpairs_s_mu_mocks ,METH_VARARGS | METH_KEYWORDS,
-         "countpairs_s_mu_mocks(autocorr, cosmology, nthreads, Nmu, binfile,\n"
+         "countpairs_s_mu_mocks(autocorr, cosmology, nthreads, nmu_bins, mu_max, binfile,\n"
          "                       RA1, DEC1, CZ1, weights1=None, weight_type=None,\n"
          "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
          "                       is_comoving_dist=False,\n"
@@ -273,8 +273,11 @@ static PyMethodDef module_methods[] = {
          "    The number of OpenMP threads to use. Has no effect if OpenMP was not used\n"
          "    during library compilation. \n"
          "\n"
-         "Nmu: int \n"
-         "    The number of "MU_CHAR" bins to use, binning from (mumin, mumax) = [0,1]\n"
+         "nmu_bins: int \n"
+         "    The number of "MU_CHAR" bins to use, binning from (mumin, mumax)\n"
+         "\n"
+         "mu_max: double \n"
+         "    The maximum mu value to use; must be > 0 and <= 1.0\n"
          "\n"
          "binfile: filename\n"
          "    Filename containing the radial bins for the correlation function. The file\n"
@@ -382,8 +385,9 @@ static PyMethodDef module_methods[] = {
          ">>> autocorr=1\n"
          ">>> nthreads=4\n"
          ">>> binfile='../mocks/tests/bins'\n"
-         ">>> Nmu=10\n"
-         ">>> (DDsmu, time) = countpairs_s_mu_mocks(autocorr, cosmology, nthreads, Nmu, binfile,\n"
+         ">>> nmu_bins=10\n"
+         ">>> mu_max=1.0\n"
+         ">>> (DDsmu, time) = countpairs_s_mu_mocks(autocorr, cosmology, nthreads, nmu_bins, mu_max, binfile,\n"
          "                                            ra,dec,cz,ra,dec,cz,\n"
          "                                            verbose=True)\n"
          "\n"
@@ -1393,14 +1397,16 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
     int autocorr=1;
     int nthreads=4;
     int cosmology=1;
-    int Nmu=10;
+    int nmu_bins=10;
+    double mu_max=1.0;
     char *binfile, *weighting_method_str = NULL;
 
     static char *kwlist[] = {
         "autocorr",
         "cosmology",
         "nthreads",
-        "Nmu",
+        "nmu_bins",
+        "mu_max",
         "binfile",
         "RA1",
         "DEC1",
@@ -1424,8 +1430,8 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiiisO!O!O!|O!O!O!O!O!bbbbbbbhbis", kwlist,
-                                       &autocorr,&cosmology,&nthreads,&Nmu,&binfile,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiiidsO!O!O!|O!O!O!O!O!bbbbbbbhbis", kwlist,
+                                       &autocorr,&cosmology,&nthreads,&nmu_bins,&mu_max,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
                                        &PyArray_Type,&z1_obj,
@@ -1634,7 +1640,8 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
                                   nthreads,
                                   autocorr,
                                   binfile,
-                                  Nmu,
+                                  mu_max,
+                                  nmu_bins,
                                   cosmology,
                                   &results,
                                   &options,
@@ -1667,20 +1674,20 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
 
     /* Build the output list */
     PyObject *ret = PyList_New(0);//create an empty list
-    double rlow=results.rupp[0];
-    const double dmu = 1.0/(double)results.nmubin ;
+    double rlow=results.supp[0];
+    const double dmu = mu_max/(double)results.nmu_bins ;
 
-    for(int i=1;i<results.nbin;i++) {
-        for(int j=0;j<results.nmubin;j++) {
-            const int bin_index = i*(results.nmubin + 1) + j;
+    for(int i=1;i<results.nsbin;i++) {
+        for(int j=0;j<results.nmu_bins;j++) {
+            const int bin_index = i*(results.nmu_bins + 1) + j;
             PyObject *item = NULL;
             const double savg = results.savg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
+            item = Py_BuildValue("(ddddkd)", rlow,results.supp[i],savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
-        rlow=results.rupp[i];
+        rlow=results.supp[i];
     }
     free_results_mocks_s_mu(&results);
     return Py_BuildValue("(Od)", ret, c_api_time);

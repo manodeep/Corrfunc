@@ -186,14 +186,15 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_s_mu_mocks_driver_DOUBLE(const struc
 
 
 int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE *czD1,
-                            const int64_t ND2, DOUBLE *ra2, DOUBLE *dec2, DOUBLE *czD2,
-                            const int numthreads,
-                            const int autocorr,
-                            const char *binfile,
-                            const int Nmu,
-                            const int cosmology,
-                            results_countpairs_mocks_s_mu *results,
-                            struct config_options *options, struct extra_options *extra)
+                                 const int64_t ND2, DOUBLE *ra2, DOUBLE *dec2, DOUBLE *czD2,
+                                 const int numthreads,
+                                 const int autocorr,
+                                 const char *sbinfile,
+                                 const double max_mu,
+                                 const int nmu_bins,
+                                 const int cosmology,
+                                 results_countpairs_mocks_s_mu *results,
+                                 struct config_options *options, struct extra_options *extra)
 {
 
     if(options->float_type != sizeof(DOUBLE)) {
@@ -256,8 +257,6 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         }
     }
 
-    const int nmubin = Nmu;
-
     /* setup interrupt handler -> mostly useful during the python execution.
        Let's Ctrl-C abort the extension  */
     SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_s_mu_mocks_DOUBLE);
@@ -274,16 +273,27 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     /***********************
      *initializing the  bins
      ************************/
-    double *rupp;
-    int nsbin ;
+    double *supp;
+    int nsbin;
     double smin,smax;
-    setup_bins(binfile,&smin,&smax,&nsbin,&rupp);
+    setup_bins(sbinfile,&smin,&smax,&nsbin,&supp);
     if( ! (smin > 0.0 && smax > 0.0 && smin < smax && nsbin > 0)) {
-        fprintf(stderr,"Error: Could not setup with R bins correctly. (smin = %lf, smax = %lf, with nbins = %d). Expected non-zero smin/smax with smax > smin and nbins >=1 \n",
+        fprintf(stderr,"Error: Could not setup with S bins correctly. (smin = %lf, smax = %lf, with nbins = %d). Expected non-zero smin/smax with smax > smin and nbins >=1 \n",
                 smin, smax, nsbin);
         return EXIT_FAILURE;
     }
-    const DOUBLE max_sep = smax;
+
+
+    if(max_mu <= 0.0 || max_mu > 1.0) {
+        fprintf(stderr,"Error: max_mu (max. value for the cosine of the angle with line of sight) must be greater than 0 and at most 1).\n"
+                "The passed value is max_mu = %lf. Please change it to be > 0 and <= 1.0\n", max_mu);
+        return EXIT_FAILURE;
+    }
+
+    if(nmu_bins < 1 ) {
+        fprintf(stderr,"Error: Number of mu bins = %d must be at least 1\n", nmu_bins);
+        return EXIT_FAILURE;
+    }
 
     //Change cz into co-moving distance
     DOUBLE *D1 = NULL, *D2 = NULL;
@@ -367,14 +377,17 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         Y2 = Y1;
         Z2 = Z1;
     }
-    DOUBLE sqr_smin = smin*smin;
-    DOUBLE sqr_smax = smax*smax;
 
-    DOUBLE rupp_sqr[nsbin];
-    rupp_sqr[0] = sqr_smin;
-    for(int i=0;i<nsbin;i++) {
-        rupp_sqr[i] = rupp[i]*rupp[i];
+    DOUBLE supp_sqr[nsbin];
+    const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
+    for(int i=0; i < nsbin;i++) {
+        supp_sqr[i] = supp[i]*supp[i];
     }
+
+    const DOUBLE sqr_smax=supp_sqr[nsbin-1];
+    const DOUBLE sqr_smin=supp_sqr[0];
+    const DOUBLE mu_max = (DOUBLE) max_mu;
+    const DOUBLE pimax = smax*mu_max;
 
     DOUBLE xmin=1e10,ymin=1e10,zmin=1e10;
     DOUBLE xmax=-1e10,ymax=-1e10,zmax=-1e10;
@@ -388,13 +401,13 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     const DOUBLE ydiff = ymax-ymin;
     const DOUBLE zdiff = zmax-zmin;
     if(get_bin_refine_scheme(options) == BINNING_DFL) {
-        if(max_sep < 0.05*xdiff) {
+        if(smax < 0.05*xdiff) {
             options->bin_refine_factors[0] = 1;
       }
-        if(max_sep < 0.05*ydiff) {
+        if(smax < 0.05*ydiff) {
             options->bin_refine_factors[1] = 1;
         }
-        if(max_sep < 0.05*zdiff) {
+        if(smax < 0.05*zdiff) {
             options->bin_refine_factors[2] = 1;
         }
     }
@@ -402,10 +415,8 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
     cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
-                                                                                             xmin, xmax,
-                                                                                             ymin, ymax,
-                                                                                             zmin, zmax,
-                                                                                             max_sep, max_sep, max_sep,
+                                                                                             xmin, xmax, ymin, ymax, zmin, zmax,
+                                                                                             smax, smax, pimax,
                                                                                              options->bin_refine_factors[0],
                                                                                              options->bin_refine_factors[1],
                                                                                              options->bin_refine_factors[2],
@@ -430,10 +441,8 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 
             free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
             lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
-                                                             xmin, xmax,
-                                                             ymin, ymax,
-                                                             zmin, zmax,
-                                                             max_sep, max_sep, max_sep,
+                                                             xmin, xmax, ymin, ymax, zmin, zmax,
+                                                             smax, smax, pimax,
                                                              options->bin_refine_factors[0],
                                                              options->bin_refine_factors[1],
                                                              options->bin_refine_factors[2],
@@ -457,7 +466,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                          xmin, xmax,
                                                          ymin, ymax,
                                                          zmin, zmax,
-                                                         max_sep, max_sep, max_sep,
+                                                         smax, smax, pimax,
                                                          options->bin_refine_factors[0],
                                                          options->bin_refine_factors[1],
                                                          options->bin_refine_factors[2],
@@ -498,12 +507,11 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
             if(autocorr == 0) {
                 free_cellarray_mocks_index_particles_DOUBLE(lattice2, totncells);
             }
-            free(rupp);
+            free(supp);
             return EXIT_FAILURE;
         }
     }
     /*---Gridlink-variables----------------*/
-    const int totnbins = (nsbin+1)*(nsbin+1);
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, totnbins);
     DOUBLE **all_savg = NULL;
@@ -599,13 +607,13 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                     DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
                     DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
                     const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
-                                                                              N1, x1, y1, z1, d1, weights1,
-                                                                              same_cell,
-                                                                              options->fast_divide,
-                                                                              sqr_smax, sqr_smin, nsbin,
-                                                                              nmubin, rupp_sqr, max_sep,
-                                                                              this_savg, npairs,
-                                                                              this_weightavg, extra->weight_method);
+                                                                             N1, x1, y1, z1, d1, weights1,
+                                                                             same_cell,
+                                                                             options->fast_divide,
+                                                                             sqr_smax, sqr_smin, nsbin,
+                                                                             nmu_bins, supp_sqr, mu_max, pimax,
+                                                                             this_savg, npairs,
+                                                                             this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
                        I care that an error occurred - rather than the exact value of
                        the error status */
@@ -627,13 +635,13 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                     DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
                     DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
                     const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
-                                                                              N2, x2, y2, z2, d2, weights2,
-                                                                              same_cell,
-                                                                              options->fast_divide,
-                                                                              sqr_smax, sqr_smin, nsbin,
-                                                                              nmubin, rupp_sqr, max_sep,
-                                                                              this_savg, npairs,
-                                                                              this_weightavg, extra->weight_method);
+                                                                             N2, x2, y2, z2, d2, weights2,
+                                                                             same_cell,
+                                                                             options->fast_divide,
+                                                                             sqr_smax, sqr_smin, nsbin,
+                                                                             nmu_bins, supp_sqr, mu_max, pimax,
+                                                                             this_savg, npairs,
+                                                                             this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
                        I care that an error occurred - rather than the exact value of
                        the error status */
@@ -661,7 +669,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 
     if(abort_status != EXIT_SUCCESS || interrupt_status_DDsmu_mocks_DOUBLE != EXIT_SUCCESS) {
         /* Cleanup memory here if aborting */
-        free(rupp);
+        free(supp);
 #if defined(_OPENMP)
         matrix_free((void **) all_npairs, numthreads);
         if(options->need_avg_sep) {
@@ -740,26 +748,28 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         }
     }
 
-    results->nbin   = nsbin;
-    results->nmubin = nmubin;
+    results->nsbin   = nsbin;
+    results->nmu_bins = nmu_bins;
+    results->mu_max = max_mu;//NOTE max_mu which is double and not mu_max (which might be float)
+    results->mu_min = ZERO;
     results->npairs = my_malloc(sizeof(*(results->npairs)), totnbins);
-    results->rupp   = my_malloc(sizeof(*(results->rupp))  , nsbin);
+    results->supp   = my_malloc(sizeof(*(results->supp))  , nsbin);
     results->savg  = my_malloc(sizeof(*(results->savg)) , totnbins);
     results->weightavg  = my_calloc(sizeof(double)  , totnbins);
-    if(results->npairs == NULL || results->rupp == NULL || results->savg == NULL || results->weightavg == NULL) {
+    if(results->npairs == NULL || results->supp == NULL || results->savg == NULL || results->weightavg == NULL) {
         free_results_mocks_s_mu(results);
-        free(rupp);
+        free(supp);
         return EXIT_FAILURE;
     }
 
     for(int i=0;i<nsbin;i++) {
-        results->rupp[i] = rupp[i];
-        for(int j=0;j<nmubin;j++) {
-            const int index = i*(nmubin+1) + j;
+        results->supp[i] = supp[i];
+        for(int j=0;j<nmu_bins;j++) {
+            const int index = i*(nmu_bins+1) + j;
             if( index >= totnbins ) {
                 fprintf(stderr, "ERROR: In %s> index = %d must be in range [0, %d)\n", __FUNCTION__, index, totnbins);
                 free_results_mocks_s_mu(results);
-                free(rupp);
+                free(supp);
                 return EXIT_FAILURE;
             }
             results->npairs[index] = npairs[index];
@@ -773,7 +783,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
             }
         }
     }
-    free(rupp);
+    free(supp);
 
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();

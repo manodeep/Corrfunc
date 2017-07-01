@@ -119,11 +119,12 @@ def main():
 
     print("-----------------------------------------------------------")
 
-    Nmu = 10
+    nmu_bins = 10
+    mu_max = 1.0
 
     print("\nRunning 2-D correlation function xi(s,mu)")
     results_DDsmu, _ = s_mu_mocks(autocorr, cosmology, nthreads,
-                                    Nmu, binfile,
+                                    nmu_bins, mu_max, binfile,
                                     ra, dec, cz, weights1=weights,
                                     output_savg=True, verbose=True,
                                     weight_type='pair_product')

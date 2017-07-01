@@ -13,7 +13,7 @@ __author__ = ('Manodeep Sinha', 'Nick Hand')
 __all__ = ('DDsmu_mocks', )
 
 
-def DDsmu_mocks(autocorr, cosmology, nthreads, Nmu, binfile,
+def DDsmu_mocks(autocorr, cosmology, nthreads, nmu_bins, mu_max, binfile,
                  RA1, DEC1, CZ1, weights1=None,
                  RA2=None, DEC2=None, CZ2=None, weights2=None,
                  is_comoving_dist=False,
@@ -62,8 +62,11 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, Nmu, binfile,
         The number of OpenMP threads to use. Has no effect if OpenMP was not
         enabled during library compilation.
 
-    Nmu: double
-        The number of ``mu`` bins, ranging from (0,1)
+    nmu_bins: int
+        The number of ``mu`` bins, ranging from (0,``mu_max``)
+
+    mu_max: double
+        The maximum ``mu`` value; must be > 0 and <= 1.0
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``s`` bins for
@@ -252,9 +255,9 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, Nmu, binfile,
             kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
-    rbinfile, delete_after_use = return_file_with_rbins(binfile)
+    sbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DDsmu_extn(autocorr, cosmology, nthreads,
-                                         Nmu, rbinfile,
+                                         nmu_bins, mu_max, sbinfile,
                                          RA1, DEC1, CZ1,
                                          is_comoving_dist=is_comoving_dist,
                                          verbose=verbose,
@@ -272,7 +275,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, Nmu, binfile,
 
     if delete_after_use:
         import os
-        os.remove(rbinfile)
+        os.remove(sbinfile)
 
     results_dtype = np.dtype([(bytes_to_native_str(b'smin'), np.float),
                               (bytes_to_native_str(b'smax'), np.float),

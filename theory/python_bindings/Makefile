@@ -10,13 +10,16 @@ DD_DIR := $(THEORY_DIR)/DD
 DDrppi_DIR := $(THEORY_DIR)/DDrppi
 WP_DIR := $(THEORY_DIR)/wp
 XI_DIR := $(THEORY_DIR)/xi
+DDSMU_DIR := $(THEORY_DIR)/DDsmu
 VPF_DIR := $(THEORY_DIR)/vpf
 
 DD_LIB := countpairs
 DDrppi_LIB := countpairs_rp_pi
 WP_LIB := countpairs_wp
 XI_LIB := countpairs_xi
+DDSMU_LIB := countpairs_s_mu
 VPF_LIB := countspheres
+
 
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
@@ -25,14 +28,14 @@ SOURCES := $(PROJECT).c
 OBJECTS := $(SOURCES:.c=.o)
 PYTHON_EXTN := $(PROJECT).so.$(MAJOR).$(MINOR).$(PATCHLEVEL)
 C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
-             $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
+             $(XI_DIR)/lib$(XI_LIB).a $(DDSMU_DIR)/lib$(DDSMU_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
 INCL := $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
-        $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h \
+        $(XI_DIR)/$(XI_LIB).h $(DDSMU_DIR)/$(DDSMU_LIB).h $(VPF_DIR)/$(VPF_LIB).h \
         $(UTILS_DIR)/defs.h $(IO_DIR)/io.h $(IO_DIR)/ftread.h \
         $(UTILS_DIR)/utils.h \
 	$(UTILS_DIR)/function_precision.h $(UTILS_DIR)/progressbar.h \
         $(UTILS_DIR)/cpu_features.h $(UTILS_DIR)/macros.h
-LIB_INCLUDE:=-I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(VPF_DIR)
+LIB_INCLUDE:=-I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(DDSMU_DIR) -I$(VPF_DIR)
 
 
 all: sharedlib $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
@@ -59,6 +62,9 @@ $(WP_DIR)/lib$(WP_LIB).a: $(WP_DIR)/*.c $(WP_DIR)/*.c.src $(WP_DIR)/*.h.src $(RO
 
 $(XI_DIR)/lib$(XI_LIB).a: $(XI_DIR)/*.c $(XI_DIR)/*.c.src $(XI_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(XI_DIR) libs
+
+$(DDSMU_DIR)/lib$(DDSMU_LIB).a: $(DDSMU_DIR)/*.c $(DDSMU_DIR)/*.c.src $(DDSMU_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(DDSMU_DIR) libs
 
 $(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/*.c $(VPF_DIR)/*.c.src $(VPF_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(VPF_DIR) libs

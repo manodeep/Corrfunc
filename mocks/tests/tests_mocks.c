@@ -51,7 +51,8 @@ double *RA2=NULL,*DEC2=NULL,*CZ2=NULL,*weights2=NULL;
 char binfile[]="../tests/bins";
 char angular_binfile[]="../tests/angular_bins";
 double pimax=40.0;
-int Nmu=10;
+int nmu_bins=10;
+double mu_max=1.0;
 double boxsize=420.0;
 #if defined(_OPENMP)
 const int nthreads=4;
@@ -180,7 +181,8 @@ int test_DDsmu_mocks(const char *correct_outputfile)
                                        nthreads,
                                        autocorr,
                                        binfile,
-                                       Nmu,
+                                       mu_max,
+                                       nmu_bins,
                                        cosmology_flag,
                                        &results,
                                        &options,
@@ -195,9 +197,9 @@ int test_DDsmu_mocks(const char *correct_outputfile)
         free_results_mocks_s_mu(&results);
         return EXIT_FAILURE;
     }
-    const double dmu= 1.0/(double)results.nmubin ;
-    const int nmubin = results.nmubin;
-    for(int i=1;i<results.nbin;i++) {
+    const double dmu= 1.0/(double)results.nmu_bins;
+    const int nmubin = results.nmu_bins;
+    for(int i=1;i<results.nsbin;i++) {
         for(int j=0;j<nmubin;j++) {
             int index = i*(nmubin+1) + j;
             uint64_t npairs;
@@ -206,7 +208,7 @@ int test_DDsmu_mocks(const char *correct_outputfile)
             int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &savg, &weightavg);
             if(nitems != 3) {
                 ret = EXIT_FAILURE;//not required but showing intent
-                i = results.nbin;
+                i = results.nsbin;
                 break;
             }
             int floats_equal = AlmostEqualRelativeAndAbs_double(savg, results.savg[index], maxdiff, maxreldiff);
@@ -220,7 +222,7 @@ int test_DDsmu_mocks(const char *correct_outputfile)
                 fprintf(stderr,"True savg  = %20.12e Computed savg = %20.12e. floats_equal = %d\n", savg, results.savg[index], floats_equal);
                 fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
                 ret = EXIT_FAILURE;//not required but showing intent
-                i = results.nbin;
+                i = results.nsbin;
                 break;
             }
         }
@@ -234,8 +236,8 @@ int test_DDsmu_mocks(const char *correct_outputfile)
             free_results_mocks_s_mu(&results);
             return EXIT_FAILURE;
         }
-        for(int i=1;i<results.nbin;i++) {
-            const double logrp = log10(results.rupp[i]);
+        for(int i=1;i<results.nsbin;i++) {
+            const double logrp = log10(results.supp[i]);
             for(int j=0;j<nmubin;j++) {
                 int index = i*(nmubin+1) + j;
                 fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf %20.8lf \n",results.npairs[index],results.savg[index],logrp,(j+1)*dmu, results.weightavg[index]);
