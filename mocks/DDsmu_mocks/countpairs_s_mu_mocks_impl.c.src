@@ -512,6 +512,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         }
     }
     /*---Gridlink-variables----------------*/
+    const int totnbins = (nmu_bins+1)*(nsbin+1);
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, totnbins);
     DOUBLE **all_savg = NULL;
