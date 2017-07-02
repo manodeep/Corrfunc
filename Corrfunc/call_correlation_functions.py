@@ -22,7 +22,8 @@ from Corrfunc._countpairs import\
     countpairs_rp_pi as DDrppi_extn,\
     countpairs_wp as wp_extn,\
     countpairs_xi as xi_extn,\
-    countspheres_vpf as vpf_extn
+    countspheres_vpf as vpf_extn,\
+    countpairs_s_mu as DDsmu_extn
 
 
 def main():
@@ -70,6 +71,26 @@ def main():
     print("########################################################################")
     for ibin in range(numbins_to_print):
         items = results_DDrppi[ibin]
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:10.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4], items[5]))
+    print("------------------------------------------------------------------------")
+
+    mu_max = 0.5
+    nmu_bins = 10
+
+    print("\nRunning 2-D correlation function DD(s,mu)")
+    results_DDsmu, _ = DDsmu_extn(autocorr, nthreads, binfile,
+                                    mu_max, nmu_bins,
+                                    x, y, z,
+                                    weights1=np.ones_like(x), weight_type='pair_product',
+                                    verbose=True, periodic=periodic,
+                                    boxsize=boxsize, output_savg=True)
+    print("\n#            ****** DD(s,mu): first {0} bins  *******      "
+          .format(numbins_to_print))
+    print("#      smin        smax       savg     mu_max     npairs    weightavg")
+    print("########################################################################")
+    for ibin in range(numbins_to_print):
+        items = results_DDsmu[ibin]
         print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:10.4f}"
               .format(items[0], items[1], items[2], items[3], items[4], items[5]))
     print("------------------------------------------------------------------------")

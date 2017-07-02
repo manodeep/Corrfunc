@@ -64,7 +64,7 @@ static char module_docstring[]             =    "Python extensions for calculati
     "countpairs_rp_pi : Calculate the 2-D DD("RP_CHAR","PI_CHAR") auto/cross-correlation function given two sets of arrays with Cartesian XYZ positions.\n"
     "countpairs_wp    : Calculate the projected auto-correlation function wp (assumes PERIODIC) given one set of arrays with Cartesian XYZ positions\n"
     "countpairs_xi    : Calculate the 3-d auto-correlation function xi (assumes PERIODIC) given one set of arrays with Cartesian XYZ positions\n"
-    "countpairs_s_mu  : Calculate the 2-D DD(s,"MU_CHAR") auto/cross-correlation function given two sets of arrays with Cartesian XYZ positions.\n"    
+    "countpairs_s_mu  : Calculate the 2-D DD(s,"MU_CHAR") auto/cross-correlation function given two sets of arrays with Cartesian XYZ positions.\n"
     "countpairs_vpf   : Calculate the counts-in-spheres given one set of arrays with Cartesian XYZ positions\n"
     "\n"
     "See `Corrfunc/call_correlation_functions.py` for example calls to each function in the extension.\n";
@@ -93,7 +93,7 @@ static PyMethodDef module_methods[] = {
      "Calculate the 3-D pair-counts, "XI_CHAR"(r), auto/cross-correlation \n"
      "function given two sets of points represented by X1/Y1/Z1 and X2/Y2/Z2 \n"
      "arrays.\n\n"
-     
+
      "Note, that this module only returns pair counts and not the actual \n"
      "correlation function "XI_CHAR"(r). See the mocks/wtheta/wtheta.c for \n"
      "computing "XI_CHAR"(r) from the output of DD(r). Also note that the \n"
@@ -103,10 +103,10 @@ static PyMethodDef module_methods[] = {
      "Parameters \n"
      "-----------\n"
      "Every parameter can be passed as a keyword of the corresponding name.\n\n"
-     
+
      "autocorr : boolean\n"
      "   Boolean flag for auto/cross-correlation. If autocorr is set to 1,\n"
-     "    are not used (but must still be passed, perhaps again as X1/Y1/Z1).\n"     
+     "    are not used (but must still be passed, perhaps again as X1/Y1/Z1).\n"
      "\n"
      "nthreads : integer\n"
      "   The number of OpenMP threads to use. Has no effect if OpenMP was not\n"
@@ -117,17 +117,17 @@ static PyMethodDef module_methods[] = {
      "   contain white-space separated values  of (rmin, rmax)  for each\n"
      "   ``r`` wanted. The bins do not need to be contiguous but must be in\n"
      "   increasing order (smallest bins come first). \n\n"
-     
+
      "X1/Y1/Z1 : array-like, real (float/double)\n"
      "   The array of X/Y/Z positions for the first set of points.\n"
      "   Calculations are done in the precision of the supplied arrays.\n\n"
-     
+
      "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
      "   Weights for computing a weighted pair count.\n\n"
-     
+
      "weight_type : str, optional\n"
      "   The type of pair weighting to apply.\n"
-     "   Options: \"pair_product\", None\n" 
+     "   Options: \"pair_product\", None\n"
      "   Default: None.\n\n"
 
      "periodic : boolean\n"
@@ -136,7 +136,7 @@ static PyMethodDef module_methods[] = {
      "X2/Y2/Z2 : array-like, real (float/double)\n"
      "   Array of XYZ positions for the second set of points. *Must* be the same\n"
      "   precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.\n\n"
-     
+
      "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
      "   Weights for computing a weighted pair count."
 
@@ -148,7 +148,7 @@ static PyMethodDef module_methods[] = {
      "   Present to facilitate exact calculations for periodic wrapping.\n"
      "   If boxsize is not supplied, then the wrapping is done based on\n"
      "   the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
-    
+
      "output_ravg : boolean (default false)\n"
      "   Boolean flag to output the average ``r`` for each bin. Code will\n"
      "   run slower if you set this flag. Also, note, if you are calculating\n"
@@ -164,7 +164,7 @@ static PyMethodDef module_methods[] = {
      "   Controls the maximum number of cells per dimension. Total number of cells \n"
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
-     
+
      "c_api_timer : boolean (default false)\n"
      "   Boolean flag to measure actual time spent in the C libraries. Here\n"
      "   to allow for benchmarking and scaling studies.\n\n"
@@ -176,16 +176,16 @@ static PyMethodDef module_methods[] = {
      "  set on the current computer. However, if you set ``isa`` to, say,\n"
      "  ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
      "  revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n\n"
-       
+
      "  Unless you are benchmarking the different instruction sets, you should\n"
      "  always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
      "  then the integer values correspond to the ``enum`` for the instruction set\n"
      "  defined in ``utils/defs.h``.\n\n"
-       
+
     "Returns\n"
     "--------\n\n"
     "A tuple (results, time) \n\n"
-     
+
     "results : A python list\n"
     "   A python list containing [rmin, rmax, ravg, npairs, weight_avg] for each radial bin\n"
     "   specified in the ``binfile``. If ``output_ravg`` is not set, then ``ravg``\n"
@@ -195,12 +195,12 @@ static PyMethodDef module_methods[] = {
 
     "time : if ``c_api_timer`` is set, then the return value contains the time spent\n"
     "   in the API; otherwise time is set to 0.0\n\n"
-     
+
     "Example\n"
     "-------\n\n"
-     
+
     ">>> from Corrfunc._countpairs import countpairs\n"
-    ">>> from Corrfunc.io import read_catalog\n" 
+    ">>> from Corrfunc.io import read_catalog\n"
     ">>> x,y,z = read_catalog()\n"
     ">>> autocorr=1\n"
     ">>> nthreads=2\n"
@@ -232,7 +232,7 @@ static PyMethodDef module_methods[] = {
      "\n"
      "autocorr: boolean, required\n"
      "   Boolean flag for auto/cross-correlation. If autocorr is set to 1,\n"
-     "    are not used (but must still be passed, perhaps again as X1/Y1/Z1).\n"     
+     "    are not used (but must still be passed, perhaps again as X1/Y1/Z1).\n"
      "\n"
      "nthreads: integer\n"
      "    The number of OpenMP threads to use. Has no effect if OpenMP was not\n"
@@ -251,17 +251,17 @@ static PyMethodDef module_methods[] = {
      "   contain white-space separated values  of (rpmin, rpmax)  for each\n"
      "   ``rp`` wanted. The bins do not need to be contiguous but must be in\n"
      "   increasing order (smallest bins come first). \n\n"
-     
+
      "X1/Y1/Z1 : array-like, real (float/double)\n"
      "   The array of X/Y/Z positions for the first set of points.\n"
      "   Calculations are done in the precision of the supplied arrays.\n"
      "\n"
      "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
      "   Weights for computing a weighted pair count.\n\n"
-     
+
      "weight_type : str, optional\n"
      "   The type of pair weighting to apply.\n"
-     "   Options: \"pair_product\", None\n" 
+     "   Options: \"pair_product\", None\n"
      "   Default: None.\n\n"
 
      "periodic : boolean\n"
@@ -298,7 +298,7 @@ static PyMethodDef module_methods[] = {
      "   Controls the maximum number of cells per dimension. Total number of cells \n"
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
-     
+
      "c_api_timer : boolean (default false)\n"
      "   Boolean flag to measure actual time spent in the C libraries. Here\n"
      "   to allow for benchmarking and scaling studies.\n"
@@ -328,7 +328,7 @@ static PyMethodDef module_methods[] = {
      "   will be set to 0.0 for all bins; similarly for ``weight_avg``. ``npairs`` contains the number of pairs\n"
      "   in that bin and can be used to compute the actual wp("RP_CHAR") by\n"
      "   combining with (DR, RR) counts.\n"
-     "\n" 
+     "\n"
      "time : if ``c_api_timer`` is set, then the return value contains the time spent\n"
      "   in the API; otherwise time is set to 0.0\n"
      "\n"
@@ -336,7 +336,7 @@ static PyMethodDef module_methods[] = {
      "--------\n"
      "\n"
      ">>> from Corrfunc._countpairs import countpairs_rp_pi\n"
-     ">>> from Corrfunc.io import read_catalog\n" 
+     ">>> from Corrfunc.io import read_catalog\n"
      ">>> x,y,z = read_catalog()\n"
      ">>> autocorr=1\n"
      ">>> nthreads=2\n"
@@ -402,10 +402,10 @@ static PyMethodDef module_methods[] = {
      "\n"
      "weights : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
      "   Weights for computing a weighted correlation function.\n\n"
-     
+
      "weight_type : str, optional\n"
      "   The type of pair weighting to apply.\n"
-     "   Options: \"pair_product\", None\n" 
+     "   Options: \"pair_product\", None\n"
      "   Default: None.\n\n"
 
      "verbose : boolean (default false)\n"
@@ -464,7 +464,7 @@ static PyMethodDef module_methods[] = {
      "   ``rpavg`` will be set to 0.0 for all bins; similarly for ``weight_avg``. ``wp`` contains the projected\n"
      "   correlation function while ``npairs`` contains the number of unique pairs\n"
      "   in that bin.  If weight are used, then ``wp`` is weighted, while ``npairs`` is not.\n"
-     "\n" 
+     "\n"
      "time : if ``c_api_timer`` is set, then the return value contains the time spent\n"
      "   in the API; otherwise time is set to 0.0\n"
      "\n"
@@ -479,7 +479,7 @@ static PyMethodDef module_methods[] = {
      "--------\n"
      "\n"
      ">>> from _countpairs import countpairs_wp\n"
-     ">>> from Corrfunc.io import read_catalog\n" 
+     ">>> from Corrfunc.io import read_catalog\n"
      ">>> x,y,z = read_catalog()\n"
      ">>> nthreads=2\n"
      ">>> pimax=40.0\n"
@@ -534,10 +534,10 @@ static PyMethodDef module_methods[] = {
      "\n"
      "weights : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
      "   Weights for computing a weighted correlation function.\n\n"
-     
+
      "weight_type : str, optional\n"
      "   The type of pair weighting to apply.\n"
-     "   Options: \"pair_product\", None\n" 
+     "   Options: \"pair_product\", None\n"
      "   Default: None.\n\n"
 
      "verbose : boolean (default false)\n"
@@ -588,7 +588,7 @@ static PyMethodDef module_methods[] = {
      "   ``ravg`` will be set to 0.0 for all bins; similarly for ``weightavg``. ``xi`` contains the projected\n"
      "   correlation function while ``npairs`` contains the number of unique pairs\n"
      "   in that bin.  If weights are used, then ``xi`` is weighted, while ``npairs`` is not.\n"
-     "\n" 
+     "\n"
      "time : if ``c_api_timer`` is set, then the return value contains the time spent\n"
      "   in the API; otherwise time is set to 0.0\n"
      "\n"
@@ -596,7 +596,7 @@ static PyMethodDef module_methods[] = {
      "--------\n"
      "\n"
      ">>> from _countpairs import countpairs_xi\n"
-     ">>> from Corrfunc.io import read_catalog\n" 
+     ">>> from Corrfunc.io import read_catalog\n"
      ">>> x,y,z = read_catalog()\n"
      ">>> nthreads=2\n"
      ">>> boxsize = 420.0\n"
@@ -627,7 +627,7 @@ static PyMethodDef module_methods[] = {
      "\n"
      "autocorr: boolean, required\n"
      "   Boolean flag for auto/cross-correlation. If autocorr is set to 1,\n"
-     "    are not used (but must still be passed, perhaps again as X1/Y1/Z1).\n"     
+     "    are not used (but must still be passed, perhaps again as X1/Y1/Z1).\n"
      "\n"
      "nthreads: integer\n"
      "    The number of OpenMP threads to use. Has no effect if OpenMP was not\n"
@@ -654,10 +654,10 @@ static PyMethodDef module_methods[] = {
      "\n"
      "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
      "   Weights for computing a weighted pair count.\n\n"
-     
+
      "weight_type : str, optional\n"
      "   The type of pair weighting to apply.\n"
-     "   Options: \"pair_product\", None\n" 
+     "   Options: \"pair_product\", None\n"
      "   Default: None.\n\n"
 
      "periodic : boolean\n"
@@ -668,7 +668,7 @@ static PyMethodDef module_methods[] = {
      "   Array of XYZ positions for the second set of points. *Must* be the same\n"
      "   precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.\n"
      "\n"
-     
+
      "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
      "   Weights for computing a weighted pair count."
 
@@ -682,7 +682,7 @@ static PyMethodDef module_methods[] = {
      "   If boxsize is not supplied, then the wrapping is done based on\n"
      "   the maximum difference within each dimension of the X/Y/Z arrays.\n"
      "\n"
-     
+
      "output_savg : boolean (default false)\n"
      "   Boolean flag to output the average ``s`` for each bin. Code will\n"
      "   run slower if you set this flag. Also, note, if you are calculating\n"
@@ -699,7 +699,7 @@ static PyMethodDef module_methods[] = {
      "   Controls the maximum number of cells per dimension. Total number of cells \n"
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
-     
+
      "c_api_timer : boolean (default false)\n"
      "   Boolean flag to measure actual time spent in the C libraries. Here\n"
      "   to allow for benchmarking and scaling studies.\n"
@@ -731,7 +731,7 @@ static PyMethodDef module_methods[] = {
      "   ranging from [0, ``mu_max``) *per* spatial bin. If ``output_savg`` is not set, then ``savg``\n"
      "   will be set to 0.0 for all bins; similarly for ``weight_avg``. ``npairs`` \n"
      "   contains the number of pairs in that bin.\n"
-     "\n" 
+     "\n"
      "time : if ``c_api_timer`` is set, then the return value contains the time spent\n"
      "   in the API; otherwise time is set to 0.0\n"
      "\n"
@@ -740,7 +740,7 @@ static PyMethodDef module_methods[] = {
      "--------\n"
      "\n"
      ">>> from Corrfunc._countpairs import countpairs_s_mu\n"
-     ">>> from Corrfunc.io import read_catalog\n" 
+     ">>> from Corrfunc.io import read_catalog\n"
      ">>> x,y,z = read_catalog()\n"
      ">>> autocorr=1\n"
      ">>> nthreads=2\n"
@@ -880,7 +880,7 @@ static PyObject *countpairs_error_out(PyObject *module, const char *msg)
 {
 #if PY_MAJOR_VERSION < 3
     (void) module;//to avoid unused warning with python2
-#endif    
+#endif
 
     struct module_state *st = GETSTATE(module);
     PyErr_SetString(st->error, msg);
@@ -936,7 +936,7 @@ PyMODINIT_FUNC init_countpairs(void)
         Py_DECREF(module);
         INITERROR;
     }
-    
+
     /* Load `numpy` functionality. */
     import_array();
 
@@ -953,24 +953,24 @@ PyMODINIT_FUNC init_countpairs(void)
 static int64_t check_dims_and_datatype(PyObject *module, PyArrayObject *x1_obj, PyArrayObject *y1_obj, PyArrayObject *z1_obj, PyArrayObject *weights1_obj, size_t *element_size)
 {
     char msg[1024];
-    
+
     const int check_weights = weights1_obj != NULL;
 
     /* All the position arrays should be 1-D*/
     const int nxdims = PyArray_NDIM(x1_obj);
     const int nydims = PyArray_NDIM(y1_obj);
     const int nzdims = PyArray_NDIM(z1_obj);
-    
+
     if(nxdims != 1 || nydims != 1 || nzdims != 1) {
         snprintf(msg, 1024, "ERROR: Expected 1-D numpy arrays.\nFound (nxdims, nydims, nzdims) = (%d, %d, %d) instead",
                  nxdims, nydims, nzdims);
         countpairs_error_out(module, msg);
         return -1;
     }
-    
+
     /* The weights array can be 1-D or 2-D of shape (n_weights, n_particles) */
     const int n_weight_dims = check_weights ? PyArray_NDIM(weights1_obj) : 1;
-    
+
     if(n_weight_dims != 1 && n_weight_dims != 2) {
         snprintf(msg, 1024, "ERROR: Expected 1-D or 2-D weight array.\nFound n_weight_dims = %d instead", n_weight_dims);
         countpairs_error_out(module, msg);
@@ -1004,7 +1004,7 @@ static int64_t check_dims_and_datatype(PyObject *module, PyArrayObject *x1_obj, 
         countpairs_error_out(module, msg);
         return -1;
     }
-    
+
     // Current version of the code only supports weights of the same dtype as positions
     if( x_type != y_type || y_type != z_type || (check_weights && z_type != weights_type)) {
         PyArray_Descr *x_descr = PyArray_DescrFromType(x_type);
@@ -1024,12 +1024,12 @@ static int64_t check_dims_and_datatype(PyObject *module, PyArrayObject *x1_obj, 
         countpairs_error_out(module, msg);
         return -1;
     }
-    
+
     /* Check if the number of elements in the 3 Python arrays are identical */
     const int64_t nx1 = (int64_t)PyArray_SIZE(x1_obj);
     const int64_t ny1 = (int64_t)PyArray_SIZE(y1_obj);
     const int64_t nz1 = (int64_t)PyArray_SIZE(z1_obj);
-    
+
     if(nx1 != ny1 || ny1 != nz1) {
       snprintf(msg, 1024, "ERROR: Expected arrays to have the same number of elements in all 3-dimensions.\nFound (nx, ny, nz) = (%"PRId64", %"PRId64", %"PRId64") instead",
                nx1, ny1, nz1);
@@ -1054,25 +1054,25 @@ static int64_t check_dims_and_datatype(PyObject *module, PyArrayObject *x1_obj, 
     } else {
       *element_size = sizeof(double);
     }
-    
+
     return nx1;
 }
 
 static int print_kwlist_into_msg(char *msg, const size_t totsize, size_t len, char *kwlist[], const size_t nitems)
 {
     for(size_t i=0;i<nitems;i++) {
-        
+
         if(len+strlen(kwlist[i]) >= totsize-2) {
             return EXIT_FAILURE;
         }
-        
+
         memcpy(msg+len, kwlist[i], strlen(kwlist[i]));
         len += strlen(kwlist[i]);
         msg[len] = ',';
         msg[len+1] = ' ';
         len += 2;
     }
-    
+
     msg[len]='\0';
     return EXIT_SUCCESS;
 }
@@ -1083,11 +1083,11 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     //Error-handling is global in python2 -> stored in struct module_state _struct declared at the top of this file
 #if PY_MAJOR_VERSION < 3
     (void) self;
-    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash.
 #else
     //In python3, self is simply the module object that was returned earlier by init
     PyObject *module = self;
-#endif    
+#endif
     PyArrayObject *x1_obj=NULL, *y1_obj=NULL, *z1_obj=NULL, *weights1_obj=NULL;
     PyArrayObject *x2_obj=NULL, *y2_obj=NULL, *z2_obj=NULL, *weights2_obj=NULL;
 
@@ -1101,7 +1101,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     options.periodic = 1;
     options.need_avg_sep = 0;
     options.c_api_timer = 0;
-    
+
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
@@ -1154,7 +1154,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
                                        &weighting_method_str)
 
          ) {
-        
+
         PyObject_Print(kwargs, stdout, 0);
         fprintf(stdout, "\n");
 
@@ -1167,7 +1167,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         if(status != EXIT_SUCCESS) {
             fprintf(stderr,"Error message does not contain all of the keywords\n");
         }
-        
+
         countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
@@ -1186,16 +1186,16 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
 
-    
+
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */
     size_t element_size;
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, weights1_obj, &element_size);
     if(ND1 == -1) {
-        //Error has already been set -> simply return 
+        //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
-    
+
     /* Ensure the weights are of the right shape (n_weights, n_particles) */
     if(weights1_obj != NULL){
         // A numpy dimension of length -1 will be expanded to n_weights
@@ -1203,7 +1203,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
         weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
     }
-    
+
     /* Validate the user's choice of weighting method */
     weight_method_t weighting_method;
     int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
@@ -1222,7 +1222,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
-    
+
     if(extra.weights0.num_weights > 0 && found_weights > MAX_NUM_WEIGHTS){
         char msg[1024];
         snprintf(msg, 1024, "ValueError: In %s: Provided %d weights-per-particle, but the code was compiled with MAX_NUM_WEIGHTS=%d.\n",
@@ -1249,17 +1249,17 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         size_t element_size2;
         ND2 = check_dims_and_datatype(module, x2_obj, y2_obj, z2_obj, weights2_obj, &element_size2);
         if(ND2 == -1) {
-            //Error has already been set -> simply return 
+            //Error has already been set -> simply return
             Py_RETURN_NONE;
         }
-        
+
         /* Ensure the weights are of the right shape (n_weights, n_particles) */
         if(weights2_obj != NULL){
             npy_intp dims[2] = {-1, ND2};
             PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
             weights2_obj = (PyArrayObject *) PyArray_Newshape(weights2_obj, &pdims, NPY_CORDER);
         }
-    
+
         if(element_size != element_size2) {
             snprintf(msg, 1024, "TypeError: In %s: The two arrays must have the same data-type. First array is of type %s while second array is of type %s\n",
                      __FUNCTION__, element_size == 4 ? "floats":"doubles", element_size2 == 4 ? "floats":"doubles");
@@ -1268,9 +1268,9 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         }
     }
 
-    
-    /* 
-       Interpret the input objects as numpy arrays (of whatever the input type the python object has). 
+
+    /*
+       Interpret the input objects as numpy arrays (of whatever the input type the python object has).
        NULL initialization is necessary since we might be calling XDECREF.
        The input objects can be converted into the required DOUBLE array.
     */
@@ -1282,7 +1282,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
-    
+
     /* NULL initialization is necessary since we might be calling XDECREF*/
     PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
     if(autocorr == 0) {
@@ -1293,14 +1293,14 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
             weights2_array = PyArray_FromArray(weights2_obj, NOTYPE_DESCR, requirements);
         }
     }
-    
+
     if (x1_array == NULL || y1_array == NULL || z1_array == NULL ||
         (autocorr==0 && (x2_array == NULL || y2_array == NULL || z2_array == NULL))) {
         Py_XDECREF(x1_array);
         Py_XDECREF(y1_array);
         Py_XDECREF(z1_array);
         Py_XDECREF(weights1_array);
-        
+
         Py_XDECREF(x2_array);
         Py_XDECREF(y2_array);
         Py_XDECREF(z2_array);
@@ -1315,7 +1315,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
 
     /* Get pointers to the data */
     void *X1 = NULL, *Y1=NULL, *Z1=NULL, *weights1=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array); 
+    X1 = PyArray_DATA((PyArrayObject *) x1_array);
     Y1 = PyArray_DATA((PyArrayObject *) y1_array);
     Z1 = PyArray_DATA((PyArrayObject *) z1_array);
     if(weights1_array != NULL){
@@ -1331,7 +1331,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
             weights2 = PyArray_DATA((PyArrayObject *) weights2_array);
         }
     }
-    
+
     /* Pack the weights into extra_options */
     for(int64_t w = 0; w < extra.weights0.num_weights; w++){
         extra.weights0.weights[w] = (char *) weights1 + w*ND1*element_size;
@@ -1389,16 +1389,16 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
 {
 #if PY_MAJOR_VERSION < 3
     (void) self;
-    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash.
 #else
     //In python3, self is simply the module object that was returned earlier by init
     PyObject *module = self;
-#endif    
+#endif
     PyArrayObject *x1_obj=NULL, *y1_obj=NULL, *z1_obj=NULL, *weights1_obj=NULL;
     PyArrayObject *x2_obj=NULL, *y2_obj=NULL, *z2_obj=NULL, *weights2_obj=NULL;
     int autocorr=0;
     int nthreads=4;
-    
+
     double pimax;
     char *binfile, *weighting_method_str = NULL;
     struct config_options options = get_config_options();
@@ -1409,7 +1409,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
-    
+
     static char *kwlist[] = {
         "autocorr",
         "nthreads",
@@ -1470,7 +1470,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         if(status != EXIT_SUCCESS) {
             fprintf(stderr,"Error message does not contain all of the keywords\n");
         }
-        
+
         countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
@@ -1493,10 +1493,10 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, weights1_obj, &element_size);
     if(ND1 == -1) {
-        //Error has already been set -> simply return 
+        //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
-    
+
     /* Ensure the weights are of the right shape (n_weights, n_particles) */
     if(weights1_obj != NULL){
         // A numpy dimension of length -1 will be expanded to n_weights
@@ -1504,7 +1504,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
         weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
     }
-    
+
     /* Validate the user's choice of weighting method */
     weight_method_t weighting_method;
     int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
@@ -1523,7 +1523,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
-    
+
     if(extra.weights0.num_weights > 0 && found_weights > MAX_NUM_WEIGHTS){
         char msg[1024];
         snprintf(msg, 1024, "ValueError: In %s: Provided %d weights-per-particle, but the code was compiled with MAX_NUM_WEIGHTS=%d.\n",
@@ -1551,7 +1551,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         size_t element_size2;
         ND2 = check_dims_and_datatype(module, x2_obj, y2_obj, z2_obj, weights2_obj, &element_size2);
         if(ND2 == -1) {
-            //Error has already been set -> simply return 
+            //Error has already been set -> simply return
             Py_RETURN_NONE;
         }
         /* Ensure the weights are of the right shape (n_weights, n_particles) */
@@ -1567,8 +1567,8 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
             countpairs_error_out(module, msg);
             Py_RETURN_NONE;
         }
-    } 
-    
+    }
+
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
     PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
@@ -1579,7 +1579,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
-    
+
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -1611,7 +1611,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     /* Get pointers to the data as C-types. */
     void *X1 = NULL, *Y1 = NULL, *Z1 = NULL, *weights1=NULL;
     void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array); 
+    X1 = PyArray_DATA((PyArrayObject *) x1_array);
     Y1 = PyArray_DATA((PyArrayObject *) y1_array);
     Z1 = PyArray_DATA((PyArrayObject *) z1_array);
     if(weights1_array != NULL){
@@ -1637,7 +1637,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
 
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
-    
+
     options.float_type = element_size;
     results_countpairs_rp_pi results;
     double c_api_time = 0.0;
@@ -1654,7 +1654,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         c_api_time = options.c_api_time;
     }
     NPY_END_THREADS;
-    
+
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);Py_XDECREF(weights1_array);//x1 should absolutely not be NULL
     Py_XDECREF(x2_array);Py_XDECREF(y2_array);Py_XDECREF(z2_array);Py_XDECREF(weights2_array);//x2 might be NULL depending on value of autocorr
@@ -1681,7 +1681,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         rlow=results.rupp[i];
     }
     free_results_rp_pi(&results);
-    
+
     return Py_BuildValue("(Od)", ret, c_api_time);
 }
 
@@ -1689,11 +1689,11 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
 {
 #if PY_MAJOR_VERSION < 3
     (void) self;//to suppress the unused variable warning. Terrible hack
-    PyObject *module = NULL;//need not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+    PyObject *module = NULL;//need not be used -> setting to NULL so any attempts to dereference will result in a crash.
 #else
     //In python3, self is simply the module object that was returned earlier by init
     PyObject *module = self;
-#endif    
+#endif
     PyArrayObject *x1_obj=NULL, *y1_obj=NULL, *z1_obj=NULL, *weights1_obj=NULL;
     double boxsize,pimax;
     int nthreads=1;
@@ -1710,7 +1710,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
-    
+
     static char *kwlist[] = {
         "boxsize",
         "pimax",
@@ -1732,7 +1732,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
         NULL
     };
-    
+
     if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|O!sbbbbbhbbi", kwlist,
                                       &boxsize,&pimax,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
@@ -1747,7 +1747,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
                                       &(options.c_api_timer),
                                       &(options.c_cell_timer),
                                       &(options.instruction_set))
-        
+
         ){
         PyObject_Print(kwargs, stdout, 0);
         fprintf(stdout, "\n");
@@ -1761,7 +1761,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         if(status != EXIT_SUCCESS) {
             fprintf(stderr,"Error message does not contain all of the keywords\n");
         }
-        
+
         countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
@@ -1780,14 +1780,14 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         options.bin_refine_factors[2] = zbin_ref;
         set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
-    
+
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, weights1_obj, &element_size);
     if(ND1 == -1) {
-        //Error has already been set -> simply return 
+        //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
-    
+
     /* Ensure the weights are of the right shape (n_weights, n_particles) */
     if(weights1_obj != NULL){
         // A numpy dimension of length -1 will be expanded to n_weights
@@ -1795,7 +1795,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
         weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
     }
-    
+
     /* Validate the user's choice of weighting method */
     weight_method_t weighting_method;
     int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
@@ -1814,7 +1814,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
-    
+
     if(extra.weights0.num_weights > 0 && found_weights > MAX_NUM_WEIGHTS){
         char msg[1024];
         snprintf(msg, 1024, "ValueError: In %s: Provided %d weights-per-particle, but the code was compiled with MAX_NUM_WEIGHTS=%d.\n",
@@ -1822,7 +1822,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
-    
+
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
     PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
@@ -1833,7 +1833,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
 
-    
+
     if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
         Py_XDECREF(x1_array);
         Py_XDECREF(y1_array);
@@ -1856,7 +1856,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
-    
+
     /* Pack the weights into extra_options */
     for(int64_t w = 0; w < extra.weights0.num_weights; w++){
         extra.weights0.weights[w] = (char *) weights1 + w*ND1*element_size;
@@ -1865,7 +1865,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
 
-    
+
     results_countpairs_wp results;
     options.float_type = element_size;
     double c_api_time = 0.0;
@@ -1888,7 +1888,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     if(status != EXIT_SUCCESS) {
         Py_RETURN_NONE;
     }
-    
+
 #if 0
     for(int i=1;i<results.nbin;i++) {
         const double rpavg = results.rpavg[i];
@@ -1929,11 +1929,11 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
 {
 #if PY_MAJOR_VERSION < 3
     (void) self;//to suppress the unused variable warning. Terrible hack
-    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash.
 #else
     //In python3, self is simply the module object that was returned earlier by init
     PyObject *module = self;
-#endif    
+#endif
 
     PyArrayObject *x1_obj, *y1_obj, *z1_obj, *weights1_obj = NULL;
     double boxsize;
@@ -1968,7 +1968,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         NULL
     };
 
-    
+
     if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|O!sbbbbbhbi", kwlist,
                                       &boxsize,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
@@ -1986,7 +1986,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
 
         PyObject_Print(kwargs, stdout, 0);
         fprintf(stdout, "\n");
-        
+
         char msg[1024];
         int len=snprintf(msg, 1024,"ArgumentError: In xi> Could not parse the arguments. Input parameters are: \n");
 
@@ -1996,7 +1996,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         if(status != EXIT_SUCCESS) {
             fprintf(stderr,"Error message does not contain all of the keywords\n");
         }
-        
+
         countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
@@ -2019,10 +2019,10 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     size_t element_size;
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, weights1_obj, &element_size);
     if(ND1 == -1) {
-        //Error has already been set -> simply return 
+        //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
-    
+
     /* Ensure the weights are of the right shape (n_weights, n_particles) */
     if(weights1_obj != NULL){
         // A numpy dimension of length -1 will be expanded to n_weights
@@ -2030,7 +2030,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
         weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
     }
-    
+
     /* Validate the user's choice of weighting method */
     weight_method_t weighting_method;
     int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
@@ -2049,7 +2049,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
-    
+
     if(extra.weights0.num_weights > 0 && found_weights > MAX_NUM_WEIGHTS){
         char msg[1024];
         snprintf(msg, 1024, "ValueError: In %s: Provided %d weights-per-particle, but the code was compiled with MAX_NUM_WEIGHTS=%d.\n",
@@ -2057,7 +2057,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
-    
+
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
     PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
@@ -2088,12 +2088,12 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
-    
+
     /* Pack the weights into extra_options */
     for(int64_t w = 0; w < extra.weights0.num_weights; w++){
         extra.weights0.weights[w] = (char *) weights1 + w*ND1*element_size;
     }
-    
+
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
 
@@ -2149,16 +2149,16 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
 {
 #if PY_MAJOR_VERSION < 3
     (void) self;
-    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash.
 #else
     //In python3, self is simply the module object that was returned earlier by init
     PyObject *module = self;
-#endif    
+#endif
     PyArrayObject *x1_obj=NULL, *y1_obj=NULL, *z1_obj=NULL, *weights1_obj=NULL;
     PyArrayObject *x2_obj=NULL, *y2_obj=NULL, *z2_obj=NULL, *weights2_obj=NULL;
     int autocorr=0;
     int nthreads=4;
-    
+
     double mu_max;
     int nmu_bins;
     char *binfile, *weighting_method_str = NULL;
@@ -2170,7 +2170,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
-    
+
     static char *kwlist[] = {
         "autocorr",
         "nthreads",
@@ -2188,7 +2188,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         "periodic",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "boxsize",
-        "output_rpavg",
+        "output_savg",
         "xbin_refine_factor",
         "ybin_refine_factor",
         "zbin_refine_factor",
@@ -2224,7 +2224,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         fprintf(stdout, "\n");
 
         char msg[1024];
-        int len=snprintf(msg, 1024,"ArgumentError: In DDrppi> Could not parse the arguments. Input parameters are: \n");
+        int len=snprintf(msg, 1024,"ArgumentError: In DDsmu> Could not parse the arguments. Input parameters are: \n");
 
         /* How many keywords do we have? Subtract 1 because of the last NULL */
         const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
@@ -2232,7 +2232,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         if(status != EXIT_SUCCESS) {
             fprintf(stderr,"Error message does not contain all of the keywords\n");
         }
-        
+
         countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
@@ -2255,10 +2255,10 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
     /* How many data points are there? And are they all of floating point type */
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, weights1_obj, &element_size);
     if(ND1 == -1) {
-        //Error has already been set -> simply return 
+        //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
-    
+
     /* Ensure the weights are of the right shape (n_weights, n_particles) */
     if(weights1_obj != NULL){
         // A numpy dimension of length -1 will be expanded to n_weights
@@ -2266,7 +2266,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
         weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
     }
-    
+
     /* Validate the user's choice of weighting method */
     weight_method_t weighting_method;
     int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
@@ -2285,7 +2285,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         countpairs_error_out(module, msg);
         Py_RETURN_NONE;
     }
-    
+
     if(extra.weights0.num_weights > 0 && found_weights > MAX_NUM_WEIGHTS){
         char msg[1024];
         snprintf(msg, 1024, "ValueError: In %s: Provided %d weights-per-particle, but the code was compiled with MAX_NUM_WEIGHTS=%d.\n",
@@ -2313,7 +2313,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         size_t element_size2;
         ND2 = check_dims_and_datatype(module, x2_obj, y2_obj, z2_obj, weights2_obj, &element_size2);
         if(ND2 == -1) {
-            //Error has already been set -> simply return 
+            //Error has already been set -> simply return
             Py_RETURN_NONE;
         }
         /* Ensure the weights are of the right shape (n_weights, n_particles) */
@@ -2329,8 +2329,8 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
             countpairs_error_out(module, msg);
             Py_RETURN_NONE;
         }
-    } 
-    
+    }
+
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
     PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
@@ -2341,7 +2341,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
-    
+
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -2373,7 +2373,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
     /* Get pointers to the data as C-types. */
     void *X1 = NULL, *Y1 = NULL, *Z1 = NULL, *weights1=NULL;
     void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array); 
+    X1 = PyArray_DATA((PyArrayObject *) x1_array);
     Y1 = PyArray_DATA((PyArrayObject *) y1_array);
     Z1 = PyArray_DATA((PyArrayObject *) z1_array);
     if(weights1_array != NULL){
@@ -2399,7 +2399,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
 
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;
-    
+
     options.float_type = element_size;
     results_countpairs_s_mu results;
     double c_api_time = 0.0;
@@ -2417,7 +2417,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         c_api_time = options.c_api_time;
     }
     NPY_END_THREADS;
-    
+
     /* Clean up. */
     Py_DECREF(x1_array);Py_DECREF(y1_array);Py_DECREF(z1_array);Py_XDECREF(weights1_array);//x1 should absolutely not be NULL
     Py_XDECREF(x2_array);Py_XDECREF(y2_array);Py_XDECREF(z2_array);Py_XDECREF(weights2_array);//x2 might be NULL depending on value of autocorr
@@ -2444,7 +2444,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         smin=smax;
     }
     free_results_s_mu(&results);
-    
+
     return Py_BuildValue("(Od)", ret, c_api_time);
 }
 
@@ -2453,11 +2453,11 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
 {
 #if PY_MAJOR_VERSION < 3
     (void) self;//to suppress the unused variable warning. Terrible hack
-    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash. 
+    PyObject *module = NULL;//should not be used -> setting to NULL so any attempts to dereference will result in a crash.
 #else
     //In python3, self is simply the module object that was returned earlier by init
     PyObject *module = self;
-#endif    
+#endif
 
     PyArrayObject *x1_obj=NULL, *y1_obj=NULL, *z1_obj=NULL;
     double rmax;
@@ -2473,11 +2473,11 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     /* Reset the bin refine factors default (since the VPF is symmetric in XYZ, conceptually the binning should be identical in all three directions)*/
     int bin_ref[] = {1,1,1};
     set_bin_refine_factors(&options, bin_ref);
-    
+
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
-    
+
     static char *kwlist[] = {
         "rmax",
         "nbins",
@@ -2517,17 +2517,17 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
 
         PyObject_Print(kwargs, stdout, 0);
         fprintf(stdout, "\n");
-        
+
         char msg[1024];
         int len=snprintf(msg, 1024,"ArgumentError: In vpf> Could not parse the arguments. Input parameters are: \n");
-        
+
         /* How many keywords do we have? Subtract 1 because of the last NULL */
         const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;
         int status = print_kwlist_into_msg(msg, 1024, len, kwlist, nitems);
         if(status != EXIT_SUCCESS) {
             fprintf(stderr,"Error message does not contain all of the keywords\n");
         }
-        
+
         countpairs_error_out(module,msg);
         Py_RETURN_NONE;
     }
@@ -2543,12 +2543,12 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
         options.bin_refine_factors[2] = zbin_ref;
         set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
-    
+
     /* How many data points are there? And are they all of floating point type */
     size_t element_size;
     const int64_t ND1 = check_dims_and_datatype(module, x1_obj, y1_obj, z1_obj, NULL, &element_size);
     if(ND1 == -1) {
-        //Error has already been set -> simply return 
+        //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
 
