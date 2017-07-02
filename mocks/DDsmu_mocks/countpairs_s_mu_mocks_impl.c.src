@@ -379,7 +379,6 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     }
 
     DOUBLE supp_sqr[nsbin];
-    const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     for(int i=0; i < nsbin;i++) {
         supp_sqr[i] = supp[i]*supp[i];
     }
