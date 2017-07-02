@@ -23,6 +23,7 @@
 
 #include "../DD/countpairs.h"
 #include "../DDrppi/countpairs_rp_pi.h"
+#include "../DDsmu/countpairs_s_mu.h"
 #include "../wp/countpairs_wp.h"
 #include "../xi/countpairs_xi.h"
 #include "../vpf/countspheres.h"
@@ -32,6 +33,7 @@ char tmpoutputfile[]="./test_periodic_output.txt";
 int test_periodic_DD(const char *correct_outputfile);
 /* int test_periodic_DD_weighted(const char *correct_outputfile); */
 int test_periodic_DDrppi(const char *correct_outputfile);
+int test_periodic_DDsmu(const char *correct_outputfile);
 int test_wp(const char *correct_outputfile);
 int test_vpf(const char *correct_outputfile);
 int test_xi(const char *correct_outputfile);
@@ -48,6 +50,8 @@ double *X2=NULL,*Y2=NULL,*Z2=NULL,*weights2=NULL;
 
 char binfile[]="bins";
 double pimax=40.0;
+double mu_max=0.5;
+int nmu_bins=10;
 double boxsize=420.0;
 #ifdef _OPENMP
 const int nthreads=4;
@@ -66,7 +70,7 @@ const double maxreldiff = 1e-6;
 int test_periodic_DD(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
-    
+
     // Set up the weights pointers
     weight_method_t weight_method = PAIR_PRODUCT;
     struct extra_options extra = get_extra_options(weight_method);
@@ -101,12 +105,12 @@ int test_periodic_DD(const char *correct_outputfile)
         }
         int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
         int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
-        
+
         //Check for exact equality of npairs and float "equality" for rpavg
         if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
             ret = EXIT_SUCCESS;
         } else {
-            ret = EXIT_FAILURE;//not required but showing intent 
+            ret = EXIT_FAILURE;//not required but showing intent
             fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
             fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n", rpavg, results.rpavg[i], floats_equal);
             fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
@@ -115,7 +119,7 @@ int test_periodic_DD(const char *correct_outputfile)
 
     }
     fclose(fp);
-    
+
     if(ret != EXIT_SUCCESS) {
         fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
@@ -137,7 +141,7 @@ int test_periodic_DD(const char *correct_outputfile)
 int test_periodic_DDrppi(const char *correct_outputfile)
 {
     int autocorr = (X1==X2) ? 1:0;
-    
+
     // Set up the weights pointers
     weight_method_t weight_method = PAIR_PRODUCT;
     struct extra_options extra = get_extra_options(weight_method);
@@ -176,7 +180,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
             }
             int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
             int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-            
+
             //Check for exact equality of npairs and float "equality" for rpavg
             if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
@@ -185,8 +189,8 @@ int test_periodic_DDrppi(const char *correct_outputfile)
                 fprintf(stderr,"True rpavg  = %20.12e Computed rpavg = %20.12e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
                 fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
 
-                ret = EXIT_FAILURE;//not required but showing intent 
-                i = results.nbin;                
+                ret = EXIT_FAILURE;//not required but showing intent
+                i = results.nbin;
                 break;
             }
         }
@@ -208,15 +212,97 @@ int test_periodic_DDrppi(const char *correct_outputfile)
         }
         fclose(fp);
     }
-    
+
     //free the result structure
     free_results_rp_pi(&results);
     return ret;
 }
 
+int test_periodic_DDsmu(const char *correct_outputfile)
+{
+    int autocorr = (X1==X2) ? 1:0;
+
+    // Set up the weights pointers
+    weight_method_t weight_method = PAIR_PRODUCT;
+    struct extra_options extra = get_extra_options(weight_method);
+    extra.weights0.weights[0] = weights1;
+    extra.weights1.weights[0] = weights2;
+
+    results_countpairs_s_mu results;
+    int status = countpairs_s_mu(ND1,X1,Y1,Z1,
+                                 ND2,X2,Y2,Z2,
+                                 nthreads,
+                                 autocorr,
+                                 binfile,
+                                 mu_max,
+                                 nmu_bins,
+                                 &results,
+                                 &options,
+                                 &extra);
+    if(status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    int ret = EXIT_FAILURE;
+    const int nmubin = results.nmu_bins;
+    const double dmu = mu_max/(double)results.nmu_bins;
+    FILE *fp = my_fopen(correct_outputfile, "r");
+    for(int i=1;i<results.nsbin;i++) {
+        for(int j=0;j<nmubin;j++) {
+            int index = i*(nmubin+1) + j;
+            uint64_t npairs;
+            double savg, weightavg;
+            ret = EXIT_FAILURE;
+            int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &savg, &weightavg);
+            if(nitems != 3) {
+                ret = EXIT_FAILURE;//not required but showing intent
+                i = results.nsbin;
+                break;
+            }
+            int floats_equal = AlmostEqualRelativeAndAbs_double(savg, results.savg[index], maxdiff, maxreldiff);
+            int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
+
+            //Check for exact equality of npairs and float "equality" for savg
+            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
+                ret = EXIT_SUCCESS;
+            } else {
+                fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
+                fprintf(stderr,"True savg  = %20.12e Computed savg = %20.12e. floats_equal = %d\n", savg, results.savg[index], floats_equal);
+                fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
+
+                ret = EXIT_FAILURE;//not required but showing intent
+                i = results.nsbin;
+                break;
+            }
+        }
+    }
+    fclose(fp);
+
+    if(ret != EXIT_SUCCESS) {
+        fp=my_fopen(tmpoutputfile,"w");
+        if(fp == NULL) {
+            free_results_s_mu(&results);
+            return EXIT_FAILURE;
+        }
+        for(int i=1;i<results.nsbin;i++) {
+            const double logs = log10(results.supp[i]);
+            for(int j=0;j<nmubin;j++) {
+                int index = i*(nmubin+1) + j;
+                fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf\n",results.npairs[index],results.savg[index],logs,(j+1)*dmu, results.weightavg[index]);
+            }
+        }
+        fclose(fp);
+    }
+
+    //free the result structure
+    free_results_s_mu(&results);
+    return ret;
+}
+
+
 int test_wp(const char *correct_outputfile)
 {
-    
+
     // Set up the weights pointers
     weight_method_t weight_method = PAIR_PRODUCT;
     struct extra_options extra = get_extra_options(weight_method);
@@ -250,11 +336,11 @@ int test_wp(const char *correct_outputfile)
         int weightavg_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
         int wp_equal = AlmostEqualRelativeAndAbs_double(wp, results.wp[i], maxdiff, maxreldiff);
 
-        //Check for exact equality of npairs and float "equality" for rpavg + wp 
+        //Check for exact equality of npairs and float "equality" for rpavg + wp
         if(npairs == results.npairs[i] && rpavg_equal == EXIT_SUCCESS && wp_equal == EXIT_SUCCESS && weightavg_equal == EXIT_SUCCESS) {
             ret = EXIT_SUCCESS;
         } else {
-            ret = EXIT_FAILURE;//not required but showing intent 
+            ret = EXIT_FAILURE;//not required but showing intent
             fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
             fprintf(stderr,"Failed. True wp = %e Computed results wp = %e\n", wp, results.wp[i]);
             fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e.\n",
@@ -280,7 +366,7 @@ int test_wp(const char *correct_outputfile)
         }
         fclose(fp);
     }
-    
+
     //free the result structure
     free_results_wp(&results);
     return ret;
@@ -329,7 +415,7 @@ int test_vpf(const char *correct_outputfile)
 
             /* Not quite sure how this is working. The correct output columns only have 4 digits printed,
                but I am comparing here with ~1e-9 in abs. diff. The only way the comparison should work is
-               if the conversion to 4 digits during printf, round-trips during scanf. But surely there must 
+               if the conversion to 4 digits during printf, round-trips during scanf. But surely there must
                be a lot more doubles that can be fit within those missing digits of precision.
 
                I would have thought the comparison would require maxdiff ~ 1e-4. -- MS
@@ -344,7 +430,7 @@ int test_vpf(const char *correct_outputfile)
         }
     }
     fclose(fp);
-    
+
     if(ret != EXIT_SUCCESS) {
         fp=my_fopen(tmpoutputfile,"w");
         for(int ibin=0;ibin<results.nbin;ibin++) {
@@ -398,12 +484,12 @@ int test_xi(const char *correct_outputfile)
         int ravg_equal = AlmostEqualRelativeAndAbs_double(ravg, results.ravg[i], maxdiff, maxreldiff);
         int weightavg_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
         int xi_equal = AlmostEqualRelativeAndAbs_double(xi, results.xi[i], maxdiff, maxreldiff);
-        
-        //Check for exact equality of npairs and float "equality" for ravg + xi 
+
+        //Check for exact equality of npairs and float "equality" for ravg + xi
         if(npairs == results.npairs[i] && ravg_equal == EXIT_SUCCESS && xi_equal == EXIT_SUCCESS && weightavg_equal == EXIT_SUCCESS) {
             ret = EXIT_SUCCESS;
         } else {
-            ret = EXIT_FAILURE;//not required but showing intent 
+            ret = EXIT_FAILURE;//not required but showing intent
             fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
             fprintf(stderr,"Failed. True xi = %e Computed results xi = %e\n", xi, results.xi[i]);
             fprintf(stderr,"Failed. True ravg = %e Computed ravg = %e.\n",
@@ -415,7 +501,7 @@ int test_xi(const char *correct_outputfile)
         }
     }
     fclose(fp);
-    
+
     if(ret != EXIT_SUCCESS){
         fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
@@ -501,12 +587,12 @@ int main(int argc, char **argv)
 
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
-    
+
     gettimeofday(&tstart,NULL);
 
     //set the globals
     ND1 = read_positions(file,fileformat, sizeof(double), 4, &X1, &Y1, &Z1, &weights1);
-    
+
     ND2 = ND1;
     X2 = X1;
     Y2 = Y1;
@@ -516,7 +602,7 @@ int main(int argc, char **argv)
     strncpy(current_file1,file,MAXLEN);
     strncpy(current_file2,file,MAXLEN);
     reset_bin_refine_factors(&options);
-    
+
     int failed=0;
     int status;
 
@@ -525,17 +611,19 @@ int main(int argc, char **argv)
                                            "Mr19 wp (periodic)",
                                            "Mr19 vpf (periodic)",
                                            "Mr19 xi periodic)",
+                                           "Mr19 DDsmu (periodic)",
                                            "CMASS DDrppi DD (periodic)",
                                            "CMASS DDrppi DR (periodic)",
                                            "CMASS DDrppi RR (periodic)"};
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
-    const int function_pointer_index[] = {1,0,2,3,4,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi
+    const int function_pointer_index[] = {1,0,2,3,4,5,1,1,1};//0->DD, 1->DDrppi,2->wp, 3->vpf, 4->xi, 5->DDsmu
 
     const char correct_outputfiles[][MAXLEN] = {"Mr19_DDrppi_periodic",
                                                 "Mr19_DD_periodic",
                                                 "Mr19_wp",
                                                 "Mr19_vpf_periodic",
                                                 "Mr19_xi",
+                                                "Mr19_DDsmu_periodic",
                                                 "cmass_DD_periodic",
                                                 "cmass_DR_periodic",
                                                 "cmass_RR_periodic"};
@@ -544,11 +632,13 @@ int main(int argc, char **argv)
                                           "../tests/data/gals_Mr19.ff",
                                           "../tests/data/gals_Mr19.ff",
                                           "../tests/data/gals_Mr19.ff",
+                                          "../tests/data/gals_Mr19.ff",
                                           "../tests/data/cmassmock_Zspace.ff",
                                           "../tests/data/cmassmock_Zspace.ff",
                                           "../tests/data/random_Zspace.ff"};
-    const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
+    const char firstfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f","f"};
     const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff",
+                                           "../tests/data/gals_Mr19.ff",
                                            "../tests/data/gals_Mr19.ff",
                                            "../tests/data/gals_Mr19.ff",
                                            "../tests/data/gals_Mr19.ff",
@@ -556,15 +646,16 @@ int main(int argc, char **argv)
                                            "../tests/data/cmassmock_Zspace.ff",
                                            "../tests/data/random_Zspace.ff",
                                            "../tests/data/random_Zspace.ff"};
-    const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f"};
-    const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
+    const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f","f"};
+    const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
 
     int (*allfunctions[]) (const char *) = {test_periodic_DD,
                                             test_periodic_DDrppi,
                                             test_wp,
                                             test_vpf,
-                                            test_xi};
-    const int numfunctions=5;//5 functions total
+                                            test_xi,
+                                            test_periodic_DDsmu};
+    const int numfunctions=6;//6 functions total
 
     int total_tests=0,skipped=0;
 
