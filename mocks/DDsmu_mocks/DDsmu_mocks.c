@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
         return status;
     }
 
-    const DOUBLE dmu = 1.0/(DOUBLE)results.nmu_bins ;
+    const DOUBLE dmu = mu_max/(DOUBLE)results.nmu_bins ;
     const int nmubin = results.nmu_bins;
     for(int i=1;i<results.nsbin;i++) {
         const double logs = LOG10(results.supp[i]);

@@ -416,7 +416,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
     cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
                                                                                              xmin, xmax, ymin, ymax, zmin, zmax,
-                                                                                             smax, smax, pimax,
+                                                                                             smax, smax, smax,
                                                                                              options->bin_refine_factors[0],
                                                                                              options->bin_refine_factors[1],
                                                                                              options->bin_refine_factors[2],
@@ -442,7 +442,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
             free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
             lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
                                                              xmin, xmax, ymin, ymax, zmin, zmax,
-                                                             smax, smax, pimax,
+                                                             smax, smax, smax,
                                                              options->bin_refine_factors[0],
                                                              options->bin_refine_factors[1],
                                                              options->bin_refine_factors[2],
@@ -466,7 +466,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                          xmin, xmax,
                                                          ymin, ymax,
                                                          zmin, zmax,
-                                                         smax, smax, pimax,
+                                                         smax, smax, smax,
                                                          options->bin_refine_factors[0],
                                                          options->bin_refine_factors[1],
                                                          options->bin_refine_factors[2],
