@@ -8,7 +8,7 @@
 
 /* PROGRAM DDsmu
 
---- DDsmu file1 format1 file2 format2 binfile pimax numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
+--- DDsmu file1 format1 file2 format2 binfile mu_max nmu_bins numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
 --- Measure the cross-correlation function xi(s, mu) for two different
    data files (or autocorrelation if file1=file1).
  * file1         = name of first data file
@@ -17,7 +17,7 @@
  * format2       = format of second data file (a=ascii, c=csv, f=fast-food)
  * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
  * mu_max        = maximum of the cosine of the angle to the line-of-sight (LOS is taken to be along the z-direction)
- * nmu_bins      = number of bins for mu 
+ * nmu_bins      = number of bins for mu
  * numthreads    = number of threads to use
 --- OPTIONAL ARGS:
  * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     const char argnames[][30]={"file1","format1","file2","format2","sbinfile","mu_max", "nmu_bins","Nthreads"};
 #endif
     const char optargnames[][30]={"weight_method", "weights_file1","weights_format1","weights_file2","weights_format2"};
-    
+
     int nargs=sizeof(argnames)/(sizeof(char)*30);
     int noptargs=sizeof(optargnames)/(sizeof(char)*30);
 
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
             fprintf(stderr,"\t\t %s = `?'\n",argnames[i-1]);
         return EXIT_FAILURE;
     }
-    
+
     /* Validate optional arguments */
     int noptargs_given = argc - (nargs + 1);
     if(noptargs_given != 0 && noptargs_given != 3 && noptargs_given != 5){
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
          return EXIT_FAILURE;
        }
        num_weights = get_num_weights_by_method(weight_method);
-      
+
        weights_file1 = argv[nargs + 2];
        weights_fileformat1 = argv[nargs + 3];
     }
@@ -172,14 +172,14 @@ int main(int argc, char *argv[])
     gettimeofday(&t1,NULL);
     read_time += ADD_DIFF_TIME(t0,t1);
     gettimeofday(&t0,NULL);
-    
+
     /* Read weights file 1 */
     if(weights_file1 != NULL){
         gettimeofday(&t0,NULL);
         int64_t wND1 = read_columns_into_array(weights_file1,weights_fileformat1, sizeof(DOUBLE), num_weights, (void **) weights1);
         gettimeofday(&t1,NULL);
         read_time += ADD_DIFF_TIME(t0,t1);
-      
+
         if(wND1 != ND1){
           fprintf(stderr, "Error: read %"PRId64" lines from %s, but read %"PRId64" from %s\n", wND1, weights_file1, ND1, file1);
           return EXIT_FAILURE;
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
     gettimeofday(&t0,NULL);
     results_countpairs_s_mu results;
     struct config_options options = get_config_options();
-    
+
     /* Pack weights into extra options */
     struct extra_options extra = get_extra_options(weight_method);
     for(int w = 0; w < num_weights; w++){
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
                                  &results,
                                  &options,
                                  &extra);
-    
+
     free(x1);free(y1);free(z1);
     for(int w = 0; w < num_weights; w++){
         free(weights1[w]);
