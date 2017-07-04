@@ -26,7 +26,8 @@ from _countpairs import \
     countpairs_rp_pi as DDrppi,\
     countpairs_wp as wp,\
     countpairs_xi as xi,\
-    countspheres_vpf as vpf
+    countspheres_vpf as vpf,\
+    countpairs_s_mu as DDsmu
 
 
 def read_text_file(filename, encoding="utf-8"):
@@ -272,6 +273,35 @@ def main():
         print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:12.4f}"
               .format(items[0], items[1], items[2], items[3], items[4], items[5]))
     print("-------------------------------------------------------------------------")
+
+    mu_max = 0.5
+    nmu_bins = 10
+
+    print("\nRunning 2-D correlation function DD(s,mu)")
+    results_DDsmu, _ = DDsmu(autocorr=autocorr,
+                             nthreads=nthreads,
+                             binfile=binfile,
+                             mu_max=mu_max,
+                             nmu_bins=nmu_bins,
+                             X1=x,
+                             Y1=y,
+                             Z1=z,
+                             weights1=np.ones_like(x),
+                             weight_type='pair_product',
+                             verbose=True,
+                             periodic=periodic,
+                             boxsize=boxsize,
+                             output_savg=True)
+    print("\n#            ****** DD(s,mu): first {0} bins  *******      "
+          .format(numbins_to_print))
+    print("#      smin        smax       savg     mu_max     npairs    weightavg")
+    print("########################################################################")
+    for ibin in range(numbins_to_print):
+        items = results_DDsmu[ibin]
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:10.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4], items[5]))
+    print("------------------------------------------------------------------------")
+
 
 
     print("\nRunning 2-D projected correlation function wp(rp)")

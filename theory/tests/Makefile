@@ -8,12 +8,14 @@ IO_DIR := $(ROOT_DIR)/io
 THEORY_DIR := $(ROOT_DIR)/theory
 DD_DIR := $(THEORY_DIR)/DD
 DDrppi_DIR := $(THEORY_DIR)/DDrppi
+DDsmu_DIR := $(THEORY_DIR)/DDsmu
 WP_DIR := $(THEORY_DIR)/wp
 XI_DIR := $(THEORY_DIR)/xi
 VPF_DIR := $(THEORY_DIR)/vpf
 
 DD_LIB := countpairs
 DDrppi_LIB := countpairs_rp_pi
+DDsmu_LIB := countpairs_s_mu
 WP_LIB := countpairs_wp
 XI_LIB := countpairs_xi
 VPF_LIB := countspheres
@@ -29,10 +31,10 @@ endif
 
 SRC1   := test_periodic.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(UTILS_DIR)/utils.c
 OBJS1  := $(SRC1:.c=.o)
-C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
+C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(DDsmu_DIR)/lib$(DDsmu_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
              $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
 INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h \
-          $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
+          $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(DDsmu_DIR)/$(DDsmu_LIB).h  $(WP_DIR)/$(WP_LIB).h \
           $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h
 
 SRC2   := test_nonperiodic.c $(UTILS_DIR)/utils.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c
@@ -40,10 +42,10 @@ OBJS2  := $(SRC2:.c=.o)
 
 all: tests $(TARGETS) $(INCL) uncompress $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 
-test_periodic: $(OBJS1) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+test_periodic: $(OBJS1) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(GSL_LINK) $(CLINK) -o $@
 
-test_nonperiodic: $(OBJS2) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+test_nonperiodic: $(OBJS2) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OBJS2) $(C_LIBRARIES) $(CLINK) -o $@
 
 %.o: %.c $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
@@ -55,6 +57,9 @@ $(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/*.c $(DD_DIR)/*.c.src $(DD_DIR)/*.h.src $(RO
 $(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(DDrppi_DIR)/*.c $(DDrppi_DIR)/*.c.src $(DDrppi_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_DIR) libs
 
+$(DDsmu_DIR)/lib$(DDsmu_LIB).a: $(DDsmu_DIR)/*.c $(DDsmu_DIR)/*.c.src $(DDsmu_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(DDsmu_DIR) libs
+
 $(WP_DIR)/lib$(WP_LIB).a: $(WP_DIR)/*.c $(WP_DIR)/*.c.src $(WP_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(WP_DIR) libs
 
@@ -65,9 +70,9 @@ $(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/*.c $(VPF_DIR)/*.c.src $(VPF_DIR)/*.h.src
 	$(MAKE) -C $(VPF_DIR) libs
 
 python_lib: tests $(OBJS1) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile | $(ROOT_DIR)/lib
-	@echo 
+	@echo
 	@echo "All THEORY tests are done. Now checking that the C extensions work."
-	@echo 
+	@echo
 	$(MAKE) -C ../python_bindings tests
 
 tests: test_periodic test_nonperiodic
@@ -86,8 +91,12 @@ wp: test_periodic
 	./test_periodic 2
 
 DDrppi: test_periodic test_nonperiodic
-	./test_periodic 0 5 6 7
-	./test_nonperiodic 1 2 
+	./test_periodic 0 6 7 8
+	./test_nonperiodic 1 3
+
+DDsmu: test_periodic
+	./test_periodic 5
+	./test_nonperiodic 2
 
 DD: test_periodic test_nonperiodic
 	./test_periodic 1
@@ -102,5 +111,3 @@ xi: test_periodic
 clean:
 	$(RM) $(targets) $(OBJS1) $(OBJS2)
 	$(RM) -R *.dSYM
-
-

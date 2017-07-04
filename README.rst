@@ -13,7 +13,7 @@ Why Should You Use it
 1. **Fast** Theory pair-counting is **7x** faster than ``SciPy cKDTree``, and at least **2x** faster than all existing public codes.
 2. **OpenMP Parallel** All pair-counting codes can be done in parallel (with strong scaling efficiency >~ 95% up to 10 cores)
 3. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python. 
-4. **Weights** All correlation functions now support weights for individual points (in ``master`` branch, upcoming in `v2.0.0 <https://github.com/manodeep/Corrfunc/releases/tag/2.0.0>`_)
+4. **Weights** All correlation functions now support *arbitrary, user-specified* weights for individual points
 5. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics. 
 6. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features. 
 
@@ -72,7 +72,7 @@ Compilation Notes
 
 - ``make install`` simply copies files into the ``lib/bin/include`` sub-directories. You do not need ``root`` permissions
 
-- Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``,  ``make install CC=yourcompiler``, ``make tests CC=yourcompiler`` etc. If you want to permanently change the default compiler, then please edit the ``common.mk`` file in the base directory.
+- Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``,  ``make install CC=yourcompiler``, ``make tests CC=yourcompiler`` etc. If you want to permanently change the default compiler, then please edit the `common.mk <common.mk>`__ file in the base directory.
 
 - If you are directly using ``python setup.py install CC=yourcompiler (--user)``, please run a ``make distclean`` beforehand (especially if switching compilers)
 
@@ -139,15 +139,15 @@ Science options
 
 If you plan to use the command-line, then you will have to specify the
 code runtime options at compile-time. For theory routines, these options
-are in the file ``theory.options`` while for the mocks, these options are
-in file ``mocks.options``. 
+are in the file `theory.options <theory.options>`__ while for the mocks, these options are
+in file `mocks.options <mocks.options>`__.
 
 **Note** All options can be specified at 
 runtime if you use the python interface or the static libraries. Each one of
 the following ``Makefile`` option has a corresponding entry for the runtime
 libraries. 
 
-Theory (in ``theory.options``)
+Theory (in `theory.options <theory.options>`__)
 -------------------------------
 
 1. ``PERIODIC`` (ignored in case of wp/xi) -- switches periodic boundary
@@ -160,7 +160,7 @@ Theory (in ``theory.options``)
 3. ``DOUBLE_PREC`` -- switches on calculations in double precision. Disabled
    by default (i.e., calculations are performed in single precision by default).
    
-Mocks (in ``mocks.options``)
+Mocks (in `mocks.options <mocks.options>`__)
 ----------------------------
 
 1. ``OUTPUT_RPAVG`` -- switches on output of ``<rp>`` in each ``rp``
@@ -218,21 +218,20 @@ Using the command-line interface
 --------------------------------
 
 Navigate to the correct directory. Make sure that the options, set in
-either ``theory.options`` or ``mocks.options`` in the root directory are
+either `theory.options <theory.options>`__ or `mocks.options <mocks.options>`__ in the root directory are
 what you want. If not, edit those two files (and possibly
-``common.mk``), and recompile. Then, you can use the command-line
+`common.mk <common.mk>`__), and recompile. Then, you can use the command-line
 executables in each individual subdirectory corresponding to the
 clustering measure you are interested in. For example, if you want to
-compute the full 3-D correlation function, ``\xi(r)``, then navigate to
-``theory/xi`` and run the executable ``xi``. If you run executables
-without any arguments, the message will you tell you all the required
-arguments.
+compute the full 3-D correlation function, ``\xi(r)``, then run the 
+executable ``theory/xi/xi``. If you run executables without any arguments, 
+the program will output a message with all the required arguments.
 
 Calling from C
 --------------
 
-Look under the ``theory/examples/run_correlations.c`` and
-``mocks/examples/run_correlations_mocks.c`` to see examples of
+Look under the `run_correlations.c <theory/examples/run_correlations.c>`__ and
+`run_correlations_mocks.c <mocks/examples/run_correlations_mocks.c>`__ to see examples of
 calling the C API directly. If you run the executables,
 ``run_correlations`` and ``run_correlations_mocks``, the output will
 also show how to call the command-line interface for the various
@@ -242,8 +241,8 @@ Calling from Python
 -------------------
 
 If all went well, the codes can be directly called from ``python``.
-Please see ``Corrfunc/call_correlation_functions.py`` and
-``Corrfunc/call_correlation_functions_mocks.py`` for examples on how to
+Please see `call_correlation_functions.py <Corrfunc/call_correlation_functions.py>`__ and
+`call_correlation_functions_mocks.py <Corrfunc/call_correlation_functions_mocks.py>`__ for examples on how to
 use the C extensions directly. Here are a few examples:
 
 .. code:: python
@@ -290,11 +289,11 @@ Common Code options for both Mocks and Cosmological Boxes
 =========================================================
 
 1. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD
-   (perfect scaling up to 12 threads in my tests) and okay (runtime
-   becomes constant ~6-8 threads in my tests) for ``DDrppi`` and ``wp``.
+   (close to perfect scaling up to 12 threads in our tests) and okay (runtime
+   becomes constant ~6-8 threads in our tests) for ``DDrppi`` and ``wp``.
    Enabled by default. The ``Makefile`` will compare the `CC` variable with
    known OpenMP enabled compilers and set compile options accordingly. 
-   Set in ``common.mk`` by default. 
+   Set in `common.mk <common.mk>`__ by default. 
 
 *Optimization for your architecture*
 
@@ -346,7 +345,7 @@ LICENSE
 =======
 
 Corrfunc is released under the MIT license. Basically, do what you want
-with the code including using it in commercial application.
+with the code, including using it in commercial application.
 
 Project URL
 ===========

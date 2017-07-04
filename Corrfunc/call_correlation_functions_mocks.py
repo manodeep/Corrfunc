@@ -19,6 +19,7 @@ def main():
     from Corrfunc.io import read_catalog
     from Corrfunc._countpairs_mocks import\
         countpairs_rp_pi_mocks as rp_pi_mocks_extn,\
+        countpairs_s_mu_mocks as s_mu_mocks_extn,\
         countpairs_theta_mocks as theta_mocks_extn,\
         countspheres_vpf_mocks as vpf_mocks_extn
 
@@ -60,6 +61,26 @@ def main():
               .format(items[0], items[1], items[2], items[3], items[4], items[5]))
 
     print("------------------------------------------------------------------------")
+
+    nmu_bins = 10
+    mu_max = 1.0
+
+    print("\nRunning 2-D correlation function xi(s,mu)")
+    results_DDsmu, _ = s_mu_mocks_extn(autocorr, cosmology, nthreads,
+                                       nmu_bins, mu_max, binfile,
+                                       ra, dec, cz, weights1=np.ones_like(ra),
+                                       output_savg=True, verbose=True,
+                                       weight_type='pair_product')
+    print("\n#            ****** DD(s,mu): first {0} bins  *******      "
+          .format(numbins_to_print))
+    print("#      smin        smax       savg     mu_upper    npairs     weight_avg")
+    print("##########################################################################")
+    for ibin in range(numbins_to_print):
+        items = results_DDsmu[ibin]
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:12.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4], items[5]))
+
+    print("--------------------------------------------------------------------------")
 
     binfile = pjoin(dirname(abspath(__file__)),
                     "../mocks/tests/", "angular_bins")
