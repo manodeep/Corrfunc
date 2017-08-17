@@ -25,6 +25,14 @@ Corrfunc.theory.DDrppi module
     :undoc-members:
     :show-inheritance:
 
+Corrfunc.theory.DDsmu module
+----------------------------
+
+.. automodule:: Corrfunc.theory.DDsmu
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Corrfunc.theory.vpf module
 --------------------------
 

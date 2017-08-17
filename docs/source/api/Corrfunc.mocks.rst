@@ -17,6 +17,14 @@ Corrfunc.mocks.DDrppi_mocks module
     :undoc-members:
     :show-inheritance:
 
+Corrfunc.mocks.DDsmu_mocks module
+---------------------------------
+
+.. automodule:: Corrfunc.mocks.DDsmu_mocks
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Corrfunc.mocks.DDtheta_mocks module
 -----------------------------------
 

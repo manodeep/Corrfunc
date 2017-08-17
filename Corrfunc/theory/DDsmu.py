@@ -20,19 +20,27 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
            zbin_refine_factor=1, max_cells_per_dim=100,
            c_api_timer=False, isa=r'fastest', weight_type=None):
     """
-    Calculate the 2-D pair-counts corresponding to the real-space correlation
-    function, :math:`\\xi(s, \mu)` Pairs which are separated
-    by less than the ``s`` bins (specified in ``binfile``) in the X-Y plane, and
+    Calculate the 2-D pair-counts corresponding to the redshift-space 
+    correlation function, :math:`\\xi(s, \mu)` Pairs which are separated
+    by less than the ``s`` bins (specified in ``binfile``) in 3-D, and
     less than ``s*mu_max`` in the Z-dimension are counted.
 
-    Note, that this module only returns pair counts and not the actual
-    correlation function :math:`\\xi(s, \mu)`.
+    If ``weights`` are provided, the resulting pair counts are weighted.  The
+    weighting scheme depends on ``weight_type``.
+
+
+    .. note:: This module only returns pair counts and not the actual
+       correlation function :math:`\\xi(s, \mu)`. See the
+       utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` 
+       for computing :math:`\\xi(s, \mu)` from the pair counts.
+
 
     Parameters
     ----------
+
     autocorr: boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
-        are not used (but must still be passed, perhaps again as X1/Y1/Z1).
+        then the second set of particle positions are not required.
 
     nthreads: integer
         The number of OpenMP threads to use. Has no effect if OpenMP was not
@@ -45,9 +53,12 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         increasing order (smallest bins come first).
 
     mu_max: double. Must be in range (0.0, 1.0]
-        A double-precision value for the maximum cosine of the angular separation from
-        the line of sight (LOS). Here, LOS is taken to be along the Z direction.
-        Note that only pairs with ``0 <= cos("THETA_CHAR"_LOS) < mu_max``
+        A double-precision value for the maximum cosine of the angular 
+        separation from the line of sight (LOS). Here, LOS is taken to be 
+        along the Z direction. 
+
+
+    .. note:: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
         are counted (no equality).
 
     nmu_bins: Integer. Must be at least 1
@@ -57,7 +68,8 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         The array of X/Y/Z positions for the first set of points.
         Calculations are done in the precision of the supplied arrays.
 
-    weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional
+    weights1 : array-like, real (float/double), shape (n_particles,) or \
+        (n_weights_per_particle,n_particles), optional
         Weights for computing a weighted pair count.
 
     weight_type : str, optional
@@ -71,10 +83,11 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         Array of XYZ positions for the second set of points. *Must* be the same
         precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
 
-    weights2 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional
+    weights2 : array-like, real (float/double), shape (n_particles,) or \
+        (n_weights_per_particle,n_particles), optional
         Weights for computing a weighted pair count.
 
-    verbose : boolean (default false)\n"
+    verbose : boolean (default false)
         Boolean flag to control output of informational messages
 
     boxsize : double
