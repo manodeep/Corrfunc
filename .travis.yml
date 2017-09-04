@@ -206,7 +206,7 @@ script:
   - make tests CC=$COMPILER
 
 after_success:
-  - cd docs && make html && cd ../
-  - cd docs && make doctest && cd ../
+  - cd docs && make html && cd ../ 
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; cd docs && make doctest && cd ../; fi
 
   
