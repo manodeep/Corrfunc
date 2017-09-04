@@ -375,6 +375,7 @@ ifeq ($(DO_CHECKS), 1)
 
   # All of the python/numpy checks follow
   export PYTHON_CHECKED ?= 0
+  export NUMPY_CHECKED ?= 0
   ifeq ($(PYTHON_CHECKED), 0)
     export COMPILE_PYTHON_EXT := 1
     export PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell $(PYTHON) --version 2>&1)))
@@ -432,7 +433,24 @@ ifeq ($(DO_CHECKS), 1)
       endif
       PYTHON_CONFIG_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_CONFIG_INCL))
 
-      export PYTHON_CFLAGS := $(PYTHON_CONFIG_INCL) $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print('-isystem ' + numpy.__path__[0] + '/core/include/numpy/')")
+      # NUMPY is available -> next step should not fail
+      # That's why we are not checking if the NUMPY_INCL_FLAG is defined.
+      ifeq ($(NUMPY_CHECKED), 0)
+        export NUMPY_INCL_FLAG := $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print('-isystem ' + numpy.__path__[0] + '/core/include/numpy/')")
+        # Take the second word -> the path (the first word is "isystem")
+        NUMPY_INCL_PATH := $(word 2, ${NUMPY_INCL_FLAG})
+        # Now check that the 'arrayobject.h' file is present in the
+        # supposed numpy directory. Otherwise, compilation will fail.
+        # The absence of the file likely indicates a missing numpy-devel
+        # package (see issue #134 on github)
+        NUMPY_NEEDED_HEADER_FILE := ${NUMPY_INCL_PATH}arrayobject.h
+        ifeq (,$(wildcard ${NUMPY_NEEDED_HEADER_FILE}))
+          $(error Required $(ccred)numpy headers$(ccreset) are missing...stopping the compilation. You might be able to fix this by installing $(ccblue)numpy-devel$(ccreset))
+        endif
+        export NUMPY_CHECKED:=1
+      endif
+
+      export PYTHON_CFLAGS := $(PYTHON_CONFIG_INCL) $(NUMPY_INCL_FLAG)
       export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
       export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
       export PYTHON_LINK :=
