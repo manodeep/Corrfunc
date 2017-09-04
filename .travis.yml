@@ -56,7 +56,7 @@ matrix:
     - os: osx
       osx_image: xcode8
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 8.0.0' PYTHON_VERSION=3.5
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -79,9 +79,9 @@ matrix:
 
 
     - os: osx
-      osx_image: xcode7
+      osx_image: xcode9
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 9.0.0' PYTHON_VERSION=3.5
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
@@ -206,7 +206,7 @@ script:
   - make tests CC=$COMPILER
 
 after_success:
-  - cd docs && make html && cd ../
-  - cd docs && make doctest && cd ../
+  - cd docs && make html && cd ../ 
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then cd docs && make doctest && cd ../; fi
 
   
