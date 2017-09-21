@@ -11,10 +11,10 @@
 CC := 
 
 #### Add any compiler specific flags you want
-CFLAGS:=
+CFLAGS ?=
 
 #### Add any compiler specific link flags you want
-CLINK:=
+CLINK ?=
 
 ## Set the python command (supply the full path to python you want to
 ## use, if different from directly calling `python` on the shell,
