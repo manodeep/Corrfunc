@@ -263,8 +263,7 @@ int main(int argc, char *argv[])
         const double smax = results.supp[i];
         for(int j=0;j<nmu_bins;j++) {
             int index = i*(nmu_bins+1) + j;
-            //fprintf(stdout,"%e\t%e\t%e\t%e\t%12"PRIu64"\t%e\n", smin, smax, (j+1)*dmu, results.savg[index], results.npairs[index], results.weightavg[index]);
-            fprintf(stdout,"%4.1lf %4.1lf %3.1lf %3.1lf %9"PRIu64"\n", smin, smax, j*dmu, (j+1)*dmu, results.npairs[index]);
+            fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\t%e\n", smin, smax, (j+1)*dmu, results.npairs[index], results.weightavg[index]);
         }
         smin = smax;
     }

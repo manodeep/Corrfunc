@@ -193,8 +193,8 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                 }
 
                 const AVX_FLOATS m_mu_mask = AVX_COMPARE_FLOATS(m_sqr_zdiff, max_sqr_dz, _CMP_LT_OS);
-                const AVX_FLOATS m_smax_mask = AVX_COMPARE_FLOATS(s2, m_sqr_smax, _CMP_LT_OS);
-                const AVX_FLOATS m_smin_mask = AVX_COMPARE_FLOATS(s2, m_sqr_smin, _CMP_GE_OS);
+                const AVX_FLOATS m_smax_mask = AVX_COMPARE_FLOATS(s2, m_sqr_smax, _CMP_LT_OS);//check for s2 < sqr_smax
+                const AVX_FLOATS m_smin_mask = AVX_COMPARE_FLOATS(s2, m_sqr_smin, _CMP_GE_OS);//check for s2 >= sqr_smin
                 const AVX_FLOATS m_s2_mask = AVX_BITWISE_AND(m_smax_mask,m_smin_mask);
 
                 //Create a combined mask by bitwise and of m1 and m_mask_left.
@@ -211,6 +211,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 
             //There is some s2 that satisfies sqr_smin <= s2 < sqr_smax && mu_min <= |dz| < mu_max
             s2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_smax, s2, m_mask_left);
+            /*m_mu := sqrt(s2/dz^2) (with masked elements set to mu_max */
             const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, AVX_DIVIDE_FLOATS(m_sqr_zdiff, s2), m_mask_left));
 
             if(need_savg) {
@@ -281,17 +282,14 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             if(sqr_dz >= s2 * sqr_mumax) continue;
             const DOUBLE mu = SQRT(sqr_dz/s2);
 
-            if(need_weightavg){
-                pair.dx.d = dx;
-                pair.dy.d = dy;
-                pair.dz.d = dz;
-            }
-
             DOUBLE s, pairweight;
             if(need_savg) {
                 s = SQRT(s2);
             }
             if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
                 pairweight = fallback_weight_func(&pair);
             }
 
@@ -587,18 +585,16 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             if(sqr_dz >= s2 * sqr_mumax) continue;
             const DOUBLE mu = SQRT(sqr_dz/s2);
 
+            DOUBLE s, pairweight;            
             if(need_weightavg){
                 pair.dx.d = dx;
                 pair.dy.d = dy;
                 pair.dz.d = dz;
+                pairweight = fallback_weight_func(&pair);                
             }
 
-            DOUBLE s, pairweight;
             if(need_savg) {
                 s = SQRT(s2);
-            }
-            if(need_weightavg){
-                pairweight = fallback_weight_func(&pair);
             }
 
             int mu_bin = (int) (mu*inv_dmu);
@@ -748,17 +744,15 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
             }
             const DOUBLE mu = SQRT(sqr_dz/s2);
 
-            if(need_weightavg){
-                pair.dx.d = dx;
-                pair.dy.d = dy;
-                pair.dz.d = dz;
-            }
-
             DOUBLE s, pairweight;
             if(need_savg) {
                 s = SQRT(s2);
             }
+
             if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
                 pairweight = weight_func(&pair);
             }
 

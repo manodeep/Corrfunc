@@ -108,9 +108,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         on runtime.
 
     max_cells_per_dim: integer (default 100, typical values in [50-300])
-        Controls the maximum number of cells per dimension. Total number of cells
-       can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small
-        relative to the boxsize (and increasing helps the runtime).
+        Controls the maximum number of cells per dimension. Total number of 
+        cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
+        too small relative to the boxsize (and increasing helps the runtime).
 
     c_api_timer : boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here
@@ -214,7 +214,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         from Corrfunc._countpairs import countpairs_s_mu as DDsmu_extn
     except ImportError:
         msg = "Could not import the C extension for the 3-D "\
-              "real-space pair counter."
+              "redshift-space pair counter."
         raise ImportError(msg)
 
     import numpy as np
@@ -255,19 +255,20 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
     integer_isa = translate_isa_string_to_enum(isa)
     sbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DDsmu_extn(autocorr, nthreads,
-                                         sbinfile,
-                                         mu_max, nmu_bins,
-                                         X1, Y1, Z1,
-                                         periodic=periodic,
-                                         verbose=verbose,
-                                         boxsize=boxsize,
-                                         output_savg=output_savg,
-                                         xbin_refine_factor=xbin_refine_factor,
-                                         ybin_refine_factor=ybin_refine_factor,
-                                         zbin_refine_factor=zbin_refine_factor,
-                                         max_cells_per_dim=max_cells_per_dim,
-                                         c_api_timer=c_api_timer,
-                                         isa=integer_isa, **kwargs)
+                                        sbinfile,
+                                        mu_max, nmu_bins,
+                                        X1, Y1, Z1,
+                                        periodic=periodic,
+                                        verbose=verbose,
+                                        boxsize=boxsize,
+                                        output_savg=output_savg,
+                                        xbin_refine_factor=xbin_refine_factor,
+                                        ybin_refine_factor=ybin_refine_factor,
+                                        zbin_refine_factor=zbin_refine_factor,
+                                        max_cells_per_dim=max_cells_per_dim,
+                                        c_api_timer=c_api_timer,
+                                        isa=integer_isa, **kwargs)
+        
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
