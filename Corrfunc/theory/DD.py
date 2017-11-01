@@ -185,8 +185,10 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         raise ImportError(msg)
 
     import numpy as np
+    from warnings import warn
     from Corrfunc.utils import translate_isa_string_to_enum,\
-        return_file_with_rbins
+        return_file_with_rbins, convert_to_native_endian,\
+        is_native_endian
     from future.utils import bytes_to_native_str
     
     # Broadcast scalar weights to arrays
@@ -194,7 +196,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         weights1 = np.atleast_1d(weights1)
     if weights2 is not None:
         weights2 = np.atleast_1d(weights2)
-
+        
     if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
@@ -206,6 +208,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
             weights1 = np.ones_like(weights2)
         if weights2 is None and weights1 is not None:
             weights2 = np.ones_like(weights1)
+            
+    # Warn about non-native endian arrays
+    if not all(is_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]):
+        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+    X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [convert_to_native_endian(arr) for arr in X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]
         
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
