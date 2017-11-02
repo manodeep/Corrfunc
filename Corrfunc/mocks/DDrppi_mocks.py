@@ -315,8 +315,10 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         raise ImportError(msg)
 
     import numpy as np
+    from warnings import warn
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
-        return_file_with_rbins
+        return_file_with_rbins, convert_to_native_endian,\
+        is_native_endian
     from future.utils import bytes_to_native_str
     
     # Broadcast scalar weights to arrays
@@ -341,6 +343,11 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
         CZ2 = np.empty(1)
+        
+    # Warn about non-native endian arrays
+    if not all(is_native_endian(arr) for arr in [RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2]):
+        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+    RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2 = [convert_to_native_endian(arr) for arr in RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2]
 
     fix_ra_dec(RA1, DEC1)
     if autocorr == 0:
