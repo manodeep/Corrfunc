@@ -350,7 +350,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2]):
         warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
-    RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2 = [convert_to_native_endian(arr) for arr in RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2]
+    RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2 = [convert_to_native_endian(arr) for arr in [RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2]]
 
     fix_ra_dec(RA1, DEC1)
     if autocorr == 0:

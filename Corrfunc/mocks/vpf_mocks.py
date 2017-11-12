@@ -292,7 +292,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ]):
         warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
-    RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ = [convert_to_native_endian(arr) for arr in RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ]
+    RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ = [convert_to_native_endian(arr) for arr in [RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ]]
 
 
     integer_isa = translate_isa_string_to_enum(isa)

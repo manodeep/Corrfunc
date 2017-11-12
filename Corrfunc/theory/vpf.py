@@ -215,7 +215,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [X, Y, Z]):
         warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
-    X, Y, Z = [convert_to_native_endian(arr) for arr in X, Y, Z]
+    X, Y, Z = [convert_to_native_endian(arr) for arr in [X, Y, Z]]
 
     integer_isa = translate_isa_string_to_enum(isa)
     extn_results, api_time = vpf_extn(rmax, nbins,

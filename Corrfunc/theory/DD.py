@@ -214,7 +214,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]):
         warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
-    X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [convert_to_native_endian(arr) for arr in X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]
+    X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [convert_to_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]]
         
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
