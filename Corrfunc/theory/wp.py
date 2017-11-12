@@ -484,7 +484,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [X, Y, Z, weights]):
         warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
-    X, Y, Z, weights = [convert_to_native_endian(arr) for arr in X, Y, Z, weights]
+    X, Y, Z, weights = [convert_to_native_endian(arr) for arr in [X, Y, Z, weights]]
     
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}

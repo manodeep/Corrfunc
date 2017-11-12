@@ -890,13 +890,13 @@ def convert_to_native_endian(array):
     >>> convert_to_native_endian(None) is None
     True
     '''
-    if array is None:
-       return array
 
+    if array is None:
+        return array
+   
     import numpy as np
     array = np.asanyarray(array)
 
-    import sys
     system_is_little_endian = (sys.byteorder == 'little')   
     array_is_little_endian = (array.dtype.byteorder == '<')
     if (array_is_little_endian != system_is_little_endian) and not (array.dtype.byteorder == '='):
@@ -937,12 +937,11 @@ def is_native_endian(array):
     '''
 
     if array is None:
-       return True
+        return True
 
     import numpy as np
     array = np.asanyarray(array)
 
-    import sys
     system_is_little_endian = (sys.byteorder == 'little')
     array_is_little_endian = (array.dtype.byteorder == '<')
     return (array_is_little_endian == system_is_little_endian) or (array.dtype.byteorder == '=')
