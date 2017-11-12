@@ -858,6 +858,101 @@ def gridlink_sphere(thetamax,
     else:
         return sphere_grid
 
+
+def convert_to_native_endian(array):
+    '''
+    Returns the supplied array in native endian byte-order.
+    If the array already has native endianness, then the
+    same array is returned.
+
+    Parameters
+    ----------
+    array: np.ndarray
+        The array to convert
+
+    Returns
+    -------
+    new_array: np.ndarray
+        The array in native-endian byte-order.
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> import sys
+    >>> sys_is_le = sys.byteorder == 'little'
+    >>> native_code = sys_is_le and '<' or '>'
+    >>> swapped_code = sys_is_le and '>' or '<'
+    >>> native_dt = np.dtype(native_code + 'i4')
+    >>> swapped_dt = np.dtype(swapped_code + 'i4')
+    >>> arr = np.arange(10, dtype=native_dt)
+    >>> new_arr = convert_to_native_endian(arr)
+    >>> arr is new_arr
+    True
+    >>> arr = np.arange(10, dtype=swapped_dt)
+    >>> new_arr = convert_to_native_endian(arr)
+    >>> new_arr.dtype.byteorder == '=' or new_arr.dtype.byteorder == native_code
+    True
+    >>> convert_to_native_endian(None) is None
+    True
+    '''
+    if array is None:
+       return array
+
+    import numpy as np
+    array = np.asanyarray(array)
+
+    import sys
+    system_is_little_endian = (sys.byteorder == 'little')   
+    array_is_little_endian = (array.dtype.byteorder == '<')
+    if (array_is_little_endian != system_is_little_endian) and not (array.dtype.byteorder == '='):
+        return array.byteswap().newbyteorder()
+    else:
+        return array
+    
+def is_native_endian(array):
+    '''
+    Checks whether the given array is native-endian.
+    None evaluates to True.
+    
+    Parameters
+    ----------
+    array: np.ndarray
+        The array to check
+
+    Returns
+    -------
+    is_native: bool
+        Whether the endianness is native
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> import sys
+    >>> sys_is_le = sys.byteorder == 'little'
+    >>> native_code = sys_is_le and '<' or '>'
+    >>> swapped_code = sys_is_le and '>' or '<'
+    >>> native_dt = np.dtype(native_code + 'i4')
+    >>> swapped_dt = np.dtype(swapped_code + 'i4')
+    >>> arr = np.arange(10, dtype=native_dt)
+    >>> is_native_endian(arr)
+    True
+    >>> arr = np.arange(10, dtype=swapped_dt)
+    >>> is_native_endian(arr)
+    False
+    '''
+
+    if array is None:
+       return True
+
+    import numpy as np
+    array = np.asanyarray(array)
+
+    import sys
+    system_is_little_endian = (sys.byteorder == 'little')
+    array_is_little_endian = (array.dtype.byteorder == '<')
+    return (array_is_little_endian == system_is_little_endian) or (array.dtype.byteorder == '=')
+
+    
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

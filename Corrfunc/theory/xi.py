@@ -181,13 +181,20 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
         raise ImportError(msg)
 
     import numpy as np
+    from warnings import warn
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
-        return_file_with_rbins
+        return_file_with_rbins, convert_to_native_endian,\
+        is_native_endian
         
     # Broadcast scalar weights to arrays
     if weights is not None:
         weights = np.atleast_1d(weights)
+        
+    # Warn about non-native endian arrays
+    if not all(is_native_endian(arr) for arr in [X, Y, Z, weights]):
+        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+    X, Y, Z, weights = [convert_to_native_endian(arr) for arr in X, Y, Z, weights]
     
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
