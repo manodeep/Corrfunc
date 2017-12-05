@@ -571,7 +571,7 @@ def compute_nbins(max_diff, binsize,
         msg = 'Error: Invalid value for max_diff = {0} or binsize = {1}. '\
               'Both must be positive'.format(max_diff, binsize)
         raise ValueError(msg)
-    if max_nbins < 1:
+    if max_nbins is not None and max_nbins < 1:
         msg = 'Error: Invalid for the max. number of bins allowed = {0}.'\
               'Max. nbins must be >= 1'.format(max_nbins)
         raise ValueError(msg)
@@ -675,6 +675,8 @@ def gridlink_sphere(thetamax,
     --------
 
     >>> from Corrfunc.utils import gridlink_sphere
+    >>> import numpy as np
+    >>> np.set_printoptions(precision=8)
     >>> thetamax=30
     >>> gridlink_sphere(thetamax)
     array([([-1.57079633, -1.04719755], [ 0.        ,  3.14159265]),
