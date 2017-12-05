@@ -31,9 +31,9 @@ TARGETSRC   := tests_mocks.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(UTILS_DIR)/util
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 C_LIBRARIES := $(DDrppi_mocks_DIR)/lib$(DDrppi_mocks_LIB).a $(DDtheta_mocks_DIR)/lib$(DDtheta_mocks_LIB).a \
              $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a $(DDsmu_mocks_DIR)/lib$(DDsmu_mocks_LIB).a
-INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h \
+INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/tests_common.h \
           $(DDrppi_mocks_DIR)/$(DDrppi_mocks_LIB).h $(DDtheta_mocks_DIR)/$(DDtheta_mocks_LIB).h $(VPF_mocks_DIR)/$(VPF_mocks_LIB).h \
-					$(DDsmu_mocks_DIR)/$(DDsmu_mocks_LIB).h
+	$(DDsmu_mocks_DIR)/$(DDsmu_mocks_LIB).h
 
 EXTRA_INCL:=-DDOUBLE_PREC -I$(DDrppi_mocks_DIR) -I$(DDtheta_mocks_DIR) -I$(VPF_mocks_DIR) -I$(DDsmu_mocks_DIR)  $(GSL_CFLAGS)
 EXTRA_LINK := $(GSL_LINK)

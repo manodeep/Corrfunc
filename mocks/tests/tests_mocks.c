@@ -6,26 +6,15 @@
   directory at https://github.com/manodeep/Corrfunc/
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
-#include <sys/time.h>
-#include <inttypes.h>
-
-#ifndef MAXLEN
-#define MAXLEN 500
-#endif
+#include "tests_common.h"
+#include "io.h"
+#include "utils.h"
+#include "cosmology_params.h"
 
 #if !(defined(__INTEL_COMPILER)) && defined(USE_AVX)
 #warning Test suite for mocks are faster with Intel compiler, icc, AVX libraries.
 #endif
 
-
-#include "defs.h"
-#include "io.h"
-#include "utils.h"
-#include "cosmology_params.h"
 
 #include "../DDrppi_mocks/countpairs_rp_pi_mocks.h"
 #include "../DDsmu_mocks/countpairs_s_mu_mocks.h"
@@ -48,37 +37,16 @@ double *RA1=NULL,*DEC1=NULL,*CZ1=NULL,*weights1=NULL;
 int ND2;
 double *RA2=NULL,*DEC2=NULL,*CZ2=NULL,*weights2=NULL;
 
-char binfile[]="../tests/bins";
-char angular_binfile[]="../tests/angular_bins";
-double pimax=40.0;
-int nmu_bins=10;
-double mu_max=1.0;
-double boxsize=420.0;
-#if defined(_OPENMP)
-const int nthreads=4;
-#else
-const int nthreads=1;
-#endif
 const int cosmology_flag=1;
 char current_file1[MAXLEN],current_file2[MAXLEN];
 
-const double maxdiff = 1e-9;
-const double maxreldiff = 1e-6;
-
 struct config_options options;
-const isa instruction_sets[] = {FALLBACK
-#if defined(__SSE4_2__)
-                                , SSE42
-#endif
-#if defined(__AVX__)
-                                , AVX
-#endif
-};
-const int num_isets = sizeof(instruction_sets)/sizeof(instruction_sets[0]);
 //end of global variables
 
 int test_DDrppi_mocks(const char *correct_outputfile)
 {
+    results_countpairs_mocks results;
+    int ret = EXIT_FAILURE;
     assert(RA1 != NULL && DEC1 != NULL && CZ1 != NULL && "ERROR: In test suite for DDrppi ra/dec/cz can not be NULL pointers");
     int autocorr = (RA1==RA2) ? 1:0;
 
@@ -89,66 +57,67 @@ int test_DDrppi_mocks(const char *correct_outputfile)
     extra.weights1.weights[0] = weights2;
 
     //Do DD(rp,pi) counts
-    results_countpairs_mocks results;
-    int status = countpairs_mocks(ND1,RA1,DEC1,CZ1,
-                                  ND2,RA2,DEC2,CZ2,
-                                  nthreads,
-                                  autocorr,
-                                  binfile,
-                                  pimax,
-                                  cosmology_flag,
-                                  &results,
-                                  &options,
-                                  &extra);
-    if(status != EXIT_SUCCESS) {
-        return status;
-    }
-
-    int ret = EXIT_FAILURE;
-    FILE *fp=my_fopen(correct_outputfile,"r");
-    if(fp == NULL) {
-        free_results_mocks(&results);
-        return EXIT_FAILURE;
-    }
-    const double dpi = pimax/(double)results.npibin ;
-    const int npibin = results.npibin;
-    for(int i=1;i<results.nbin;i++) {
-        for(int j=0;j<npibin;j++) {
-            int index = i*(npibin+1) + j;
-            uint64_t npairs;
-            double rpavg, weightavg;
-            ret = EXIT_FAILURE;
-            int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &rpavg, &weightavg);
-            if(nitems != 3) {
-                ret = EXIT_FAILURE;//not required but showing intent
-                i = results.nbin;
-                break;
-            }
-            int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
-            int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-
-            //Check for exact equality of npairs and float "equality" for rpavg
-            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
-                ret = EXIT_SUCCESS;
-            } else {
-                fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
-                fprintf(stderr,"True rpavg  = %20.12e Computed rpavg = %20.12e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
-                fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
-                ret = EXIT_FAILURE;//not required but showing intent
-                i = results.nbin;
-                break;
-            }
+    BEGIN_INTEGRATION_TEST_SECTION
+        int status = countpairs_mocks(ND1,RA1,DEC1,CZ1,
+                                      ND2,RA2,DEC2,CZ2,
+                                      nthreads,
+                                      autocorr,
+                                      binfile,
+                                      pimax,
+                                      cosmology_flag,
+                                      &results,
+                                      &options,
+                                      &extra);
+        if(status != EXIT_SUCCESS) {
+            return status;
         }
-    }
-    fclose(fp);
 
-    /* If the test failed, then write the output into a temporary file */
-    if(ret != EXIT_SUCCESS) {
-        fp=my_fopen(tmpoutputfile,"w");
+        FILE *fp=my_fopen(correct_outputfile,"r");
         if(fp == NULL) {
             free_results_mocks(&results);
             return EXIT_FAILURE;
         }
+        const int npibin = results.npibin;
+        for(int i=1;i<results.nbin;i++) {
+            for(int j=0;j<npibin;j++) {
+                int index = i*(npibin+1) + j;
+                uint64_t npairs;
+                double rpavg, weightavg;
+                ret = EXIT_FAILURE;
+                int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &rpavg, &weightavg);
+                if(nitems != 3) {
+                    ret = EXIT_FAILURE;//not required but showing intent
+                    i = results.nbin;
+                    break;
+                }
+                int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
+                int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
+                
+                //Check for exact equality of npairs and float "equality" for rpavg
+                if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
+                    ret = EXIT_SUCCESS;
+                } else {
+                    fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
+                    fprintf(stderr,"True rpavg  = %20.12e Computed rpavg = %20.12e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
+                    fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
+                    ret = EXIT_FAILURE;//not required but showing intent
+                    i = results.nbin;
+                    break;
+                }
+            }
+        }
+        fclose(fp);
+    END_INTEGRATION_TEST_SECTION;
+        
+    /* If the test failed, then write the output into a temporary file */
+    if(ret != EXIT_SUCCESS) {
+        FILE *fp=my_fopen(tmpoutputfile,"w");
+        if(fp == NULL) {
+            free_results_mocks(&results);
+            return EXIT_FAILURE;
+        }
+        const double dpi = pimax/(double)results.npibin ;
+        const int npibin = results.npibin;
         for(int i=1;i<results.nbin;i++) {
             const double logrp = log10(results.rupp[i]);
             for(int j=0;j<npibin;j++) {
@@ -165,6 +134,9 @@ int test_DDrppi_mocks(const char *correct_outputfile)
 
 int test_DDsmu_mocks(const char *correct_outputfile)
 {
+    results_countpairs_mocks_s_mu results;
+    int ret = EXIT_FAILURE;
+    
     assert(RA1 != NULL && DEC1 != NULL && CZ1 != NULL && "ERROR: In test suite for DDsmu ra/dec/cz can not be NULL pointers");
     int autocorr = (RA1==RA2) ? 1:0;
 
@@ -174,68 +146,70 @@ int test_DDsmu_mocks(const char *correct_outputfile)
     extra.weights0.weights[0] = weights1;
     extra.weights1.weights[0] = weights2;
 
-    //Do DD(s,mu) counts
-    results_countpairs_mocks_s_mu results;
-    int status = countpairs_mocks_s_mu(ND1,RA1,DEC1,CZ1,
-                                       ND2,RA2,DEC2,CZ2,
-                                       nthreads,
-                                       autocorr,
-                                       binfile,
-                                       mu_max,
-                                       nmu_bins,
-                                       cosmology_flag,
-                                       &results,
-                                       &options,
-                                       &extra);
-    if(status != EXIT_SUCCESS) {
-        return status;
-    }
-
-    int ret = EXIT_FAILURE;
-    FILE *fp=my_fopen(correct_outputfile,"r");
-    if(fp == NULL) {
-        free_results_mocks_s_mu(&results);
-        return EXIT_FAILURE;
-    }
-    const double dmu= 1.0/(double)results.nmu_bins;
-    const int nmubin = results.nmu_bins;
-    for(int i=1;i<results.nsbin;i++) {
-        for(int j=0;j<nmubin;j++) {
-            int index = i*(nmubin+1) + j;
-            uint64_t npairs;
-            double savg, weightavg;
-            ret = EXIT_FAILURE;
-            int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &savg, &weightavg);
-            if(nitems != 3) {
-                ret = EXIT_FAILURE;//not required but showing intent
-                i = results.nsbin;
-                break;
-            }
-            int floats_equal = AlmostEqualRelativeAndAbs_double(savg, results.savg[index], maxdiff, maxreldiff);
-            int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-
-            //Check for exact equality of npairs and float "equality" for savg
-            if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
-                ret = EXIT_SUCCESS;
-            } else {
-                fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
-                fprintf(stderr,"True savg  = %20.12e Computed savg = %20.12e. floats_equal = %d\n", savg, results.savg[index], floats_equal);
-                fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
-                ret = EXIT_FAILURE;//not required but showing intent
-                i = results.nsbin;
-                break;
-            }
+    BEGIN_INTEGRATION_TEST_SECTION
+        //Do DD(s,mu) counts
+        int status = countpairs_mocks_s_mu(ND1,RA1,DEC1,CZ1,
+                                           ND2,RA2,DEC2,CZ2,
+                                           nthreads,
+                                           autocorr,
+                                           binfile,
+                                           mocks_mu_max,
+                                           nmu_bins,
+                                           cosmology_flag,
+                                           &results,
+                                           &options,
+                                           &extra);
+        if(status != EXIT_SUCCESS) {
+            return status;
         }
-    }
-    fclose(fp);
 
-    /* If the test failed, then write the output into a temporary file */
-    if(ret != EXIT_SUCCESS) {
-        fp=my_fopen(tmpoutputfile,"w");
+        FILE *fp=my_fopen(correct_outputfile,"r");
         if(fp == NULL) {
             free_results_mocks_s_mu(&results);
             return EXIT_FAILURE;
         }
+
+        const int nmubin = results.nmu_bins;
+        for(int i=1;i<results.nsbin;i++) {
+            for(int j=0;j<nmubin;j++) {
+                int index = i*(nmubin+1) + j;
+                uint64_t npairs;
+                double savg, weightavg;
+                ret = EXIT_FAILURE;
+                int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &savg, &weightavg);
+                if(nitems != 3) {
+                    ret = EXIT_FAILURE;//not required but showing intent
+                    i = results.nsbin;
+                    break;
+                }
+                int floats_equal = AlmostEqualRelativeAndAbs_double(savg, results.savg[index], maxdiff, maxreldiff);
+                int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
+                
+                //Check for exact equality of npairs and float "equality" for savg
+                if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
+                    ret = EXIT_SUCCESS;
+                } else {
+                    fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
+                    fprintf(stderr,"True savg  = %20.12e Computed savg = %20.12e. floats_equal = %d\n", savg, results.savg[index], floats_equal);
+                    fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
+                    ret = EXIT_FAILURE;//not required but showing intent
+                    i = results.nsbin;
+                    break;
+                }
+            }
+        }
+        fclose(fp);
+    END_INTEGRATION_TEST_SECTION;
+   
+    /* If the test failed, then write the output into a temporary file */
+    if(ret != EXIT_SUCCESS) {
+        FILE *fp=my_fopen(tmpoutputfile,"w");
+        if(fp == NULL) {
+            free_results_mocks_s_mu(&results);
+            return EXIT_FAILURE;
+        }
+        const double dmu= 1.0/(double)results.nmu_bins;
+        const int nmubin = results.nmu_bins;
         for(int i=1;i<results.nsbin;i++) {
             const double logrp = log10(results.supp[i]);
             for(int j=0;j<nmubin;j++) {
@@ -255,11 +229,14 @@ int test_wtheta_mocks(const char *correct_outputfile)
     int autocorr = (RA1==RA2) ? 1:0;
     int ret = EXIT_FAILURE;
     results_countpairs_theta results;
-    const isa old_isa = options.instruction_set;
 
-#ifdef DEVELOPER_TESTS
-    const int min_bin_ref = 1, max_bin_ref = 3;
-
+    // Set up the weights pointers
+    weight_method_t weight_method = PAIR_PRODUCT;
+    struct extra_options extra = get_extra_options(weight_method);
+    extra.weights0.weights[0] = weights1;
+    extra.weights1.weights[0] = weights2;
+    
+#ifdef INTEGRATION_TESTS
     //wtheta has 3 implementations (brute-force, link-in-dec and link-in-dec + link-in-ra)
     //For developer testing, multiple bin refine factors are tested as well as the
     //all three of the linking logic.
@@ -267,109 +244,138 @@ int test_wtheta_mocks(const char *correct_outputfile)
     // (dec_link, ra_link) == (0, 0) -> brute-force
     // (dec_link, ra_link) == (1, 0) -> dec-linking only
     // (dec_link, ra_link) == (1, 1) -> dec + ra linking
+
+    /* The order of the for loop breaks the convention "RA before DEC"
+       -- This is because the binning in RA can only be done if the binning
+       in DEC is enabled. Therefore, it makes more sense to loop in RA *only*
+       after the DEC binning is decided.
+     */
+    int fastest_bin_ref[] = {1, 1, 1};
+    int fastest_isa = 0;
+    double fastest_time = 1e30;
+    struct timespec t0, t1;
+    const isa old_isa = options.instruction_set;
+    int dotest = 1;
     for(int dec_link=0;dec_link<=1;dec_link++) {
         for(int ra_link=0;ra_link <= dec_link; ra_link++) {
             options.link_in_dec=dec_link;
             options.link_in_ra=ra_link;
-            for(int bf=min_bin_ref;bf<=max_bin_ref;bf++) {
-                if((dec_link + ra_link) == 0 && bf > min_bin_ref) continue;//bin refine factor has no impact on brute-force
-                options.bin_refine_factors[0] = bf;
-                options.bin_refine_factors[1] = bf;
-                options.bin_refine_factors[2] = bf;
-
-                // Check the specific implementations for each instruction set
-                for(int iset=0;iset<num_isets;iset++) {
-                    options.instruction_set = instruction_sets[iset];
-                    struct timeval t0;
-                    gettimeofday(&t0, NULL);
+            for(int ra_bin_ref=min_bin_ref;ra_bin_ref<=max_bin_ref;ra_bin_ref++) {
+                for(int dec_bin_ref=min_bin_ref;dec_bin_ref<=max_bin_ref;dec_bin_ref++) {
+                    if(dotest == 1) {
+                        if((dec_link + ra_link) == 0 && ra_bin_ref > min_bin_ref) continue;//bin refine factor has no impact on brute-force -> only check once
+                        const int bf[] = {ra_bin_ref, dec_bin_ref, -1};
+                        set_custom_bin_refine_factors(&options, bf);
+                        
+                        // Check the specific implementations for each instruction set
+                        for(int iset=0;iset<num_instructions;iset++) {
+                            options.instruction_set = valid_instruction_sets[iset];
+                            fprintf(stderr,"Running with dec-linking = %d ra-linking = %d bin-ref = (%d, %d) and instruction set = %s",
+                                    dec_link, ra_link,
+                                    options.bin_refine_factors[0],
+                                    options.bin_refine_factors[1],
+                                    isa_name[iset]);
+                            
+                            current_utc_time(&t0);
 #else
-                    options.link_in_dec = 1;
-                    options.link_in_ra = 1;
+    {
+                            options.link_in_dec = 1;
+                            options.link_in_ra = 1;
 #endif
-
-                    // Set up the weights pointers
-                    weight_method_t weight_method = PAIR_PRODUCT;
-                    struct extra_options extra = get_extra_options(weight_method);
-                    extra.weights0.weights[0] = weights1;
-                    extra.weights1.weights[0] = weights2;
-                    int status = countpairs_theta_mocks(ND1,RA1,DEC1,
-                                                        ND2,RA2,DEC2,
-                                                        nthreads,
-                                                        autocorr,
-                                                        angular_binfile,
-                                                        &results,
-                                                        &options,
-                                                        &extra);
-#ifdef DEVELOPER_TESTS
-                    struct timeval t1;
-                    gettimeofday(&t1, NULL);
-                    fprintf(stderr,"bf = %d dec = %d ra = %d (iset, isa) = (%d,%d) status = %d. Time taken = %0.3g sec\n",
-                            bf, dec_link, ra_link, iset, instruction_sets[iset], status, ADD_DIFF_TIME(t0, t1));
-#endif
-
-                    if(status != EXIT_SUCCESS) {
-                        return status;
-                    }
-
-                    /*---Output-Pairs-------------------------------------*/
-                    FILE *fp=my_fopen(correct_outputfile,"r");
-                    if(fp == NULL) {
-                        free_results_countpairs_theta(&results);
-                        return EXIT_FAILURE;
-                    }
-                    for(int i=1;i<results.nbin;i++) {
-                        uint64_t npairs;
-                        double theta_avg, weightavg;
-                        ret = EXIT_FAILURE;
-                        int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &theta_avg, &weightavg);
-                        if(nitems != 3) {
-                            ret = EXIT_FAILURE;//not required but showing intent
-                            break;
-                        }
-                        int floats_equal = AlmostEqualRelativeAndAbs_double(theta_avg, results.theta_avg[i], maxdiff, maxreldiff);
-                        int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
-
-                        //Check for exact equality of npairs and float "equality" for theta_avg
-                        if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
-                            ret = EXIT_SUCCESS;
-                        } else {
-                            ret = EXIT_FAILURE;//not required but showing intent
-                            fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
-                            fprintf(stderr,"Failed. True thetaavg = %e Computed thetaavg = %e. floats_equal = %d\n", theta_avg, results.theta_avg[i], floats_equal);
-                            fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. floats_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
-                            break;
-                        }
-                    }
-                    fclose(fp);
-
-                    if(ret != EXIT_SUCCESS) {
-                        fp=my_fopen(tmpoutputfile,"w");
-                        double theta_low = results.theta_upp[0];
-                        for(int i=1;i<results.nbin;i++) {
-                            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf\n",
-                                    results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i], results.weightavg[i]);
-                            theta_low=results.theta_upp[i];
-                        }
-                        fclose(fp);
-                    }
-#ifdef DEVELOPER_TESTS
-                }
-            }
-        }
+                            
+                            int status = countpairs_theta_mocks(ND1,RA1,DEC1,
+                                                                ND2,RA2,DEC2,
+                                                                nthreads,
+                                                                autocorr,
+                                                                angular_binfile,
+                                                                &results,
+                                                                &options,
+                                                                &extra);
+                            if(status != EXIT_SUCCESS) {
+                                return status;
+                            }
+                            
+                            /*---Output-Pairs-------------------------------------*/
+                            FILE *fp=my_fopen(correct_outputfile,"r");
+                            if(fp == NULL) {
+                                free_results_countpairs_theta(&results);
+                                return EXIT_FAILURE;
+                            }
+                            for(int i=1;i<results.nbin;i++) {
+                                uint64_t npairs;
+                                double theta_avg, weightavg;
+                                ret = EXIT_FAILURE;
+                                int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &theta_avg, &weightavg);
+                                if(nitems != 3) {
+                                    ret = EXIT_FAILURE;//not required but showing intent
+                                    break;
+                                }
+                                int floats_equal = AlmostEqualRelativeAndAbs_double(theta_avg, results.theta_avg[i], maxdiff, maxreldiff);
+                                int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
+                                
+                                //Check for exact equality of npairs and float "equality" for theta_avg
+                                if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
+                                    ret = EXIT_SUCCESS;
+                                } else {
+                                    ret = EXIT_FAILURE;//not required but showing intent
+                                    fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
+                                    fprintf(stderr,"Failed. True thetaavg = %e Computed thetaavg = %e. floats_equal = %d\n", theta_avg, results.theta_avg[i], floats_equal);
+                                    fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. floats_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
+                                    break;
+                                }
+                            }
+                            fclose(fp);
+#ifdef INTEGRATION_TESTS
+                            current_utc_time(&t1);                      \
+                            double time_to_run = REALTIME_ELAPSED_NS(t0, t1); \
+                            if(time_to_run < fastest_time) {
+                                fastest_time = time_to_run;
+                                fastest_isa = iset;
+                                memcpy(&fastest_bin_ref, &bf, sizeof(bf));
+                            }
+                            if(ret != EXIT_SUCCESS) {                   \
+                                fprintf(stderr, ANSI_COLOR_RED "FAILED"); \
+                                dotest = 0;                             \
+                            } else {                                    \
+                                fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
+                            }                                           \
+                        } //dotest if condition
+                    }//iset loop (instruction sets)
+                }//loop over declination bin refine factors
+            }//loop over ra bin refine factors
+        }//loop over ra link
+    }//loop over dec link
+    fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d} and instruction_set = %s" ANSI_COLOR_RESET "\n",
+            fastest_time*1e-9,                                          
+            fastest_bin_ref[0],                                         
+            fastest_bin_ref[1],                                         
+            isa_name[fastest_isa]);
+    options.instruction_set = old_isa;
+    reset_bin_refine_factors(&options);
+#else
     }
 #endif
 
-    options.instruction_set = old_isa;
+    
+    if(ret != EXIT_SUCCESS) {
+        FILE *fp=my_fopen(tmpoutputfile,"w");
+        double theta_low = results.theta_upp[0];
+        for(int i=1;i<results.nbin;i++) {
+            fprintf(fp,"%10"PRIu64" %20.8lf %20.8lf %20.8lf %20.8lf\n",
+                    results.npairs[i],results.theta_avg[i],theta_low,results.theta_upp[i], results.weightavg[i]);
+            theta_low=results.theta_upp[i];
+        }
+        fclose(fp);
+    }
 
     //free the result structure
     free_results_countpairs_theta(&results);
     return ret;
-
 }
 
 int test_vpf_mocks(const char *correct_outputfile)
 {
-                const double rmax=10.0;
+    const double rmax=10.0;
     const int nbin=10;
     const int nc=10000;
     const int num_pN=6;
@@ -377,63 +383,66 @@ int test_vpf_mocks(const char *correct_outputfile)
     double *xran=NULL,*yran=NULL,*zran=NULL;
     const int threshold_neighbors=1;
     const char centers_file[]="../tests/data/Mr19_centers_xyz_forVPF_rmax_10Mpc.txt";
-
     results_countspheres_mocks results;
-    int status = countspheres_mocks(ND1, RA1, DEC1, CZ1,
-                                    Nran, xran, yran, zran,
-                                    threshold_neighbors,
-                                    rmax, nbin, nc,
-                                    num_pN,
-                                    centers_file,
-                                    cosmology_flag,
-                                    &results,
-                                    &options, NULL);
-    if(status != EXIT_SUCCESS) {
-        return status;
-    }
-
     int ret = EXIT_FAILURE;
-    //Output the results
-    FILE *fp=my_fopen(correct_outputfile,"r");
-    if(fp == NULL) {
-        free_results_countspheres_mocks(&results);
-        return EXIT_FAILURE;
-    }
-    const double rstep = rmax/(double)nbin ;
-    for(int ibin=0;ibin<results.nbin;ibin++) {
-        double r;
-        int nitems = fscanf(fp, "%lf", &r);
-        if(nitems != 1) {
+
+    BEGIN_INTEGRATION_TEST_SECTION
+        int status = countspheres_mocks(ND1, RA1, DEC1, CZ1,
+                                        Nran, xran, yran, zran,
+                                        threshold_neighbors,
+                                        rmax, nbin, nc,
+                                        num_pN,
+                                        centers_file,
+                                        cosmology_flag,
+                                        &results,
+                                        &options, NULL);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+
+
+        //Output the results
+        FILE *fp=my_fopen(correct_outputfile,"r");
+        if(fp == NULL) {
+            free_results_countspheres_mocks(&results);
             return EXIT_FAILURE;
         }
-        ret = EXIT_FAILURE;
-        for(int i=0;i<num_pN;i++) {
-            double pN;
-            nitems = fscanf(fp, " %lf ", &pN);
+        for(int ibin=0;ibin<results.nbin;ibin++) {
+            double r;
+            int nitems = fscanf(fp, "%lf", &r);
             if(nitems != 1) {
                 return EXIT_FAILURE;
             }
-
-            /* Not quite sure how this is working. The correct output columns only have 4 digits printed,
-               but I am comparing here with ~1e-9 in abs. diff. The only way the comparison should work is
-               if the conversion to 4 digits during printf, round-trips during scanf. But surely there must
-               be a lot more doubles that can be fit within those missing digits of precision.
-
-               I would have thought the comparison would require maxdiff ~ 1e-4. -- MS
-             */
-            int floats_equal = AlmostEqualRelativeAndAbs_double(pN, (results.pN)[ibin][i], maxdiff, maxreldiff);
-            if(floats_equal != EXIT_SUCCESS) {
-                ibin=results.nbin;
-                ret=EXIT_FAILURE;
-                break;
+            ret = EXIT_FAILURE;
+            for(int i=0;i<num_pN;i++) {
+                double pN;
+                nitems = fscanf(fp, " %lf ", &pN);
+                if(nitems != 1) {
+                    return EXIT_FAILURE;
+                }
+                
+                /* Not quite sure how this is working. The correct output columns only have 4 digits printed,
+                   but I am comparing here with ~1e-9 in abs. diff. The only way the comparison should work is
+                   if the conversion to 4 digits during printf, round-trips during scanf. But surely there must
+                   be a lot more doubles that can be fit within those missing digits of precision.
+                   
+                   I would have thought the comparison would require maxdiff ~ 1e-4. -- MS
+                */
+                int floats_equal = AlmostEqualRelativeAndAbs_double(pN, (results.pN)[ibin][i], maxdiff, maxreldiff);
+                if(floats_equal != EXIT_SUCCESS) {
+                    ibin=results.nbin;
+                    ret=EXIT_FAILURE;
+                    break;
+                }
+                ret = EXIT_SUCCESS;
             }
-            ret = EXIT_SUCCESS;
         }
-    }
-    fclose(fp);
-
+        fclose(fp);
+    END_INTEGRATION_TEST_SECTION;
+        
     if(ret != EXIT_SUCCESS) {
-        fp=my_fopen(tmpoutputfile,"w");
+        FILE *fp=my_fopen(tmpoutputfile,"w");
+        const double rstep = rmax/(double)nbin ;
         for(int ibin=0;ibin<results.nbin;ibin++) {
             const double r=(ibin+1)*rstep;
             fprintf(fp,"%10.2lf ", r);
