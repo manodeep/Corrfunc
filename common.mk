@@ -11,10 +11,10 @@
 CC := 
 
 #### Add any compiler specific flags you want
-CFLAGS:=
+CFLAGS ?=
 
 #### Add any compiler specific link flags you want
-CLINK:=
+CLINK ?=
 
 ## Set the python command (supply the full path to python you want to
 ## use, if different from directly calling `python` on the shell,
@@ -212,7 +212,7 @@ ifeq ($(DO_CHECKS), 1)
     CFLAGS += -Werror -Wno-unknown-warning-option
   endif
 
-  GSL_FOUND := $(shell gsl-config --version)
+  GSL_FOUND := $(shell gsl-config --version 2>/dev/null)
   ifndef GSL_FOUND
     $(error $(ccred)Error:$(ccreset) GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION) $(ccreset))
   endif

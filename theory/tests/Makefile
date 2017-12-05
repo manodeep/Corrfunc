@@ -33,7 +33,7 @@ SRC1   := test_periodic.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(UTILS_DIR)/utils.c
 OBJS1  := $(SRC1:.c=.o)
 C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(DDsmu_DIR)/lib$(DDsmu_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
              $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
-INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h \
+INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/tests_common.h \
           $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(DDsmu_DIR)/$(DDsmu_LIB).h  $(WP_DIR)/$(WP_LIB).h \
           $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h
 
@@ -108,6 +108,9 @@ vpf: test_periodic
 xi: test_periodic
 	./test_periodic 4
 
+.PHONY: celna clena celan clean
+
+celna clena celan: clean
 clean:
 	$(RM) $(targets) $(OBJS1) $(OBJS2)
 	$(RM) -R *.dSYM
