@@ -555,10 +555,10 @@ def compute_nbins(max_diff, binsize,
     ---------
     
     >>> from Corrfunc.utils import compute_nbins
-    >>> max_diff = 180
+    >>> max_diff = 180.0
     >>> binsize = 10
     >>> compute_nbins(max_diff, binsize)
-    18L
+    18
     >>> refine_factor=2
     >>> max_nbins = 20
     >>> compute_nbins(max_diff, binsize, refine_factor=refine_factor, 
@@ -592,7 +592,7 @@ def compute_nbins(max_diff, binsize,
     if max_nbins:
         ngrid = min(max_nbins, ngrid)
 
-    return ngrid             
+    return ngrid
                      
     
 def gridlink_sphere(thetamax,
@@ -679,6 +679,8 @@ def gridlink_sphere(thetamax,
     --------
 
     >>> from Corrfunc.utils import gridlink_sphere
+    >>> import numpy as np
+    >>> np.set_printoptions(precision=8)
     >>> thetamax=30
     >>> gridlink_sphere(thetamax) # doctest: +NORMALIZE_WHITESPACE
     array([([-1.57079633, -1.04719755], [ 0.        ,  3.14159265]),
