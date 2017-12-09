@@ -18,6 +18,7 @@ wrapper :py:mod:`Corrfunc.theory.DD`
 
           >>> # Read the supplied galaxies on a periodic box
           >>> X, Y, Z = read_catalog()
+          >>> N = len(X)
           >>> boxsize = 420.0
           >>> nthreads = 2
 

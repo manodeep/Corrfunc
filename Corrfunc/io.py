@@ -10,6 +10,10 @@ from __future__ import (absolute_import, division, print_function,
 from os.path import dirname, abspath, splitext, exists as file_exists,\
     join as pjoin
 import numpy as np
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 
 
 __all__ = ('read_fastfood_catalog', 'read_ascii_catalog', 'read_catalog')
@@ -220,11 +224,6 @@ def read_ascii_catalog(filename, return_dtype=None):
 
     # check if pandas is available - much faster to read in the data
     # using pandas
-    try:
-        import pandas as pd
-    except ImportError:
-        pd = None
-
     if pd is not None:
         df = pd.read_csv(filename, header=None,
                          engine="c",

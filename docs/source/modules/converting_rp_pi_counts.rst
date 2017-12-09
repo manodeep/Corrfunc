@@ -8,12 +8,14 @@ by using the helper function :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp`
 
 .. code-block:: python
 
+          >>> import numpy as np
           >>> from Corrfunc.theory import DDrppi
           >>> from Corrfunc.io import read_catalog
           >>> from Corrfunc.utils import convert_rp_pi_counts_to_wp
           
           # Read the supplied galaxies on a periodic box          
           >>> X, Y, Z = read_catalog()
+          >>> N = len(X)
           >>> boxsize = 420.0
 
           # Generate randoms on the box          
