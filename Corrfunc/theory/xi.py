@@ -68,9 +68,9 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        are double precision arrays (C double type).
        
     weights: array_like, real (float/double), optional
-        A scalar, or an array of weights of shape (n_weights, n_positions) or 
-        (n_positions,). `weight_type` specifies how these weights are used; 
-        results are returned in the `weightavg` field.
+       A scalar, or an array of weights of shape (n_weights, n_positions) or 
+       (n_positions,). `weight_type` specifies how these weights are used; 
+       results are returned in the `weightavg` field.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -81,10 +81,9 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
 
 
     .. note:: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
-        arrays for the particle positions.
-
+       suffer from numerical loss of precision and can not be trusted. If 
+       you need accurate ``rpavg`` values, then pass in double precision 
+       arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
@@ -114,7 +113,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
     weight_type: string, optional, Default: None.
-        The type of weighting to apply.  One of ["pair_product", None].  
+       The type of weighting to apply.  One of ["pair_product", None].  
 
 
     Returns
@@ -129,8 +128,8 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        will not be.
 
     api_time: float, optional
-        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent
-        within the C library and ignores all python overhead.
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent
+       within the C library and ignores all python overhead.
 
     Example
     --------

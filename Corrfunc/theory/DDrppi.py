@@ -42,12 +42,12 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     -----------
 
     autocorr: boolean, required
-        Boolean flag for auto/cross-correlation. If autocorr is set to 1,
-        then the second set of particle positions are not required.
+       Boolean flag for auto/cross-correlation. If autocorr is set to 1,
+       then the second set of particle positions are not required.
 
     nthreads: integer
-        The number of OpenMP threads to use. Has no effect if OpenMP was not
-        enabled during library compilation.
+       The number of OpenMP threads to use. Has no effect if OpenMP was not
+       enabled during library compilation.
 
     pimax: double
        A double-precision value for the maximum separation along
@@ -59,7 +59,6 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
 
     .. note:: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
-
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
@@ -78,29 +77,29 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
        Calculations are done in the precision of the supplied arrays.
        
     weights1: array_like, real (float/double), optional
-        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
-        `weight_type` specifies how these weights are used; results are returned
-        in the `weightavg` field.  If only one of weights1 and weights2 is
-        specified, the other will be set to uniform weights.
+       A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
+       `weight_type` specifies how these weights are used; results are returned
+       in the `weightavg` field.  If only one of weights1 and weights2 is
+       specified, the other will be set to uniform weights.
 
     X2/Y2/Z2: array-like, real (float/double)
        Array of XYZ positions for the second set of points. *Must* be the same
        precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
        
     weights2: array-like, real (float/double), optional
-        Same as weights1, but for the second set of positions
+       Same as weights1, but for the second set of positions
 
     periodic: boolean
-        Boolean flag to indicate periodic boundary conditions.
+       Boolean flag to indicate periodic boundary conditions.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
 
     boxsize: double
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is not supplied, then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
+       The side-length of the cube in the cosmological simulation.
+       Present to facilitate exact calculations for periodic wrapping.
+       If boxsize is not supplied, then the wrapping is done based on
+       the maximum difference within each dimension of the X/Y/Z arrays.
 
     output_rpavg: boolean (default false)
        Boolean flag to output the average ``rp`` for each bin. Code will
@@ -108,10 +107,9 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
 
     .. note:: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
-        arrays for the particle positions.
-
+       suffer from numerical loss of precision and can not be trusted. If 
+       you need accurate ``rpavg`` values, then pass in double precision 
+       arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

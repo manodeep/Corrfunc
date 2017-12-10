@@ -62,7 +62,6 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     
     .. note:: p0 is the vpf
 
-
     seed: unsigned integer
        Random number seed for the underlying GSL random number generator. Used
        to draw centers of the spheres.
@@ -81,13 +80,13 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
        Boolean flag to control output of informational messages
 
     periodic: boolean
-        Boolean flag to indicate periodic boundary conditions.
+       Boolean flag to indicate periodic boundary conditions.
 
     boxsize: double
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is not supplied, then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
+       The side-length of the cube in the cosmological simulation.
+       Present to facilitate exact calculations for periodic wrapping.
+       If boxsize is not supplied, then the wrapping is done based on
+       the maximum difference within each dimension of the X/Y/Z arrays.
 
     (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
@@ -97,7 +96,6 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     .. note:: Since the counts in spheres calculation is symmetric
        in all 3 dimensions, the defaults are different from the clustering
        routines.
-
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of

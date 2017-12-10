@@ -39,7 +39,6 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     .. note:: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
-
     nthreads: integer
        Number of threads to use.
 
@@ -74,10 +73,9 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
 
     .. note:: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
-        arrays for the particle positions.
-
+       suffer from numerical loss of precision and can not be trusted. If 
+       you need accurate ``rpavg`` values, then pass in double precision 
+       arrays for the particle positions.
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of
@@ -120,7 +118,6 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
        produces the fastest code.
 
     runtimes: numpy structured array
-
        if ``return_runtimes`` is set, then the return value is a tuple
        containing ((nx, ny, nz), runtimes). ``runtimes`` is a ``numpy``
        structured array containing the fields, [``nx``, ``ny``, ``nz``,

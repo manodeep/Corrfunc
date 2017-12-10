@@ -86,46 +86,46 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
 
     binfile: string or an list/array of floats
-       For string input: filename specifying the ``rp`` bins for
-       ``DDrppi_mocks``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``rp`` wanted. The bins need to be
-       contiguous and sorted in increasing order (smallest bins come first).
+        For string input: filename specifying the ``rp`` bins for
+        ``DDrppi_mocks``. The file should contain white-space separated values
+        of (rpmin, rpmax)  for each ``rp`` wanted. The bins need to be
+        contiguous and sorted in increasing order (smallest bins come first).
 
-       For array-like input: A sequence of ``rp`` values that provides the
-       bin-edges. For example,
-       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-       array does not need to be sorted.
+        For array-like input: A sequence of ``rp`` values that provides the
+        bin-edges. For example,
+        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
+        input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
+        array does not need to be sorted.
 
     RA1: array-like, real (float/double)
-       The array of Right Ascensions for the first set of points. RA's
-       are expected to be in [0.0, 360.0], but the code will try to fix cases
-       where the RA's are in [-180, 180.0]. For peace of mind, always supply
-       RA's in [0.0, 360.0].
+        The array of Right Ascensions for the first set of points. RA's
+        are expected to be in [0.0, 360.0], but the code will try to fix cases
+        where the RA's are in [-180, 180.0]. For peace of mind, always supply
+        RA's in [0.0, 360.0].
 
-       Calculations are done in the precision of the supplied arrays.
+        Calculations are done in the precision of the supplied arrays.
 
     DEC1: array-like, real (float/double)
-       Array of Declinations for the first set of points. DEC's are expected
-       to be in the [-90.0, 90.0], but the code will try to fix cases where
-       the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
-       DEC's in [-90.0, 90.0].
+        Array of Declinations for the first set of points. DEC's are expected
+        to be in the [-90.0, 90.0], but the code will try to fix cases where
+        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
+        DEC's in [-90.0, 90.0].
 
-       Must be of same precision type as RA1.
+        Must be of same precision type as RA1.
 
     CZ1: array-like, real (float/double)
-       Array of (Speed Of Light * Redshift) values for the first set of
-       points. Code will try to detect cases where ``redshifts`` have been
-       passed and multiply the entire array with the ``speed of light``.
+        Array of (Speed Of Light * Redshift) values for the first set of
+        points. Code will try to detect cases where ``redshifts`` have been
+        passed and multiply the entire array with the ``speed of light``.
 
-       If is_comoving_dist is set, then ``CZ1`` is interpreted as the
-       co-moving distance, rather than `cz`.
+        If is_comoving_dist is set, then ``CZ1`` is interpreted as the
+        co-moving distance, rather than `cz`.
        
     weights1: array_like, real (float/double), optional
-       A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
-       `weight_type` specifies how these weights are used; results are returned
-       in the `weightavg` field.  If only one of weights1 and weights2 is
-       specified, the other will be set to uniform weights.
+        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
+        `weight_type` specifies how these weights are used; results are returned
+        in the `weightavg` field.  If only one of weights1 and weights2 is
+        specified, the other will be set to uniform weights.
 
     RA2: array-like, real (float/double)
         The array of Right Ascensions for the second set of points. RA's
@@ -181,13 +181,13 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
-       Controls the refinement on the cell sizes. Can have up to a 20% impact
-       on runtime.
+        Controls the refinement on the cell sizes. Can have up to a 20% impact
+        on runtime.
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
-       Controls the maximum number of cells per dimension. Total number of
-       cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
-       too small relative to the boxsize (and increasing helps the runtime).
+        Controls the maximum number of cells per dimension. Total number of
+        cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
+        too small relative to the boxsize (and increasing helps the runtime).
 
     c_api_timer: boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here
@@ -216,17 +216,17 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
     results: Numpy structured array
 
-       A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs, weightavg]
-       for each radial bin specified in the ``binfile``. If ``output_ravg`` is
-       not set, then ``rpavg`` will be set to 0.0 for all bins; similarly for
-       ``weightavg``. ``npairs``
-       contains the number of pairs in that bin and can be used to compute the
-       actual :math:`\\xi(r_p, \pi)` or :math:`wp(rp)` by combining with
-       (DR, RR) counts.
+        A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs, weightavg]
+        for each radial bin specified in the ``binfile``. If ``output_ravg`` is
+        not set, then ``rpavg`` will be set to 0.0 for all bins; similarly for
+        ``weightavg``. ``npairs``
+        contains the number of pairs in that bin and can be used to compute the
+        actual :math:`\\xi(r_p, \pi)` or :math:`wp(rp)` by combining with
+        (DR, RR) counts.
 
     api_time: float, optional
-       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
-       spent within the C library and ignores all python overhead.
+        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
+        spent within the C library and ignores all python overhead.
 
     Example
     --------

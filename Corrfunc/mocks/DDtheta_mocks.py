@@ -118,7 +118,6 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        at all. For very small angular separations, the brute-force method 
        might be the most numerically stable method.
 
-
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
 
@@ -137,7 +136,6 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        Use the keyword ``fast_acos`` if you can tolerate some loss of 
        precision.
 
-
     fast_acos: boolean (default false)
        Flag to use numerical approximation for the ``arccos`` - gives better
        performance at the expense of some precision. Relevant only if
@@ -151,7 +149,6 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
 
     .. note:: Tests will fail if you run the tests with``fast_acos=True``.
-
 
     (radec)_refine_factor: integer, default is (2,2); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

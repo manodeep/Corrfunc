@@ -94,7 +94,6 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        If you need accurate ``ravg`` values, then pass in double precision 
        arrays for the particle positions.
 
-
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
        on runtime.

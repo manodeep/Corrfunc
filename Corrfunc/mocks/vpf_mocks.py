@@ -65,7 +65,6 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
     .. note:: p0 is the vpf
 
-
     threshold_ngb: integer
        Minimum number of random points needed in a ``rmax`` sphere such that it
        is considered to be entirely within the mock footprint. The
@@ -86,21 +85,20 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        significantly longer to finish. However, subsequent runs can re-use
        that centers file and will be faster.
 
-
     cosmology: integer, required
-        Integer choice for setting cosmology. Valid values are 1->LasDamas
-        cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
-        easiest way is to convert the ``CZ`` values into co-moving distance,
-        based on your preferred cosmology. Set ``is_comoving_dist=True``, to
-        indicate that the co-moving distance conversion has already been done.
+       Integer choice for setting cosmology. Valid values are 1->LasDamas
+       cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
+       easiest way is to convert the ``CZ`` values into co-moving distance,
+       based on your preferred cosmology. Set ``is_comoving_dist=True``, to
+       indicate that the co-moving distance conversion has already been done.
 
-        Choices:
+       Choices:
                  1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\Lambda=0.75`
                  2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\Lambda=0.698`
 
-        To setup a new cosmology, add an entry to the function,
-        ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
-        the entire package.
+       To setup a new cosmology, add an entry to the function,
+       ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
+       the entire package.
 
     RA: array-like, real (float/double)
        The array of Right Ascensions for the first set of points. RA's
