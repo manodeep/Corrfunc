@@ -54,7 +54,7 @@ matrix:
     #     - conda install -q --yes -c asmeurer gsl        
 
     - os: osx
-      osx_image: xcode8
+      osx_image: xcode8.3
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 8.0.0' PYTHON_VERSION=3.5
       before_install:
@@ -204,9 +204,11 @@ install:
         
 script:
   - make tests CC=$COMPILER
+  - cd docs && make html && cd ../
+  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then cd docs && make doctest && cd ../; fi  
 
-after_success:
-  - cd docs && make html && cd ../ 
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then cd docs && make doctest && cd ../; fi
+
+
+
 
   
