@@ -1,5 +1,17 @@
-2.0.0 (upcoming)
+3.0.0 (upcoming)
 =================
+
+**Breaking Changes**
+---------------------
+- Package will be renamed to ``corrfunc`` from ``Corrfunc``
+
+New features
+------------
+- New pair counter `DD(s, mu)` for theory and mocks
+- conda installable package
+
+2.0.0
+======
 
 New features
 ------------
