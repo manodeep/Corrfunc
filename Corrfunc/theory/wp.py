@@ -39,19 +39,20 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     .. note:: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
+
     nthreads: integer
        Number of threads to use.
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
-       ``DDrppi_mocks``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+       ``wp``. The file should contain white-space separated values
+       of (rpmin, rpmax)  for each ``rp`` wanted. The bins need to be
+       contiguous and sorted in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``rp`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
+       input, specifying **14** (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
 
     X/Y/Z: arraytype, real (float/double)
@@ -76,6 +77,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
         suffer from numerical loss of precision and can not be trusted. If 
         you need accurate ``rpavg`` values, then pass in double precision 
         arrays for the particle positions.
+
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of
@@ -152,6 +154,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     .. note:: Since the result might change depending on the computer, doctest
         is skipped for this function.
+
 
     """
     try:
@@ -303,6 +306,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        added to the first bin => minimum number of pairs in the first bin
        is the total number of particles.
 
+
     Parameters
     -----------
 
@@ -317,19 +321,20 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     .. note:: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
+
     nthreads: integer
        Number of threads to use.
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
-       ``DDrppi_mocks``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+       ``wp``. The file should contain white-space separated values
+       of (rpmin, rpmax)  for each ``rp`` wanted. The bins need to be
+       contiguous and sorted in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``rp`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
+       input, specifying **14** (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
 
     X/Y/Z: arraytype, real (float/double)
@@ -359,6 +364,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         suffer from numerical loss of precision and can not be trusted. If 
         you need accurate ``rpavg`` values, then pass in double precision 
         arrays for the particle positions.
+
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

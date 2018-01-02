@@ -39,6 +39,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` for computing 
        :math:`\\omega(\theta)` from the pair counts returned.
 
+
     Parameters
     -----------
 
@@ -49,17 +50,17 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     nthreads: integer
        Number of threads to use.
 
-    binfile: string or an list/array of floats
+    binfile: string or an list/array of floats, units: degrees
        For string input: filename specifying the ``rp`` bins for
-       ``DDrppi_mocks``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+       ``DDtheta_mocks``. The file should contain white-space separated values
+       of (thetapmin, thetamax)  for each ``theta`` wanted. The bins need to be
+       contiguous and sorted in increasing order (smallest bins come first).
 
-       For array-like input: A sequence of ``rp`` values that provides the
+       For array-like input: A sequence of ``theta`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
-       array does not need to be sorted.
+       input specifying **14** (logarithmic) bins between 0.1 and 10.0 degrees. 
+       This array does not need to be sorted.
 
     RA1: array-like, real (float/double)
         The array of Right Ascensions for the first set of points. RA's
@@ -117,6 +118,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        at all. For very small angular separations, the brute-force method 
        might be the most numerically stable method.
 
+
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
 
@@ -135,6 +137,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        Use the keyword ``fast_acos`` if you can tolerate some loss of 
        precision.
 
+
     fast_acos: boolean (default false)
        Flag to use numerical approximation for the ``arccos`` - gives better
        performance at the expense of some precision. Relevant only if
@@ -149,6 +152,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     .. note:: Tests will fail if you run the tests with``fast_acos=True``.
 
+
     (radec)_refine_factor: integer, default is (2,2); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
        on runtime. 
@@ -157,6 +161,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     .. note:: Only two refine factors are to be specified and these
        correspond to ``ra`` and ``dec`` (rather, than the usual three of
        ``(xyz)bin_refine_factor`` for all other correlation functions).
+
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of

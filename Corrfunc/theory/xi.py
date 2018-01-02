@@ -34,6 +34,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        added to the first bin => minimum number of pairs in the first bin
        is the total number of particles.
 
+
     Parameters
     -----------
 
@@ -47,13 +48,13 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
     binfile: string or an list/array of floats
        For string input: filename specifying the ``r`` bins for
        ``xi``. The file should contain white-space separated values
-       of (rmin, rmax)  for each ``r`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+       of (rmin, rmax)  for each ``r`` wanted. The bins need to be
+       contiguous and sorted in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``r`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
+       input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
 
     X/Y/Z: arraytype, real (float/double)
@@ -83,6 +84,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
         suffer from numerical loss of precision and can not be trusted. If 
         you need accurate ``rpavg`` values, then pass in double precision 
         arrays for the particle positions.
+
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

@@ -31,6 +31,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` for computing 
        for computing :math:`\\xi(r)` from the pair counts returned.
 
+
     Parameters
     -----------
 
@@ -45,13 +46,13 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     binfile: string or an list/array of floats
        For string input: filename specifying the ``r`` bins for
        ``DD``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``r`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+       of (rmin, rmax)  for each ``r`` wanted. The bins need to be
+       contiguous and sorted in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``r`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
+       input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
        array does not need to be sorted.
 
     X1/Y1/Z1: array_like, real (float/double)
@@ -92,6 +93,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        suffer from numerical loss of precision and can not be trusted. 
        If you need accurate ``ravg`` values, then pass in double precision 
        arrays for the particle positions.
+
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     sscanf(argv[6],"%"REAL_FORMAT,&pimax) ;
     cosmology = atoi(argv[7]);
 
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     nthreads=atoi(argv[8]);
     assert(nthreads >= 1 && "Number of threads must be at least 1");
 #endif
@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
 void Printhelp(void)
 {
     fprintf(stderr,"=========================================================================\n") ;
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax cosmology numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
 #else
     fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax cosmology [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
@@ -287,7 +287,7 @@ void Printhelp(void)
     fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
     fprintf(stderr,"     * pimax         = maximum line-of-sight-separation\n") ;
     fprintf(stderr,"     * cosmology     = flag to pick-up the cosmology combination to use (set as an array of combinations in ../utils/cosmology_params.c)\n") ;
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif
     fprintf(stderr,"   --- OPTIONAL ARGS:\n");
@@ -307,19 +307,25 @@ void Printhelp(void)
     fprintf(stderr,"Output RPAVG = False\n");
 #endif
 
+#ifdef FAST_DIVIDE
+    fprintf(stderr,"Fast (approx) divide = True\n");
+#else
+    fprintf(stderr,"Fast (approx) divide = False\n");
+#endif
+
+#ifdef COMOVING_DIST
+    fprintf(stderr,"CZ column contains co-moving distance = True\n");
+#else
+    fprintf(stderr,"CZ column contains co-moving distance = False\n");
+#endif    
+    
 #ifdef DOUBLE_PREC
     fprintf(stderr,"Precision = double\n");
 #else
     fprintf(stderr,"Precision = float\n");
 #endif
 
-#if defined(USE_AVX) && defined(__AVX__)
-    fprintf(stderr,"Use AVX = True\n");
-#else
-    fprintf(stderr,"Use AVX = False\n");
-#endif
-
-#if defined(USE_OMP) && defined(_OPENMP)
+#if defined(_OPENMP)
     fprintf(stderr,"Use OMP = True\n");
 #else
     fprintf(stderr,"Use OMP = False\n");
