@@ -49,7 +49,7 @@ distclean:clean
 	cd $(INSTALL_BIN_DIR) && $(RM) $(TARGET)
 
 tests: 
-	$(MAKE) -C ../tests xi_s_mu
+	$(MAKE) -C ../tests DDsmu
 
 include $(ROOT_DIR)/rules.mk
 

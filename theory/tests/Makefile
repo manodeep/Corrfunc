@@ -94,7 +94,7 @@ DDrppi: test_periodic test_nonperiodic
 	./test_periodic 0 6 7 8
 	./test_nonperiodic 1 3
 
-DDsmu: test_periodic
+DDsmu: test_periodic test_nonperiodic
 	./test_periodic 5
 	./test_nonperiodic 2
 
