@@ -42,13 +42,13 @@ countpairs_s_mu_mocks_impl_float.o:countpairs_s_mu_mocks_impl_float.c countpairs
 countpairs_s_mu_mocks.o:countpairs_s_mu_mocks.c countpairs_s_mu_mocks_impl_double.h countpairs_s_mu_mocks_impl_float.h $(INCL)
 
 
-# wprp_mocks: wprp_mocks.c $(UTILS_DIR)/utils.c
-#     $(CC) $(CFLAGS) $(INCLUDE) $^ $(CLINK) -o $@
-
 libs: lib
 lib: $(LIBRARY) 
 
-install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_BIN_DIR)/wprp_mocks $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
+install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
+
+tests: 
+	$(MAKE) -C ../tests DDsmu_mocks
 
 clean:
 	$(RM) $(TARGETS) $(TARGETOBJS) $(LIBRARY) countpairs_s_mu_mocks_impl_float.[ch] countpairs_s_mu_mocks_impl_double.[ch] countpairs_s_mu_mocks_kernels_double.c countpairs_s_mu_mocks_kernels_float.c 
