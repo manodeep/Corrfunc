@@ -355,14 +355,26 @@ int main(int argc, char **argv)
     int failed=0;
     int status;
 
-    const char alltests_names[][MAXLEN] = {"Mr19 DD (nonperiodic)","Mr19 DDrppi (nonperiodic)","Mr19 DDsmu (nonperiodic)","CMASS DDrppi DR (nonperiodic)"};
+    const char alltests_names[][MAXLEN] = {"Mr19 DD (nonperiodic)",
+                                           "Mr19 DDrppi (nonperiodic)",
+                                           "Mr19 DDsmu (nonperiodic)",
+                                           "CMASS DDrppi DR (nonperiodic)"};
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
     const int function_pointer_index[] = {0,1,2,1};//0->DD, 1->DDrppi, 2->DDsmu
 
-    const char correct_outputfiles[][MAXLEN] = {"Mr19_DD_nonperiodic","Mr19_DDrppi_nonperiodic","Mr19_DDsmu_nonperiodic","cmass_DR_nonperiodic"};
-    const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/cmassmock_Zspace.ff"};
+    const char correct_outputfiles[][MAXLEN] = {"Mr19_DD_nonperiodic",
+                                                "Mr19_DDrppi_nonperiodic",
+                                                "Mr19_DDsmu_nonperiodic",
+                                                "cmass_DR_nonperiodic"};
+    const char firstfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff",
+                                          "../tests/data/gals_Mr19.ff",
+                                          "../tests/data/gals_Mr19.ff",
+                                          "../tests/data/cmassmock_Zspace.ff"};
     const char firstfiletype[][MAXLEN] = {"f","f","f","f"};
-    const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/gals_Mr19.ff","../tests/data/random_Zspace.ff"};
+    const char secondfilename[][MAXLEN] = {"../tests/data/gals_Mr19.ff",
+                                           "../tests/data/gals_Mr19.ff",
+                                           "../tests/data/gals_Mr19.ff",
+                                           "../tests/data/random_Zspace.ff"};
     const char secondfiletype[][MAXLEN] = {"f","f","f","f"};
 
     const double allpimax[]             = {40.0,40.0,40.0,80.0};
