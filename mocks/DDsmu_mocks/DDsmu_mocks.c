@@ -261,10 +261,10 @@ int main(int argc, char *argv[])
     const DOUBLE dmu = mu_max/(DOUBLE)results.nmu_bins ;
     const int nmubin = results.nmu_bins;
     for(int i=1;i<results.nsbin;i++) {
-        const double logs = LOG10(results.supp[i]);
+        const double log_supp = LOG10(results.supp[i]);
         for(int j=0;j<nmubin;j++) {
             const int index = i*(nmubin+1) + j;
-            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf %20.8lf \n",results.npairs[index],results.savg[index],logs,(j+1)*dmu, results.weightavg[index]);
+            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf  %20.8lf %20.8lf \n",results.npairs[index],results.savg[index],log_supp,(j+1)*dmu, results.weightavg[index]);
         }
     }
 

@@ -773,8 +773,8 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                 return EXIT_FAILURE;
             }
             results->npairs[index] = npairs[index];
-            results->savg[index] = 0.0;
-            results->weightavg[index] = 0.0;
+            results->savg[index] = ZERO;
+            results->weightavg[index] = ZERO;
             if(options->need_avg_sep) {
                 results->savg[index] = savg[index];
             }

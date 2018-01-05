@@ -130,6 +130,6 @@ char angular_binfile[]="../tests/angular_bins";
 double pimax=40.0;
 double theory_mu_max=0.5;
 double mocks_mu_max=1.0;
-double nmu_bins=10;
+int nmu_bins=10;
 double boxsize=420.0;
 
