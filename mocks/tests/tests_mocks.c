@@ -562,7 +562,7 @@ int main(int argc, char **argv)
                                                 "../tests/Mr19_mock.DR", /* Test 3 Mr19 DR */
                                                 "../tests/Mr19_mock_wtheta.DR", /* Test 4 Mr19 wtheta DR */
                                                 "../tests/Mr19_randoms_vpf", /* Test 5 Mr19 randoms vpf */
-                                                "../tests/Mr19_mock_DDsmu.DD", /* Test 6 Mr19 DD smu */
+                                                "../tests/Mr19_mock_DDsmu.RR", /* Test 6 Mr19 RR smu */
                                                 "../tests/Mr19_mock_DDsmu.DR"}; /* Test 7 Mr19 DR smu */
     const char firstfilename[][MAXLEN] = {"../tests/data/Mr19_mock_northonly.rdcz.dat",
                                           "../tests/data/Mr19_mock_northonly.rdcz.dat",
@@ -570,18 +570,18 @@ int main(int argc, char **argv)
                                           "../tests/data/Mr19_randoms_northonly.rdcz.ff",
                                           "../tests/data/Mr19_randoms_northonly.rdcz.ff",
                                           "../tests/data/Mr19_randoms_northonly.rdcz.ff",
-                                          "../tests/data/Mr19_mock_northonly.rdcz.dat",
+                                          "../tests/data/Mr19_randoms_northonly.rdcz.ff",
                                           "../tests/data/Mr19_randoms_northonly.rdcz.ff"};
-    const char firstfiletype[][MAXLEN]  = {"a","a","a","f","f","f","a","f"};
+    const char firstfiletype[][MAXLEN]  = {"a","a","a","f","f","f","f","f"};
     const char secondfilename[][MAXLEN] = {"../tests/data/Mr19_mock_northonly.rdcz.dat",
                                            "../tests/data/Mr19_mock_northonly.rdcz.dat",
                                            "../tests/data/Mr19_mock_northonly.rdcz.dat",
                                            "../tests/data/Mr19_mock_northonly.rdcz.dat",
                                            "../tests/data/Mr19_mock_northonly.rdcz.dat",
                                            "../tests/data/Mr19_randoms_northonly.rdcz.ff",
-                                           "../tests/data/Mr19_mock_northonly.rdcz.dat",
+                                           "../tests/data/Mr19_randoms_northonly.rdcz.ff",
                                            "../tests/data/Mr19_mock_northonly.rdcz.dat"};
-    const char secondfiletype[][MAXLEN] = {"a","a","a","a","a","f","a","a"};
+    const char secondfiletype[][MAXLEN] = {"a","a","a","a","a","f","f","a"};
 
     const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0,40.0,40.0};
 
