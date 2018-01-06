@@ -563,7 +563,7 @@ def compute_nbins(max_diff, binsize,
     >>> max_nbins = 20
     >>> compute_nbins(max_diff, binsize, refine_factor=refine_factor, 
     ...              max_nbins=max_nbins)
-    20
+    20L
 
     """
 
@@ -582,7 +582,7 @@ def compute_nbins(max_diff, binsize,
         raise ValueError(msg)
 
     # At least 1 bin
-    ngrid = max(1, long(max_diff/binsize))
+    ngrid = max(long(1), long(max_diff/binsize))
 
     # Then refine
     ngrid *= refine_factor
@@ -590,7 +590,7 @@ def compute_nbins(max_diff, binsize,
     # But don't exceed max number of bins
     # (if passed as a parameter)
     if max_nbins:
-        ngrid = min(max_nbins, ngrid)
+        ngrid = min(long(max_nbins), ngrid)
 
     return ngrid             
                      
@@ -678,7 +678,8 @@ def gridlink_sphere(thetamax,
     >>> import numpy as np
     >>> np.set_printoptions(precision=8)
     >>> thetamax=30
-    >>> gridlink_sphere(thetamax) # doctest: +NORMALIZE_WHITESPACE
+    >>> grid = gridlink_sphere(thetamax) # doctest: +NORMALIZE_WHITESPACE
+    >>> print(grid)
     array([([-1.57079633, -1.04719755], [ 0.        ,  3.14159265]),
          ([-1.57079633, -1.04719755], [ 3.14159265,  6.28318531]),
          ([-1.04719755, -0.52359878], [ 0.        ,  3.14159265]),
@@ -698,7 +699,8 @@ def gridlink_sphere(thetamax,
          ([ 1.04719755,  1.57079633], [ 0.        ,  3.14159265]),
          ([ 1.04719755,  1.57079633], [ 3.14159265,  6.28318531])], 
       dtype=[(u'dec_limit', '<f8', (2,)), (u'ra_limit', '<f8', (2,))])
-    >>> gridlink_sphere(60, dec_refine_factor=3, ra_refine_factor=2) # doctest: +NORMALIZE_WHITESPACE
+    >>> grid = gridlink_sphere(60, dec_refine_factor=3, ra_refine_factor=2) # doctest: +NORMALIZE_WHITESPACE
+    >>> print(grid)
     array([([-1.57079633, -1.22173048], [ 0.        ,  1.57079633]),
            ([-1.57079633, -1.22173048], [ 1.57079633,  3.14159265]),
            ([-1.57079633, -1.22173048], [ 3.14159265,  4.71238898]),
