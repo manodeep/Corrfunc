@@ -10,7 +10,8 @@ notifications:
 
 env:
   global:
-    - NUMPY_VERSION=1.9
+    - NUMPY_VERSION=1.12
+    - DOCTEST=TRUE
 
 addons: 
   apt:
@@ -32,12 +33,6 @@ matrix:
     #     - brew update
     #     - brew tap homebrew/versions && brew reinstall gcc49 --without-multilib
     #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
-    #     - bash miniconda.sh -b -p $HOME/miniconda
-    #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-    #     - source activate test
-    #     - conda install -q --yes -c asmeurer gsl
-
 
     # - os: osx
     #   compiler: clang
@@ -47,62 +42,35 @@ matrix:
     #     - brew outdated xctool || brew upgrade xctool
     #     - brew tap homebrew/versions && brew install clang-omp
     #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
-    #     - bash miniconda.sh -b -p $HOME/miniconda
-    #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-    #     - source activate test
-    #     - conda install -q --yes -c asmeurer gsl        
 
     - os: osx
       osx_image: xcode8
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-        - source activate test
-        - conda install -q --yes -c asmeurer gsl
 
     - os: osx
       osx_image: xcode7.3
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-        - source activate test
-        - conda install -q --yes -c asmeurer gsl
 
 
     - os: osx
       osx_image: xcode7
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-        - source activate test
-        - conda install -q --yes -c asmeurer gsl
-
 
     - os: osx
       osx_image: xcode6.4
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-        - source activate test
-        - conda install -q --yes -c asmeurer gsl
-
 
     # - os: osx
     #   compiler: gcc
@@ -110,11 +78,6 @@ matrix:
     #   before_install:
     #     - brew update && brew tap homebrew/versions && brew install gcc48 --without-multilib
     #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-    #     - bash miniconda.sh -b -p $HOME/miniconda
-    #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-    #     - source activate test
-    #     - conda install -q --yes -c asmeurer gsl
         
     # - os: linux
     #   dist: trusty
@@ -127,10 +90,6 @@ matrix:
     #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7 
     #   before_install:
     #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-    #     - bash miniconda.sh -b -p $HOME/miniconda
-    #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-    #     - source activate test
 
     # - os: linux
     #   dist: trusty
@@ -143,22 +102,14 @@ matrix:
     #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.5
     #   before_install:
     #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    #     - bash miniconda.sh -b -p $HOME/miniconda
-    #     - export PATH="$HOME/miniconda/bin:$PATH"
-    #     - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-    #     - source activate test
         
     - os: linux
       dist: trusty
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=2.6 NUMPY_VERSION=1.7
+      env: COMPILER=gcc PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 DOCTEST=FALSE
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-        - source activate test
 
     - os: linux
       dist: trusty
@@ -167,10 +118,6 @@ matrix:
       env: COMPILER=gcc PYTHON_VERSION=2.7
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-        - source activate test
         
     - os: linux
       dist: trusty
@@ -179,10 +126,6 @@ matrix:
       env: COMPILER=gcc PYTHON_VERSION=3.3 
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-        - source activate test
 
     - os: linux
       dist: trusty
@@ -191,13 +134,13 @@ matrix:
       env: COMPILER=gcc PYTHON_VERSION=3.5
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
-        - source activate test
-        
 
 install:
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
+  - source activate test
+  - conda install -q --yes -c asmeurer gsl
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
   - python setup.py install
@@ -205,7 +148,7 @@ install:
 script:
   - make tests CC=$COMPILER
   - cd docs && make html && cd ../
-  - cd docs && make doctest && cd ../
+  - if [[ "${DOCTEST}" == "TRUE" ]]; cd docs && make doctest && cd ../ ; fi
 
 
   
