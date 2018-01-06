@@ -551,7 +551,14 @@ int main(int argc, char **argv)
 
     int failed=0;
 
-    const char alltests_names[][MAXLEN] = {"Mr19 mocks DDrppi (DD)","Mr19 mocks wtheta (DD)","Mr19 mocks vpf (data)","Mr19 mocks DDrppi (DR)", "Mr19 mocks wtheta (DR)","Mr19 mocks vpf (randoms)", "Mr19 mocks DDsmu (DD)","Mr19 mocks DDsmu (DR)"};
+    const char alltests_names[][MAXLEN] = {"Mr19 mocks DDrppi (DD)",
+                                           "Mr19 mocks wtheta (DD)",
+                                           "Mr19 mocks vpf (data)",
+                                           "Mr19 mocks DDrppi (DR)",
+                                           "Mr19 mocks wtheta (DR)",
+                                           "Mr19 mocks vpf (randoms)",
+                                           "Mr19 mocks DDsmu (RR)",
+                                           "Mr19 mocks DDsmu (DR)"};
     const int ntests = sizeof(alltests_names)/(sizeof(char)*MAXLEN);
     const int function_pointer_index[] = {0,1,2,0,1,2,3,3};//0->DDrppi, 1->wtheta, 2->vpf, 3->DDsmu
     assert(sizeof(function_pointer_index)/sizeof(int) == ntests && "Number of tests should equal the number of functions");
