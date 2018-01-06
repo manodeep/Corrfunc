@@ -19,11 +19,6 @@ try:
 except NameError:
     xrange = range
 
-try:
-    long
-except NameError:
-    long = int
-    
 def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
                             D1D2, D1R2, D2R1, R1R2,
                             estimator='LS'):
@@ -582,7 +577,7 @@ def compute_nbins(max_diff, binsize,
         raise ValueError(msg)
 
     # At least 1 bin
-    ngrid = max(long(1), long(max_diff/binsize))
+    ngrid = max(int(1), int(max_diff/binsize))
 
     # Then refine
     ngrid *= refine_factor
@@ -590,7 +585,7 @@ def compute_nbins(max_diff, binsize,
     # But don't exceed max number of bins
     # (if passed as a parameter)
     if max_nbins:
-        ngrid = min(long(max_nbins), ngrid)
+        ngrid = min(int(max_nbins), ngrid)
 
     return ngrid             
                      
