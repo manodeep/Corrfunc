@@ -63,14 +63,14 @@ matrix:
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=2.7 DOCTEST=FALSE
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - wget http://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh
 
     - os: osx
       osx_image: xcode6.4
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=2.6 DOCTEST=FALSE
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - wget http://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh
 
     # - os: osx
     #   compiler: gcc
