@@ -44,6 +44,14 @@ matrix:
     #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
 
     - os: osx
+      osx_image: xcode9
+      compiler: clang
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+
+
+    - os: osx
       osx_image: xcode8
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
@@ -52,14 +60,6 @@ matrix:
 
     - os: osx
       osx_image: xcode7.3
-      compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
-      before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-
-
-    - os: osx
-      osx_image: xcode7
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
       before_install:
@@ -156,7 +156,7 @@ install:
 script:
   - make tests CC=$COMPILER
   - make -C docs html
-  - if [[ "${DOCTEST}" == "TRUE" ]]; make -C docs doctest ; fi
+  - if [[ "${DOCTEST}" == "TRUE" ]]; then make -C docs doctest ; fi
 
 
   
