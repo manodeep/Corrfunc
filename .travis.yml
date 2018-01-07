@@ -123,7 +123,7 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=3.3 
+      env: COMPILER=gcc PYTHON_VERSION=3.4 
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
@@ -132,6 +132,14 @@ matrix:
       sudo: required
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=3.5
+      before_install:
+        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+
+    - os: linux
+      dist: trusty
+      sudo: required
+      compiler: gcc
+      env: COMPILER=gcc PYTHON_VERSION=3.6
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
@@ -147,8 +155,8 @@ install:
         
 script:
   - make tests CC=$COMPILER
-  - cd docs && make html && cd ../
-  - if [[ "${DOCTEST}" == "TRUE" ]]; cd docs && make doctest && cd ../ ; fi
+  - make -C docs html
+  - if [[ "${DOCTEST}" == "TRUE" ]]; make -C docs doctest ; fi
 
 
   
