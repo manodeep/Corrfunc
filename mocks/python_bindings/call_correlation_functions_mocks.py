@@ -124,10 +124,10 @@ def main():
 
     print("\nRunning 2-D correlation function xi(s,mu)")
     results_DDsmu, _ = s_mu_mocks(autocorr, cosmology, nthreads,
-                                    nmu_bins, mu_max, binfile,
-                                    ra, dec, cz, weights1=weights,
-                                    output_savg=True, verbose=True,
-                                    weight_type='pair_product')
+                                  mu_max, nmu_bins, binfile,
+                                  ra, dec, cz, weights1=weights,
+                                  output_savg=True, verbose=True,
+                                  weight_type='pair_product')
     print("\n#            ****** DD(s,mu): first {0} bins  *******      "
           .format(numbins_to_print))
     print("#      smin        smax       savg     mu_upper    npairs     weight_avg")

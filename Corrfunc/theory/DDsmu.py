@@ -61,8 +61,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
     .. note:: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
         are counted (no equality).
 
-    nmu_bins: Integer. Must be at least 1
-        Number of bins for ``mu``
+    nmu_bins: int
+        The number of linear ``mu`` bins, with the bins ranging from
+        from (0,``mu_max``)
 
     X1/Y1/Z1 : array-like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
@@ -228,6 +229,19 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
     if weights2 is not None:
         weights2 = np.atleast_1d(weights2)
 
+    # Check if mu_max is of size(1) 
+    if np.size(mu_max) != 1:
+        msg = "The parameter `mu_max` = {0}, has size = {1}. "\
+              "The code is expecting a scalar quantity."\
+              format(mu_max, np.size(mu_max))
+        raise TypeError(msg)
+
+    # Check that mu_max is within [0.0, 1.0]
+    if min(mu_max) < 0.0 or max(mu_max) > 1.0:
+        msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "
+        "angle and should be within [0.0, 1.0]".format(mu_max)
+        raise ValueError(msg)
+        
     if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\

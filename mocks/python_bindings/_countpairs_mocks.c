@@ -1405,8 +1405,8 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         "autocorr",
         "cosmology",
         "nthreads",
+        "mu_max",        
         "nmu_bins",
-        "mu_max",
         "binfile",
         "RA1",
         "DEC1",
@@ -1430,8 +1430,8 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiiidsO!O!O!|O!O!O!O!O!bbbbbbbhbis", kwlist,
-                                       &autocorr,&cosmology,&nthreads,&nmu_bins,&mu_max,&binfile,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidisO!O!O!|O!O!O!O!O!bbbbbbbhbis", kwlist,
+                                       &autocorr,&cosmology,&nthreads,&mu_max,&nmu_bins,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
                                        &PyArray_Type,&z1_obj,
@@ -1636,16 +1636,16 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
     results_countpairs_mocks_s_mu results;
     double c_api_time = 0.0;
     int status = countpairs_mocks_s_mu(ND1,phiD1,thetaD1,czD1,
-                                  ND2,phiD2,thetaD2,czD2,
-                                  nthreads,
-                                  autocorr,
-                                  binfile,
-                                  mu_max,
-                                  nmu_bins,
-                                  cosmology,
-                                  &results,
-                                  &options,
-                                  &extra);
+                                       ND2,phiD2,thetaD2,czD2,
+                                       nthreads,
+                                       autocorr,
+                                       binfile,
+                                       mu_max,
+                                       nmu_bins,
+                                       cosmology,
+                                       &results,
+                                       &options,
+                                       &extra);
     if(options.c_api_timer) {
         c_api_time = options.c_api_time;
     }

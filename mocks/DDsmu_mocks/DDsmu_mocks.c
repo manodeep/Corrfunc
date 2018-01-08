@@ -16,8 +16,8 @@
  * file2         = name of second data file
  * format2       = format of second data file (a=ascii, c=csv, f=fast-food)
  * sbinfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
- * nmu_bins      = number of mu bins
  * mu_max        = maximum mu value (>0 and <= 1.0)
+ * nmu_bins      = number of mu bins
  * cosmology     = flag to pick-up the cosmology combination to use (set as an array of combinations in ../utils/cosmology_params.c)
  * numthreads    = number of threads to use
 --- OPTIONAL ARGS:
@@ -72,9 +72,9 @@ int main(int argc, char *argv[])
 
     /*---Corrfunc-variables----------------*/
 #if defined(_OPENMP)
-    const char argnames[][30]={"file1","format1","file2","format2","sbinfile","nmu_bins","mu_max","cosmology flag","numthreads"};
+    const char argnames[][30]={"file1","format1","file2","format2","sbinfile","mu_max","nmu_bins","cosmology flag","numthreads"};
 #else
-    const char argnames[][30]={"file1","format1","file2","format2","sbinfile","nmu_bins","mu_max","cosmology flag"};
+    const char argnames[][30]={"file1","format1","file2","format2","sbinfile","mu_max","nmu_bins","cosmology flag"};
 #endif
     const char optargnames[][30]={"weight_method", "weights_file1","weights_format1","weights_file2","weights_format2"};
 
@@ -123,10 +123,10 @@ int main(int argc, char *argv[])
     fileformat2=argv[4];
     sbinfile=argv[5];
 
-    nmu_bins=10;
-    sscanf(argv[6],"%d",&nmu_bins) ;
-    mu_max=4.0;
-    sscanf(argv[7],"%"REAL_FORMAT,&mu_max) ;
+    mu_max=1.0;
+    sscanf(argv[6],"%"REAL_FORMAT,&mu_max) ;
+    nmu_bins=-10;
+    sscanf(argv[7],"%d",&nmu_bins) ;
     cosmology = atoi(argv[8]);
 
 #if defined(USE_OMP) && defined(_OPENMP)

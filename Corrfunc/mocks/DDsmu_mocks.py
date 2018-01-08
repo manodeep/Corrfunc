@@ -13,21 +13,21 @@ __author__ = ('Manodeep Sinha', 'Nick Hand')
 __all__ = ('DDsmu_mocks', )
 
 
-def DDsmu_mocks(autocorr, cosmology, nthreads, nmu_bins, mu_max, binfile,
-                 RA1, DEC1, CZ1, weights1=None,
-                 RA2=None, DEC2=None, CZ2=None, weights2=None,
-                 is_comoving_dist=False,
-                 verbose=False, output_savg=False,
-                 fast_divide=False, xbin_refine_factor=2,
-                 ybin_refine_factor=2, zbin_refine_factor=1,
-                 max_cells_per_dim=100,
-                 c_api_timer=False, isa='fastest', weight_type=None):
+def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
+                RA1, DEC1, CZ1, weights1=None,
+                RA2=None, DEC2=None, CZ2=None, weights2=None,
+                is_comoving_dist=False,
+                verbose=False, output_savg=False,
+                fast_divide=False, xbin_refine_factor=2,
+                ybin_refine_factor=2, zbin_refine_factor=1,
+                max_cells_per_dim=100,
+                c_api_timer=False, isa='fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
     function, :math:`\\xi(s, \mu)`. The pairs are counted in bins of
-    radial separation and angle to the line-of-sight (LOS). The input positions
-    are expected to be on-sky co-ordinates. This module is suitable for
-    calculating correlation functions for mock catalogs.
+    radial separation and cosine of angle to the line-of-sight (LOS). The
+    input positions are expected to be on-sky co-ordinates. This module is
+    suitable for calculating correlation functions for mock catalogs.
 
     If ``weights`` are provided, the resulting pair counts are weighted.  The
     weighting scheme depends on ``weight_type``.
@@ -61,12 +61,21 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, nmu_bins, mu_max, binfile,
         The number of OpenMP threads to use. Has no effect if OpenMP was not
         enabled during library compilation.
 
+    mu_max: double. Must be in range [0.0, 1.0]
+        A double-precision value for the maximum cosine of the angular 
+        separation from the line of sight (LOS). Here, ``mu`` is defined as
+        the angle between ``s`` and ``l``. If :math:`v_1` and :math:`v_2`
+        represent the vectors to each point constituting the pair, then
+        :math:`s := v_1 - v_2` and :math:`l := 1/2 (v_1 + v_2)`.
+
+    
+    .. note:: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
+        are counted (no equality).
+
     nmu_bins: int
-        The number of ``mu`` bins, ranging from (0,``mu_max``)
-
-    mu_max: double
-        The maximum ``mu`` value; must be > 0 and <= 1.0
-
+        The number of linear ``mu`` bins, with the bins ranging from
+        from (0,``mu_max``)
+    
     binfile: string or an list/array of floats
         For string input: filename specifying the ``s`` bins for
         ``DDsmu_mocks``. The file should contain white-space separated values
@@ -194,17 +203,16 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, nmu_bins, mu_max, binfile,
     --------
 
     results: Numpy structured array
-
         A numpy structured array containing [smin, smax, savg, mumax, npairs, weightavg]
         for each separation bin specified in the ``binfile``. If ``output_savg`` is
         not set, then ``savg`` will be set to 0.0 for all bins; similarly for
         ``weightavg``. ``npairs`` contains the number of pairs in that bin and
-        can be used to compute the actual :math:`\\xi(s, \mu)` by combining with
-        (DR, RR) counts.
+        can be used to compute the actual :math:`\\xi(s, \mu)` by combining
+        with (DR, RR) counts.
 
     api_time: float, optional
-        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
-        spent within the C library and ignores all python overhead.
+        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
+        the time spent within the C library and ignores all python overhead.
     """
     try:
         from Corrfunc._countpairs_mocks import countpairs_s_mu_mocks as\
@@ -225,6 +233,19 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, nmu_bins, mu_max, binfile,
     if weights2 is not None:
         weights2 = np.atleast_1d(weights2)
 
+    # Check if mu_max is of size(1) 
+    if np.size(mu_max) != 1:
+        msg = "The parameter `mu_max` = {0}, has size = {1}. "\
+              "The code is expecting a scalar quantity."\
+              format(mu_max, np.size(mu_max))
+        raise TypeError(msg)
+
+    # Check that mu_max is within [0.0, 1.0]
+    if min(mu_max) < 0.0 or max(mu_max) > 1.0:
+        msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "
+        "angle and should be within [0.0, 1.0]".format(mu_max)
+        raise ValueError(msg)
+    
     if not autocorr:
         if RA2 is None or DEC2 is None or CZ2 is None:
             msg = "Must pass valid arrays for RA2/DEC2/CZ2 for "\
@@ -256,18 +277,18 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, nmu_bins, mu_max, binfile,
     integer_isa = translate_isa_string_to_enum(isa)
     sbinfile, delete_after_use = return_file_with_rbins(binfile)
     extn_results, api_time = DDsmu_extn(autocorr, cosmology, nthreads,
-                                         nmu_bins, mu_max, sbinfile,
-                                         RA1, DEC1, CZ1,
-                                         is_comoving_dist=is_comoving_dist,
-                                         verbose=verbose,
-                                         output_savg=output_savg,
-                                         fast_divide=fast_divide,
-                                         xbin_refine_factor=xbin_refine_factor,
-                                         ybin_refine_factor=ybin_refine_factor,
-                                         zbin_refine_factor=zbin_refine_factor,
-                                         max_cells_per_dim=max_cells_per_dim,
-                                         c_api_timer=c_api_timer,
-                                         isa=integer_isa, **kwargs)
+                                        mu_max, nmu_bins, sbinfile,
+                                        RA1, DEC1, CZ1,
+                                        is_comoving_dist=is_comoving_dist,
+                                        verbose=verbose,
+                                        output_savg=output_savg,
+                                        fast_divide=fast_divide,
+                                        xbin_refine_factor=xbin_refine_factor,
+                                        ybin_refine_factor=ybin_refine_factor,
+                                        zbin_refine_factor=zbin_refine_factor,
+                                        max_cells_per_dim=max_cells_per_dim,
+                                        c_api_timer=c_api_timer,
+                                        isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
