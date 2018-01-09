@@ -236,8 +236,8 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
     # Check if mu_max is of size(1) 
     if np.size(mu_max) != 1:
         msg = "The parameter `mu_max` = {0}, has size = {1}. "\
-              "The code is expecting a scalar quantity."\
-              format(mu_max, np.size(mu_max))
+              "The code is expecting a scalar quantity"\
+              .format(mu_max, np.size(mu_max))
         raise TypeError(msg)
 
     # Check that mu_max is within [0.0, 1.0]
