@@ -27,7 +27,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                                                               const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                               const int same_cell,
                                                               const int fast_divide,
-                                                              const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,const int nmu_bins,
+                                                              const DOUBLE smax, const DOUBLE smin, const int nsbin,const int nmu_bins,
                                                               const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                               DOUBLE *src_savg,
                                                               uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
@@ -45,7 +45,8 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     const DOUBLE sqr_mumax = mu_max*mu_max;
-    const DOUBLE max_sep = SQRT(sqr_smax);
+    const DOUBLE sqr_smax  = smax*smax;
+    const DOUBLE sqr_smin  = smin*smin;
 
     AVX_FLOATS m_supp_sqr[nsbin];
     AVX_FLOATS m_kbin[nsbin];
@@ -105,7 +106,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
         } else {
             for(;prev_j<N1;prev_j++) {
                 const DOUBLE dz = *d1 - dpos;
-                if(dz > -max_sep) break;
+                if(dz > -smax) break;
                 d1++; n_off++;
             }
             if(prev_j == N1) {
@@ -375,20 +376,20 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
     }
     return EXIT_SUCCESS;
 }
-#endif //AVX defined and USE_AVX
+#endif //AVX
 
 
 #if defined(__SSE4_2__)
 #include "sse_calls.h"
 
 static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
-                                                               const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
-                                                               const int same_cell,
-                                                               const int fast_divide,
-                                                               const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
-                                                               const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
-                                                               DOUBLE *src_savg, uint64_t *src_npairs,
-                                                               DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                              const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
+                                                              const int same_cell,
+                                                              const int fast_divide,
+                                                              const DOUBLE smax, const DOUBLE smin, const int nsbin,
+                                                              const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
+                                                              DOUBLE *src_savg, uint64_t *src_npairs,
+                                                              DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -403,7 +404,8 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     const DOUBLE sqr_mumax = mu_max*mu_max;
-    const DOUBLE max_sep = SQRT(sqr_smax);
+    const DOUBLE sqr_smax  = smax*smax;
+    const DOUBLE sqr_smin  = smin*smin;
 
     SSE_FLOATS m_supp_sqr[nsbin];
     SSE_FLOATS m_kbin[nsbin];
@@ -463,7 +465,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
         } else {
             for(;prev_j<N1;prev_j++) {
                 const DOUBLE dz = *d1 - dpos;
-                if(dz > -max_sep) break;
+                if(dz > -smax) break;
                 d1++; n_off++;
             }
             if(prev_j == N1) {
@@ -706,7 +708,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                         const int same_cell,
                                                         const int fast_divide,
-                                                        const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
+                                                        const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                         const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                         DOUBLE *src_savg, uint64_t *src_npairs,
                                                         DOUBLE *src_weightavg, const weight_method_t weight_method)
@@ -723,6 +725,10 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
     const int32_t need_weightavg = src_weightavg != NULL;
 
     (void) fast_divide;//unused parameter but required to keep the same function signature amongst the kernels
+
+    const DOUBLE sqr_smax  = smax*smax;
+    const DOUBLE sqr_smin  = smin*smin;
+    const DOUBLE sqr_mumax = mu_max*mu_max;
 
     /*----------------- FALLBACK CODE --------------------*/
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
@@ -752,10 +758,8 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
         weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    const DOUBLE sqr_mumax = mu_max*mu_max;
     const DOUBLE dmu = mu_max/(DOUBLE) nmu_bins;
     const DOUBLE inv_dmu = 1.0/dmu;
-    const DOUBLE max_sep = SQRT(sqr_smax);
 
     int64_t nleft=N1, n_off = 0;
     for(int64_t i=0;i<N0;i++) {
@@ -776,7 +780,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
             while(nleft > 0) {
                 /*Particles are sorted on 'd', in increasing order */
                 const DOUBLE dz = *d1 - dpos;
-                if(dz > -max_sep) break;
+                if(dz > -smax) break;
                 d1++; n_off++;
                 nleft--;
             }

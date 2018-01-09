@@ -25,7 +25,7 @@ extern "C" {
                                                     const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                     const int same_cell,
                                                     const int fast_divide,
-                                                    const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
+                                                    const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                     const int nmu_bins, const DOUBLE *supp_sqr,
                                                     const DOUBLE mu_max,
                                                     DOUBLE *src_savg, uint64_t *src_npairs,

@@ -383,9 +383,6 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     for(int i=0; i < nsbin;i++) {
         supp_sqr[i] = supp[i]*supp[i];
     }
-
-    const DOUBLE sqr_smax=supp_sqr[nsbin-1];
-    const DOUBLE sqr_smin=supp_sqr[0];
     const DOUBLE mu_max = (DOUBLE) max_mu;
 
     DOUBLE xmin=1e10,ymin=1e10,zmin=1e10;
@@ -610,7 +607,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                              N1, x1, y1, z1, d1, weights1,
                                                                              same_cell,
                                                                              options->fast_divide,
-                                                                             sqr_smax, sqr_smin, nsbin,
+                                                                             smax, smin, nsbin,
                                                                              nmu_bins, supp_sqr, mu_max,
                                                                              this_savg, npairs,
                                                                              this_weightavg, extra->weight_method);
@@ -638,7 +635,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                              N2, x2, y2, z2, d2, weights2,
                                                                              same_cell,
                                                                              options->fast_divide,
-                                                                             sqr_smax, sqr_smin, nsbin,
+                                                                             smax, smin, nsbin,
                                                                              nmu_bins, supp_sqr, mu_max,
                                                                              this_savg, npairs,
                                                                              this_weightavg, extra->weight_method);
