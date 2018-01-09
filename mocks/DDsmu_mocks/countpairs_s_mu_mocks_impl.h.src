@@ -27,7 +27,7 @@ extern "C" {
                                                     const int fast_divide,
                                                     const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
                                                     const int nmu_bins, const DOUBLE *supp_sqr,
-                                                    const DOUBLE mu_max, const DOUBLE pimax,
+                                                    const DOUBLE mu_max,
                                                     DOUBLE *src_savg, uint64_t *src_npairs,
                                                     DOUBLE *src_weightavg, const weight_method_t weight_method);
 

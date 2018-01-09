@@ -387,7 +387,6 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     const DOUBLE sqr_smax=supp_sqr[nsbin-1];
     const DOUBLE sqr_smin=supp_sqr[0];
     const DOUBLE mu_max = (DOUBLE) max_mu;
-    const DOUBLE pimax = smax*mu_max;
 
     DOUBLE xmin=1e10,ymin=1e10,zmin=1e10;
     DOUBLE xmax=-1e10,ymax=-1e10,zmax=-1e10;
@@ -612,7 +611,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                              same_cell,
                                                                              options->fast_divide,
                                                                              sqr_smax, sqr_smin, nsbin,
-                                                                             nmu_bins, supp_sqr, mu_max, pimax,
+                                                                             nmu_bins, supp_sqr, mu_max,
                                                                              this_savg, npairs,
                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
@@ -640,7 +639,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                              same_cell,
                                                                              options->fast_divide,
                                                                              sqr_smax, sqr_smin, nsbin,
-                                                                             nmu_bins, supp_sqr, mu_max, pimax,
+                                                                             nmu_bins, supp_sqr, mu_max,
                                                                              this_savg, npairs,
                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
