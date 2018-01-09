@@ -173,37 +173,27 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const AVX_FLOATS m_pary = AVX_ADD_FLOATS(m_y2, m_ypos);
             const AVX_FLOATS m_parz = AVX_ADD_FLOATS(m_z2, m_zpos);
 
-            AVX_FLOATS m_sqr_mu, m_sqr_sep;
+            AVX_FLOATS m_sqr_mu, m_sqr_s;
             {
-                const AVX_FLOATS m_dsep =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
+                const AVX_FLOATS m_dsep =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos)); // m_dsep := s \dot l
 
-                const AVX_FLOATS m_numerator = AVX_SQUARE_FLOAT(m_dsep);
+                const AVX_FLOATS m_numerator = AVX_SQUARE_FLOAT(m_dsep);// numerator := |s.l|^2
                 const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
                 const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
                 const AVX_FLOATS m_sqr_perpz = AVX_SQUARE_FLOAT(m_perpz);
-                m_sqr_sep = AVX_ADD_FLOATS(m_sqr_perpx, AVX_ADD_FLOATS(m_sqr_perpy, m_sqr_perpz));//3-d separation
+                m_sqr_s = AVX_ADD_FLOATS(m_sqr_perpx, AVX_ADD_FLOATS(m_sqr_perpy, m_sqr_perpz));//3-d separation
 
-                //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
-                //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
-                //we would discard the pair.
-                const AVX_FLOATS m_mask_3d_sep = AVX_COMPARE_FLOATS(m_sqr_sep, m_sqr_smax, _CMP_LT_OQ);
-                const AVX_FLOATS m_sqr_norm_l = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_parx), AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_pary), AVX_SQUARE_FLOAT(m_parz)));
-
-                //\pi ^2 = |s.l| ^2 / |l|^2
-                //However, division is slow -> so we will check if \pimax^2 * |l| ^2 < |s.l|^2. If not, then the
-                //value of \pi (after division) *must* be larger than \pimax -> in which case we would
-                //not count that pair anway.
-                const AVX_FLOATS m_sqr_pimax_times_l = AVX_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
-                const AVX_FLOATS m_mask_pimax_sep = AVX_COMPARE_FLOATS(m_numerator, m_sqr_pimax_times_l, _CMP_LT_OQ);// is pi < pimax ?
-                //If the bits are all 0, then *none* of the pairs satisfy the pimax + rpmax constraints.
-                const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_3d_sep, m_mask_pimax_sep);
-                if(AVX_TEST_COMPARISON(m_mask)==0) {
+                //Create a mask where s^2 < smax^2
+                const AVX_FLOATS m_mask_3d_sep = AVX_COMPARE_FLOATS(m_sqr_s, m_sqr_smax, _CMP_LT_OQ);
+                if(AVX_TEST_COMPARISON(m_mask_3d_sep) == 0) {
                     continue;
                 }
+                const AVX_FLOATS m_sqr_norm_l = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_parx),
+                                                               AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_pary),
+                                                                              AVX_SQUARE_FLOAT(m_parz)));
 
-                //\pi ^2 = |s.l| ^2 / |l|^2
-                // \mu^2 = \pi^2 / s^2
-                const AVX_FLOATS m_sqr_norm_l_norm_s = AVX_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_sep);
+                // \mu^2 := cos^2(\theta_between_s_and_l) = |s.l|^2 / (|s|^2 * |l|^2)
+                const AVX_FLOATS m_sqr_norm_l_norm_s = AVX_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
                 if (fast_divide == 0) {
                     m_sqr_mu = AVX_DIVIDE_FLOATS(m_numerator, m_sqr_norm_l_norm_s);
                     //The divide is the actual operation we need
@@ -249,21 +239,21 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             //Do the mask filters in a separate scope
             {
                 const AVX_FLOATS m_mask_mumax = AVX_COMPARE_FLOATS(m_sqr_mu,m_sqr_mumax,_CMP_LT_OQ);
-                const AVX_FLOATS m_smax_mask = AVX_COMPARE_FLOATS(m_sqr_sep, m_sqr_smax, _CMP_LT_OQ);
-                const AVX_FLOATS m_smin_mask = AVX_COMPARE_FLOATS(m_sqr_sep, m_sqr_smin, _CMP_GE_OQ);
+                const AVX_FLOATS m_smax_mask = AVX_COMPARE_FLOATS(m_sqr_s, m_sqr_smax, _CMP_LT_OQ);
+                const AVX_FLOATS m_smin_mask = AVX_COMPARE_FLOATS(m_sqr_s, m_sqr_smin, _CMP_GE_OQ);
                 const AVX_FLOATS m_s_mask = AVX_BITWISE_AND(m_smax_mask, m_smin_mask);
 
                 m_mask_left = AVX_BITWISE_AND(m_mask_mumax, m_s_mask);
                 if(AVX_TEST_COMPARISON(m_mask_left)==0) {
                     continue;
                 }
-                m_sqr_sep = AVX_BLEND_FLOATS_WITH_MASK(m_zero,m_sqr_sep,m_mask_left);
+                m_sqr_s = AVX_BLEND_FLOATS_WITH_MASK(m_zero,m_sqr_s,m_mask_left);
                 m_sqr_mu  = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax,m_sqr_mu,m_mask_left);
             }
 
             union float8 union_msep;
             if(need_savg) {
-                union_msep.m_sep = AVX_SQRT_FLOAT(m_sqr_sep);
+                union_msep.m_sep = AVX_SQRT_FLOAT(m_sqr_s);
             }
             if(need_weightavg){
                 pair.dx.a = m_perpx;
@@ -280,10 +270,10 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const AVX_FLOATS m_mask = m_mask_left;
             AVX_FLOATS m_sbin = AVX_SET_FLOAT((DOUBLE) 0);
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
-                const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_sqr_sep,m_supp_sqr[kbin-1],_CMP_GE_OQ);
+                const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_sqr_s,m_supp_sqr[kbin-1],_CMP_GE_OQ);
                 const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
                 m_sbin = AVX_BLEND_FLOATS_WITH_MASK(m_sbin,m_kbin[kbin], m_bin_mask);
-                m_mask_left = AVX_COMPARE_FLOATS(m_sqr_sep, m_supp_sqr[kbin-1],_CMP_LT_OQ);
+                m_mask_left = AVX_COMPARE_FLOATS(m_sqr_s, m_supp_sqr[kbin-1],_CMP_LT_OQ);
                 if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
                     break;
                 }
@@ -543,7 +533,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             const SSE_FLOATS m_pary = SSE_ADD_FLOATS(m_y2, m_ypos);
             const SSE_FLOATS m_parz = SSE_ADD_FLOATS(m_z2, m_zpos);
 
-            SSE_FLOATS m_sqr_sep, m_sqr_mu;
+            SSE_FLOATS m_sqr_s, m_sqr_mu;
             {
                 const SSE_FLOATS m_dsep =  SSE_SUBTRACT_FLOATS(SSE_SQUARE_FLOAT(m_d2), SSE_SQUARE_FLOAT(m_dpos));
 
@@ -551,23 +541,17 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
                 const SSE_FLOATS m_sqr_perpx = SSE_SQUARE_FLOAT(m_perpx);
                 const SSE_FLOATS m_sqr_perpy = SSE_SQUARE_FLOAT(m_perpy);
                 const SSE_FLOATS m_sqr_perpz = SSE_SQUARE_FLOAT(m_perpz);
-                m_sqr_sep = SSE_ADD_FLOATS(m_sqr_perpx, SSE_ADD_FLOATS(m_sqr_perpy, m_sqr_perpz));//3-d separation
+                m_sqr_s = SSE_ADD_FLOATS(m_sqr_perpx, SSE_ADD_FLOATS(m_sqr_perpy, m_sqr_perpz));//3-d separation
 
-                //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
-                //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
-                //we would discard the pair.
-                const SSE_FLOATS m_mask_3d_sep = SSE_COMPARE_FLOATS_LT(m_sqr_sep, m_sqr_smax);
+                const SSE_FLOATS m_mask_3d_sep = SSE_COMPARE_FLOATS_LT(m_sqr_s, m_sqr_smax);
                 const SSE_FLOATS m_sqr_norm_l = SSE_ADD_FLOATS(SSE_SQUARE_FLOAT(m_parx), SSE_ADD_FLOATS(SSE_SQUARE_FLOAT(m_pary), SSE_SQUARE_FLOAT(m_parz)));
 
-                const SSE_FLOATS m_sqr_pimax_times_l = SSE_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
-                const SSE_FLOATS m_mask_pimax_sep = SSE_COMPARE_FLOATS_LT(m_numerator, m_sqr_pimax_times_l);// is pi < pimax ?
-                const SSE_FLOATS m_mask = SSE_BITWISE_AND(m_mask_3d_sep, m_mask_pimax_sep);
-                if(SSE_TEST_COMPARISON(m_mask)==0) {
+                if(SSE_TEST_COMPARISON(m_mask_3d_sep)==0) {
                     continue;
                 }
 
                 // \mu^2 = \pi^2 / s^2
-                const SSE_FLOATS m_sqr_norm_l_norm_s = SSE_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_sep);
+                const SSE_FLOATS m_sqr_norm_l_norm_s = SSE_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
                 m_sqr_mu = SSE_DIVIDE_FLOATS(m_numerator,m_sqr_norm_l_norm_s);
             }
 
@@ -578,8 +562,8 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             //Do the mask filters in a separate scope
             {
                 const SSE_FLOATS m_mask_mumax = SSE_COMPARE_FLOATS_LT(m_sqr_mu,m_sqr_mumax);
-                const SSE_FLOATS m_smax_mask = SSE_COMPARE_FLOATS_LT(m_sqr_sep, m_sqr_smax);
-                const SSE_FLOATS m_smin_mask = SSE_COMPARE_FLOATS_GE(m_sqr_sep, m_sqr_smin);
+                const SSE_FLOATS m_smax_mask = SSE_COMPARE_FLOATS_LT(m_sqr_s, m_sqr_smax);
+                const SSE_FLOATS m_smin_mask = SSE_COMPARE_FLOATS_GE(m_sqr_s, m_sqr_smin);
                 const SSE_FLOATS m_s_mask = SSE_BITWISE_AND(m_smax_mask,m_smin_mask);
 
                 m_mask_left = SSE_BITWISE_AND(m_mask_mumax, m_s_mask);
@@ -587,12 +571,12 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
                     continue;
                 }
 
-                m_sqr_sep = SSE_BLEND_FLOATS_WITH_MASK(m_zero,m_sqr_sep,m_mask_left);
+                m_sqr_s = SSE_BLEND_FLOATS_WITH_MASK(m_zero,m_sqr_s,m_mask_left);
                 m_sqr_mu  = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_mumax,m_sqr_mu,m_mask_left);
             }
             union float8 union_msep;
             if(need_savg) {
-                union_msep.m_sep = SSE_SQRT_FLOAT(m_sqr_sep);
+                union_msep.m_sep = SSE_SQRT_FLOAT(m_sqr_s);
             }
             if(need_weightavg){
                 pair.dx.s = m_perpx;
@@ -609,10 +593,10 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             const SSE_FLOATS m_mask = m_mask_left;
             SSE_FLOATS m_sbin = SSE_SET_FLOAT((DOUBLE) 0);
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
-                const SSE_FLOATS m_mask_low = SSE_COMPARE_FLOATS_GE(m_sqr_sep,m_supp_sqr[kbin-1]);
+                const SSE_FLOATS m_mask_low = SSE_COMPARE_FLOATS_GE(m_sqr_s,m_supp_sqr[kbin-1]);
                 const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m_mask_low,m_mask_left);
                 m_sbin = SSE_BLEND_FLOATS_WITH_MASK(m_sbin,m_kbin[kbin], m_bin_mask);
-                m_mask_left = SSE_COMPARE_FLOATS_LT(m_sqr_sep, m_supp_sqr[kbin-1]);
+                m_mask_left = SSE_COMPARE_FLOATS_LT(m_sqr_s, m_supp_sqr[kbin-1]);
                 if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
                     break;
                 }
