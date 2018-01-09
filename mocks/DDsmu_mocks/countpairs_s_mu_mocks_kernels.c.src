@@ -176,9 +176,17 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 
             AVX_FLOATS m_sqr_mu, m_sqr_s;
             {
-                const AVX_FLOATS m_dsep =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos)); // m_dsep := s \dot l
+                /*
+                  //Technically l := 1/2 (v1 + v2) but the factor of 1/2 occurs both in numerator and denominator
+                  and cancels out.
 
-                const AVX_FLOATS m_numerator = AVX_SQUARE_FLOAT(m_dsep);// numerator := |s.l|^2
+                  s \dot l := (parx*perpx + pary*perpy + parz*perp)
+                           := (x1 + x2)*(x1 - x2) + (y1 + y2)*(y1 - y2) + (z1 + z2)*(z1 - z2)
+                           := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
+                           := d1^2 - d2^2
+                */
+                const AVX_FLOATS m_s_dot_l =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
+                const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);// numerator := |s.l|^2
                 const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
                 const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
                 const AVX_FLOATS m_sqr_perpz = AVX_SQUARE_FLOAT(m_perpz);
@@ -196,7 +204,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 // \mu^2 := cos^2(\theta_between_s_and_l) = |s.l|^2 / (|s|^2 * |l|^2)
                 const AVX_FLOATS m_sqr_norm_l_norm_s = AVX_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
                 if (fast_divide == 0) {
-                    m_sqr_mu = AVX_DIVIDE_FLOATS(m_numerator, m_sqr_norm_l_norm_s);
+                    m_sqr_mu = AVX_DIVIDE_FLOATS(m_sqr_s_dot_l, m_sqr_norm_l_norm_s);
                     //The divide is the actual operation we need
                     // but divides are about 10x slower than multiplies. So, I am replacing it
                     //with a approximate reciprocal in floating point
@@ -230,7 +238,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                   AVX_FLOATS rc2 = AVX_MULTIPLY_FLOATS(rc1,
                                                        AVX_SUBTRACT_FLOATS(two,
                                                                            AVX_MULTIPLY_FLOATS(m_sqr_norm_l_norm_s,rc1)));
-                  m_sqr_mu = AVX_MULTIPLY_FLOATS(m_numerator,rc2);
+                  m_sqr_mu = AVX_MULTIPLY_FLOATS(m_sqr_s_dot_l,rc2);
                 } //end of FAST_DIVIDE
             }
 
@@ -281,7 +289,6 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             }
 
             /* Compute the 1-D index to the [sbin, mubin] := sbin*(nmu_bins+1) + mubin */
-            /*                      const AVX_FLOATS m_Dpar = AVX_SQRT_FLOAT(m_sqr_Dpar); */
             const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
             const AVX_FLOATS m_mubin = AVX_BLEND_FLOATS_WITH_MASK(m_nmu_bins, m_tmp2, m_mask);
             const AVX_FLOATS m_nmu_bins_p1 = AVX_ADD_FLOATS(m_nmu_bins,m_one);
@@ -315,6 +322,16 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE perpx = xpos - *localx1;
             const DOUBLE perpy = ypos - *localy1;
             const DOUBLE perpz = zpos - *localz1;
+            /*
+              s := (perpx, perpy, perpz)
+              l := 1/2 (parx, pary, parz)  //ignoring the factor 1/2 since it cancels out in both numerator and denominator
+              
+              s \dot l := (parx*perpx + pary*perpy + parz*perpz)
+                       := (x1 + x2)*(x1 - x2) + (y1 + y2)*(y1 - y2) + (z1 + z2)*(z1 - z2)
+                       := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
+                       := d1^2 - d2^2
+            */
+            const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);// s \dot l
 
             localx1++;localy1++;localz1++;locald1++;
 
@@ -322,9 +339,6 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
 
-            /* const DOUBLE s_dot_l = (parx*perpx+pary*perpy+parz*perpz); */
-            //parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
-            const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);// s \dot l
 
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
@@ -354,7 +368,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                     const int ibin = kbin*(nmu_bins+1) + mubin;
                     npairs[ibin]++;
                     if(need_savg) {
-                        savg[ibin]+=s;
+                        savg[ibin] += s;
                     }
                     if(need_weightavg){
                         weightavg[ibin] += pairweight;
@@ -537,9 +551,9 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
             SSE_FLOATS m_sqr_s, m_sqr_mu;
             {
-                const SSE_FLOATS m_dsep =  SSE_SUBTRACT_FLOATS(SSE_SQUARE_FLOAT(m_d2), SSE_SQUARE_FLOAT(m_dpos));
+                const SSE_FLOATS m_s_dot_l =  SSE_SUBTRACT_FLOATS(SSE_SQUARE_FLOAT(m_d2), SSE_SQUARE_FLOAT(m_dpos));
 
-                const SSE_FLOATS m_numerator = SSE_SQUARE_FLOAT(m_dsep);
+                const SSE_FLOATS m_sqr_s_dot_l = SSE_SQUARE_FLOAT(m_s_dot_l);
                 const SSE_FLOATS m_sqr_perpx = SSE_SQUARE_FLOAT(m_perpx);
                 const SSE_FLOATS m_sqr_perpy = SSE_SQUARE_FLOAT(m_perpy);
                 const SSE_FLOATS m_sqr_perpz = SSE_SQUARE_FLOAT(m_perpz);
@@ -554,7 +568,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
                 // \mu^2 = \pi^2 / s^2
                 const SSE_FLOATS m_sqr_norm_l_norm_s = SSE_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
-                m_sqr_mu = SSE_DIVIDE_FLOATS(m_numerator,m_sqr_norm_l_norm_s);
+                m_sqr_mu = SSE_DIVIDE_FLOATS(m_sqr_s_dot_l,m_sqr_norm_l_norm_s);
             }
 
 
@@ -626,7 +640,6 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
                     const DOUBLE weight = union_mweight.weights[jj];
                     weightavg[ibin] += weight;
                 }
-                /* fprintf(stderr,"i=%d j=%d union_rpbin.ibin[jj] = %d union_pibin.ibin[jj] = %d\n",i,j,union_rpbin.ibin[jj],union_pibin.ibin[jj]); */
             }
         }//SSE j loop
 

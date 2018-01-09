@@ -99,20 +99,22 @@ const int min_bin_ref = 1, max_bin_ref = 3;
                        }/*bin ref z*/                                   \
                    }/*bin ref y*/                                       \
                }/*bin ref x*/                                           \
-               fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d, %d}" ANSI_COLOR_RESET "\n", \
-                       fastest_time*1e-9,                               \
-                       fastest_bin_ref[0],                              \
-                       fastest_bin_ref[1],                              \
-                       fastest_bin_ref[2]);                             \
-               } /*instruction set */                                   \
+               if(ret == EXIT_SUCCESS) {                                \
+                   fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d, %d}" ANSI_COLOR_RESET "\n", \
+                           fastest_time*1e-9,                           \
+                           fastest_bin_ref[0],                          \
+                           fastest_bin_ref[1],                          \
+                           fastest_bin_ref[2]);                         \
+               }                                                        \
+           } /*instruction set */                                       \
            reset_bin_refine_factors(&options);                          \
            options.instruction_set = old_isa;                           \
     } while(0)
 #else
 /* Running regular tests -> no need for exhaustive testing */
-#define BEGIN_INTEGRATION_TEST_SECTION          \
-    do {                               
-#define END_INTEGRATION_TEST_SECTION } while(0)
+#define BEGIN_INTEGRATION_TEST_SECTION  do {                               
+#define END_INTEGRATION_TEST_SECTION    } while(0)
+
 #endif
 
 
