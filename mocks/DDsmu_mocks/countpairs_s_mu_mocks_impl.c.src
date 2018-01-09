@@ -285,9 +285,9 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     }
 
 
-    if(max_mu < 0.0 || max_mu > 1.0) {
-        fprintf(stderr,"Error: max_mu (max. value for the cosine of the angle with line of sight) must be at least 0 and at most 1).\n"
-                "The passed value is max_mu = %lf. Please change it to be >= 0 and <= 1.0\n", max_mu);
+    if(max_mu <= 0.0 || max_mu > 1.0) {
+        fprintf(stderr,"Error: max_mu (max. value for the cosine of the angle with line of sight) must be greater than 0 and at most 1).\n"
+                "The passed value is max_mu = %lf. Please change it to be > 0 and <= 1.0\n", max_mu);
         return EXIT_FAILURE;
     }
 

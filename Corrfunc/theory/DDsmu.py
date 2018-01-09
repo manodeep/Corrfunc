@@ -229,17 +229,17 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
     if weights2 is not None:
         weights2 = np.atleast_1d(weights2)
 
-    # Check if mu_max is of size(1) 
-    if np.size(mu_max) != 1:
+    # Check if mu_max is scalar
+    if not np.isscalar(mu_max):
         msg = "The parameter `mu_max` = {0}, has size = {1}. "\
-              "The code is expecting a scalar quantity"\
-              .format(mu_max, np.size(mu_max))
+              "The code is expecting a scalar quantity (and not "\
+              "not a list, array)".format(mu_max, np.size(mu_max))
         raise TypeError(msg)
 
-    # Check that mu_max is within [0.0, 1.0]
-    if min(mu_max) < 0.0 or max(mu_max) > 1.0:
+    # Check that mu_max is within (0.0, 1.0]
+    if mu_max <= 0.0 or mu_max > 1.0:
         msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "
-        "angle and should be within [0.0, 1.0]".format(mu_max)
+        "angle and should be within (0.0, 1.0]".format(mu_max)
         raise ValueError(msg)
         
     if not autocorr:
