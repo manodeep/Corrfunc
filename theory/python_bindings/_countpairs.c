@@ -606,9 +606,9 @@ static PyMethodDef module_methods[] = {
     },
     {"countpairs_s_mu"      ,(PyCFunction) countpairs_countpairs_s_mu ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_s_mu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=None, weight_type=None,\n"
-     "                 periodic=True, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,\n"
-     "                 boxsize=0.0, output_savg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
-     "                 zbin_refine_factor=1, max_cells_per_dim=100, c_api_timer=False, isa=-1)\n"
+     "                periodic=True, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,\n"
+     "                boxsize=0.0, output_savg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
+     "                zbin_refine_factor=1, max_cells_per_dim=100, c_api_timer=False, isa=-1)\n"
      "\n"
      "Calculate the 2-D pair-counts corresponding to the real-space correlation\n"
      "function, "XI_CHAR"(s, "MU_CHAR"). Pairs which are separated\n"
