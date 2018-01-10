@@ -24,7 +24,7 @@
 char tmpoutputfile[]="../tests/tests_mocks_output.txt";
 
 int test_DDrppi_mocks(const char *correct_outputfile);
-int test_wtheta_mocks(const char *correct_outputfile);
+int test_DDtheta_mocks(const char *correct_outputfile);
 int test_vpf_mocks(const char *correct_outputfile);
 int test_DDsmu_mocks(const char *correct_outputfile);
 
@@ -224,7 +224,7 @@ int test_DDsmu_mocks(const char *correct_outputfile)
     return ret;
 }
 
-int test_wtheta_mocks(const char *correct_outputfile)
+int test_DDtheta_mocks(const char *correct_outputfile)
 {
     int autocorr = (RA1==RA2) ? 1:0;
     int ret = EXIT_FAILURE;
@@ -250,27 +250,33 @@ int test_wtheta_mocks(const char *correct_outputfile)
        in DEC is enabled. Therefore, it makes more sense to loop in RA *only*
        after the DEC binning is decided.
      */
-    int fastest_bin_ref[] = {1, 1, 1};
-    int fastest_isa = 0;
-    double fastest_time = 1e30;
     struct timespec t0, t1;
     const isa old_isa = options.instruction_set;
     int dotest = 1;
-    for(int dec_link=0;dec_link<=1;dec_link++) {
-        for(int ra_link=0;ra_link <= dec_link; ra_link++) {
-            options.link_in_dec=dec_link;
-            options.link_in_ra=ra_link;
-            for(int ra_bin_ref=min_bin_ref;ra_bin_ref<=max_bin_ref;ra_bin_ref++) {
-                for(int dec_bin_ref=min_bin_ref;dec_bin_ref<=max_bin_ref;dec_bin_ref++) {
-                    if(dotest == 1) {
-                        if((dec_link + ra_link) == 0 && ra_bin_ref > min_bin_ref) continue;//bin refine factor has no impact on brute-force -> only check once
-                        const int bf[] = {ra_bin_ref, dec_bin_ref, -1};
-                        set_custom_bin_refine_factors(&options, bf);
-                        
-                        // Check the specific implementations for each instruction set
-                        for(int iset=0;iset<num_instructions;iset++) {
-                            options.instruction_set = valid_instruction_sets[iset];
-                            fprintf(stderr,"Running with dec-linking = %d ra-linking = %d bin-ref = (%d, %d) and instruction set = %s",
+    // Check the specific implementations for each instruction set
+    for(int iset=0;iset<num_instructions;iset++) {
+        options.instruction_set = valid_instruction_sets[iset];
+        for(int dec_link=0;dec_link<=1;dec_link++) {
+            for(int ra_link=0;ra_link <= dec_link; ra_link++) {
+                int fastest_bin_ref[] = {1, 1, 1};
+                int fastest_isa = 0;
+                double fastest_time = 1e30;
+                for(int ra_bin_ref=min_bin_ref;ra_bin_ref<=max_bin_ref;ra_bin_ref++) {
+                    for(int dec_bin_ref=min_bin_ref;dec_bin_ref<=max_bin_ref;dec_bin_ref++) {
+
+                        if(dotest == 1) {
+                            if(dec_link == 0 && ra_link == 0) continue;//I have checked the brute force
+                            
+                            //bin refine factor has no impact on brute-force -> only check brute-force once
+                            if(dec_link == 0 && ra_link == 0 && (dec_bin_ref != min_bin_ref || ra_bin_ref != min_bin_ref)) continue;
+                            
+                            const int bf[] = {ra_bin_ref, dec_bin_ref, -1};
+                            set_custom_bin_refine_factors(&options, bf);
+                            
+                            options.link_in_dec=dec_link;
+                            options.link_in_ra=ra_link;
+
+                            fprintf(stderr,"Running with dec-linking = %d ra-linking = %d bin-ref = (%d, %d) and instruction set = %s ",
                                     dec_link, ra_link,
                                     options.bin_refine_factors[0],
                                     options.bin_refine_factors[1],
@@ -278,11 +284,12 @@ int test_wtheta_mocks(const char *correct_outputfile)
                             
                             current_utc_time(&t0);
 #else
-    {
-                            options.link_in_dec = 1;
-                            options.link_in_ra = 1;
+   {
+       options.link_in_dec = 1;
+       options.link_in_ra = 1;
 #endif
-                            
+
+
                             int status = countpairs_theta_mocks(ND1,RA1,DEC1,
                                                                 ND2,RA2,DEC2,
                                                                 nthreads,
@@ -291,6 +298,7 @@ int test_wtheta_mocks(const char *correct_outputfile)
                                                                 &results,
                                                                 &options,
                                                                 &extra);
+                            
                             if(status != EXIT_SUCCESS) {
                                 return status;
                             }
@@ -325,37 +333,40 @@ int test_wtheta_mocks(const char *correct_outputfile)
                                 }
                             }
                             fclose(fp);
+
 #ifdef INTEGRATION_TESTS
-                            current_utc_time(&t1);                      \
-                            double time_to_run = REALTIME_ELAPSED_NS(t0, t1); \
+                            current_utc_time(&t1);                      
+                            double time_to_run = REALTIME_ELAPSED_NS(t0, t1); 
                             if(time_to_run < fastest_time) {
                                 fastest_time = time_to_run;
                                 fastest_isa = iset;
                                 memcpy(&fastest_bin_ref, &bf, sizeof(bf));
                             }
-                            if(ret != EXIT_SUCCESS) {                   \
-                                fprintf(stderr, ANSI_COLOR_RED "FAILED"); \
-                                dotest = 0;                             \
-                            } else {                                    \
-                                fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
-                            }                                           \
+                            if(ret != EXIT_SUCCESS) {                   
+                                fprintf(stderr, ANSI_COLOR_RED "FAILED"); 
+                                dotest = 0;                             
+                            } else {                                    
+                                fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); 
+                            }
+                            fprintf(stderr, ANSI_COLOR_RESET ". Time taken = %8.2lf seconds \n", time_to_run * 1e-9);
                         } //dotest if condition
-                    }//iset loop (instruction sets)
-                }//loop over declination bin refine factors
-            }//loop over ra bin refine factors
-        }//loop over ra link
-    }//loop over dec link
-    fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d} and instruction_set = %s" ANSI_COLOR_RESET "\n",
-            fastest_time*1e-9,                                          
-            fastest_bin_ref[0],                                         
-            fastest_bin_ref[1],                                         
-            isa_name[fastest_isa]);
+                    }//loop over declination bin refine factors
+                }//loop over ra bin refine factors
+                if(ret == EXIT_SUCCESS) {                                        
+                    fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d} and instruction_set = %s" ANSI_COLOR_RESET "\n",
+                            fastest_time*1e-9,                                          
+                            fastest_bin_ref[0],                                         
+                            fastest_bin_ref[1],                                         
+                            isa_name[fastest_isa]);
+                }
+            }//loop over ra link
+        }//loop over dec link
+    }//iset loop (instruction sets)
     options.instruction_set = old_isa;
     reset_bin_refine_factors(&options);
 #else
     }
 #endif
-
     
     if(ret != EXIT_SUCCESS) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
@@ -592,7 +603,7 @@ int main(int argc, char **argv)
 
     const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0,40.0,40.0};
 
-    int (*allfunctions[]) (const char *) = {test_DDrppi_mocks,test_wtheta_mocks,test_vpf_mocks,test_DDsmu_mocks};
+    int (*allfunctions[]) (const char *) = {test_DDrppi_mocks,test_DDtheta_mocks,test_vpf_mocks,test_DDsmu_mocks};
     const int numfunctions=4;//4 functions total
 
     int total_tests=0,skipped=0;
