@@ -241,7 +241,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         raise TypeError(msg)
     
     # Check that mu_max is within (0.0, 1.0]
-    if min(mu_max) <= 0.0 or max(mu_max) > 1.0:
+    if mu_max <= 0.0 or mu_max > 1.0:
         msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "
         "angle and should be within (0.0, 1.0]".format(mu_max)
         raise ValueError(msg)
