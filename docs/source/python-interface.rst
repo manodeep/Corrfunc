@@ -127,7 +127,8 @@ clustering functions:
           nbins = 20
           rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins + 1)
           pimax = 40.0
-          mu_max = 1.0     
+          mu_max = 1.0
+          nmu_bins = 20
           autocorr = 1
 
           
@@ -342,8 +343,7 @@ Here is the python code to call ``Corrfunc.mocks.DDrppi_mocks``:
 .. testcode:: mocks
 
           from Corrfunc.mocks.DDrppi_mocks import DDrppi_mocks
-          results_DDrppi_mocks = DDrppi_mocks(autocorr, cosmology, nthreads,
-          pimax, rbins, RA, DEC, CZ)
+          results_DDrppi_mocks = DDrppi_mocks(autocorr, cosmology, nthreads, pimax, rbins, RA, DEC, CZ)
   
 
 Calculating 2-D pair counts (``Corrfunc.mocks.DDsmu_mocks``)
@@ -369,9 +369,9 @@ two points under consideration, and, :math:`\Vert\mathbf{s}\Vert=\sqrt{(x_1 - x_
 Here is the python code to call ``Corrfunc.mocks.DDsmu_mocks``:
 
 .. testcode:: mocks
+
           from Corrfunc.mocks.DDsmu_mocks import DDsmu_mocks
-          results_DDsmu_mocks = DDsmu_mocks(autocorr, cosmology, nthreads,
-          mu_max, nmu_bins, rbins, RA, DEC, CZ)
+          results_DDsmu_mocks = DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, rbins, RA, DEC, CZ)
   
               
 Calculating angular pair-counts (``Corrfunc.mocks.DDtheta_mocks``)
