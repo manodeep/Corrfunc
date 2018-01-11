@@ -104,6 +104,13 @@ clustering functions:
           
                # Specify the distance to integrate along line of sight
                >>> pimax = 40.0
+
+               # Specify the max. of the cosine of the angle to the LOS for
+               # DD(s, mu) 
+               >>> mu_max = 1.0
+
+               # Specify the number of linear bins in `mu`
+               >>> nmu_bins = 20
                
                # Specify that an autocorrelation is wanted
                >>> autocorr = 1
@@ -120,6 +127,7 @@ clustering functions:
           nbins = 20
           rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins + 1)
           pimax = 40.0
+          mu_max = 1.0     
           autocorr = 1
 
           
@@ -169,6 +177,7 @@ bin is ``0.0`` for an autocorrelation, then the self-pairs *will* be counted.
 
 Calculating 2-D pair-counts (``Corrfunc.theory.DDrppi``)
 --------------------------------------------------------
+
 Corrfunc can return the pair counts in 2-D real-space for a set of arrays. The
 calculation can be either auto or cross-correlation, *and* with or without periodic
 boundaries. The projected separation, :math:`r_p` is calculated in the X-Y plane while the
@@ -182,6 +191,31 @@ bin is ``0.0`` for an autocorrelation, then the self-pairs *will* be counted.
           from Corrfunc.theory.DDrppi import DDrppi
           results_DDrppi = DDrppi(autocorr, nthreads, pimax, rbins, X, Y, Z, boxsize=boxsize)
 
+Calculating 2-D pair-counts (``Corrfunc.theory.DDsmu``)
+--------------------------------------------------------
+
+Corrfunc can return the pair counts in 2-D real-space for a set of arrays. The
+calculation can be either auto or cross-correlation, *and* with or without periodic
+boundaries. The spatial separation, :math:`s` is calculated in 3-D while 
+:math:`mu` is the cosine of angle to the line-of-sight and is calculated
+assuming that the Z-axis is the line-of-sight.
+
+.. math::
+   
+   \mathbf{s}  &= \mathbf{v_1} - \mathbf{v_2}, \\
+   {\mu} &= \frac{\left(z_1 - z_2 \right)}{\Vert\mathbf{s}\Vert}
+
+where, :math:`\mathbf{v_1}:=(x_1, y_1, z_1)` and :math:`\mathbf{v_2}:=(x_2, y_2, z_2)` are the vectors for the
+two points under consideration, and, :math:`\Vert\mathbf{s}\Vert=\sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2 + (z_1 - z_2)^2}`
+
+The pairs are always double-counted. Additionally, if the smallest
+bin is ``0.0`` for an autocorrelation, then the self-pairs *will* be counted.
+
+.. testcode:: theory
+
+          from Corrfunc.theory.DDsmu import DDsmu
+          results_DDsmu = DDsmu(autocorr, nthreads, rbins, mu_max, nmu_bins, X, Y, Z, boxsize=boxsize)
+              
 
 Calculating the Counts-in-Cells (``Corrfunc.theory.vpf``)
 ---------------------------------------------------------
@@ -249,6 +283,13 @@ sets up the default arrays and parameters for the actual clustering calculations
           # Specify the distance to integrate along line of sight
           pimax = 40.0
 
+          # Specify the max. of the cosine of the angle to the LOS
+          # for DD(s, mu)
+          mu_max = 1.0
+
+          # Specify the number of linear bins in `mu`
+          nmu_bins = 20
+
           # Specify that an autocorrelation is wanted
           autocorr = 1
 
@@ -270,10 +311,11 @@ sets up the default arrays and parameters for the actual clustering calculations
           nbins = 20
           rbins = np.logspace(np.log10(rmin), np.log10(rmax), nbins + 1)
           pimax = 40.0
+          mu_max = 1.0
+          nmu_bins = 20
           autocorr = 1
 
           
-
 Calculating 2-D pair counts (``Corrfunc.mocks.DDrppi_mocks``)
 -------------------------------------------------------------
 Corrfunc can calculate pair counts for mock catalogs. The input positions are
@@ -291,10 +333,10 @@ equations from `Zehavi et al. 2002 <http://adsabs.harvard.edu/abs/2002ApJ...571.
    \mathbf{l} &= \frac{1}{2}\left(\mathbf{v_1} + \mathbf{v_2}\right), \\
    \pi &= \left(\mathbf{s} \cdot \mathbf{l}\right)/\Vert\mathbf{l}\Vert, \\
    r_p^2 &= \mathbf{s} \cdot \mathbf{s} - \pi^2
-   
-where, :math:`\mathbf{v_1}` and :math:`\mathbf{v_2}` are the vectors for the
-two points under consideration. 
-   
+
+where, :math:`\mathbf{v_1}:=(x_1, y_1, z_1)` and :math:`\mathbf{v_2}:=(x_2, y_2, z_2)` are the vectors for the
+two points under consideration, and, :math:`\Vert\mathbf{s}\Vert=\sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2 + (z_1 - z_2)^2}`.
+
 Here is the python code to call ``Corrfunc.mocks.DDrppi_mocks``:
 
 .. testcode:: mocks
@@ -304,6 +346,34 @@ Here is the python code to call ``Corrfunc.mocks.DDrppi_mocks``:
           pimax, rbins, RA, DEC, CZ)
   
 
+Calculating 2-D pair counts (``Corrfunc.mocks.DDsmu_mocks``)
+-------------------------------------------------------------
+Corrfunc can calculate pair counts for mock catalogs. The input positions are
+expected to be ``Right Ascension``, ``Declination`` and ``CZ`` (speed of light
+times redshift, in ``Mpc/h``). Cosmology has to be specified since ``CZ`` needs
+to be converted into co-moving distance. If you want to calculate in arbitrary
+cosmology, then convert ``CZ`` into co-moving distance, and then pass the
+converted array while setting the option ``is_comoving_dist=True``. The
+projected and line of sight separations are calculated using the following
+equations from `Zehavi et al. 2002 <http://adsabs.harvard.edu/abs/2002ApJ...571..172Z>`_
+
+.. math::
+   
+   \mathbf{s} &= \mathbf{v_1} - \mathbf{v_2}, \\
+   \mathbf{l} &= \frac{1}{2}\left(\mathbf{v_1} + \mathbf{v_2}\right), \\
+   \mu &= \left(\mathbf{s} \cdot \mathbf{l}\right)/\left(\Vert\mathbf{l}\Vert \Vert\mathbf{s}\Vert \right)
+   
+where, :math:`\mathbf{v_1}:=(x_1, y_1, z_1)` and :math:`\mathbf{v_2}:=(x_2, y_2, z_2)` are the vectors for the
+two points under consideration, and, :math:`\Vert\mathbf{s}\Vert=\sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2 + (z_1 - z_2)^2}`
+   
+Here is the python code to call ``Corrfunc.mocks.DDsmu_mocks``:
+
+.. testcode:: mocks
+          from Corrfunc.mocks.DDsmu_mocks import DDsmu_mocks
+          results_DDsmu_mocks = DDsmu_mocks(autocorr, cosmology, nthreads,
+          mu_max, nmu_bins, rbins, RA, DEC, CZ)
+  
+              
 Calculating angular pair-counts (``Corrfunc.mocks.DDtheta_mocks``)
 -------------------------------------------------------------------
 Corrfunc can compute angular pair counts for mock catalogs. The input positions

@@ -68,8 +68,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         represent the vectors to each point constituting the pair, then
         :math:`s := v_1 - v_2` and :math:`l := 1/2 (v_1 + v_2)`.
 
-    
-    .. note:: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
+        Note: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
         are counted (no equality).
 
     nmu_bins: int
@@ -79,14 +78,15 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
     binfile: string or an list/array of floats
         For string input: filename specifying the ``s`` bins for
         ``DDsmu_mocks``. The file should contain white-space separated values
-        of (smin, smax)  for each ``s`` wanted. The bins do not need to be
-        contiguous but must be in increasing order (smallest bins come first).
+        of (smin, smax) specifying each ``s`` bin wanted. The bins
+        need to be contiguous and sorted in increasing order (smallest bins
+        come first).
 
         For array-like input: A sequence of ``s`` values that provides the
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-        input, specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.
+        input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
+        array does not need to be sorted.         
 
     RA1: array-like, real (float/double)
         The array of Right Ascensions for the first set of points. RA's

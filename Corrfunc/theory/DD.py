@@ -43,17 +43,17 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         enabled during library compilation.
 
     binfile: string or an list/array of floats
-       For string input: filename specifying the ``r`` bins for
-       ``DD``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``r`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+        For string input: filename specifying the ``r`` bins for
+        ``DD``. The file should contain white-space separated values
+        of (rmin, rmax)  for each ``r`` wanted. The bins need to be
+        contiguous and sorted in increasing order (smallest bins come first).
 
-       For array-like input: A sequence of ``r`` values that provides the
-       bin-edges. For example,
-       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
-       array does not need to be sorted.
-
+        For array-like input: A sequence of ``r`` values that provides the
+        bin-edges. For example,
+        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
+        input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
+        array does not need to be sorted.         
+    
     X1/Y1/Z1: array_like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
         Calculations are done in the precision of the supplied arrays.
@@ -87,8 +87,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        Boolean flag to output the average ``r`` for each bin. Code will
        run slower if you set this flag. 
 
-
-    .. note:: If you are calculating in single-precision, ``ravg`` will 
+       Note: If you are calculating in single-precision, ``ravg`` will 
        suffer from numerical loss of precision and can not be trusted. 
        If you need accurate ``ravg`` values, then pass in double precision 
        arrays for the particle positions.

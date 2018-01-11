@@ -45,16 +45,16 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        Number of threads to use.
 
     binfile: string or an list/array of floats
-       For string input: filename specifying the ``r`` bins for
-       ``xi``. The file should contain white-space separated values
-       of (rmin, rmax)  for each ``r`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+        For string input: filename specifying the ``r`` bins for
+        ``xi``. The file should contain white-space separated values
+        of (rmin, rmax)  for each ``r`` wanted. The bins need to be
+        contiguous and sorted in increasing order (smallest bins come first).
 
-       For array-like input: A sequence of ``r`` values that provides the
-       bin-edges. For example,
-       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
-       array does not need to be sorted.
+        For array-like input: A sequence of ``r`` values that provides the
+        bin-edges. For example,
+        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
+        input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
+        array does not need to be sorted.         
 
     X/Y/Z: arraytype, real (float/double)
        Particle positions in the 3 axes. Must be within [0, boxsize]
@@ -67,9 +67,9 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        are double precision arrays (C double type).
        
     weights: array_like, real (float/double), optional
-        A scalar, or an array of weights of shape (n_weights, n_positions) or 
-        (n_positions,). `weight_type` specifies how these weights are used; 
-        results are returned in the `weightavg` field.
+       A scalar, or an array of weights of shape (n_weights, n_positions) or 
+       (n_positions,). `weight_type` specifies how these weights are used; 
+       results are returned in the `weightavg` field.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -78,11 +78,10 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        Boolean flag to output the average ``r`` for each bin. Code will
        run slower if you set this flag. 
 
-
-    .. note:: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
-        arrays for the particle positions.
+       Note: If you are calculating in single-precision, ``rpavg`` will 
+       suffer from numerical loss of precision and can not be trusted. If 
+       you need accurate ``rpavg`` values, then pass in double precision 
+       arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact

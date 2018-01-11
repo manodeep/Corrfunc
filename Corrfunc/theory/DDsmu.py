@@ -46,19 +46,25 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         The number of OpenMP threads to use. Has no effect if OpenMP was not
         enabled during library compilation.
 
-    binfile : string
-        Filename specifying the ``s`` bins for ``DDsmu``. The file should
-        contain white-space separated values  of (smin, smax)  for each
-        ``s`` wanted. The bins must be contiguous and in
-        increasing order (smallest bins come first).
+    binfile: string or an list/array of floats
+        For string input: filename specifying the ``s`` bins for
+        ``DDsmu_mocks``. The file should contain white-space separated values
+        of (smin, smax) specifying each ``s`` bin wanted. The bins
+        need to be contiguous and sorted in increasing order (smallest bins
+        come first).
+
+        For array-like input: A sequence of ``s`` values that provides the
+        bin-edges. For example,
+        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
+        input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
+        array does not need to be sorted.         
 
     mu_max: double. Must be in range (0.0, 1.0]
         A double-precision value for the maximum cosine of the angular 
         separation from the line of sight (LOS). Here, LOS is taken to be 
         along the Z direction. 
 
-
-    .. note:: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
+        Note: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
         are counted (no equality).
 
     nmu_bins: int

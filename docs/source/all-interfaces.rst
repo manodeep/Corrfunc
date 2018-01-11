@@ -28,7 +28,8 @@ associated with each type of clustering statistic:
 Clustering Statistic      Python Interface                  Static library                            Command-line  (executable name)
 ======================    ================================  ========================================  ====================================
 :math:`\xi(r)`            :py:mod:`Corrfunc.theory.DD`       ``theory/DD/libcountpairs.a``            ``theory/DD/DD``             
-:math:`\xi(r_p,\pi)`      :py:mod:`Corrfunc.theory.DDrppi`   ``theory/DDrppi/libcountpairs_rp_pi.a``   ``theory/DDrppi/DDrppi``        
+:math:`\xi(r_p,\pi)`      :py:mod:`Corrfunc.theory.DDrppi`   ``theory/DDrppi/libcountpairs_rp_pi.a``  ``theory/DDrppi/DDrppi``        
+:math:`\xi(s,\mu)`        :py:mod:`Corrfunc.theory.DDsmu`    ``theory/DDsmu/libcountpairs_s_mu.a``    ``theory/DDsmu/DDsmu``        
 :math:`w_p(r_p)`          :py:mod:`Corrfunc.theory.wp`       ``theory/wp/libcountpairs_wp.a``         ``theory/wp/wp``         
 :math:`\xi(r)`            :py:mod:`Corrfunc.theory.xi`       ``theory/xi/libcountpairs_xi.a``         ``theory/xi/xi``         
 :math:`pN(n)`             :py:mod:`Corrfunc.theory.vpf`      ``theory/vpf/libcountspheres.a``         ``theory/vpf/vpf``       
@@ -44,6 +45,7 @@ command-line executables are:
 Clustering Statistic     Python Interface                        Static library                                           Command-line (executable name)
 ======================   ======================================  =====================================================    =====================================
 :math:`\xi(r_p,\pi)`     :py:mod:`Corrfunc.mocks.DDrppi_mocks`    ``mocks/DDrppi_mocks/libcountpairs_rp_pi_mocks.a``      ``mocks/DDrppi_mocks/DDrppi_mocks``  
+:math:`\xi(s,\mu)`       :py:mod:`Corrfunc.mocks.DDsmu_mocks`     ``mocks/DDsmu_mocks/libcountpairs_s_mu_mocks.a``        ``mocks/DDsmu_mocks/DDsmu_mocks``  
 :math:`\omega(\theta)`   :py:mod:`Corrfunc.mocks.DDtheta_mocks`   ``mocks/DDtheta_mocks/libcountpairs_theta_mocks.a``     ``mocks/DDtheta_mocks/DDtheta_mocks``
 :math:`pN(n)`            :py:mod:`Corrfunc.mocks.vpf_mocks`       ``mocks/vpf_mocks/libcountspheres_mocks``               ``mocks/vpf_mocks/vpf_mocks``        
 ======================   ======================================  =====================================================    =====================================

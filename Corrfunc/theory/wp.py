@@ -36,23 +36,22 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
        A double-precision value for the maximum separation along
        the Z-dimension. 
 
-
-    .. note:: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
+       Note: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
     nthreads: integer
        Number of threads to use.
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
-       ``DDrppi_mocks``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+       ``wp``. The file should contain white-space separated values
+       of (rpmin, rpmax)  for each ``rp`` wanted. The bins need to be
+       contiguous and sorted in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``rp`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
-       array does not need to be sorted.
+       input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
+       array does not need to be sorted.         
 
     X/Y/Z: arraytype, real (float/double)
        Particle positions in the 3 axes. Must be within [0, boxsize]
@@ -71,11 +70,10 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
        Boolean flag to output the average ``rp`` for each bin. Code will
        run slower if you set this flag. 
 
-
-    .. note:: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
-        arrays for the particle positions.
+       Note: If you are calculating in single-precision, ``rpavg`` will 
+       suffer from numerical loss of precision and can not be trusted. If 
+       you need accurate ``rpavg`` values, then pass in double precision 
+       arrays for the particle positions.
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of
@@ -117,7 +115,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
        The combination of ``bin refine factors`` along each dimension that
        produces the fastest code.
 
-    runtimes: numpy structured array
+    runtimes : numpy structured array
 
        if ``return_runtimes`` is set, then the return value is a tuple
        containing ((nx, ny, nz), runtimes). ``runtimes`` is a ``numpy``
@@ -314,23 +312,22 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        A double-precision value for the maximum separation along
        the Z-dimension. 
 
-
-    .. note:: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
+       Note: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
     nthreads: integer
        Number of threads to use.
 
     binfile: string or an list/array of floats
        For string input: filename specifying the ``rp`` bins for
-       ``DDrppi_mocks``. The file should contain white-space separated values
-       of (rpmin, rpmax)  for each ``rp`` wanted. The bins do not need to be
-       contiguous but must be in increasing order (smallest bins come first).
+       ``wp``. The file should contain white-space separated values
+       of (rpmin, rpmax)  for each ``rp`` wanted. The bins need to be
+       contiguous and sorted in increasing order (smallest bins come first).
 
        For array-like input: A sequence of ``rp`` values that provides the
        bin-edges. For example,
        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input, specifying 15 (logarithmic) bins between 0.1 and 10.0. This
-       array does not need to be sorted.
+       input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
+       array does not need to be sorted.         
 
     X/Y/Z: arraytype, real (float/double)
        Particle positions in the 3 axes. Must be within [0, boxsize]
@@ -343,9 +340,9 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        are double precision arrays (C double type).
        
     weights: array_like, real (float/double), optional
-        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
-        `weight_type` specifies how these weights are used; results are returned
-        in the `weightavg` field.
+       A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
+       `weight_type` specifies how these weights are used; results are returned
+       in the `weightavg` field.
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -354,11 +351,10 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        Boolean flag to output the average ``rp`` for each bin. Code will
        run slower if you set this flag. 
 
-
-    .. note:: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
-        arrays for the particle positions.
+       Note: If you are calculating in single-precision, ``rpavg`` will 
+       suffer from numerical loss of precision and can not be trusted. If 
+       you need accurate ``rpavg`` values, then pass in double precision 
+       arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
