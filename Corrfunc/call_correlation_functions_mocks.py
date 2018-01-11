@@ -53,7 +53,7 @@ def main():
                                          output_rpavg=True, verbose=True)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
-    print("#      rmin        rmax       rpavg     pi_upper     npairs    weightavg")
+    print("#      rmin        rmax       rpavg     pi_upper     npairs   weightavg")
     print("########################################################################")
     for ibin in range(numbins_to_print):
         items = results_DDrppi[ibin]
@@ -67,14 +67,14 @@ def main():
 
     print("\nRunning 2-D correlation function xi(s,mu)")
     results_DDsmu, _ = s_mu_mocks_extn(autocorr, cosmology, nthreads,
-                                       nmu_bins, mu_max, binfile,
+                                       mu_max, nmu_bins, binfile,
                                        ra, dec, cz, weights1=np.ones_like(ra),
                                        output_savg=True, verbose=True,
                                        weight_type='pair_product')
     print("\n#            ****** DD(s,mu): first {0} bins  *******      "
           .format(numbins_to_print))
-    print("#      smin        smax       savg     mu_upper    npairs     weight_avg")
-    print("##########################################################################")
+    print("#      smin        smax       savg     mu_upper       npairs    weight_avg")
+    print("###########################################################################")
     for ibin in range(numbins_to_print):
         items = results_DDsmu[ibin]
         print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:12.4f}"
@@ -84,7 +84,7 @@ def main():
 
     binfile = pjoin(dirname(abspath(__file__)),
                     "../mocks/tests/", "angular_bins")
-    print("\nRunning angular correlation function w(theta)")
+    print("\nRunning angular correlation function DD(theta)")
     results_wtheta, _ = theta_mocks_extn(autocorr, nthreads, binfile,
                                          ra, dec, RA2=ra, DEC2=dec,
                                          weights1=np.ones_like(ra),
@@ -92,10 +92,10 @@ def main():
                                          weight_type='pair_product',
                                          output_thetaavg=True, fast_acos=True,
                                          verbose=1)
-    print("\n#         ******  wtheta: first {0} bins  *******        "
+    print("\n#         ******  DD(theta): first {0} bins  *******        "
           .format(numbins_to_print))
-    print("#      thetamin        thetamax       thetaavg      npairs    weightavg")
-    print("#######################################################################")
+    print("#      thetamin        thetamax       thetaavg        npairs      weightavg")
+    print("############################################################################")
     for ibin in range(numbins_to_print):
         items = results_wtheta[ibin]
         print("{0:14.4f} {1:14.4f} {2:14.4f} {3:14d} {4:14.4f}"
