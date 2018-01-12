@@ -40,8 +40,8 @@ OPT += -DUSE_OMP
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=2
-MINOR:=0
-PATCHLEVEL:=1
+MINOR:=1
+PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 ABI_COMPAT_VERSION:=$(MAJOR).0
 # Whenever conda needs to be checked again

@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#define API_VERSION          STR("2.0.1")
+#define API_VERSION          STR("2.1.0")
 
 typedef enum {
   DEFAULT=-42,/* present simply to make the enum a signed int*/
