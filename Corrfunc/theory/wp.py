@@ -38,6 +38,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
        Note: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
+
     nthreads: integer
        Number of threads to use.
 
@@ -74,6 +75,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
        suffer from numerical loss of precision and can not be trusted. If 
        you need accurate ``rpavg`` values, then pass in double precision 
        arrays for the particle positions.
+
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of
@@ -150,6 +152,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     .. note:: Since the result might change depending on the computer, doctest
         is skipped for this function.
+
 
     """
     try:
@@ -301,6 +304,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        added to the first bin => minimum number of pairs in the first bin
        is the total number of particles.
 
+
     Parameters
     -----------
 
@@ -313,6 +317,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        the Z-dimension. 
 
        Note: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
+
 
     nthreads: integer
        Number of threads to use.
@@ -355,6 +360,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        suffer from numerical loss of precision and can not be trusted. If 
        you need accurate ``rpavg`` values, then pass in double precision 
        arrays for the particle positions.
+
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
@@ -467,13 +473,20 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         raise ImportError(msg)
 
     import numpy as np
+    from warnings import warn
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
-        return_file_with_rbins
+        return_file_with_rbins, convert_to_native_endian,\
+        is_native_endian
         
     # Broadcast scalar weights to arrays
     if weights is not None:
         weights = np.atleast_1d(weights)
+        
+    # Warn about non-native endian arrays
+    if not all(is_native_endian(arr) for arr in [X, Y, Z, weights]):
+        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+    X, Y, Z, weights = [convert_to_native_endian(arr) for arr in [X, Y, Z, weights]]
     
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}

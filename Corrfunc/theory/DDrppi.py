@@ -59,6 +59,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
        Note: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
+
     binfile: string or an list/array of floats
         For string input: filename specifying the ``rp`` bins for
         ``DDrppi``. The file should contain white-space separated values
@@ -108,6 +109,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
        suffer from numerical loss of precision and can not be trusted. If 
        you need accurate ``rpavg`` values, then pass in double precision 
        arrays for the particle positions.
+
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
@@ -231,8 +233,10 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         raise ImportError(msg)
 
     import numpy as np
+    from warnings import warn
     from Corrfunc.utils import translate_isa_string_to_enum,\
-        return_file_with_rbins
+        return_file_with_rbins, convert_to_native_endian,\
+        is_native_endian
     from future.utils import bytes_to_native_str
     
     # Broadcast scalar weights to arrays
@@ -257,6 +261,11 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         X2 = np.empty(1)
         Y2 = np.empty(1)
         Z2 = np.empty(1)
+        
+    # Warn about non-native endian arrays
+    if not all(is_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]):
+        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+    X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [convert_to_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]]
         
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}

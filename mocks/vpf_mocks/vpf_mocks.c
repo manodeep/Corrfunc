@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 
     results_countspheres_mocks results;
     struct config_options options = get_config_options();
-    options.float_type=sizeof(DOUBLE);
+
     int status = countspheres_mocks(Ngal, ra, dec, cz,
                                     Nran, xran, yran, zran,
                                     threshold_neighbors,
@@ -208,5 +208,18 @@ void Printhelp(void)
     fprintf(stderr,"      * random file format (a -> ascii, f-> fast-food)\n");
     fprintf(stderr,"      * file with sphere centers (centers will be read-in if enough centers exist, otherwise centers will be output into this file)\n");
     fprintf(stderr,"      > output: <R P0 P1 P2 ...>\n") ;
+
+#ifdef COMOVING_DIST
+    fprintf(stderr,"CZ column contains co-moving distance = True\n");
+#else
+    fprintf(stderr,"CZ column contains co-moving distance = False\n");
+#endif    
+    
+#ifdef DOUBLE_PREC
+    fprintf(stderr,"Precision = double\n");
+#else
+    fprintf(stderr,"Precision = float\n");
+#endif
+
     fprintf(stderr,"=========================================================================\n") ;
 }

@@ -274,8 +274,17 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
         raise ImportError(msg)
 
     import numpy as np
+    from warnings import warn
     from future.utils import bytes_to_native_str
-    from Corrfunc.utils import translate_isa_string_to_enum
+    from Corrfunc.utils import translate_isa_string_to_enum,\
+        return_file_with_rbins, convert_to_native_endian,\
+        is_native_endian
+        
+    # Warn about non-native endian arrays
+    if not all(is_native_endian(arr) for arr in [RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ]):
+        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+    RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ = [convert_to_native_endian(arr) for arr in [RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ]]
+
 
     integer_isa = translate_isa_string_to_enum(isa)
     extn_results, api_time = vpf_extn(rmax, nbins, nspheres, numpN,

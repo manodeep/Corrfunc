@@ -61,6 +61,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
 
        Note: ``p0`` is the vpf
 
+
     seed: unsigned integer
        Random number seed for the underlying GSL random number generator. Used
        to draw centers of the spheres.
@@ -94,6 +95,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
        Note: Since the counts in spheres calculation is symmetric
        in all 3 dimensions, the defaults are different from the clustering
        routines.
+
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of
@@ -182,8 +184,10 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         raise ImportError(msg)
 
     import numpy as np
+    from warnings import warn
     from future.utils import bytes_to_native_str
-    from Corrfunc.utils import translate_isa_string_to_enum
+    from Corrfunc.utils import translate_isa_string_to_enum,\
+        convert_to_native_endian, is_native_endian
     from math import pi
 
     if numpN <= 0:
@@ -205,6 +209,11 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
               "{3}. Reduce rmax or Nspheres"\
               .format(nspheres, rmax, nspheres * volume_sphere, volume)
         raise ValueError(msg)
+        
+    # Warn about non-native endian arrays
+    if not all(is_native_endian(arr) for arr in [X, Y, Z]):
+        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+    X, Y, Z = [convert_to_native_endian(arr) for arr in [X, Y, Z]]
 
     integer_isa = translate_isa_string_to_enum(isa)
     extn_results, api_time = vpf_extn(rmax, nbins,
