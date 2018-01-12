@@ -10,10 +10,10 @@ either a filename or an array for specifying the
 
 Manually creating a file with arbitrary bins
 --------------------------------------------
-This manual method lets you specify the most
-generic bins. The upper-edge of one bin does
-not have to be the lower-edge of the next, the
-bins themselves can have arbitrary widths, the
+This manual method lets you specify generic bins 
+as long as the upper-edge of one bin is the 
+same as the lower-edge of the next (i.e., continuous bins). The
+bins themselves can have arbitrary widths, and the
 smallest bin can start from 0.0. 
 
 * Open a text editor with a new file
@@ -32,24 +32,22 @@ smallest bin can start from 0.0.
 ::
   
      0.10     0.15
-     0.20     0.50
+     0.15     0.50
      0.50     5.00
 
 This example specifies 3 bins, with the individual
 bin limits specified on each line. Notice that the
-bins need not be continuous, and the width of each
-bin can be independently specified.
+width of each bin can be independently specified (but
+the bins **do** have to be continuous)
   
-**NOTE** Make sure that the bins are in increasing
-order -- smallest bin first, then the next smallest
-bin and so on up to the largest bin.
-
+.. note:: Make sure that the bins are in increasing order -- smallest bin first, then the next smallest
+          bin and so on up to the largest bin.
+          
 Specifying bins as an array
 ---------------------------
 
 You can specify the bins using ``numpy.linspace`` or
-``numpy.logspace``. Note, in this case the bins are constrained
-to be continuous (unlike the preceeding case). 
+``numpy.logspace``. 
 
 .. code:: python
 

@@ -267,6 +267,7 @@ def read_catalog(filebase=None, return_dtype=np.float):
         is searched for, and then the ascii file. End-users should always
         supply the full filename.
 
+
     """
 
     if filebase is None:

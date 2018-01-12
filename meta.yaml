@@ -3,34 +3,29 @@ package:
   version: "2.0.0"
 
 source:
-  path: dist
-  fn: Corrfunc-2.0.0.tar.gz
-  md5: 8523662c871c33f3db44ffe535c0e286
+  fn: corrfunc-2.0.0.tar.gz
+  url: https://pypi.io/packages/source/c/corrfunc/corrfunc-2.0.0.tar.gz
+  md5: 1ef4ba2d917929aede23efddfcfbc78a
 
-  
-  # git_url: https://github.com/manodeep/Corrfunc.git
-  # git_rev: master
-  
+build:
+  number : 0
+  script :
+    - make install
+    - python setup.py install
+
 requirements:
   build:
-    - python >=2.6
-    - numpy >=1.7
-    - setuptools
+    - python
+    - numpy x.x
     - future
     - gsl
 
   run:
-    - python >=2.6
+    - python
     - future
-    - numpy >=1.7
+    - numpy x.x
     - gsl
 
-build:
-  detect_binary_files_with_prefix: True
-  script: python setup.py install --single-version-externally-managed --record record.txt
-  binary_relocation: False
-  skip: True # [win]
-  
 test:
   files:
     - theory/tests/data/gals_Mr19.ff
@@ -51,15 +46,13 @@ test:
   commands:
     - python -c "import Corrfunc.call_correlation_functions as c; c.main()"
     - python -c "import Corrfunc.call_correlation_functions_mocks as m; m.main()"
-	
+
 about:
   home: http://manodeep.github.io/Corrfunc/
   license: MIT
   license_file: LICENSE
   summary: Blazing fast correlation functions on the CPU
-  
+
 extra:
   maintainers:
     - Manodeep Sinha <manodeep@gmail.com>
-    
-    

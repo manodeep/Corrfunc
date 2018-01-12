@@ -654,15 +654,19 @@ def gridlink_sphere(thetamax,
     Returns
     ---------
 
-    sphere_grid : A numpy compound array 
+    sphere_grid : A numpy compound array, shape (ncells, 2) 
        A numpy compound array with fields ``dec_limit`` and ``ra_limit`` of 
        size 2 each. These arrays contain the beginning and end of DEC 
        and RA regions for the cell. 
-    
+
+    num_ra_cells: numpy array, returned if ``return_num_ra_cells`` is set
+       A numpy array containing the number of RA cells per declination band
+
 
     .. note:: If ``link_in_ra=False``, then there is effectively one RA bin
        per DEC band. The  'ra_limit' field will show the range of allowed 
        RA values.
+
 
     .. seealso:: :py:mod:`Corrfunc.mocks.DDtheta_mocks`
 
@@ -740,9 +744,10 @@ def gridlink_sphere(thetamax,
 
     if input_in_degrees:
         thetamax = radians(thetamax)
-        for x in [ra_limits, dec_limits]:
-            if x:
-                x = radians(x)
+        if ra_limits:
+            ra_limits = [radians(x) for x in ra_limits]
+        if dec_limits:
+            dec_limits = [radians(x) for x in dec_limits]
             
     if not ra_limits:
         ra_limits = [0.0, 2.0*pi]
@@ -850,6 +855,100 @@ def gridlink_sphere(thetamax,
     else:
         return sphere_grid
 
+
+def convert_to_native_endian(array):
+    '''
+    Returns the supplied array in native endian byte-order.
+    If the array already has native endianness, then the
+    same array is returned.
+
+    Parameters
+    ----------
+    array: np.ndarray
+        The array to convert
+
+    Returns
+    -------
+    new_array: np.ndarray
+        The array in native-endian byte-order.
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> import sys
+    >>> sys_is_le = sys.byteorder == 'little'
+    >>> native_code = sys_is_le and '<' or '>'
+    >>> swapped_code = sys_is_le and '>' or '<'
+    >>> native_dt = np.dtype(native_code + 'i4')
+    >>> swapped_dt = np.dtype(swapped_code + 'i4')
+    >>> arr = np.arange(10, dtype=native_dt)
+    >>> new_arr = convert_to_native_endian(arr)
+    >>> arr is new_arr
+    True
+    >>> arr = np.arange(10, dtype=swapped_dt)
+    >>> new_arr = convert_to_native_endian(arr)
+    >>> new_arr.dtype.byteorder == '=' or new_arr.dtype.byteorder == native_code
+    True
+    >>> convert_to_native_endian(None) is None
+    True
+    '''
+
+    if array is None:
+        return array
+   
+    import numpy as np
+    array = np.asanyarray(array)
+
+    system_is_little_endian = (sys.byteorder == 'little')   
+    array_is_little_endian = (array.dtype.byteorder == '<')
+    if (array_is_little_endian != system_is_little_endian) and not (array.dtype.byteorder == '='):
+        return array.byteswap().newbyteorder()
+    else:
+        return array
+    
+def is_native_endian(array):
+    '''
+    Checks whether the given array is native-endian.
+    None evaluates to True.
+    
+    Parameters
+    ----------
+    array: np.ndarray
+        The array to check
+
+    Returns
+    -------
+    is_native: bool
+        Whether the endianness is native
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> import sys
+    >>> sys_is_le = sys.byteorder == 'little'
+    >>> native_code = sys_is_le and '<' or '>'
+    >>> swapped_code = sys_is_le and '>' or '<'
+    >>> native_dt = np.dtype(native_code + 'i4')
+    >>> swapped_dt = np.dtype(swapped_code + 'i4')
+    >>> arr = np.arange(10, dtype=native_dt)
+    >>> is_native_endian(arr)
+    True
+    >>> arr = np.arange(10, dtype=swapped_dt)
+    >>> is_native_endian(arr)
+    False
+    '''
+
+    if array is None:
+        return True
+
+    import numpy as np
+    array = np.asanyarray(array)
+
+    system_is_little_endian = (sys.byteorder == 'little')
+    array_is_little_endian = (array.dtype.byteorder == '<')
+    return (array_is_little_endian == system_is_little_endian) or (array.dtype.byteorder == '=')
+
+    
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
