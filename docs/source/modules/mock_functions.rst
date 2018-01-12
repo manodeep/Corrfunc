@@ -11,6 +11,7 @@ Clustering in 2-D
 -------------------
 
 * Pair counts (auto or cross) correlations for :math:`\xi(rp, \pi)` -- :py:mod:`Corrfunc.mocks.DDrppi_mocks`
+* Pair counts (auto or cross) correlations for :math:`\xi(s, \mu)` -- :py:mod:`Corrfunc.mocks.DDsmu_mocks`     
 
 Angular clustering
 --------------------

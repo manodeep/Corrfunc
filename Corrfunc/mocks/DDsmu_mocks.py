@@ -35,6 +35,14 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
     Returns a numpy structured array containing the pair counts for the
     specified bins.
 
+
+    .. note:: This module only returns pair counts and not the actual
+       correlation function :math:`\\xi(s, \mu)`. See the
+       utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` 
+       for computing :math:`\\xi(s, \mu)` from the pair counts.
+    
+    .. versionadded:: 2.1.0
+
     Parameters
     ----------
     

@@ -34,6 +34,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
        utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` 
        for computing :math:`\\xi(s, \mu)` from the pair counts.
 
+    .. versionadded:: 2.1.0
 
     Parameters
     ----------
