@@ -48,7 +48,7 @@ test:
     - python -c "import Corrfunc.call_correlation_functions_mocks as m; m.main()"
 
 about:
-  home: http://manodeep.github.io/Corrfunc/
+  home: https://github.com/manodeep/Corrfunc
   license: MIT
   license_file: LICENSE
   summary: Blazing fast correlation functions on the CPU
