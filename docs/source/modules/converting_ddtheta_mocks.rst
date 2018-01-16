@@ -12,6 +12,7 @@ wrapper :py:mod:`Corrfunc.mocks.DDtheta_mocks`
 .. code-block:: python
 
           >>> from os.path import dirname, abspath, join as pjoin
+          >>> import numpy as np
           >>> import Corrfunc
           >>> from Corrfunc.mocks.DDtheta_mocks import DDtheta_mocks
           >>> from Corrfunc.io import read_catalog
@@ -28,11 +29,15 @@ wrapper :py:mod:`Corrfunc.mocks.DDtheta_mocks`
           >>> random_catalog=pjoin(dirname(abspath(Corrfunc.__file__)),
           ...                     "../mocks/tests/data", "Mr19_randoms_northonly.rdcz.ff")
           >>> rand_RA, rand_DEC, _ = read_catalog(random_catalog)
-          
+          >>> rand_N = len(rand_RA)
+
           # Setup the bins
           >>> nbins = 10
           >>> bins = np.linspace(0.1, 10.0, nbins + 1) # note the +1 to nbins
 
+          # Number of threads to use
+          >>> nthreads = 2
+          
           # Auto pair counts in DD
           >>> autocorr=1
           >>> DD_counts = DDtheta_mocks(autocorr, nthreads, bins,

@@ -489,7 +489,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         options->bin_refine_factors[1]=numthreads;
     }
 #endif
-    for(int i=0;i<3;i++) {
+    /* Only check the ra and dec bin refine factors (not all 3 bin refs)*/
+    for(int i=0;i<2;i++) {
         if(options->bin_refine_factors[i] < 1) {
             fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
                     i, options->bin_refine_factors[i]);

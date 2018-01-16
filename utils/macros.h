@@ -8,7 +8,7 @@
 
 #define ADD_DIFF_TIME(t0,t1)            ((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
 #define REALTIME_ELAPSED_NS(t0, t1)     ((t1.tv_sec - t0.tv_sec)*1000000000.0 + (t1.tv_nsec - t0.tv_nsec))
-    
+
 #define ALIGNMENT                32
 
 #define STRINGIFY(x)   #x
@@ -25,16 +25,16 @@
         thread_timings->second_cellindex = second_cellid;               \
     }
 
-/* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd 
+/* Taken from http://stackoverflow.com/questions/19403233/compile-time-struct-size-check-error-out-if-odd
    which is in turn taken from the linux kernel */
 /* #define BUILD_BUG_OR_ZERO(e) (sizeof(struct{ int:-!!(e);})) */
 /* #define ENSURE_STRUCT_SIZE(e, size)  BUILD_BUG_OR_ZERO(sizeof(e) != size) */
-/* However, the previous one gives me an unused-value warning and I do not want 
-   to turn that compiler warning off. Therefore, this version, which results in 
-   an unused local typedef warning is used. I turn off the corresponding warning 
+/* However, the previous one gives me an unused-value warning and I do not want
+   to turn that compiler warning off. Therefore, this version, which results in
+   an unused local typedef warning is used. I turn off the corresponding warning
    in common.mk (-Wno-unused-local-typedefs) via CFLAGS
 */
-#define BUILD_BUG_OR_ZERO(cond, msg) typedef volatile char assertion_on_##msg[( !!(cond) )*2-1 ] 
+#define BUILD_BUG_OR_ZERO(cond, msg) typedef volatile char assertion_on_##msg[( !!(cond) )*2-1 ]
 #define ENSURE_STRUCT_SIZE(e, size)                 BUILD_BUG_OR_ZERO(sizeof(e) == size, sizeof_struct_config_options)
 
 /* Macro Constants */
@@ -56,6 +56,7 @@
 #define RP_UNICODE    "rp"
 #define THETA_UNICODE "\u03B8"
 #define OMEGA_UNICODE "\u03C9"
+#define MU_UNICODE    "\u03BC"
 
 #define PI_SAFE    "pi"
 #define XI_SAFE    "xi"
@@ -63,6 +64,7 @@
 #define RP_SAFE "rp"
 #define THETA_SAFE "theta"
 #define OMEGA      "omega"
+#define MU_SAFE    "mu"
 
 
 #ifdef USE_UNICODE
@@ -70,6 +72,7 @@
 #define XI_CHAR XI_UNICODE
 #define PIMAX_CHAR PIMAX_UNICODE
 #define RP_CHAR  RP_UNICODE
+#define MU_CHAR  MU_UNICODE
 #define THETA_CHAR THETA_UNICODE
 #define OMEGA_CHAR OMEGA_UNICODE
 #define UNICODE_WARNING  "\n\
@@ -83,6 +86,7 @@ the ROOT DIRECTORY of ``Corrfunc`` and re-install the entire packge.\n"
 #else
 #define PI_CHAR PI_SAFE
 #define XI_CHAR XI_SAFE
+#define MU_CHAR MU_SAFE
 #define PIMAX_CHAR PIMAX_SAFE
 #define RP_CHAR    RP_SAFE
 #define THETA_CHAR THETA_SAFE
@@ -142,7 +146,7 @@ the ROOT DIRECTORY of ``Corrfunc`` and re-install the entire packge.\n"
              fprintf(stderr,"Can not handle signal = %d\n", signo);     \
          }                                                              \
          previous_handlers[i] = prev;                                   \
-     }                                                              
+     }
 
 #define RESET_INTERRUPT_HANDLERS()              \
      for(size_t i=0;i<nsig;i++) {                                       \
@@ -153,4 +157,3 @@ the ROOT DIRECTORY of ``Corrfunc`` and re-install the entire packge.\n"
              fprintf(stderr,"Could not reset signal handler to default for signal = %d\n", signo); \
          }                                                              \
      }
-     

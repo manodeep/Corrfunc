@@ -8,12 +8,14 @@ DATA_DIR := ../tests/data
 THEORY_DIR := $(ROOT_DIR)/theory
 DD_DIR := $(THEORY_DIR)/DD
 DDrppi_DIR := $(THEORY_DIR)/DDrppi
+DDsmu_DIR := $(THEORY_DIR)/DDsmu
 WP_DIR := $(THEORY_DIR)/wp
 XI_DIR := $(THEORY_DIR)/xi
 VPF_DIR := $(THEORY_DIR)/vpf
 
 DD_LIB := countpairs
 DDrppi_LIB := countpairs_rp_pi
+DDsmu_LIB := countpairs_s_mu
 WP_LIB := countpairs_wp
 XI_LIB := countpairs_xi
 VPF_LIB := countspheres
@@ -23,14 +25,13 @@ include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 TARGET := run_correlations
 TARGETSRC   := run_correlations.c $(IO_DIR)/ftread.c $(IO_DIR)/io.c  $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c 
 TARGETOBJS  := $(TARGETSRC:.c=.o)
-C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
+C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(DDsmu_DIR)/lib$(DDsmu_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
              $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
-
-INCL :=	$(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).h \
+INCL :=	$(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(DDsmu_DIR)/$(DDsmu_LIB).h $(WP_DIR)/$(WP_LIB).h \
         $(XI_DIR)/$(XI_LIB).h $(VPF_DIR)/$(VPF_LIB).h \
         $(UTILS_DIR)/defs.h 
 
-EXTRA_INCL:= -I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(VPF_DIR) $(GSL_CFLAGS)
+EXTRA_INCL:= -I$(DD_DIR) -I$(DDrppi_DIR) -I$(DDsmu_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(VPF_DIR) $(GSL_CFLAGS)
 EXTRA_LINK:= $(GSL_LINK)
 
 all: $(TARGET) $(TARGETSRC) $(INCL) $(C_LIBRARY) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile uncompress
@@ -40,6 +41,9 @@ $(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/*.c $(DD_DIR)/*.c.src $(DD_DIR)/*.h.src $(RO
 
 $(DDrppi_DIR)/lib$(DDrppi_LIB).a: $(DDrppi_DIR)/*.c $(DDrppi_DIR)/*.c.src $(DDrppi_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(DDrppi_DIR) libs
+
+$(DDsmu_DIR)/lib$(DDsmu_LIB).a: $(DDsmu_DIR)/*.c $(DDsmu_DIR)/*.c.src $(DDsmu_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
+	$(MAKE) -C $(DDsmu_DIR) libs
 
 $(WP_DIR)/lib$(WP_LIB).a: $(WP_DIR)/*.c $(WP_DIR)/*.c.src $(WP_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(WP_DIR) libs

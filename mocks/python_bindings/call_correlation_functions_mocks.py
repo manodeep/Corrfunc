@@ -15,7 +15,8 @@ import numpy as np
 from _countpairs_mocks import \
     countpairs_rp_pi_mocks as rp_pi_mocks,\
     countpairs_theta_mocks as theta_mocks,\
-    countspheres_vpf_mocks as vpf_mocks
+    countspheres_vpf_mocks as vpf_mocks, \
+    countpairs_s_mu_mocks as s_mu_mocks
 
 
 try:
@@ -80,7 +81,7 @@ def main():
     autocorr = 1
     numbins_to_print = 5
     cosmology = 1
-    
+
     print("\nRunning 2-D correlation function xi(rp,pi)")
     results_DDrppi, _ = rp_pi_mocks(autocorr, cosmology, nthreads,
                                     pimax, binfile,
@@ -115,9 +116,29 @@ def main():
         items = results_DDrppi[ibin]
         print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d}"
               .format(items[0], items[1], items[2], items[3], items[4]))
-    
+
     print("-----------------------------------------------------------")
-    
+
+    nmu_bins = 10
+    mu_max = 1.0
+
+    print("\nRunning 2-D correlation function xi(s,mu)")
+    results_DDsmu, _ = s_mu_mocks(autocorr, cosmology, nthreads,
+                                  mu_max, nmu_bins, binfile,
+                                  ra, dec, cz, weights1=weights,
+                                  output_savg=True, verbose=True,
+                                  weight_type='pair_product')
+    print("\n#            ****** DD(s,mu): first {0} bins  *******      "
+          .format(numbins_to_print))
+    print("#      smin        smax       savg     mu_upper    npairs     weight_avg")
+    print("##########################################################################")
+    for ibin in range(numbins_to_print):
+        items = results_DDsmu[ibin]
+        print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:12.4f}"
+              .format(items[0], items[1], items[2], items[3], items[4], items[5]))
+
+    print("--------------------------------------------------------------------------")
+
     binfile = pjoin(dirname(abspath(__file__)),
                     "../tests/", "angular_bins")
     print("\nRunning angular correlation function w(theta)")

@@ -16,7 +16,8 @@ Clustering in 3-D
 Clustering in 2-D
 ------------------
 
-* Pair counts (auto or cross) correlations for :math:`\xi(rp, \pi)` -- :py:mod:`Corrfunc.theory.DDrppi`
+* Pair counts (auto or cross) correlations for :math:`\xi(rp, \pi)` --  :py:mod:`Corrfunc.theory.DDrppi`
+* Pair counts (auto or cross) correlations for :math:`\xi(s, \mu)` -- :py:mod:`Corrfunc.theory.DDsmu`     
 * Projected auto-correlation function, :math:`wp(rp)` --  :py:mod:`Corrfunc.theory.wp`
 
 Counts-in-cells

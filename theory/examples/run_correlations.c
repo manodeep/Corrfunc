@@ -32,6 +32,7 @@
 */
 #include "countpairs.h"
 #include "countpairs_rp_pi.h"
+#include "countpairs_s_mu.h"
 #include "countpairs_wp.h"
 #include "countpairs_xi.h"
 
@@ -54,6 +55,8 @@ void Printhelp(void)
     fprintf(stderr,"     * binfile      = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
     fprintf(stderr,"     * boxsize      = BoxSize (in same units as X/Y/Z of the data)\n");
     fprintf(stderr,"     * pimax        = pimax   (in same units as X/Y/Z of the data)\n");
+    fprintf(stderr,"     * mu_max       = Max. value of the cosine of the angle to the LOS (must be within [0.0, 1.0])\n");
+    fprintf(stderr,"     * nmu_bins     = Number of linear bins to create (the bins themselves range from [0.0, mu_max]\n");
 #if defined(_OPENMP)
     fprintf(stderr,"     * numthreads   = number of threads to use\n");
 #endif
@@ -69,6 +72,8 @@ int main(int argc, char **argv)
     double boxsize;
     struct timeval t0,t1;
     DOUBLE pimax;
+    DOUBLE mu_max=1.0;
+    int nmu_bins=10;
     int nthreads=1;//default to single thread
 
     struct config_options options = get_config_options();
@@ -77,9 +82,9 @@ int main(int argc, char **argv)
     options.float_type = sizeof(DOUBLE);
     
 #if defined(_OPENMP)
-    const char argnames[][30]={"file","format","binfile","boxsize","pimax","Nthreads"};
+    const char argnames[][30]={"file","format","binfile","boxsize","pimax","mu_max","nmu_bins","Nthreads"};
 #else
-    const char argnames[][30]={"file","format","binfile","boxsize","pimax"};
+    const char argnames[][30]={"file","format","binfile","boxsize","pimax","mu_max","nmu_bins"};
     nthreads = 4;
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
@@ -97,8 +102,10 @@ int main(int argc, char **argv)
             my_snprintf(binfile,MAXLEN,"%s",argv[3]);
             boxsize=atof(argv[4]);
             pimax=atof(argv[5]);
+            mu_max=atof(argv[6]);
+            nmu_bins=atoi(argv[7]);
 #if defined(_OPENMP)
-            nthreads = atoi(argv[6]);
+            nthreads = atoi(argv[8]);
 #endif
         }
     } else {
@@ -107,6 +114,8 @@ int main(int argc, char **argv)
         my_snprintf(binfile, MAXLEN,"%s","../tests/bins");
         boxsize=420.0;
         pimax=40.0;
+        mu_max=1.0;
+        nmu_bins=10;
     }
 
     fprintf(stderr,ANSI_COLOR_BLUE  "Running `%s' with the parameters \n",argv[0]);
@@ -116,8 +125,10 @@ int main(int argc, char **argv)
     fprintf(stderr,"\t\t %-10s = %s \n",argnames[2],binfile);
     fprintf(stderr,"\t\t %-10s = %10.4lf\n",argnames[3],boxsize);
     fprintf(stderr,"\t\t %-10s = %10.4lf\n",argnames[4],pimax);
+    fprintf(stderr,"\t\t %-10s = %10.4lf\n",argnames[5],mu_max);
+    fprintf(stderr,"\t\t %-10s = %d\n",argnames[6],nmu_bins);
 #if defined(_OPENMP)
-    fprintf(stderr,"\t\t %-10s = %d\n",argnames[5],nthreads);
+    fprintf(stderr,"\t\t %-10s = %d\n",argnames[7],nthreads);
 #endif
     fprintf(stderr,"\t\t -------------------------------------" ANSI_COLOR_RESET "\n");
 
@@ -129,6 +140,46 @@ int main(int argc, char **argv)
     DOUBLE *y2 = y1;
     DOUBLE *z2 = z1;
     int64_t ND2 = ND1;
+
+    //Do the straight-up DD counts
+    {
+        gettimeofday(&t0,NULL);
+#if defined(_OPENMP)
+        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
+                "../DD/DD",file,fileformat,file,fileformat,binfile,nthreads);
+#else
+        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s'" ANSI_COLOR_RESET "\n",
+                "../DD/DD",file,fileformat,file,fileformat,binfile);
+#endif
+        
+        results_countpairs results;
+        int status = countpairs(ND1,x1,y1,z1,
+                                ND2,x2,y2,z2,
+                                nthreads,
+                                autocorr,
+                                binfile,
+                                &results,
+                                &options, NULL);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+
+        gettimeofday(&t1,NULL);
+        double pair_time = ADD_DIFF_TIME(t0,t1);
+#if 0
+        DOUBLE rlow=results.rupp[0];
+        for(int i=1;i<results.nbin;i++) {
+            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
+            rlow=results.rupp[i];
+        }
+#endif
+        fprintf(stderr,ANSI_COLOR_GREEN "Done 3-d auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);
+        //The results structure contains the pair-counts
+
+
+        //free the result structure
+        free_results(&results);
+    }
 
     //Do the DD(rp, pi) counts
     {
@@ -175,46 +226,53 @@ int main(int argc, char **argv)
     }
 
 
-    //Do the straight-up DD counts
+    //Do the DD(s, mu) counts
     {
         gettimeofday(&t0,NULL);
 #if defined(_OPENMP)
-        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s %d'" ANSI_COLOR_RESET "\n",
-                "../DD/DD",file,fileformat,file,fileformat,binfile,nthreads);
+        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(s,mu) calculation would be:\n `%s %s %s %s %s %s %lf %d %d'"ANSI_COLOR_RESET"\n",
+                "../DDsmu/DDsmu",file,fileformat,file,fileformat,binfile,mu_max,nmu_bins,nthreads);
 #else
-        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s'" ANSI_COLOR_RESET "\n",
-                "../DD/DD",file,fileformat,file,fileformat,binfile);
+        fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(s,mu) calculation would be:\n `%s %s %s %s %s %s %lf %d'"ANSI_COLOR_RESET"\n",
+                "../DDsmu/DDsmu",file,fileformat,file,fileformat,binfile,mu_max,nmu_bins);
 #endif
-        
-        results_countpairs results;
-        int status = countpairs(ND1,x1,y1,z1,
-                                ND2,x2,y2,z2,
-                                nthreads,
-                                autocorr,
-                                binfile,
-                                &results,
-                                &options, NULL);
+
+        results_countpairs_s_mu results;
+        int status = countpairs_s_mu(ND1,x1,y1,z1,
+                                     ND2,x2,y2,z2,
+                                     nthreads,
+                                     autocorr,
+                                     binfile,
+                                     mu_max,
+                                     nmu_bins,
+                                     &results,
+                                     &options, NULL);
         if(status != EXIT_SUCCESS) {
             return status;
         }
-
+        
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
-        DOUBLE rlow=results.rupp[0];
-        for(int i=1;i<results.nbin;i++) {
-            fprintf(stdout,"%10"PRIu64" %20.8lf %20.8lf %20.8lf \n",results.npairs[i],results.rpavg[i],rlow,results.rupp[i]);
-            rlow=results.rupp[i];
+    double smin = results.supp[0];
+    const double dmu = mu_max/(double) nmu_bins;
+    for(int i=1;i<results.nsbin;i++) {
+        const double smax = results.supp[i];
+        for(int j=0;j<nmu_bins;j++) {
+            int index = i*(nmu_bins+1) + j;
+            fprintf(stdout,"%e\t%e\t%e\t%12"PRIu64"\t%e\n", smin, smax, (j+1)*dmu, results.npairs[index], results.weightavg[index]);
         }
+        smin = smax;
+    }
 #endif
-        fprintf(stderr,ANSI_COLOR_GREEN "Done 3-d auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds " ANSI_COLOR_RESET "\n", ND1, pair_time);
-        //The results structure contains the pair-counts
-
+        fprintf(stderr,ANSI_COLOR_GREEN "Done DD(s,mu) auto-correlation. Ngalaxies = %12"PRId64" Time taken = %8.2lf seconds "ANSI_COLOR_RESET"\n", ND1, pair_time);
 
         //free the result structure
-        free_results(&results);
+        free_results_s_mu(&results);
     }
 
+    
+    
     //Do the wp counts
     {
         gettimeofday(&t0,NULL);

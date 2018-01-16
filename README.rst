@@ -350,7 +350,6 @@ with the code, including using it in commercial application.
 Project URL
 ===========
 
--  website (https://manodeep.github.io/Corrfunc/)
 -  documentation (http://corrfunc.rtfd.io/)   
 -  version control (https://github.com/manodeep/Corrfunc)
 

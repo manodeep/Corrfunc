@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#define API_VERSION          STR("2.0.1")
+#define API_VERSION          STR("2.1.0")
 
 typedef enum {
   DEFAULT=-42,/* present simply to make the enum a signed int*/
@@ -187,6 +187,12 @@ static inline void set_bin_refine_factors(struct config_options *options, const 
     reset_bin_refine_scheme(options);
 }
 
+static inline void set_custom_bin_refine_factors(struct config_options *options, const int bin_refine_factors[3])
+{
+    set_bin_refine_factors(options, bin_refine_factors);
+    set_bin_refine_scheme(options, BINNING_CUST);
+}
+    
 static inline void reset_bin_refine_factors(struct config_options *options)
 {
     /* refine factors of 2,2,1 in the xyz dims

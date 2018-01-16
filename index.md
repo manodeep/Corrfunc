@@ -337,10 +337,8 @@ with the code including using it in commercial application.
 
 Project URL
 ===========
-
--  website (https://manodeep.github.io/Corrfunc/)
+-  website & version control (https://github.com/manodeep/Corrfunc)
 -  documentation (http://corrfunc.rtfd.io/)   
--  version control (https://github.com/manodeep/Corrfunc)
 
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest

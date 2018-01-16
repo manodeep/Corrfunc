@@ -372,8 +372,8 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                 pair.pary.d = pary;
                 pair.parz.d = parz;
 
-                pairweight = fallback_weight_func(&pair);
-            }
+                pairweight = fallback_weight_func(&pair); 
+           }
 
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 if(sqr_Dperp >= rupp_sqr[kbin-1]) {
@@ -705,8 +705,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_max_sep) continue;
 
-            /* const DOUBLE dot_product  = (parx*perpx+pary*perpy+parz*perpz); */
-            const DOUBLE norm = (parx*parx+pary*pary+parz*parz);
+            const DOUBLE norm = (parx*parx + pary*pary + parz*parz);
             const DOUBLE tmp = dot_product * dot_product;
             if(tmp >= sqr_pimax * norm) continue;
             const DOUBLE sqr_Dpar = (dot_product * dot_product)/norm;
@@ -723,6 +722,10 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 pair.dx.d = perpx;
                 pair.dy.d = perpy;
                 pair.dz.d = perpz;
+
+                pair.parx.d = parx;
+                pair.pary.d = pary;
+                pair.parz.d = parz;
 
                 pairweight = fallback_weight_func(&pair);
             }
@@ -895,9 +898,9 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                 pair.dy.d = perpy;
                 pair.dz.d = perpz;
                 
-                pair.dx.d = parx;
-                pair.dy.d = pary;
-                pair.dz.d = parz;
+                pair.parx.d = parx;
+                pair.pary.d = pary;
+                pair.parz.d = parz;
                 
                 pairweight = weight_func(&pair);
             }

@@ -39,12 +39,12 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        Number of bins in the counts-in-cells. Radius of first shell
        is rmax/nbins
 
-    nspheres: integer (>= 0)
+    nspheres : integer (>= 0)
        Number of random spheres to place within the particle distribution.
        For a small number of spheres, the error is larger in the measured
        pN's.
 
-    numpN: integer (>= 1)
+    numpN : integer (>= 1)
        Governs how many unique pN's are to returned. If ``numpN`` is set to 1,
        then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
        returned.
@@ -62,18 +62,16 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
        and so on...
 
+       Note: ``p0`` is the vpf
 
-    .. note:: p0 is the vpf
-
-
-    threshold_ngb: integer
+    threshold_ngb : integer
        Minimum number of random points needed in a ``rmax`` sphere such that it
        is considered to be entirely within the mock footprint. The
        command-line version, ``mocks/vpf/vpf_mocks.c``, assumes that the
        minimum number of randoms can be at most a 1-sigma deviation from
        the expected random number density.
 
-    centers_file: string, filename
+    centers_file : string, filename
        A file containing random sphere centers. If the file does not exist,
        then a list of random centers will be written out. In that case, the
        randoms arrays, ``RAND_RA``, ``RAND_DEC`` and ``RAND_CZ`` are used to
@@ -81,13 +79,11 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        exist but either ``rmax`` is too small or there are not enough centers
        then the file will be overwritten.
 
-    
-    .. note:: If the centers file has to be written, the code will take
+       Note: If the centers file has to be written, the code will take
        significantly longer to finish. However, subsequent runs can re-use
        that centers file and will be faster.
 
-
-    cosmology: integer, required
+    cosmology : integer, required
         Integer choice for setting cosmology. Valid values are 1->LasDamas
         cosmology and 2->Planck cosmology. If you need arbitrary cosmology,
         easiest way is to convert the ``CZ`` values into co-moving distance,
@@ -102,7 +98,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
         ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
         the entire package.
 
-    RA: array-like, real (float/double)
+    RA : array-like, real (float/double)
        The array of Right Ascensions for the first set of points. RA's
        are expected to be in [0.0, 360.0], but the code will try to fix cases
        where the RA's are in [-180, 180.0]. For peace of mind, always supply
@@ -110,7 +106,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
        Calculations are done in the precision of the supplied arrays.
 
-    DEC: array-like, real (float/double)
+    DEC : array-like, real (float/double)
        Array of Declinations for the first set of points. DEC's are expected
        to be in the [-90.0, 90.0], but the code will try to fix cases where
        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
@@ -118,7 +114,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
        Must be of same precision type as RA.
 
-    CZ: array-like, real (float/double)
+    CZ : array-like, real (float/double)
        Array of (Speed Of Light * Redshift) values for the first set of
        points. Code will try to detect cases where ``redshifts`` have been
        passed and multiply the entire array with the ``speed of light``.
@@ -126,7 +122,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        If ``is_comoving_dist`` is set, then ``CZ`` is interpreted as the
        co-moving distance, rather than (Speed Of Light * Redshift).
 
-    RAND_RA: array-like, real (float/double)
+    RAND_RA : array-like, real (float/double)
        The array of Right Ascensions for the randoms. RA's are expected to be
        in [0.0, 360.0], but the code will try to fix cases where the RA's are
        in [-180, 180.0]. For peace of mind, always supply RA's in
@@ -134,7 +130,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
        Must be of same precision type as RA/DEC/CZ.
 
-    RAND_DEC: array-like, real (float/double)
+    RAND_DEC : array-like, real (float/double)
        Array of Declinations for the randoms. DEC's are expected to be in the
        [-90.0, 90.0], but the code will try to fix cases where the DEC's are
        in [0.0, 180.0]. Again, for peace of mind, always supply DEC's in
@@ -142,7 +138,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
        Must be of same precision type as RA/DEC/CZ.
 
-    RAND_CZ: array-like, real (float/double)
+    RAND_CZ : array-like, real (float/double)
        Array of (Speed Of Light * Redshift) values for the randoms. Code
        will try to detect cases where ``redshifts`` have been
        passed and multiply the entire array with the ``speed of light``.
@@ -150,40 +146,36 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the
        co-moving distance, rather than ``(Speed Of Light * Redshift)``.
 
-     
-    .. note:: RAND_RA, RAND_DEC and RAND_CZ are only used when the
+       Note: RAND_RA, RAND_DEC and RAND_CZ are only used when the
           ``centers_file``  needs to be written out. In that case, the
           RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.
 
-
-    verbose: boolean (default false)
+    verbose : boolean (default false)
        Boolean flag to control output of informational messages
 
-    is_comoving_dist: boolean (default false)
+    is_comoving_dist : boolean (default false)
        Boolean flag to indicate that ``cz`` values have already been
        converted into co-moving distances. This flag allows arbitrary
        cosmologies to be used in ``Corrfunc``.
 
-    (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
+    (xyz)bin_refine_factor : integer, default is (1,1,1); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
        on runtime. 
 
-
-    .. note:: Since the counts in spheres calculation is symmetric
+       Note: Since the counts in spheres calculation is symmetric
        in all 3 dimensions, the defaults are different from the clustering
        routines.
 
-
-    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+    max_cells_per_dim : integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of
        cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
        too small relative to the boxsize (and increasing helps the runtime).
 
-    c_api_timer: boolean (default false)
+    c_api_timer : boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
 
-    isa: string (default ``fastest``)
+    isa : string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
 
@@ -201,8 +193,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     Returns
     --------
 
-    results: Numpy structured array
-
+    results : Numpy structured array
        A numpy structured array containing [rmax, pN[numpN]] with ``nbins``
        elements. Each row contains the maximum radius of the sphere and the
        ``numpN`` elements in the ``pN`` array. Each element of this array
@@ -211,9 +202,9 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        function) is the probability that a sphere of radius ``rmax`` contains 0
        galaxies.
 
-       if ``c_api_timer`` is set, then the return value is a tuple containing
-       (results, api_time). ``api_time`` measures only the time spent within
-       the C library and ignores all python overhead.
+    api_time : float, optional
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
+       spent within the C library and ignores all python overhead.
 
 
     Example

@@ -43,26 +43,26 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     Parameters
     -----------
 
-    autocorr: boolean, required
+    autocorr : boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
         then the second set of particle positions are not required.
 
-    nthreads: integer
+    nthreads : integer
        Number of threads to use.
 
-    binfile: string or an list/array of floats, units: degrees
-       For string input: filename specifying the ``rp`` bins for
-       ``DDtheta_mocks``. The file should contain white-space separated values
-       of (thetapmin, thetamax)  for each ``theta`` wanted. The bins need to be
-       contiguous and sorted in increasing order (smallest bins come first).
+    binfile: string or an list/array of floats. Units: degrees.
+        For string input: filename specifying the ``theta`` bins for
+        ``DDtheta_mocks``. The file should contain white-space separated values
+        of (thetamin, thetamax)  for each ``theta`` wanted. The bins need to be
+        contiguous and sorted in increasing order (smallest bins come first).
 
-       For array-like input: A sequence of ``theta`` values that provides the
-       bin-edges. For example,
-       ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
-       input specifying **14** (logarithmic) bins between 0.1 and 10.0 degrees. 
-       This array does not need to be sorted.
+        For array-like input: A sequence of ``theta`` values that provides the
+        bin-edges. For example,
+        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
+        input specifying **14** (logarithmic) bins between 0.1 and 10.0
+        degrees. This array does not need to be sorted.         
 
-    RA1: array-like, real (float/double)
+    RA1 : array-like, real (float/double)
         The array of Right Ascensions for the first set of points. RA's
         are expected to be in [0.0, 360.0], but the code will try to fix cases
         where the RA's are in [-180, 180.0]. For peace of mind, always supply
@@ -70,75 +70,70 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
         Calculations are done in the precision of the supplied arrays.
 
-    DEC1: array-like, real (float/double)
+    DEC1 : array-like, real (float/double)
        Array of Declinations for the first set of points. DEC's are expected
        to be in the [-90.0, 90.0], but the code will try to fix cases where
        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
        DEC's in [-90.0, 90.0].
        Must be of same precision type as RA1.
        
-    weights1: array_like, real (float/double), optional
+    weights1 : array_like, real (float/double), optional
        A scalar, or an array of weights of shape (n_weights, n_positions) or 
        (n_positions,). `weight_type` specifies how these weights are used; 
        results are returned in the `weightavg` field.  If only one of weights1 
        and weights2 is specified, the other will be set to uniform weights.
 
-    RA2: array-like, real (float/double)
+    RA2 : array-like, real (float/double)
        The array of Right Ascensions for the second set of points. RA's
        are expected to be in [0.0, 360.0], but the code will try to fix cases
        where the RA's are in [-180, 180.0]. For peace of mind, always supply
        RA's in [0.0, 360.0].
        Must be of same precision type as RA1/DEC1.
 
-    DEC2: array-like, real (float/double)
+    DEC2 : array-like, real (float/double)
        Array of Declinations for the second set of points. DEC's are expected
        to be in the [-90.0, 90.0], but the code will try to fix cases where
        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
        DEC's in [-90.0, 90.0].
        Must be of same precision type as RA1/DEC1.
        
-    weights2: array-like, real (float/double), optional
+    weights2 : array-like, real (float/double), optional
        Same as weights1, but for the second set of positions
 
-    link_in_dec: boolean (default True)
+    link_in_dec : boolean (default True)
        Boolean flag to create lattice in Declination. Code runs faster with
        this option. However, if the angular separations are too small, then
        linking in declination might produce incorrect results. When running
        for the first time, check your results by comparing with the output
        of the code for ``link_in_dec=False`` and ``link_in_ra=False``.
 
-    link_in_ra: boolean (default True)
+    link_in_ra : boolean (default True)
        Boolean flag to create lattice in Right Ascension. Setting this option
        implies ``link_in_dec=True``. Similar considerations as ``link_in_dec``
        described above.
 
-
-    .. note:: If you disable both ``link_in_dec`` and ``link_in_ra``, then
+       If you disable both ``link_in_dec`` and ``link_in_ra``, then
        the code reduces to a brute-force pair counter. No lattices are created
        at all. For very small angular separations, the brute-force method 
        might be the most numerically stable method.
 
-
-    verbose: boolean (default false)
+    verbose : boolean (default false)
        Boolean flag to control output of informational messages
 
-    output_thetaavg: boolean (default false)
+    output_thetaavg : boolean (default false)
        Boolean flag to output the average ``\theta`` for each bin. Code will
        run slower if you set this flag. 
 
-    
-    .. note:: If you are calculating in single-precision, ``thetaavg`` will 
+       If you are calculating in single-precision, ``thetaavg`` will 
        suffer from numerical loss of precision and can not be trusted. If you 
        need accurate ``thetaavg`` values, then pass in double precision arrays 
        for ``RA/DEC``.
 
-
-    .. note:: Code will run significantly slower if you enable this option.
+       Code will run significantly slower if you enable this option.
        Use the keyword ``fast_acos`` if you can tolerate some loss of 
        precision.
 
-
-    fast_acos: boolean (default false)
+    fast_acos : boolean (default false)
        Flag to use numerical approximation for the ``arccos`` - gives better
        performance at the expense of some precision. Relevant only if
        ``output_thetaavg==True``.
@@ -149,30 +144,26 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
        if you know your ``theta`` range is limited. If you implement a new
        version, then you will have to reinstall the entire Corrfunc package.
 
+       Note: Tests will fail if you run the tests with``fast_acos=True``.
 
-    .. note:: Tests will fail if you run the tests with``fast_acos=True``.
-
-
-    (radec)_refine_factor: integer, default is (2,2); typically within [1-3]
+    (radec)_refine_factor : integer, default is (2,2); typically within [1-3]
        Controls the refinement on the cell sizes. Can have up to a 20% impact
        on runtime. 
 
-
-    .. note:: Only two refine factors are to be specified and these
+       Only two refine factors are to be specified and these
        correspond to ``ra`` and ``dec`` (rather, than the usual three of
        ``(xyz)bin_refine_factor`` for all other correlation functions).
 
-
-    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+    max_cells_per_dim : integer, default is 100, typical values in [50-300]
        Controls the maximum number of cells per dimension. Total number of
        cells can be up to (max_cells_per_dim)^3. Only increase if ``thetamax``
        is too small relative to the boxsize (and increasing helps the runtime).
 
-    c_api_timer: boolean (default false)
+    c_api_timer : boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
 
-    isa: string (default ``fastest``)
+    isa : string (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
 
@@ -189,15 +180,14 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     Returns
     --------
 
-    results: Numpy structured array
-
+    results : Numpy structured array
        A numpy structured array containing [thetamin, thetamax, thetaavg,
        npairs, weightavg] for each angular bin specified in the ``binfile``. If
        ``output_thetaavg`` is not set then ``thetavg`` will be set to 0.0 for
        all bins; similarly for
        ``weightavg``. ``npairs`` contains the number of pairs in that bin.
 
-    api_time: float, optional
+    api_time : float, optional
        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
        spent within the C library and ignores all python overhead.
 

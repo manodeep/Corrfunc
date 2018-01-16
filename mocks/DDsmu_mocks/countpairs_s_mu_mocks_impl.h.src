@@ -1,0 +1,51 @@
+// # -*- mode: c -*-
+/* File: countpairs_s_mu_mocks_impl.h.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "defs.h" //for struct config_options
+#include "weight_defs_DOUBLE.h"
+#include <inttypes.h> //for uint64_t
+
+#include "countpairs_s_mu_mocks.h" //for definition of results_countpairs_mocks
+
+    extern void interrupt_handler_countpairs_s_mu_mocks_DOUBLE(int signo);
+
+    typedef int (*countpairs_mocks_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
+                                                    const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
+                                                    const int same_cell,
+                                                    const int fast_divide,
+                                                    const DOUBLE smax, const DOUBLE smin, const int nsbin,
+                                                    const int nmu_bins, const DOUBLE *supp_sqr,
+                                                    const DOUBLE mu_max,
+                                                    DOUBLE *src_savg, uint64_t *src_npairs,
+                                                    DOUBLE *src_weightavg, const weight_method_t weight_method);
+
+    extern countpairs_mocks_func_ptr_DOUBLE countpairs_s_mu_mocks_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
+
+    extern int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *theta1, DOUBLE *phi1, DOUBLE *czD1,
+                                            const int64_t ND2, DOUBLE *theta2, DOUBLE *phi2, DOUBLE *czD2,
+                                            const int numthreads,
+                                            const int autocorr,
+                                            const char *sbinfile,
+                                            const double mu_max,
+                                            const int nmu_bins,
+                                            const int cosmology,
+                                            results_countpairs_mocks_s_mu *results,
+                                            struct config_options *options, struct extra_options *extra);
+
+    extern int check_ra_dec_cz_s_mu_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz);
+
+#ifdef __cplusplus
+}
+#endif

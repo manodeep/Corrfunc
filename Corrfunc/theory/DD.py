@@ -53,8 +53,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
         input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.
-
+        array does not need to be sorted.         
+    
     X1/Y1/Z1: array_like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
         Calculations are done in the precision of the supplied arrays.
@@ -88,8 +88,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        Boolean flag to output the average ``r`` for each bin. Code will
        run slower if you set this flag. 
 
-
-    .. note:: If you are calculating in single-precision, ``ravg`` will 
+       Note: If you are calculating in single-precision, ``ravg`` will 
        suffer from numerical loss of precision and can not be trusted. 
        If you need accurate ``ravg`` values, then pass in double precision 
        arrays for the particle positions.

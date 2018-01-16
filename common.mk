@@ -40,8 +40,8 @@ OPT += -DUSE_OMP
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=2
-MINOR:=0
-PATCHLEVEL:=1
+MINOR:=1
+PATCHLEVEL:=0
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 ABI_COMPAT_VERSION:=$(MAJOR).0
 # Whenever conda needs to be checked again
@@ -212,7 +212,7 @@ ifeq ($(DO_CHECKS), 1)
     CFLAGS += -Werror -Wno-unknown-warning-option
   endif
 
-  GSL_FOUND := $(shell gsl-config --version)
+  GSL_FOUND := $(shell gsl-config --version 2>/dev/null)
   ifndef GSL_FOUND
     $(error $(ccred)Error:$(ccreset) GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION) $(ccreset))
   endif
