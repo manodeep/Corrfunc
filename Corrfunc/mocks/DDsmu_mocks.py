@@ -76,12 +76,12 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         represent the vectors to each point constituting the pair, then
         :math:`s := v_1 - v_2` and :math:`l := 1/2 (v_1 + v_2)`.
 
-        Note: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
+        Note: Only pairs with :math:`0 <= \cos(\\theta_{LOS}) < \mu_{max}`
         are counted (no equality).
 
     nmu_bins: int
         The number of linear ``mu`` bins, with the bins ranging from
-        from (0,``mu_max``)
+        from (0, :math:`\mu_{max}`)
     
     binfile: string or an list/array of floats
         For string input: filename specifying the ``s`` bins for
