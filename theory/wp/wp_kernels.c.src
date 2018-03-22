@@ -168,12 +168,9 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       }
       
       const AVX512_FLOATS m_sqr_xdiff = AVX512_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
-      const AVX512_FLOATS m_sqr_ydiff = AVX512_SQUARE_FLOAT(m_ydiff);  //(y0 - y[j])^2
-      //const AVX512_FLOATS m_sqr_zdiff = AVX512_SQUARE_FLOAT(m_zdiff);
-      AVX512_FLOATS r2  = AVX512_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
-            
+      AVX512_FLOATS r2  = AVX512_FMA_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
+       
       AVX512_MASK m_mask_left;
-            
       //Do all the distance cuts using masks here in new scope
       {
         //the z2 arrays are sorted in increasing order. which means
@@ -193,19 +190,19 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
         //Create a combined mask 
         //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
         m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_rpmax_mask, r2, m_sqr_rpmin, _CMP_GE_OS);
-        
+	if(m_mask_left == 0) {
+	  continue;
+	}
+
         //If not, continue with the next iteration of j-loop
-        const int num_left = m_mask_left;
-        if(num_left == 0) {
-          continue;
-        }
+        const int num_left = bits_set_in_avx512_mask_DOUBLE[m_mask_left];
 
         /* Check if all the possible pairs are in the last bin. But only run
            this check if not evaluating same cell pairs or when simply counting 
            the pairs (no rpavg requested)  */
         if(same_cell == 0 && need_rpavg == 0 && need_weightavg == 0) {
-            const AVX512_MASK m_last_bin = AVX512_MASK_BITWISE_AND(m_mask_left, AVX512_COMPARE_FLOATS(r2, m_rupp_sqr[nbin-1], _CMP_GE_OS));
-            if(m_last_bin == num_left) { /* all the valid pairs are in the last bin */
+            const AVX512_MASK m_last_bin = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2, m_rupp_sqr[nbin-1], _CMP_GE_OS);
+            if(bits_set_in_avx512_mask_DOUBLE[m_last_bin] == num_left) { /* all the valid pairs are in the last bin */
 	      npairs[nbin-1] += num_left;/* add the total number of pairs to the last bin and continue j-loop*/
 	      continue;
             }
@@ -226,13 +223,12 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
       for(int kbin=nbin-1;kbin>=1;kbin--) {
         const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-        npairs[kbin] += (int64_t) m_bin_mask;
+        npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
         if(need_rpavg || need_weightavg) {
           m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, m_kbin[kbin]);
         }
 
-        m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
-	
+        m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2, m_rupp_sqr[kbin-1],_CMP_LT_OS);
         if(m_mask_left  == 0) {
           break;
         }

@@ -39,6 +39,16 @@ extern "C" {
 
 #define AVX512_INTS                         __m512i
 
+  /* For setting up the array that contains the number bits set in a mask */
+  // Can be used to generate up to 16 bit lookup tables
+#   define B2(n)  n,      n+1,      n+1,      n+2
+#   define B4(n)  B2(n),  B2(n+1),  B2(n+1),  B2(n+2)
+#   define B6(n)  B4(n),  B4(n+1),  B4(n+1),  B4(n+2)
+#   define B8(n)  B6(n),  B6(n+1),  B6(n+1),  B6(n+2)
+#   define B10(n) B8(n),  B8(n+1),  B8(n+1),  B8(n+2)
+#   define B12(n) B10(n), B10(n+1), B10(n+1), B10(n+2)
+#   define B14(n) B12(n), B12(n+1), B12(n+1), B12(n+2)
+#   define B16(n) B14(0),B14(1), B14(1),   B14(2)
 
 #ifndef DOUBLE_PREC
 
@@ -46,13 +56,39 @@ extern "C" {
 #define AVX512_NVEC                         16    
 #define AVX512_MASK                         __mmask16
 #define AVX512_FLOATS                       __m512
+
+const int bits_set_in_avx512_mask_float[] = { B16(0) };
+const uint16_t masks_per_misalignment_value_float[16] = {0b1111111111111111,
+							 0b1000000000000000,
+							 0b1100000000000000,
+							 0b1110000000000000,
+							 0b1111000000000000,
+							 0b1111100000000000,
+							 0b1111110000000000,
+							 0b1111111000000000,
+							 0b1111111100000000,
+							 0b1111111110000000,
+							 0b1111111111000000,
+							 0b1111111111100000,
+							 0b1111111111110000,
+							 0b1111111111111000,
+							 0b1111111111111100,
+							 0b1111111111111110};
+  
   
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)     _mm512_loadu_ps(X)
 #define AVX512_LOAD_FLOATS_ALIGNED(X)       _mm512_load_ps(X)
+#define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)     _mm512_mask_loadu_ps(FALSEVALS, MASK, X)
+#define AVX512_MASK_LOAD_FLOATS_ALIGNED(FALSEVALS, MASK, X)       _mm512_mask_load_ps(FALSEVALS, MASK, X)
+
+
 #define AVX512_MULTIPLY_FLOATS(X,Y)         _mm512_mul_ps(X,Y)
 #define AVX512_DIVIDE_FLOATS(X,Y)           _mm512_div_ps(X,Y)
 #define AVX512_SUBTRACT_FLOATS(X,Y)         _mm512_sub_ps(X,Y)
 #define AVX512_ADD_FLOATS(X,Y)              _mm512_add_ps(X,Y)
+#define AVX512_FMA_FLOATS(X,Y,Z)            _mm512_fmadd_ps(X,Y,Z)
+#define AVX512_MASK_FMA_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_ps(X, MASK, Y, Z)
+
 #define AVX512_SQRT_FLOAT(X)                _mm512_sqrt_ps(X)
 #define AVX512_SVML_SQRT_FLOAT(X)           _mm512_svml_sqrt_ps(X)
 #define AVX512_TRUNCATE_FLOAT_TO_INT(X)     _mm512_cvttps_epi32(X)
@@ -111,12 +147,32 @@ extern "C" {
 #define AVX512_MASK                         __mmask8
 #define AVX512_FLOATS                       __m512d
 
+const int bits_set_in_avx512_mask_double[] = { B8(0) };
+const uint8_t masks_per_misalignment_value_double[8] = {0b11111111, 
+							0b10000000,
+							0b11000000,
+							0b11100000,
+							0b11110000,
+							0b11111000,
+							0b11111100,
+							0b11111110};
+
+
+
+
+
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)     _mm512_loadu_pd(X)
 #define AVX512_LOAD_FLOATS_ALIGNED(X)       _mm512_load_pd(X)
+#define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)     _mm512_mask_loadu_pd(FALSEVALS, MASK, X)
+#define AVX512_MASK_LOAD_FLOATS_ALIGNED(FALSEVALS, MASK, X)       _mm512_mask_load_pd(FALSEVALS, MASK, X)
+
 #define AVX512_MULTIPLY_FLOATS(X,Y)         _mm512_mul_pd(X,Y)
 #define AVX512_DIVIDE_FLOATS(X,Y)           _mm512_div_pd(X,Y)
 #define AVX512_SUBTRACT_FLOATS(X,Y)         _mm512_sub_pd(X,Y)
 #define AVX512_ADD_FLOATS(X,Y)              _mm512_add_pd(X,Y)
+#define AVX512_FMA_FLOATS(X,Y,Z)            _mm512_fmadd_pd(X,Y,Z)
+#define AVX512_MASK_FMA_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_pd(X, MASK, Y, Z)
+
 #define AVX512_SQRT_FLOAT(X)                _mm512_sqrt_pd(X)
 #define AVX512_SVML_SQRT_FLOAT(X)           _mm512_svml_sqrt_pd(X)
 #define AVX512_TRUNCATE_FLOAT_TO_INT(X)     _mm512_cvttpd_epi32(X)
