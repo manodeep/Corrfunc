@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <immintrin.h>
 
 #ifdef __cplusplus
@@ -30,14 +31,13 @@ extern "C" {
 #define AVX512_BIT_COUNT_LONG(X)               _popcnt64(X)
 #define AVX512_BIT_COUNT_UNSIGNED_INT(X)       _mm_popcnt_u32(X)
 #define AVX512_BIT_COUNT_UNSIGNED_LONG(X)      _mm_popcnt_u64(X)
-#define AVX512_SET_INT(X)                      _mm512_set1_epi32(X)
+
 
 #define AVX512_MASK_BITWISE_AND(X,Y)              _mm512_kand(X,Y)
 #define AVX512_MASK_BITWISE_OR(X,Y)               _mm512_kor(X,Y)
 #define AVX512_MASK_BITWISE_XOR_FLOATS(X,Y)       _mm512_kxor(X,Y)
 #define AVX512_MASK_BITWISE_AND_NOT(X,Y)          _mm512_kandn(X,Y)  //~X & Y
 
-#define AVX512_INTS                         __m512i
 
   /* For setting up the array that contains the number bits set in a mask */
   // Can be used to generate up to 16 bit lookup tables
@@ -57,24 +57,9 @@ extern "C" {
 #define AVX512_MASK                         __mmask16
 #define AVX512_FLOATS                       __m512
 
-const int bits_set_in_avx512_mask_float[] = { B16(0) };
-const uint16_t masks_per_misalignment_value_float[16] = {0b1111111111111111,
-							 0b0000000000000001,
-							 0b0000000000000011,
-							 0b0000000000000111,
-							 0b0000000000001111,
-							 0b0000000000011111,
-							 0b0000000000111111,
-							 0b0000000001111111,
-							 0b0000000011111111,
-							 0b0000000111111111,
-							 0b0000001111111111,
-							 0b0000011111111111,
-							 0b0000111111111111,
-							 0b0001111111111111,
-							 0b0011111111111111,
-							 0b0111111111111111};
-  
+#define AVX512_INTS                            __m512i
+#define AVX512_SET_INT(X)                      _mm512_set1_epi32(X)
+
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)     _mm512_loadu_ps(X)
 #define AVX512_LOAD_FLOATS_ALIGNED(X)       _mm512_load_ps(X)
 #define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)     _mm512_mask_loadu_ps(FALSEVALS, MASK, X)
@@ -146,16 +131,8 @@ const uint16_t masks_per_misalignment_value_float[16] = {0b1111111111111111,
 #define AVX512_NVEC                         8    
 #define AVX512_MASK                         __mmask8
 #define AVX512_FLOATS                       __m512d
-
-const int bits_set_in_avx512_mask_double[] = { B8(0) };
-const uint8_t masks_per_misalignment_value_double[8] = {0b11111111, 
-							0b00000001,
-							0b00000011,
-							0b00000111,
-							0b00001111,
-							0b00011111,
-							0b00111111,
-							0b01111111};
+#define AVX512_INTS                         __m256i
+#define AVX512_SET_INT(X)                   _mm256_set1_epi32(X)
 
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)     _mm512_loadu_pd(X)
 #define AVX512_LOAD_FLOATS_ALIGNED(X)       _mm512_load_pd(X)
@@ -190,7 +167,7 @@ const uint8_t masks_per_misalignment_value_double[8] = {0b11111111,
 #define AVX512_TEST_COMPARISON(X)            _mm512_movemask_pd(X)
 
 #define AVX512_BLEND_FLOATS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm512_mask_blend_pd(MASK, FALSEVALUE,TRUEVALUE)
-#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm512_mask_blend_epi64(MASK, FALSEVALUE,TRUEVALUE)
+#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm256_mask_blend_epi32(MASK, FALSEVALUE,TRUEVALUE)
 #define AVX512_MASKSTORE_FLOATS(dest, mask, source)   _mm512_maskstore_pd(dest, mask, source)
 
 //Trig
@@ -256,6 +233,11 @@ static inline AVX512_FLOATS inv_cosine_avx512(const AVX512_FLOATS X, const int o
 
 #endif
 
+  extern const int64_t bits_set_in_avx512_mask_float[];
+  extern const uint16_t masks_per_misalignment_value_float[];
+
+  extern const int64_t bits_set_in_avx512_mask_double[];
+  extern const uint8_t masks_per_misalignment_value_double[];
 
 #ifdef __cplusplus
 }

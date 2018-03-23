@@ -189,7 +189,6 @@ int main(int argc, char *argv[])
     gettimeofday(&t0,NULL);
     struct config_options options = get_config_options();
     options.verbose=1;
-    /* options.instruction_set=AVX512F; */
 
     /* Pack weights into extra options */
     struct extra_options extra = get_extra_options(weight_method);

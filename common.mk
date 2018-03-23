@@ -8,7 +8,7 @@
 ### less effort to do so here.
 ### *NOTE* Does not honour environment variable CC, since that
 ### is typically set to really outdated fail-safe compiler, /usr/bin/cc
-CC := 
+CC := icc
 
 #### Add any compiler specific flags you want
 CFLAGS ?=
@@ -254,10 +254,10 @@ ifeq ($(DO_CHECKS), 1)
   ## done with check for conflicting options
 
   ifeq (icc,$(findstring icc,$(CC)))
-    CFLAGS += -xhost -opt-prefetch -opt-prefetch-distance=16 #-vec-report6
+    CFLAGS += -xhost -axCORE-AVX512 
 	  ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-      CFLAGS += -openmp
-      CLINK  += -openmp
+      CFLAGS += -qopenmp
+      CLINK  += -qopenmp
     endif ##openmp with icc
   else ## not icc -> gcc or clang follow
 
