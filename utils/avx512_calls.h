@@ -34,8 +34,8 @@ extern "C" {
 
 #define AVX512_MASK_BITWISE_AND(X,Y)              _mm512_kand(X,Y)
 #define AVX512_MASK_BITWISE_OR(X,Y)               _mm512_kor(X,Y)
-#define AVX512_MASK_XOR_FLOATS(X,Y)               _mm512_kxor(X,Y)
-#define AVX512_MASK_AND_NOT(X,Y)                  _mm512_kandn(X,Y)  //~X & Y
+#define AVX512_MASK_BITWISE_XOR_FLOATS(X,Y)       _mm512_kxor(X,Y)
+#define AVX512_MASK_BITWISE_AND_NOT(X,Y)          _mm512_kandn(X,Y)  //~X & Y
 
 #define AVX512_INTS                         __m512i
 
@@ -59,22 +59,21 @@ extern "C" {
 
 const int bits_set_in_avx512_mask_float[] = { B16(0) };
 const uint16_t masks_per_misalignment_value_float[16] = {0b1111111111111111,
-							 0b1000000000000000,
-							 0b1100000000000000,
-							 0b1110000000000000,
-							 0b1111000000000000,
-							 0b1111100000000000,
-							 0b1111110000000000,
-							 0b1111111000000000,
-							 0b1111111100000000,
-							 0b1111111110000000,
-							 0b1111111111000000,
-							 0b1111111111100000,
-							 0b1111111111110000,
-							 0b1111111111111000,
-							 0b1111111111111100,
-							 0b1111111111111110};
-  
+							 0b0000000000000001,
+							 0b0000000000000011,
+							 0b0000000000000111,
+							 0b0000000000001111,
+							 0b0000000000011111,
+							 0b0000000000111111,
+							 0b0000000001111111,
+							 0b0000000011111111,
+							 0b0000000111111111,
+							 0b0000001111111111,
+							 0b0000011111111111,
+							 0b0000111111111111,
+							 0b0001111111111111,
+							 0b0011111111111111,
+							 0b0111111111111111};
   
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)     _mm512_loadu_ps(X)
 #define AVX512_LOAD_FLOATS_ALIGNED(X)       _mm512_load_ps(X)
@@ -89,8 +88,9 @@ const uint16_t masks_per_misalignment_value_float[16] = {0b1111111111111111,
 #define AVX512_FMA_FLOATS(X,Y,Z)            _mm512_fmadd_ps(X,Y,Z)
 #define AVX512_MASK_FMA_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_ps(X, MASK, Y, Z)
 
-#define AVX512_SQRT_FLOAT(X)                _mm512_sqrt_ps(X)
-#define AVX512_SVML_SQRT_FLOAT(X)           _mm512_svml_sqrt_ps(X)
+#define AVX512_SQRT_FLOAT(X)                        _mm512_sqrt_ps(X)
+#define AVX512_MASK_SQRT_FLOAT(FALSEVALS, MASK, X)  _mm512_mask_sqrt_ps(FALSEVALS, MASK, X)
+#define AVX512_SVML_SQRT_FLOAT(X)                   _mm512_svml_sqrt_ps(X)
 #define AVX512_TRUNCATE_FLOAT_TO_INT(X)     _mm512_cvttps_epi32(X)
 #define AVX512_STORE_FLOATS_TO_MEMORY(X,Y)  _mm512_storeu_ps(X,Y)
 #define AVX512_SQUARE_FLOAT(X)              _mm512_mul_ps(X,X)
@@ -149,17 +149,13 @@ const uint16_t masks_per_misalignment_value_float[16] = {0b1111111111111111,
 
 const int bits_set_in_avx512_mask_double[] = { B8(0) };
 const uint8_t masks_per_misalignment_value_double[8] = {0b11111111, 
-							0b10000000,
-							0b11000000,
-							0b11100000,
-							0b11110000,
-							0b11111000,
-							0b11111100,
-							0b11111110};
-
-
-
-
+							0b00000001,
+							0b00000011,
+							0b00000111,
+							0b00001111,
+							0b00011111,
+							0b00111111,
+							0b01111111};
 
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)     _mm512_loadu_pd(X)
 #define AVX512_LOAD_FLOATS_ALIGNED(X)       _mm512_load_pd(X)
@@ -174,6 +170,7 @@ const uint8_t masks_per_misalignment_value_double[8] = {0b11111111,
 #define AVX512_MASK_FMA_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_pd(X, MASK, Y, Z)
 
 #define AVX512_SQRT_FLOAT(X)                _mm512_sqrt_pd(X)
+#define AVX512_MASK_SQRT_FLOAT(FALSEVALS, MASK, X)  _mm512_mask_sqrt_pd(FALSEVALS, MASK, X)
 #define AVX512_SVML_SQRT_FLOAT(X)           _mm512_svml_sqrt_pd(X)
 #define AVX512_TRUNCATE_FLOAT_TO_INT(X)     _mm512_cvttpd_epi32(X)
 #define AVX512_STORE_FLOATS_TO_MEMORY(X,Y)  _mm512_storeu_pd(X,Y)
