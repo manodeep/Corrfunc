@@ -144,7 +144,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       }
       
       const AVX512_FLOATS m_sqr_xdiff = AVX512_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
-      AVX512_FLOATS r2  = AVX512_FMA_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
+      const AVX512_FLOATS r2  = AVX512_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
        
       //the z2 arrays are sorted in increasing order. which means
       //the z2 value will increase in any future iteration of j.

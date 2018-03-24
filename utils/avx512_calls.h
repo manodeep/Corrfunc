@@ -70,8 +70,8 @@ extern "C" {
 #define AVX512_DIVIDE_FLOATS(X,Y)           _mm512_div_ps(X,Y)
 #define AVX512_SUBTRACT_FLOATS(X,Y)         _mm512_sub_ps(X,Y)
 #define AVX512_ADD_FLOATS(X,Y)              _mm512_add_ps(X,Y)
-#define AVX512_FMA_FLOATS(X,Y,Z)            _mm512_fmadd_ps(X,Y,Z)
-#define AVX512_MASK_FMA_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_ps(X, MASK, Y, Z)
+#define AVX512_FMA_ADD_FLOATS(X,Y,Z)            _mm512_fmadd_ps(X,Y,Z)
+#define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_ps(X, MASK, Y, Z)
 #define AVX512_HORIZONTAL_SUM_FLOATS(X)     _mm512_reduce_add_ps(X)
 #define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _mm512_mask_reduce_add_ps(MASK, X)
 
@@ -154,8 +154,8 @@ extern "C" {
 #define AVX512_DIVIDE_FLOATS(X,Y)           _mm512_div_pd(X,Y)
 #define AVX512_SUBTRACT_FLOATS(X,Y)         _mm512_sub_pd(X,Y)
 #define AVX512_ADD_FLOATS(X,Y)              _mm512_add_pd(X,Y)
-#define AVX512_FMA_FLOATS(X,Y,Z)            _mm512_fmadd_pd(X,Y,Z)
-#define AVX512_MASK_FMA_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_pd(X, MASK, Y, Z)
+#define AVX512_FMA_ADD_FLOATS(X,Y,Z)            _mm512_fmadd_pd(X,Y,Z)
+#define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_pd(X, MASK, Y, Z)
 #define AVX512_HORIZONTAL_SUM_FLOATS(X)     _mm512_reduce_add_pd(X)
 #define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _mm512_mask_reduce_add_pd(MASK, X)
 

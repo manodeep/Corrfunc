@@ -359,11 +359,6 @@ ifeq ($(DO_CHECKS), 1)
       endif # USE_OMP
     endif # CC is clang
 
-    # #### common options for gcc and clang
-    # ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-    #   CFLAGS  +=  -mavx
-    # endif
-
     CFLAGS += -funroll-loops
     CFLAGS += -march=native -fno-strict-aliasing
     CFLAGS += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
@@ -387,33 +382,41 @@ ifeq ($(DO_CHECKS), 1)
     PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
 
     ## Check numpy version
-    export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print(numpy.__version__)" 2>/dev/null)))
-    export NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
-    export NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
-
-    ## Same reason as python patch level.
-    NUMPY_VERSION_PATCH := $(word 3,${NUMPY_VERSION_FULL})
-
-    ### Check for minimum python + numpy versions. In theory, I should also check
-    ### that *any* python and numpy are available but that seems too much effort
-    MIN_PYTHON_MAJOR := 2
-    MIN_PYTHON_MINOR := 6
-
-    MIN_NUMPY_MAJOR  := 1
-    MIN_NUMPY_MINOR  := 7
-
-    PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
-    NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
-
-    ifneq ($(PYTHON_AVAIL),true)
-      $(warning $(ccmagenta) Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR) $(ccreset))
+    NUMPY_VERSION_STRING := $(strip $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print(numpy.__version__)" 2>&1))
+    ifeq (ImportError, $(findstring ImportError,${NUMPY_VERSION_STRING}))
+      $(warning $(ccmagenta) Did not locate 'numpy' - python extensions will not be compiled $(ccreset))
+      NUMPY_AVAIL := false
       COMPILE_PYTHON_EXT := 0
-    endif
+    else 
+      export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,${NUMPY_VERSION_STRING}))
+      export NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
+      export NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
 
-    ifneq ($(NUMPY_AVAIL),true)
-      $(warning $(ccmagenta) Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR) $(ccreset))
-      COMPILE_PYTHON_EXT := 0
-    endif
+      ## Same reason as python patch level.
+      NUMPY_VERSION_PATCH := $(word 3,${NUMPY_VERSION_FULL})
+
+      ### Check for minimum python + numpy versions. In theory, I should also check
+      ### that *any* python and numpy are available but that seems too much effort
+      MIN_PYTHON_MAJOR := 2
+      MIN_PYTHON_MINOR := 6
+
+      MIN_NUMPY_MAJOR  := 1
+      MIN_NUMPY_MINOR  := 7
+
+      PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
+      NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
+
+      ifneq ($(PYTHON_AVAIL),true)
+        $(warning $(ccmagenta) Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR) $(ccreset))
+        COMPILE_PYTHON_EXT := 0
+      endif
+
+      ifneq ($(NUMPY_AVAIL),true)
+        $(warning $(ccmagenta) Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR) $(ccreset))
+        COMPILE_PYTHON_EXT := 0
+      endif
+    endif # ImportError on import numpy statement
+
 
     ifneq ($(COMPILE_PYTHON_EXT), 0)
       ifndef PYTHON_CONFIG_EXE
