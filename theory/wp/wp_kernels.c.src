@@ -269,6 +269,299 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 }
 #endif //__AVX512F__
 
+#ifdef __AVX2__
+#include "avx2_calls.h"
+
+static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
+					    DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell,
+					    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+					    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+					    DOUBLE *src_rpavg, uint64_t *src_npairs,
+					    DOUBLE *src_weightavg, const weight_method_t weight_method)
+{
+#ifdef COUNT_VECTORIZED
+    struct timespec tcell_start;
+    current_utc_time(&tcell_start);
+    uint64_t serial_npairs = 0, vectorized_npairs=0;
+#endif
+    
+    uint64_t npairs[nbin];
+  for(int i=0;i<nbin;i++) {
+    npairs[i] = 0;
+  }
+  AVX2_FLOATS m_rupp_sqr[nbin];
+  for(int i=0;i<nbin;i++) {
+    m_rupp_sqr[i] = AVX2_SET_FLOAT(rupp_sqr[i]);
+  }
+  const int32_t need_rpavg = src_rpavg != NULL;
+  const int32_t need_weightavg = src_weightavg != NULL;
+
+  
+  /* variables required for rpavg and weightavg*/
+  AVX2_FLOATS m_kbin[nbin];
+  DOUBLE rpavg[nbin], weightavg[nbin];
+  if(need_rpavg || need_weightavg){
+      for(int i=0;i<nbin;i++) {
+        m_kbin[i] = AVX2_SET_FLOAT((DOUBLE) i);
+        if(need_rpavg){
+          rpavg[i] = ZERO;
+        }
+        if(need_weightavg){
+          weightavg[i] = ZERO;
+        }
+      }
+  }
+
+  // A copy whose pointers we can advance
+  weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
+                       local_w1 = {.weights={NULL}, .num_weights=0};
+  pair_struct_DOUBLE pair = {.num_weights=0};
+  avx_weight_func_t_DOUBLE avx_weight_func = NULL;
+  weight_func_t_DOUBLE fallback_weight_func = NULL;
+  if(need_weightavg){
+      // Same particle list, new copy of num_weights pointers into that list
+      local_w0 = *weights0;
+      local_w1 = *weights1;
+      
+      pair.num_weights = local_w0.num_weights;
+      
+      avx_weight_func = get_avx_weight_func_by_method_DOUBLE(weight_method);
+      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
+  }
+
+  const DOUBLE *zend = z1 + N1, *zstart = z1;
+  for(int64_t i=0;i<N0;i++) {
+    const DOUBLE xpos = *x0++ + off_xwrap;
+    const DOUBLE ypos = *y0++ + off_ywrap;
+    const DOUBLE zpos = *z0++ + off_zwrap;
+    for(int w = 0; w < pair.num_weights; w++){
+        // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+        // just as x0 is a pointer into the list of x-positions.
+        // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+        pair.weights0[w].a = AVX2_SET_FLOAT(*(local_w0.weights[w])++);
+    }
+
+    if(same_cell == 1) {
+      z1++;
+    } else {
+      while(z1 != zend && (*z1 - zpos) <= -pimax) {
+	z1++;
+      }
+      if(z1 == zend) {
+	i = N0;
+	break;
+      }
+    }
+    int64_t j = z1 - zstart;
+    DOUBLE *localz1 = z1;
+    DOUBLE *localx1 = x1 + j;
+    DOUBLE *localy1 = y1 + j;
+    for(int w = 0; w < local_w1.num_weights; w++){
+        local_w1.weights[w] = weights1->weights[w] + j;
+    }
+    for(;j<=(N1 - AVX2_NVEC);j+=AVX2_NVEC) {
+      const AVX2_FLOATS m_xpos    = AVX2_SET_FLOAT(xpos);
+      const AVX2_FLOATS m_ypos    = AVX2_SET_FLOAT(ypos);
+      const AVX2_FLOATS m_zpos    = AVX2_SET_FLOAT(zpos);
+      union int8 {
+        AVX2_INTS m_ibin;
+        int ibin[AVX2_NVEC];
+      };
+      union float8{
+        AVX2_FLOATS m_Dperp;
+        DOUBLE Dperp[AVX2_NVEC];
+      };
+            
+      union int8 union_rpbin;
+      union float8 union_mDperp;
+      union float8_weights{
+        AVX2_FLOATS m_weights;
+        DOUBLE weights[AVX2_NVEC];
+      };
+      union float8_weights union_mweight;
+
+      const AVX2_FLOATS m_x1 = AVX2_LOAD_FLOATS_UNALIGNED(localx1);
+      const AVX2_FLOATS m_y1 = AVX2_LOAD_FLOATS_UNALIGNED(localy1);
+      const AVX2_FLOATS m_z1 = AVX2_LOAD_FLOATS_UNALIGNED(localz1);
+
+#ifdef COUNT_VECTORIZED
+      vectorized_npairs += AVX2_NVEC;
+#endif
+      localx1 += AVX2_NVEC;//this might actually exceed the allocated range but we will never dereference that
+      localy1 += AVX2_NVEC;
+      localz1 += AVX2_NVEC;
+        
+      for(int w = 0; w < pair.num_weights; w++){
+        pair.weights1[w].a = AVX2_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+        local_w1.weights[w] += AVX2_NVEC;
+      }
+
+      const AVX2_FLOATS m_pimax = AVX2_SET_FLOAT(pimax);
+      const AVX2_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
+      const AVX2_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
+            
+      const AVX2_FLOATS m_xdiff = AVX2_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+      const AVX2_FLOATS m_ydiff = AVX2_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+      const AVX2_FLOATS m_zdiff = AVX2_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
+      
+      if(need_weightavg){
+        pair.dx.a = m_xdiff;
+        pair.dy.a = m_ydiff;
+        pair.dz.a = m_zdiff;
+      }
+      
+      const AVX2_FLOATS m_sqr_xdiff = AVX2_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
+      AVX2_FLOATS r2  = AVX2_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
+            
+      AVX2_FLOATS m_mask_left;
+      //Do all the distance cuts using masks here in new scope
+      {
+        //the z2 arrays are sorted in increasing order. which means
+        //the z2 value will increase in any future iteration of j.
+        //that implies the zdiff values are also monotonically increasing
+        //Therefore, if none of the zdiff values are less than pimax, then
+        //no future iteration in j can produce a zdiff value less than pimax.
+        AVX2_FLOATS m_mask_pimax = AVX2_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
+        if(AVX2_TEST_COMPARISON(m_mask_pimax) == 0) {
+          //None of the dz^2 values satisfies dz^2 < pimax^2
+          // => no pairs can be added -> continue and process the next NVEC
+          j=N1;
+          break;
+        }
+
+        const AVX2_FLOATS m_rpmax_mask = AVX2_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
+        const AVX2_FLOATS m_rpmin_mask = AVX2_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
+        const AVX2_FLOATS m_rp_mask = AVX2_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
+                
+        //Create a combined mask by bitwise and of m1 and m_mask_left.
+        //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
+        m_mask_left = AVX2_BITWISE_AND(m_mask_pimax,m_rp_mask);
+                
+        //If not, continue with the next iteration of j-loop
+        const int num_left = AVX2_TEST_COMPARISON(m_mask_left);
+        if(num_left == 0) {
+          continue;
+        }
+
+        //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
+        r2 = AVX2_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
+      }
+
+      AVX2_FLOATS m_rpbin = AVX2_SET_FLOAT(0);
+      if(need_rpavg) {
+        union_mDperp.m_Dperp = AVX2_SQRT_FLOAT(r2);
+      }
+      if(need_weightavg){
+        union_mweight.m_weights = avx_weight_func(&pair);
+      }
+            
+      //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
+      for(int kbin=nbin-1;kbin>=1;kbin--) {
+        const AVX2_FLOATS m1 = AVX2_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+        const AVX2_FLOATS m_bin_mask = AVX2_BITWISE_AND(m1,m_mask_left);
+        const int test2  = AVX2_TEST_COMPARISON(m_bin_mask);
+        npairs[kbin] += AVX2_BIT_COUNT_INT(test2);
+        if(need_rpavg || need_weightavg) {
+          m_rpbin = AVX2_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+        }
+
+        m_mask_left = AVX2_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
+        const int test3 = AVX2_TEST_COMPARISON(m_mask_left);
+        if(test3 == 0) {
+          break;
+        }
+      }
+            
+      if(need_rpavg || need_weightavg) {
+        union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
+        //protect the unroll pragma in case compiler is not icc.
+#if  __INTEL_COMPILER
+#pragma unroll(AVX2_NVEC)
+#endif
+        for(int jj=0;jj<AVX2_NVEC;jj++) {
+          const int kbin = union_rpbin.ibin[jj];
+          if(need_rpavg){
+            const DOUBLE r = union_mDperp.Dperp[jj];
+            rpavg[kbin] += r;
+          }
+          if(need_weightavg){
+            const DOUBLE weight = union_mweight.weights[jj];
+            weightavg[kbin] += weight;
+          }
+        }
+      } //OUTPUT_RPAVG
+
+    }//end of j-loop
+        
+    //remainder loop 
+    for(;j<N1;j++){
+#ifdef COUNT_VECTORIZED
+        serial_npairs++;
+#endif
+        const DOUBLE dz = *localz1++ - zpos;
+      const DOUBLE dx = *localx1++ - xpos;
+      const DOUBLE dy = *localy1++ - ypos;
+      for(int w = 0; w < pair.num_weights; w++){
+          pair.weights1[w].d = *local_w1.weights[w]++;
+      }
+
+      if(dz >= pimax) {
+        break;
+      } 
+            
+      const DOUBLE r2 = dx*dx + dy*dy;
+      if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
+        continue;
+      }
+        
+      if(need_weightavg){
+        pair.dx.d = dx;
+        pair.dy.d = dy;
+        pair.dz.d = dz;
+      }
+
+            
+      const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
+      const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
+      for(int kbin=nbin-1;kbin>=1;kbin--) {
+        if(r2 >= rupp_sqr[kbin-1]) {
+          npairs[kbin]++;
+          if(need_rpavg) {
+            rpavg[kbin] += r;
+          }
+          if(need_weightavg){
+            weightavg[kbin] += pairweight;
+          }
+          break;
+        }
+      }
+    }//remainder loop over second set of particles
+  }//loop over first set of particles
+
+  uint64_t npairs_found = 0;
+  for(int i=0;i<nbin;i++) {
+      npairs_found += npairs[i];
+    src_npairs[i] += npairs[i];
+    if(need_rpavg) {
+      src_rpavg[i]  += rpavg[i];
+    }
+    if(need_weightavg) {
+      src_weightavg[i] += weightavg[i];
+    }
+  }
+  
+#ifdef COUNT_VECTORIZED
+  struct timespec tcell_end;
+  current_utc_time(&tcell_end);
+  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
+#endif
+  
+  return EXIT_SUCCESS;
+}
+#endif //__AVX2__
+
+
 
 #ifdef __AVX__
 #include "avx_calls.h"
