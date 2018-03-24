@@ -51,13 +51,10 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
   const int32_t need_rpavg = src_rpavg != NULL;
   const int32_t need_weightavg = src_weightavg != NULL;
   
-  
   /* variables required for rpavg and weightavg*/
-  AVX512_INTS m_kbin[nbin];
   DOUBLE rpavg[nbin], weightavg[nbin];
   if(need_rpavg || need_weightavg){
     for(int i=0;i<nbin;i++) {
-      m_kbin[i] = AVX512_SET_INT(i);
       rpavg[i] = ZERO;
       weightavg[i] = ZERO;
     }
@@ -112,23 +109,11 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
         local_w1.weights[w] = weights1->weights[w] + n_off;
     }
     const AVX512_FLOATS m_zero_DOUBLE = AVX512_SET_FLOAT(ZERO);
-    const AVX512_INTS m_zero_integer = AVX512_SET_INT(0);
     for(;j<N1;j+=AVX512_NVEC) {
       AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
       const AVX512_FLOATS m_xpos  = AVX512_SET_FLOAT(xpos);
       const AVX512_FLOATS m_ypos  = AVX512_SET_FLOAT(ypos);
       const AVX512_FLOATS m_zpos  = AVX512_SET_FLOAT(zpos);
-      union int8 {
-        AVX512_INTS m_ibin;
-        int ibin[AVX512_NVEC];
-      };
-      union float8{
-        AVX512_FLOATS m_Dperp;
-        DOUBLE Dperp[AVX512_NVEC];
-      };
-            
-      union int8 union_rpbin;
-      union float8 union_mDperp;
 
       const AVX512_FLOATS m_x1 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_xpos, m_mask_left, localx1);
       const AVX512_FLOATS m_y1 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_ypos, m_mask_left, localy1);
@@ -145,12 +130,6 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
         pair.weights1[w].a512 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_zero_DOUBLE, m_mask_left, local_w1.weights[w]);
         local_w1.weights[w] += AVX512_NVEC;
       }
-
-      union float8_weights{
-        AVX512_FLOATS m_weights;
-        DOUBLE weights[AVX512_NVEC];
-      };
-      union float8_weights union_mweight;
 
       const AVX512_FLOATS m_pimax = AVX512_SET_FLOAT(pimax);
       const AVX512_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
@@ -193,47 +172,28 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 	}
       }
 
-      int64_t numleft = bits_set_in_avx512_mask_DOUBLE[m_mask_left];
-      AVX512_INTS m_rpbin = m_zero_integer;
-      union_mDperp.m_Dperp = AVX512_MASK_SQRT_FLOAT(m_zero_DOUBLE, m_mask_left, r2);
-      union_mweight.m_weights = m_zero_DOUBLE;
+      const AVX512_FLOATS m_Dperp = AVX512_MASK_SQRT_FLOAT(m_zero_DOUBLE, m_mask_left, r2);
+      AVX512_FLOATS m_weights = m_zero_DOUBLE;
       if(need_weightavg){
-        union_mweight.m_weights = avx512_weight_func(&pair);
+        m_weights = avx512_weight_func(&pair);
       }
-            
+
       //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
       // at the beginning of the loop. 
       for(int kbin=nbin-1;kbin>=1;kbin--) {
         const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-	if(m_bin_mask != 0) {
-	  npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
-	  numleft -= bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
-	  m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, m_kbin[kbin]);
-	  if(numleft == 0) {
-	    break;
-	  }
-	  m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);
+	npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
+	if(need_rpavg) {
+	  rpavg[kbin] += AVX512_MASK_HORIZONTAL_SUM_FLOATS(m_bin_mask, m_Dperp);
 	}
-      }
-            
-      if(need_rpavg || need_weightavg) {
-        union_rpbin.m_ibin = m_rpbin;
-        //protect the unroll pragma in case compiler is not icc.
-#if defined(__INTEL_COMPILER)
-#pragma unroll(AVX512_NVEC)
-#endif
-        for(int jj=0;jj<AVX512_NVEC;jj++) {
-          const int kbin = union_rpbin.ibin[jj];
-	  const DOUBLE r = union_mDperp.Dperp[jj];
-	  const DOUBLE weight = union_mweight.weights[jj];
-	  if(need_rpavg) {
-	    rpavg[kbin] += r;
-	  }
-	  if(need_weightavg) {
-	    weightavg[kbin] += weight;
-	  }
-        }
-      } //OUTPUT_RPAVG
+	if(need_weightavg) {
+	  weightavg[kbin] += AVX512_MASK_HORIZONTAL_SUM_FLOATS(m_bin_mask, m_weights);
+	}
+	m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
+	if(m_mask_left == 0) {
+	  break;
+	}
+      }//backwards loop over the bins
     }//end of j-loop
   }//loop over first set of particles
 
