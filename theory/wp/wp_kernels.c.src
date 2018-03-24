@@ -117,6 +117,27 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       const AVX512_FLOATS m_y1 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_ypos, m_mask_left, localy1);
       const AVX512_FLOATS m_z1 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_zpos, m_mask_left, localz1);
 
+
+      union int16 {
+        AVX512_INTS m_ibin;
+        int ibin[AVX512_NVEC];
+      };
+      union float16{
+        AVX512_FLOATS m_Dperp;
+        DOUBLE Dperp[AVX512_NVEC];
+      };
+            
+      union int16 union_rpbin;
+      union float16 union_mDperp;
+      union_rpbin.m_ibin = AVX512_SET_INT(0);
+      union_mDperp.m_Dperp = m_zero_DOUBLE;
+      
+      union float16_weights{
+        AVX512_FLOATS m_weights;
+        DOUBLE weights[AVX512_NVEC];
+      };
+      union float16_weights union_mweight;
+
 #ifdef COUNT_VECTORIZED
       vectorized_npairs += AVX512_NVEC;
 #endif
@@ -170,30 +191,58 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 	}
       }
       
-      AVX512_FLOATS m_Dperp = m_zero_DOUBLE, m_weights = m_zero_DOUBLE;;
       if(need_rpavg) {
-	m_Dperp = AVX512_MASK_SQRT_FLOAT(m_zero_DOUBLE, m_mask_left, r2);
+	union_mDperp.m_Dperp = AVX512_MASK_SQRT_FLOAT(m_zero_DOUBLE, m_mask_left, r2);
       }
       if(need_weightavg){
-        m_weights = avx512_weight_func(&pair);
+        union_mweight.m_weights = avx512_weight_func(&pair);
       }
 
+      AVX512_INTS m_rpbin = AVX512_SET_INT(0);
       //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
       // at the beginning of the loop. 
       for(int kbin=nbin-1;kbin>=1;kbin--) {
         const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
 	npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
-	if(need_rpavg) {
-	  rpavg[kbin] += AVX512_MASK_HORIZONTAL_SUM_FLOATS(m_bin_mask, m_Dperp);
+	if(need_rpavg || need_weightavg) {
+	  m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_INT(kbin));
 	}
-	if(need_weightavg) {
-	  weightavg[kbin] += AVX512_MASK_HORIZONTAL_SUM_FLOATS(m_bin_mask, m_weights);
-	}
+	// Only intel compilers have the mask_horizontal sum intrinsics (which is a collection of intrinsics)
+	/* if(need_rpavg) { */
+	/*   rpavg[kbin] += AVX512_MASK_HORIZONTAL_SUM_FLOATS(m_bin_mask, m_Dperp); */
+	/* } */
+	/* if(need_weightavg) { */
+	/*   weightavg[kbin] += AVX512_MASK_HORIZONTAL_SUM_FLOATS(m_bin_mask, m_weights); */
+	/* } */
 	m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
 	if(m_mask_left == 0) {
 	  break;
 	}
       }//backwards loop over the bins
+      
+      if(need_rpavg || need_weightavg) {
+	//Do I need this step of going via the union? accessing int[] -> AVX* vector might 
+	//cause alignment problems but accessing the ints from an AVX*
+	//register should always be fine
+        union_rpbin.m_ibin = m_rpbin;
+        //protect the unroll pragma in case compiler is not icc.
+#if  __INTEL_COMPILER
+#pragma unroll(AVX512_NVEC)
+#endif
+        for(int jj=0;jj<AVX512_NVEC;jj++) {
+          const int kbin = union_rpbin.ibin[jj];
+          if(need_rpavg){
+            const DOUBLE r = union_mDperp.Dperp[jj];
+            rpavg[kbin] += r;
+          }
+          if(need_weightavg){
+            const DOUBLE weight = union_mweight.weights[jj];
+            weightavg[kbin] += weight;
+          }
+        }
+      } //OUTPUT_RPAVG
+
+
     }//end of j-loop
   }//loop over first set of particles
 
@@ -321,17 +370,10 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
       const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
       const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
       const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(zpos);
-      union int8 {
-        AVX_INTS m_ibin;
-        int ibin[AVX_NVEC];
-      };
-      union float8{
-        AVX_FLOATS m_Dperp;
-        DOUBLE Dperp[AVX_NVEC];
-      };
-            
+
       union int8 union_rpbin;
       union float8 union_mDperp;
+      union float8_weights union_mweight;
 
       const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
       const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
@@ -349,11 +391,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
         local_w1.weights[w] += AVX_NVEC;
       }
 
-      union float8_weights{
-        AVX_FLOATS m_weights;
-        DOUBLE weights[NVEC];
-      };
-      union float8_weights union_mweight;
+
 
       const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
       const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];

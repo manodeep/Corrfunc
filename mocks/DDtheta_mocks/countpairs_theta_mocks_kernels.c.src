@@ -241,17 +241,9 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
       }
      
       for(;j<=(N1-AVX_NVEC);j+=AVX_NVEC){
-          union int8 {
-              AVX_INTS m_ibin;
-              int ibin[NVEC];
-          };
           union int8 union_rpbin;
-          
-          union float8{
-              AVX_FLOATS m_Dperp;
-              DOUBLE Dperp[NVEC];
-          };
           union float8 union_mDperp;
+          union float8_weights union_mweight;
 
           const AVX_FLOATS m_costhetamax=AVX_SET_FLOAT(costhetamax);
           const AVX_FLOATS m_costhetamin = AVX_SET_FLOAT(costhetamin);
@@ -269,12 +261,6 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
               local_w1.weights[w] += AVX_NVEC;
           }
            
-          union float8_weights{
-              AVX_FLOATS m_weights;
-              DOUBLE weights[NVEC];
-          };
-          union float8_weights union_mweight;
-
           const AVX_FLOATS m_tmp1 = AVX_MULTIPLY_FLOATS(m_x2,m_x1);
           const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_y2,m_y1);
           const AVX_FLOATS m_tmp3 = AVX_MULTIPLY_FLOATS(m_z2,m_z1);
@@ -288,14 +274,13 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
           
           AVX_FLOATS m_thetabin;
           if(need_rpavg || need_weightavg) {
-              m_thetabin = AVX_SET_FLOAT((DOUBLE) 0.0);
+              m_thetabin = AVX_SET_FLOAT(ZERO);
           }
           if(need_rpavg){
               //first do the acos to get the actual angles
               const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
               const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta, order);
               union_mDperp.m_Dperp = AVX_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
-              
           }
           
           if(need_weightavg){
@@ -510,17 +495,9 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
         }
 
       for(;j<=(N1-SSE_NVEC);j+=SSE_NVEC){
-          union int4 {
-              SSE_INTS m_ibin;
-              int ibin[NVEC];
-          };
           union int4 union_rpbin;
-          
-          union float4{
-              SSE_FLOATS m_Dperp;
-              DOUBLE Dperp[NVEC];
-          };
           union float4 union_mDperp;
+          union float4_weights union_mweight;
 
           const SSE_FLOATS m_costhetamax=SSE_SET_FLOAT(costhetamax);
           const SSE_FLOATS m_costhetamin=SSE_SET_FLOAT(costhetamin);
@@ -535,12 +512,6 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
                 pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
                 local_w1.weights[w] += SSE_NVEC;
           }
-          
-          union float4_weights{
-                SSE_FLOATS m_weights;
-                DOUBLE weights[SSE_NVEC];
-            };
-          union float4_weights union_mweight;
           
           const SSE_FLOATS m_tmp1 = SSE_MULTIPLY_FLOATS(m_x2,m_x1);
           const SSE_FLOATS m_tmp2 = SSE_MULTIPLY_FLOATS(m_y2,m_y1);

@@ -108,17 +108,9 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
             const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(y1pos);
             const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(z1pos);
             
-            union int8 {
-                AVX_INTS m_ibin;
-                int ibin[AVX_NVEC];
-            };
             union int8 union_rbin;
-            
-            union float8{
-                AVX_FLOATS m_Dperp;
-                DOUBLE Dperp[AVX_NVEC];
-            };
             union float8 union_mDperp;
+            union float8_weights union_mweight;
 
             const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx2);
             const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy2);
@@ -133,11 +125,6 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 local_w2.weights[w] += AVX_NVEC;
             }
             
-            union float8_weights{
-                AVX_FLOATS m_weights;
-                DOUBLE weights[NVEC];
-            };
-            union float8_weights union_mweight;
 
             const AVX_FLOATS m_rmax = AVX_SET_FLOAT(rmax);
             

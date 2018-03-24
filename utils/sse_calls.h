@@ -116,7 +116,7 @@ extern "C" {
 #endif
 
 #ifndef  __INTEL_COMPILER
-    #include "fast_acos.h"
+#include "fast_acos.h"
     static inline SSE_FLOATS inv_cosine_sse(const SSE_FLOATS X, const int order)
 {
     union cos{
@@ -150,5 +150,24 @@ extern "C" {
     }
     return union_returnvalue.m;
   }
+#endif
+
+  union int4 {
+    SSE_INTS m_ibin;
+    int ibin[SSE_NVEC];
+  };
+  
+  union float4{
+    SSE_FLOATS m_Dperp;
+    DOUBLE Dperp[SSE_NVEC];
+  };
+  
+  union float4_weights{
+    SSE_FLOATS m_weights;
+    DOUBLE weights[SSE_NVEC];
+  };
+
+#ifdef __cplusplus
+}
 #endif
     

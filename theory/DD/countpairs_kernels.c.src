@@ -118,17 +118,9 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
       const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
       const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(zpos);
             
-      union int8 {
-        AVX_INTS m_ibin;
-        int ibin[NVEC];
-      };
       union int8 union_rpbin;
-            
-      union float8{
-        AVX_FLOATS m_Dperp;
-        DOUBLE Dperp[NVEC];
-      };
       union float8 union_mDperp;
+      union float8_weights union_mweight;
 
       const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
       const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
@@ -142,12 +134,6 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
         local_w1.weights[w] += AVX_NVEC;
       }
-      
-      union float8_weights{
-        AVX_FLOATS m_weights;
-        DOUBLE weights[NVEC];
-      };
-      union float8_weights union_mweight;
 
       const AVX_FLOATS m_pimax = AVX_SET_FLOAT(rpmax);
       const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];

@@ -8,7 +8,7 @@
 ### less effort to do so here.
 ### *NOTE* Does not honour environment variable CC, since that
 ### is typically set to really outdated fail-safe compiler, /usr/bin/cc
-CC :=
+CC := icc
 
 #### Add any compiler specific flags you want
 CFLAGS ?=
@@ -383,7 +383,16 @@ ifeq ($(DO_CHECKS), 1)
 
     ## Check numpy version
     NUMPY_VERSION_STRING := $(strip $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print(numpy.__version__)" 2>&1))
+    NUMPY_ERROR := 0
     ifeq (ImportError, $(findstring ImportError,${NUMPY_VERSION_STRING}))
+      NUMPY_ERROR := 1
+    else ifeq (ModuleNotFound, $(findstring ModuleNotFound,${NUMPY_VERSION_STRING}))
+      NUMPY_ERROR := 1
+    else
+      NUMPY_ERROR := 0
+    endif
+
+    ifeq (${NUMPY_ERROR}, 1)
       $(warning $(ccmagenta) Did not locate 'numpy' - python extensions will not be compiled $(ccreset))
       NUMPY_AVAIL := false
       COMPILE_PYTHON_EXT := 0

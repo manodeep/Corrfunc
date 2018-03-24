@@ -72,41 +72,47 @@ extern "C" {
 #define AVX512_ADD_FLOATS(X,Y)              _mm512_add_ps(X,Y)
 #define AVX512_FMA_ADD_FLOATS(X,Y,Z)            _mm512_fmadd_ps(X,Y,Z)
 #define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_ps(X, MASK, Y, Z)
+
+#ifdef  __INTEL_COMPILER
 #define AVX512_HORIZONTAL_SUM_FLOATS(X)     _mm512_reduce_add_ps(X)
 #define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _mm512_mask_reduce_add_ps(MASK, X)
+#else
+#define AVX512_HORIZONTAL_SUM_FLOATS(X)                _horizontal_sum_floats(X)
+#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _horizontal_mask_sum_floats(X)
+#endif
 
 #define AVX512_SQRT_FLOAT(X)                        _mm512_sqrt_ps(X)
 #define AVX512_MASK_SQRT_FLOAT(FALSEVALS, MASK, X)  _mm512_mask_sqrt_ps(FALSEVALS, MASK, X)
 #define AVX512_SVML_SQRT_FLOAT(X)                   _mm512_svml_sqrt_ps(X)
-#define AVX512_TRUNCATE_FLOAT_TO_INT(X)     _mm512_cvttps_epi32(X)
-#define AVX512_STORE_FLOATS_TO_MEMORY(X,Y)  _mm512_storeu_ps(X,Y)
-#define AVX512_SQUARE_FLOAT(X)              _mm512_mul_ps(X,X)
-#define AVX512_LOG_FLOAT(X)                 _mm512_log_ps(X)
-#define AVX512_LOG10_FLOAT(X)               _mm512_log10_ps(X)
-#define AVX512_LOG2_FLOAT(X)                _mm512_log2_ps(X)
-#define AVX512_RECIPROCAL_FLOATS(X)         _mm512_rcp_ps(X)
+#define AVX512_TRUNCATE_FLOAT_TO_INT(X)             _mm512_cvttps_epi32(X)
+#define AVX512_STORE_FLOATS_TO_MEMORY(X,Y)          _mm512_storeu_ps(X,Y)
+#define AVX512_SQUARE_FLOAT(X)                      _mm512_mul_ps(X,X)
+#define AVX512_LOG_FLOAT(X)                         _mm512_log_ps(X)
+#define AVX512_LOG10_FLOAT(X)                       _mm512_log10_ps(X)
+#define AVX512_LOG2_FLOAT(X)                        _mm512_log2_ps(X)
+#define AVX512_RECIPROCAL_FLOATS(X)                 _mm512_rcp_ps(X)
 
-#define AVX512_BROADCAST_FLOAT(X)           _mm512_broadcast_ss(X);
-#define AVX512_SET_FLOAT(X)                 _mm512_set1_ps(X);
+#define AVX512_BROADCAST_FLOAT(X)                   _mm512_broadcast_ss(X)
+#define AVX512_SET_FLOAT(X)                         _mm512_set1_ps(X)
 
 
     // X OP Y
-#define AVX512_COMPARE_FLOATS(X, Y, OP)      _mm512_cmp_ps_mask(X, Y, OP)
+#define AVX512_COMPARE_FLOATS(X, Y, OP)             _mm512_cmp_ps_mask(X, Y, OP)
 
   //Mask operations (new in AVX512)
-#define AVX512_MASK_COMPARE_FLOATS(M, X, Y, OP) _mm512_mask_cmp_ps_mask(M, X, Y, OP)
+#define AVX512_MASK_COMPARE_FLOATS(M, X, Y, OP)     _mm512_mask_cmp_ps_mask(M, X, Y, OP)
 
 //MoveMask
-#define AVX512_TEST_COMPARISON(X)            _mm512_movemask_ps(X)
+#define AVX512_TEST_COMPARISON(X)                   _mm512_movemask_ps(X)
 
-#define AVX512_BLEND_FLOATS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm512_mask_blend_ps(MASK, FALSEVALUE,TRUEVALUE)
+#define AVX512_BLEND_FLOATS_WITH_MASK(MASK, FALSE,TRUE) _mm512_mask_blend_ps(MASK, FALSE,TRUE)
 
 #if defined(__AVX512VL__)
 /* #warning blending integers with avx512vl */
-#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm512_mask_blend_epi32(MASK, FALSEVALUE,TRUEVALUE)
+#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSE,TRUE)   _mm512_mask_blend_epi32(MASK, FALSE,TRUE)
 #elif defined(__AVX2__)
 /* #warning blending integers with avx2 */
-#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm256_blend_epi32(FALSEVALUE, TRUEVALUE, MASK)//AVX2
+#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSE,TRUE) _mm256_blend_epi32(FALSE, TRUE, MASK)//AVX2
 #else
 #error Do not know how to implement a integer blend intrinsics on AVX512 cpu without AVX2 support. 
 #endif
@@ -156,8 +162,11 @@ extern "C" {
 #define AVX512_ADD_FLOATS(X,Y)              _mm512_add_pd(X,Y)
 #define AVX512_FMA_ADD_FLOATS(X,Y,Z)            _mm512_fmadd_pd(X,Y,Z)
 #define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_pd(X, MASK, Y, Z)
-#define AVX512_HORIZONTAL_SUM_FLOATS(X)     _mm512_reduce_add_pd(X)
-#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _mm512_mask_reduce_add_pd(MASK, X)
+
+#ifdef  __INTEL_COMPILER
+#define AVX512_HORIZONTAL_SUM_FLOATS(X)     _mm512_reduce_add_ps(X)
+#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _mm512_mask_reduce_add_ps(MASK, X)
+#endif
 
 #define AVX512_SQRT_FLOAT(X)                _mm512_sqrt_pd(X)
 #define AVX512_MASK_SQRT_FLOAT(FALSEVALS, MASK, X)  _mm512_mask_sqrt_pd(FALSEVALS, MASK, X)
@@ -174,8 +183,8 @@ extern "C" {
 #define AVX512_COMPARE_FLOATS(X, Y, OP)      _mm512_cmp_pd_mask(X, Y, OP)
 #define AVX512_MASK_COMPARE_FLOATS(M, X, Y, OP) _mm512_mask_cmp_pd_mask(M, X, Y, OP)
 
-#define AVX512_BROADCAST_FLOAT(X)            _mm512_broadcast_sd(X);
-#define AVX512_SET_FLOAT(X)                  _mm512_set1_pd(X);
+#define AVX512_BROADCAST_FLOAT(X)            _mm512_broadcast_sd(X)
+#define AVX512_SET_FLOAT(X)                  _mm512_set1_pd(X)
 //MoveMask
 #define AVX512_TEST_COMPARISON(X)            _mm512_movemask_pd(X)
 
@@ -242,7 +251,6 @@ static inline AVX512_FLOATS inv_cosine_avx512(const AVX512_FLOATS X, const int o
     }
     return union_returnvalue.m;
   }
-
 
 #endif
 

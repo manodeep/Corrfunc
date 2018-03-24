@@ -56,8 +56,8 @@ extern "C" {
 #define AVX_LOG2_FLOAT(X)                _mm256_log2_ps(X)
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_ps(X)
 
-#define AVX_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X);
-#define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X);
+#define AVX_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X)
+#define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X)
 
 
     // X OP Y
@@ -126,8 +126,8 @@ extern "C" {
 #define AVX_XOR_FLOATS(X,Y)               _mm256_xor_pd(X,Y)
 #define AVX_AND_NOT(X,Y)                  _mm256_andnot_pd((X),(Y))  //~X & Y
 
-#define AVX_BROADCAST_FLOAT(X)            _mm256_broadcast_sd(X);
-#define AVX_SET_FLOAT(X)                  _mm256_set1_pd(X);
+#define AVX_BROADCAST_FLOAT(X)            _mm256_broadcast_sd(X)
+#define AVX_SET_FLOAT(X)                  _mm256_set1_pd(X)
 //MoveMask
 #define AVX_TEST_COMPARISON(X)            _mm256_movemask_pd(X)
 
@@ -196,7 +196,21 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
 
 
 #endif
-
+  
+  //The three different unions used
+  //for computing rpavg and weightavg
+  union int8 {
+    AVX_INTS m_ibin;
+    int ibin[AVX_NVEC];
+  };
+  union float8{
+    AVX_FLOATS m_Dperp;
+    DOUBLE Dperp[AVX_NVEC];
+  };
+  union float8_weights{
+    AVX_FLOATS m_weights;
+    DOUBLE weights[AVX_NVEC];
+  };
 
 #ifdef __cplusplus
 }

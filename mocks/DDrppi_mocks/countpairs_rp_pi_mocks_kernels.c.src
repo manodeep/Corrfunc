@@ -151,6 +151,10 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
             const AVX_FLOATS m_d2 = AVX_LOAD_FLOATS_UNALIGNED(locald1);
 
+            union int8 union_finalbin;
+            union float8 union_mDperp;
+            union float8_weights union_mweight;
+
             localx1 += AVX_NVEC;
             localy1 += AVX_NVEC;
             localz1 += AVX_NVEC;
@@ -160,12 +164,6 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                 pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
                 local_w1.weights[w] += AVX_NVEC;
             }
-            
-            union float8_weights{
-                AVX_FLOATS m_weights;
-                DOUBLE weights[NVEC];
-            };
-            union float8_weights union_mweight;
             
             const AVX_FLOATS m_perpx = AVX_SUBTRACT_FLOATS(m_xpos, m_x2);
             const AVX_FLOATS m_perpy = AVX_SUBTRACT_FLOATS(m_ypos, m_y2);
@@ -274,7 +272,6 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             }
             const AVX_FLOATS m_Dpar = AVX_SQRT_FLOAT(m_sqr_Dpar);
 
-            union float8 union_mDperp;
             if(need_rpavg) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(m_sqr_Dperp);
             }
@@ -308,7 +305,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const AVX_FLOATS m_pibin = AVX_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
             const AVX_FLOATS m_npibin_p1 = AVX_ADD_FLOATS(m_npibin,m_one);
             const AVX_FLOATS m_binproduct = AVX_ADD_FLOATS(AVX_MULTIPLY_FLOATS(m_rpbin,m_npibin_p1),m_pibin);
-            union int8 union_finalbin;
+
             union_finalbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_binproduct);
 
 #if  __INTEL_COMPILER
