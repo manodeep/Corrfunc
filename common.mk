@@ -8,7 +8,7 @@
 ### less effort to do so here.
 ### *NOTE* Does not honour environment variable CC, since that
 ### is typically set to really outdated fail-safe compiler, /usr/bin/cc
-CC := icc
+CC :=
 
 #### Add any compiler specific flags you want
 CFLAGS ?=

@@ -98,7 +98,16 @@ extern "C" {
 #define AVX512_TEST_COMPARISON(X)            _mm512_movemask_ps(X)
 
 #define AVX512_BLEND_FLOATS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm512_mask_blend_ps(MASK, FALSEVALUE,TRUEVALUE)
+
+#if defined(__AVX512VL__)
+/* #warning blending integers with avx512vl */
 #define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm512_mask_blend_epi32(MASK, FALSEVALUE,TRUEVALUE)
+#elif defined(__AVX2__)
+/* #warning blending integers with avx2 */
+#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm256_blend_epi32(FALSEVALUE, TRUEVALUE, MASK)//AVX2
+#else
+#error Do not know how to implement a integer blend intrinsics on AVX512 cpu without AVX2 support. 
+#endif
 
 #define AVX512_MASKSTORE_FLOATS(dest, mask, source)   _mm512_maskstore_ps(dest, mask, source)
 
