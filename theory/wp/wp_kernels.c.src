@@ -74,7 +74,8 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       avx512_weight_func   = get_avx512_weight_func_by_method_DOUBLE(weight_method);
   }
 
-  int64_t prev_j = 0, n_off = 0;
+  const DOUBLE *zend = z1 + N1;
+  const DOUBLE *zstart = z1;
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
@@ -86,22 +87,18 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
         pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
     }
 
-    int64_t j;
     if(same_cell == 1) {
-        z1++; n_off++;
-        j = i+1;
+        z1++;
     } else {
-        for(;prev_j<N1;prev_j++) {
-            const DOUBLE dz = *z1 - zpos;
-            if(dz > -pimax) break;
-            z1++; n_off++;
-        }
-        if(prev_j == N1) {
-            i = N0;
-            break;
-        }
-        j = prev_j;
+      while(z1 != zend && (*z1 - zpos) <= -pimax) {
+	z1++;
+      }
+      if(z1 == zend) {
+	i = N0;
+	break;
+      }
     }
+    const int64_t n_off = z1 - zstart;
     DOUBLE *localz1 = z1;
     DOUBLE *localx1 = x1 + n_off;
     DOUBLE *localy1 = y1 + n_off;
@@ -109,7 +106,8 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
         local_w1.weights[w] = weights1->weights[w] + n_off;
     }
     const AVX512_FLOATS m_zero_DOUBLE = AVX512_SET_FLOAT(ZERO);
-    for(;j<N1;j+=AVX512_NVEC) {
+
+    for(int64_t j=n_off;j<N1;j+=AVX512_NVEC) {
       AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
       const AVX512_FLOATS m_xpos  = AVX512_SET_FLOAT(xpos);
       const AVX512_FLOATS m_ypos  = AVX512_SET_FLOAT(ypos);
@@ -171,9 +169,11 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 	  continue;
 	}
       }
-
-      const AVX512_FLOATS m_Dperp = AVX512_MASK_SQRT_FLOAT(m_zero_DOUBLE, m_mask_left, r2);
-      AVX512_FLOATS m_weights = m_zero_DOUBLE;
+      
+      AVX512_FLOATS m_Dperp = m_zero_DOUBLE, m_weights = m_zero_DOUBLE;;
+      if(need_rpavg) {
+	m_Dperp = AVX512_MASK_SQRT_FLOAT(m_zero_DOUBLE, m_mask_left, r2);
+      }
       if(need_weightavg){
         m_weights = avx512_weight_func(&pair);
       }

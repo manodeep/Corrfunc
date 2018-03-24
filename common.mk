@@ -387,7 +387,7 @@ ifeq ($(DO_CHECKS), 1)
     PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
 
     ## Check numpy version
-    export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
+    export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print(numpy.__version__)" 2>/dev/null)))
     export NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
     export NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
 
