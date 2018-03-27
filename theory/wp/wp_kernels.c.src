@@ -15,10 +15,7 @@
 #include "utils.h"
 
 #include "function_precision.h"
-#include "utils.h"
-
 #include "weight_functions_DOUBLE.h"
-
 
 #ifdef __AVX512F__
 #include "avx512_calls.h"
@@ -98,6 +95,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 	break;
       }
     }
+
     const int64_t n_off = z1 - zstart;
     DOUBLE *localz1 = z1;
     DOUBLE *localx1 = x1 + n_off;
@@ -118,25 +116,12 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       const AVX512_FLOATS m_z1 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_zpos, m_mask_left, localz1);
 
 
-      union int16 {
-        AVX512_INTS m_ibin;
-        int ibin[AVX512_NVEC];
-      };
-      union float16{
-        AVX512_FLOATS m_Dperp;
-        DOUBLE Dperp[AVX512_NVEC];
-      };
-            
       union int16 union_rpbin;
       union float16 union_mDperp;
+      union float16_weights union_mweight;
+
       union_rpbin.m_ibin = AVX512_SET_INT(0);
       union_mDperp.m_Dperp = m_zero_DOUBLE;
-      
-      union float16_weights{
-        AVX512_FLOATS m_weights;
-        DOUBLE weights[AVX512_NVEC];
-      };
-      union float16_weights union_mweight;
 
 #ifdef COUNT_VECTORIZED
       vectorized_npairs += AVX512_NVEC;
@@ -207,13 +192,6 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 	if(need_rpavg || need_weightavg) {
 	  m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_INT(kbin));
 	}
-	// Only intel compilers have the mask_horizontal sum intrinsics (which is a collection of intrinsics)
-	/* if(need_rpavg) { */
-	/*   rpavg[kbin] += AVX512_MASK_HORIZONTAL_SUM_FLOATS(m_bin_mask, m_Dperp); */
-	/* } */
-	/* if(need_weightavg) { */
-	/*   weightavg[kbin] += AVX512_MASK_HORIZONTAL_SUM_FLOATS(m_bin_mask, m_weights); */
-	/* } */
 	m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
 	if(m_mask_left == 0) {
 	  break;
@@ -241,8 +219,6 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
           }
         }
       } //OUTPUT_RPAVG
-
-
     }//end of j-loop
   }//loop over first set of particles
 

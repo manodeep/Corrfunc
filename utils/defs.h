@@ -262,6 +262,8 @@ static inline struct config_options get_config_options(void)
 
 #ifdef __AVX512F__
     options.instruction_set = AVX512F;
+#elif defined(__AVX2__)
+    options.instruction_set = AVX2;
 #elif defined(__AVX__)
     options.instruction_set = AVX;
 #elif defined(__SSE4_2__)

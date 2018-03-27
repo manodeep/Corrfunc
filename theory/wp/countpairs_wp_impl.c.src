@@ -48,7 +48,7 @@ wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options)
         return function;
     }
 
-    //Seriously this is the declaration for the function pointers...here be dragons.
+    //Seriously this is the declaration for the function pointers
     wp_func_ptr_DOUBLE allfunctions[] = {
 #ifdef __AVX512F__
       wp_avx512_intrinsics_DOUBLE,

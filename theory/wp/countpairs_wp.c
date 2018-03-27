@@ -48,7 +48,7 @@ int countpairs_wp(const int64_t ND, void * restrict X, void * restrict Y, void *
     }
 
     if(options->float_type == sizeof(float)) {
-      return countpairs_wp_float(ND, (float * restrict) X, (float * restrict) Y, (float * restrict) Z,
+      return countpairs_wp_float(ND, (float *) X, (float *) Y, (float *) Z,
                                  boxsize,
                                  numthreads,
                                  binfile,
@@ -57,7 +57,7 @@ int countpairs_wp(const int64_t ND, void * restrict X, void * restrict Y, void *
                                  options,
                                  extra);
     } else {
-      return countpairs_wp_double(ND, (double * restrict) X, (double * restrict) Y, (double * restrict) Z,
+      return countpairs_wp_double(ND, (double *) X, (double *) Y, (double *) Z,
                                   boxsize,
                                   numthreads,
                                   binfile,
