@@ -43,7 +43,14 @@ extern "C" {
 #define AVX2_MULTIPLY_FLOATS(X,Y)         _mm256_mul_ps(X,Y)
 #define AVX2_DIVIDE_FLOATS(X,Y)           _mm256_div_ps(X,Y)
 #define AVX2_SUBTRACT_FLOATS(X,Y)         _mm256_sub_ps(X,Y)
+#if defined(__FMA__) 
 #define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_fmadd_ps(X,Y,Z)
+#elif defined(__FMA4__) /* on AMD cpus with FMA4 */
+#define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_macc_ps(X,Y,Z)
+#else
+#error Can not detect applicable FMA instruction 
+#endif
+
 #define AVX2_ADD_FLOATS(X,Y)              _mm256_add_ps(X,Y)
 
 #define AVX2_SQRT_FLOAT(X)                _mm256_sqrt_ps(X)
@@ -111,7 +118,14 @@ extern "C" {
 #define AVX2_DIVIDE_FLOATS(X,Y)           _mm256_div_pd(X,Y)
 #define AVX2_SUBTRACT_FLOATS(X,Y)         _mm256_sub_pd(X,Y)
 #define AVX2_ADD_FLOATS(X,Y)              _mm256_add_pd(X,Y)
+
+#if defined(__FMA__) 
 #define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_fmadd_pd(X,Y,Z)
+#elif defined(__FMA4__)
+#define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_macc_pd(X,Y,Z)
+#else
+#error Can not detect applicable FMA instruction 
+#endif
 
 #define AVX2_SQRT_FLOAT(X)                _mm256_sqrt_pd(X)
 #define AVX2_SVML_SQRT_FLOAT(X)           _mm256_svml_sqrt_pd(X)

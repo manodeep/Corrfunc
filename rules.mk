@@ -50,6 +50,12 @@ $(TARGET).o: $(TARGET).c $(ROOT_DIR)/common.mk Makefile $(ROOT_DIR)/theory.optio
 	@echo "#endif" >> $@
 	sed -e "/DOUBLE_PREC/!s/DOUBLE/double/g"  $< >> $@
 
+$(LIBNAME).o:$(LIBNAME).c $(LIBNAME).h $(LIBNAME)_impl_double.h $(LIBNAME)_impl_float.h
+$(LIBNAME)_impl_double.h: $(UTILS_DIR)/weight_defs_double.h
+$(LIBNAME)_impl_float.h:  $(UTILS_DIR)/weight_defs_float.h
+$(LIBNAME)_impl_double.o: $(UTILS_DIR)/weight_functions_double.h
+$(LIBNAME)_impl_float.o: $(UTILS_DIR)/weight_functions_float.h
+
 %_double.o: %_double.c
 	$(CC) -DDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
