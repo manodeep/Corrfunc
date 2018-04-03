@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
     /*---Count-pairs--------------------------------------*/
     results_countpairs_mocks results;
     struct config_options options = get_config_options();
-    
+
     /* Pack weights into extra options */
     struct extra_options extra = get_extra_options(weight_method);
     for(int w = 0; w < num_weights; w++){
