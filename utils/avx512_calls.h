@@ -57,161 +57,233 @@ extern "C" {
 #define AVX512_MASK                         __mmask16
 #define AVX512_FLOATS                       __m512
 
-#define AVX512_INTS                            __m512i
-#define AVX512_SET_INT(X)                      _mm512_set1_epi32(X)
+#define AVX512_INTS                                      __m512i
+#define AVX512_SET_INT(X)                                _mm512_set1_epi32(X)
 
-#define AVX512_LOAD_FLOATS_UNALIGNED(X)     _mm512_loadu_ps(X)
-#define AVX512_LOAD_FLOATS_ALIGNED(X)       _mm512_load_ps(X)
-#define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)     _mm512_mask_loadu_ps(FALSEVALS, MASK, X)
+#if 0
+#define AVX512_ADD_INTS(X, Y)                            _mm512_add_epi32(X, Y) 
+#define AVX512_MASK_ADD_INTS(FALSEVALS, MASK, X, Y)      _mm512_mask_add_epi32(FALSEVALS, MASK, X, Y)
+#define AVX512_MASKZ_ADD_INTS(MASK, X, Y)                _mm512_maskz_add_epi32(MASK, X, Y)
+
+#define AVX512_MULTIPLY_INTS(X, Y)                                 _mm512_mul_epi32(X, Y) 
+#define AVX512_MASK_MULTIPLY_INTS(FALSEVALS, MASK, X, Y)           _mm512_mask_mul_epi32(FALSEVALS, MASK, X, Y)
+#define AVX512_MASKZ_MULTIPLY_INTS(MASK, X, Y)                     _mm512_maskz_mul_epi32(MASK, X, Y)
+#endif /* commenting out the int math operations since they are either cumbersome or produce results of different SIMD widths*/
+
+#define AVX512_LOAD_FLOATS_UNALIGNED(X)                            _mm512_loadu_ps(X)
+#define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)      _mm512_mask_loadu_ps(FALSEVALS, MASK, X)
+#define AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(MASK, X)                _mm512_maskz_loadu_ps(MASK, X)
+
+#define AVX512_LOAD_FLOATS_ALIGNED(X)                             _mm512_load_ps(X)
 #define AVX512_MASK_LOAD_FLOATS_ALIGNED(FALSEVALS, MASK, X)       _mm512_mask_load_ps(FALSEVALS, MASK, X)
+#define AVX512_MASKZ_LOAD_FLOATS_ALIGNED(MASK, X)                 _mm512_maskz_load_ps(MASK, X)
 
 
-#define AVX512_MULTIPLY_FLOATS(X,Y)         _mm512_mul_ps(X,Y)
-#define AVX512_DIVIDE_FLOATS(X,Y)           _mm512_div_ps(X,Y)
-#define AVX512_SUBTRACT_FLOATS(X,Y)         _mm512_sub_ps(X,Y)
-#define AVX512_ADD_FLOATS(X,Y)              _mm512_add_ps(X,Y)
-#define AVX512_FMA_ADD_FLOATS(X,Y,Z)            _mm512_fmadd_ps(X,Y,Z)
-#define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_ps(X, MASK, Y, Z)
+#define AVX512_MULTIPLY_FLOATS(X,Y)                               _mm512_mul_ps(X,Y)
+#define AVX512_MASK_MULTIPLY_FLOATS(FALSEVALS, MASK, X,Y)         _mm512_mask_mul_ps(FALSEVALS, MASK, X,Y)
+#define AVX512_MASKZ_MULTIPLY_FLOATS(MASK, X,Y)                   _mm512_maskz_mul_ps(MASK, X,Y)
+
+
+#define AVX512_DIVIDE_FLOATS(X,Y)                                 _mm512_div_ps(X,Y)
+#define AVX512_MASK_DIVIDE_FLOATS(FALSEVALS, MASK, X,Y)           _mm512_mask_div_ps(FALSEVALS, MASK, X,Y)
+#define AVX512_MASKZ_DIVIDE_FLOATS(MASK, X,Y)                     _mm512_maskz_div_ps(MASK, X,Y)
+
+#define AVX512_ADD_FLOATS(X,Y)                                    _mm512_add_ps(X,Y)
+#define AVX512_MASK_ADD_FLOATS(FALSEVALS, MASK, X,Y)              _mm512_mask_add_ps(FALSEVALS, MASK, X,Y)
+#define AVX512_MASKZ_ADD_FLOATS(MASK, X,Y)                        _mm512_maskz_add_ps(MASK, X,Y)
+
+#define AVX512_SUBTRACT_FLOATS(X,Y)                               _mm512_sub_ps(X,Y)
+#define AVX512_MASK_SUBTRACT_FLOATS(FALSEVALS, MASK, X,Y)         _mm512_mask_sub_ps(FALSEVALS, MASK, X,Y)
+#define AVX512_MASKZ_SUBTRACT_FLOATS(MASK, X,Y)                   _mm512_maskz_sub_ps(MASK, X,Y)
+
+#define AVX512_FMA_ADD_FLOATS(X,Y,Z)                              _mm512_fmadd_ps(X,Y,Z)
+#define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z)                 _mm512_mask_fmadd_ps(X, MASK, Y, Z)
+#define AVX512_MASKZ_FMA_ADD_FLOATS(X, MASK, Y, Z)                _mm512_maskz_fmadd_ps(X, MASK, Y, Z)
+
+#define AVX512_FMA_SUBTRACT_FLOATS(X,Y,Z)                         _mm512_fmsub_ps(X,Y,Z)
+#define AVX512_MASK_FMA_SUBTRACT_FLOATS(X, MASK, Y, Z)            _mm512_mask_fmsub_ps(X, MASK, Y, Z)
+#define AVX512_MASKZ_FMA_SUBTRACT_FLOATS(X, MASK, Y, Z)           _mm512_maskz_fmsub_ps(X, MASK, Y, Z)
+
 
 #ifdef  __INTEL_COMPILER
-#define AVX512_HORIZONTAL_SUM_FLOATS(X)     _mm512_reduce_add_ps(X)
-#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _mm512_mask_reduce_add_ps(MASK, X)
+#define AVX512_HORIZONTAL_SUM_FLOATS(X)                           _mm512_reduce_add_ps(X)
+#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)                _mm512_mask_reduce_add_ps(MASK, X)
 #else
-#define AVX512_HORIZONTAL_SUM_FLOATS(X)                _horizontal_sum_floats(X)
-#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _horizontal_mask_sum_floats(X)
+#define AVX512_HORIZONTAL_SUM_FLOATS(X)                           _horizontal_sum_floats(X)
+#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)                _horizontal_mask_sum_floats(X)
 #endif
 
-#define AVX512_SQRT_FLOAT(X)                        _mm512_sqrt_ps(X)
-#define AVX512_MASK_SQRT_FLOAT(FALSEVALS, MASK, X)  _mm512_mask_sqrt_ps(FALSEVALS, MASK, X)
-#define AVX512_SVML_SQRT_FLOAT(X)                   _mm512_svml_sqrt_ps(X)
-#define AVX512_TRUNCATE_FLOAT_TO_INT(X)             _mm512_cvttps_epi32(X)
-#define AVX512_STORE_FLOATS_TO_MEMORY(X,Y)          _mm512_storeu_ps(X,Y)
-#define AVX512_SQUARE_FLOAT(X)                      _mm512_mul_ps(X,X)
-#define AVX512_LOG_FLOAT(X)                         _mm512_log_ps(X)
-#define AVX512_LOG10_FLOAT(X)                       _mm512_log10_ps(X)
-#define AVX512_LOG2_FLOAT(X)                        _mm512_log2_ps(X)
-#define AVX512_RECIPROCAL_FLOATS(X)                 _mm512_rcp_ps(X)
-
-#define AVX512_BROADCAST_FLOAT(X)                   _mm512_broadcast_ss(X)
-#define AVX512_SET_FLOAT(X)                         _mm512_set1_ps(X)
+#define AVX512_SQRT_FLOAT(X)                                      _mm512_sqrt_ps(X)
+#define AVX512_MASK_SQRT_FLOAT(FALSEVALS, MASK, X)                _mm512_mask_sqrt_ps(FALSEVALS, MASK, X)
+#define AVX512_MASKZ_SQRT_FLOAT(MASK, X)                          _mm512_maskz_sqrt_ps(MASK, X)
 
 
-    // X OP Y
-#define AVX512_COMPARE_FLOATS(X, Y, OP)             _mm512_cmp_ps_mask(X, Y, OP)
+#define AVX512_SVML_SQRT_FLOAT(X)                                 _mm512_svml_sqrt_ps(X)
+#define AVX512_TRUNCATE_FLOAT_TO_INT(X)                           _mm512_cvttps_epi32(X)
+#define AVX512_STORE_FLOATS_TO_MEMORY(X,Y)                        _mm512_storeu_ps(X,Y)
+#define AVX512_SQUARE_FLOAT(X)                                    _mm512_mul_ps(X,X)
+#define AVX512_LOG_FLOAT(X)                                       _mm512_log_ps(X)
+#define AVX512_LOG10_FLOAT(X)                                     _mm512_log10_ps(X)
+#define AVX512_LOG2_FLOAT(X)                                      _mm512_log2_ps(X)
 
-  //Mask operations (new in AVX512)
-#define AVX512_MASK_COMPARE_FLOATS(M, X, Y, OP)     _mm512_mask_cmp_ps_mask(M, X, Y, OP)
+#define AVX512_RECIPROCAL_FLOATS(X)                               _mm512_rcp14_ps(X)
+#define AVX512_MASK_RECIPROCAL_FLOATS(FALSEVALS, MASK, X)         _mm512_mask_rcp14_ps(FALSEVALS, MASK, X)
+#define AVX512_MASKZ_RECIPROCAL_FLOATS(MASK, X)                   _mm512_maskz_rcp14_ps(MASK, X)
 
-//MoveMask
-#define AVX512_TEST_COMPARISON(X)                   _mm512_movemask_ps(X)
+#define AVX512_SET_FLOAT(X)                                       _mm512_set1_ps(X)
 
-#define AVX512_BLEND_FLOATS_WITH_MASK(MASK, FALSE,TRUE) _mm512_mask_blend_ps(MASK, FALSE,TRUE)
+// X OP Y
+#define AVX512_COMPARE_FLOATS(X, Y, OP)                           _mm512_cmp_ps_mask(X, Y, OP)
 
-#if defined(__AVX512VL__)
-/* #warning blending integers with avx512vl */
-#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSE,TRUE)   _mm512_mask_blend_epi32(MASK, FALSE,TRUE)
-#elif defined(__AVX2__)
-/* #warning blending integers with avx2 */
-#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSE,TRUE) _mm256_blend_epi32(FALSE, TRUE, MASK)//AVX2
-#else
-#error Do not know how to implement a integer blend intrinsics on AVX512 cpu without AVX2 support. 
-#endif
-
-#define AVX512_MASKSTORE_FLOATS(dest, mask, source)   _mm512_maskstore_ps(dest, mask, source)
+//Mask operations (new in AVX512)
+#define AVX512_MASK_COMPARE_FLOATS(M, X, Y, OP)                   _mm512_mask_cmp_ps_mask(M, X, Y, OP)
+#define AVX512_BLEND_FLOATS_WITH_MASK(MASK, FALSE,TRUE)           _mm512_mask_blend_ps(MASK, FALSE,TRUE)
+#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSE, TRUE)            _mm512_mask_blend_epi32(MASK, FALSE, TRUE)
 
 //Trig
 #ifdef  __INTEL_COMPILER
-#define AVX512_ARC_COSINE(X, order)                 _mm512_acos_ps(X)
+/* Needs SVML */
+#define AVX512_ARC_COSINE(X, order)                 _mm512_acos_ps(X)  
 #else
-    //Other compilers do not have the vectorized arc-cosine
-#define AVX512_ARC_COSINE(X, order)                  inv_cosine_avx512(X, order)
+//Other compilers do not have the vectorized arc-cosine
+#define AVX512_ARC_COSINE(X, order)                 inv_cosine_avx512(X, order)
 #endif
 
-    //Max
+//Max
 #define AVX512_MAX_FLOATS(X,Y)               _mm512_max_ps(X,Y)
 
 
-  //Absolute value
-#define AVX512_ABS_FLOAT(X)                  _mm512_max_ps(_mm512_sub_ps(_mm512_setzero_ps(), X), X)
+//Absolute value
+#define AVX512_ABS_FLOAT(X)                  _mm512_abs_ps(X)
   
-    //Casting (does not actual convert between types)
-#define AVX512_CAST_FLOAT_TO_INT(X)          _mm512_castps_si256(X)
-#define AVX512_CAST_INT_TO_FLOAT(X)          _mm512_castsi256_ps(X)
+ //Casting (does not actual convert between types)
+#define AVX512_CAST_FLOAT_TO_INT(X)          _mm512_castps_si512(X)
+#define AVX512_CAST_INT_TO_FLOAT(X)          _mm512_castsi512_ps(X)
 
-    //Streaming store
-#define AVX512_STREAMING_STORE_FLOATS(X,Y)   _mm512_stream_ps(X,Y)
-#define AVX512_STREAMING_STORE_INTS(X,Y)     _mm512_stream_si256(X,Y)
 
 #else //DOUBLE PRECISION CALCULATIONS
   
-#define DOUBLE                           double
+#define DOUBLE                              double
 #define AVX512_NVEC                         8    
 #define AVX512_MASK                         __mmask8
 #define AVX512_FLOATS                       __m512d
+
+//This is AVX2 and not AVX512F 
 #define AVX512_INTS                         __m256i
+
 #define AVX512_SET_INT(X)                   _mm256_set1_epi32(X)
 
-#define AVX512_LOAD_FLOATS_UNALIGNED(X)     _mm512_loadu_pd(X)
-#define AVX512_LOAD_FLOATS_ALIGNED(X)       _mm512_load_pd(X)
-#define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)     _mm512_mask_loadu_pd(FALSEVALS, MASK, X)
-#define AVX512_MASK_LOAD_FLOATS_ALIGNED(FALSEVALS, MASK, X)       _mm512_mask_load_pd(FALSEVALS, MASK, X)
+#if 0
+#define AVX512_ADD_INTS(X, Y)               _mm256_add_epi32(X, Y) 
+#define AVX512_MULTIPLY_INTS(X, Y)          _mm256_mul_epi32(X, Y) 
 
-#define AVX512_MULTIPLY_FLOATS(X,Y)         _mm512_mul_pd(X,Y)
-#define AVX512_DIVIDE_FLOATS(X,Y)           _mm512_div_pd(X,Y)
-#define AVX512_SUBTRACT_FLOATS(X,Y)         _mm512_sub_pd(X,Y)
-#define AVX512_ADD_FLOATS(X,Y)              _mm512_add_pd(X,Y)
-#define AVX512_FMA_ADD_FLOATS(X,Y,Z)            _mm512_fmadd_pd(X,Y,Z)
-#define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z) _mm512_mask_fmadd_pd(X, MASK, Y, Z)
+#if defined(__AVX512VL__)
+#define AVX512_MASK_ADD_INTS(FALSEVALS, MASK, X, Y)               _mm256_mask_add_epi32(FALSEVALS, MASK, X, Y)
+#define AVX512_MASKZ_ADD_INTS(MASK, X, Y)                         _mm256_maskz_add_epi32(MASK, X, Y)
+
+#define AVX512_MASK_MULTIPLY_INTS(FALSEVALS, MASK, X, Y)          _mm256_mask_mul_epi32(FALSEVALS, MASK, X, Y)
+#define AVX512_MASKZ_MULTIPLY_INTS(MASK, X, Y)                    _mm256_maskz_mul_epi32(MASK, X, Y)
+
+#elif defined(__AVX512F__)
+#define AVX512_MASK_ADD_INTS(FALSEVALS, MASK, X, Y)               _mm512_castsi512_si256(_mm512_mask_add_epi32(_mm512_castsi256_si512(FALSEVALS), MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
+#define AVX512_MASKZ_ADD_INTS(MASK, X, Y)                         _mm512_castsi512_si256(_mm512_maskz_add_epi32(MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
+
+#define AVX512_MASK_MULTIPLY_INTS(FALSEVALS, MASK, X, Y)          _mm512_castsi512_si256(_mm512_mask_mul_epi32(_mm512_castsi256_si512(FALSEVALS), MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
+#define AVX512_MASKZ_MULTIPLY_INTS(MASK, X, Y)                    _mm512_castsi512_si256(_mm512_maskz_mul_epi32(MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
+#endif
+#endif /* commenting out the int math operations since they are either cumbersome or produce results of different SIMD widths*/
+
+
+#define AVX512_LOAD_FLOATS_UNALIGNED(X)                           _mm512_loadu_pd(X)
+#define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)     _mm512_mask_loadu_pd(FALSEVALS, MASK, X)
+#define AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(MASK, X)               _mm512_maskz_loadu_pd(MASK, X)
+
+#define AVX512_LOAD_FLOATS_ALIGNED(X)                             _mm512_load_pd(X)
+#define AVX512_MASK_LOAD_FLOATS_ALIGNED(FALSEVALS, MASK, X)       _mm512_mask_load_pd(FALSEVALS, MASK, X)
+#define AVX512_MASKZ_LOAD_FLOATS_ALIGNED(MASK, X)                 _mm512_maskz_load_pd(MASK, X)
+
+#define AVX512_MULTIPLY_FLOATS(X,Y)                               _mm512_mul_pd(X,Y)
+#define AVX512_MASK_MULTIPLY_FLOATS(FALSEVALS, MASK, X,Y)         _mm512_mask_mul_pd(FALSEVALS, MASK, X,Y)
+#define AVX512_MASKZ_MULTIPLY_FLOATS(MASK, X,Y)                   _mm512_maskz_mul_pd(MASK, X,Y)
+
+#define AVX512_DIVIDE_FLOATS(X,Y)                                 _mm512_div_pd(X,Y)
+#define AVX512_MASK_DIVIDE_FLOATS(FALSEVALS, MASK, X,Y)           _mm512_mask_div_pd(FALSEVALS, MASK, X,Y)
+#define AVX512_MASKZ_DIVIDE_FLOATS(MASK, X,Y)                     _mm512_maskz_div_pd(MASK, X,Y)
+
+#define AVX512_ADD_FLOATS(X,Y)                                    _mm512_add_pd(X,Y)
+#define AVX512_MASK_ADD_FLOATS(FALSEVALS, MASK, X,Y)              _mm512_mask_add_pd(FALSEVALS, MASK, X,Y)
+#define AVX512_MASKZ_ADD_FLOATS(MASK, X,Y)                        _mm512_maskz_add_pd(MASK, X,Y)
+
+#define AVX512_SUBTRACT_FLOATS(X,Y)                               _mm512_sub_pd(X,Y)
+#define AVX512_MASK_SUBTRACT_FLOATS(FALSEVALS, MASK, X,Y)         _mm512_mask_sub_pd(FALSEVALS, MASK, X,Y)
+#define AVX512_MASKZ_SUBTRACT_FLOATS(MASK, X,Y)                   _mm512_maskz_sub_pd(MASK, X,Y)
+
+#define AVX512_FMA_ADD_FLOATS(X,Y,Z)                              _mm512_fmadd_pd(X,Y,Z)
+#define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z)                 _mm512_mask_fmadd_pd(X, MASK, Y, Z)
+#define AVX512_MASKZ_FMA_ADD_FLOATS(X, MASK, Y, Z)                _mm512_maskz_fmadd_pd(X, MASK, Y, Z)
+
+#define AVX512_FMA_SUBTRACT_FLOATS(X,Y,Z)                         _mm512_fmsub_pd(X,Y,Z)
+#define AVX512_MASK_FMA_SUBTRACT_FLOATS(X, MASK, Y, Z)            _mm512_mask_fmsub_pd(X, MASK, Y, Z)
+#define AVX512_MASKZ_FMA_SUBTRACT_FLOATS(X, MASK, Y, Z)           _mm512_maskz_fmsub_pd(X, MASK, Y, Z)
+
 
 #ifdef  __INTEL_COMPILER
-#define AVX512_HORIZONTAL_SUM_FLOATS(X)     _mm512_reduce_add_ps(X)
-#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)     _mm512_mask_reduce_add_ps(MASK, X)
+#define AVX512_HORIZONTAL_SUM_FLOATS(X)                           _mm512_reduce_add_pd(X)
+#define AVX512_MASK_HORIZONTAL_SUM_FLOATS(MASK, X)                _mm512_mask_reduce_add_pd(MASK, X)
 #endif
 
-#define AVX512_SQRT_FLOAT(X)                _mm512_sqrt_pd(X)
-#define AVX512_MASK_SQRT_FLOAT(FALSEVALS, MASK, X)  _mm512_mask_sqrt_pd(FALSEVALS, MASK, X)
-#define AVX512_SVML_SQRT_FLOAT(X)           _mm512_svml_sqrt_pd(X)
-#define AVX512_TRUNCATE_FLOAT_TO_INT(X)     _mm512_cvttpd_epi32(X)
-#define AVX512_STORE_FLOATS_TO_MEMORY(X,Y)  _mm512_storeu_pd(X,Y)
-#define AVX512_SQUARE_FLOAT(X)              _mm512_mul_pd(X,X)
-#define AVX512_LOG_FLOAT(X)                 _mm512_log_pd(X)
-#define AVX512_LOG2_FLOAT(X)                _mm512_log2_pd(X)
-#define AVX512_LOG10_FLOAT(X)                _mm512_log10_pd(X)
-#define AVX512_RECIPROCAL_FLOATS(X)         _mm512_rcp_pd(X)
+#define AVX512_SQRT_FLOAT(X)                                      _mm512_sqrt_pd(X)
+#define AVX512_MASK_SQRT_FLOAT(FALSEVALS, MASK, X)                _mm512_mask_sqrt_pd(FALSEVALS, MASK, X)
+#define AVX512_MASKZ_SQRT_FLOAT(MASK, X)                          _mm512_maskz_sqrt_pd(MASK, X)
+
+
+#define AVX512_SVML_SQRT_FLOAT(X)                                 _mm512_svml_sqrt_pd(X)
+#define AVX512_TRUNCATE_FLOAT_TO_INT(X)                           _mm512_cvttpd_epi32(X) 
+#define AVX512_STORE_FLOATS_TO_MEMORY(X,Y)                        _mm512_storeu_pd(X,Y)
+#define AVX512_SQUARE_FLOAT(X)                                    _mm512_mul_pd(X,X)
+#define AVX512_LOG_FLOAT(X)                                       _mm512_log_pd(X)
+#define AVX512_LOG2_FLOAT(X)                                      _mm512_log2_pd(X)
+#define AVX512_LOG10_FLOAT(X)                                     _mm512_log10_pd(X)
+
+#define AVX512_RECIPROCAL_FLOATS(X)                               _mm512_rcp14_pd(X)
+#define AVX512_MASK_RECIPROCAL_FLOATS(FALSEVALS, MASK, X)         _mm512_mask_rcp14_pd(FALSEVALS, MASK, X)
+#define AVX512_MASKZ_RECIPROCAL_FLOATS(MASK, X)                   _mm512_maskz_rcp14_pd(MASK, X)
+
 
     // X OP Y
-#define AVX512_COMPARE_FLOATS(X, Y, OP)      _mm512_cmp_pd_mask(X, Y, OP)
-#define AVX512_MASK_COMPARE_FLOATS(M, X, Y, OP) _mm512_mask_cmp_pd_mask(M, X, Y, OP)
+#define AVX512_COMPARE_FLOATS(X, Y, OP)                           _mm512_cmp_pd_mask(X, Y, OP)
+#define AVX512_MASK_COMPARE_FLOATS(M, X, Y, OP)                   _mm512_mask_cmp_pd_mask(M, X, Y, OP)
 
-#define AVX512_BROADCAST_FLOAT(X)            _mm512_broadcast_sd(X)
-#define AVX512_SET_FLOAT(X)                  _mm512_set1_pd(X)
-//MoveMask
-#define AVX512_TEST_COMPARISON(X)            _mm512_movemask_pd(X)
+#define AVX512_SET_FLOAT(X)                                       _mm512_set1_pd(X)
 
 #define AVX512_BLEND_FLOATS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm512_mask_blend_pd(MASK, FALSEVALUE,TRUEVALUE)
-#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSEVALUE,TRUEVALUE) _mm256_mask_blend_epi32(MASK, FALSEVALUE,TRUEVALUE)
-#define AVX512_MASKSTORE_FLOATS(dest, mask, source)   _mm512_maskstore_pd(dest, mask, source)
+
+#if defined(__AVX512VL__)
+#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSE,TRUE)             _mm256_mask_blend_epi32(MASK, FALSE,TRUE)
+#elif defined(__AVX2__)
+#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSE,TRUE)             _mm256_blend_epi32(FALSE, TRUE, MASK)//AVX2
+#else
+#define AVX512_BLEND_INTS_WITH_MASK(MASK, FALSE, TRUE)            _blend_epi32_with_mask(MASK, FALSE, TRUE)
+#endif
+
 
 //Trig
 #ifdef  __INTEL_COMPILER
 #define AVX512_ARC_COSINE(X, order)                 _mm512_acos_pd(X)
 #else
-#define AVX512_ARC_COSINE(X, order)                  inv_cosine_avx(X, order)
+#define AVX512_ARC_COSINE(X, order)                  inv_cosine_avx512(X, order)
 #endif
 
     //Max
 #define AVX512_MAX_FLOATS(X,Y)               _mm512_max_pd(X,Y)
 
-  //Absolute value
-#define AVX512_ABS_FLOAT(X)                  _mm512_max_pd(_mm512_sub_pd(_mm512_setzero_pd(), X), X)
-  
-    //Casting (does not actual convert between types)
-#define AVX512_CAST_FLOAT_TO_INT(X)          _mm512_castpd_si256(X)
-#define AVX512_CAST_INT_TO_FLOAT(X)          _mm512_castsi256_pd(X)
+//Absolute value
+#define AVX512_ABS_FLOAT(X)                  _mm512_abs_pd(X)
 
-    //Streaming store
-#define AVX512_STREAMING_STORE_FLOATS(X,Y)   _mm512_stream_pd(X,Y)
-#define AVX512_STREAMING_STORE_INTS(X,Y)     _mm512_stream_si512(X,Y)
+  
+ //Casting (does not actual convert between types)
+#define AVX512_CAST_FLOAT_TO_INT(X)          _mm512_castpd_si512(X)
+#define AVX512_CAST_INT_TO_FLOAT(X)          _mm512_castsi512_pd(_mm512_castsi256_si512(X))
 
 #endif //DOUBLE_PREC
 

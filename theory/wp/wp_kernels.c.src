@@ -104,17 +104,15 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
         local_w1.weights[w] = weights1->weights[w] + n_off;
     }
     const AVX512_FLOATS m_zero_DOUBLE = AVX512_SET_FLOAT(ZERO);
+    const AVX512_FLOATS m_xpos  = AVX512_SET_FLOAT(xpos);
+    const AVX512_FLOATS m_ypos  = AVX512_SET_FLOAT(ypos);
+    const AVX512_FLOATS m_zpos  = AVX512_SET_FLOAT(zpos);
 
     for(int64_t j=n_off;j<N1;j+=AVX512_NVEC) {
       AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
-      const AVX512_FLOATS m_xpos  = AVX512_SET_FLOAT(xpos);
-      const AVX512_FLOATS m_ypos  = AVX512_SET_FLOAT(ypos);
-      const AVX512_FLOATS m_zpos  = AVX512_SET_FLOAT(zpos);
-
-      const AVX512_FLOATS m_x1 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_xpos, m_mask_left, localx1);
-      const AVX512_FLOATS m_y1 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_ypos, m_mask_left, localy1);
-      const AVX512_FLOATS m_z1 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_zpos, m_mask_left, localz1);
-
+      const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
+      const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
+      const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
 
       union int16 union_rpbin;
       union float16 union_mDperp;
@@ -131,7 +129,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       localz1 += AVX512_NVEC;
         
       for(int w = 0; w < pair.num_weights; w++){
-        pair.weights1[w].a512 = AVX512_MASK_LOAD_FLOATS_UNALIGNED(m_zero_DOUBLE, m_mask_left, local_w1.weights[w]);
+        pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
         local_w1.weights[w] += AVX512_NVEC;
       }
 
@@ -167,17 +165,18 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       
       //Do all the distance cuts using masks here in new scope
       {
-        const AVX512_MASK m_rpmax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, r2, m_sqr_rpmax, _CMP_LT_OS);
+        const AVX512_MASK m_rpmax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, r2, m_sqr_rpmax, _CMP_LT_OQ);
         //Create a combined mask 
         //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
-        m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_rpmax_mask, r2, m_sqr_rpmin, _CMP_GE_OS);
+        m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_rpmax_mask, r2, m_sqr_rpmin, _CMP_GE_OQ);
 	if(m_mask_left == 0) {
 	  continue;
 	}
+
       }
       
       if(need_rpavg) {
-	union_mDperp.m_Dperp = AVX512_MASK_SQRT_FLOAT(m_zero_DOUBLE, m_mask_left, r2);
+	union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
       }
       if(need_weightavg){
         union_mweight.m_weights = avx512_weight_func(&pair);
@@ -187,7 +186,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
       // at the beginning of the loop. 
       for(int kbin=nbin-1;kbin>=1;kbin--) {
-        const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+	const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
 	npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
 	if(need_rpavg || need_weightavg) {
 	  m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_INT(kbin));
@@ -745,9 +744,8 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
           m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
         }
 
-        m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
-        const int test3 = AVX_TEST_COMPARISON(m_mask_left);
-        if(test3 == 0) {
+        m_mask_left = AVX_AND_NOT(m_bin_mask, m_mask_left);/* not(bin_mask) and mask_left */
+        if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
           break;
         }
       }
