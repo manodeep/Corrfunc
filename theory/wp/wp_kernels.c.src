@@ -122,7 +122,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
       union_mDperp.m_Dperp = m_zero_DOUBLE;
 
 #ifdef COUNT_VECTORIZED
-      vectorized_npairs += AVX512_NVEC;
+      vectorized_npairs += (N1 - j) >= AVX512_NVEC ? AVX512_NVEC:N1-j;
 #endif
       localx1 += AVX512_NVEC;//this might actually exceed the allocated range but we will never dereference that
       localy1 += AVX512_NVEC;
@@ -237,7 +237,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
   struct timespec tcell_end;
   current_utc_time(&tcell_end);
   int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
+  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
 #endif
   
   return EXIT_SUCCESS;
@@ -529,7 +529,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
   struct timespec tcell_end;
   current_utc_time(&tcell_end);
   int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
+  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
 #endif
   
   return EXIT_SUCCESS;
@@ -832,7 +832,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
   struct timespec tcell_end;
   current_utc_time(&tcell_end);
   int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
+  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
 #endif
   
   return EXIT_SUCCESS;
@@ -1127,7 +1127,7 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
   struct timespec tcell_end;
   current_utc_time(&tcell_end);
   int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
+  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell);
 #endif
 
   return EXIT_SUCCESS;
@@ -1277,7 +1277,7 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
   struct timespec tcell_end;
   current_utc_time(&tcell_end);
   int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); */
+  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell);
 #endif
   
   return EXIT_SUCCESS;
