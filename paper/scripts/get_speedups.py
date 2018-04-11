@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function, division
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import matplotlib.cm as cm
 try:
     import pandas as pd
 except ImportError:
@@ -60,9 +56,9 @@ def run_wp(boxsize, x, y, z, pimax, nthreads=max_threads, isa=None):
     import Corrfunc
     from Corrfunc.theory import wp
     from os.path import dirname, abspath, join as pjoin
-    #binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
-    #                "../theory/tests/", "bins")
-    binfile = './bins'
+    binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
+                   "../theory/tests/", "bins")
+    # binfile = './bins'
     _, cell_time = wp(boxsize, pimax, nthreads, binfile,
                       x, y, z, c_cell_timer=True, isa=isa,
                       verbose=True)
@@ -74,19 +70,23 @@ def main():
     import sys
     if len(sys.argv) == 1:
         print("Running cell timers for wp")
-        all_isa = ['avx', 'sse42', 'fallback']
-        #x, y, z = read_catalog()
-        boxsize = 1100.0
-        pimax = 45.0
+        all_isa = ['avx512f', 'avx2', 'avx', 'sse42', 'fallback']
+        x, y, z = read_catalog()
+
+        # boxsize = 1100.0
+        # pimax = 45.0
         
-        points = np.loadtxt('halos_emulator_1100box_Neff3_00.txt')
-        numpart = int(1.*len(points))
-        assert (points >= 0).all() and (points < 1100.).all()
-        dtype = points.dtype  # float64
-        points = points.reshape(-1).view(dtype=[('x',dtype,3)])
-        subsample = np.random.choice(points, numpart, replace=False)
-        subsample = subsample.view(dtype=dtype).reshape(-1,3)
-        x, y, z = subsample.T
+        # points = np.loadtxt('halos_emulator_1100box_Neff3_00.txt')
+        # numpart = int(1.*len(points))
+        # assert (points >= 0).all() and (points < 1100.).all()
+        # dtype = points.dtype  # float64
+        # points = points.reshape(-1).view(dtype=[('x',dtype,3)])
+        # subsample = np.random.choice(points, numpart, replace=False)
+        # subsample = subsample.view(dtype=dtype).reshape(-1,3)
+        # x, y, z = subsample.T
+
+        boxsize = 420.0
+        pimax = 40.0
         
         cell_timings = dict()
         serial_timings = dict()
@@ -105,18 +105,23 @@ def main():
                              nthreads=max_threads, isa=isa)
             (cell_timings[isa])[max_threads] = timings
 
-        with open('wp_cell_timers.pkl', 'wb') as outfile:
+        with open('wp_cell_timers_ozstar.pkl', 'wb') as outfile:
             pickle.dump([all_isa, cell_timings, serial_timings], outfile,
                         protocol=pickle.HIGHEST_PROTOCOL)
 
     else:
+
+        import matplotlib
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as mcolors
+        import matplotlib.cm as cm
         
         timings_file = sys.argv[1]
         print("Loading benchmarks from file = {0}".format(timings_file))
         with open(timings_file, 'rb') as pkl_file:
             all_isa, _, serial_timings = pickle.load(pkl_file)
             
-        legend = ['AVX', 'SSE4.2', 'Fallback']
+        legend = ['AVX512F', 'AVX2', 'AVX', 'SSE4.2', 'Fallback']
         base_string = 'wp'
 
         all_speedup = []
@@ -124,9 +129,9 @@ def main():
         N1_parts = (serial_timings['fallback'])[1]['N1']
         N2_parts = (serial_timings['fallback'])[1]['N2']
         gridsize = 40
-        cb_range = [0.0, 3.0e-5]
+        cb_range = [0.0, 100.0]
         contour_nlevels = 4
-        xlimits = [0, 40]
+        xlimits = [0, 1000]
         ylimits = xlimits
         xlabel = 'Number of points in a cell'
         ylabel = xlabel
@@ -163,8 +168,8 @@ def main():
             ind = (np.where((this_timing > 0.0) & (base_timing > 0.0)))[0]
             speedup = base_timing[ind] / this_timing[ind]
             all_speedup.append(speedup)
-            print("Min speedup = {0}. Max = {1}".format(
-                min(speedup), max(speedup)))
+            print("Min speedup = {0:0.2f}. Max = {1:0.2f} Median = {2:0.2f}".format(
+                min(speedup), max(speedup), np.median(speedup)))
             bad = (np.where(speedup <= 1.0))[0]
             bad_timings_base = np.sum(base_timing[ind[bad]])
             bad_timings = np.sum(this_timing[ind[bad]])
@@ -277,6 +282,8 @@ def main():
                 exts = 'stampede_'
             elif 'bender' in timings_file:
                 exts = 'bender_'
+            elif 'ozstar' in timings_file:
+                exts = 'ozstar_'
             else:
                 exts = ''
             
@@ -294,6 +301,9 @@ def main():
             axhist.clear()
             ax_time.clear()
             plt.close(fig)
+
+
+    np.savez('isa_and_speedups.npz',all_isa=all_isa, all_speedup=all_speedup)
 
 if __name__ == '__main__':
     main()
