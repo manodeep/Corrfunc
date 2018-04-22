@@ -47,6 +47,9 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     
     //Seriously this is the declaration for the function pointers...here be dragons.
     xi_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX512F__
+      xi_avx512_intrinsics_DOUBLE,
+#endif			 
 #ifdef __AVX__
       xi_avx_intrinsics_DOUBLE,
 #endif			 
@@ -57,10 +60,16 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     };
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
-#if defined(__AVX__) || defined __SSE4_2__    
+#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = instrset_detect();
 #endif    
     int curr_offset = 0;
+    /* Check for AVX512F support */    
+    int avx512_offset = fallback_offset;
+#ifdef __AVX512F__
+    avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
     
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
@@ -85,7 +94,7 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):
+        case(AVX512F):function_dispatch=avx512_offset;break;
         case(AVX2):
         case(AVX): function_dispatch=avx_offset;break;
         case(SSE42):function_dispatch=sse_offset;break;
@@ -105,12 +114,15 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
             fprintf(stderr,"Using fallback kernel\n");
+        } else if(function_dispatch == avx512_offset){
+            fprintf(stderr,"Using AVX512 kernel\n");
         } else if(function_dispatch == avx_offset){
             fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
             fprintf(stderr,"Using SSE kernel\n");
         } else {
-            printf("Unknown kernel!\n");
+            fprintf(stderr, "Unknown kernel!\n");
+            return NULL;
         }
     }
 
