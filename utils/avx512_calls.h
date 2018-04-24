@@ -38,6 +38,8 @@ extern "C" {
 #define AVX512_MASK_BITWISE_XOR_FLOATS(X,Y)       _mm512_kxor(X,Y)
 #define AVX512_MASK_BITWISE_AND_NOT(X,Y)          _mm512_kandn(X,Y)  //~X & Y
 
+#define AVX512_SETZERO_INT()                       _mm512_setzero_epi32()
+    
 
   /* For setting up the array that contains the number bits set in a mask */
   // Can be used to generate up to 16 bit lookup tables
@@ -61,6 +63,7 @@ extern "C" {
 #define AVX512_SET_INT(X)                                _mm512_set1_epi32(X)
 
 #if 0
+/* commenting out the integer math operations since they are either cumbersome or produce results of different SIMD widths*/    
 #define AVX512_ADD_INTS(X, Y)                            _mm512_add_epi32(X, Y) 
 #define AVX512_MASK_ADD_INTS(FALSEVALS, MASK, X, Y)      _mm512_mask_add_epi32(FALSEVALS, MASK, X, Y)
 #define AVX512_MASKZ_ADD_INTS(MASK, X, Y)                _mm512_maskz_add_epi32(MASK, X, Y)
@@ -68,8 +71,10 @@ extern "C" {
 #define AVX512_MULTIPLY_INTS(X, Y)                                 _mm512_mul_epi32(X, Y) 
 #define AVX512_MASK_MULTIPLY_INTS(FALSEVALS, MASK, X, Y)           _mm512_mask_mul_epi32(FALSEVALS, MASK, X, Y)
 #define AVX512_MASKZ_MULTIPLY_INTS(MASK, X, Y)                     _mm512_maskz_mul_epi32(MASK, X, Y)
-#endif /* commenting out the int math operations since they are either cumbersome or produce results of different SIMD widths*/
+#endif  /*end of integer math*/
 
+#define AVX512_SETZERO_FLOAT()                                    _mm512_setzero_ps()
+    
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)                            _mm512_loadu_ps(X)
 #define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)      _mm512_mask_loadu_ps(FALSEVALS, MASK, X)
 #define AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(MASK, X)                _mm512_maskz_loadu_ps(MASK, X)
@@ -200,7 +205,8 @@ extern "C" {
 #endif
 #endif /* commenting out the int math operations since they are either cumbersome or produce results of different SIMD widths*/
 
-
+#define AVX512_SETZERO_FLOAT()                                    _mm512_setzero_pd()
+    
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)                           _mm512_loadu_pd(X)
 #define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)     _mm512_mask_loadu_pd(FALSEVALS, MASK, X)
 #define AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(MASK, X)               _mm512_maskz_loadu_pd(MASK, X)

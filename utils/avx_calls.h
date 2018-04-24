@@ -39,7 +39,9 @@ extern "C" {
 #define AVX_NVEC                         8    
 #define AVX_INTS                         __m256i
 #define AVX_FLOATS                       __m256
-  
+
+#define AVX_SETZERO_FLOAT()              _mm256_setzero_ps()
+    
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_ps(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_ps(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_ps(X,Y)
@@ -103,6 +105,7 @@ extern "C" {
 #define AVX_INTS                         __m128i
 #define AVX_FLOATS                       __m256d
 
+#define AVX_SETZERO_FLOAT()              _mm256_setzero_pd()    
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_pd(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_pd(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_pd(X,Y)

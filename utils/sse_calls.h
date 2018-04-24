@@ -31,6 +31,7 @@ extern "C" {
 #define SSE_INTS                         __m128i
 #define SSE_FLOATS                       __m128
 
+#define SSE_SETZERO_FLOAT()              _mm_setzero_ps()    
 #define SSE_LOAD_FLOATS_UNALIGNED(X)     _mm_loadu_ps(X)
 #define SSE_MULTIPLY_FLOATS(X,Y)         _mm_mul_ps(X,Y)
 #define SSE_SUBTRACT_FLOATS(X,Y)         _mm_sub_ps(X,Y)
@@ -73,7 +74,8 @@ extern "C" {
 #define SSE_INTS                         __m128i
 #define SSE_FLOATS                       __m128d
 
-#define SSE_SET_FLOAT(X)                  _mm_set1_pd(X)
+#define SSE_SETZERO_FLOAT()              _mm_setzero_pd()        
+#define SSE_SET_FLOAT(X)                 _mm_set1_pd(X)
 #define SSE_LOAD_FLOATS_UNALIGNED(X)     _mm_loadu_pd(X)
 #define SSE_LOAD_FLOATS_ALIGNED(X)       _mm_load_pd(X)
 

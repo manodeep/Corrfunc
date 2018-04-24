@@ -96,19 +96,19 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
             pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
         }
 
-	if(same_cell == 1) {
-	  d1++;
-	} else {
-	  while(d1 != dend && (*d1 - dpos) <= -max_sep) {
-	    d1++;
-	  }
-	  if(d1 == dend) {
-	    i = N0;
-	    break;
-	  }
-	}
-
-	const int64_t n_off = d1 - dstart;
+        if(same_cell == 1) {
+            d1++;
+        } else {
+            while(d1 != dend && (*d1 - dpos) <= -max_sep) {
+                d1++;
+            }
+            if(d1 == dend) {
+                i = N0;
+                break;
+            }
+        }
+        
+        const int64_t n_off = d1 - dstart;
         DOUBLE *locald1 = d1;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
@@ -117,7 +117,6 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
             local_w1.weights[w] = weights1->weights[w] + n_off;
         }
 
-	const AVX512_FLOATS m_zero_DOUBLE = AVX512_SET_FLOAT(ZERO);
         const AVX512_FLOATS m_xpos    = AVX512_SET_FLOAT(xpos);
         const AVX512_FLOATS m_ypos    = AVX512_SET_FLOAT(ypos);
         const AVX512_FLOATS m_zpos    = AVX512_SET_FLOAT(zpos);
@@ -130,187 +129,187 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
         const AVX512_FLOATS m_sqr_rpmin  = AVX512_SET_FLOAT(sqr_rpmin);
 
         for(int64_t j=n_off;j<N1;j+=AVX512_NVEC){
-	  AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
-	  const AVX512_FLOATS m_x2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
-	  const AVX512_FLOATS m_y2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
-	  const AVX512_FLOATS m_z2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
-	  const AVX512_FLOATS m_d2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, locald1);
-	  
-	  union int16 union_finalbin;
-	  union float16 union_mDperp;
-	  union float16_weights union_mweight;
-
-	  union_finalbin.m_ibin = AVX512_SET_INT(0);
-	  union_mDperp.m_Dperp = m_zero_DOUBLE;
-	  
+            AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
+            const AVX512_FLOATS m_x2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
+            const AVX512_FLOATS m_y2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
+            const AVX512_FLOATS m_z2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
+            const AVX512_FLOATS m_d2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, locald1);
+            
+            union int16 union_finalbin;
+            union float16 union_mDperp;
+            union float16_weights union_mweight;
+            
+            union_finalbin.m_ibin = AVX512_SETZERO_INT();
+            union_mDperp.m_Dperp = AVX512_SETZERO_FLOAT();
+            
 #ifdef COUNT_VECTORIZED
-	  vectorized_npairs += AVX512_NVEC;
+            vectorized_npairs += AVX512_NVEC;
 #endif
-	  
-	  localx1 += AVX512_NVEC;
-	  localy1 += AVX512_NVEC;
-	  localz1 += AVX512_NVEC;
-	  locald1 += AVX512_NVEC;
-          
-	  for(int w = 0; w < pair.num_weights; w++){
-	    pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
-	    local_w1.weights[w] += AVX512_NVEC;
-	  }
             
-	  const AVX512_FLOATS m_perpx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_xpos, m_x2);
-	  const AVX512_FLOATS m_perpy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_ypos, m_y2);
-	  const AVX512_FLOATS m_perpz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_zpos, m_z2);
+            localx1 += AVX512_NVEC;
+            localy1 += AVX512_NVEC;
+            localz1 += AVX512_NVEC;
+            locald1 += AVX512_NVEC;
             
-	  const AVX512_FLOATS m_parx = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_x2, m_xpos);
-	  const AVX512_FLOATS m_pary = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_y2, m_ypos);
-	  const AVX512_FLOATS m_parz = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_z2, m_zpos);
-	  
-	  AVX512_FLOATS m_sqr_Dpar, m_sqr_Dperp;
-	  {
-	    /* We need to calculate r_p and pi, where 
-	       
-	       1. r_p^2 + pi^2 = |s|^2
-	       2. pi^2 = |s.l|^2 / |l| ^2
-
-	       where, 
-
-	       s:= Vector((x2-x1), (y2-y1), (z2-z1)) 
-	       l:= 1/2 * Vector((x2+x1), (y2+y1), (z2+z1))
-	       
-	          |s.l|^2 = 1/4 [ (x2^2 - x1^2) + (y2^2 - y1^2) + (z2^2 - z1^2)]
-	       => |s.l|^2 = 1/4 [ (x2^2 + y2^2 + z2^2) - (x1^2 + y1^2 + z1^2) ]
-	       => |s.l|^2 = 1/4 [ d2^2 - d1^2 ]
-	       
-	       Since I will finally need, ||s.l||^2 / ||l||^2, the factors of 1/4 will cancel out. 
-	       
-	    */
-	    
-	    const AVX512_FLOATS m_s_dot_l =  AVX512_FMA_SUBTRACT_FLOATS(m_d2, m_d2, AVX512_SQUARE_FLOAT(m_dpos)); /* := d2^2 - dpos^2 */
-	    const AVX512_FLOATS m_sqr_s_dot_l = AVX512_SQUARE_FLOAT(m_s_dot_l);
-	    const AVX512_FLOATS m_sqr_sep = AVX512_FMA_ADD_FLOATS(m_perpx, m_perpx, AVX512_FMA_ADD_FLOATS(m_perpy, m_perpy, 
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
+                local_w1.weights[w] += AVX512_NVEC;
+            }
+            
+            const AVX512_FLOATS m_perpx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_xpos, m_x2);
+            const AVX512_FLOATS m_perpy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_ypos, m_y2);
+            const AVX512_FLOATS m_perpz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_zpos, m_z2);
+            
+            const AVX512_FLOATS m_parx = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_x2, m_xpos);
+            const AVX512_FLOATS m_pary = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_y2, m_ypos);
+            const AVX512_FLOATS m_parz = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_z2, m_zpos);
+            
+            AVX512_FLOATS m_sqr_Dpar, m_sqr_Dperp;
+            {
+                /* We need to calculate r_p and pi, where 
+                   
+                   1. r_p^2 + pi^2 = |s|^2
+                   2. pi^2 = |s.l|^2 / |l| ^2
+                   
+                   where, 
+                   
+                   s:= Vector((x2-x1), (y2-y1), (z2-z1)) 
+                   l:= 1/2 * Vector((x2+x1), (y2+y1), (z2+z1))
+                   
+                   |s.l|^2 = 1/4 [ (x2^2 - x1^2) + (y2^2 - y1^2) + (z2^2 - z1^2)]
+                   => |s.l|^2 = 1/4 [ (x2^2 + y2^2 + z2^2) - (x1^2 + y1^2 + z1^2) ]
+                   => |s.l|^2 = 1/4 [ d2^2 - d1^2 ]
+                   
+                   Since I will finally need, ||s.l||^2 / ||l||^2, the factors of 1/4 will cancel out. 
+                   
+                */
+                
+                const AVX512_FLOATS m_s_dot_l =  AVX512_FMA_SUBTRACT_FLOATS(m_d2, m_d2, AVX512_SQUARE_FLOAT(m_dpos)); /* := d2^2 - dpos^2 */
+                const AVX512_FLOATS m_sqr_s_dot_l = AVX512_SQUARE_FLOAT(m_s_dot_l);
+                const AVX512_FLOATS m_sqr_sep = AVX512_FMA_ADD_FLOATS(m_perpx, m_perpx, AVX512_FMA_ADD_FLOATS(m_perpy, m_perpy, 
 													  AVX512_SQUARE_FLOAT(m_perpz)));//3-d separation
-	    
-	    //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
-	    //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
-	    //we would discard the pair.
-	    const AVX512_MASK m_mask_3d_sep = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_sep, m_sqr_max_sep, _CMP_LT_OQ);
-	    const AVX512_FLOATS m_sqr_norm_l = AVX512_FMA_ADD_FLOATS(m_parx, m_parx, 
+                
+                //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
+                //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
+                //we would discard the pair.
+                const AVX512_MASK m_mask_3d_sep = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_sep, m_sqr_max_sep, _CMP_LT_OQ);
+                const AVX512_FLOATS m_sqr_norm_l = AVX512_FMA_ADD_FLOATS(m_parx, m_parx, 
 								     AVX512_FMA_ADD_FLOATS(m_pary, m_pary, AVX512_SQUARE_FLOAT(m_parz)));
-	    
-	    //\pi ^2 = |s.l| ^2 / |l|^2
-	    //However, division is slow -> so we will check if \pimax^2 * |l| ^2 < |s.l|^2. If not, then the
-	    //value of \pi (after division) *must* be larger than \pimax -> in which case we would
-	    //not count that pair anway.
-	    const AVX512_FLOATS m_sqr_pimax_times_sqr_l = AVX512_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
-	    m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_mask_3d_sep, m_sqr_s_dot_l, m_sqr_pimax_times_sqr_l, _CMP_LT_OQ);// is pi < pimax ?
-	    if(m_mask_left == 0) {
-	      continue;
-	    }
-	    
-	    /* If we are here, that means we can not rule out at least one valid pair -> need to
-	       perform (slow) division to find out the value of pi's for each pair
-	    */
-	    
-	    if(fast_divide == 0) {
-	      //regular division -> slow op
-	      m_sqr_Dpar = AVX512_MASKZ_DIVIDE_FLOATS(m_mask_left, m_sqr_s_dot_l,m_sqr_norm_l);
-	      //The divide is the actual operation we need
-	      // but divides are about 10x slower than multiplies. So, I am replacing it
-	      //with a approximate reciprocal in floating point
-	      // + 2 iterations of newton-raphson in case of DOUBLE
-	    } else {
-	      //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
-	      const AVX512_FLOATS rc = AVX512_MASKZ_RECIPROCAL_FLOATS(m_mask_left, m_sqr_norm_l);
-	      //We have the double->float->approx. reciprocal->double process done.
-	      //Now improve the accuracy of the divide with newton-raphson.
-              
-	      //Ist iteration of NewtonRaphson
-	      const AVX512_FLOATS two = AVX512_SET_FLOAT((DOUBLE) 2.0);
-	      const AVX512_FLOATS rc1 = AVX512_MULTIPLY_FLOATS(rc,
+                
+                //\pi ^2 = |s.l| ^2 / |l|^2
+                //However, division is slow -> so we will check if \pimax^2 * |l| ^2 < |s.l|^2. If not, then the
+                //value of \pi (after division) *must* be larger than \pimax -> in which case we would
+                //not count that pair anway.
+                const AVX512_FLOATS m_sqr_pimax_times_sqr_l = AVX512_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
+                m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_mask_3d_sep, m_sqr_s_dot_l, m_sqr_pimax_times_sqr_l, _CMP_LT_OQ);// is pi < pimax ?
+                if(m_mask_left == 0) {
+                    continue;
+                }
+                
+                /* If we are here, that means we can not rule out at least one valid pair -> need to
+                   perform (slow) division to find out the value of pi's for each pair
+                */
+                
+                if(fast_divide == 0) {
+                    //regular division -> slow op
+                    m_sqr_Dpar = AVX512_MASKZ_DIVIDE_FLOATS(m_mask_left, m_sqr_s_dot_l,m_sqr_norm_l);
+                    //The divide is the actual operation we need
+                    // but divides are about 10x slower than multiplies. So, I am replacing it
+                    //with a approximate reciprocal in floating point
+                    // + 2 iterations of newton-raphson in case of DOUBLE
+                } else {
+                    //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
+                    const AVX512_FLOATS rc = AVX512_MASKZ_RECIPROCAL_FLOATS(m_mask_left, m_sqr_norm_l);
+                    //We have the double->float->approx. reciprocal->double process done.
+                    //Now improve the accuracy of the divide with newton-raphson.
+                    
+                    //Ist iteration of NewtonRaphson
+                    const AVX512_FLOATS two = AVX512_SET_FLOAT((DOUBLE) 2.0);
+                    const AVX512_FLOATS rc1 = AVX512_MULTIPLY_FLOATS(rc,
 							       AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc, two));/*2.0 - l^2*rc */
-	      //2nd iteration of NewtonRaphson
-	      const AVX512_FLOATS rc2 = AVX512_MULTIPLY_FLOATS(rc1,
-							       AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc1, two));/* 2.0 - l^2*rc1 */
-
-	      m_sqr_Dpar = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_sqr_s_dot_l, rc2);
-	    }//end of FAST_DIVIDE
-	    
-	    m_sqr_Dperp = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_sqr_sep, m_sqr_Dpar);
-	  }
-	    
-	  
-	  //Do the mask filters in a separate scope
-	  {
-	    const AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dpar, m_sqr_pimax,_CMP_LT_OQ);
-	    const AVX512_MASK m_rpmax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dperp, m_sqr_rpmax, _CMP_LT_OQ);
-	    const AVX512_MASK m_rpmin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dperp, m_sqr_rpmin, _CMP_GE_OQ);
-	    m_mask_left = AVX512_MASK_BITWISE_AND(AVX512_MASK_BITWISE_AND(m_rpmax_mask, m_rpmin_mask), m_mask_pimax);
-	    if(m_mask_left == 0) {
-	      continue;
-	    }
-	  }
-	  const AVX512_FLOATS m_Dpar = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_Dpar);
-	  if(need_rpavg) {
-	    union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_Dperp);
-	  }
-	  
-	  if(need_weightavg){
-	    pair.dx.a512 = m_perpx;
-	    pair.dy.a512 = m_perpy;
-	    pair.dz.a512 = m_perpz;
-	    
-	    pair.parx.a512 = m_parx;
-	    pair.pary.a512 = m_pary;
-	    pair.parz.a512 = m_parz;
-	    
-	    union_mweight.m_weights = avx512_weight_func(&pair);
-	  }
-	  
-	  const AVX512_MASK m_mask = m_mask_left;
-	  AVX512_FLOATS m_rpbin = AVX512_SET_FLOAT(ZERO);
-	  for(int kbin=nbin-1;kbin>=1;kbin--) {
-	    const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dperp, m_rupp_sqr[kbin-1],_CMP_GE_OQ);
-	    m_rpbin = AVX512_BLEND_FLOATS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_FLOAT(kbin));
-	    m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
-	    if(m_mask_left == 0) {
-	      break;
-	    }
-	  }
-	  
-	  const AVX512_FLOATS m_npibin = AVX512_SET_FLOAT((DOUBLE) npibin);
-	  /* pibin := (int) dist_pi/dpi */
-	  const AVX512_FLOATS m_pibin = AVX512_MULTIPLY_FLOATS(m_Dpar, m_inv_dpi);
-	  /* Compute the 1-D index to the [rpbin, pibin] := rpbin*(npibin+1) + pibin */
-	  const AVX512_FLOATS m_npibin_p1 = AVX512_SET_FLOAT((DOUBLE) npibin + 1);
-	  const AVX512_FLOATS m_rpbin_linear_index = AVX512_MULTIPLY_FLOATS(m_rpbin, m_npibin_p1);
-	  const AVX512_FLOATS m_finalbin = AVX512_MASK_ADD_FLOATS(m_npibin, m_mask, m_rpbin_linear_index, m_pibin);
-	  union_finalbin.m_ibin = AVX512_TRUNCATE_FLOAT_TO_INT(m_finalbin);
-
+                    //2nd iteration of NewtonRaphson
+                    const AVX512_FLOATS rc2 = AVX512_MULTIPLY_FLOATS(rc1,
+                                                                     AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc1, two));/* 2.0 - l^2*rc1 */
+                    
+                    m_sqr_Dpar = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_sqr_s_dot_l, rc2);
+                }//end of FAST_DIVIDE
+                
+                m_sqr_Dperp = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_sqr_sep, m_sqr_Dpar);
+            }
+            
+            
+            //Do the mask filters in a separate scope
+            {
+                const AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dpar, m_sqr_pimax,_CMP_LT_OQ);
+                const AVX512_MASK m_rpmax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dperp, m_sqr_rpmax, _CMP_LT_OQ);
+                const AVX512_MASK m_rpmin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dperp, m_sqr_rpmin, _CMP_GE_OQ);
+                m_mask_left = AVX512_MASK_BITWISE_AND(AVX512_MASK_BITWISE_AND(m_rpmax_mask, m_rpmin_mask), m_mask_pimax);
+                if(m_mask_left == 0) {
+                    continue;
+                }
+            }
+            const AVX512_FLOATS m_Dpar = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_Dpar);
+            if(need_rpavg) {
+                union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_Dperp);
+            }
+            
+            if(need_weightavg){
+                pair.dx.a512 = m_perpx;
+                pair.dy.a512 = m_perpy;
+                pair.dz.a512 = m_perpz;
+                
+                pair.parx.a512 = m_parx;
+                pair.pary.a512 = m_pary;
+                pair.parz.a512 = m_parz;
+                
+                union_mweight.m_weights = avx512_weight_func(&pair);
+            }
+            
+            const AVX512_MASK m_mask = m_mask_left;
+            AVX512_FLOATS m_rpbin = AVX512_SETZERO_FLOAT();
+            for(int kbin=nbin-1;kbin>=1;kbin--) {
+                const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dperp, m_rupp_sqr[kbin-1],_CMP_GE_OQ);
+                m_rpbin = AVX512_BLEND_FLOATS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_FLOAT(kbin));
+                m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
+                if(m_mask_left == 0) {
+                    break;
+                }
+            }
+            
+            const AVX512_FLOATS m_npibin = AVX512_SET_FLOAT((DOUBLE) npibin);
+            /* pibin := (int) dist_pi/dpi */
+            const AVX512_FLOATS m_pibin = AVX512_MULTIPLY_FLOATS(m_Dpar, m_inv_dpi);
+            /* Compute the 1-D index to the [rpbin, pibin] := rpbin*(npibin+1) + pibin */
+            const AVX512_FLOATS m_npibin_p1 = AVX512_SET_FLOAT((DOUBLE) npibin + 1);
+            const AVX512_FLOATS m_rpbin_linear_index = AVX512_MULTIPLY_FLOATS(m_rpbin, m_npibin_p1);
+            const AVX512_FLOATS m_finalbin = AVX512_MASK_ADD_FLOATS(m_npibin, m_mask, m_rpbin_linear_index, m_pibin);
+            union_finalbin.m_ibin = AVX512_TRUNCATE_FLOAT_TO_INT(m_finalbin);
+            
 #if  __INTEL_COMPILER
 #pragma unroll(AVX512_NVEC)
 #endif
-	  for(int jj=0;jj<AVX512_NVEC;jj++) {
-	    const int ibin=union_finalbin.ibin[jj];
-	    npairs[ibin]++;
-	    if(need_rpavg) {
-	      rpavg[ibin] += union_mDperp.Dperp[jj];
-	    }
-	    if(need_weightavg){
-	      const DOUBLE weight = union_mweight.weights[jj];
-	      weightavg[ibin] += weight;
-	    }
-	  }
+            for(int jj=0;jj<AVX512_NVEC;jj++) {
+                const int ibin=union_finalbin.ibin[jj];
+                npairs[ibin]++;
+                if(need_rpavg) {
+                    rpavg[ibin] += union_mDperp.Dperp[jj];
+                }
+                if(need_weightavg){
+                    const DOUBLE weight = union_mweight.weights[jj];
+                    weightavg[ibin] += weight;
+                }
+            }
         }//AVX512 j loop
     }//i-loop
     
     for(int i=0;i<totnbins;i++) {
-      src_npairs[i] += npairs[i];
-      if(need_rpavg) {
-	src_rpavg[i] += rpavg[i];
-      }
-      if(need_weightavg) {
-	src_weightavg[i] += weightavg[i];
-      }
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i] += rpavg[i];
+        }
+        if(need_weightavg) {
+            src_weightavg[i] += weightavg[i];
+        }
     }
     return EXIT_SUCCESS;
 }
@@ -429,7 +428,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
         const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
         const AVX_FLOATS m_sqr_rpmin  = AVX_SET_FLOAT(sqr_rpmin);
         const AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
-        const AVX_FLOATS m_zero       = AVX_SET_FLOAT(ZERO);
+        const AVX_FLOATS m_zero       = AVX_SETZERO_FLOAT();
         const AVX_FLOATS m_one    = AVX_SET_FLOAT((DOUBLE) 1);
 
         for(;j<=(N1-AVX_NVEC);j+=AVX_NVEC){
@@ -586,7 +585,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             }
 
             const AVX_FLOATS m_mask = m_mask_left;
-            AVX_FLOATS m_rpbin = AVX_SET_FLOAT((DOUBLE) 0);
+            AVX_FLOATS m_rpbin = AVX_SETZERO_FLOAT();
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_sqr_Dperp,m_rupp_sqr[kbin-1],_CMP_GE_OQ);
                 const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
@@ -826,7 +825,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
         const SSE_FLOATS m_inv_dpi    = SSE_SET_FLOAT(inv_dpi);
         const SSE_FLOATS m_sqr_rpmin  = SSE_SET_FLOAT(sqr_rpmin);
         const SSE_FLOATS m_npibin     = SSE_SET_FLOAT((DOUBLE) npibin);
-        const SSE_FLOATS m_zero       = SSE_SET_FLOAT(ZERO);
+        const SSE_FLOATS m_zero       = SSE_SETZERO_FLOAT();
         const SSE_FLOATS m_one    = SSE_SET_FLOAT((DOUBLE) 1);
 
         for(;j<=(N1-SSE_NVEC);j+=SSE_NVEC){
@@ -938,7 +937,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             }
 
             const SSE_FLOATS m_mask = m_mask_left;
-            SSE_FLOATS m_rpbin = SSE_SET_FLOAT((DOUBLE) 0);
+            SSE_FLOATS m_rpbin = SSE_SETZERO_FLOAT();
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 const SSE_FLOATS m_mask_low = SSE_COMPARE_FLOATS_GE(m_sqr_Dperp,m_rupp_sqr[kbin-1]);
                 const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m_mask_low,m_mask_left);

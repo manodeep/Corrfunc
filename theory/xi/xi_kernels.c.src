@@ -103,7 +103,6 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
     for(int w = 0; w < local_w2.num_weights; w++){
         local_w2.weights[w] = weights2->weights[w] + n_off;
     }
-    const AVX512_FLOATS m_zero_DOUBLE = AVX512_SET_FLOAT(ZERO);
     const AVX512_FLOATS m_xpos  = AVX512_SET_FLOAT(xpos);
     const AVX512_FLOATS m_ypos  = AVX512_SET_FLOAT(ypos);
     const AVX512_FLOATS m_zpos  = AVX512_SET_FLOAT(zpos);
@@ -118,8 +117,8 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
       union float16 union_mDperp;
       union float16_weights union_mweight;
 
-      union_rpbin.m_ibin = AVX512_SET_INT(0);
-      union_mDperp.m_Dperp = m_zero_DOUBLE;
+      union_rpbin.m_ibin = AVX512_SETZERO_INT();
+      union_mDperp.m_Dperp = AVX512_SETZERO_FLOAT();
 
 #ifdef COUNT_VECTORIZED
       vectorized_npairs += (N2 - j) >= AVX512_NVEC ? AVX512_NVEC:N2-j;
@@ -182,7 +181,7 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
         union_mweight.m_weights = avx512_weight_func(&pair);
       }
 
-      AVX512_INTS m_rpbin = AVX512_SET_INT(0);
+      AVX512_INTS m_rpbin = AVX512_SETZERO_INT();
       //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
       // at the beginning of the loop. 
       for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -405,7 +404,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 r2 = AVX_BLEND_FLOATS_WITH_MASK(m_rupp_sqr[nbin-1], r2, m_mask_left);
             }
             
-            AVX_FLOATS m_rbin = AVX_SET_FLOAT(ZERO);
+            AVX_FLOATS m_rbin = AVX_SETZERO_FLOAT();
             if(need_ravg) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
             }
@@ -675,7 +674,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             SSE_FLOATS m_rbin;
             if(need_ravg) {
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
-                m_rbin = SSE_SET_FLOAT(ZERO);
+                m_rbin = SSE_SETZERO_FLOAT();
             }
             if(need_weightavg){
                 union_mweight.m_weights = sse_weight_func(&pair);

@@ -182,7 +182,7 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
             }
 
             const AVX512_MASK m_mask = m_mask_left;
-            AVX512_FLOATS m_rpbin = AVX512_SET_FLOAT(ZERO);
+            AVX512_FLOATS m_rpbin = AVX512_SETZERO_FLOAT();
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2, m_rupp_sqr[kbin-1],_CMP_GE_OQ);
                 m_rpbin = AVX512_BLEND_FLOATS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_FLOAT(kbin));
@@ -357,7 +357,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
             const AVX_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
             const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
-            const AVX_FLOATS m_zero = AVX_SET_FLOAT(ZERO);
+            const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
             const AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
             const AVX_FLOATS m_one    = AVX_SET_FLOAT((DOUBLE) 1);
 
@@ -415,7 +415,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             }
             
             const AVX_FLOATS m_pibin = AVX_MULTIPLY_FLOATS(m_zdiff,m_inv_dpi);
-            AVX_FLOATS m_rpbin     = AVX_SET_FLOAT((DOUBLE) 0);
+            AVX_FLOATS m_rpbin     = AVX_SETZERO_FLOAT();
             //AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
@@ -654,7 +654,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
             const SSE_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
             const SSE_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
             const SSE_FLOATS m_inv_dpi    = SSE_SET_FLOAT(inv_dpi);
-            const SSE_FLOATS m_zero = SSE_SET_FLOAT(ZERO);
+            const SSE_FLOATS m_zero = SSE_SETZERO_FLOAT();
             const SSE_FLOATS m_npibin     = SSE_SET_FLOAT((DOUBLE) npibin);
             const SSE_FLOATS m_one    = SSE_SET_FLOAT((DOUBLE) 1);
         
@@ -713,7 +713,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
             }
 
             const SSE_FLOATS m_pibin = SSE_MULTIPLY_FLOATS(m_zdiff,m_inv_dpi);
-            SSE_FLOATS m_rpbin     = SSE_SET_FLOAT((DOUBLE) 0);
+            SSE_FLOATS m_rpbin     = SSE_SETZERO_FLOAT();
             //SSE_FLOATS m_all_ones  = SSE_CAST_INT_TO_FLOAT(SSE_SET_INT(-1));
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 const SSE_FLOATS m_mask_low = SSE_COMPARE_FLOATS_GE(r2,m_rupp_sqr[kbin-1]);

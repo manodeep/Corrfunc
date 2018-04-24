@@ -274,7 +274,7 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
           
           AVX_FLOATS m_thetabin;
           if(need_rpavg || need_weightavg) {
-              m_thetabin = AVX_SET_FLOAT(ZERO);
+              m_thetabin = AVX_SETZERO_FLOAT();
           }
           if(need_rpavg){
               //first do the acos to get the actual angles
@@ -525,7 +525,7 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
           
           SSE_FLOATS m_thetabin;
           if(need_rpavg || need_weightavg){
-              m_thetabin = SSE_SET_FLOAT((DOUBLE) 0.0);
+              m_thetabin = SSE_SETZERO_FLOAT();
           }
           if(need_rpavg) {
               //first do the acos to get the actual angles

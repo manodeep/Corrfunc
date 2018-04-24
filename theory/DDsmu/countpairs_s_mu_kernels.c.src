@@ -147,7 +147,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const AVX_FLOATS m_inv_dmu    = AVX_SET_FLOAT(inv_dmu);
             const AVX_FLOATS m_sqr_mumax = AVX_SET_FLOAT(sqr_mumax);
 
-            const AVX_FLOATS m_zero = AVX_SET_FLOAT(ZERO);
+            const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
             const AVX_FLOATS m_nmu_bins     = AVX_SET_FLOAT((DOUBLE) nmu_bins);
             const AVX_FLOATS m_one    = AVX_SET_FLOAT((DOUBLE) 1);
 
@@ -212,7 +212,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             }
 
             const AVX_FLOATS m_mubin = AVX_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
-            AVX_FLOATS m_sbin     = AVX_SET_FLOAT((DOUBLE) 0);
+            AVX_FLOATS m_sbin     = AVX_SETZERO_FLOAT();
             //AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
                 const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(s2,m_supp_sqr[kbin-1],_CMP_GE_OS);
@@ -453,7 +453,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const SSE_FLOATS m_sqr_smin = m_supp_sqr[0];
             const SSE_FLOATS m_sqr_mumax = SSE_SET_FLOAT(sqr_mumax);
             const SSE_FLOATS m_inv_dmu    = SSE_SET_FLOAT(inv_dmu);
-            const SSE_FLOATS m_zero = SSE_SET_FLOAT(ZERO);
+            const SSE_FLOATS m_zero = SSE_SETZERO_FLOAT();
             const SSE_FLOATS m_nmu_bins     = SSE_SET_FLOAT((DOUBLE) nmu_bins);
             const SSE_FLOATS m_one    = SSE_SET_FLOAT((DOUBLE) 1);
 
@@ -517,7 +517,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             }
 
             const SSE_FLOATS m_mubin = SSE_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
-            SSE_FLOATS m_sbin     = SSE_SET_FLOAT((DOUBLE) 0);
+            SSE_FLOATS m_sbin     = SSE_SETZERO_FLOAT();
             //SSE_FLOATS m_all_ones  = SSE_CAST_INT_TO_FLOAT(SSE_SET_INT(-1));
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
                 const SSE_FLOATS m_mask_low = SSE_COMPARE_FLOATS_GE(s2,m_supp_sqr[kbin-1]);
