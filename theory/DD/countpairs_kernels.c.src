@@ -158,22 +158,22 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
       //no future iteration in j can produce a zdiff value less than pimax.
       AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_pimax,_CMP_LT_OS);
       if(m_mask_pimax == 0) {
-	//None of the dz^2 values satisfies dz^2 < pimax^2
-	// => no pairs can be added -> continue and process the next NVEC
-	j=N1;
-	break;
+          //None of the dz^2 values satisfies dz^2 < pimax^2
+          // => no pairs can be added -> continue and process the next NVEC
+          j=N1;
+          break;
       }
       
       //Do all the distance cuts using masks here in new scope
       {
-        const AVX512_MASK m_rpmax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, r2, m_sqr_rpmax, _CMP_LT_OQ);
-        //Create a combined mask 
-        //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
-        m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_rpmax_mask, r2, m_sqr_rpmin, _CMP_GE_OQ);
-	if(m_mask_left == 0) {
-	  continue;
-	}
-
+          const AVX512_MASK m_rpmax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, r2, m_sqr_rpmax, _CMP_LT_OQ);
+          //Create a combined mask 
+          //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
+          m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_rpmax_mask, r2, m_sqr_rpmin, _CMP_GE_OQ);
+          if(m_mask_left == 0) {
+              continue;
+          }
+          
       }
       
       if(need_rpavg) {
@@ -301,7 +301,8 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
       fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
   }
 
-  int64_t prev_j = 0, n_off = 0;
+  DOUBLE *zstart = z1;
+  DOUBLE *zend = z1 + N1;
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
@@ -313,27 +314,20 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
     }
 
-    int64_t j;
-    if(same_cell == 1) {
-        z1++; n_off++;
-        j = i+1;
-    } else {
-        for(;prev_j<N1;prev_j++) {
-            const DOUBLE dz = *z1 - zpos;
-            if(dz > -rpmax) break;
-            z1++; n_off++;
-        }
 
-        /* Since 'z' is sorted in increasing order for both the first and second cells, 
-           no more valid pairs can be found between these two cell pairs
-         */
-        if(prev_j == N1) {
-            i=N0;
-            break;
-        }
-        j = prev_j;
+    if(same_cell == 1) {
+        z1++;
+    } else {
+      while(z1 != zend && (*z1 - zpos) <= -rpmax) {
+          z1++;
+      }
+      if(z1 == zend) {
+          i = N0;
+          break;
+      }
     }
-    
+
+    const int64_t n_off = z1 - zstart;
     DOUBLE *localz1 = z1;
     DOUBLE *localx1 = x1 + n_off;
     DOUBLE *localy1 = y1 + n_off;
@@ -341,6 +335,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         local_w1.weights[w] = weights1->weights[w] + n_off;
     }
 
+    int64_t j = n_off;
     for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
       const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
       const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);

@@ -78,7 +78,7 @@ wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options)
     curr_offset++;
 #endif
 
-    /* Check for AVX2F support */    
+    /* Check for AVX2 support */    
     int avx2_offset = fallback_offset;
 #ifdef __AVX2__
     avx2_offset = highest_isa >= 8 ? curr_offset:fallback_offset;

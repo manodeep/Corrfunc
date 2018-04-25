@@ -91,8 +91,8 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
           z2++;
       }
       if(z2 == zend) {
-	i = N1;
-	break;
+          i = N1;
+          break;
       }
     }
 
