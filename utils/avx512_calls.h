@@ -38,7 +38,6 @@ extern "C" {
 #define AVX512_MASK_BITWISE_XOR_FLOATS(X,Y)       _mm512_kxor(X,Y)
 #define AVX512_MASK_BITWISE_AND_NOT(X,Y)          _mm512_kandn(X,Y)  //~X & Y
 
-#define AVX512_SETZERO_INT()                       _mm512_setzero_epi32()
     
 
   /* For setting up the array that contains the number bits set in a mask */
@@ -61,6 +60,7 @@ extern "C" {
 
 #define AVX512_INTS                                      __m512i
 #define AVX512_SET_INT(X)                                _mm512_set1_epi32(X)
+#define AVX512_SETZERO_INT()                             _mm512_setzero_epi32()
 
 #if 0
 /* commenting out the integer math operations since they are either cumbersome or produce results of different SIMD widths*/    
@@ -184,7 +184,8 @@ extern "C" {
 #define AVX512_INTS                         __m256i
 
 #define AVX512_SET_INT(X)                   _mm256_set1_epi32(X)
-
+#define AVX512_SETZERO_INT()                _mm256_setzero_si256()
+    
 #if 0
 #define AVX512_ADD_INTS(X, Y)               _mm256_add_epi32(X, Y) 
 #define AVX512_MULTIPLY_INTS(X, Y)          _mm256_mul_epi32(X, Y) 
