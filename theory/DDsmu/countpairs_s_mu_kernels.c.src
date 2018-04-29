@@ -178,6 +178,31 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
             }
 
             /*m_mu := sqrt(dz^2/s2) (with masked elements set to mu_max */
+#if 0            
+            if(fast_divide == 0) {
+                //regular division -> slow op
+                m_sqr_Dpar = AVX512_MASKZ_DIVIDE_FLOATS(m_mask_left, m_sqr_s_dot_l,m_sqr_norm_l);
+                //The divide is the actual operation we need
+                // but divides are about 10x slower than multiplies. So, I am replacing it
+                //with a approximate reciprocal in floating point
+                // + 2 iterations of newton-raphson in case of DOUBLE
+            } else {
+                //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
+                const AVX512_FLOATS rc = AVX512_MASKZ_RECIPROCAL_FLOATS(m_mask_left, m_sqr_norm_l);
+                //We have the double->float->approx. reciprocal->double process done.
+                //Now improve the accuracy of the divide with newton-raphson.
+                
+                //Ist iteration of NewtonRaphson
+                const AVX512_FLOATS two = AVX512_SET_FLOAT((DOUBLE) 2.0);
+                const AVX512_FLOATS rc1 = AVX512_MULTIPLY_FLOATS(rc,
+                                                                 AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc, two));/*2.0 - l^2*rc */
+                //2nd iteration of NewtonRaphson
+                const AVX512_FLOATS rc2 = AVX512_MULTIPLY_FLOATS(rc1,
+                                                                 AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc1, two));/* 2.0 - l^2*rc1 */
+                
+                m_sqr_Dpar = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_sqr_s_dot_l, rc2);
+            }//end of FAST_DIVIDE
+#endif            
             const AVX512_FLOATS m_mu = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, AVX512_MASKZ_DIVIDE_FLOATS(m_mask_left, m_sqr_zdiff, s2));
             if(need_savg) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, s2);
