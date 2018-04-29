@@ -665,7 +665,6 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
                                                                    DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                                    DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
-    
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
@@ -797,7 +796,7 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
           //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
           // at the beginning of the loop. 
           for(int kbin=nthetabin-1;kbin>=1;kbin--) {
-              const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costheta_upp[kbin-1],_CMP_GE_OS);
+              const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OQ);
               npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
               if(need_rpavg || need_weightavg) {
                   m_thetabin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_thetabin, AVX512_SET_INT(kbin));
