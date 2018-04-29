@@ -52,10 +52,8 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
     const DOUBLE sqr_smin  = smin*smin;
 
     AVX512_FLOATS m_supp_sqr[nsbin];
-    AVX512_FLOATS m_kbin[nsbin];
     for(int i=0;i<nsbin;i++) {
         m_supp_sqr[i] = AVX512_SET_FLOAT(supp_sqr[i]);
-        m_kbin[i] = AVX512_SET_FLOAT((DOUBLE) i);
     }
 
     uint64_t npairs[totnbins];
