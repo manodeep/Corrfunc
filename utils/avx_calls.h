@@ -198,6 +198,65 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
 #endif
 
 
+
+#ifdef DOUBLE_PREC    
+#define CHECK_AND_FAST_DIVIDE(result, numerator, denominator, fast_divide_and_NR_steps)                      { \
+        /* For double precision floats */                               \
+        if (fast_divide_and_NR_steps == 0) {                            \
+            result = AVX_DIVIDE_FLOATS(numerator, denominator);         \
+            /* The divide is the actual operation we need */            \
+            /* but divides are about 10x slower than multiplies. So, I am replacing it */ \
+            /* with a approximate reciprocal in floating point */       \
+            /* + 2 iterations of newton-raphson in case of DOUBLE */    \
+        } else {                                                        \
+            unsigned int _ii;                                           \
+            /* following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson */ \
+            const __m128 float_tmp1 =  _mm256_cvtpd_ps(denominator);/* convert double to float -> not avx_floats := _m256d */ \
+            /*(convert 4 doubles into 4 floats -> use half of available 256 bit SIMD registers) */ \
+            __m128 float_inv_tmp1 = _mm_rcp_ps(float_tmp1);/* intrinsic for 128 bit float approximate reciprocal */ \
+            const AVX_FLOATS rc = _mm256_cvtps_pd(float_inv_tmp1);/* convert back to double */ \
+            /* We have the double->float->approx. reciprocal->double process done. */ \
+            /* Now improve the accuracy of the divide with newton-raphson. */ \
+            const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);         \
+            AVX_FLOATS rc_iter = rc;                                    \
+            /* Do NewtonRaphson iterations */                           \
+            for(_ii=0;ii<fast_divide_and_NR_steps;_ii++) {              \
+                rc_iter = AVX_MULTIPLY_FLOATS(rc_iter,                  \
+                                              AVX_SUBTRACT_FLOATS(two,  \
+                                                                  AVX_MULTIPLY_FLOATS(denominator, rc_iter))); /*2.0 - l^2*rc */ \
+            }                                                           \
+            result = AVX_MULTIPLY_FLOATS(numerator, rc_iter);           \
+        } /* end of FAST_DIVIDE */                                      \
+    }
+#else
+#define CHECK_AND_FAST_DIVIDE(result, numerator, denominator, fast_divide_and_NR_steps)                      { \
+        /* single precision floats */                                   \
+        if (fast_divide_and_NR_steps == 0) {                            \
+            result = AVX_DIVIDE_FLOATS(numerator, denominator);         \
+            /* The divide is the actual operation we need */            \
+            /* but divides are about 10x slower than multiplies. So, I am replacing it */ \
+            /* with a approximate reciprocal in floating point */       \
+            /* + 2 iterations of newton-raphson in case of DOUBLE */    \
+        } else {                                                        \
+            unsigned int _ii;                                                    \
+            /* following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson */ \
+            const AVX_FLOATS rc  = _mm256_rcp_ps(denominator);/* intrinsic for 256 bit approximate reciprocal */ \
+            /* We have the double->float->approx. reciprocal->double process done. */ \
+            /* Now improve the accuracy of the divide with newton-raphson. */ \
+            const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);         \
+            AVX_FLOATS rc_iter = rc;                                    \
+            /* Do NewtonRaphson iterations */                           \
+            for(_ii=0;ii<fast_divide_and_NR_steps;_ii++) {              \
+                rc_iter = AVX_MULTIPLY_FLOATS(rc_iter,                  \
+                                              AVX_SUBTRACT_FLOATS(two,  \
+                                                                  AVX_MULTIPLY_FLOATS(denominator, rc_iter))); /*2.0 - l^2*rc */ \
+            }                                                           \
+            result = AVX_MULTIPLY_FLOATS(numerator, rc_iter);           \
+        } /* end of FAST_DIVIDE */                                      \
+    }
+#endif /* end of DOUBLE_PREC for defining check_and_fast_divide macro */
+
+    
 #ifdef __cplusplus
 }
 #endif

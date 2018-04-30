@@ -122,7 +122,13 @@ struct config_options
     uint8_t link_in_ra; /* relevant for DDtheta_mocks.*/
 
     /* Replaces the divide in DDrppi_mocks in AVX mode by a reciprocal and a Newton-Raphson step. */
-    uint8_t fast_divide;//Only used in AVX
+    uint8_t fast_divide_and_NR_steps;/* Used in AVX512/AVX; if set to 0, the standard (slow) divide is used
+                                        If > 0, the value is interpreted as the number of NR steps
+                                        i.e., fast_divide_and_NR_steps = 2, performs two steps of Newton-Raphson
+                                        Anything greater than ~5, probably makes the code slower than the
+                                        divide without any improvement in precision
+                                      */
+    
 
     /* Fast arccos for wtheta (effective only when OUTPUT_THETAAVG is enabled) */
     uint8_t fast_acos;

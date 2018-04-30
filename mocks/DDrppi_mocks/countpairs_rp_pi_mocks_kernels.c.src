@@ -201,10 +201,21 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                 //However, division is slow -> so we will check if \pimax^2 * |l| ^2 < |s.l|^2. If not, then the
                 //value of \pi (after division) *must* be larger than \pimax -> in which case we would
                 //not count that pair anway.
-                const AVX_FLOATS m_sqr_pimax_times_l = AVX_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
-                const AVX_FLOATS m_mask_pimax_sep = AVX_COMPARE_FLOATS(m_numerator, m_sqr_pimax_times_l, _CMP_LT_OQ);// is pi < pimax ?
+                const AVX_FLOATS m_sqr_pimax_times_sqr_l = AVX_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
+                const AVX_FLOATS m_mask_pimax_sep = AVX_COMPARE_FLOATS(m_sqr_s_dot_l, m_sqr_pimax_times_sqr_l, _CMP_LT_OQ);// is pi < pimax ?
+
+#if 0
+                /* This could have been an additional check before the divide but does not seem to boost performance */
+                const AVX_FLOATS m_sqr_rpmax_times_sqr_l = AVX_MULTIPLY_FLOATS(m_sqr_rpmax, m_sqr_norm_l);
+                const AVX_FLOATS m_sqr_s_minus_sqr_sdotl = AVX_SUBTRACT_FLOATS(m_sqr_sep, m_sqr_s_dot_l);
+                const AVX_FLOATS m_sqr_rpmax_initial_mask = AVX_COMPARE_FLOATS(m_sqr_s_minus_sqr_sdotl, m_sqr_rpmax_times_sqr_l, _CMP_LT_OQ);/* is rp < rpmax */
+                
                 //If the bits are all 0, then *none* of the pairs satisfy the pimax + rpmax constraints.
+                const AVX_FLOATS m_mask = AVX_BITWISE_AND(AVX_BITWISE_AND(m_mask_3d_sep, m_mask_pimax_sep), m_sqr_rpmax_initial_mask);
+#else
                 const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_3d_sep, m_mask_pimax_sep);
+#endif
+
                 if(AVX_TEST_COMPARISON(m_mask)==0) {
                     continue;
                 }
