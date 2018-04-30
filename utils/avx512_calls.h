@@ -369,6 +369,32 @@ static inline AVX512_FLOATS inv_cosine_avx512(const AVX512_FLOATS X, const int o
     DOUBLE weights[AVX512_NVEC];
   };
   
+
+#define CHECK_AND_FAST_DIVIDE(result, numerator, denominator, mask, num_nr_steps)                      { \
+        int _ii;                                                        \
+        if (fast_divide == 0) {                                         \
+            result = AVX512_DIVIDE_FLOATS(numerator, denominator); \
+            /* The divide is the actual operation we need */            \
+            /* but divides are about 10x slower than multiplies. So, I am replacing it */ \
+            /* with a approximate reciprocal in floating point */       \
+            /* + 2 iterations of newton-raphson in case of DOUBLE */    \
+        } else {                                                        \
+            /* following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson */ \
+            const AVX512_FLOATS rc = AVX512_MASKZ_RECIPROCAL_FLOATS(mask, denominator); \
+            /* We have the double->float->approx. reciprocal->double process done. */ \
+            /* Now improve the accuracy of the divide with newton-raphson. */ \
+            /* Ist iteration of NewtonRaphson */                        \
+            const AVX512_FLOATS two = AVX512_SET_FLOAT((DOUBLE) 2.0);   \
+            AVX512_FLOATS rc_iter = rc;                                 \
+            for(_ii=0;ii<num_nr_steps;_ii++) {                          \
+                rc_iter = AVX512_MULTIPLY_FLOATS(rc_iter,               \
+                                                 AVX512_FNMA_ADD_FLOATS(denominator, rc_iter, two));/*2.0 - l^2*rc */ \
+            }                                                           \
+            result = AVX512_MASKZ_MULTIPLY_FLOATS(mask, numerator, rc_iter); \
+        } /* end of FAST_DIVIDE */                                      \
+    }
+    
+
 #ifdef __cplusplus
 }
 #endif

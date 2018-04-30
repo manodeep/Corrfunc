@@ -24,6 +24,7 @@
 static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                            const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                            const int same_cell,
+                                                           const int fast_divide,
                                                            const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
                                                            const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                            const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
@@ -178,32 +179,32 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
             }
 
             /*m_mu := sqrt(dz^2/s2) (with masked elements set to mu_max */
-#if 0            
+            AVX512_FLOATS m_sqr_mu = AVX512_SETZERO_FLOAT();
             if(fast_divide == 0) {
                 //regular division -> slow op
-                m_sqr_Dpar = AVX512_MASKZ_DIVIDE_FLOATS(m_mask_left, m_sqr_s_dot_l,m_sqr_norm_l);
+                m_sqr_mu = AVX512_MASKZ_DIVIDE_FLOATS(m_mask_left, m_sqr_zdiff, s2);
                 //The divide is the actual operation we need
                 // but divides are about 10x slower than multiplies. So, I am replacing it
                 //with a approximate reciprocal in floating point
                 // + 2 iterations of newton-raphson in case of DOUBLE
             } else {
                 //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
-                const AVX512_FLOATS rc = AVX512_MASKZ_RECIPROCAL_FLOATS(m_mask_left, m_sqr_norm_l);
+                const AVX512_FLOATS rc = AVX512_MASKZ_RECIPROCAL_FLOATS(m_mask_left, s2);
                 //We have the double->float->approx. reciprocal->double process done.
                 //Now improve the accuracy of the divide with newton-raphson.
                 
                 //Ist iteration of NewtonRaphson
                 const AVX512_FLOATS two = AVX512_SET_FLOAT((DOUBLE) 2.0);
                 const AVX512_FLOATS rc1 = AVX512_MULTIPLY_FLOATS(rc,
-                                                                 AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc, two));/*2.0 - l^2*rc */
+                                                                 AVX512_FNMA_ADD_FLOATS(s2, rc, two));/*2.0 - l^2*rc */
                 //2nd iteration of NewtonRaphson
                 const AVX512_FLOATS rc2 = AVX512_MULTIPLY_FLOATS(rc1,
-                                                                 AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc1, two));/* 2.0 - l^2*rc1 */
+                                                                 AVX512_FNMA_ADD_FLOATS(s2, rc1, two));/* 2.0 - l^2*rc1 */
                 
-                m_sqr_Dpar = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_sqr_s_dot_l, rc2);
+                m_sqr_mu = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_sqr_zdiff, rc2);
             }//end of FAST_DIVIDE
 #endif            
-            const AVX512_FLOATS m_mu = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, AVX512_MASKZ_DIVIDE_FLOATS(m_mask_left, m_sqr_zdiff, s2));
+            const AVX512_FLOATS m_mu = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_mu);
             if(need_savg) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, s2);
             }
@@ -272,7 +273,9 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
 #include "avx_calls.h"
 
 static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int same_cell,
+                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                        const int same_cell,
+                                                        const int fast_divide,
                                                         const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
                                                         const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                         const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
@@ -446,9 +449,50 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 
             //There is some s2 that satisfies sqr_smin <= s2 < sqr_smax && mu_min <= |dz| < mu_max
             s2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_smax, s2, m_mask_left);
-            /*m_mu := sqrt(s2/dz^2) (with masked elements set to mu_max */
-            const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, AVX_DIVIDE_FLOATS(m_sqr_zdiff, s2), m_mask_left));
-
+            /*m_sqr_mu := dz^2/s^2 (with masked elements set to mu_max */
+            AVX_FLOATS m_sqr_mu = AVX_SETZERO_FLOAT();
+            if(fast_divide == 0) {
+                //regular division -> slow op
+                m_sqr_mu = AVX_DIVIDE_FLOATS(m_sqr_zdiff, s2);    
+                //The divide is the actual operation we need
+                // but divides are about 10x slower than multiplies. So, I am replacing it
+                //with a approximate reciprocal in floating point
+                // + 2 iterations of newton-raphson in case of DOUBLE
+            } else {
+                //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
+                //However, the exact implementation depends on the precision. floats have an inbuilt approx. reciprocal
+                //but doubles do not. So, we have to 'fake' an approximate reciprocal for doubles by converting to float
+                //taking the approximate reciprocal, and then convert back to double
+#ifndef DOUBLE_PREC
+                const AVX_FLOATS rc  = _mm256_rcp_ps(s2);//intrinsic for 256 bit approximate reciprocal
+#else
+                //we have to do this for doubles now.
+                //if the vrcpps instruction is not generated, there will
+                //be a ~70 cycle performance hit from switching between
+                //AVX and SSE modes.
+                const __m128 float_tmp1 =  _mm256_cvtpd_ps(s2);//convert double to float -> not avx_floats := _m256d 
+                //(convert 4 doubles into 4 floats -> use half of available 256 bit SIMD registers)
+                __m128 float_inv_tmp1 = _mm_rcp_ps(float_tmp1);//intrinsic for 128 bit float approximate reciprocal
+                const AVX_FLOATS rc = _mm256_cvtps_pd(float_inv_tmp1);//convert back to double
+#endif//DOUBLE_PREC
+                
+                //We have the double->float->approx. reciprocal->double process done.
+                //Now improve the accuracy of the divide with newton-raphson.
+                
+                //Ist iteration of NewtonRaphson
+                const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);
+                const AVX_FLOATS rc1 = AVX_MULTIPLY_FLOATS(rc,
+                                                           AVX_SUBTRACT_FLOATS(two,
+                                                                               AVX_MULTIPLY_FLOATS(s2,rc)));
+                //2nd iteration of NewtonRaphson
+                const AVX_FLOATS rc2 = AVX_MULTIPLY_FLOATS(rc1,
+                                                           AVX_SUBTRACT_FLOATS(two,
+                                                                               AVX_MULTIPLY_FLOATS(2,rc1)));
+                m_sqr_mu = AVX_MULTIPLY_FLOATS(m_sqr_zdiff,rc2);
+            }//end of FAST_DIVIDE
+                
+            const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, m_sqr_mu, m_mask_left));
+            
             if(need_savg) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(s2);
             }
@@ -566,13 +610,17 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 #include "sse_calls.h"
 
 static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int same_cell,
+                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                        const int same_cell,
+                                                        const int fast_divide,
                                                         const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin, const int nmu_bins,
                                                         const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                         const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                         DOUBLE *src_savg, uint64_t *src_npairs,
                                                         DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
+    (void) fast_divide;
+    
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
@@ -868,6 +916,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                   const int same_cell,
+                                                  const int fast_divide,
                                                   const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin, const int nmu_bins,
                                                   const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                   const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
@@ -875,6 +924,7 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
                                                   DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
 
+    (void) fast_divide;
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
