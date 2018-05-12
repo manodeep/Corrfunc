@@ -203,7 +203,7 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
                 
                 m_sqr_mu = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_sqr_zdiff, rc2);
             }//end of FAST_DIVIDE
-#endif            
+
             const AVX512_FLOATS m_mu = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_mu);
             if(need_savg) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, s2);
@@ -487,7 +487,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                 //2nd iteration of NewtonRaphson
                 const AVX_FLOATS rc2 = AVX_MULTIPLY_FLOATS(rc1,
                                                            AVX_SUBTRACT_FLOATS(two,
-                                                                               AVX_MULTIPLY_FLOATS(2,rc1)));
+                                                                               AVX_MULTIPLY_FLOATS(s2,rc1)));
                 m_sqr_mu = AVX_MULTIPLY_FLOATS(m_sqr_zdiff,rc2);
             }//end of FAST_DIVIDE
                 
