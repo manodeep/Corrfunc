@@ -88,11 +88,11 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
         z1++;
     } else {
       while(z1 != zend && (*z1 - zpos) <= -pimax) {
-	z1++;
+          z1++;
       }
       if(z1 == zend) {
-	i = N0;
-	break;
+          i = N0;
+          break;
       }
     }
 
@@ -319,7 +319,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
       z1++;
     } else {
       while(z1 != zend && (*z1 - zpos) <= -pimax) {
-	z1++;
+          z1++;
       }
       if(z1 == zend) {
 	i = N0;
@@ -597,7 +597,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
       fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
   }
 
-  int64_t prev_j = 0, n_off = 0;
+  const DOUBLE *zend = z1 + N1, *zstart=z1;
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
@@ -609,22 +609,20 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
         pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
     }
 
-    int64_t j;
     if(same_cell == 1) {
-        z1++; n_off++;
-        j = i+1;
+        z1++;
     } else {
-        for(;prev_j<N1;prev_j++) {
-            const DOUBLE dz = *z1 - zpos;
-            if(dz > -pimax) break;
-            z1++; n_off++;
+        while(z1 != zend && (*z1 - zpos) <= -pimax) {
+            z1++;
         }
-        if(prev_j == N1) {
+        if(z1 == zend) {
             i = N0;
             break;
         }
-        j = prev_j;
     }
+    
+    const int64_t n_off = z1 - zstart;
+    int64_t j = n_off;
     DOUBLE *localz1 = z1;
     DOUBLE *localx1 = x1 + n_off;
     DOUBLE *localy1 = y1 + n_off;
