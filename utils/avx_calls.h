@@ -39,7 +39,9 @@ extern "C" {
 #define AVX_NVEC                         8    
 #define AVX_INTS                         __m256i
 #define AVX_FLOATS                       __m256
-  
+
+#define AVX_SETZERO_FLOAT()              _mm256_setzero_ps()
+    
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_ps(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_ps(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_ps(X,Y)
@@ -103,6 +105,8 @@ extern "C" {
 #define AVX_INTS                         __m128i
 #define AVX_FLOATS                       __m256d
 
+#define AVX_SETZERO_FLOAT()              _mm256_setzero_pd()
+    
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_pd(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_pd(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_pd(X,Y)
@@ -220,7 +224,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
             const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);         \
             AVX_FLOATS rc_iter = rc;                                    \
             /* Do NewtonRaphson iterations */                           \
-            for(_ii=0;ii<fast_divide_and_NR_steps;_ii++) {              \
+            for(_ii=0;_ii<fast_divide_and_NR_steps;_ii++) {              \
                 rc_iter = AVX_MULTIPLY_FLOATS(rc_iter,                  \
                                               AVX_SUBTRACT_FLOATS(two,  \
                                                                   AVX_MULTIPLY_FLOATS(denominator, rc_iter))); /*2.0 - l^2*rc */ \
@@ -246,7 +250,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
             const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);         \
             AVX_FLOATS rc_iter = rc;                                    \
             /* Do NewtonRaphson iterations */                           \
-            for(_ii=0;ii<fast_divide_and_NR_steps;_ii++) {              \
+            for(_ii=0;_ii<fast_divide_and_NR_steps;_ii++) {             \
                 rc_iter = AVX_MULTIPLY_FLOATS(rc_iter,                  \
                                               AVX_SUBTRACT_FLOATS(two,  \
                                                                   AVX_MULTIPLY_FLOATS(denominator, rc_iter))); /*2.0 - l^2*rc */ \

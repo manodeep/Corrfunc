@@ -25,15 +25,16 @@ INCL   := countpairs_s_mu_kernels_float.c countpairs_s_mu_kernels_double.c count
           $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
           $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/progressbar.h \
           $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_functions.h.src \
-		  $(UTILS_DIR)/weight_defs_double.h $(UTILS_DIR)/weight_defs_float.h $(UTILS_DIR)/weight_defs.h.src
+	  $(UTILS_DIR)/weight_defs_double.h $(UTILS_DIR)/weight_defs_float.h $(UTILS_DIR)/weight_defs.h.src
 
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 LIBOBJS := $(LIBSRC:.c=.o)
 all: $(TARGETS) $(TARGETSRC) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
 
-countpairs_s_mu_impl_double.o:countpairs_s_mu_impl_double.c countpairs_s_mu_impl_double.h countpairs_s_mu_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h  $(UTILS_DIR)/cellarray_double.h
-countpairs_s_mu_impl_float.o:countpairs_s_mu_impl_float.c countpairs_s_mu_impl_float.h countpairs_s_mu_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h  $(UTILS_DIR)/cellarray_float.h
-countpairs_s_mu.o:countpairs_s_mu.c countpairs_s_mu_impl_double.h countpairs_s_mu_impl_float.h $(INCL)
+countpairs_s_mu_impl_double.o:countpairs_s_mu_impl_double.c countpairs_s_mu_impl_double.h countpairs_s_mu_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h 
+countpairs_s_mu_impl_float.o:countpairs_s_mu_impl_float.c countpairs_s_mu_impl_float.h countpairs_s_mu_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h
+countpairs_s_mu.o:countpairs_s_mu.c countpairs_s_mu_impl_double.h countpairs_s_mu_impl_float.h countpairs_s_mu.h $(INCL)
+countpairs_s_mu_impl_float.c countpairs_s_mu_impl_double.c:countpairs_s_mu_impl.c.src $(INCL)
 
 libs: lib
 lib:  $(LIBRARY)

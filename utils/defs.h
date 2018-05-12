@@ -48,7 +48,7 @@ the ``uint32_t binning_flags`` */
 
 #define BINNING_DFL   0x0
 #define BINNING_CUST  0x1
-    
+
 struct api_cell_timings
 {
     int64_t N1;/* Number of points in the first cell*/
@@ -60,7 +60,9 @@ struct api_cell_timings
 };
     
 
-#define OPTIONS_HEADER_SIZE     (1024)
+#define MAX_FAST_DIVIDE_NR_STEPS  6
+#define OPTIONS_HEADER_SIZE     1024
+
 struct config_options
 {
     /* The fields should appear here in decreasing order of 
@@ -275,13 +277,11 @@ static inline struct config_options get_config_options(void)
 #endif
 
     /* Options specific to mocks */
-
     /* Options for DDrppi_mocks */
-#ifdef FAST_DIVIDE
-    options.fast_divide=1;
+#if defined(FAST_DIVIDE)
+    options.fast_divide_and_NR_steps=FAST_DIVIDE;
 #endif
 
-    
     /* Options for wtheta*/
 #ifdef OUTPUT_THETAAVG
     options.need_avg_sep = 1;

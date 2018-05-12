@@ -1,9 +1,10 @@
 #### Science use-cases for Theory Correlation Functions
 OPT = -DPERIODIC
 #OPT += -DOUTPUT_RPAVG  ### Enabling this can cause up to a 2x performance hit
+#OPT += -DFAST_DIVIDE=2 ##replaces a divide (in DDsmu) with approximate reciprocals, followed by 'FAST_DIVIDE' number of Newton-Raphson steps. Trade-off between speed and accuracy; may be slower on newer computers
 
 #### Code specs for both theory and data Correlation Functions
-OPT += -DDOUBLE_PREC
+#OPT += -DDOUBLE_PREC
 
 
 

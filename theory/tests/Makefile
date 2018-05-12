@@ -23,10 +23,11 @@ VPF_LIB := countspheres
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 TARGETS := test_periodic test_nonperiodic
+
 ifneq ($(COMPILE_PYTHON_EXT), 0)
-TARGETS += python_lib
+  TARGETS += python_lib
 else
-$(warning $(ccmagenta) Skipping python tests since python or numpy is unavailable $(ccreset))
+  $(warning $(ccmagenta) Skipping python tests since python or numpy is unavailable $(ccreset))
 endif
 
 SRC1   := test_periodic.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(UTILS_DIR)/utils.c

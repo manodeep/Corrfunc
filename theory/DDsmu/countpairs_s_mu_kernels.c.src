@@ -215,45 +215,15 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             s2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_smax, s2, m_mask_left);
             /*m_sqr_mu := dz^2/s^2 (with masked elements set to mu_max */
             AVX_FLOATS m_sqr_mu = AVX_SETZERO_FLOAT();
-            if(fast_divide_and_NR_steps == 0) {
-                //regular division -> slow op
-                m_sqr_mu = AVX_DIVIDE_FLOATS(m_sqr_zdiff, s2);    
-                //The divide is the actual operation we need
-                // but divides are about 10x slower than multiplies. So, I am replacing it
-                //with a approximate reciprocal in floating point
-                // + 2 iterations of newton-raphson in case of DOUBLE
-            } else {
-                //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
-                //However, the exact implementation depends on the precision. floats have an inbuilt approx. reciprocal
-                //but doubles do not. So, we have to 'fake' an approximate reciprocal for doubles by converting to float
-                //taking the approximate reciprocal, and then convert back to double
-#ifndef DOUBLE_PREC
-                const AVX_FLOATS rc  = _mm256_rcp_ps(s2);//intrinsic for 256 bit approximate reciprocal
-#else
-                //we have to do this for doubles now.
-                //if the vrcpps instruction is not generated, there will
-                //be a ~70 cycle performance hit from switching between
-                //AVX and SSE modes.
-                const __m128 float_tmp1 =  _mm256_cvtpd_ps(s2);//convert double to float -> not avx_floats := _m256d 
-                //(convert 4 doubles into 4 floats -> use half of available 256 bit SIMD registers)
-                __m128 float_inv_tmp1 = _mm_rcp_ps(float_tmp1);//intrinsic for 128 bit float approximate reciprocal
-                const AVX_FLOATS rc = _mm256_cvtps_pd(float_inv_tmp1);//convert back to double
-#endif//DOUBLE_PREC
-                
-                //We have the double->float->approx. reciprocal->double process done.
-                //Now improve the accuracy of the divide with newton-raphson.
-                
-                //Ist iteration of NewtonRaphson
-                const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);
-                const AVX_FLOATS rc1 = AVX_MULTIPLY_FLOATS(rc,
-                                                           AVX_SUBTRACT_FLOATS(two,
-                                                                               AVX_MULTIPLY_FLOATS(s2,rc)));
-                //2nd iteration of NewtonRaphson
-                const AVX_FLOATS rc2 = AVX_MULTIPLY_FLOATS(rc1,
-                                                           AVX_SUBTRACT_FLOATS(two,
-                                                                               AVX_MULTIPLY_FLOATS(2,rc1)));
-                m_sqr_mu = AVX_MULTIPLY_FLOATS(m_sqr_zdiff,rc2);
-            }//end of FAST_DIVIDE
+
+
+            /* Check if fast_divide is enabled and either use the normal divide or
+               use the approx. reciprocal followed by `fast_divide_and_NR_steps` number
+               of Newton-Raphson steps to improve numerical accuracy.
+               
+               macro is defined in `avx_calls.h`
+            */
+            CHECK_AND_FAST_DIVIDE(m_sqr_mu, m_sqr_zdiff, s2, fast_divide_and_NR_steps);
                 
             const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, m_sqr_mu, m_mask_left));
             
