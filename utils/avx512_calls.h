@@ -1,4 +1,4 @@
-/* File: avx_calls.h */
+/* File: avx512_calls.h */
 /*
   This file is a part of the Corrfunc package
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
@@ -7,6 +7,8 @@
 */
 
 #pragma once
+
+#if defined(__AVX512F__)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -398,3 +400,6 @@ static inline AVX512_FLOATS inv_cosine_avx512(const AVX512_FLOATS X, const int o
 #ifdef __cplusplus
 }
 #endif
+
+
+#endif /* if defined(AVX512F) */
