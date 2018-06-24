@@ -552,7 +552,8 @@ def setup_packages():
                                                     min_np_minor)],
             install_requires=['numpy>={0}.{1}'.format(min_np_major,
                                                       min_np_minor),
-                              'future'],
+                              'future',
+                              'wurlitzer'],
             zip_safe=False,
             cmdclass={'build_ext': BuildExtSubclass})
 
