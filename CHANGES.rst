@@ -9,7 +9,7 @@ New features
 ------------
 - New pair counter `DD(s, mu)` for theory and mocks
 - conda installable package
-- Progress bar and error messages are displayed in Jupyter notebooks (`#158 <https://github.com/manodeep/Corrfunc/pull/158>`_)
+- Progress bar and error messages are displayed in Jupyter notebooks [#158]
 
 2.0.0
 ======
