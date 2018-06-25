@@ -9,6 +9,7 @@ New features
 ------------
 - New pair counter `DD(s, mu)` for theory and mocks
 - conda installable package
+- Fix virtualenv install issue [#159]
 
 2.0.0
 ======
