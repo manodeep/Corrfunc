@@ -4,6 +4,7 @@
 **Breaking Changes**
 ---------------------
 - Package will be renamed to ``corrfunc`` from ``Corrfunc``
+- Drop Python 2.6 support
 
 New features
 ------------
