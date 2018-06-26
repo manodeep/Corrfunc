@@ -102,14 +102,6 @@ matrix:
     #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.5
     #   before_install:
     #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        
-    - os: linux
-      dist: trusty
-      sudo: required
-      compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 DOCTEST=FALSE
-      before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
 
     - os: linux
       dist: trusty

@@ -43,7 +43,7 @@ Pre-requisites
    ``conda install -c https://conda.anaconda.org/asmeurer gsl``
    (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl``
    if necessary.
-4. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions.
+4. ``python >= 2.7`` or ``python>=3.4`` for compiling the C extensions.
 5. ``numpy>=1.7`` for compiling the C extensions.
 
 *If python and/or numpy are not available, then the C extensions will
