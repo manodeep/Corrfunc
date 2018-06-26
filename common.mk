@@ -417,25 +417,25 @@ ifeq ($(DO_CHECKS), 1)
 
     ifneq ($(COMPILE_PYTHON_EXT), 0)
       ifndef PYTHON_CONFIG_EXE
-        # first try python-config
         PYTHON_SCRIPTS:=$(shell python -c "import sysconfig;print(sysconfig.get_path('scripts'));")
-        PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python-config"
+        # try python3-config first for Python 3
+        ifeq ($(PYTHON_VERSION_MAJOR), 3)
+    	    PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python3-config"
+    	    PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
+	    endif
 
-        PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
         ifndef PYTHON_CONFIG_INCL
-          # python-config failed; let's try python3-config if using Python 3
-          ifeq ($(PYTHON_VERSION_MAJOR), 3)
-            PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python3-config"
-          endif
-          PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
+          # python3-config failed; let's try python-config (for Python 2 or 3)
+          PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python-config"
         endif
+
+        $(warning $(ccblue)"PYTHON"$(ccreset) is set to $(ccblue)$(PYTHON)$(ccreset); using $(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset) as $(ccblue)python-config$(ccreset). If this is not correct, please also set $(ccblue)"PYTHON_CONFIG_EXE"$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset))
       endif
 
-      # if PYTHON_CONFIG_INCL is still undef, then we also failed with python3-config
+      PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
+      # if PYTHON_CONFIG_INCL is still undef, then we failed to find any python-config
       ifndef PYTHON_CONFIG_INCL
-        $(error $(ccred)python-config$(ccreset) ($(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset)) not found. Please set $(ccgreen)PYTHON_CONFIG_EXE$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset) before installing $(DISTNAME).$(VERSION). Installing $(ccblue)python-devel$(ccreset) might fix this issue $(ccreset))
-      else
-        $(warning $(ccblue)"PYTHON"$(ccreset) is set to $(ccblue)$(PYTHON)$(ccreset); using $(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset) as $(ccblue)python-config$(ccreset). If this is not correct, please also set $(ccblue)"PYTHON_CONFIG_EXE"$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset))
+        $(error $(ccred)python-config$(ccreset) ($(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset)) not found. Please set $(ccgreen)PYTHON_CONFIG_EXE$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset) before installing $(DISTNAME).$(VERSION). Installing $(ccblue)python-devel$(ccreset) might fix this issue $(ccreset))  
       endif
 
       PYTHON_CONFIG_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_CONFIG_INCL))
