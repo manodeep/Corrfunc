@@ -12,7 +12,7 @@ If you have a question, please consider emailing the mailing list:
 
 ## Issue description 
 
-## Expected behavior 
+### Expected behavior 
 
 
 ### Actual behavior
