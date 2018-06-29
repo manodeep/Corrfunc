@@ -4,27 +4,24 @@ If you have a question, please consider emailing the mailing list:
   https://groups.google.com/forum/#!forum/corrfunc
 -->
 
-General information
-*********************
+** General information **
 
 - Corrfunc version:
 - platform:
 - installation method (pip/source/other?):
 
-Issue description
-********************
+** Issue description **
 
-Expected behavior
-###################
+### Expected behavior 
 
-Actual behavior
-################
 
-What have you tried so far?
-############################
+### Actual behavior
 
-Minimal failing example
-##########################
+
+### What have you tried so far?
+
+
+### Minimal failing example
 
 <!-- In this section, you should include or link to a code snippet that demonstrates the issue. -->
 
