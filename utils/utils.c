@@ -27,6 +27,7 @@
 #include<string.h>
 #include<limits.h>
 #include<stdarg.h>
+#include<ctype.h>
 
 #include "macros.h"
 #include "utils.h"
@@ -126,7 +127,6 @@ int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,doub
         if(fgets(buf,MAXBUFSIZE,fp)!=NULL) {
             nread=sscanf(buf,"%lf %lf",&low,&hi);
             if(nread==nitems) {
-
                 if(index==1) {
                     *rmin=low;
                     (*rupp)[0]=low;
@@ -731,12 +731,20 @@ int64_t getnumlines(const char *fname,const char comment)
 
     while(1){
         if(fgets(str_line, MAXLINESIZE,fp)!=NULL) {
-            //WARNING: this does not remove white-space. You might
-            //want to implement that (was never an issue for me)
-            if(str_line[0] !=comment)
-                nlines++;
-        } else
+            /*
+              fgets always terminates the string with a '\0'
+              on a successful read
+             */
+            char *c = &str_line[0];
+            while(*c != '\0' && isspace(*c)) {
+                c++;
+            }
+            if(*c != '\0' && *c !=comment) {
+                 nlines++;
+            }
+        } else {
             break;
+        }
     }
     fclose(fp);
     return nlines;
