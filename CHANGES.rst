@@ -9,7 +9,14 @@ New features
 ------------
 - New pair counter `DD(s, mu)` for theory and mocks
 - conda installable package
+
+2.2.0
+=====
+
+New features
+------------
 - Progress bar and error messages are displayed in Jupyter notebooks [#158]
+
 
 2.0.0
 ======
