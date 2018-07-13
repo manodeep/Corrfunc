@@ -1,8 +1,0 @@
-title: Corrfunc
-description: Blazing fast correlation functions on the CPU
-google_analytics: UA-53726906-2
-show_downloads: true
-theme: jekyll-theme-minimal
-
-gems:
-  - jekyll-mentions
