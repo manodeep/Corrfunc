@@ -11,7 +11,7 @@ New features
 - conda installable package
 
 
-2.1.0
+2.1
 =======
 
 Enhancements
