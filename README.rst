@@ -39,10 +39,10 @@ Pre-requisites
    sys-admin for system-wide installs of the compiler; if you prefer to
    install your own then ``conda install gcc`` (MAC/linux) or
    ``(sudo) port install gcc5`` (on MAC) should work. 
-3. ``gsl``. Use either
-   ``conda install -c https://conda.anaconda.org/asmeurer gsl``
+3. ``gsl >= 2.4``. Use either
+   ``conda install -c conda-forge gsl``
    (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl``
-   if necessary.
+   if necessary. 
 4. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions.
 5. ``numpy>=1.7`` for compiling the C extensions.
 
@@ -116,7 +116,10 @@ are:
 4. ``DDrppi`` -- Measures the auto/cross correlation function between
    two boxes. The boxes do not need to be cubes.
 
-5. ``vpf`` -- Measures the void probability function + counts-in-cells.
+5. ``DDsmu`` -- Measures the auto/cross correlation function between
+   two boxes. The boxes do not need to be cubes.
+
+6. ``vpf`` -- Measures the void probability function + counts-in-cells.
 
 Clustering measures on a Mock
 -----------------------------
@@ -128,11 +131,15 @@ All codes that work on mock catalogs (RA, DEC, CZ) are located in the
    sets. The outputs, DD, DR and RR can be combined using ``wprp`` to
    produce the Landy-Szalay estimator for `wp(rp)`.
 
-2. ``DDtheta_mocks`` -- Computes angular correlation function between two data
+2. ``DDsmu_mocks`` -- The standard auto/cross correlation between two data
+   sets. The outputs, DD, DR and RR can be combined using the python utility 
+   ``convert_3d_counts_to_cf`` to produce the Landy-Szalay estimator for `xi(s, mu)`.
+   
+3. ``DDtheta_mocks`` -- Computes angular correlation function between two data
    sets. The outputs from ``DDtheta_mocks`` need to be combined with
    ``wtheta`` to get the full `\omega(\theta)`
 
-3. ``vpf_mocks`` -- Computes the void probability function on mocks.
+4. ``vpf_mocks`` -- Computes the void probability function on mocks.
 
 Science options
 ===============

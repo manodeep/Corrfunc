@@ -65,12 +65,12 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         separation from the line of sight (LOS). Here, LOS is taken to be 
         along the Z direction. 
 
-        Note: Only pairs with :math:`0 <= cos(\theta_{LOS}) < \mu_{max}`
+        Note: Only pairs with :math:`0 <= \cos(\\theta_{LOS}) < \mu_{max}`
         are counted (no equality).
 
     nmu_bins: int
         The number of linear ``mu`` bins, with the bins ranging from
-        from (0,``mu_max``)
+        from (0, :math:`\mu_{max}`)
 
     X1/Y1/Z1 : array-like, real (float/double)
         The array of X/Y/Z positions for the first set of points.

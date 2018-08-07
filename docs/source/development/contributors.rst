@@ -17,8 +17,9 @@ Lead developers
 Core package contributors
 ==========================
 
-* Manodeep Sinha
-* Lehman Garrison
+* Manodeep Sinha (@manodeep)
+* Lehman Garrison (@lgarrison)
+* Nick Hand (@nickhand)
 
 Other credits
 =============
@@ -32,5 +33,7 @@ Other credits
   <https://github.com/astropy/halotools>`_. I know, first-hand, how much of an
   effort it was for the developers of `halotools` to generate all of this
   documentation. Having such a template made creating the docs for Corrfunc a
-  lot easier process. The API generation script for Corrfunc was lifted
-  directly out of the repo `bccp/nbodykit/ <https://github.com/bccp/nbodykit/>`_.
+  lot easier process.
+
+* The API generation script for Corrfunc was lifted directly out of the
+  repo `bccp/nbodykit/ <https://github.com/bccp/nbodykit/>`_.
