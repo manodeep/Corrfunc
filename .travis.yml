@@ -12,6 +12,7 @@ env:
   global:
     - NUMPY_VERSION=1.12
     - DOCTEST=TRUE
+    - INSTALL_LIBGFORTRAN=FALSE
 
 addons: 
   apt:
@@ -107,7 +108,7 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 DOCTEST=FALSE
+      env: COMPILER=gcc PYTHON_VERSION=2.6 NUMPY_VERSION=1.7 DOCTEST=FALSE INSTALL_LIBGFORTRAN=TRUE
       before_install:
         - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
 
@@ -149,6 +150,7 @@ install:
   - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
   - source activate test
   - conda install -q --yes -c conda-forge gsl
+  - if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; conda install libgfortran ; fi
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
   - python setup.py install
