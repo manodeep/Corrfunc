@@ -1,3 +1,12 @@
+
+2.1.0
+=====
+
+Enhancements
+------------
+- GSL version now specified and tested by Travis [#164]
+
+
 3.0.0 (upcoming)
 =================
 
@@ -10,12 +19,6 @@ New features
 - New pair counter `DD(s, mu)` for theory and mocks
 - conda installable package
 
-2.1.0
-=====
-
-Enhancements
-------------
-- GSL version now specified and tested by Travis [#164]
 
 2.0.0
 ======
