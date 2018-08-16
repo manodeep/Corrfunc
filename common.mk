@@ -368,57 +368,60 @@ ifeq ($(DO_CHECKS), 1)
 
 
   # All of the python/numpy checks follow
-
   export PYTHON_CHECKED ?= 0
   export NUMPY_CHECKED ?= 0
   export COMPILE_PYTHON_EXT ?= 0
   ifeq ($(PYTHON_CHECKED), 0)
-    PYTHON_FOUND := $(shell $(PYTHON) --version 2>/dev/null)
+    # This is very strange -- requested 'version' info goes to stderr!!
+    # anything user-requested should always go to stdout IMHO -- MS 17/8/2018
+    # Only stdout is passed back as the output; therefore need to redirect
+    # stderr to stdout, and then capture that output to `PYTHON_FOUND`
+    PYTHON_FOUND := $(shell $(PYTHON) --version 2>&1))
     PYTHON_CHECKED := 1
     ifdef PYTHON_FOUND
       export PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,${PYTHON_FOUND}))
       export PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
       export PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
-  
+
       ## I only need this so that I can print out the full python version (correctly)
       ## in case of error
       PYTHON_VERSION_PATCH := $(word 3,${PYTHON_VERSION_FULL})
-  
+
       ## Check numpy version
       export NUMPY_VERSION_FULL :=  $(wordlist 1,3,$(subst ., ,$(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print(numpy.__version__)")))
       export NUMPY_VERSION_MAJOR := $(word 1,${NUMPY_VERSION_FULL})
       export NUMPY_VERSION_MINOR := $(word 2,${NUMPY_VERSION_FULL})
-  
+
       ## Same reason as python patch level.
       NUMPY_VERSION_PATCH := $(word 3,${NUMPY_VERSION_FULL})
-  
+
       ### Check for minimum python + numpy versions. In theory, I should also check
       ### that *any* python and numpy are available but that seems too much effort
       MIN_PYTHON_MAJOR := 2
       MIN_PYTHON_MINOR := 6
-  
+
       MIN_NUMPY_MAJOR  := 1
       MIN_NUMPY_MINOR  := 7
-  
+
       PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
       NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
-  
+
       ifeq ($(PYTHON_AVAIL),true)
         ifeq ($(NUMPY_AVAIL),true)
           export COMPILE_PYTHON_EXT := 1
         endif
       endif
-  
+
       ifneq ($(PYTHON_AVAIL),true)
         $(warning $(ccmagenta) Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR) $(ccreset))
         export COMPILE_PYTHON_EXT := 0
       endif
-  
+
       ifneq ($(NUMPY_AVAIL),true)
         $(warning $(ccmagenta) Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR) $(ccreset))
         export COMPILE_PYTHON_EXT := 0
       endif
-  
+
       ifneq ($(COMPILE_PYTHON_EXT), 0)
         ifndef PYTHON_CONFIG_EXE
           ifeq ($(PYTHON_VERSION_MAJOR), 2)
@@ -436,7 +439,7 @@ ifeq ($(DO_CHECKS), 1)
           $(error $(ccred)python-config$(ccreset) ($(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset)) not found. Please set $(ccgreen)PYTHON_CONFIG_EXE$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset) before installing $(DISTNAME).$(VERSION). Installing $(ccblue)python-devel$(ccreset) might fix this issue $(ccreset))
         endif
         PYTHON_CONFIG_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_CONFIG_INCL))
-  
+
         # NUMPY is available -> next step should not fail
         # That's why we are not checking if the NUMPY_INCL_FLAG is defined.
         ifeq ($(NUMPY_CHECKED), 0)
@@ -453,7 +456,7 @@ ifeq ($(DO_CHECKS), 1)
           endif
           export NUMPY_CHECKED:=1
         endif
-  
+
         export PYTHON_CFLAGS := $(PYTHON_CONFIG_INCL) $(NUMPY_INCL_FLAG)
         export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
         export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
@@ -469,7 +472,7 @@ ifeq ($(DO_CHECKS), 1)
         endif
         export PYTHON_SOABI
         # export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
-  
+
         ### Check if conda is being used on OSX - then we need to fix python link libraries
         export FIX_PYTHON_LINK := 0
         # ifeq ($(CONDA_BUILD), 0)
@@ -487,7 +490,7 @@ ifeq ($(DO_CHECKS), 1)
           # PYTHON_LINK := $(filter-out CoreFoundation, $(PYTHON_LINK))
           PYTHON_LINK += -dynamiclib -Wl,-compatibility_version,$(ABI_COMPAT_VERSION) -Wl,-current_version,$(VERSION) -undefined dynamic_lookup
           PYTHON_LINK += -headerpad_max_install_names
-  
+
           ### Another check for stack-size. travis ci chokes on this with gcc
           # comma := ,
           # PYTHON_LINK := $(filter-out -Wl$(comma)-stack_size$(comma)1000000$(comma), $(PYTHON_LINK))
