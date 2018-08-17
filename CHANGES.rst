@@ -11,7 +11,7 @@ New features
 - conda installable package
 
 2.2.0
-======
+=======
 
 **Breaking Changes**
 --------------------
@@ -19,7 +19,6 @@ New features
 
 Bug fixes
 ---------
-
 - Fix virtualenv install issue [#159]
 
 
