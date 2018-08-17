@@ -17,7 +17,7 @@ New features
 New features
 ------------
 - New pair counter `DD(s, mu)` for theory and mocks (contributed by @nickhand,
-  in #130 and #132)
+  in #130 and #132) [#166]
 
 
 Enhancements
