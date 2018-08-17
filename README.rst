@@ -160,7 +160,7 @@ the following ``Makefile`` option has a corresponding entry for the runtime
 libraries. 
 
 Theory (in `theory.options <theory.options>`__)
--------------------------------
+-------------------------------------------------
 
 1. ``PERIODIC`` (ignored in case of wp/xi) -- switches periodic boundary
    conditions on/off. Enabled by default.
@@ -173,7 +173,7 @@ Theory (in `theory.options <theory.options>`__)
    by default (i.e., calculations are performed in single precision by default).
    
 Mocks (in `mocks.options <mocks.options>`__)
-----------------------------
+----------------------------------------------
 
 1. ``OUTPUT_RPAVG`` -- switches on output of ``<rp>`` in each ``rp``
    bin for ``DDrppi_mocks``. Enabled by default.
