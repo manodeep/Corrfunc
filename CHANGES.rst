@@ -11,6 +11,18 @@ New features
 - GPU version
 
 
+2.2.0
+=======
+
+**Breaking Changes**
+--------------------
+- Drop Python 2.6 support
+
+Bug fixes
+---------
+- Fix virtualenv install issue [#159]
+
+
 2.1.0
 =======
 

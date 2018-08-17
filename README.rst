@@ -47,8 +47,8 @@ Pre-requisites
 3. ``gsl >= 2.4``. Use either
    ``conda install -c conda-forge gsl``
    (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl``
-   if necessary. 
-4. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions.
+   if necessary.
+4. ``python >= 2.7`` or ``python>=3.4`` for compiling the C extensions.
 5. ``numpy>=1.7`` for compiling the C extensions.
 
 Preferred Install Method
