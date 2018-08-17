@@ -7,16 +7,25 @@
 
 New features
 ------------
-- New pair counter `DD(s, mu)` for theory and mocks
 - conda installable package
+- GPU version
 
 
 2.1.0
 =======
 
+New features
+------------
+- New pair counter `DD(s, mu)` for theory and mocks (contributed by @nickhand,
+  in #130 and #132) [#166]
+
+
 Enhancements
 ------------
 - GSL version now specified and tested by Travis [#164]
+- Now possible to specify the number of Newton-Raphson steps to
+improve accuracy of approximate reciprocals. Available in `DD(rp, pi)` for mocks,
+and `DD(s, mu)` for both theory and mocks
 
 
 2.0.0
