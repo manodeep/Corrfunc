@@ -1,3 +1,8 @@
+.. raw:: html
+
+    <img src="https://github.com/manodeep/Corrfunc/blob/master/corrfunc_logo.png" height="240px">
+
+
 |Release| |PyPI| |MIT licensed| |ASCL| |Travis Build| |Issues| |RTD| |Landscape|
 
 Description
@@ -39,8 +44,8 @@ Pre-requisites
    sys-admin for system-wide installs of the compiler; if you prefer to
    install your own then ``conda install gcc`` (MAC/linux) or
    ``(sudo) port install gcc5`` (on MAC) should work. 
-3. ``gsl``. Use either
-   ``conda install -c https://conda.anaconda.org/asmeurer gsl``
+3. ``gsl >= 2.4``. Use either
+   ``conda install -c conda-forge gsl``
    (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl``
    if necessary.
 4. ``python >= 2.7`` or ``python>=3.4`` for compiling the C extensions.
@@ -360,6 +365,7 @@ Project URL
 -  documentation (http://corrfunc.rtfd.io/)   
 -  version control (https://github.com/manodeep/Corrfunc)
 
+    
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
    :alt: Latest Release

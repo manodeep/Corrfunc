@@ -607,8 +607,9 @@ static PyMethodDef module_methods[] = {
     {"countpairs_s_mu"      ,(PyCFunction) countpairs_countpairs_s_mu ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_s_mu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=None, weight_type=None,\n"
      "                periodic=True, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,\n"
-     "                boxsize=0.0, output_savg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
-     "                zbin_refine_factor=1, max_cells_per_dim=100, c_api_timer=False, isa=-1)\n"
+     "                boxsize=0.0, output_savg=False, fast_divide_and_NR_steps=0,\n"
+     "                xbin_refine_factor=2, ybin_refine_factor=2, zbin_refine_factor=1,\n"
+     "                max_cells_per_dim=100, c_api_timer=False, isa=-1)\n"
      "\n"
      "Calculate the 2-D pair-counts corresponding to the real-space correlation\n"
      "function, "XI_CHAR"(s, "MU_CHAR"). Pairs which are separated\n"
@@ -691,6 +692,13 @@ static PyMethodDef module_methods[] = {
      "   values, then pass in double precision arrays for the particle positions.\n"
      "\n"
 
+     "fast_divide_and_NR_steps: integer (default 0)\n"
+     "   Replaces the division in ``AVX`` implementation with an\n"
+     "   approximate reciprocal, followed by ``fast_divide_and_NR_steps`` "
+     "   Newton-Raphson step. Can improve \n"
+     "   runtime by ~15-20%. Value of 0 keeps the standard division.\n"
+     "\n"
+     
      "(xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3]) \n"
      "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
      "   on runtime. \n\n"
@@ -2167,6 +2175,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
     options.instruction_set = -1;
     options.periodic = 1;
     options.c_api_timer = 0;
+    options.fast_divide_and_NR_steps = 0;
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
@@ -2189,6 +2198,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "boxsize",
         "output_savg",
+        "fast_divide_and_NR_steps",
         "xbin_refine_factor",
         "ybin_refine_factor",
         "zbin_refine_factor",
@@ -2199,7 +2209,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisdiO!O!O!|O!O!O!O!O!bbdbbbbhbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisdiO!O!O!|O!O!O!O!O!bbdbbbbbhbis", kwlist,
                                        &autocorr,&nthreads,&binfile, &mu_max, &nmu_bins,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -2213,6 +2223,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
                                        &(options.verbose),
                                        &(options.boxsize),
                                        &(options.need_avg_sep),
+                                       &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
                                        &(options.c_api_timer),
@@ -2224,7 +2235,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         fprintf(stdout, "\n");
 
         char msg[1024];
-        int len=snprintf(msg, 1024,"ArgumentError: In DDsmu> Could not parse the arguments. Input parameters are: \n");
+        int len=snprintf(msg, 1024,"ArgumentError: In %s> Could not parse the arguments. Input parameters are: \n", __FUNCTION__);
 
         /* How many keywords do we have? Subtract 1 because of the last NULL */
         const size_t nitems = sizeof(kwlist)/sizeof(*kwlist) - 1;

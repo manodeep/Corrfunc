@@ -220,6 +220,12 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);
     }
+    if(options->fast_divide_and_NR_steps >= MAX_FAST_DIVIDE_NR_STEPS) {
+        fprintf(stderr, ANSI_COLOR_MAGENTA"Warning: The number of requested Newton-Raphson steps = %u is larger than max. allowed steps = %u."
+                " Switching to a standard divide"ANSI_COLOR_RESET"\n",
+                options->fast_divide_and_NR_steps, MAX_FAST_DIVIDE_NR_STEPS);
+        options->fast_divide_and_NR_steps = 0;
+    }
 
     //Check inputs
     if(ND1 == 0 || (autocorr == 0 && ND2 == 0)) {
@@ -604,7 +610,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                     const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
                                                                               N1, x1, y1, z1, d1, weights1,
                                                                               same_cell,
-                                                                              options->fast_divide,
+                                                                              options->fast_divide_and_NR_steps,
                                                                               sqr_rpmax, sqr_rpmin, nrpbin,
                                                                               npibin, rupp_sqr, pimax,max_sep,
                                                                               this_rpavg, npairs,
@@ -632,7 +638,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                     const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
                                                                               N2, x2, y2, z2, d2, weights2,
                                                                               same_cell,
-                                                                              options->fast_divide,
+                                                                              options->fast_divide_and_NR_steps,
                                                                               sqr_rpmax, sqr_rpmin, nrpbin,
                                                                               npibin, rupp_sqr, pimax,max_sep,
                                                                               this_rpavg, npairs,

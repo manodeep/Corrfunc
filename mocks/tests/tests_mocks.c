@@ -537,9 +537,8 @@ int main(int argc, char **argv)
     options.verbose=0;
     options.periodic=0;
     options.float_type=sizeof(double);
-    options.fast_divide=0;
+    options.fast_divide_and_NR_steps=0;
     options.fast_acos=0;
-    //options.instruction_set = FALLBACK;
 
     int status = init_cosmology(cosmology_flag);
     if(status != EXIT_SUCCESS) {

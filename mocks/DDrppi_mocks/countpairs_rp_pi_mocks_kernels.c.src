@@ -26,7 +26,7 @@
 static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                                const int same_cell,
-                                                               const int fast_divide,
+                                                               const unsigned int fast_divide_and_NR_steps,
                                                                const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
                                                                const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
                                                                DOUBLE *src_rpavg,
@@ -177,7 +177,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
 
             AVX_FLOATS m_sqr_Dpar, m_sqr_Dperp;
             {
-                const AVX_FLOATS m_dsep =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
+                const AVX_FLOATS m_s_dot_l = AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
                 
                 /* const AVX_FLOATS m_dz_mask = AVX_COMPARE_FLOATS(m_perpz, m_max_sep, _CMP_LT_OQ); */
                 /* if(AVX_TEST_COMPARISON(m_dz_mask) == 0) { */
@@ -185,12 +185,12 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                 /*     break; */
                 /* } */
 
-                const AVX_FLOATS m_numerator = AVX_SQUARE_FLOAT(m_dsep);
+                const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);
                 const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
                 const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
                 const AVX_FLOATS m_sqr_perpz = AVX_SQUARE_FLOAT(m_perpz);
                 const AVX_FLOATS m_sqr_sep = AVX_ADD_FLOATS(m_sqr_perpx, AVX_ADD_FLOATS(m_sqr_perpy, m_sqr_perpz));//3-d separation
-
+                
                 //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
                 //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
                 //we would discard the pair.
@@ -201,53 +201,33 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                 //However, division is slow -> so we will check if \pimax^2 * |l| ^2 < |s.l|^2. If not, then the
                 //value of \pi (after division) *must* be larger than \pimax -> in which case we would
                 //not count that pair anway.
-                const AVX_FLOATS m_sqr_pimax_times_l = AVX_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
-                const AVX_FLOATS m_mask_pimax_sep = AVX_COMPARE_FLOATS(m_numerator, m_sqr_pimax_times_l, _CMP_LT_OQ);// is pi < pimax ?
+                const AVX_FLOATS m_sqr_pimax_times_sqr_l = AVX_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
+                const AVX_FLOATS m_mask_pimax_sep = AVX_COMPARE_FLOATS(m_sqr_s_dot_l, m_sqr_pimax_times_sqr_l, _CMP_LT_OQ);// is pi < pimax ?
+
+#if 0
+                /* This could have been an additional check before the divide but does not seem to boost performance */
+                const AVX_FLOATS m_sqr_rpmax_times_sqr_l = AVX_MULTIPLY_FLOATS(m_sqr_rpmax, m_sqr_norm_l);
+                const AVX_FLOATS m_sqr_s_minus_sqr_sdotl = AVX_SUBTRACT_FLOATS(m_sqr_sep, m_sqr_s_dot_l);
+                const AVX_FLOATS m_sqr_rpmax_initial_mask = AVX_COMPARE_FLOATS(m_sqr_s_minus_sqr_sdotl, m_sqr_rpmax_times_sqr_l, _CMP_LT_OQ);/* is rp < rpmax */
+                
                 //If the bits are all 0, then *none* of the pairs satisfy the pimax + rpmax constraints.
+                const AVX_FLOATS m_mask = AVX_BITWISE_AND(AVX_BITWISE_AND(m_mask_3d_sep, m_mask_pimax_sep), m_sqr_rpmax_initial_mask);
+#else
                 const AVX_FLOATS m_mask = AVX_BITWISE_AND(m_mask_3d_sep, m_mask_pimax_sep);
+#endif
+
                 if(AVX_TEST_COMPARISON(m_mask)==0) {
                     continue;
                 }
 
-                if(fast_divide == 0) {
-                    //regular division -> slow op
-                    m_sqr_Dpar = AVX_DIVIDE_FLOATS(m_numerator,m_sqr_norm_l);
-                    //The divide is the actual operation we need
-                    // but divides are about 10x slower than multiplies. So, I am replacing it
-                    //with a approximate reciprocal in floating point
-                    // + 2 iterations of newton-raphson in case of DOUBLE
-                } else {
-                    //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
-                    //However, the exact implementation depends on the precision. floats have an inbuilt approx. reciprocal
-                    //but doubles do not. So, we have to 'fake' an approximate reciprocal for doubles by converting to float
-                    //taking the approximate reciprocal, and then convert back to double
-#ifndef DOUBLE_PREC
-                    const AVX_FLOATS rc  = _mm256_rcp_ps(m_sqr_norm_l);//intrinsic for 256 bit approximate reciprocal
-#else
-                    //we have to do this for doubles now.
-                    //if the vrcpps instruction is not generated, there will
-                    //be a ~70 cycle performance hit from switching between
-                    //AVX and SSE modes.
-                    const __m128 float_tmp1 =  _mm256_cvtpd_ps(m_sqr_norm_l);//convert double to float -> not avx_floats := _m256d 
-                                                                             //(convert 4 doubles into 4 floats -> use half of available 256 bit SIMD registers)
-                    __m128 float_inv_tmp1 = _mm_rcp_ps(float_tmp1);//intrinsic for 128 bit float approximate reciprocal
-                    const AVX_FLOATS rc = _mm256_cvtps_pd(float_inv_tmp1);//convert back to double
-#endif//DOUBLE_PREC
 
-                    //We have the double->float->approx. reciprocal->double process done.
-                    //Now improve the accuracy of the divide with newton-raphson.
-                    
-                    //Ist iteration of NewtonRaphson
-                    const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);
-                    const AVX_FLOATS rc1 = AVX_MULTIPLY_FLOATS(rc,
-                                                               AVX_SUBTRACT_FLOATS(two,
-                                                                                   AVX_MULTIPLY_FLOATS(m_sqr_norm_l,rc)));
-                    //2nd iteration of NewtonRaphson
-                    const AVX_FLOATS rc2 = AVX_MULTIPLY_FLOATS(rc1,
-                                                               AVX_SUBTRACT_FLOATS(two,
-                                                                                   AVX_MULTIPLY_FLOATS(m_sqr_norm_l,rc1)));
-                    m_sqr_Dpar = AVX_MULTIPLY_FLOATS(m_numerator,rc2);
-                }//end of FAST_DIVIDE
+                /* Check if fast_divide is enabled and either use the normal divide or
+                   use the approx. reciprocal followed by `fast_divide_and_NR_steps` number
+                   of Newton-Raphson steps to improve numerical accuracy.
+
+                   macro is defined in `avx_calls.h`
+                 */
+                CHECK_AND_FAST_DIVIDE(m_sqr_Dpar, m_sqr_s_dot_l, m_sqr_norm_l, fast_divide_and_NR_steps);
                 
                 m_sqr_Dperp = AVX_SUBTRACT_FLOATS(m_sqr_sep,m_sqr_Dpar);
             }
@@ -413,7 +393,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
 static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                                const int same_cell,
-                                                               const int fast_divide,
+                                                               const unsigned int fast_divide_and_NR_steps,
                                                                const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
                                                                const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
                                                                DOUBLE *src_rpavg,
@@ -429,7 +409,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
 
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    (void) fast_divide; //unused
+    (void) fast_divide_and_NR_steps; //unused
 
     SSE_FLOATS m_rupp_sqr[nbin];
     for(int i=0;i<nbin;i++) {
@@ -578,7 +558,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 /* const SSE_FLOATS m_term1 = SSE_MULTIPLY_FLOATS(m_parx, m_perpx); */
                 /* const SSE_FLOATS m_term2 = SSE_MULTIPLY_FLOATS(m_pary, m_perpy); */
                 /* const SSE_FLOATS m_term3 = SSE_MULTIPLY_FLOATS(m_parz, m_perpz); */
-                const SSE_FLOATS m_numerator = SSE_SQUARE_FLOAT(m_dsep);
+                const SSE_FLOATS m_sqr_s_dot_l = SSE_SQUARE_FLOAT(m_dsep);
 
                 const SSE_FLOATS m_sqr_perpx = SSE_SQUARE_FLOAT(m_perpx);
                 const SSE_FLOATS m_sqr_perpy = SSE_SQUARE_FLOAT(m_perpy);
@@ -596,14 +576,14 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 //value of \pi (after division) *must* be larger than \pimax -> in which case we would
                 //not count that pair anway.
                 const SSE_FLOATS m_sqr_pimax_times_l = SSE_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
-                const SSE_FLOATS m_mask_pimax_sep = SSE_COMPARE_FLOATS_LT(m_numerator, m_sqr_pimax_times_l);// is pi < pimax ?
+                const SSE_FLOATS m_mask_pimax_sep = SSE_COMPARE_FLOATS_LT(m_sqr_s_dot_l, m_sqr_pimax_times_l);// is pi < pimax ?
                 //If the bits are all 0, then *none* of the pairs satisfy the pimax + rpmax constraints.
                 const SSE_FLOATS m_mask = SSE_BITWISE_AND(m_mask_3d_sep, m_mask_pimax_sep);
                 if(SSE_TEST_COMPARISON(m_mask)==0) {
                     continue;
                 }
 
-                m_sqr_Dpar = SSE_DIVIDE_FLOATS(m_numerator,m_sqr_norm_l);
+                m_sqr_Dpar = SSE_DIVIDE_FLOATS(m_sqr_s_dot_l,m_sqr_norm_l);
                 //The divide is the actual operation we need
                 // but divides are about 10x slower than multiplies.
                 m_sqr_Dperp = SSE_SUBTRACT_FLOATS(m_sqr_sep,m_sqr_Dpar);
@@ -764,7 +744,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
 static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
                                                          const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                          const int same_cell,
-                                                         const int fast_divide,
+                                                         const unsigned int fast_divide_and_NR_steps,
                                                          const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin,
                                                          const int npibin, const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
                                                          DOUBLE *src_rpavg, uint64_t *src_npairs,
@@ -781,7 +761,7 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
 
-    (void) fast_divide;//unused parameter but required to keep the same function signature amongst the kernels
+    (void) fast_divide_and_NR_steps;//unused parameter but required to keep the same function signature amongst the kernels
     
     /*----------------- FALLBACK CODE --------------------*/
     const int64_t totnbins = (npibin+1)*(nbin+1);

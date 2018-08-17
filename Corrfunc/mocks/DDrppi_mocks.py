@@ -19,9 +19,9 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                  RA2=None, DEC2=None, CZ2=None, weights2=None,
                  is_comoving_dist=False,
                  verbose=False, output_rpavg=False,
-                 fast_divide=False, xbin_refine_factor=2,
-                 ybin_refine_factor=2, zbin_refine_factor=1,
-                 max_cells_per_dim=100,
+                 fast_divide_and_NR_steps=0,
+                 xbin_refine_factor=2, ybin_refine_factor=2,
+                 zbin_refine_factor=1, max_cells_per_dim=100,
                  c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
@@ -169,12 +169,13 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         suffer from numerical loss of precision and can not be trusted. If 
         you need accurate ``rpavg`` values, then pass in double precision 
         arrays for the particle positions.
-    
-    fast_divide : boolean (default false)
-        Boolean flag to replace the division in ``AVX`` implementation with an
-        approximate reciprocal, followed by two Newton-Raphson steps. Improves
-        runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.
 
+    fast_divide_and_NR_steps: integer (default 0)
+        Replaces the division in ``AVX`` implementation with an approximate
+        reciprocal, followed by ``fast_divide_and_NR_steps`` of Newton-Raphson.
+        Can improve runtime by ~15-20% on older computers. Value of 0 uses
+        the standard division operation.
+    
     (xyz)bin_refine_factor : integer, default is (2,2,1); typically within [1-3]
         Controls the refinement on the cell sizes. Can have up to a 20% impact
         on runtime.
@@ -366,7 +367,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                                          is_comoving_dist=is_comoving_dist,
                                          verbose=verbose,
                                          output_rpavg=output_rpavg,
-                                         fast_divide=fast_divide,
+                                         fast_divide_and_NR_steps=fast_divide_and_NR_steps,
                                          xbin_refine_factor=xbin_refine_factor,
                                          ybin_refine_factor=ybin_refine_factor,
                                          zbin_refine_factor=zbin_refine_factor,

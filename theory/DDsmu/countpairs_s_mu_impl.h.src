@@ -22,7 +22,9 @@ extern "C" {
     extern void interrupt_handler_countpairs_s_mu_DOUBLE(int signo);
     
     typedef int (*countpairs_s_mu_func_ptr_DOUBLE)(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int same_cell,
+                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                   const int same_cell,
+                                                   const unsigned int fast_divide_and_NR_steps,
                                                    const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin, const int nmu_bins,
                                                    const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,

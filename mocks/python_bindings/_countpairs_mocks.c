@@ -75,7 +75,7 @@ static PyMethodDef module_methods[] = {
      "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
      "                       is_comoving_dist=False,\n"
      "                       verbose=False, output_rpavg=False,\n"
-     "                       fast_divide=False, xbin_refine_factor=2, \n"
+     "                       fast_divide_and_NR_steps=0, xbin_refine_factor=2, \n"
      "                       ybin_refine_factor=2, zbin_refine_factor=1, \n"
      "                       max_cells_per_dim=100, \n"
      "                       c_api_timer=False, isa=-1)\n"
@@ -175,10 +175,11 @@ static PyMethodDef module_methods[] = {
      "   precision and can not be trusted. If you need accurate ``rpavg``\n"
      "   values, then pass in double precision arrays for the particle positions.\n"
      "\n"
-     "fast_divide: boolean (default false)\n"
-     "   Boolean flag to replace the division in ``AVX`` implementation with an\n"
-     "   approximate reciprocal, followed by a Newton-Raphson step. Improves\n"
-     "   runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.\n"
+     "fast_divide_and_NR_steps: integer (default 0)\n"
+     "   Replaces the division in ``AVX`` implementation with an\n"
+     "   approximate reciprocal, followed by ``fast_divide_and_NR_steps`` "
+     "   Newton-Raphson step. Can improve \n"
+     "   runtime by ~15-20%. Value of 0 keeps the standard division.\n"
      "\n"
      "(xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3]) \n"
      "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
@@ -242,7 +243,7 @@ static PyMethodDef module_methods[] = {
          "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
          "                       is_comoving_dist=False,\n"
          "                       verbose=False, output_savg=False,\n"
-         "                       fast_divide=False, xbin_refine_factor=2, \n"
+         "                       fast_divide_and_NR_steps=0, xbin_refine_factor=2, \n"
          "                       ybin_refine_factor=2, zbin_refine_factor=1, \n"
          "                       max_cells_per_dim=100, \n"
          "                       c_api_timer=False, isa=-1)\n"
@@ -338,10 +339,11 @@ static PyMethodDef module_methods[] = {
          "   precision and can not be trusted. If you need accurate ``savg``\n"
          "   values, then pass in double precision arrays for the particle positions.\n"
          "\n"
-         "fast_divide: boolean (default false)\n"
-         "   Boolean flag to replace the division in ``AVX`` implementation with an\n"
-         "   approximate reciprocal, followed by a Newton-Raphson step. Improves\n"
-         "   runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.\n"
+         "fast_divide_and_NR_steps: integer (default 0)\n"
+         "   Replaces the division in ``AVX`` implementation with an\n"
+         "   approximate reciprocal, followed by ``fast_divide_and_NR_steps`` "
+         "   Newton-Raphson step. Can improve \n"
+         "   runtime by ~15-20%. Value of 0 keeps the standard division.\n"
          "\n"
          "(xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3]) \n"
          "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
@@ -1062,7 +1064,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     options.verbose = 0;
     options.instruction_set = -1;
     options.periodic = 0;
-    options.fast_divide=0;
+    options.fast_divide_and_NR_steps=0;
     options.c_api_timer = 0;
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
@@ -1091,7 +1093,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         "is_comoving_dist",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_rpavg",
-        "fast_divide",
+        "fast_divide_and_NR_steps",
         "xbin_refine_factor",
         "ybin_refine_factor",
         "zbin_refine_factor",
@@ -1115,7 +1117,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                        &(options.is_comoving_dist),
                                        &(options.verbose),
                                        &(options.need_avg_sep),
-                                       &(options.fast_divide),
+                                       &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
                                        &(options.c_api_timer),
@@ -1388,7 +1390,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
     options.verbose = 0;
     options.instruction_set = -1;
     options.periodic = 0;
-    options.fast_divide=0;
+    options.fast_divide_and_NR_steps=0;
     options.c_api_timer = 0;
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
@@ -1419,7 +1421,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         "is_comoving_dist",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
         "output_savg",
-        "fast_divide",
+        "fast_divide_and_NR_steps",
         "xbin_refine_factor",
         "ybin_refine_factor",
         "zbin_refine_factor",
@@ -1443,7 +1445,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
                                        &(options.is_comoving_dist),
                                        &(options.verbose),
                                        &(options.need_avg_sep),
-                                       &(options.fast_divide),
+                                       &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
                                        &(options.c_api_timer),
