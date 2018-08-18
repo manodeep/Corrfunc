@@ -259,7 +259,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     from warnings import warn
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian
+        is_native_endian, sys_pipes
     from future.utils import bytes_to_native_str
     
     # Broadcast scalar weights to arrays
@@ -305,22 +305,24 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
-    extn_results, api_time = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
-                                                RA1, DEC1,
-                                                verbose=verbose,
-                                                link_in_dec=link_in_dec,
-                                                link_in_ra=link_in_ra,
-                                                output_thetaavg=output_thetaavg,
-                                                fast_acos=fast_acos,
-                                                ra_refine_factor=ra_refine_factor,
-                                                dec_refine_factor=dec_refine_factor,
-                                                max_cells_per_dim=max_cells_per_dim,
-                                                c_api_timer=c_api_timer,
-                                                isa=integer_isa, **kwargs)
-
+    with sys_pipes():
+      extn_results = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
+                                        RA1, DEC1,
+                                        verbose=verbose,
+                                        link_in_dec=link_in_dec,
+                                        link_in_ra=link_in_ra,
+                                        output_thetaavg=output_thetaavg,
+                                        fast_acos=fast_acos,
+                                        ra_refine_factor=ra_refine_factor,
+                                        dec_refine_factor=dec_refine_factor,
+                                        max_cells_per_dim=max_cells_per_dim,
+                                        c_api_timer=c_api_timer,
+                                        isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
+    else:
+        extn_results, api_time = extn_results
 
     if delete_after_use:
         import os

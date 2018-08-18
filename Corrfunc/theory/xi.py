@@ -184,7 +184,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian
+        is_native_endian, sys_pipes
         
     # Broadcast scalar weights to arrays
     if weights is not None:
@@ -204,19 +204,22 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
-    extn_results, api_time = xi_extn(boxsize, nthreads, rbinfile,
-                                     X, Y, Z,
-                                     verbose=verbose,
-                                     output_ravg=output_ravg,
-                                     xbin_refine_factor=xbin_refine_factor,
-                                     ybin_refine_factor=ybin_refine_factor,
-                                     zbin_refine_factor=zbin_refine_factor,
-                                     max_cells_per_dim=max_cells_per_dim,
-                                     c_api_timer=c_api_timer,
-                                     isa=integer_isa, **kwargs)
+    with sys_pipes():
+      extn_results = xi_extn(boxsize, nthreads, rbinfile,
+                                       X, Y, Z,
+                                       verbose=verbose,
+                                       output_ravg=output_ravg,
+                                       xbin_refine_factor=xbin_refine_factor,
+                                       ybin_refine_factor=ybin_refine_factor,
+                                       zbin_refine_factor=zbin_refine_factor,
+                                       max_cells_per_dim=max_cells_per_dim,
+                                       c_api_timer=c_api_timer,
+                                       isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
+    else:
+        extn_results, api_time = extn_results
 
     if delete_after_use:
         import os
