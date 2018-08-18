@@ -15,6 +15,7 @@ zz*
 *_double.[ch]
 DD
 wtheta
+DDsmu
 build*
 paper/*
 dist*
