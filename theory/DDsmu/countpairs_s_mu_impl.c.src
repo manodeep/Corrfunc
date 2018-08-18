@@ -174,6 +174,13 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         options->max_cells_per_dim = NLATMAX;
     }
     
+    if(options->fast_divide_and_NR_steps >= MAX_FAST_DIVIDE_NR_STEPS) {
+        fprintf(stderr, ANSI_COLOR_MAGENTA"Warning: The number of requested Newton-Raphson steps = %u is larger than max. allowed steps = %u."
+                " Switching to a standard divide"ANSI_COLOR_RESET"\n",
+                options->fast_divide_and_NR_steps, MAX_FAST_DIVIDE_NR_STEPS);
+        options->fast_divide_and_NR_steps = 0;
+    }
+
     /* setup interrupt handler -> mostly useful during the python execution. 
        Let's Ctrl-C abort the extension  */
     SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_s_mu_DOUBLE);
@@ -449,10 +456,11 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                     }
                     const int status = countpairs_s_mu_function_DOUBLE(N1, x1, y1, z1, weights1,
                                                                        N1, x1, y1, z1, weights1,
-                                                                       same_cell
-                                                                       ,sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max, pimax
-                                                                       ,ZERO, ZERO, ZERO
-                                                                       ,this_savg, npairs,
+                                                                       same_cell,
+                                                                       options->fast_divide_and_NR_steps,
+                                                                       sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max, pimax,
+                                                                       ZERO, ZERO, ZERO,
+                                                                       this_savg, npairs,
                                                                        this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
                        I care that an error occurred - rather than the exact value of
@@ -485,7 +493,9 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                         this_weightavg = weightavg;
                     }
                     const int status = countpairs_s_mu_function_DOUBLE(N1, x1, y1, z1, weights1,
-                                                                       N2, x2, y2, z2, weights2, same_cell,
+                                                                       N2, x2, y2, z2, weights2,
+                                                                       same_cell,
+                                                                       options->fast_divide_and_NR_steps,
                                                                        sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max, pimax, 
                                                                        off_xwrap, off_ywrap, off_zwrap,
                                                                        this_savg, npairs,

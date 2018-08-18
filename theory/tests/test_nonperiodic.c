@@ -335,8 +335,9 @@ int main(int argc, char **argv)
     options.need_avg_sep=1;
     options.verbose=0;
     options.periodic=0;
+    options.fast_divide_and_NR_steps=0;
     options.float_type=sizeof(double);
-
+    
     gettimeofday(&tstart,NULL);
 
     //set the globals

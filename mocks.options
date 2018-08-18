@@ -1,6 +1,6 @@
-### Special option for DDrppi_mocks
+### Special option for DDrppi_mocks/DDsmu_mocks
 OPT += -DOUTPUT_RPAVG  ### Enabling this DOES NOT cause too much of a runtime-hit for DDrppi (<= 10% performance hit)
-#OPT += -DFAST_DIVIDE ##replaces divide in DDrppi with approximate divides. If you really must get that extra ~20% performance boost
+#OPT += -DFAST_DIVIDE=2 ##replaces a divide with approximate reciprocals, followed by 'FAST_DIVIDE' number of Newton-Raphson steps. Trade-off between speed and accuracy; may be slower on newer computers
 
 ### Specific options for wtheta (DDtheta_mocks.c)
 #OPT += -DOUTPUT_THETAAVG

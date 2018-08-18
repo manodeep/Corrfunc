@@ -23,7 +23,9 @@
 #include "avx_calls.h"
 
 static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int same_cell,
+                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                        const int same_cell,
+                                                        const unsigned int fast_divide_and_NR_steps,
                                                         const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
                                                         const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                         const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
@@ -211,9 +213,20 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 
             //There is some s2 that satisfies sqr_smin <= s2 < sqr_smax && mu_min <= |dz| < mu_max
             s2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_smax, s2, m_mask_left);
-            /*m_mu := sqrt(s2/dz^2) (with masked elements set to mu_max */
-            const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, AVX_DIVIDE_FLOATS(m_sqr_zdiff, s2), m_mask_left));
+            /*m_sqr_mu := dz^2/s^2 (with masked elements set to mu_max */
+            AVX_FLOATS m_sqr_mu = AVX_SETZERO_FLOAT();
 
+
+            /* Check if fast_divide is enabled and either use the normal divide or
+               use the approx. reciprocal followed by `fast_divide_and_NR_steps` number
+               of Newton-Raphson steps to improve numerical accuracy.
+               
+               macro is defined in `avx_calls.h`
+            */
+            CHECK_AND_FAST_DIVIDE(m_sqr_mu, m_sqr_zdiff, s2, fast_divide_and_NR_steps);
+                
+            const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, m_sqr_mu, m_mask_left));
+            
             if(need_savg) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(s2);
             }
@@ -331,13 +344,17 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 #include "sse_calls.h"
 
 static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int same_cell,
+                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                        const int same_cell,
+                                                        const unsigned int fast_divide_and_NR_steps,
                                                         const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin, const int nmu_bins,
                                                         const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                         const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                         DOUBLE *src_savg, uint64_t *src_npairs,
                                                         DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
+    (void) fast_divide_and_NR_steps;
+    
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
@@ -633,6 +650,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                   const int same_cell,
+                                                  const unsigned int fast_divide_and_NR_steps,
                                                   const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin, const int nmu_bins,
                                                   const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                   const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
@@ -640,6 +658,7 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
                                                   DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
 
+    (void) fast_divide_and_NR_steps;
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
