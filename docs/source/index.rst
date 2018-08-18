@@ -1,8 +1,8 @@
+|corrfunc logo|
+
 =======================
 Corrfunc Documentation
 =======================
-
-|corrfunc logo|
 
 Corrfunc is a set of high-performance routines to measure clustering statistics.
 The main features of Corrfunc are:
