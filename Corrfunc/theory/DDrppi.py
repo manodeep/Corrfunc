@@ -236,7 +236,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     from warnings import warn
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian
+        is_native_endian, sys_pipes
     from future.utils import bytes_to_native_str
     
     # Broadcast scalar weights to arrays
@@ -276,22 +276,26 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
-    extn_results, api_time = DDrppi_extn(autocorr, nthreads,
-                                         pimax, rbinfile,
-                                         X1, Y1, Z1,
-                                         periodic=periodic,
-                                         verbose=verbose,
-                                         boxsize=boxsize,
-                                         output_rpavg=output_rpavg,
-                                         xbin_refine_factor=xbin_refine_factor,
-                                         ybin_refine_factor=ybin_refine_factor,
-                                         zbin_refine_factor=zbin_refine_factor,
-                                         max_cells_per_dim=max_cells_per_dim,
-                                         c_api_timer=c_api_timer,
-                                         isa=integer_isa, **kwargs)
+
+    with sys_pipes():
+      extn_results = DDrppi_extn(autocorr, nthreads,
+                                 pimax, rbinfile,
+                                 X1, Y1, Z1,
+                                 periodic=periodic,
+                                 verbose=verbose,
+                                 boxsize=boxsize,
+                                 output_rpavg=output_rpavg,
+                                 xbin_refine_factor=xbin_refine_factor,
+                                 ybin_refine_factor=ybin_refine_factor,
+                                 zbin_refine_factor=zbin_refine_factor,
+                                 max_cells_per_dim=max_cells_per_dim,
+                                 c_api_timer=c_api_timer,
+                                 isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
+    else:
+        extn_results, api_time = extn_results
 
     if delete_after_use:
         import os

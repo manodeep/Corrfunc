@@ -18,9 +18,15 @@ New features
 --------------------
 - Drop Python 2.6 support
 
+New features
+------------
+- Progress bar is displayed in Jupyter notebooks [#158]
+
 Bug fixes
 ---------
 - Fix virtualenv install issue [#159]
+- Error messages are displayed in Jupyter notebooks
+  instead of the unhelpful "TypeError: 'NoneType' object is not iterable". [#158]
 
 
 2.1.0
