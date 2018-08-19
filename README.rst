@@ -1,7 +1,4 @@
-.. raw:: html
-
-    <img src="https://github.com/manodeep/Corrfunc/blob/master/corrfunc_logo.png" height="240px">
-
+|logo| 
 
 |Release| |PyPI| |MIT licensed| |ASCL| |Travis Build| |Issues| |RTD| |Landscape|
 
@@ -365,7 +362,9 @@ Project URL
 -  documentation (http://corrfunc.rtfd.io/)   
 -  version control (https://github.com/manodeep/Corrfunc)
 
-    
+.. |logo| image:: https://github.com/manodeep/Corrfunc/blob/master/corrfunc_logo.png
+    :target: https://github.com/manodeep/Corrfunc
+    :alt: Corrfunc logo   
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
    :alt: Latest Release
