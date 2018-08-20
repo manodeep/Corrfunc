@@ -14,11 +14,12 @@ __all__ = ('DDsmu', )
 
 
 def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=None,
-           periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
-           verbose=False, boxsize=0.0, output_savg=False,
-           xbin_refine_factor=2, ybin_refine_factor=2,
-           zbin_refine_factor=1, max_cells_per_dim=100,
-           c_api_timer=False, isa=r'fastest', weight_type=None):
+          periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
+          verbose=False, boxsize=0.0, output_savg=False,
+          fast_divide_and_NR_steps=0,
+          xbin_refine_factor=2, ybin_refine_factor=2,
+          zbin_refine_factor=1, max_cells_per_dim=100,
+          c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the redshift-space 
     correlation function, :math:`\\xi(s, \mu)` Pairs which are separated
@@ -111,6 +112,12 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         precision and can not be trusted. If you need accurate ``s``
         values, then pass in double precision arrays for the particle positions.
 
+    fast_divide_and_NR_steps: integer (default 0)
+        Replaces the division in ``AVX`` implementation with an approximate
+        reciprocal, followed by ``fast_divide_and_NR_steps`` of Newton-Raphson.
+        Can improve runtime by ~15-20% on older computers. Value of 0 uses
+        the standard division operation.
+    
     (xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3])
         Controls the refinement on the cell sizes. Can have up to a 20% impact
         on runtime.
@@ -227,7 +234,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
 
     import numpy as np
     from Corrfunc.utils import translate_isa_string_to_enum,\
-        return_file_with_rbins
+        return_file_with_rbins, sys_pipes
     from future.utils import bytes_to_native_str
 
     # Broadcast scalar weights to arrays
@@ -275,24 +282,27 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
 
     integer_isa = translate_isa_string_to_enum(isa)
     sbinfile, delete_after_use = return_file_with_rbins(binfile)
-    extn_results, api_time = DDsmu_extn(autocorr, nthreads,
-                                        sbinfile,
-                                        mu_max, nmu_bins,
-                                        X1, Y1, Z1,
-                                        periodic=periodic,
-                                        verbose=verbose,
-                                        boxsize=boxsize,
-                                        output_savg=output_savg,
-                                        xbin_refine_factor=xbin_refine_factor,
-                                        ybin_refine_factor=ybin_refine_factor,
-                                        zbin_refine_factor=zbin_refine_factor,
-                                        max_cells_per_dim=max_cells_per_dim,
-                                        c_api_timer=c_api_timer,
-                                        isa=integer_isa, **kwargs)
-        
+    with sys_pipes():
+        extn_results = DDsmu_extn(autocorr, nthreads,
+                                  sbinfile,
+                                  mu_max, nmu_bins,
+                                  X1, Y1, Z1,
+                                  periodic=periodic,
+                                  verbose=verbose,
+                                  boxsize=boxsize,
+                                  output_savg=output_savg,
+                                  fast_divide_and_NR_steps=fast_divide_and_NR_steps,
+                                  xbin_refine_factor=xbin_refine_factor,
+                                  ybin_refine_factor=ybin_refine_factor,
+                                  zbin_refine_factor=zbin_refine_factor,
+                                  max_cells_per_dim=max_cells_per_dim,
+                                  c_api_timer=c_api_timer,
+                                  isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
+    else:
+        extn_results, api_time = extn_results
 
     if delete_after_use:
         import os

@@ -13,7 +13,7 @@ INCL  := avx512_calls.h avx2_calls.h avx_calls.h sse_calls.h defs.h defs.h funct
          gridlink_mocks_impl_float.h gridlink_mocks_impl_double.h gridlink_mocks_impl.h.src gridlink_mocks_impl.c.src \
          progressbar.h set_cosmo_dist.h set_cosmology.h sglib.h utils.h \
          weight_functions_double.h weight_functions_float.h weight_functions.h.src \
-	 weight_defs_double.h weight_defs_float.h weight_defs.h.src
+      	 weight_defs_double.h weight_defs_float.h weight_defs.h.src
 
 all: $(TARGETOBJS) Makefile $(ROOT_DIR)/common.mk $(ROOT_DIR)/theory.options $(ROOT_DIR)/mocks.options
 

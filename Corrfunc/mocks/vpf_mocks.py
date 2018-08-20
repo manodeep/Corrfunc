@@ -278,7 +278,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian
+        is_native_endian, sys_pipes
         
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ]):
@@ -287,23 +287,25 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
 
 
     integer_isa = translate_isa_string_to_enum(isa)
-    extn_results, api_time = vpf_extn(rmax, nbins, nspheres, numpN,
-                                      threshold_ngb, centers_file,
-                                      cosmology,
-                                      RA, DEC, CZ,
-                                      RAND_RA, RAND_DEC, RAND_CZ,
-                                      verbose=verbose,
-                                      is_comoving_dist=is_comoving_dist,
-                                      xbin_refine_factor=xbin_refine_factor,
-                                      ybin_refine_factor=ybin_refine_factor,
-                                      zbin_refine_factor=zbin_refine_factor,
-                                      max_cells_per_dim=max_cells_per_dim,
-                                      c_api_timer=c_api_timer,
-                                      isa=integer_isa)
-
+    with sys_pipes():
+      extn_results = vpf_extn(rmax, nbins, nspheres, numpN,
+                              threshold_ngb, centers_file,
+                              cosmology,
+                              RA, DEC, CZ,
+                              RAND_RA, RAND_DEC, RAND_CZ,
+                              verbose=verbose,
+                              is_comoving_dist=is_comoving_dist,
+                              xbin_refine_factor=xbin_refine_factor,
+                              ybin_refine_factor=ybin_refine_factor,
+                              zbin_refine_factor=zbin_refine_factor,
+                              max_cells_per_dim=max_cells_per_dim,
+                              c_api_timer=c_api_timer,
+                              isa=integer_isa)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
+    else:
+        extn_results, api_time = extn_results
 
     results_dtype = np.dtype([(bytes_to_native_str(b'rmax'), np.float),
                               (bytes_to_native_str(b'pN'),

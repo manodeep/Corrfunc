@@ -948,6 +948,30 @@ def is_native_endian(array):
     array_is_little_endian = (array.dtype.byteorder == '<')
     return (array_is_little_endian == system_is_little_endian) or (array.dtype.byteorder == '=')
 
+
+import wurlitzer
+
+def sys_pipes():
+    '''
+    We can use the Wurlitzer package to redirect stdout and stderr
+    from the command line into a Jupyter notebook.  But if we're not
+    in a notebook, this isn't safe because we can't redirect stdout
+    to itself.  This function is a thin wrapper that checks if the
+    stdout/err streams are TTYs and enables output redirection
+    based on that.
+
+    Basic usage is:
+
+    >>> with sys_pipes():
+    >>>    call_some_c_function()
+
+    See the Wurlitzer package for usage of `wurlitzer.pipes()`;
+    see also https://github.com/manodeep/Corrfunc/issues/157.
+    '''
+
+    kwargs = {'stdout':None if sys.stdout.isatty() else sys.stdout,
+              'stderr':None if sys.stderr.isatty() else sys.stderr }
+    return wurlitzer.pipes(**kwargs)
     
 if __name__ == '__main__':
     import doctest

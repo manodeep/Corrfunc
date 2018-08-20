@@ -52,7 +52,7 @@ The command-line version of Corrfunc needs the following packages to be installe
 
 If you plan to use the C extensions, then the following are required:
 
-- `Python <http://www.python.org/>`_: 2.6 or later
+- `Python <http://www.python.org/>`_: 2.7 or later
 - `Numpy <http://www.numpy.org/>`_: 1.7 or later
 
 Any of the above can be installed with either pip or conda.

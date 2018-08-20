@@ -62,7 +62,7 @@ $(LIBNAME)_impl_float.o: $(UTILS_DIR)/weight_functions_float.h
 %_float.o: %_float.c
 	$(CC) -DNDOUBLE_PREC $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
-%.o: %.c $(ROOT_DIR)/common.mk Makefile
+%.o: %.c $(ROOT_DIR)/common.mk $(ROOT_DIR)/utils/defs.h Makefile
 	$(CC) $(CFLAGS) $(INCLUDE) $(EXTRA_INCL) -c $< -o $@
 
 $(LIBRARY): $(LIBOBJS) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile

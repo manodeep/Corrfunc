@@ -1,3 +1,5 @@
+|logo| 
+
 |Release| |PyPI| |MIT licensed| |ASCL| |Travis Build| |Issues| |RTD| |Landscape|
 
 Description
@@ -39,11 +41,11 @@ Pre-requisites
    sys-admin for system-wide installs of the compiler; if you prefer to
    install your own then ``conda install gcc`` (MAC/linux) or
    ``(sudo) port install gcc5`` (on MAC) should work. 
-3. ``gsl``. Use either
-   ``conda install -c https://conda.anaconda.org/asmeurer gsl``
+3. ``gsl >= 2.4``. Use either
+   ``conda install -c conda-forge gsl``
    (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl``
    if necessary.
-4. ``python >= 2.6`` or ``python>=3.4`` for compiling the C extensions.
+4. ``python >= 2.7`` or ``python>=3.4`` for compiling the C extensions.
 5. ``numpy>=1.7`` for compiling the C extensions.
 
 Preferred Install Method
@@ -155,7 +157,7 @@ the following ``Makefile`` option has a corresponding entry for the runtime
 libraries. 
 
 Theory (in `theory.options <theory.options>`__)
--------------------------------
+-------------------------------------------------
 
 1. ``PERIODIC`` (ignored in case of wp/xi) -- switches periodic boundary
    conditions on/off. Enabled by default.
@@ -168,7 +170,7 @@ Theory (in `theory.options <theory.options>`__)
    by default (i.e., calculations are performed in single precision by default).
    
 Mocks (in `mocks.options <mocks.options>`__)
-----------------------------
+----------------------------------------------
 
 1. ``OUTPUT_RPAVG`` -- switches on output of ``<rp>`` in each ``rp``
    bin for ``DDrppi_mocks``. Enabled by default.
@@ -360,6 +362,9 @@ Project URL
 -  documentation (http://corrfunc.rtfd.io/)   
 -  version control (https://github.com/manodeep/Corrfunc)
 
+.. |logo| image:: https://github.com/manodeep/Corrfunc/blob/master/corrfunc_logo.png
+    :target: https://github.com/manodeep/Corrfunc
+    :alt: Corrfunc logo   
 .. |Release| image:: https://img.shields.io/github/release/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/releases/latest
    :alt: Latest Release

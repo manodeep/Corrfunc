@@ -7,11 +7,47 @@
 
 New features
 ------------
-- New pair counter `DD(s, mu)` for theory and mocks
 - conda installable package
+- GPU version
+
+
+2.2.0
+=======
+
+**Breaking Changes**
+--------------------
+- Drop Python 2.6 support
+
+New features
+------------
+- Progress bar is displayed in Jupyter notebooks [#158]
+
+Bug fixes
+---------
+- Fix virtualenv install issue [#159]
+- Error messages are displayed in Jupyter notebooks
+  instead of the unhelpful "TypeError: 'NoneType' object is not iterable". [#158]
+
+
+2.1.0
+=======
+
+New features
+------------
+- New pair counter `DD(s, mu)` for theory and mocks (contributed by @nickhand,
+  in #130 and #132) [#166]
+
+
+Enhancements
+------------
+- GSL version now specified and tested by Travis [#164]
+- Now possible to specify the number of Newton-Raphson steps to
+improve accuracy of approximate reciprocals. Available in `DD(rp, pi)` for mocks,
+and `DD(s, mu)` for both theory and mocks
+
 
 2.0.0
-======
+=======
 
 New features
 ------------

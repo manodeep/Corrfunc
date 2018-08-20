@@ -18,9 +18,9 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
                 RA2=None, DEC2=None, CZ2=None, weights2=None,
                 is_comoving_dist=False,
                 verbose=False, output_savg=False,
-                fast_divide=False, xbin_refine_factor=2,
-                ybin_refine_factor=2, zbin_refine_factor=1,
-                max_cells_per_dim=100,
+                fast_divide_and_NR_steps=0,
+                xbin_refine_factor=2, ybin_refine_factor=2,
+                zbin_refine_factor=1, max_cells_per_dim=100,
                 c_api_timer=False, isa='fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
@@ -121,10 +121,11 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         co-moving distance, rather than `cz`.
 
     weights1: array_like, real (float/double), optional
-        A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
-        `weight_type` specifies how these weights are used; results are returned
-        in the `weightavg` field.  If only one of weights1 and weights2 is
-        specified, the other will be set to uniform weights.
+        A scalar, or an array of weights of shape (n_weights, n_positions)
+        or (n_positions,). `weight_type` specifies how these weights are used;
+        results are returned in the `weightavg` field.  If only one of
+        ``weights1`` or ``weights2`` is specified, the other will be set
+        to uniform weights.
 
     RA2: array-like, real (float/double)
         The array of Right Ascensions for the second set of points. RA's
@@ -171,11 +172,12 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         values, then pass in double precision arrays for the particle
         positions.
 
-    fast_divide: boolean (default false)
-        Boolean flag to replace the division in ``AVX`` implementation with an
-        approximate reciprocal, followed by a Newton-Raphson step. Improves
-        runtime by ~15-20%. Loss of precision is at the 5-6th decimal place.
-
+    fast_divide_and_NR_steps: integer (default 0)
+        Replaces the division in ``AVX`` implementation with an approximate
+        reciprocal, followed by ``fast_divide_and_NR_steps`` of Newton-Raphson.
+        Can improve runtime by ~15-20% on older computers. Value of 0 uses
+        the standard division operation.
+    
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
         Controls the refinement on the cell sizes. Can have up to a 20% impact
         on runtime.
@@ -232,7 +234,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 
     import numpy as np
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
-        return_file_with_rbins
+        return_file_with_rbins, sys_pipes
     from future.utils import bytes_to_native_str
 
     # Broadcast scalar weights to arrays
@@ -284,22 +286,25 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 
     integer_isa = translate_isa_string_to_enum(isa)
     sbinfile, delete_after_use = return_file_with_rbins(binfile)
-    extn_results, api_time = DDsmu_extn(autocorr, cosmology, nthreads,
-                                        mu_max, nmu_bins, sbinfile,
-                                        RA1, DEC1, CZ1,
-                                        is_comoving_dist=is_comoving_dist,
-                                        verbose=verbose,
-                                        output_savg=output_savg,
-                                        fast_divide=fast_divide,
-                                        xbin_refine_factor=xbin_refine_factor,
-                                        ybin_refine_factor=ybin_refine_factor,
-                                        zbin_refine_factor=zbin_refine_factor,
-                                        max_cells_per_dim=max_cells_per_dim,
-                                        c_api_timer=c_api_timer,
-                                        isa=integer_isa, **kwargs)
+    with sys_pipes():
+        extn_results = DDsmu_extn(autocorr, cosmology, nthreads,
+                                  mu_max, nmu_bins, sbinfile,
+                                  RA1, DEC1, CZ1,
+                                  is_comoving_dist=is_comoving_dist,
+                                  verbose=verbose,
+                                  output_savg=output_savg,
+                                  fast_divide_and_NR_steps=fast_divide_and_NR_steps,
+                                  xbin_refine_factor=xbin_refine_factor,
+                                  ybin_refine_factor=ybin_refine_factor,
+                                  zbin_refine_factor=zbin_refine_factor,
+                                  max_cells_per_dim=max_cells_per_dim,
+                                  c_api_timer=c_api_timer,
+                                  isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
+    else:
+        extn_results, api_time = extn_results
 
     if delete_after_use:
         import os
