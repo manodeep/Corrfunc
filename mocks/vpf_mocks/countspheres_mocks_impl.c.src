@@ -402,7 +402,6 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                                           &nran_x, &nran_y, &nran_z,
                                           options);
         XRETURN(nran_x == nmesh_x && nran_y == nmesh_y && nran_z == nmesh_z, EXIT_FAILURE, "The number of grid cells for randoms = (%d, %d, %d) should be identical to that in the data = (%d, %d, %d) \n", nran_x, nran_y, nran_z, nmesh_x, nmesh_y, nmesh_z);
-        free(xran);free(yran);free(zran);
     }
     const int64_t totncells = nmesh_x * (int64_t) nmesh_y * nmesh_z;
     
@@ -536,6 +535,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
     free(counts);
     free_cellarray_DOUBLE(lattice, totncells);
     if(need_randoms == 1) {
+        free(xran);free(yran);free(zran);      
         free_cellarray_DOUBLE(randoms_lattice, totncells);
     }
     if(interrupt_status_vpf_mocks_DOUBLE != EXIT_SUCCESS) {
