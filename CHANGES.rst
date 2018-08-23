@@ -11,6 +11,20 @@ New features
 - GPU version
 
 
+2.3.0
+=======
+
+**Breaking Changes**
+--------------------
+
+New features
+------------
+
+Bug fixes
+---------
+- Fix segmentation fault in vpf_mocks [#168]
+
+
 2.2.0
 =======
 
