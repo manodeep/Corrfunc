@@ -131,9 +131,9 @@ matrix:
 install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda config --append channels conda-forge
-  - conda create -q --yes -n test python=$PYTHON_VERSION numpy=$NUMPY_VERSION sphinx
+  - conda create -q --yes -n test python=$PYTHON_VERSION
   - source activate test
+  - conda install -q --yes numpy=$NUMPY_VERSION sphinx || conda install -q --yes -c conda-forge numpy=$NUMPY_VERSION sphinx
   - conda install -q --yes -c conda-forge gsl
   - if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi
   - make -r CC=$COMPILER
