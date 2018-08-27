@@ -40,7 +40,7 @@ void interrupt_handler_countpairs_xi_DOUBLE(int signo)
 xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
 {
     static xi_func_ptr_DOUBLE function = NULL;
-    static isa old_isa=-1;
+    static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
     }

@@ -107,7 +107,7 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
 {
   
     static countpairs_mocks_func_ptr_DOUBLE function = NULL;
-    static isa old_isa=-1;
+    static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
     } 

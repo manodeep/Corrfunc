@@ -28,7 +28,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                                                                  const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1,
                                                                  const weight_struct_DOUBLE *weights1,
                                                                  const int same_cell,
-                                                                 const int fast_divide,
+                                                                 const unsigned int fast_divide_and_NR_steps,
                                                                  const DOUBLE smax, const DOUBLE smin, const int nsbin,const int nmu_bins,
                                                                  const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                                  DOUBLE *src_savg,
@@ -190,29 +190,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
             // \mu^2 := cos^2(\theta_between_s_and_l) = |s.l|^2 / (|s|^2 * |l|^2)
             const AVX512_FLOATS m_sqr_norm_l_norm_s = AVX512_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
             AVX512_FLOATS m_sqr_mu = AVX512_SETZERO_FLOAT();
-            if (fast_divide == 0) {
-                m_sqr_mu = AVX512_DIVIDE_FLOATS(m_sqr_s_dot_l, m_sqr_norm_l_norm_s);
-                //The divide is the actual operation we need
-                // but divides are about 10x slower than multiplies. So, I am replacing it
-                //with a approximate reciprocal in floating point
-                // + 2 iterations of newton-raphson in case of DOUBLE
-            } else {
-                //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
-                const AVX512_FLOATS rc = AVX512_MASKZ_RECIPROCAL_FLOATS(m_mask_left, m_sqr_norm_l_norm_s);
-                //We have the double->float->approx. reciprocal->double process done.
-                //Now improve the accuracy of the divide with newton-raphson.
-                
-                //Ist iteration of NewtonRaphson
-                const AVX512_FLOATS two = AVX512_SET_FLOAT((DOUBLE) 2.0);
-                const AVX512_FLOATS rc1 = AVX512_MULTIPLY_FLOATS(rc,
-                                                                 AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l_norm_s, rc, two));/*2.0 - l^2*rc */
-                //2nd iteration of NewtonRaphson
-                const AVX512_FLOATS rc2 = AVX512_MULTIPLY_FLOATS(rc1,
-                                                                 AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l_norm_s, rc1, two));/* 2.0 - l^2*rc1 */
-                
-                m_sqr_mu = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_sqr_s_dot_l, rc2);
-            } //end of FAST_DIVIDE
-            
+            CHECK_AND_FAST_DIVIDE_AVX512(m_sqr_mu, m_sqr_s_dot_l, m_sqr_norm_l_norm_s, m_mask_left, fast_divide_and_NR_steps);
             
             const AVX512_FLOATS m_mu = AVX512_SQRT_FLOAT(m_sqr_mu);
             //Do the mask filters in a separate scope
@@ -301,7 +279,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
 static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
                                                               const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                               const int same_cell,
-                                                              const int fast_divide,
+                                                              const unsigned int fast_divide_and_NR_steps,
                                                               const DOUBLE smax, const DOUBLE smin, const int nsbin,const int nmu_bins,
                                                               const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                               DOUBLE *src_savg,
@@ -439,73 +417,35 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 	  const AVX_FLOATS m_pary = AVX_ADD_FLOATS(m_y2, m_ypos);
 	  const AVX_FLOATS m_parz = AVX_ADD_FLOATS(m_z2, m_zpos);
 	  
-	  AVX_FLOATS m_sqr_mu, m_sqr_s;
-	  {
-	    /*
-	    //Technically l := 1/2 (v1 + v2) but the factor of 1/2 occurs both in numerator and denominator
-	    and cancels out.
-	    
-	    s \dot l := (parx*perpx + pary*perpy + parz*perp)
-	    := (x1 + x2)*(x1 - x2) + (y1 + y2)*(y1 - y2) + (z1 + z2)*(z1 - z2)
-	    := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
-	    := d1^2 - d2^2
-	    */
-	    const AVX_FLOATS m_s_dot_l =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
-	    const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);// numerator := |s.l|^2
-	    const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
-	    const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
-	    const AVX_FLOATS m_sqr_perpz = AVX_SQUARE_FLOAT(m_perpz);
-	    m_sqr_s = AVX_ADD_FLOATS(m_sqr_perpx, AVX_ADD_FLOATS(m_sqr_perpy, m_sqr_perpz));//3-d separation
-	    
-	    //Create a mask where s^2 < smax^2
-	    const AVX_FLOATS m_mask_3d_sep = AVX_COMPARE_FLOATS(m_sqr_s, m_sqr_smax, _CMP_LT_OQ);
-	    if(AVX_TEST_COMPARISON(m_mask_3d_sep) == 0) {
+      /*
+      //Technically l := 1/2 (v1 + v2) but the factor of 1/2 occurs both in numerator and denominator
+      and cancels out.
+	  
+      s \dot l := (parx*perpx + pary*perpy + parz*perp)
+      := (x1 + x2)*(x1 - x2) + (y1 + y2)*(y1 - y2) + (z1 + z2)*(z1 - z2)
+      := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
+      := d1^2 - d2^2
+      */
+      const AVX_FLOATS m_s_dot_l =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
+      const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);// numerator := |s.l|^2
+      const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
+      const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
+      const AVX_FLOATS m_sqr_perpz = AVX_SQUARE_FLOAT(m_perpz);
+      AVX_FLOATS m_sqr_s = AVX_ADD_FLOATS(m_sqr_perpx, AVX_ADD_FLOATS(m_sqr_perpy, m_sqr_perpz));//3-d separation
+	  
+      //Create a mask where s^2 < smax^2
+      const AVX_FLOATS m_mask_3d_sep = AVX_COMPARE_FLOATS(m_sqr_s, m_sqr_smax, _CMP_LT_OQ);
+      if(AVX_TEST_COMPARISON(m_mask_3d_sep) == 0) {
 	      continue;
-	    }
-	    const AVX_FLOATS m_sqr_norm_l = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_parx),
-							   AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_pary),
-									  AVX_SQUARE_FLOAT(m_parz)));
-
-	    // \mu^2 := cos^2(\theta_between_s_and_l) = |s.l|^2 / (|s|^2 * |l|^2)
-	    const AVX_FLOATS m_sqr_norm_l_norm_s = AVX_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
-	    if (fast_divide == 0) {
-	      m_sqr_mu = AVX_DIVIDE_FLOATS(m_sqr_s_dot_l, m_sqr_norm_l_norm_s);
-	      //The divide is the actual operation we need
-	      // but divides are about 10x slower than multiplies. So, I am replacing it
-	      //with a approximate reciprocal in floating point
-	      // + 2 iterations of newton-raphson in case of DOUBLE
-	    } else {
-	      //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
-	      
-#ifndef DOUBLE_PREC
-	      //Taken from Intel's site: https://software.intel.com/en-us/articles/wiener-filtering-using-intel-advanced-vector-extensions
-	      // (which has bugs in it, just FYI). Plus, https://techblog.lankes.org/2014/06/16/avx-isnt-always-faster-then-see/
-	      __m256 rc  = _mm256_rcp_ps(m_sqr_norm_l_norm_s);
-#else
-	      //we have to do this for doubles now.
-	      //if the vrcpps instruction is not generated, there will
-	      //be a ~70 cycle performance hit from switching between
-	      //AVX and SSE modes.
-	      __m128 float_tmp1 =  _mm256_cvtpd_ps(m_sqr_norm_l_norm_s);
-	      __m128 float_inv_tmp1 = _mm_rcp_ps(float_tmp1);
-	      AVX_FLOATS rc = _mm256_cvtps_pd(float_inv_tmp1);
-#endif//DOUBLE_PREC
-	      
-	      //We have the double->float->approx. reciprocal->double process done.
-	      //Now improve the accuracy of the divide with newton-raphson.
-	      
-	      //Ist iteration of NewtonRaphson
-	      AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);
-	      AVX_FLOATS rc1 = AVX_MULTIPLY_FLOATS(rc,
-						   AVX_SUBTRACT_FLOATS(two,
-								       AVX_MULTIPLY_FLOATS(m_sqr_norm_l_norm_s,rc)));
-	      //2nd iteration of NewtonRaphson
-	      AVX_FLOATS rc2 = AVX_MULTIPLY_FLOATS(rc1,
-						   AVX_SUBTRACT_FLOATS(two,
-								       AVX_MULTIPLY_FLOATS(m_sqr_norm_l_norm_s,rc1)));
-	      m_sqr_mu = AVX_MULTIPLY_FLOATS(m_sqr_s_dot_l,rc2);
-	    } //end of FAST_DIVIDE
-	  }
+      }
+      const AVX_FLOATS m_sqr_norm_l = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_parx),
+                                                     AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_pary),
+                                                                    AVX_SQUARE_FLOAT(m_parz)));
+      
+      // \mu^2 := cos^2(\theta_between_s_and_l) = |s.l|^2 / (|s|^2 * |l|^2)
+      AVX_FLOATS m_sqr_mu = AVX_SETZERO_FLOAT();
+      const AVX_FLOATS m_sqr_norm_l_norm_s = AVX_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
+      CHECK_AND_FAST_DIVIDE_AVX(m_sqr_mu, m_sqr_s_dot_l, m_sqr_norm_l_norm_s, fast_divide_and_NR_steps);
 	  
 	  const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(m_sqr_mu);
 	  
@@ -662,7 +602,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
                                                               const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                               const int same_cell,
-                                                              const int fast_divide,
+                                                              const unsigned int fast_divide_and_NR_steps,
                                                               const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                               const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                               DOUBLE *src_savg, uint64_t *src_npairs,
@@ -677,7 +617,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    (void) fast_divide; //unused
+    (void) fast_divide_and_NR_steps; //unused
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     const DOUBLE sqr_mumax = mu_max*mu_max;
@@ -983,7 +923,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
                                                         const int same_cell,
-                                                        const int fast_divide,
+                                                        const unsigned int fast_divide_and_NR_steps,
                                                         const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                         const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                         DOUBLE *src_savg, uint64_t *src_npairs,
@@ -1000,7 +940,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
 
-    (void) fast_divide;//unused parameter but required to keep the same function signature amongst the kernels
+    (void) fast_divide_and_NR_steps;//unused parameter but required to keep the same function signature amongst the kernels
 
     const DOUBLE sqr_smax  = smax*smax;
     const DOUBLE sqr_smin  = smin*smin;

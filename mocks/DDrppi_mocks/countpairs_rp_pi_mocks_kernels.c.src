@@ -28,7 +28,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
 								  const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, 
 								  DOUBLE *d1, const weight_struct_DOUBLE *weights1,
 								  const int same_cell,
-								  const int fast_divide,
+								  const unsigned int fast_divide_and_NR_steps,
 								  const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
 								  const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
 								  DOUBLE *src_rpavg,
@@ -164,80 +164,54 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
             const AVX512_FLOATS m_pary = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_y2, m_ypos);
             const AVX512_FLOATS m_parz = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_z2, m_zpos);
             
-            AVX512_FLOATS m_sqr_Dpar, m_sqr_Dperp;
-            {
-                /* We need to calculate r_p and pi, where 
-                   
-                   1. r_p^2 + pi^2 = |s|^2
-                   2. pi^2 = |s.l|^2 / |l| ^2
-                   
-                   where, 
-                   
-                   s:= Vector((x2-x1), (y2-y1), (z2-z1)) 
-                   l:= 1/2 * Vector((x2+x1), (y2+y1), (z2+z1))
-                   
-                   |s.l|^2 = 1/4 [ (x2^2 - x1^2) + (y2^2 - y1^2) + (z2^2 - z1^2)]
-                   => |s.l|^2 = 1/4 [ (x2^2 + y2^2 + z2^2) - (x1^2 + y1^2 + z1^2) ]
-                   => |s.l|^2 = 1/4 [ d2^2 - d1^2 ]
-                   
-                   Since I will finally need, ||s.l||^2 / ||l||^2, the factors of 1/4 will cancel out. 
-                   
-                */
-                
-                const AVX512_FLOATS m_s_dot_l =  AVX512_FMA_SUBTRACT_FLOATS(m_d2, m_d2, AVX512_SQUARE_FLOAT(m_dpos)); /* := d2^2 - dpos^2 */
-                const AVX512_FLOATS m_sqr_s_dot_l = AVX512_SQUARE_FLOAT(m_s_dot_l);
-                const AVX512_FLOATS m_sqr_sep = AVX512_FMA_ADD_FLOATS(m_perpx, m_perpx, AVX512_FMA_ADD_FLOATS(m_perpy, m_perpy, 
-													  AVX512_SQUARE_FLOAT(m_perpz)));//3-d separation
-                
-                //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
-                //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
-                //we would discard the pair.
-                const AVX512_MASK m_mask_3d_sep = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_sep, m_sqr_max_sep, _CMP_LT_OQ);
-                const AVX512_FLOATS m_sqr_norm_l = AVX512_FMA_ADD_FLOATS(m_parx, m_parx, 
-								     AVX512_FMA_ADD_FLOATS(m_pary, m_pary, AVX512_SQUARE_FLOAT(m_parz)));
-                
-                //\pi ^2 = |s.l| ^2 / |l|^2
-                //However, division is slow -> so we will check if \pimax^2 * |l| ^2 < |s.l|^2. If not, then the
-                //value of \pi (after division) *must* be larger than \pimax -> in which case we would
-                //not count that pair anway.
-                const AVX512_FLOATS m_sqr_pimax_times_sqr_l = AVX512_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
-                m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_mask_3d_sep, m_sqr_s_dot_l, m_sqr_pimax_times_sqr_l, _CMP_LT_OQ);// is pi < pimax ?
-                if(m_mask_left == 0) {
-                    continue;
-                }
-                
-                /* If we are here, that means we can not rule out at least one valid pair -> need to
-                   perform (slow) division to find out the value of pi's for each pair
-                */
-                
-                if(fast_divide == 0) {
-                    //regular division -> slow op
-                    m_sqr_Dpar = AVX512_MASKZ_DIVIDE_FLOATS(m_mask_left, m_sqr_s_dot_l,m_sqr_norm_l);
-                    //The divide is the actual operation we need
-                    // but divides are about 10x slower than multiplies. So, I am replacing it
-                    //with a approximate reciprocal in floating point
-                    // + 2 iterations of newton-raphson in case of DOUBLE
-                } else {
-                    //following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson
-                    const AVX512_FLOATS rc = AVX512_MASKZ_RECIPROCAL_FLOATS(m_mask_left, m_sqr_norm_l);
-                    //We have the double->float->approx. reciprocal->double process done.
-                    //Now improve the accuracy of the divide with newton-raphson.
-                    
-                    //Ist iteration of NewtonRaphson
-                    const AVX512_FLOATS two = AVX512_SET_FLOAT((DOUBLE) 2.0);
-                    const AVX512_FLOATS rc1 = AVX512_MULTIPLY_FLOATS(rc,
-							       AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc, two));/*2.0 - l^2*rc */
-                    //2nd iteration of NewtonRaphson
-                    const AVX512_FLOATS rc2 = AVX512_MULTIPLY_FLOATS(rc1,
-                                                                     AVX512_FNMA_ADD_FLOATS(m_sqr_norm_l, rc1, two));/* 2.0 - l^2*rc1 */
-                    
-                    m_sqr_Dpar = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_sqr_s_dot_l, rc2);
-                }//end of FAST_DIVIDE
-                
-                m_sqr_Dperp = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_sqr_sep, m_sqr_Dpar);
+            /* We need to calculate r_p and pi, where 
+               
+               1. r_p^2 + pi^2 = |s|^2
+               2. pi^2 = |s.l|^2 / |l| ^2
+               
+               where, 
+               
+               s:= Vector((x2-x1), (y2-y1), (z2-z1)) 
+               l:= 1/2 * Vector((x2+x1), (y2+y1), (z2+z1))
+               
+               |s.l|^2 = 1/4 [ (x2^2 - x1^2) + (y2^2 - y1^2) + (z2^2 - z1^2)]
+               => |s.l|^2 = 1/4 [ (x2^2 + y2^2 + z2^2) - (x1^2 + y1^2 + z1^2) ]
+               => |s.l|^2 = 1/4 [ d2^2 - d1^2 ]
+               
+               Since I will finally need, ||s.l||^2 / ||l||^2, the factors of 1/4 will cancel out. 
+               
+            */
+            
+            const AVX512_FLOATS m_s_dot_l =  AVX512_FMA_SUBTRACT_FLOATS(m_d2, m_d2, AVX512_SQUARE_FLOAT(m_dpos)); /* := d2^2 - dpos^2 */
+            const AVX512_FLOATS m_sqr_s_dot_l = AVX512_SQUARE_FLOAT(m_s_dot_l);
+            const AVX512_FLOATS m_sqr_sep = AVX512_FMA_ADD_FLOATS(m_perpx, m_perpx, AVX512_FMA_ADD_FLOATS(m_perpy, m_perpy, 
+                                                                                                          AVX512_SQUARE_FLOAT(m_perpz)));//3-d separation
+            
+            //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
+            //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
+            //we would discard the pair.
+            const AVX512_MASK m_mask_3d_sep = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_sep, m_sqr_max_sep, _CMP_LT_OQ);
+            const AVX512_FLOATS m_sqr_norm_l = AVX512_FMA_ADD_FLOATS(m_parx, m_parx, 
+                                                                     AVX512_FMA_ADD_FLOATS(m_pary, m_pary, AVX512_SQUARE_FLOAT(m_parz)));
+            
+            //\pi ^2 = |s.l| ^2 / |l|^2
+            //However, division is slow -> so we will check if \pimax^2 * |l| ^2 < |s.l|^2. If not, then the
+            //value of \pi (after division) *must* be larger than \pimax -> in which case we would
+            //not count that pair anway.
+            const AVX512_FLOATS m_sqr_pimax_times_sqr_l = AVX512_MULTIPLY_FLOATS(m_sqr_pimax, m_sqr_norm_l);
+            m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_mask_3d_sep, m_sqr_s_dot_l, m_sqr_pimax_times_sqr_l, _CMP_LT_OQ);// is pi < pimax ?
+            if(m_mask_left == 0) {
+                continue;
             }
             
-            
+            /* If we are here, that means we can not rule out at least one valid pair -> need to
+               perform (slow) division to find out the value of pi's for each pair
+            */
+            AVX512_FLOATS m_sqr_Dpar = AVX512_SETZERO_FLOAT();
+            CHECK_AND_FAST_DIVIDE_AVX512(m_sqr_Dpar, m_sqr_s_dot_l, m_sqr_norm_l, m_mask_left, fast_divide_and_NR_steps);
+            AVX512_FLOATS m_sqr_Dperp = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_sqr_sep, m_sqr_Dpar);
+        
+        
             //Do the mask filters in a separate scope
             {
                 const AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_Dpar, m_sqr_pimax,_CMP_LT_OQ);
@@ -248,6 +222,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                     continue;
                 }
             }
+
             const AVX512_FLOATS m_Dpar = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_Dpar);
             if(need_rpavg) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_Dperp);
@@ -510,7 +485,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
 
                    macro is defined in `avx_calls.h`
                  */
-                CHECK_AND_FAST_DIVIDE(m_sqr_Dpar, m_sqr_s_dot_l, m_sqr_norm_l, fast_divide_and_NR_steps);
+                CHECK_AND_FAST_DIVIDE_AVX(m_sqr_Dpar, m_sqr_s_dot_l, m_sqr_norm_l, fast_divide_and_NR_steps);
                
                 m_sqr_Dperp = AVX_SUBTRACT_FLOATS(m_sqr_sep,m_sqr_Dpar);
             }
