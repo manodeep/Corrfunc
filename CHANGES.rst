@@ -10,6 +10,19 @@ New features
 - conda installable package
 - GPU version
 
+2.3.0
+=======
+
+**Breaking Changes**
+--------------------
+
+New features
+------------
+- AVX512 kernels for all pair-counters [#167]
+
+Bug fixes
+---------
+- Fix segmentation fault in vpf_mocks [#168]
 
 2.2.0
 =======
