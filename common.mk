@@ -398,7 +398,7 @@ ifeq ($(DO_CHECKS), 1)
       ### Check for minimum python + numpy versions. In theory, I should also check
       ### that *any* python and numpy are available but that seems too much effort
       MIN_PYTHON_MAJOR := 2
-      MIN_PYTHON_MINOR := 6
+      MIN_PYTHON_MINOR := 7
 
       MIN_NUMPY_MAJOR  := 1
       MIN_NUMPY_MINOR  := 7
