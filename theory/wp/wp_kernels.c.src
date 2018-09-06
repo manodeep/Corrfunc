@@ -79,7 +79,8 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
       fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
   }
 
-  int64_t prev_j = 0, n_off = 0;
+  const DOUBLE *zstart = z1;
+  const DOUBLE last_z1 = z1[N1-1];
   for(int64_t i=0;i<N0;i++) {
     const DOUBLE xpos = *x0++ + off_xwrap;
     const DOUBLE ypos = *y0++ + off_ywrap;
@@ -91,27 +92,26 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
         pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
     }
 
-    int64_t j;
-    if(same_cell == 1) {
-        z1++; n_off++;
-        j = i+1;
-    } else {
-        for(;prev_j<N1;prev_j++) {
-            const DOUBLE dz = *z1 - zpos;
-            if(dz > -pimax) break;
-            z1++; n_off++;
-        }
-        if(prev_j == N1) {
-            i = N0;
-            break;
-        }
-        j = prev_j;
+    const DOUBLE min_dz = *z1 - zpos;
+    if(min_dz >= pimax) continue;
+    if((last_z1 - zpos) <= -pimax) {
+        i = N0;
+        break;
     }
+    
+    if(same_cell == 1) {
+        z1++;
+    } else {
+        while((*z1 - zpos) <= -pimax) {
+            z1++;
+        }
+    }
+    int64_t j = z1 - zstart;
     DOUBLE *localz1 = z1;
-    DOUBLE *localx1 = x1 + n_off;
-    DOUBLE *localy1 = y1 + n_off;
+    DOUBLE *localx1 = x1 + j;
+    DOUBLE *localy1 = y1 + j;
     for(int w = 0; w < local_w1.num_weights; w++){
-        local_w1.weights[w] = weights1->weights[w] + n_off;
+        local_w1.weights[w] = weights1->weights[w] + j;
     }
 
     for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {

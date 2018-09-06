@@ -29,16 +29,19 @@ typedef struct{
 
 typedef struct cellarray_index_particles_DOUBLE cellarray_index_particles_DOUBLE;
 struct cellarray_index_particles_DOUBLE{
-  int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
-  int64_t num_ngb;
-  DOUBLE *x;
-  DOUBLE *y;
-  DOUBLE *z;
-  weight_struct_DOUBLE weights;
-  cellarray_index_particles_DOUBLE **ngb_cells;
-  DOUBLE *xwrap;
-  DOUBLE *ywrap;
-  DOUBLE *zwrap;
+    int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
+    int64_t num_ngb;
+    DOUBLE *x;
+    DOUBLE *y;
+    DOUBLE *z;
+    weight_struct_DOUBLE weights;
+    cellarray_index_particles_DOUBLE **ngb_cells;
+    DOUBLE *ngb_min_dx;
+    DOUBLE *ngb_min_dy;
+    DOUBLE *ngb_min_dz;
+    DOUBLE *xwrap;
+    DOUBLE *ywrap;
+    DOUBLE *zwrap;
 };
 
   

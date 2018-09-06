@@ -22,11 +22,12 @@
 #include "avx_calls.h"
 
 static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1,
-                                           DOUBLE *x2, DOUBLE *y2, DOUBLE *z2, const weight_struct_DOUBLE *weights2, const int64_t N2, const int same_cell,
+                                           DOUBLE *x2, DOUBLE *y2, DOUBLE *z2, const weight_struct_DOUBLE *weights2, const int64_t N2,
+                                           const int same_cell,
                                            const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rmax,
-                                           const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                           ,DOUBLE *src_ravg
-                                           ,uint64_t *src_npairs,
+                                           const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                           const double min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                           DOUBLE *src_ravg, uint64_t *src_npairs,
                                            DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     uint64_t npair[nbin];
@@ -70,7 +71,8 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
       fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    int64_t prev_j=0, n_off=0;
+    const DOUBLE *zstart = z2;
+    const DOUBLE last_z2 = z2[N2-1];
     for(int64_t i=0;i<N1;i++) {
         const DOUBLE x1pos = *x1++ + off_xwrap;
         const DOUBLE y1pos = *y1++ + off_ywrap;
@@ -82,24 +84,27 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
             pair.weights0[w].a = AVX_SET_FLOAT(*(local_w1.weights[w])++);
         }
 
-        int64_t j;
-        if(same_cell == 1) {
-            z2++; n_off++;
-            j = i+1;
-        } else {
-            for(;prev_j<N2;prev_j++) {
-                const DOUBLE dz = *z2 - z1pos;
-                if(dz > -rmax) break;
-                z2++; n_off++;
-            }
-            if(prev_j==N2) break;
-            j=prev_j;
+        const DOUBLE min_dz = *z2 - z1pos;
+        if(min_dz >= rmax) continue;
+        if((last_z2 - z1pos) <= -rmax) {
+            i = N1;
+            break;
         }
+        
+        if(same_cell == 1) {
+            z2++;
+        } else {
+            while((*z2 - z1pos) <= -rmax) {
+                z2++;
+            }
+        }
+
+        int64_t j = z2 - zstart;
         DOUBLE *localz2 = z2;
-        DOUBLE *localx2 = x2 + n_off;
-        DOUBLE *localy2 = y2 + n_off;
+        DOUBLE *localx2 = x2 + j;
+        DOUBLE *localy2 = y2 + j;
         for(int w = 0; w < local_w2.num_weights; w++){
-            local_w2.weights[w] = weights2->weights[w] + n_off;
+            local_w2.weights[w] = weights2->weights[w] + j;
         }
 
 
@@ -303,8 +308,9 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
 static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
                                            DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell, 
                                            const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rmax,
-                                           const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap
-                                           ,DOUBLE *src_ravg, uint64_t *src_npairs,
+                                           const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                           const double min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                           DOUBLE *src_ravg, uint64_t *src_npairs,
                                            DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     uint64_t npairs[nbin];
@@ -562,6 +568,7 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
                                      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell, 
                                      const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rmax,
                                      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                     const double min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                      DOUBLE *src_ravg, uint64_t *src_npairs,
                                      DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
