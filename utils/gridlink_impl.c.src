@@ -77,7 +77,6 @@ void free_cellarray_index_particles_DOUBLE(cellarray_index_particles_DOUBLE *lat
         free(lattice[i].ngb_cells);
         free(lattice[i].ngb_min_dx);
         free(lattice[i].ngb_min_dy);
-        free(lattice[i].ngb_min_dz);
     }
     free(lattice);
 }
@@ -373,7 +372,6 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
         lattice[index].ngb_cells = NULL;
         lattice[index].ngb_min_dx = NULL;
         lattice[index].ngb_min_dy = NULL;
-        lattice[index].ngb_min_dz = NULL;
         lattice[index].xwrap = NULL;
         lattice[index].ywrap = NULL;
         lattice[index].zwrap = NULL;
@@ -537,7 +535,6 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
 
   const DOUBLE xbinsize = xdiff/nmesh_x;
   const DOUBLE ybinsize = ydiff/nmesh_y;
-  const DOUBLE zbinsize = zdiff/nmesh_z;
   
   for(int64_t icell=0;icell<totncells;icell++) {
     struct cellarray_index_particles_DOUBLE *first = &(lattice1[icell]);
@@ -565,9 +562,9 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
     first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
     first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
     first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
-    first->ngb_min_dz = my_malloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
-    if(first->ngb_cells == NULL || first->ngb_min_dx == NULL ||
-       first->ngb_min_dy == NULL || first->ngb_min_dz == NULL) {
+    if(first->ngb_cells == NULL || first->ngb_min_dx == NULL || first->ngb_min_dy == NULL) {
+        fprintf(stderr,"Error: Could not allocate memory for storing neighbouring cell indices and the min. separations. "
+                "Reducing bin refine factors might help\n");
         return EXIT_FAILURE;
     }
     
@@ -604,7 +601,6 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
 
             const int min_xdiff = abs(iix) > 1 ? abs(iix)-1:0;
             const int min_ydiff = abs(iiy) > 1 ? abs(iiy)-1:0;
-            const int min_zdiff = llabs(iiz) > 1 ? llabs(iiz)-1:0;
             
             const int64_t ngb_index = first->num_ngb;
             XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
@@ -612,7 +608,6 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
             first->ngb_cells[ngb_index] = &(lattice2[icell2]);
             first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
             first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
-            first->ngb_min_dz[ngb_index] = min_zdiff * zbinsize;
             
             //Note the xwrap/ywraps do not have memory allocated for them in the
             //non-periodic case. 

@@ -25,7 +25,7 @@ extern "C" {
                                       DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell,
                                       const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
                                       const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
-                                      const double min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                      const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
                                       DOUBLE *src_rpavg, uint64_t *src_npairs,
                                       DOUBLE *src_weightavg, const weight_method_t weight_method);
 

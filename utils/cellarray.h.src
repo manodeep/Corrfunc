@@ -38,7 +38,6 @@ struct cellarray_index_particles_DOUBLE{
     cellarray_index_particles_DOUBLE **ngb_cells;
     DOUBLE *ngb_min_dx;
     DOUBLE *ngb_min_dy;
-    DOUBLE *ngb_min_dz;
     DOUBLE *xwrap;
     DOUBLE *ywrap;
     DOUBLE *zwrap;

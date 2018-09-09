@@ -446,7 +446,8 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                                                             N1, x1, y1, z1, weights1,
                                                             same_cell,
                                                             sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
-                                                            ZERO, ZERO, ZERO,
+                                                            ZERO, ZERO, ZERO, /* offsets to do periodic wrapping */
+                                                            ZERO, ZERO, /* min separations in x & y */
                                                             this_rpavg, npairs,
                                                             this_weightavg, extra->weight_method);
               /* This actually causes a race condition under OpenMP - but mostly
@@ -465,16 +466,20 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
             }
             const int same_cell = 0;
             /* ngb_part += second->nelements; */
-            DOUBLE *x2 = second->x;
-            DOUBLE *y2 = second->y;
-            DOUBLE *z2 = second->z;
-            const weight_struct_DOUBLE *weights2 = &(second->weights);
-            DOUBLE off_xwrap = 0.0, off_ywrap = 0.0, off_zwrap = 0.0;
+            DOUBLE off_xwrap = ZERO, off_ywrap = ZERO, off_zwrap = ZERO;
             if(options->periodic) {
               off_xwrap = first->xwrap[ngb];
               off_ywrap = first->ywrap[ngb];
               off_zwrap = first->zwrap[ngb];
             }
+            const DOUBLE min_xdiff = first->ngb_min_dx[ngb];
+            const DOUBLE min_ydiff = first->ngb_min_dy[ngb];
+            
+            DOUBLE *x2 = second->x;
+            DOUBLE *y2 = second->y;
+            DOUBLE *z2 = second->z;
+            const weight_struct_DOUBLE *weights2 = &(second->weights);
+            
             const int64_t N2 = second->nelements;
             DOUBLE *this_rpavg = NULL;
             DOUBLE *this_weightavg = NULL;
@@ -486,11 +491,12 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
             }
             const int status = countpairs_function_DOUBLE(N1, x1, y1, z1, weights1,
                                                           N2, x2, y2, z2, weights2,
-                                                          same_cell
-                                                          ,sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax //pimax is simply rpmax cast to DOUBLE
-                                                          ,off_xwrap, off_ywrap, off_zwrap
-                                                          ,this_rpavg,npairs
-                                                          ,this_weightavg, extra->weight_method);
+                                                          same_cell,
+                                                          sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
+                                                          off_xwrap, off_ywrap, off_zwrap,
+                                                          min_xdiff, min_ydiff, 
+                                                          this_rpavg,npairs,
+                                                          this_weightavg, extra->weight_method);
             /* This actually causes a race condition under OpenMP - but mostly
                I care that an error occurred - rather than the exact value of
                the error status */
