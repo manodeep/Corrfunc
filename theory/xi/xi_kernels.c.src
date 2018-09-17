@@ -197,23 +197,18 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 //the z2 arrays are sorted in increasing order. which means
                 //the z2 value will increase in any future iteration of j.
                 //that implies the zdiff values are also monotonically increasing
-                //Therefore, if none of the zdiff values are less than rmax, then
-                //no future iteration in j can produce a zdiff value less than rmax.
-                AVX_FLOATS m_mask_rmax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
-                if(AVX_TEST_COMPARISON(m_mask_rmax) == 0) {
-                    //None of the dz values satisfies dz < pimax
-                    // => no pairs can be added -> continue and process the next NVEC
-                    j=N2;
-                    break;
+                //Therefore, if any of the zdiff values are >= `pimax`, then
+                //no future iteration in j can produce a r < rmax rmax.
+                //(But this iteration might still contain values within rmax -- i.e., don't
+                // break out of this iteration. 
+                const AVX_FLOATS m_mask_all_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_GE_OQ);
+                if(AVX_TEST_COMPARISON(m_mask_all_pimax) > 0){
+                    j=N2;//stop the next iteration of the j'loop but do not break out of this current interation
                 }
                 
-                const AVX_FLOATS m_pimax_mask = AVX_COMPARE_FLOATS(r2, m_rupp_sqr[nbin-1], _CMP_LT_OS);
-                const AVX_FLOATS m_rmin_mask = AVX_COMPARE_FLOATS(r2, m_rupp_sqr[0], _CMP_GE_OS);
-                const AVX_FLOATS m_r_mask = AVX_BITWISE_AND(m_pimax_mask,m_rmin_mask);
-                
-                //Create a combined mask by bitwise and of m1 and m_mask_left.
-                //This gives us the mask for all sqr_rmin <= r2 < sqr_rmax
-                m_mask_left = AVX_BITWISE_AND(m_mask_rmax,m_r_mask);
+                const AVX_FLOATS m_rmax_mask = AVX_COMPARE_FLOATS(r2, m_rupp_sqr[nbin-1], _CMP_LT_OQ);
+                const AVX_FLOATS m_rmin_mask = AVX_COMPARE_FLOATS(r2, m_rupp_sqr[0], _CMP_GE_OQ);
+                m_mask_left = AVX_BITWISE_AND(m_rmax_mask, m_rmin_mask);
                 
                 //If not, continue with the next iteration of j-loop
                 if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
@@ -234,14 +229,14 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
 
             //Loop backwards through nbins. m_mask_left contains all the points that are less than rmax
             for(int kbin=nbin-1;kbin>=1;kbin--) {
-                const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+                const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OQ);
                 const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
                 const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
                 npair[kbin] += AVX_BIT_COUNT_INT(test2);
                 if(need_ravg || need_weightavg) {
                     m_rbin = AVX_BLEND_FLOATS_WITH_MASK(m_rbin,m_kbin[kbin], m_bin_mask);
                 }
-                m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
+                m_mask_left = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OQ);
                 const int test3 = AVX_TEST_COMPARISON(m_mask_left);
                 if(test3 == 0) {
                     break;
