@@ -39,6 +39,7 @@ extern "C" {
 #define AVX512_MASK_BITWISE_OR(X,Y)               _mm512_kor(X,Y)
 #define AVX512_MASK_BITWISE_XOR_FLOATS(X,Y)       _mm512_kxor(X,Y)
 #define AVX512_MASK_BITWISE_AND_NOT(X,Y)          _mm512_kandn(X,Y)  //~X & Y
+#define AVX512_MASK_BITWISE_NOT(X,Y)              _mm512_knot(X) //~X
 
     
 
