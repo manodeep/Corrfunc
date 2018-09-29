@@ -12,7 +12,7 @@ LIBNAME := countpairs
 LIBRARY := lib$(LIBNAME).a
 LIBSRC  := countpairs.c countpairs_impl_double.c countpairs_impl_float.c \
          $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
-         $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
+         $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c $(UTILS_DIR)/avx512_calls.c
 LIBRARY_HEADERS := $(LIBNAME).h
 
 TARGET := DD
@@ -21,7 +21,7 @@ INCL   := countpairs_kernels_float.c countpairs_kernels_double.c countpairs_kern
           countpairs.h countpairs_impl_double.h countpairs_impl_float.h \
           $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/gridlink_impl.h.src \
           $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray.h.src \
-          $(UTILS_DIR)/function_precision.h  $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
+          $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/avx512_calls.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
           $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
           $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/progressbar.h \
           $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_functions.h.src \
@@ -35,9 +35,10 @@ libs: lib
 lib:  $(LIBRARY)
 install: $(INSTALL_BIN_DIR)/$(TARGET) $(INSTALL_LIB_DIR)/$(LIBRARY) $(INSTALL_HEADERS_DIR)/$(LIBRARY_HEADERS)
 
-countpairs_impl_double.o:countpairs_impl_double.c countpairs_impl_double.h countpairs_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_defs_double.h
-countpairs_impl_float.o:countpairs_impl_float.c countpairs_impl_float.h countpairs_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_defs_float.h
-countpairs.o:countpairs.c countpairs_impl_double.h countpairs_impl_float.h $(INCL)
+countpairs_impl_float.c countpairs_impl_double.c:countpairs_impl.c.src $(INCL)
+countpairs_impl_float.o:countpairs_impl_float.c countpairs_impl_float.h countpairs_kernels_float.c $(UTILS_DIR)/gridlink_impl_float.h 
+countpairs_impl_double.o:countpairs_impl_double.c countpairs_impl_double.h countpairs_kernels_double.c $(UTILS_DIR)/gridlink_impl_double.h  
+countpairs.o:countpairs.c countpairs_impl_double.h countpairs_impl_float.h countpairs.h
 
 clean:
 	$(RM) $(TARGETOBJS) $(TARGET) $(LIBRARY) countpairs_kernels_float.c countpairs_kernels_double.c countpairs_impl_double.[ch] countpairs_impl_float.[ch]

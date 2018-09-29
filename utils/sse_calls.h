@@ -31,6 +31,7 @@ extern "C" {
 #define SSE_INTS                         __m128i
 #define SSE_FLOATS                       __m128
 
+#define SSE_SETZERO_FLOAT()              _mm_setzero_ps()    
 #define SSE_LOAD_FLOATS_UNALIGNED(X)     _mm_loadu_ps(X)
 #define SSE_MULTIPLY_FLOATS(X,Y)         _mm_mul_ps(X,Y)
 #define SSE_SUBTRACT_FLOATS(X,Y)         _mm_sub_ps(X,Y)
@@ -73,7 +74,8 @@ extern "C" {
 #define SSE_INTS                         __m128i
 #define SSE_FLOATS                       __m128d
 
-#define SSE_SET_FLOAT(X)                  _mm_set1_pd(X)
+#define SSE_SETZERO_FLOAT()              _mm_setzero_pd()        
+#define SSE_SET_FLOAT(X)                 _mm_set1_pd(X)
 #define SSE_LOAD_FLOATS_UNALIGNED(X)     _mm_loadu_pd(X)
 #define SSE_LOAD_FLOATS_ALIGNED(X)       _mm_load_pd(X)
 
@@ -116,7 +118,7 @@ extern "C" {
 #endif
 
 #ifndef  __INTEL_COMPILER
-    #include "fast_acos.h"
+#include "fast_acos.h"
     static inline SSE_FLOATS inv_cosine_sse(const SSE_FLOATS X, const int order)
 {
     union cos{
@@ -150,5 +152,24 @@ extern "C" {
     }
     return union_returnvalue.m;
   }
+#endif
+
+  union int4 {
+    SSE_INTS m_ibin;
+    int ibin[SSE_NVEC];
+  };
+  
+  union float4{
+    SSE_FLOATS m_Dperp;
+    DOUBLE Dperp[SSE_NVEC];
+  };
+  
+  union float4_weights{
+    SSE_FLOATS m_weights;
+    DOUBLE weights[SSE_NVEC];
+  };
+
+#ifdef __cplusplus
+}
 #endif
     

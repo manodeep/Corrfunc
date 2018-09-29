@@ -46,7 +46,7 @@ int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen
 vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *options) 
 {
     static vpf_mocks_func_ptr_DOUBLE function = NULL;
-    static isa old_isa=-1;
+    static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
     } 
