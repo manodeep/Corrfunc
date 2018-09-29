@@ -19,7 +19,7 @@ New features
 New features
 ------------
 - AVX512F kernels for all pair-counters [#167, #170]
-- Faster code from new optimizations using the minimum separation between pairs of cells
+- Faster code from new optimizations using the minimum separation between pairs of cells [#170]
 
 Bug fixes
 ---------
