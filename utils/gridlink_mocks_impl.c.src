@@ -41,6 +41,8 @@ void free_cellarray_mocks_index_particles_DOUBLE(cellarray_mocks_index_particles
 
         /* Might be NULL but free(NULL) is fine*/
         free(lattice[i].ngb_cells);
+        free(lattice[i].ngb_min_dx);
+        free(lattice[i].ngb_min_dy);
     }
     free(lattice);
 }
@@ -204,9 +206,11 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
                 return NULL;
             }
         }
+        nallocated[index] = expected_n;
         lattice[index].nelements=0;
         lattice[index].ngb_cells = NULL;
-        nallocated[index] = expected_n;
+        lattice[index].ngb_min_dx = NULL;
+        lattice[index].ngb_min_dy = NULL;        
     }
 
     const DOUBLE xinv=1.0/xbinsize;
@@ -402,8 +406,7 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
                       "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
               first->ngb_cells[ngb_index] = &(lattice2[icell2]);
               
-              //Note the xwrap/ywraps do not have memory allocated for them in the
-              //non-periodic case. 
+              //There are no periodic boundary conditions for mocks
               first->num_ngb++;
           }
       }

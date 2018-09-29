@@ -32,6 +32,8 @@ extern "C" {
         DOUBLE *cz;//co-moving distance
         weight_struct_DOUBLE weights;
         cellarray_mocks_index_particles_DOUBLE **ngb_cells;
+        DOUBLE *ngb_min_dx;
+        DOUBLE *ngb_min_dy;
     };
 
     /* Used for wtheta */

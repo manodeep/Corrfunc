@@ -18,6 +18,234 @@
 
 #include "weight_functions_DOUBLE.h"
 
+#if defined(__AVX512F__)
+#include "avx512_calls.h"
+
+static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                           const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                           const int same_cell,
+                                                           const unsigned int fast_divide_and_NR_steps,
+                                                           const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
+                                                           const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
+                                                           const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                                           DOUBLE *src_savg, uint64_t *src_npairs,
+                                                           DOUBLE *src_weightavg, const weight_method_t weight_method)
+{
+    (void) sqr_smax, (void) sqr_smin;
+    if(N0 == 0 || N1 == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    if(src_npairs == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    const int32_t need_savg = src_savg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
+
+    const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
+    uint64_t npairs[totnbins];
+    DOUBLE savg[totnbins], weightavg[totnbins];
+    for(int64_t i=0;i<totnbins;i++) {
+        npairs[i] = 0;
+        if(need_savg) {
+            savg[i] = ZERO;
+        }
+        if(need_weightavg){
+            weightavg[i] = ZERO;
+        }
+    }
+
+    AVX512_FLOATS m_supp_sqr[nsbin];
+    for(int i=0;i<nsbin;i++) {
+        m_supp_sqr[i] = AVX512_SET_FLOAT(supp_sqr[i]);
+    }
+
+    const DOUBLE sqr_mumax = mu_max*mu_max;
+    const DOUBLE dmu = mu_max/(DOUBLE) nmu_bins;
+    const DOUBLE inv_dmu = 1.0/dmu;
+
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0},
+                         local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    avx512_weight_func_t_DOUBLE avx512_weight_func = NULL;
+    if(need_weightavg){
+        // Same particle list, new copy of num_weights pointers into that list
+        local_w0 = *weights0;
+        local_w1 = *weights1;
+
+        pair.num_weights = local_w0.num_weights;
+        avx512_weight_func   = get_avx512_weight_func_by_method_DOUBLE(weight_method);
+    }
+
+    DOUBLE *zstart = z1;
+    DOUBLE *zend = z1 + N1;
+    for(int64_t i=0;i<N0;i++) {
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
+
+        for(int w = 0; w < pair.num_weights; w++){
+            // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+            pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
+        }
+
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while(z1 != zend && (*z1 - zpos) <= -pimax) {
+                z1++;
+            }
+            if(z1 == zend) {
+                i = N0;
+                break;
+            }
+        }
+        
+        const int64_t n_off = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + n_off;
+        DOUBLE *localy1 = y1 + n_off;
+
+        for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + n_off;
+        }
+        
+        for(int64_t j=n_off;j<N1;j+=AVX512_NVEC){
+            AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
+            const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
+            const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
+            const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
+
+            localx1 += AVX512_NVEC;//this might actually exceed the allocated range but we will never dereference that
+            localy1 += AVX512_NVEC;
+            localz1 += AVX512_NVEC;
+
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);                
+                local_w1.weights[w] += AVX512_NVEC;
+            }
+            
+            const AVX512_FLOATS m_xpos    = AVX512_SET_FLOAT(xpos);
+            const AVX512_FLOATS m_ypos    = AVX512_SET_FLOAT(ypos);
+            const AVX512_FLOATS m_zpos    = AVX512_SET_FLOAT(zpos);
+
+            union int16 union_finalbin;
+            union float16 union_mDperp;
+            union float16_weights union_mweight;
+
+            const AVX512_FLOATS m_pimax = AVX512_SET_FLOAT((DOUBLE) pimax);
+            const AVX512_FLOATS m_sqr_smax = m_supp_sqr[nsbin-1];
+            const AVX512_FLOATS m_sqr_smin = m_supp_sqr[0];
+            const AVX512_FLOATS m_sqr_mumax = AVX512_SET_FLOAT(sqr_mumax);
+
+            const AVX512_FLOATS m_xdiff = AVX512_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+            const AVX512_FLOATS m_ydiff = AVX512_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+            const AVX512_FLOATS m_zdiff = AVX512_ABS_FLOAT(AVX512_SUBTRACT_FLOATS(m_z1, m_zpos));  //fabs(z2[j:j+NVEC-1] - z1)
+
+            const AVX512_FLOATS m_sqr_zdiff = AVX512_SQUARE_FLOAT(m_zdiff);  //(z0 - z[j])^2
+            const AVX512_FLOATS m_sqr_z_p_sqr_y = AVX512_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_zdiff);  //dy*dy + dz^2
+            const AVX512_FLOATS s2  = AVX512_FMA_ADD_FLOATS(m_xdiff, m_xdiff, m_sqr_z_p_sqr_y);//s^2 = dx*dx + z^2 + dy^2
+
+            const AVX512_FLOATS max_sqr_dz = AVX512_MULTIPLY_FLOATS(s2, m_sqr_mumax);
+
+            //the z2 arrays are sorted in increasing order. which means
+            //the z2 value will increase in any future iteration of j.
+            //that implies the zdiff values are also monotonically increasing
+            //Therefore, if none of the zdiff values are less than pimax, then
+            //no future iteration in j can produce a zdiff value less than pimax.
+            const AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_pimax,_CMP_LT_OS);
+            if(m_mask_pimax == 0) {
+                j=N1;
+                break;
+            }
+            
+            const AVX512_MASK m_mu_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, m_sqr_zdiff, max_sqr_dz, _CMP_LT_OS);
+            const AVX512_MASK m_smax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, s2, m_sqr_smax, _CMP_LT_OS);//check for s2 < sqr_smax
+            const AVX512_MASK m_smin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, s2, m_sqr_smin, _CMP_GE_OS);//check for s2 >= sqr_smin
+            const AVX512_MASK m_s2_mask = AVX512_MASK_BITWISE_AND(m_smax_mask, m_smin_mask);
+            
+            //Create a combined mask by bitwise and of m1 and m_mask_left.
+            //This gives us the mask for all sqr_smin <= s2 < sqr_smax
+            // + mu_min <= mu < mu_max
+            m_mask_left = AVX512_MASK_BITWISE_AND(m_mu_mask, m_s2_mask);
+            
+            //If not, continue with the next iteration of j-loop
+            if(m_mask_left == 0) {
+                continue;
+            }
+
+            /*m_mu := sqrt(dz^2/s2) (with masked elements set to mu_max */
+            AVX512_FLOATS m_sqr_mu = AVX512_SETZERO_FLOAT();
+            CHECK_AND_FAST_DIVIDE_AVX512(m_sqr_mu, m_sqr_zdiff, s2, m_mask_left, fast_divide_and_NR_steps);
+
+            const AVX512_FLOATS m_mu = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_mu);
+            if(need_savg) {
+                union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, s2);
+            }
+            if(need_weightavg){
+                pair.dx.a512 = m_xdiff;
+                pair.dy.a512 = m_ydiff;
+                pair.dz.a512 = m_zdiff;
+
+                union_mweight.m_weights = avx512_weight_func(&pair);
+            }
+
+            const AVX512_MASK m_mask = m_mask_left;
+            AVX512_FLOATS m_sbin     = AVX512_SETZERO_FLOAT();
+            for(int kbin=nsbin-1;kbin>=1;kbin--) {
+                const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, s2, m_supp_sqr[kbin-1],_CMP_GE_OQ);
+                m_sbin = AVX512_BLEND_FLOATS_WITH_MASK(m_bin_mask, m_sbin, AVX512_SET_FLOAT(kbin));
+                m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
+                if(m_mask_left == 0) {
+                    break;
+                }
+            }
+            const AVX512_FLOATS m_inv_dmu    = AVX512_SET_FLOAT(inv_dmu);
+            const AVX512_FLOATS m_nmu_bins = AVX512_SET_FLOAT((DOUBLE) nmu_bins);
+            const AVX512_FLOATS m_nmu_bins_p1 = AVX512_SET_FLOAT((DOUBLE) (nmu_bins + 1));
+            const AVX512_FLOATS m_mubin = AVX512_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
+
+            /* Compute the 1-D index to the [sbin, mubin] := sbin*(nmubin+1) + mubin */
+            const AVX512_FLOATS m_sbin_linear_index = AVX512_MULTIPLY_FLOATS(m_sbin, m_nmu_bins_p1);
+            const AVX512_FLOATS m_finalbin = AVX512_MASK_ADD_FLOATS(m_nmu_bins, m_mask, m_sbin_linear_index, m_mubin);
+            union_finalbin.m_ibin = AVX512_TRUNCATE_FLOAT_TO_INT(m_finalbin);
+
+            //update the histograms
+#if defined(__ICC) || defined(__INTEL_COMPILER)
+#pragma unroll(AVX512_NVEC)
+#endif
+            for(int jj=0;jj<AVX512_NVEC;jj++) {
+                int ibin = union_finalbin.ibin[jj];
+                npairs[ibin]++;
+                if(need_savg) {
+                    savg[ibin] += union_mDperp.Dperp[jj];
+                }
+                if(need_weightavg){
+                    const DOUBLE weight = union_mweight.weights[jj];
+                    weightavg[ibin] += weight;
+                }
+            }
+        }//loop over second set of particles
+    }//loop over first set of particles
+
+	for(int i=0;i<totnbins;i++) {
+		src_npairs[i] += npairs[i];
+        if(need_savg) {
+            src_savg[i] += savg[i];
+        }
+        if(need_weightavg) {
+            src_weightavg[i] += weightavg[i];
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+#endif //__AVX512F__
+
 
 #if defined(__AVX__)
 #include "avx_calls.h"
@@ -126,17 +354,9 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
             const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(zpos);
 
-            union int8 {
-                AVX_INTS m_ibin;
-                int ibin[AVX_NVEC];
-            };
             union int8 union_finalbin;
-            union float8{
-                AVX_FLOATS m_Dperp;
-                DOUBLE Dperp[AVX_NVEC];
-            };
             union float8 union_mDperp;
-
+            union float8_weights union_mweight;
 
             const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
             const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
@@ -151,19 +371,13 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                 local_w1.weights[w] += AVX_NVEC;
             }
 
-            union float8_weights{
-                AVX_FLOATS m_weights;
-                DOUBLE weights[NVEC];
-            };
-            union float8_weights union_mweight;
-
             const AVX_FLOATS m_pimax = AVX_SET_FLOAT((DOUBLE) pimax);
             const AVX_FLOATS m_sqr_smax = m_supp_sqr[nsbin-1];
             const AVX_FLOATS m_sqr_smin = m_supp_sqr[0];
             const AVX_FLOATS m_inv_dmu    = AVX_SET_FLOAT(inv_dmu);
             const AVX_FLOATS m_sqr_mumax = AVX_SET_FLOAT(sqr_mumax);
 
-            const AVX_FLOATS m_zero = AVX_SET_FLOAT(ZERO);
+            const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
             const AVX_FLOATS m_nmu_bins     = AVX_SET_FLOAT((DOUBLE) nmu_bins);
             const AVX_FLOATS m_one    = AVX_SET_FLOAT((DOUBLE) 1);
 
@@ -216,14 +430,13 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             /*m_sqr_mu := dz^2/s^2 (with masked elements set to mu_max */
             AVX_FLOATS m_sqr_mu = AVX_SETZERO_FLOAT();
 
-
             /* Check if fast_divide is enabled and either use the normal divide or
                use the approx. reciprocal followed by `fast_divide_and_NR_steps` number
                of Newton-Raphson steps to improve numerical accuracy.
                
                macro is defined in `avx_calls.h`
             */
-            CHECK_AND_FAST_DIVIDE(m_sqr_mu, m_sqr_zdiff, s2, fast_divide_and_NR_steps);
+            CHECK_AND_FAST_DIVIDE_AVX(m_sqr_mu, m_sqr_zdiff, s2, fast_divide_and_NR_steps);
                 
             const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, m_sqr_mu, m_mask_left));
             
@@ -239,7 +452,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             }
 
             const AVX_FLOATS m_mubin = AVX_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
-            AVX_FLOATS m_sbin     = AVX_SET_FLOAT((DOUBLE) 0);
+            AVX_FLOATS m_sbin     = AVX_SETZERO_FLOAT();
             //AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
                 const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(s2,m_supp_sqr[kbin-1],_CMP_GE_OS);
@@ -484,7 +697,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const SSE_FLOATS m_sqr_smin = m_supp_sqr[0];
             const SSE_FLOATS m_sqr_mumax = SSE_SET_FLOAT(sqr_mumax);
             const SSE_FLOATS m_inv_dmu    = SSE_SET_FLOAT(inv_dmu);
-            const SSE_FLOATS m_zero = SSE_SET_FLOAT(ZERO);
+            const SSE_FLOATS m_zero = SSE_SETZERO_FLOAT();
             const SSE_FLOATS m_nmu_bins     = SSE_SET_FLOAT((DOUBLE) nmu_bins);
             const SSE_FLOATS m_one    = SSE_SET_FLOAT((DOUBLE) 1);
 
@@ -548,7 +761,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             }
 
             const SSE_FLOATS m_mubin = SSE_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
-            SSE_FLOATS m_sbin     = SSE_SET_FLOAT((DOUBLE) 0);
+            SSE_FLOATS m_sbin     = SSE_SETZERO_FLOAT();
             //SSE_FLOATS m_all_ones  = SSE_CAST_INT_TO_FLOAT(SSE_SET_INT(-1));
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
                 const SSE_FLOATS m_mask_low = SSE_COMPARE_FLOATS_GE(s2,m_supp_sqr[kbin-1]);

@@ -40,13 +40,16 @@ void interrupt_handler_countpairs_xi_DOUBLE(int signo)
 xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
 {
     static xi_func_ptr_DOUBLE function = NULL;
-    static isa old_isa=-1;
+    static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
     }
     
     //Seriously this is the declaration for the function pointers...here be dragons.
     xi_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX512F__
+      xi_avx512_intrinsics_DOUBLE,
+#endif			 
 #ifdef __AVX__
       xi_avx_intrinsics_DOUBLE,
 #endif			 
@@ -57,10 +60,16 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     };
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
-#if defined(__AVX__) || defined __SSE4_2__    
+#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = instrset_detect();
 #endif    
     int curr_offset = 0;
+    /* Check for AVX512F support */    
+    int avx512_offset = fallback_offset;
+#ifdef __AVX512F__
+    avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
     
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
@@ -85,7 +94,7 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):
+        case(AVX512F):function_dispatch=avx512_offset;break;
         case(AVX2):
         case(AVX): function_dispatch=avx_offset;break;
         case(SSE42):function_dispatch=sse_offset;break;
@@ -105,12 +114,15 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
             fprintf(stderr,"Using fallback kernel\n");
+        } else if(function_dispatch == avx512_offset){
+            fprintf(stderr,"Using AVX512 kernel\n");
         } else if(function_dispatch == avx_offset){
             fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
             fprintf(stderr,"Using SSE kernel\n");
         } else {
-            printf("Unknown kernel!\n");
+            fprintf(stderr, "Unknown kernel!\n");
+            return NULL;
         }
     }
 
@@ -387,7 +399,8 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                 int status = xi_function_DOUBLE(x1, y1, z1, weights1, N1,
                                                 x1, y1, z1, weights1, N1, same_cell, 
                                                 sqr_rmax, sqr_rmin, nbins, rupp_sqr, rmax,
-                                                ZERO, ZERO, ZERO,
+                                                ZERO, ZERO, ZERO, /* periodic wrap */
+                                                ZERO, ZERO, /* min x & y diff */
                                                 this_ravg, npairs,
                                                 this_weightavg, extra->weight_method);
                 /* This actually causes a race condition under OpenMP - but mostly 
@@ -408,11 +421,14 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                     const DOUBLE off_xwrap = first->xwrap[ngb];
                     const DOUBLE off_ywrap = first->ywrap[ngb];
                     const DOUBLE off_zwrap = first->zwrap[ngb];
+                    const DOUBLE min_xdiff = first->ngb_min_dx[ngb];
+                    const DOUBLE min_ydiff = first->ngb_min_dy[ngb];
                     same_cell = 0;
                     status = xi_function_DOUBLE(x1, y1, z1, weights1, N1,
                                                 x2, y2, z2, weights2, N2, same_cell, 
                                                 sqr_rmax, sqr_rmin, nbins, rupp_sqr, rmax,
                                                 off_xwrap, off_ywrap, off_zwrap,
+                                                min_xdiff, min_ydiff, 
                                                 this_ravg, npairs,
                                                 this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly 

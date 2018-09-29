@@ -53,8 +53,8 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
     }
   
     if(options->float_type == sizeof(float)) {
-        return countpairs_float(ND1, (float * restrict) X1, (float * restrict) Y1, (float * restrict) Z1,
-                                ND2, (float * restrict) X2, (float * restrict) Y2, (float * restrict) Z2,
+        return countpairs_float(ND1, (float *) X1, (float *) Y1, (float *) Z1,
+                                ND2, (float *) X2, (float *) Y2, (float *) Z2,
                                 numthreads,
                                 autocorr,
                                 binfile,
@@ -62,8 +62,8 @@ int countpairs(const int64_t ND1, void * restrict X1, void * restrict Y1, void  
                                 options,
                                 extra);
   } else {
-        return countpairs_double(ND1, (double * restrict) X1, (double * restrict) Y1, (double * restrict) Z1,
-                                 ND2, (double * restrict) X2, (double * restrict) Y2, (double * restrict) Z2,
+        return countpairs_double(ND1, (double *) X1, (double *) Y1, (double *) Z1,
+                                 ND2, (double *) X2, (double *) Y2, (double *) Z2,
                                  numthreads,
                                  autocorr,
                                  binfile,

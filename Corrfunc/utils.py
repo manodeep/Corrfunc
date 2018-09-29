@@ -485,7 +485,7 @@ def translate_isa_string_to_enum(isa):
     except NameError:
         if not isinstance(isa, str):
             raise TypeError(msg)
-    valid_isa = ['FALLBACK', 'AVX', 'SSE42', 'FASTEST']
+    valid_isa = ['FALLBACK', 'AVX512F', 'AVX2', 'AVX', 'SSE42', 'FASTEST']
     isa_upper = isa.upper()
     if isa_upper not in valid_isa:
         msg = "Desired instruction set = {0} is not in the list of valid "\

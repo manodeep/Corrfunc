@@ -248,10 +248,10 @@ ifeq ($(DO_CHECKS), 1)
   ## done with check for conflicting options
 
   ifeq (icc,$(findstring icc,$(CC)))
-    CFLAGS += -xhost -opt-prefetch -opt-prefetch-distance=16 #-vec-report6
-    ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
-      CFLAGS += -openmp
-      CLINK  += -openmp
+    CFLAGS += -xhost -axCORE-AVX512 
+	  ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
+      CFLAGS += -qopenmp
+      CLINK  += -qopenmp
     endif ##openmp with icc
   else ## not icc -> gcc or clang follow
 
@@ -353,11 +353,6 @@ ifeq ($(DO_CHECKS), 1)
       endif # USE_OMP
     endif # CC is clang
 
-    # #### common options for gcc and clang
-    # ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-    #   CFLAGS  +=  -mavx
-    # endif
-
     CFLAGS += -funroll-loops
     CFLAGS += -march=native -fno-strict-aliasing
     CFLAGS += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
@@ -435,7 +430,6 @@ ifeq ($(DO_CHECKS), 1)
             # python3-config failed; let's try python-config (for Python 2 or 3)
             PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python-config"
           endif
-
           $(warning $(ccblue)"PYTHON"$(ccreset) is set to $(ccblue)$(PYTHON)$(ccreset); using $(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset) as $(ccblue)python-config$(ccreset). If this is not correct, please also set $(ccblue)"PYTHON_CONFIG_EXE"$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset))
         endif
       

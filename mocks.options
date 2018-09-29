@@ -11,7 +11,7 @@ OPT += -DLINK_IN_RA #link_in_dec must be enabled before link_in_ra
 #### Floating point precision to use
 OPT += -DDOUBLE_PREC
 
-#### If input distances are already in co-moving (relevant for DDrppi_mocks and vpf)
+#### If input distances are already in co-moving (relevant for DDrppi_mocks, DDsmu_mocks and vpf)
 #OPT += -DCOMOVING_DIST
 
 

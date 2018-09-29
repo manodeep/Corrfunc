@@ -58,8 +58,8 @@ extern "C" {
 #define AVX_LOG2_FLOAT(X)                _mm256_log2_ps(X)
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_ps(X)
 
-#define AVX_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X);
-#define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X);
+#define AVX_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X)
+#define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X)
 
 
     // X OP Y
@@ -105,8 +105,8 @@ extern "C" {
 #define AVX_INTS                         __m128i
 #define AVX_FLOATS                       __m256d
 
-#define AVX_SETZERO_FLOAT()              _mm256_setzero_pd()
-    
+#define AVX_SETZERO_FLOAT()              _mm256_setzero_pd()    
+
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_pd(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_pd(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_pd(X,Y)
@@ -130,8 +130,8 @@ extern "C" {
 #define AVX_XOR_FLOATS(X,Y)               _mm256_xor_pd(X,Y)
 #define AVX_AND_NOT(X,Y)                  _mm256_andnot_pd((X),(Y))  //~X & Y
 
-#define AVX_BROADCAST_FLOAT(X)            _mm256_broadcast_sd(X);
-#define AVX_SET_FLOAT(X)                  _mm256_set1_pd(X);
+#define AVX_BROADCAST_FLOAT(X)            _mm256_broadcast_sd(X)
+#define AVX_SET_FLOAT(X)                  _mm256_set1_pd(X)
 //MoveMask
 #define AVX_TEST_COMPARISON(X)            _mm256_movemask_pd(X)
 
@@ -200,11 +200,24 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
 
 
 #endif
-
-
+  
+  //The three different unions used
+  //for computing rpavg and weightavg
+  union int8 {
+    AVX_INTS m_ibin;
+    int ibin[AVX_NVEC];
+  };
+  union float8{
+    AVX_FLOATS m_Dperp;
+    DOUBLE Dperp[AVX_NVEC];
+  };
+  union float8_weights{
+    AVX_FLOATS m_weights;
+    DOUBLE weights[AVX_NVEC];
+  };
 
 #ifdef DOUBLE_PREC    
-#define CHECK_AND_FAST_DIVIDE(result, numerator, denominator, fast_divide_and_NR_steps)                      { \
+#define CHECK_AND_FAST_DIVIDE_AVX(result, numerator, denominator, fast_divide_and_NR_steps)                      { \
         /* For double precision floats */                               \
         if (fast_divide_and_NR_steps == 0) {                            \
             result = AVX_DIVIDE_FLOATS(numerator, denominator);         \
@@ -213,7 +226,6 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
             /* with a approximate reciprocal in floating point */       \
             /* + 2 iterations of newton-raphson in case of DOUBLE */    \
         } else {                                                        \
-            unsigned int _ii;                                           \
             /* following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson */ \
             const __m128 float_tmp1 =  _mm256_cvtpd_ps(denominator);/* convert double to float -> not avx_floats := _m256d */ \
             /*(convert 4 doubles into 4 floats -> use half of available 256 bit SIMD registers) */ \
@@ -224,7 +236,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
             const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);         \
             AVX_FLOATS rc_iter = rc;                                    \
             /* Do NewtonRaphson iterations */                           \
-            for(_ii=0;_ii<fast_divide_and_NR_steps;_ii++) {              \
+            for(unsigned int _ii=0;_ii<fast_divide_and_NR_steps;_ii++) { \
                 rc_iter = AVX_MULTIPLY_FLOATS(rc_iter,                  \
                                               AVX_SUBTRACT_FLOATS(two,  \
                                                                   AVX_MULTIPLY_FLOATS(denominator, rc_iter))); /*2.0 - l^2*rc */ \
@@ -233,7 +245,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
         } /* end of FAST_DIVIDE */                                      \
     }
 #else
-#define CHECK_AND_FAST_DIVIDE(result, numerator, denominator, fast_divide_and_NR_steps)                      { \
+#define CHECK_AND_FAST_DIVIDE_AVX(result, numerator, denominator, fast_divide_and_NR_steps)                      { \
         /* single precision floats */                                   \
         if (fast_divide_and_NR_steps == 0) {                            \
             result = AVX_DIVIDE_FLOATS(numerator, denominator);         \
@@ -242,7 +254,6 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
             /* with a approximate reciprocal in floating point */       \
             /* + 2 iterations of newton-raphson in case of DOUBLE */    \
         } else {                                                        \
-            unsigned int _ii;                                                    \
             /* following blocks do an approximate reciprocal followed by two iterations of Newton-Raphson */ \
             const AVX_FLOATS rc  = _mm256_rcp_ps(denominator);/* intrinsic for 256 bit approximate reciprocal */ \
             /* We have the double->float->approx. reciprocal->double process done. */ \
@@ -250,7 +261,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
             const AVX_FLOATS two = AVX_SET_FLOAT((DOUBLE) 2.0);         \
             AVX_FLOATS rc_iter = rc;                                    \
             /* Do NewtonRaphson iterations */                           \
-            for(_ii=0;_ii<fast_divide_and_NR_steps;_ii++) {             \
+            for(unsigned int _ii=0;_ii<fast_divide_and_NR_steps;_ii++) {             \
                 rc_iter = AVX_MULTIPLY_FLOATS(rc_iter,                  \
                                               AVX_SUBTRACT_FLOATS(two,  \
                                                                   AVX_MULTIPLY_FLOATS(denominator, rc_iter))); /*2.0 - l^2*rc */ \
@@ -260,7 +271,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
     }
 #endif /* end of DOUBLE_PREC for defining check_and_fast_divide macro */
 
-    
+
 #ifdef __cplusplus
 }
 #endif

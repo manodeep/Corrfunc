@@ -33,7 +33,7 @@ matrix:
     #   before_install:
     #     - brew update
     #     - brew tap homebrew/versions && brew reinstall gcc49 --without-multilib
-    #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+    #     - wget https://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
 
     # - os: osx
     #   compiler: clang
@@ -42,13 +42,13 @@ matrix:
     #     - brew update
     #     - brew outdated xctool || brew upgrade xctool
     #     - brew tap homebrew/versions && brew install clang-omp
-    #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
+    #     - wget https://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh -O miniconda.sh
     - os: osx
       osx_image: xcode9
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.6 DOCTEST=FALSE
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 
 
     - os: osx
@@ -56,22 +56,21 @@ matrix:
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 
     - os: osx
       osx_image: xcode7.3
       compiler: clang
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=2.7 DOCTEST=FALSE
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh
-
+        - wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh
 
     # - os: osx
     #   compiler: gcc
     #   env: COMPILER=gcc-4.8 V='4.8' PYTHON_VERSION=3.5 FAMILY=gcc
     #   before_install:
     #     - brew update && brew tap homebrew/versions && brew install gcc48 --without-multilib
-    #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+    #     - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
         
     # - os: linux
     #   dist: trusty
@@ -83,7 +82,7 @@ matrix:
     #       packages: ['clang-3.6','libgsl0-dev']
     #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=2.7 
     #   before_install:
-    #     - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+    #     - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
 
     # - os: linux
     #   dist: trusty
@@ -95,7 +94,7 @@ matrix:
     #       packages: ['clang-3.6','libgsl0-dev']
     #   env: COMPILER=clang-3.6 V=3.6 PYTHON_VERSION=3.5
     #   before_install:
-    #     - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    #     - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
     - os: linux
       dist: trusty
@@ -103,7 +102,7 @@ matrix:
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=2.7
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+        - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
         
     - os: linux
       dist: trusty
@@ -111,7 +110,7 @@ matrix:
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=3.4 
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
     - os: linux
       dist: trusty
@@ -119,7 +118,7 @@ matrix:
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=3.5
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
     - os: linux
       dist: trusty
@@ -127,7 +126,7 @@ matrix:
       compiler: gcc
       env: COMPILER=gcc PYTHON_VERSION=3.6
       before_install:
-        - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
 install:
   - bash miniconda.sh -b -p $HOME/miniconda

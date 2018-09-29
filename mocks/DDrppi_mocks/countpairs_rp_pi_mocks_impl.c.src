@@ -107,15 +107,18 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
 {
   
     static countpairs_mocks_func_ptr_DOUBLE function = NULL;
-    static isa old_isa=-1;
+    static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
     } 
 
     /* Array of function pointers */
     countpairs_mocks_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX512F__
+      countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE,
+#endif			 
 #ifdef __AVX__
-        countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE,
+      countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE,
 #endif			 
 #ifdef __SSE4_2__
       countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE,
@@ -125,10 +128,17 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
 
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
-#if defined(__AVX__) || defined __SSE4_2__
+#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = instrset_detect();
 #endif    
     int curr_offset = 0;
+
+    /* Check for AVX512F support */    
+    int avx512_offset = fallback_offset;
+#ifdef __AVX512F__
+    avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
     
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
@@ -153,7 +163,7 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):
+	case(AVX512F):function_dispatch=avx512_offset;break;
         case(AVX2):
         case(AVX):function_dispatch=avx_offset;break;
         case(SSE42): function_dispatch=sse_offset;break;
@@ -173,6 +183,8 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
             fprintf(stderr,"Using fallback kernel\n");
+	} else if(function_dispatch == avx512_offset){
+	  fprintf(stderr,"Using AVX512 kernel\n");
         } else if(function_dispatch == avx_offset){
             fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
