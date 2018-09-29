@@ -393,7 +393,7 @@ ifeq ($(DO_CHECKS), 1)
       ### Check for minimum python + numpy versions. In theory, I should also check
       ### that *any* python and numpy are available but that seems too much effort
       MIN_PYTHON_MAJOR := 2
-      MIN_PYTHON_MINOR := 6
+      MIN_PYTHON_MINOR := 7
 
       MIN_NUMPY_MAJOR  := 1
       MIN_NUMPY_MINOR  := 7
@@ -419,7 +419,7 @@ ifeq ($(DO_CHECKS), 1)
 
       ifneq ($(COMPILE_PYTHON_EXT), 0)
         ifndef PYTHON_CONFIG_EXE
-          PYTHON_SCRIPTS:=$(shell python -c "import sysconfig;print(sysconfig.get_path('scripts'));")
+          PYTHON_SCRIPTS:=$(shell $(PYTHON) -c "import sysconfig;print(sysconfig.get_path('scripts'));")
           # try python3-config first for Python 3
           ifeq ($(PYTHON_VERSION_MAJOR), 3)
             PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python3-config"

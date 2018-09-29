@@ -92,7 +92,7 @@ $(INSTALL_LIB_DIR)/$(PROJECT).so:$(INSTALL_LIB_DIR)/$(PYTHON_EXTN)
 	cd $(INSTALL_LIB_DIR) && ln -s $(PYTHON_EXTN) $(PROJECT).so
 
 tests: sharedlib $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(OBJECTS) | $(ROOT_DIR)/lib
-	python call_correlation_functions.py
+	$(PYTHON) call_correlation_functions.py
 
 clean:
 	$(RM) $(OBJECTS) $(PYTHON_EXTN) $(PROJECT).so

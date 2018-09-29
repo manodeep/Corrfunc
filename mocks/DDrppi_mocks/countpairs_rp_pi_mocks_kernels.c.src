@@ -355,7 +355,8 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
         fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    int64_t prev_j = 0, n_off = 0;
+    const DOUBLE *dstart = d1;
+    const DOUBLE last_d1 = d1[N1-1];
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -368,27 +369,51 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
         }
 
-        int64_t j;
-        if(same_cell == 1) {
-            d1++; n_off++;
-            j = i+1;
-        } else {
-            for(;prev_j<N1;prev_j++) {
-                const DOUBLE dz = *d1 - dpos;
-                if(dz > -max_sep) break;
-                d1++; n_off++;
-            }
-            if(prev_j == N1) {
-                break;
-            }
-            j = prev_j;
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((dpos - last_d1) >= max_sep) {
+            i = N1;
+            break;
         }
+
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_d = *d1 - dpos;
+        if(this_d >= max_sep) {
+            continue;
+        }
+        
+        if(same_cell == 1) {
+            d1++; 
+        } else {
+            while((*d1 - dpos) <= -max_sep) {
+                d1++;
+            }
+        }
+        int64_t j = d1 - dstart;
         DOUBLE *locald1 = d1;
-        DOUBLE *localx1 = x1 + n_off;
-        DOUBLE *localy1 = y1 + n_off;
-        DOUBLE *localz1 = z1 + n_off;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
+        DOUBLE *localz1 = z1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + n_off;
+            local_w1.weights[w] = weights1->weights[w] + j;
         }
 
         AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
@@ -437,14 +462,14 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             AVX_FLOATS m_sqr_Dpar, m_sqr_Dperp;
             {
                 const AVX_FLOATS m_s_dot_l = AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
-               
-                /* const AVX_FLOATS m_dz_mask = AVX_COMPARE_FLOATS(m_perpz, m_max_sep, _CMP_LT_OQ); */
-                /* if(AVX_TEST_COMPARISON(m_dz_mask) == 0) { */
+                const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);
+                
+                /* const AVX_FLOATS m_quad_max_sep_mask = AVX_COMPARE_FLOATS(m_sqr_s_dot_l, AVX_SQUARE_FLOAT(m_sqr_max_sep), _CMP_LT_OQ); */
+                /* if(AVX_TEST_COMPARISON(m_sqr_max_sep_mask) == 0) { */
                 /*     j = N1; */
                 /*     break; */
                 /* } */
-
-                const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);
+                
                 const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
                 const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
                 const AVX_FLOATS m_sqr_perpz = AVX_SQUARE_FLOAT(m_perpz);

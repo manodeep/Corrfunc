@@ -75,6 +75,8 @@ void free_cellarray_index_particles_DOUBLE(cellarray_index_particles_DOUBLE *lat
 
         /* Might be NULL but free(NULL) is fine*/
         free(lattice[i].ngb_cells);
+        free(lattice[i].ngb_min_dx);
+        free(lattice[i].ngb_min_dy);
     }
     free(lattice);
 }
@@ -368,6 +370,8 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
 
         lattice[index].nelements=0;
         lattice[index].ngb_cells = NULL;
+        lattice[index].ngb_min_dx = NULL;
+        lattice[index].ngb_min_dy = NULL;
         lattice[index].xwrap = NULL;
         lattice[index].ywrap = NULL;
         lattice[index].zwrap = NULL;
@@ -517,18 +521,21 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
 
 
 
-int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOUBLE *lattice1, struct cellarray_index_particles_DOUBLE *lattice2, const int64_t totncells,
-                                             const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
-                                             const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                             const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff, 
-                                             const int autocorr, const int periodic)
+int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOUBLE *lattice1, struct cellarray_index_particles_DOUBLE *lattice2,
+                                            const int64_t totncells,
+                                            const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
+                                            const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                                            const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                            const int autocorr, const int periodic)
 {
   const int64_t nx_ngb = 2*xbin_refine_factor + 1;
   const int64_t ny_ngb = 2*ybin_refine_factor + 1;
   const int64_t nz_ngb = 2*zbin_refine_factor + 1;
   const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
-
+  const DOUBLE xbinsize = xdiff/nmesh_x;
+  const DOUBLE ybinsize = ydiff/nmesh_y;
+  
   for(int64_t icell=0;icell<totncells;icell++) {
     struct cellarray_index_particles_DOUBLE *first = &(lattice1[icell]);
     if(first->nelements == 0) continue;
@@ -553,7 +560,11 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
         first->zwrap = NULL;
     }
     first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
-    if(first->ngb_cells == NULL) {
+    first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
+    first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
+    if(first->ngb_cells == NULL || first->ngb_min_dx == NULL || first->ngb_min_dy == NULL) {
+        fprintf(stderr,"Error: Could not allocate memory for storing neighbouring cell indices and the min. separations. "
+                "Reducing bin refine factors might help\n");
         return EXIT_FAILURE;
     }
     
@@ -587,10 +598,16 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
             if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements == 0) {
                 continue;
             }
+
+            const int min_xdiff = abs(iix) > 1 ? abs(iix)-1:0;
+            const int min_ydiff = abs(iiy) > 1 ? abs(iiy)-1:0;
+            
             const int64_t ngb_index = first->num_ngb;
             XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
                     "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
             first->ngb_cells[ngb_index] = &(lattice2[icell2]);
+            first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
+            first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
             
             //Note the xwrap/ywraps do not have memory allocated for them in the
             //non-periodic case. 

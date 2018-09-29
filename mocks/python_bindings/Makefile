@@ -45,7 +45,7 @@ $(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makef
 	$(CC) $(CFLAGS) $(LIB_INCLUDE) $(PYTHON_CFLAGS)  $(INCLUDE) $< -c -o $@
 
 tests: sharedlib $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(OBJECTS) | $(ROOT_DIR)/lib
-	python call_correlation_functions_mocks.py
+	$(PYTHON) call_correlation_functions_mocks.py
 
 $(PYTHON_EXTN): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OBJECTS) $(C_LIBRARIES) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
