@@ -365,7 +365,6 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
         local_w1.weights[w] = weights1->weights[w] + j;
     }
 
-    int64_t j = n_off;
     for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
       const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
       const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
