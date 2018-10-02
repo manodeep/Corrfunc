@@ -388,9 +388,9 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        cell pair. This timer can be used to study the instruction set
        efficiency, and load-balancing of the code.
 
-    isa: string (default ``fastest``)
+    isa: string, case-insensitive (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
-       options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
+       options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,

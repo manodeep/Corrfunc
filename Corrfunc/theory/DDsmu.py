@@ -82,10 +82,6 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         (n_weights_per_particle,n_particles), optional
         Weights for computing a weighted pair count.
 
-    weight_type : str, optional
-        The type of pair weighting to apply.
-        Options: "pair_product", None; Default: None.
-
     periodic : boolean
         Boolean flag to indicate periodic boundary conditions.
 
@@ -136,19 +132,24 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
 
-    isa : integer (default -1)
-      Controls the runtime dispatch for the instruction set to use. Possible
-      options are: [-1, AVX, SSE42, FALLBACK]
+    isa: string, case-insensitive (default ``fastest``)
+       Controls the runtime dispatch for the instruction set to use. Possible
+       options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
-      Setting isa to -1 will pick the fastest available instruction
-      set on the current computer. However, if you set ``isa`` to, say,
-      ``AVX`` and ``AVX`` is not available on the computer, then the code will
-      revert to using ``FALLBACK`` (even though ``SSE42`` might be available).
+       Setting isa to ``fastest`` will pick the fastest available instruction
+       set on the current computer. However, if you set ``isa`` to, say,
+       ``avx`` and ``avx`` is not available on the computer, then the code will
+       revert to using ``fallback`` (even though ``sse42`` might be available).
 
-      Unless you are benchmarking the different instruction sets, you should
-      always leave ``isa`` to the default value. And if you *are* benchmarking,
-      then the integer values correspond to the ``enum`` for the instruction set
-      defined in ``utils/defs.h``.
+       Unless you are benchmarking the different instruction sets, you should
+       always leave ``isa`` to the default value. And if you *are*
+       benchmarking, then the string supplied here gets translated into an
+       ``enum`` for the instruction set defined in ``utils/defs.h``.
+    
+    weight_type : str, optional
+        The type of pair weighting to apply.
+        Options: "pair_product", None; Default: None.
+
 
     Returns
     --------

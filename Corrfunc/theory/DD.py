@@ -111,9 +111,9 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
 
-    isa: string (default ``fastest``)
+    isa: string, case-insensitive (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
-       options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
+       options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,
