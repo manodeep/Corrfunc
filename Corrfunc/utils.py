@@ -459,14 +459,14 @@ def translate_isa_string_to_enum(isa):
     """
     Helper function to convert an user-supplied string to the
     underlying enum in the C-API. The extensions only have specific
-    implementations for AVX, SSE42 and FALLBACK. Any other value
-    will raise a ValueError.
+    implementations for AVX512F, AVX, SSE42 and FALLBACK. Any other
+    value will raise a ValueError.
 
     Parameters
     ------------
     isa: string
        A string containing the desired instruction set. Valid values are
-       ['AVX', 'SSE42', 'FALLBACK', 'FASTEST']
+       ['AVX512F', 'AVX', 'SSE42', 'FALLBACK', 'FASTEST']
 
     Returns
     --------
