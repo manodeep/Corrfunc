@@ -13,6 +13,89 @@
 #include <stdint.h>
 #include "function_precision.h"
 
+
+
+#ifdef __AVX512F__
+#include "avx512_calls.h"
+
+static inline int vpf_avx512_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restrict X, DOUBLE * restrict Y, DOUBLE * restrict Z,
+                                               const DOUBLE xcen, const DOUBLE ycen, const DOUBLE zcen,
+                                               const DOUBLE rmax, const int nbin,
+                                               int *src_counts)
+{
+    if(np == 0) {
+        return EXIT_SUCCESS;
+    }
+
+    int counts[nbin];
+    for(int i=0;i<nbin;i++) {
+        counts[i] = 0;
+    }
+    const DOUBLE rstep = rmax/(DOUBLE)nbin ;
+    const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep;
+    const DOUBLE rmax_sqr = rmax*rmax;
+
+    AVX512_FLOATS m_rmax_sqr = AVX512_SET_FLOAT(rmax_sqr);
+    AVX512_FLOATS m_rupp_sqr[nbin];
+    for(int k=0;k<nbin;k++) {
+        m_rupp_sqr[k] = AVX512_SET_FLOAT((k+1)*rstep*rstep*(k+1));
+    }
+    const AVX512_FLOATS m_xc    = AVX512_SET_FLOAT(xcen);
+    const AVX512_FLOATS m_yc    = AVX512_SET_FLOAT(ycen);
+    const AVX512_FLOATS m_zc    = AVX512_SET_FLOAT(zcen);
+    
+    DOUBLE *localx2 = (DOUBLE *) X;
+    DOUBLE *localy2 = (DOUBLE *) Y;
+    DOUBLE *localz2 = (DOUBLE *) Z;
+    
+    for(int64_t j=0;j<np;j+=AVX512_NVEC) {
+        AVX512_MASK m_mask_left = (np - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[np-j];
+        
+        const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx2);
+        const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy2);
+        const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz2);
+        
+        localx2 += AVX512_NVEC;
+        localy2 += AVX512_NVEC;
+        localz2 += AVX512_NVEC;
+        
+        const AVX512_FLOATS m_dx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_xc, m_x1);
+        const AVX512_FLOATS m_dy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_yc, m_y1);
+        const AVX512_FLOATS m_dz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_zc, m_z1);
+
+
+        const AVX512_FLOATS m_sqr_dx = AVX512_SQUARE_FLOAT(m_dx);  //(x0 - x[j])^2
+        const AVX512_FLOATS m_x2py2  = AVX512_FMA_ADD_FLOATS(m_dy, m_dy, m_sqr_dx);/* dy*dy + dx^2*/
+        const AVX512_FLOATS m_r2 = AVX512_FMA_ADD_FLOATS(m_dz, m_dz, m_x2py2);/* dz*dz + (dy^2 + dx^2)*/
+        m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_r2, m_rmax_sqr,_CMP_LT_OS);
+        if(m_mask_left == 0) {
+            continue;
+        }
+        
+        for(int k=nbin-1;k>=1;k--){
+          const AVX512_MASK m_mask1 = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_r2,m_rupp_sqr[k],_CMP_LT_OS);
+          const AVX512_MASK m_mask2 = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_r2,m_rupp_sqr[k-1],_CMP_GE_OS);
+          const AVX512_MASK m_bin_mask = AVX512_MASK_BITWISE_AND(m_mask1,m_mask2);
+          counts[k] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
+          m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y  
+          if(m_mask_left == 0) {
+              break;
+          } else if(k==1){
+              counts[0] += bits_set_in_avx512_mask_DOUBLE[m_mask_left];
+          }
+        }
+    }
+    
+    for(int i=0;i<nbin;i++) {
+        src_counts[i] += counts[i];
+    }
+
+    return EXIT_SUCCESS;
+}    
+
+#endif //AVX512F
+
+
 #ifdef __AVX__
 #include "avx_calls.h"
 
