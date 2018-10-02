@@ -19,6 +19,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        weights=None, weight_type=None, verbose=False, output_ravg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
+       enable_min_sep_opt=True,
        c_api_timer=False, isa=r'fastest'):
     """
     Function to compute the projected correlation function in a
@@ -93,6 +94,10 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        Controls the maximum number of cells per dimension. Total number of
        cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
        too small relative to the boxsize (and increasing helps the runtime).
+
+    enable_min_sep_opt: boolean (default true)
+       Boolean flag to allow optimizations based on min. separation between
+       pairs of cells. Here to allow for comparison studies.
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -206,15 +211,16 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     with sys_pipes():
       extn_results = xi_extn(boxsize, nthreads, rbinfile,
-                                       X, Y, Z,
-                                       verbose=verbose,
-                                       output_ravg=output_ravg,
-                                       xbin_refine_factor=xbin_refine_factor,
-                                       ybin_refine_factor=ybin_refine_factor,
-                                       zbin_refine_factor=zbin_refine_factor,
-                                       max_cells_per_dim=max_cells_per_dim,
-                                       c_api_timer=c_api_timer,
-                                       isa=integer_isa, **kwargs)
+                             X, Y, Z,
+                             verbose=verbose,
+                             output_ravg=output_ravg,
+                             xbin_refine_factor=xbin_refine_factor,
+                             ybin_refine_factor=ybin_refine_factor,
+                             zbin_refine_factor=zbin_refine_factor,
+                             max_cells_per_dim=max_cells_per_dim,
+                             enable_min_sep_opt=enable_min_sep_opt,
+                             c_api_timer=c_api_timer,
+                             isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)

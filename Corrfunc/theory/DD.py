@@ -16,7 +16,7 @@ __all__ = ('DD', )
 def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        X2=None, Y2=None, Z2=None, weights2=None, verbose=False, boxsize=0.0,
        output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,
-       zbin_refine_factor=1, max_cells_per_dim=100,
+       zbin_refine_factor=1, max_cells_per_dim=100, enable_min_sep_opt=True,
        c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
@@ -102,6 +102,10 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        Controls the maximum number of cells per dimension. Total number of
        cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
        too small relative to the boxsize (and increasing helps the runtime).
+
+    enable_min_sep_opt: boolean (default true)
+       Boolean flag to allow optimizations based on min. separation between
+       pairs of cells. Here to allow for comparison studies.
 
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -236,6 +240,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
                               ybin_refine_factor=ybin_refine_factor,
                               zbin_refine_factor=zbin_refine_factor,
                               max_cells_per_dim=max_cells_per_dim,
+                              enable_min_sep_opt=enable_min_sep_opt,
                               c_api_timer=c_api_timer,
                               isa=integer_isa, **kwargs)
     if extn_results is None:
