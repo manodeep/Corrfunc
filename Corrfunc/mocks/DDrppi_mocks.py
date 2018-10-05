@@ -22,6 +22,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                  fast_divide_and_NR_steps=0,
                  xbin_refine_factor=2, ybin_refine_factor=2,
                  zbin_refine_factor=1, max_cells_per_dim=100,
+                 enable_min_sep_opt=True,
                  c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
@@ -185,27 +186,30 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
         too small relative to the boxsize (and increasing helps the runtime).
 
+    enable_min_sep_opt: boolean (default true)
+       Boolean flag to allow optimizations based on min. separation between
+       pairs of cells. Here to allow for comparison studies.
+    
     c_api_timer : boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
 
-    isa : string (default ``fastest``)
-        Controls the runtime dispatch for the instruction set to use. Possible
-        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
+    isa: string, case-insensitive (default ``fastest``)
+       Controls the runtime dispatch for the instruction set to use. Possible
+       options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
-        Setting isa to ``fastest`` will pick the fastest available instruction
-        set on the current computer. However, if you set ``isa`` to, say,
-        ``avx`` and ``avx`` is not available on the computer, then the code
-        will revert to using ``fallback`` (even though ``sse42`` might be
-        available).
+       Setting isa to ``fastest`` will pick the fastest available instruction
+       set on the current computer. However, if you set ``isa`` to, say,
+       ``avx`` and ``avx`` is not available on the computer, then the code will
+       revert to using ``fallback`` (even though ``sse42`` might be available).
 
-        Unless you are benchmarking the different instruction sets, you should
-        always leave ``isa`` to the default value. And if you *are*
-        benchmarking, then the string supplied here gets translated into an
-        ``enum`` for the instruction set defined in ``utils/defs.h``.
+       Unless you are benchmarking the different instruction sets, you should
+       always leave ``isa`` to the default value. And if you *are*
+       benchmarking, then the string supplied here gets translated into an
+       ``enum`` for the instruction set defined in ``utils/defs.h``.
         
-    weight_type : string, optional
-        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
+    weight_type : string, optional (default None)
+        The type of weighting to apply.  One of ["pair_product", None].
 
     Returns
     --------

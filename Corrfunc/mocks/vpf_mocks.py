@@ -175,7 +175,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.
 
-    isa : string (default ``fastest``)
+    isa: string, case-insensitive (default ``fastest``)
        Controls the runtime dispatch for the instruction set to use. Possible
        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
 
@@ -188,7 +188,6 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-
 
     Returns
     --------
