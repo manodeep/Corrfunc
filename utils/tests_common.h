@@ -59,8 +59,8 @@ const char isa_name[][20] = {"FALLBACK"
 };
 
 /* This is a fun C tid-bit. The sizeof(valid_instruction_sets) refers to the total bytes
-   required to store the array. As in the typeof valid_instruction_sets is int[3] when
-   all 3 instructions sets are supported */
+   required to store the array. As in the typeof valid_instruction_sets is int[5] when
+   all 5 instructions sets are supported */
 const int num_instructions = sizeof(valid_instruction_sets)/sizeof(valid_instruction_sets[0]);
 
 /* The max. value of bin refine factor to probe. Each of bin refinements factors is set from [1, max_binref]

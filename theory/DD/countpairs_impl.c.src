@@ -308,6 +308,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
         int status = assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
                                                              options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                                              nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff,
+                                                             options->enable_min_sep_opt,
                                                              autocorr, options->periodic);
         if(status != EXIT_SUCCESS) {
             free_cellarray_index_particles_DOUBLE(lattice1, totncells);

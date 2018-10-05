@@ -135,7 +135,9 @@ struct config_options
     /* Fast arccos for wtheta (effective only when OUTPUT_THETAAVG is enabled) */
     uint8_t fast_acos;
 
-
+    /* Enabled by default */
+    uint8_t enable_min_sep_opt;/* Whether to enable min. separation optimizations introduced in v2.3*/
+    
     int8_t bin_refine_factors[3];/* Array for the custom bin refine factors in each dim 
                                    xyz for theory routines and ra/dec/cz for mocks
                                    Must be signed integers since some for loops might use -bin_refine_factor
@@ -299,6 +301,8 @@ static inline struct config_options get_config_options(void)
     options.link_in_dec=1;
 #endif
 
+    options.enable_min_sep_opt=1;/* optimizations based on min. separation between cell-pairs. Enabled by default */
+    
 #ifdef FAST_ACOS
     options.fast_acos=1;
 #endif    

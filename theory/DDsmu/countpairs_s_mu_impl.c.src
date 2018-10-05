@@ -332,7 +332,10 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
     {
         int status = assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
                                                              options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
-                                                             nmesh_x, nmesh_y, nmesh_z, xdiff, ydiff, zdiff, autocorr, options->periodic);
+                                                             nmesh_x, nmesh_y, nmesh_z,
+                                                             xdiff, ydiff, zdiff,
+                                                             options->enable_min_sep_opt,                                                             
+                                                             autocorr, options->periodic);
         if(status != EXIT_SUCCESS) {
             free_cellarray_index_particles_DOUBLE(lattice1, totncells);
             if(autocorr == 0) {
@@ -473,6 +476,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                                                                        options->fast_divide_and_NR_steps,
                                                                        sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max, pimax,
                                                                        ZERO, ZERO, ZERO,
+                                                                       ZERO, ZERO, /* min_xdiff, min_ydiff */
                                                                        this_savg, npairs,
                                                                        this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
@@ -497,6 +501,8 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                         off_zwrap = first->zwrap[ngb];
                     }
                     const int64_t N2 = second->nelements;
+                    const DOUBLE min_xdiff = first->ngb_min_dx[ngb];
+                    const DOUBLE min_ydiff = first->ngb_min_dy[ngb];
                     DOUBLE *this_savg = NULL;
                     DOUBLE *this_weightavg = NULL;
                     if(options->need_avg_sep) {
@@ -511,6 +517,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                                                                        options->fast_divide_and_NR_steps,
                                                                        sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max, pimax, 
                                                                        off_xwrap, off_ywrap, off_zwrap,
+                                                                       min_xdiff, min_ydiff,
                                                                        this_savg, npairs,
                                                                        this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly

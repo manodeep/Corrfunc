@@ -80,7 +80,6 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
     const DOUBLE *zstart = z1;
     const DOUBLE last_z1 = z1[N1-1];
     const DOUBLE max_dz = pimax;
-
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -327,7 +326,9 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
         fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    int64_t prev_j = 0, n_off = 0;    
+    const DOUBLE *zstart = z1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE max_dz = pimax;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -339,27 +340,53 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
         }
 
-        int64_t j;
-        if(same_cell == 1) {
-            z1++; n_off++;
-            j = i+1;
-        } else {
-            for(;prev_j<N1;prev_j++) {
-                const DOUBLE dz = *z1 - zpos;
-                if(dz > -pimax) break;
-                z1++; n_off++;
-            }
-            if(prev_j == N1) {
-                i = N0;
-                break;
-            }
-            j = prev_j;
+
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
         }
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
+        }
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
+            }
+        }
+        
+        int64_t j = z1 - zstart;
         DOUBLE *localz1 = z1;
-        DOUBLE *localx1 = x1 + n_off;
-        DOUBLE *localy1 = y1 + n_off;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + n_off;
+            local_w1.weights[w] = weights1->weights[w] + j;
         }
 
         for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
@@ -409,8 +436,13 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 //the z2 arrays are sorted in increasing order. which means
                 //the z2 value will increase in any future iteration of j.
                 //that implies the zdiff values are also monotonically increasing
-                //Therefore, if none of the zdiff values are less than pimax, then
+                //Therefore, if any of the zdiff values are less than pimax, then
                 //no future iteration in j can produce a zdiff value less than pimax.
+                const AVX_FLOATS m_mask_geq_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_GE_OQ);
+                if(AVX_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
+                    j=N1;// but do not break yet -> need to process this chunk
+                }
+
                 AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
                 if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
                     j=N1;
@@ -610,7 +642,9 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
     const DOUBLE dpi = pimax/npibin;
     const DOUBLE inv_dpi = 1.0/dpi;
 
-    int64_t prev_j = 0, n_off = 0;
+    const DOUBLE *zstart = z1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE max_dz = pimax;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -622,41 +656,57 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
             pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
         }
         
-        int64_t j;
-        if(same_cell == 1) {
-            z1++; n_off++;
-            j = i+1;
-        } else {
-            for(;prev_j<N1;prev_j++) {
-                const DOUBLE dz = *z1 - zpos;
-                if(dz > -pimax) break;
-                z1++; n_off++;
-            }
-            if(prev_j == N1) {
-                i = N0;
-                break;
-            }
-            j = prev_j;
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
         }
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
+        }
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
+            }
+        }
+        
+        int64_t j = z1 - zstart;
         DOUBLE *localz1 = z1;
-        DOUBLE *localx1 = x1 + n_off;
-        DOUBLE *localy1 = y1 + n_off;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + n_off;
+            local_w1.weights[w] = weights1->weights[w] + j;
         }
         
         for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
 
-            union int4{
-                SSE_INTS m_ibin;
-                int ibin[SSE_NVEC];
-            };
             union int4 union_finalbin;
-
-            union float4{
-                SSE_FLOATS m_Dperp;
-                DOUBLE Dperp[SSE_NVEC];
-            };
             union float4 union_mDperp;
 
             const SSE_FLOATS m_xpos = SSE_SET_FLOAT(xpos);
@@ -707,8 +757,13 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 //the z2 arrays are sorted in increasing order. which means
                 //the z2 value will increase in any future iteration of j.
                 //that implies the zdiff values are also monotonically increasing
-                //Therefore, if none of the zdiff values are less than pimax, then
+                //Therefore, if any of the zdiff values are >= pimax, then
                 //no future iteration in j can produce a zdiff value less than pimax.
+                const SSE_FLOATS m_mask_geq_pimax = SSE_COMPARE_FLOATS_GE(m_zdiff,m_pimax);
+                if(SSE_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
+                    j=N1;//but do not break since this chunk might contain valid pairs
+                }
+
                 SSE_FLOATS m_mask_pimax = SSE_COMPARE_FLOATS_LT(m_zdiff,m_pimax);
                 if(SSE_TEST_COMPARISON(m_mask_pimax) == 0) {
                     j=N1;
@@ -894,7 +949,9 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
 
 
     /* naive implementation that is guaranteed to compile */
-    int64_t nleft=N1, n_off = 0;
+    const DOUBLE *zstart = z1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE max_dz = pimax;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -903,27 +960,49 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
             pair.weights0[w].d = *local_w0.weights[w]++;
         }
 
-        /* If in the same cell, unique pairs are guaranteed by not including the current particle */
+
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
+        }
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
+        }
+        
+        /* Okay so there MAY be a pair */
         if(same_cell == 1) {
-            z1++; n_off++;
-            nleft--;
+            z1++;
         } else {
-            /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
-            while(nleft > 0) {
-                /*Particles are sorted on 'z', in increasing order */
-                const DOUBLE dz = *z1 - zpos;
-                if(dz > -pimax) break;
-                z1++; n_off++;
-                nleft--;
-            }
-            /*If no particle in the second cell satisfies distance constraints on 'dz' for the current 'i'th particle in first cell, 
-              then there can be no more pairs from any particles in the first cell (since the first cell is also sorted in increasing order in 'z')
-             */
-            if(nleft == 0) {
-                i=N0;
-                break;
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
             }
         }
+        
+        const int64_t n_off = z1 - zstart;
+        const int64_t nleft = N1 - n_off;
         DOUBLE *localz1 = z1;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;

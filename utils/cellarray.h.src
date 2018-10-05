@@ -23,8 +23,8 @@ typedef struct{
   DOUBLE *x;
   DOUBLE *y;
   DOUBLE *z;
-  int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
-} cellarray_DOUBLE;
+  int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting 
+} cellarray_DOUBLE;/* this struct is only used by the vpf routine */
 
 
 typedef struct cellarray_index_particles_DOUBLE cellarray_index_particles_DOUBLE;

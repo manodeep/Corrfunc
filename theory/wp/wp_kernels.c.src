@@ -21,225 +21,258 @@
 #include "avx512_calls.h"
 
 static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
-					      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1,
-					      const int same_cell,
-					      const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, 
-					      const DOUBLE *rupp_sqr, const DOUBLE pimax,
-					      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
-					      DOUBLE *src_rpavg, uint64_t *src_npairs,
-					      DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                              DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1,
+                                              const int same_cell,
+                                              const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, 
+                                              const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                                              const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                              DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                              DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
-  (void) sqr_rpmax, (void) sqr_rpmin;
+    (void) sqr_rpmax, (void) sqr_rpmin;
   
 #ifdef COUNT_VECTORIZED
-  struct timespec tcell_start;
-  current_utc_time(&tcell_start);
-  uint64_t serial_npairs = 0, vectorized_npairs=0;
+    struct timespec tcell_start;
+    current_utc_time(&tcell_start);
+    uint64_t serial_npairs = 0, vectorized_npairs=0;
 #endif
     
-  uint64_t npairs[nbin];
-  for(int i=0;i<nbin;i++) {
-    npairs[i] = 0;
-  }
-  AVX512_FLOATS m_rupp_sqr[nbin];
-  for(int i=0;i<nbin;i++) {
-    m_rupp_sqr[i] = AVX512_SET_FLOAT(rupp_sqr[i]);
-  }
-  const int32_t need_rpavg = src_rpavg != NULL;
-  const int32_t need_weightavg = src_weightavg != NULL;
-  
-  /* variables required for rpavg and weightavg*/
-  DOUBLE rpavg[nbin], weightavg[nbin];
-  if(need_rpavg || need_weightavg){
+    uint64_t npairs[nbin];
     for(int i=0;i<nbin;i++) {
-      rpavg[i] = ZERO;
-      weightavg[i] = ZERO;
+        npairs[i] = 0;
     }
-  }
+    AVX512_FLOATS m_rupp_sqr[nbin];
+    for(int i=0;i<nbin;i++) {
+        m_rupp_sqr[i] = AVX512_SET_FLOAT(rupp_sqr[i]);
+    }
+    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
+  
+    /* variables required for rpavg and weightavg*/
+    DOUBLE rpavg[nbin], weightavg[nbin];
+    if(need_rpavg || need_weightavg){
+        for(int i=0;i<nbin;i++) {
+            rpavg[i] = ZERO;
+            weightavg[i] = ZERO;
+        }
+    }
     
-  // A copy whose pointers we can advance
-  weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
-                       local_w1 = {.weights={NULL}, .num_weights=0};
-  pair_struct_DOUBLE pair = {.num_weights=0};
-  avx512_weight_func_t_DOUBLE avx512_weight_func = NULL;
-  if(need_weightavg){
-      // Same particle list, new copy of num_weights pointers into that list
-      local_w0 = *weights0;
-      local_w1 = *weights1;
-      
-      pair.num_weights = local_w0.num_weights;
-      avx512_weight_func   = get_avx512_weight_func_by_method_DOUBLE(weight_method);
-  }
-
-  const DOUBLE *zend = z1 + N1;
-  const DOUBLE *zstart = z1;
-  for(int64_t i=0;i<N0;i++) {
-    const DOUBLE xpos = *x0++ + off_xwrap;
-    const DOUBLE ypos = *y0++ + off_ywrap;
-    const DOUBLE zpos = *z0++ + off_zwrap;
-    for(int w = 0; w < pair.num_weights; w++){
-        // local_w0.weights[w] is a pointer to a float in the particle list of weights,
-        // just as x0 is a pointer into the list of x-positions.
-        // The advancement of the local_w0.weights[w] pointer should always mirror x0.
-        pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
-    }
-
-    if(same_cell == 1) {
-        z1++;
-    } else {
-      while(z1 != zend && (*z1 - zpos) <= -pimax) {
-          z1++;
-      }
-      if(z1 == zend) {
-          i = N0;
-          break;
-      }
-    }
-
-    const int64_t n_off = z1 - zstart;
-    DOUBLE *localz1 = z1;
-    DOUBLE *localx1 = x1 + n_off;
-    DOUBLE *localy1 = y1 + n_off;
-    for(int w = 0; w < local_w1.num_weights; w++){
-        local_w1.weights[w] = weights1->weights[w] + n_off;
-    }
-    const AVX512_FLOATS m_xpos  = AVX512_SET_FLOAT(xpos);
-    const AVX512_FLOATS m_ypos  = AVX512_SET_FLOAT(ypos);
-    const AVX512_FLOATS m_zpos  = AVX512_SET_FLOAT(zpos);
-
-    for(int64_t j=n_off;j<N1;j+=AVX512_NVEC) {
-      AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
-      const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
-      const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
-      const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
-
-      union int16 union_rpbin;
-      union float16 union_mDperp;
-      union float16_weights union_mweight;
-
-      union_rpbin.m_ibin = AVX512_SETZERO_INT();
-      union_mDperp.m_Dperp = AVX512_SETZERO_FLOAT();
-
-#ifdef COUNT_VECTORIZED
-      vectorized_npairs += (N1 - j) >= AVX512_NVEC ? AVX512_NVEC:N1-j;
-#endif
-      localx1 += AVX512_NVEC;//this might actually exceed the allocated range but we will never dereference that
-      localy1 += AVX512_NVEC;
-      localz1 += AVX512_NVEC;
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    avx512_weight_func_t_DOUBLE avx512_weight_func = NULL;
+    if(need_weightavg){
+        // Same particle list, new copy of num_weights pointers into that list
+        local_w0 = *weights0;
+        local_w1 = *weights1;
         
-      for(int w = 0; w < pair.num_weights; w++){
-        pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
-        local_w1.weights[w] += AVX512_NVEC;
-      }
-
-      const AVX512_FLOATS m_pimax = AVX512_SET_FLOAT(pimax);
-      const AVX512_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
-      const AVX512_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
-            
-      const AVX512_FLOATS m_xdiff = AVX512_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
-      const AVX512_FLOATS m_ydiff = AVX512_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
-      const AVX512_FLOATS m_zdiff = AVX512_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
-      
-      if(need_weightavg){
-        pair.dx.a512 = m_xdiff;
-        pair.dy.a512 = m_ydiff;
-        pair.dz.a512 = m_zdiff;
-      }
-      
-      const AVX512_FLOATS m_sqr_xdiff = AVX512_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
-      const AVX512_FLOATS r2  = AVX512_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
-       
-      //the z2 arrays are sorted in increasing order. which means
-      //the z2 value will increase in any future iteration of j.
-      //that implies the zdiff values are also monotonically increasing
-      //Therefore, if none of the zdiff values are less than pimax, then
-      //no future iteration in j can produce a zdiff value less than pimax.
-      AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_pimax,_CMP_LT_OS);
-      if(m_mask_pimax == 0) {
-          //None of the dz^2 values satisfies dz^2 < pimax^2
-          // => no pairs can be added -> continue and process the next NVEC
-          j=N1;
-          break;
-      }
-      
-      //Do all the distance cuts using masks here in new scope
-      {
-        const AVX512_MASK m_rpmax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, r2, m_sqr_rpmax, _CMP_LT_OQ);
-        //Create a combined mask 
-        //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
-        m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_rpmax_mask, r2, m_sqr_rpmin, _CMP_GE_OQ);
-        if(m_mask_left == 0) {
+        pair.num_weights = local_w0.num_weights;
+        avx512_weight_func   = get_avx512_weight_func_by_method_DOUBLE(weight_method);
+    }
+    
+    const DOUBLE *zstart = z1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE max_dz = pimax;
+    for(int64_t i=0;i<N0;i++) {
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
+        for(int w = 0; w < pair.num_weights; w++){
+            // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+            pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
+        }
+        
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
+        }
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+     */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
             continue;
         }
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
+            }
+        }
+        
+        const int64_t n_off = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + n_off;
+        DOUBLE *localy1 = y1 + n_off;
+        for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + n_off;
+        }
+        const AVX512_FLOATS m_xpos  = AVX512_SET_FLOAT(xpos);
+        const AVX512_FLOATS m_ypos  = AVX512_SET_FLOAT(ypos);
+        const AVX512_FLOATS m_zpos  = AVX512_SET_FLOAT(zpos);
+        
+        for(int64_t j=n_off;j<N1;j+=AVX512_NVEC) {
+            AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
+            const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
+            const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
+            const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
+            
+            union int16 union_rpbin;
+            union float16 union_mDperp;
+            union float16_weights union_mweight;
+            
+            union_rpbin.m_ibin = AVX512_SETZERO_INT();
+            union_mDperp.m_Dperp = AVX512_SETZERO_FLOAT();
 
-      }
+#ifdef COUNT_VECTORIZED
+            vectorized_npairs += (N1 - j) >= AVX512_NVEC ? AVX512_NVEC:N1-j;
+#endif
+            localx1 += AVX512_NVEC;//this might actually exceed the allocated range but we will never dereference that
+            localy1 += AVX512_NVEC;
+            localz1 += AVX512_NVEC;
+            
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
+                local_w1.weights[w] += AVX512_NVEC;
+            }
+            
+            const AVX512_FLOATS m_max_dz = AVX512_SET_FLOAT(max_dz);
+            const AVX512_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
+            const AVX512_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
+            
+            const AVX512_FLOATS m_xdiff = AVX512_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+            const AVX512_FLOATS m_ydiff = AVX512_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+            const AVX512_FLOATS m_zdiff = AVX512_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
+            
+            if(need_weightavg){
+                pair.dx.a512 = m_xdiff;
+                pair.dy.a512 = m_ydiff;
+                pair.dz.a512 = m_zdiff;
+            }
       
-      if(need_rpavg) {
-          union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
-      }
-      if(need_weightavg){
-          union_mweight.m_weights = avx512_weight_func(&pair);
-      }
-
-      AVX512_INTS m_rpbin = AVX512_SETZERO_INT();
-      //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
-      // at the beginning of the loop. 
-      for(int kbin=nbin-1;kbin>=1;kbin--) {
-          const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-          npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
-          if(need_rpavg || need_weightavg) {
-              m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_INT(kbin));
-          }
-          m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
-          if(m_mask_left == 0) {
-              break;
-          }
-      }//backwards loop over the bins
+            const AVX512_FLOATS m_sqr_xdiff = AVX512_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
+            const AVX512_FLOATS r2  = AVX512_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
+            
+            //the z2 arrays are sorted in increasing order. which means
+            //the z2 value will increase in any future iteration of j.
+            //that implies the zdiff values are also monotonically increasing
+            //Therefore, if any of the zdiff values >= max_dz (==pimax), then
+            //no future iteration in j can produce a zdiff value less than max_dz.
+            AVX512_MASK m_mask_geq_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_max_dz,_CMP_GE_OQ);
+            if(m_mask_geq_pimax > 0) {
+                j = N1;//but do not break yet, this chunk might contain valid pairs
+            }
+            
+            AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_max_dz,_CMP_LT_OS);
+            if(m_mask_pimax == 0) {
+                //None of the dz^2 values satisfies dz^2 < pimax^2
+                // => no pairs can be added -> break out of j-loop
+                j=N1;
+                break;
+            }
+            
+            //Do all the distance cuts using masks here in new scope
+            {
+                const AVX512_MASK m_rpmax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_pimax, r2, m_sqr_rpmax, _CMP_LT_OQ);
+                //Create a combined mask 
+                //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
+                m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_rpmax_mask, r2, m_sqr_rpmin, _CMP_GE_OQ);
+                if(m_mask_left == 0) {
+                    continue;
+                }
+                
+            }
+            
+            if(need_rpavg) {
+                union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
+            }
+            if(need_weightavg){
+                union_mweight.m_weights = avx512_weight_func(&pair);
+            }
+            
+            AVX512_INTS m_rpbin = AVX512_SETZERO_INT();
+            //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
+            // at the beginning of the loop. 
+            for(int kbin=nbin-1;kbin>=1;kbin--) {
+                const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+                npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
+                if(need_rpavg || need_weightavg) {
+                    m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_INT(kbin));
+                }
+                m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
+                if(m_mask_left == 0) {
+                    break;
+                }
+            }//backwards loop over the bins
       
-      if(need_rpavg || need_weightavg) {
-	//Do I need this step of going via the union? accessing int[] -> AVX* vector might 
-	//cause alignment problems but accessing the ints from an AVX*
-	//register should always be fine
-        union_rpbin.m_ibin = m_rpbin;
-        //protect the unroll pragma in case compiler is not icc.
+            if(need_rpavg || need_weightavg) {
+                //Do I need this step of going via the union? accessing int[] -> AVX* vector might 
+                //cause alignment problems but accessing the ints from an AVX*
+                //register should always be fine
+                union_rpbin.m_ibin = m_rpbin;
+                //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
 #pragma unroll(AVX512_NVEC)
 #endif
-        for(int jj=0;jj<AVX512_NVEC;jj++) {
-          const int kbin = union_rpbin.ibin[jj];
-          if(need_rpavg){
-            const DOUBLE r = union_mDperp.Dperp[jj];
-            rpavg[kbin] += r;
-          }
-          if(need_weightavg){
-            const DOUBLE weight = union_mweight.weights[jj];
-            weightavg[kbin] += weight;
-          }
+                for(int jj=0;jj<AVX512_NVEC;jj++) {
+                    const int kbin = union_rpbin.ibin[jj];
+                    if(need_rpavg){
+                        const DOUBLE r = union_mDperp.Dperp[jj];
+                        rpavg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        const DOUBLE weight = union_mweight.weights[jj];
+                        weightavg[kbin] += weight;
+                    }
+                }
+            } //OUTPUT_RPAVG
+        }//end of j-loop over second set of particles
+    }//loop over first set of particles
+    
+    uint64_t npairs_found = 0;
+    for(int i=0;i<nbin;i++) {
+        npairs_found += npairs[i];
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i]  += rpavg[i];
         }
-      } //OUTPUT_RPAVG
-    }//end of j-loop
-  }//loop over first set of particles
-
-  uint64_t npairs_found = 0;
-  for(int i=0;i<nbin;i++) {
-      npairs_found += npairs[i];
-      src_npairs[i] += npairs[i];
-      if(need_rpavg) {
-	src_rpavg[i]  += rpavg[i];
-      }
-      if(need_weightavg) {
-	src_weightavg[i] += weightavg[i];
-      }
-  }
-  
+        if(need_weightavg) {
+            src_weightavg[i] += weightavg[i];
+        }
+    }
+    
 #ifdef COUNT_VECTORIZED
-  struct timespec tcell_end;
-  current_utc_time(&tcell_end);
-  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
+    struct timespec tcell_end;
+    current_utc_time(&tcell_end);
+    int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+    fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
 #endif
-  
-  return EXIT_SUCCESS;
+    
+        return EXIT_SUCCESS;
 }
 #endif //__AVX512F__
 
@@ -247,11 +280,11 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 #include "avx2_calls.h"
 
 static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
-					    DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell,
-					    const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
-					    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
-					    DOUBLE *src_rpavg, uint64_t *src_npairs,
-					    DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                            DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell,
+                                            const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
+                                            const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                            DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                            DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
 #ifdef COUNT_VECTORIZED
     struct timespec tcell_start;
@@ -260,278 +293,303 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
 #endif
     
     uint64_t npairs[nbin];
-  for(int i=0;i<nbin;i++) {
-    npairs[i] = 0;
-  }
-  AVX2_FLOATS m_rupp_sqr[nbin];
-  for(int i=0;i<nbin;i++) {
-    m_rupp_sqr[i] = AVX2_SET_FLOAT(rupp_sqr[i]);
-  }
-  const int32_t need_rpavg = src_rpavg != NULL;
-  const int32_t need_weightavg = src_weightavg != NULL;
+    for(int i=0;i<nbin;i++) {
+        npairs[i] = 0;
+    }
+    AVX2_FLOATS m_rupp_sqr[nbin];
+    for(int i=0;i<nbin;i++) {
+        m_rupp_sqr[i] = AVX2_SET_FLOAT(rupp_sqr[i]);
+    }
+    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
 
   
-  /* variables required for rpavg and weightavg*/
-  AVX2_FLOATS m_kbin[nbin];
-  DOUBLE rpavg[nbin], weightavg[nbin];
-  if(need_rpavg || need_weightavg){
-      for(int i=0;i<nbin;i++) {
-        m_kbin[i] = AVX2_SET_FLOAT((DOUBLE) i);
-        if(need_rpavg){
-          rpavg[i] = ZERO;
+    /* variables required for rpavg and weightavg*/
+    AVX2_FLOATS m_kbin[nbin];
+    DOUBLE rpavg[nbin], weightavg[nbin];
+    if(need_rpavg || need_weightavg){
+        for(int i=0;i<nbin;i++) {
+            m_kbin[i] = AVX2_SET_FLOAT((DOUBLE) i);
+            if(need_rpavg){
+                rpavg[i] = ZERO;
+            }
+            if(need_weightavg){
+                weightavg[i] = ZERO;
+            }
         }
-        if(need_weightavg){
-          weightavg[i] = ZERO;
-        }
-      }
-  }
-
-  // A copy whose pointers we can advance
-  weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
-                       local_w1 = {.weights={NULL}, .num_weights=0};
-  pair_struct_DOUBLE pair = {.num_weights=0};
-  avx_weight_func_t_DOUBLE avx_weight_func = NULL;
-  weight_func_t_DOUBLE fallback_weight_func = NULL;
-  if(need_weightavg){
-      // Same particle list, new copy of num_weights pointers into that list
-      local_w0 = *weights0;
-      local_w1 = *weights1;
-      
-      pair.num_weights = local_w0.num_weights;
-      
-      avx_weight_func = get_avx_weight_func_by_method_DOUBLE(weight_method);
-      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
-  }
-
-  const DOUBLE *zend = z1 + N1, *zstart = z1;
-  for(int64_t i=0;i<N0;i++) {
-    const DOUBLE xpos = *x0++ + off_xwrap;
-    const DOUBLE ypos = *y0++ + off_ywrap;
-    const DOUBLE zpos = *z0++ + off_zwrap;
-    for(int w = 0; w < pair.num_weights; w++){
-        // local_w0.weights[w] is a pointer to a float in the particle list of weights,
-        // just as x0 is a pointer into the list of x-positions.
-        // The advancement of the local_w0.weights[w] pointer should always mirror x0.
-        pair.weights0[w].a = AVX2_SET_FLOAT(*(local_w0.weights[w])++);
     }
 
-    if(same_cell == 1) {
-      z1++;
-    } else {
-      while(z1 != zend && (*z1 - zpos) <= -pimax) {
-          z1++;
-      }
-      if(z1 == zend) {
-	i = N0;
-	break;
-      }
-    }
-    int64_t j = z1 - zstart;
-    DOUBLE *localz1 = z1;
-    DOUBLE *localx1 = x1 + j;
-    DOUBLE *localy1 = y1 + j;
-    for(int w = 0; w < local_w1.num_weights; w++){
-        local_w1.weights[w] = weights1->weights[w] + j;
-    }
-    for(;j<=(N1 - AVX2_NVEC);j+=AVX2_NVEC) {
-      const AVX2_FLOATS m_xpos    = AVX2_SET_FLOAT(xpos);
-      const AVX2_FLOATS m_ypos    = AVX2_SET_FLOAT(ypos);
-      const AVX2_FLOATS m_zpos    = AVX2_SET_FLOAT(zpos);
-      union int8 {
-        AVX2_INTS m_ibin;
-        int ibin[AVX2_NVEC];
-      };
-      union float8{
-        AVX2_FLOATS m_Dperp;
-        DOUBLE Dperp[AVX2_NVEC];
-      };
-            
-      union int8 union_rpbin;
-      union float8 union_mDperp;
-      union float8_weights{
-        AVX2_FLOATS m_weights;
-        DOUBLE weights[AVX2_NVEC];
-      };
-      union float8_weights union_mweight;
-
-      const AVX2_FLOATS m_x1 = AVX2_LOAD_FLOATS_UNALIGNED(localx1);
-      const AVX2_FLOATS m_y1 = AVX2_LOAD_FLOATS_UNALIGNED(localy1);
-      const AVX2_FLOATS m_z1 = AVX2_LOAD_FLOATS_UNALIGNED(localz1);
-
-#ifdef COUNT_VECTORIZED
-      vectorized_npairs += AVX2_NVEC;
-#endif
-      localx1 += AVX2_NVEC;//this might actually exceed the allocated range but we will never dereference that
-      localy1 += AVX2_NVEC;
-      localz1 += AVX2_NVEC;
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0},  local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    avx_weight_func_t_DOUBLE avx_weight_func = NULL;
+    weight_func_t_DOUBLE fallback_weight_func = NULL;
+    if(need_weightavg){
+        // Same particle list, new copy of num_weights pointers into that list
+        local_w0 = *weights0;
+        local_w1 = *weights1;
         
-      for(int w = 0; w < pair.num_weights; w++){
-        pair.weights1[w].a = AVX2_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
-        local_w1.weights[w] += AVX2_NVEC;
-      }
-
-      const AVX2_FLOATS m_pimax = AVX2_SET_FLOAT(pimax);
-      const AVX2_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
-      const AVX2_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
-            
-      const AVX2_FLOATS m_xdiff = AVX2_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
-      const AVX2_FLOATS m_ydiff = AVX2_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
-      const AVX2_FLOATS m_zdiff = AVX2_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
-      
-      if(need_weightavg){
-        pair.dx.a = m_xdiff;
-        pair.dy.a = m_ydiff;
-        pair.dz.a = m_zdiff;
-      }
-      
-      const AVX2_FLOATS m_sqr_xdiff = AVX2_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
-      AVX2_FLOATS r2  = AVX2_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
-            
-      AVX2_FLOATS m_mask_left;
-      //Do all the distance cuts using masks here in new scope
-      {
-        //the z2 arrays are sorted in increasing order. which means
-        //the z2 value will increase in any future iteration of j.
-        //that implies the zdiff values are also monotonically increasing
-        //Therefore, if none of the zdiff values are less than pimax, then
-        //no future iteration in j can produce a zdiff value less than pimax.
-        AVX2_FLOATS m_mask_pimax = AVX2_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
-        if(AVX2_TEST_COMPARISON(m_mask_pimax) == 0) {
-          //None of the dz^2 values satisfies dz^2 < pimax^2
-          // => no pairs can be added -> continue and process the next NVEC
-          j=N1;
-          break;
+        pair.num_weights = local_w0.num_weights;
+        
+        avx_weight_func = get_avx_weight_func_by_method_DOUBLE(weight_method);
+        fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
+    }
+    
+    const DOUBLE *zstart = z1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE max_dz = pimax;
+    for(int64_t i=0;i<N0;i++) {
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
+        for(int w = 0; w < pair.num_weights; w++){
+            // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+            pair.weights0[w].a = AVX2_SET_FLOAT(*(local_w0.weights[w])++);
         }
 
-        const AVX2_FLOATS m_rpmax_mask = AVX2_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
-        const AVX2_FLOATS m_rpmin_mask = AVX2_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
-        const AVX2_FLOATS m_rp_mask = AVX2_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
+
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
+        }
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
+        }
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
+            }
+        }
+        
+        int64_t j = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
+        for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + j;
+        }
+        for(;j<=(N1 - AVX2_NVEC);j+=AVX2_NVEC) {
+            const AVX2_FLOATS m_xpos    = AVX2_SET_FLOAT(xpos);
+            const AVX2_FLOATS m_ypos    = AVX2_SET_FLOAT(ypos);
+            const AVX2_FLOATS m_zpos    = AVX2_SET_FLOAT(zpos);
+
+            union int8 union_rpbin;
+            union float8 union_mDperp;
+            union float8_weights union_mweight;
+
+            const AVX2_FLOATS m_x1 = AVX2_LOAD_FLOATS_UNALIGNED(localx1);
+            const AVX2_FLOATS m_y1 = AVX2_LOAD_FLOATS_UNALIGNED(localy1);
+            const AVX2_FLOATS m_z1 = AVX2_LOAD_FLOATS_UNALIGNED(localz1);
+            
+#ifdef COUNT_VECTORIZED
+            vectorized_npairs += AVX2_NVEC;
+#endif
+            localx1 += AVX2_NVEC;//this might actually exceed the allocated range but we will never dereference that
+            localy1 += AVX2_NVEC;
+            localz1 += AVX2_NVEC;
+            
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].a = AVX2_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+                local_w1.weights[w] += AVX2_NVEC;
+            }
+            
+            const AVX2_FLOATS m_max_dz = AVX2_SET_FLOAT(max_dz);
+            const AVX2_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
+            const AVX2_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
+            
+            const AVX2_FLOATS m_xdiff = AVX2_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+            const AVX2_FLOATS m_ydiff = AVX2_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+            const AVX2_FLOATS m_zdiff = AVX2_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
+            
+            if(need_weightavg){
+                pair.dx.a = m_xdiff;
+                pair.dy.a = m_ydiff;
+                pair.dz.a = m_zdiff;
+            }
+            
+            const AVX2_FLOATS m_sqr_xdiff = AVX2_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
+            AVX2_FLOATS r2  = AVX2_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
+            
+            AVX2_FLOATS m_mask_left;
+            //Do all the distance cuts using masks here in new scope
+            {
+                //the z2 arrays are sorted in increasing order. which means
+                //the z2 value will increase in any future iteration of j.
+                //that implies the zdiff values are also monotonically increasing
+                //Therefore, if any of the zdiff values >= max_dz (==pimax), then
+                //no future iteration in j can produce a zdiff value less than pimax.
+                const AVX2_FLOATS m_mask_geq_pimax = AVX2_COMPARE_FLOATS(m_zdiff,m_max_dz,_CMP_GE_OQ);
+                if(AVX2_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
+                    j=N1;//but do not break, there might be valid pairs in this chunk
+                }
+
                 
-        //Create a combined mask by bitwise and of m1 and m_mask_left.
-        //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
-        m_mask_left = AVX2_BITWISE_AND(m_mask_pimax,m_rp_mask);
+                AVX2_FLOATS m_mask_pimax = AVX2_COMPARE_FLOATS(m_zdiff,m_max_dz,_CMP_LT_OS);
+                if(AVX2_TEST_COMPARISON(m_mask_pimax) == 0) {
+                    //None of the dz^2 values satisfies dz^2 < pimax^2
+                    // => no pairs can be added -> continue and process the next NVEC
+                    j=N1;
+                    break;
+                }
                 
-        //If not, continue with the next iteration of j-loop
-        const int num_left = AVX2_TEST_COMPARISON(m_mask_left);
-        if(num_left == 0) {
-          continue;
-        }
-
-        //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
-        r2 = AVX2_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
-      }
-
-      AVX2_FLOATS m_rpbin = AVX2_SETZERO_FLOAT();
-      if(need_rpavg) {
-        union_mDperp.m_Dperp = AVX2_SQRT_FLOAT(r2);
-      }
-      if(need_weightavg){
-        union_mweight.m_weights = avx_weight_func(&pair);
-      }
+                const AVX2_FLOATS m_rpmax_mask = AVX2_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
+                const AVX2_FLOATS m_rpmin_mask = AVX2_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
+                const AVX2_FLOATS m_rp_mask = AVX2_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
+                
+                //Create a combined mask by bitwise and of m1 and m_mask_left.
+                //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
+                m_mask_left = AVX2_BITWISE_AND(m_mask_pimax,m_rp_mask);
+                
+                //If not, continue with the next iteration of j-loop
+                const int num_left = AVX2_TEST_COMPARISON(m_mask_left);
+                if(num_left == 0) {
+                    continue;
+                }
+                
+                //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
+                r2 = AVX2_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
+            }
             
-      //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
-      for(int kbin=nbin-1;kbin>=1;kbin--) {
-        const AVX2_FLOATS m1 = AVX2_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-        const AVX2_FLOATS m_bin_mask = AVX2_BITWISE_AND(m1,m_mask_left);
-        const int test2  = AVX2_TEST_COMPARISON(m_bin_mask);
-        npairs[kbin] += AVX2_BIT_COUNT_INT(test2);
-        if(need_rpavg || need_weightavg) {
-          m_rpbin = AVX2_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
-        }
-
-        m_mask_left = AVX2_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
-        const int test3 = AVX2_TEST_COMPARISON(m_mask_left);
-        if(test3 == 0) {
-          break;
-        }
-      }
+            AVX2_FLOATS m_rpbin = AVX2_SETZERO_FLOAT();
+            if(need_rpavg) {
+                union_mDperp.m_Dperp = AVX2_SQRT_FLOAT(r2);
+            }
+            if(need_weightavg){
+                union_mweight.m_weights = avx_weight_func(&pair);
+            }
             
-      if(need_rpavg || need_weightavg) {
-        union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
-        //protect the unroll pragma in case compiler is not icc.
+            //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
+            for(int kbin=nbin-1;kbin>=1;kbin--) {
+                const AVX2_FLOATS m1 = AVX2_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+                const AVX2_FLOATS m_bin_mask = AVX2_BITWISE_AND(m1,m_mask_left);
+                const int test2  = AVX2_TEST_COMPARISON(m_bin_mask);
+                npairs[kbin] += AVX2_BIT_COUNT_INT(test2);
+                if(need_rpavg || need_weightavg) {
+                    m_rpbin = AVX2_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+                }
+                
+                m_mask_left = AVX2_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_LT_OS);
+                const int test3 = AVX2_TEST_COMPARISON(m_mask_left);
+                if(test3 == 0) {
+                    break;
+                }
+            }
+            
+            if(need_rpavg || need_weightavg) {
+                union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
+                //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
 #pragma unroll(AVX2_NVEC)
 #endif
-        for(int jj=0;jj<AVX2_NVEC;jj++) {
-          const int kbin = union_rpbin.ibin[jj];
-          if(need_rpavg){
-            const DOUBLE r = union_mDperp.Dperp[jj];
-            rpavg[kbin] += r;
-          }
-          if(need_weightavg){
-            const DOUBLE weight = union_mweight.weights[jj];
-            weightavg[kbin] += weight;
-          }
-        }
-      } //OUTPUT_RPAVG
-
-    }//end of j-loop
-        
-    //remainder loop 
-    for(;j<N1;j++){
-#ifdef COUNT_VECTORIZED
-        serial_npairs++;
-#endif
-        const DOUBLE dz = *localz1++ - zpos;
-      const DOUBLE dx = *localx1++ - xpos;
-      const DOUBLE dy = *localy1++ - ypos;
-      for(int w = 0; w < pair.num_weights; w++){
-          pair.weights1[w].d = *local_w1.weights[w]++;
-      }
-
-      if(dz >= pimax) {
-        break;
-      } 
+                for(int jj=0;jj<AVX2_NVEC;jj++) {
+                    const int kbin = union_rpbin.ibin[jj];
+                    if(need_rpavg){
+                        const DOUBLE r = union_mDperp.Dperp[jj];
+                        rpavg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        const DOUBLE weight = union_mweight.weights[jj];
+                        weightavg[kbin] += weight;
+                    }
+                }
+            } //OUTPUT_RPAVG
             
-      const DOUBLE r2 = dx*dx + dy*dy;
-      if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
-        continue;
-      }
+        }//end of j-loop
         
-      if(need_weightavg){
-        pair.dx.d = dx;
-        pair.dy.d = dy;
-        pair.dz.d = dz;
-      }
-
-            
-      const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
-      const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
-      for(int kbin=nbin-1;kbin>=1;kbin--) {
-        if(r2 >= rupp_sqr[kbin-1]) {
-          npairs[kbin]++;
-          if(need_rpavg) {
-            rpavg[kbin] += r;
-          }
-          if(need_weightavg){
-            weightavg[kbin] += pairweight;
-          }
-          break;
-        }
-      }
-    }//remainder loop over second set of particles
-  }//loop over first set of particles
-
-  uint64_t npairs_found = 0;
-  for(int i=0;i<nbin;i++) {
-      npairs_found += npairs[i];
-    src_npairs[i] += npairs[i];
-    if(need_rpavg) {
-      src_rpavg[i]  += rpavg[i];
-    }
-    if(need_weightavg) {
-      src_weightavg[i] += weightavg[i];
-    }
-  }
-  
+        //remainder loop 
+        for(;j<N1;j++){
 #ifdef COUNT_VECTORIZED
-  struct timespec tcell_end;
-  current_utc_time(&tcell_end);
-  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
+            serial_npairs++;
 #endif
-  
-  return EXIT_SUCCESS;
+            const DOUBLE dz = *localz1++ - zpos;
+            const DOUBLE dx = *localx1++ - xpos;
+            const DOUBLE dy = *localy1++ - ypos;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
+            }
+            
+            if(dz >= max_dz) {
+                break;
+            } 
+            
+            const DOUBLE r2 = dx*dx + dy*dy;
+            if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
+                continue;
+            }
+            
+            if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+            }
+            
+            
+            const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
+            const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
+            for(int kbin=nbin-1;kbin>=1;kbin--) {
+                if(r2 >= rupp_sqr[kbin-1]) {
+                    npairs[kbin]++;
+                    if(need_rpavg) {
+                        rpavg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        weightavg[kbin] += pairweight;
+                    }
+                    break;
+                }
+            }
+        }//remainder loop over second set of particles
+    }//loop over first set of particles
+    
+    uint64_t npairs_found = 0;
+    for(int i=0;i<nbin;i++) {
+        npairs_found += npairs[i];
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i]  += rpavg[i];
+        }
+        if(need_weightavg) {
+            src_weightavg[i] += weightavg[i];
+        }
+    }
+    
+#ifdef COUNT_VECTORIZED
+    struct timespec tcell_end;
+    current_utc_time(&tcell_end);
+    int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+    fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
+#endif
+    
+    return EXIT_SUCCESS;
 }
 #endif //__AVX2__
 
@@ -554,287 +612,315 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 #endif
     
     uint64_t npairs[nbin];
-  for(int i=0;i<nbin;i++) {
-    npairs[i] = 0;
-  }
-  AVX_FLOATS m_rupp_sqr[nbin];
-  for(int i=0;i<nbin;i++) {
-    m_rupp_sqr[i] = AVX_SET_FLOAT(rupp_sqr[i]);
-  }
-  const int32_t need_rpavg = src_rpavg != NULL;
-  const int32_t need_weightavg = src_weightavg != NULL;
+    for(int i=0;i<nbin;i++) {
+        npairs[i] = 0;
+    }
+    AVX_FLOATS m_rupp_sqr[nbin];
+    for(int i=0;i<nbin;i++) {
+        m_rupp_sqr[i] = AVX_SET_FLOAT(rupp_sqr[i]);
+    }
+    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
 
   
-  /* variables required for rpavg and weightavg*/
-  AVX_FLOATS m_kbin[nbin];
-  DOUBLE rpavg[nbin], weightavg[nbin];
-  if(need_rpavg || need_weightavg){
-      for(int i=0;i<nbin;i++) {
-        m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
-        if(need_rpavg){
-          rpavg[i] = ZERO;
+    /* variables required for rpavg and weightavg*/
+    AVX_FLOATS m_kbin[nbin];
+    DOUBLE rpavg[nbin], weightavg[nbin];
+    if(need_rpavg || need_weightavg){
+        for(int i=0;i<nbin;i++) {
+            m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
+            if(need_rpavg){
+                rpavg[i] = ZERO;
+            }
+            if(need_weightavg){
+                weightavg[i] = ZERO;
+            }
         }
-        if(need_weightavg){
-          weightavg[i] = ZERO;
-        }
-      }
-  }
-
-  // A copy whose pointers we can advance
-  weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
-                       local_w1 = {.weights={NULL}, .num_weights=0};
-  pair_struct_DOUBLE pair = {.num_weights=0};
-  avx_weight_func_t_DOUBLE avx_weight_func = NULL;
-  weight_func_t_DOUBLE fallback_weight_func = NULL;
-  if(need_weightavg){
-      // Same particle list, new copy of num_weights pointers into that list
-      local_w0 = *weights0;
-      local_w1 = *weights1;
-      
-      pair.num_weights = local_w0.num_weights;
-      
-      avx_weight_func = get_avx_weight_func_by_method_DOUBLE(weight_method);
-      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
-  }
-
-  const DOUBLE *zstart = z1;
-  const DOUBLE last_z1 = z1[N1-1];
-  for(int64_t i=0;i<N0;i++) {
-    const DOUBLE xpos = *x0++ + off_xwrap;
-    const DOUBLE ypos = *y0++ + off_ywrap;
-    const DOUBLE zpos = *z0++ + off_zwrap;
-    for(int w = 0; w < pair.num_weights; w++){
-        // local_w0.weights[w] is a pointer to a float in the particle list of weights,
-        // just as x0 is a pointer into the list of x-positions.
-        // The advancement of the local_w0.weights[w] pointer should always mirror x0.
-        pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
     }
 
-    const DOUBLE min_dz = *z1 - zpos;
-    if(min_dz >= pimax) continue;
-    if((last_z1 - zpos) <= -pimax) {
-        i = N0;
-        break;
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    avx_weight_func_t_DOUBLE avx_weight_func = NULL;
+    weight_func_t_DOUBLE fallback_weight_func = NULL;
+    if(need_weightavg){
+        // Same particle list, new copy of num_weights pointers into that list
+        local_w0 = *weights0;
+        local_w1 = *weights1;
+        
+        pair.num_weights = local_w0.num_weights;
+        
+        avx_weight_func = get_avx_weight_func_by_method_DOUBLE(weight_method);
+        fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
     
-    if(same_cell == 1) {
-        z1++;
-    } else {
-        while((*z1 - zpos) <= -pimax) {
-            z1++;
+    const DOUBLE *zstart = z1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE max_dz = pimax;
+    for(int64_t i=0;i<N0;i++) {
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
+        for(int w = 0; w < pair.num_weights; w++){
+            // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+            pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
         }
-    }
-    int64_t j = z1 - zstart;
-    DOUBLE *localz1 = z1;
-    DOUBLE *localx1 = x1 + j;
-    DOUBLE *localy1 = y1 + j;
-    for(int w = 0; w < local_w1.num_weights; w++){
-        local_w1.weights[w] = weights1->weights[w] + j;
-    }
 
-    for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
-
-      const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
-      const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
-      const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(zpos);
-
-      union int8 union_rpbin;
-      union float8 union_mDperp;
-      union float8_weights union_mweight;
-
-      const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
-      const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
-      const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
-
-#ifdef COUNT_VECTORIZED
-      vectorized_npairs += AVX_NVEC;
-#endif
-      localx1 += AVX_NVEC;//this might actually exceed the allocated range but we will never dereference that
-      localy1 += AVX_NVEC;
-      localz1 += AVX_NVEC;
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
+        }
         
-      for(int w = 0; w < pair.num_weights; w++){
-        pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
-        local_w1.weights[w] += AVX_NVEC;
-      }
-
-
-
-      const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
-      const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
-      const AVX_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
-            
-      const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
-      const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
-      const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
-      
-      if(need_weightavg){
-        pair.dx.a = m_xdiff;
-        pair.dy.a = m_ydiff;
-        pair.dz.a = m_zdiff;
-      }
-      
-      const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
-      const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(m_ydiff);  //(y0 - y[j])^2
-      //const AVX_FLOATS m_sqr_zdiff = AVX_SQUARE_FLOAT(m_zdiff);
-      AVX_FLOATS r2  = AVX_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
-            
-      AVX_FLOATS m_mask_left;
-            
-      //Do all the distance cuts using masks here in new scope
-      {
-        //the z2 arrays are sorted in increasing order. which means
-        //the z2 value will increase in any future iteration of j.
-        //that implies the zdiff values are also monotonically increasing
-        //Therefore, if none of the zdiff values are less than pimax, then
-        //no future iteration in j can produce a zdiff value less than pimax.
-        AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
-        if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
-          //None of the dz^2 values satisfies dz^2 < pimax^2
-          // => no pairs can be added -> continue and process the next NVEC
-          j=N1;
-          break;
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
         }
-
-        const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
-        const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
-        const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
-                
-        //Create a combined mask by bitwise and of m1 and m_mask_left.
-        //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
-        m_mask_left = AVX_BITWISE_AND(m_mask_pimax,m_rp_mask);
-                
-        //If not, continue with the next iteration of j-loop
-        const int num_left = AVX_TEST_COMPARISON(m_mask_left);
-        if(num_left == 0) {
-          continue;
-        }
-
-        /* Check if all the possible pairs are in the last bin. But only run
-           this check if not evaluating same cell pairs or when simply counting 
-           the pairs (no rpavg requested)  */
-        if(same_cell == 0 && need_rpavg == 0 && need_weightavg == 0) {
-            const AVX_FLOATS m_last_bin = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_rupp_sqr[nbin-1], _CMP_GE_OS));
-            if(AVX_TEST_COMPARISON(m_last_bin) == num_left) { /* all the valid pairs are in the last bin */
-                npairs[nbin-1] += num_left;/* add the total number of pairs to the last bin and continue j-loop*/
-                continue;
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
             }
         }
         
-        //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
-        r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
-      }
-
-      AVX_FLOATS m_rpbin = AVX_SETZERO_FLOAT();
-      if(need_rpavg) {
-        union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
-      }
-      if(need_weightavg){
-        union_mweight.m_weights = avx_weight_func(&pair);
-      }
-            
-      //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
-      for(int kbin=nbin-1;kbin>=1;kbin--) {
-        const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-        const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
-        const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
-        npairs[kbin] += AVX_BIT_COUNT_INT(test2);
-        if(need_rpavg || need_weightavg) {
-          m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+        int64_t j = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
+        for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + j;
         }
-
-        m_mask_left = AVX_AND_NOT(m_bin_mask, m_mask_left);/* not(bin_mask) and mask_left */
-        if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
-          break;
-        }
-      }
+        
+        for(;j<=(N1 - AVX_NVEC);j+=AVX_NVEC) {
             
-      if(need_rpavg || need_weightavg) {
-        union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
-        //protect the unroll pragma in case compiler is not icc.
+            const AVX_FLOATS m_xpos    = AVX_SET_FLOAT(xpos);
+            const AVX_FLOATS m_ypos    = AVX_SET_FLOAT(ypos);
+            const AVX_FLOATS m_zpos    = AVX_SET_FLOAT(zpos);
+                
+            union int8 union_rpbin;
+            union float8 union_mDperp;
+            union float8_weights union_mweight;
+
+            const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
+            const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
+            const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
+
+#ifdef COUNT_VECTORIZED
+            vectorized_npairs += AVX_NVEC;
+#endif
+            localx1 += AVX_NVEC;//this might actually exceed the allocated range but we will never dereference that
+            localy1 += AVX_NVEC;
+            localz1 += AVX_NVEC;
+        
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+                local_w1.weights[w] += AVX_NVEC;
+            }
+
+            const AVX_FLOATS m_max_dz = AVX_SET_FLOAT(max_dz);
+            const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
+            const AVX_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
+            
+            const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+            const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+            const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
+      
+            if(need_weightavg){
+                pair.dx.a = m_xdiff;
+                pair.dy.a = m_ydiff;
+                pair.dz.a = m_zdiff;
+            }
+      
+            const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
+            const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(m_ydiff);  //(y0 - y[j])^2
+            AVX_FLOATS r2  = AVX_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
+            
+            AVX_FLOATS m_mask_left;
+            
+            //Do all the distance cuts using masks here in new scope
+            {
+                //the z2 arrays are sorted in increasing order. which means
+                //the z2 value will increase in any future iteration of j.
+                //that implies the zdiff values are also monotonically increasing
+                //Therefore, if any of the zdiff values are >= max_dz (==pimax), then
+                //no future iteration in j can produce a zdiff value less than pimax.
+                const AVX_FLOATS m_mask_geq_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_max_dz,_CMP_GE_OQ);
+                if(AVX_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
+                    j=N1;//but do not break yet, this chunk might contain valid pairs
+                }
+                                
+                AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_max_dz,_CMP_LT_OS);
+                if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
+                    //None of the dz^2 values satisfies dz^2 < pimax^2
+                    // => no pairs can be added -> continue and process the next NVEC
+                    j=N1;
+                    break;
+                }
+
+                const AVX_FLOATS m_rpmax_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmax, _CMP_LT_OS);
+                const AVX_FLOATS m_rpmin_mask = AVX_COMPARE_FLOATS(r2, m_sqr_rpmin, _CMP_GE_OS);
+                const AVX_FLOATS m_rp_mask = AVX_BITWISE_AND(m_rpmax_mask,m_rpmin_mask);
+                
+                //Create a combined mask by bitwise and of m1 and m_mask_left.
+                //This gives us the mask for all sqr_rpmin <= r2 < sqr_rpmax
+                m_mask_left = AVX_BITWISE_AND(m_mask_pimax,m_rp_mask);
+                
+                //If not, continue with the next iteration of j-loop
+                const int num_left = AVX_TEST_COMPARISON(m_mask_left);
+                if(num_left == 0) {
+                    continue;
+                }
+
+                /* Check if all the possible pairs are in the last bin. But only run
+                   this check if not evaluating same cell pairs or when simply counting 
+                   the pairs (no rpavg requested)  */
+                if(same_cell == 0 && need_rpavg == 0 && need_weightavg == 0) {
+                    const AVX_FLOATS m_last_bin = AVX_BITWISE_AND(m_mask_left, AVX_COMPARE_FLOATS(r2, m_rupp_sqr[nbin-1], _CMP_GE_OS));
+                    if(AVX_TEST_COMPARISON(m_last_bin) == num_left) { /* all the valid pairs are in the last bin */
+                        npairs[nbin-1] += num_left;/* add the total number of pairs to the last bin and continue j-loop*/
+                        continue;
+                    }
+                }
+        
+                //There is some r2 that satisfies sqr_rpmin <= r2 < sqr_rpmax && 0.0 <= dz^2 < pimax^2.
+                r2 = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
+            }
+
+            AVX_FLOATS m_rpbin = AVX_SETZERO_FLOAT();
+            if(need_rpavg) {
+                union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
+            }
+            if(need_weightavg){
+                union_mweight.m_weights = avx_weight_func(&pair);
+            }
+            
+            //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
+            for(int kbin=nbin-1;kbin>=1;kbin--) {
+                const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
+                const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
+                const int test2  = AVX_TEST_COMPARISON(m_bin_mask);
+                npairs[kbin] += AVX_BIT_COUNT_INT(test2);
+                if(need_rpavg || need_weightavg) {
+                    m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+                }
+
+                m_mask_left = AVX_AND_NOT(m_bin_mask, m_mask_left);/* not(bin_mask) and mask_left */
+                if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+                    break;
+                }
+            }
+            
+            if(need_rpavg || need_weightavg) {
+                union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
+                //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
 #pragma unroll(AVX_NVEC)
 #endif
-        for(int jj=0;jj<AVX_NVEC;jj++) {
-          const int kbin = union_rpbin.ibin[jj];
-          if(need_rpavg){
-            const DOUBLE r = union_mDperp.Dperp[jj];
-            rpavg[kbin] += r;
-          }
-          if(need_weightavg){
-            const DOUBLE weight = union_mweight.weights[jj];
-            weightavg[kbin] += weight;
-          }
-        }
-      } //OUTPUT_RPAVG
+                for(int jj=0;jj<AVX_NVEC;jj++) {
+                    const int kbin = union_rpbin.ibin[jj];
+                    if(need_rpavg){
+                        const DOUBLE r = union_mDperp.Dperp[jj];
+                        rpavg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        const DOUBLE weight = union_mweight.weights[jj];
+                        weightavg[kbin] += weight;
+                    }
+                }
+            } //OUTPUT_RPAVG
 
-    }//end of j-loop
+        }//end of j-loop
         
-    //remainder loop 
-    for(;j<N1;j++){
+        //remainder loop 
+        for(;j<N1;j++){
 #ifdef COUNT_VECTORIZED
-        serial_npairs++;
+            serial_npairs++;
 #endif
-        const DOUBLE dz = *localz1++ - zpos;
-      const DOUBLE dx = *localx1++ - xpos;
-      const DOUBLE dy = *localy1++ - ypos;
-      for(int w = 0; w < pair.num_weights; w++){
-          pair.weights1[w].d = *local_w1.weights[w]++;
-      }
+            const DOUBLE dz = *localz1++ - zpos;
+            const DOUBLE dx = *localx1++ - xpos;
+            const DOUBLE dy = *localy1++ - ypos;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
+            }
 
-      if(dz >= pimax) {
-        break;
-      } 
+            if(dz >= max_dz) {
+                break;
+            } 
             
-      const DOUBLE r2 = dx*dx + dy*dy;
-      if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
-        continue;
-      }
+            const DOUBLE r2 = dx*dx + dy*dy;
+            if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
+                continue;
+            }
         
-      if(need_weightavg){
-        pair.dx.d = dx;
-        pair.dy.d = dy;
-        pair.dz.d = dz;
-      }
+            if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+            }
 
             
-      const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
-      const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
-      for(int kbin=nbin-1;kbin>=1;kbin--) {
-        if(r2 >= rupp_sqr[kbin-1]) {
-          npairs[kbin]++;
-          if(need_rpavg) {
-            rpavg[kbin] += r;
-          }
-          if(need_weightavg){
-            weightavg[kbin] += pairweight;
-          }
-          break;
-        }
-      }
-    }//remainder loop over second set of particles
-  }//loop over first set of particles
+            const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
+            const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
+            for(int kbin=nbin-1;kbin>=1;kbin--) {
+                if(r2 >= rupp_sqr[kbin-1]) {
+                    npairs[kbin]++;
+                    if(need_rpavg) {
+                        rpavg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        weightavg[kbin] += pairweight;
+                    }
+                    break;
+                }
+            }
+        }//remainder loop over second set of particles
+    }//loop over first set of particles
 
-  uint64_t npairs_found = 0;
-  for(int i=0;i<nbin;i++) {
-      npairs_found += npairs[i];
-    src_npairs[i] += npairs[i];
-    if(need_rpavg) {
-      src_rpavg[i]  += rpavg[i];
+    uint64_t npairs_found = 0;
+    for(int i=0;i<nbin;i++) {
+        npairs_found += npairs[i];
+        src_npairs[i] += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i]  += rpavg[i];
+        }
+        if(need_weightavg) {
+            src_weightavg[i] += weightavg[i];
+        }
     }
-    if(need_weightavg) {
-      src_weightavg[i] += weightavg[i];
-    }
-  }
   
 #ifdef COUNT_VECTORIZED
-  struct timespec tcell_end;
-  current_utc_time(&tcell_end);
-  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
+    struct timespec tcell_end;
+    current_utc_time(&tcell_end);
+    int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+    fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell); 
 #endif
   
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 #endif //__AVX__
 
@@ -856,280 +942,300 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
     uint64_t vectorized_npairs=0, serial_npairs=0;
 #endif
 
-  const int32_t need_rpavg = src_rpavg != NULL;
-  const int32_t need_weightavg = src_weightavg != NULL;
+    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
 
-  uint64_t npairs[nbin];
-  for(int i=0;i<nbin;i++) {
-    npairs[i] = 0;
-  }
-
-  SSE_FLOATS m_rupp_sqr[nbin];
-  for(int i=0;i<nbin;i++) {
-    m_rupp_sqr[i] = SSE_SET_FLOAT(rupp_sqr[i]);
-  }
-  
-  SSE_FLOATS m_kbin[nbin];
-  DOUBLE rpavg[nbin], weightavg[nbin];
-  if(need_rpavg || need_weightavg){
+    uint64_t npairs[nbin];
     for(int i=0;i<nbin;i++) {
-        m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
-        if(need_rpavg) {
-            rpavg[i] = ZERO;
-        }
-        if(need_weightavg){
-            weightavg[i] = ZERO;
-        }
+        npairs[i] = 0;
     }
-  }
+
+    SSE_FLOATS m_rupp_sqr[nbin];
+    for(int i=0;i<nbin;i++) {
+        m_rupp_sqr[i] = SSE_SET_FLOAT(rupp_sqr[i]);
+    }
   
-  // A copy whose pointers we can advance
-  weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
-                       local_w1 = {.weights={NULL}, .num_weights=0};
-  pair_struct_DOUBLE pair = {.num_weights=0};
-  sse_weight_func_t_DOUBLE sse_weight_func = NULL;
-  weight_func_t_DOUBLE fallback_weight_func = NULL;
-  if(need_weightavg){
-      // Same particle list, new copy of num_weights pointers into that list
-      local_w0 = *weights0;
-      local_w1 = *weights1;
-      
-      pair.num_weights = local_w0.num_weights;
-      
-      sse_weight_func = get_sse_weight_func_by_method_DOUBLE(weight_method);
-      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
-  }
-
-
-  int64_t prev_j=0, n_off = 0;
-  for(int64_t i=0;i<N0;i++) {
-    const DOUBLE xpos = *x0++ + off_xwrap;
-    const DOUBLE ypos = *y0++ + off_ywrap;
-    const DOUBLE zpos = *z0++ + off_zwrap;
-    for(int w = 0; w < pair.num_weights; w++){
-        // local_w0.weights[w] is a pointer to a float in the particle list of weights,
-        // just as x0 is a pointer into the list of x-positions.
-        // The advancement of the local_w0.weights[w] pointer should always mirror x0.
-        pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
-    }
-
-    int64_t j;
-    if(same_cell == 1) {
-        z1++; n_off++;
-        j = i+1;
-    } else {
-        for(;prev_j<N1;prev_j++) {
-            const DOUBLE dz = *z1 - zpos;
-            if(dz > -pimax) break;
-            z1++; n_off++;
+    SSE_FLOATS m_kbin[nbin];
+    DOUBLE rpavg[nbin], weightavg[nbin];
+    if(need_rpavg || need_weightavg){
+        for(int i=0;i<nbin;i++) {
+            m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
+            if(need_rpavg) {
+                rpavg[i] = ZERO;
+            }
+            if(need_weightavg){
+                weightavg[i] = ZERO;
+            }
         }
-        /* Since 'z' is sorted in increasing order for both the first and second cells, 
-           no more valid pairs can be found between these two cell pairs
+    }
+  
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    sse_weight_func_t_DOUBLE sse_weight_func = NULL;
+    weight_func_t_DOUBLE fallback_weight_func = NULL;
+    if(need_weightavg){
+        // Same particle list, new copy of num_weights pointers into that list
+        local_w0 = *weights0;
+        local_w1 = *weights1;
+        
+        pair.num_weights = local_w0.num_weights;
+        
+        sse_weight_func = get_sse_weight_func_by_method_DOUBLE(weight_method);
+        fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
+    }
+    
+    const DOUBLE *zstart = z1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE max_dz = pimax;
+    for(int64_t i=0;i<N0;i++) {
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
+        for(int w = 0; w < pair.num_weights; w++){
+            // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+            // just as x0 is a pointer into the list of x-positions.
+            // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+            pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
+        }
+
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
         */
-        if(prev_j == N1) {
+        if((zpos - last_z1) >= max_dz) {
             i = N0;
             break;
         }
-        j = prev_j;
-    }
-    DOUBLE *localz1 = z1;
-    DOUBLE *localx1 = x1 + n_off;
-    DOUBLE *localy1 = y1 + n_off;
-    for(int w = 0; w < local_w1.num_weights; w++){
-        local_w1.weights[w] = weights1->weights[w] + n_off;
-    }
-
-    for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
-        union int4{
-            SSE_INTS m_ibin;
-            int ibin[SSE_NVEC];
-        };
-        union float4{
-            SSE_FLOATS m_Dperp;
-            DOUBLE Dperp[SSE_NVEC];
-        };
-      
-      union int4 union_rpbin;
-      union float4 union_mDperp;
-      
-      const SSE_FLOATS m_xpos = SSE_SET_FLOAT(xpos);
-      const SSE_FLOATS m_ypos = SSE_SET_FLOAT(ypos);
-      const SSE_FLOATS m_zpos = SSE_SET_FLOAT(zpos);
-      
-      const SSE_FLOATS m_x1 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
-      const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
-      const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
-
-#ifdef COUNT_VECTORIZED
-      vectorized_npairs += SSE_NVEC;
-#endif
-      localx1 += SSE_NVEC;
-      localy1 += SSE_NVEC;
-      localz1 += SSE_NVEC;
-      
-      for(int w = 0; w < pair.num_weights; w++){
-        pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
-        local_w1.weights[w] += SSE_NVEC;
-      }
-
-      union float4_weights{
-        SSE_FLOATS m_weights;
-        DOUBLE weights[SSE_NVEC];
-      };
-      union float4_weights union_mweight;
-      
-      const SSE_FLOATS m_pimax = SSE_SET_FLOAT(pimax);
-      const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
-      const SSE_FLOATS m_sqr_rpmin = SSE_SET_FLOAT(sqr_rpmin);
-      
-      const SSE_FLOATS m_xdiff = SSE_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
-      const SSE_FLOATS m_ydiff = SSE_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
-      const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
         
-      const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(m_xdiff);
-      const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(m_ydiff);
-      //const SSE_FLOATS m_sqr_zdiff = SSE_SQUARE_FLOAT(m_zdiff);
-      
-      if(need_weightavg){
-        pair.dx.s = m_xdiff;
-        pair.dy.s = m_ydiff;
-        pair.dz.s = m_zdiff;
-      }
-        
-      SSE_FLOATS r2  = SSE_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
-      SSE_FLOATS m_mask_left;
-      {
-          const SSE_FLOATS m_pimax_mask = SSE_COMPARE_FLOATS_LT(m_zdiff,m_pimax);
-          if(SSE_TEST_COMPARISON(m_pimax_mask) == 0) {
-              j = N1;
-              break;
-          }
-                
-          const SSE_FLOATS m_rpmin_mask = SSE_COMPARE_FLOATS_GE(r2, m_sqr_rpmin);
-          const SSE_FLOATS m_rpmax_mask = SSE_COMPARE_FLOATS_LT(r2,m_sqr_rpmax);
-          const SSE_FLOATS m_rp_mask = SSE_BITWISE_AND(m_rpmin_mask, m_rpmax_mask);
-          m_mask_left = SSE_BITWISE_AND(m_pimax_mask, m_rp_mask);
-          const int num_left = SSE_TEST_COMPARISON(m_mask_left);
-          if(num_left == 0) {
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
             continue;
-          }
+        }
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
+            }
+        }
+        
+        int64_t j = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
+        for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + j;
+        }
 
-          /* Check if all the possible pairs are in the last bin. But only run
-             this check if not evaluating same cell pairs or when simply counting 
-             the pairs (no rpavg requested)  */
-          if(same_cell == 0 && need_rpavg == 0 && need_weightavg == 0) {
-              const SSE_FLOATS m_last_bin = SSE_BITWISE_AND(m_mask_left, SSE_COMPARE_FLOATS_GE(r2, m_rupp_sqr[nbin-1]));
-              if(SSE_TEST_COMPARISON(m_last_bin) == num_left) { /* all the valid pairs are in the last bin */
-                  npairs[nbin-1] += num_left;/* add the total number of pairs to the last bin and continue j-loop*/
-                  continue;
-              }
-          }
-          
-          r2 = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
-      }
+        for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
+      
+            const SSE_FLOATS m_xpos = SSE_SET_FLOAT(xpos);
+            const SSE_FLOATS m_ypos = SSE_SET_FLOAT(ypos);
+            const SSE_FLOATS m_zpos = SSE_SET_FLOAT(zpos);
+            
+            const SSE_FLOATS m_x1 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
+            const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
+            const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
+            
+#ifdef COUNT_VECTORIZED
+            vectorized_npairs += SSE_NVEC;
+#endif
+            localx1 += SSE_NVEC;
+            localy1 += SSE_NVEC;
+            localz1 += SSE_NVEC;
+            
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+                local_w1.weights[w] += SSE_NVEC;
+            }
+            
+            union int4 union_rpbin;
+            union float4 union_mDperp;
+            union float4_weights union_mweight;
+            
+
+      
+            const SSE_FLOATS m_max_dz = SSE_SET_FLOAT(max_dz);
+            const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
+            const SSE_FLOATS m_sqr_rpmin = SSE_SET_FLOAT(sqr_rpmin);
+            
+            const SSE_FLOATS m_xdiff = SSE_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+            const SSE_FLOATS m_ydiff = SSE_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+            const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
+            
+            const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(m_xdiff);
+            const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(m_ydiff);
+            //const SSE_FLOATS m_sqr_zdiff = SSE_SQUARE_FLOAT(m_zdiff);
+            
+            if(need_weightavg){
+                pair.dx.s = m_xdiff;
+                pair.dy.s = m_ydiff;
+                pair.dz.s = m_zdiff;
+            }
+            
+            SSE_FLOATS r2  = SSE_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
+            SSE_FLOATS m_mask_left;
+            {
+                /* See in previous sections for explanation. z is sorted -> if any
+                   element of the chunk is >= max_dz (==pimax), then none in any
+                   following chunks can contain dz < pimax.
+                 */
+                SSE_FLOATS m_mask_geq_pimax = SSE_COMPARE_FLOATS_GE(m_zdiff,m_max_dz);
+                if(SSE_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
+                    j = N1;//but do not break yet since there might be valid pairs in this chunk
+                }
+
+                SSE_FLOATS m_mask_pimax = SSE_COMPARE_FLOATS_LT(m_zdiff,m_max_dz);
+                if(SSE_TEST_COMPARISON(m_mask_pimax) == 0) {
+                    j = N1;
+                    break;
+                }
+
+                const SSE_FLOATS m_rpmin_mask = SSE_COMPARE_FLOATS_GE(r2, m_sqr_rpmin);
+                const SSE_FLOATS m_rpmax_mask = SSE_COMPARE_FLOATS_LT(r2,m_sqr_rpmax);
+                const SSE_FLOATS m_rp_mask = SSE_BITWISE_AND(m_rpmin_mask, m_rpmax_mask);
+                m_mask_left = SSE_BITWISE_AND(m_mask_pimax, m_rp_mask);
+                const int num_left = SSE_TEST_COMPARISON(m_mask_left);
+                if(num_left == 0) {
+                    continue;
+                }
                 
-      SSE_FLOATS m_rpbin = SSE_SETZERO_FLOAT();
-      if(need_rpavg) {
-        union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
-      }
-      if(need_weightavg){
-        union_mweight.m_weights = sse_weight_func(&pair);
-      }
-
-      for(int kbin=nbin-1;kbin>=1;kbin--) {
-        SSE_FLOATS m1 = SSE_COMPARE_FLOATS_GE(r2,m_rupp_sqr[kbin-1]);
-        SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m1,m_mask_left);
-        m_mask_left = SSE_COMPARE_FLOATS_LT(r2,m_rupp_sqr[kbin-1]);
-        int test2  = SSE_TEST_COMPARISON(m_bin_mask);
-        npairs[kbin] += SSE_BIT_COUNT_INT(test2);
-        if(need_rpavg || need_weightavg) {
-          m_rpbin = SSE_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
-        }
-        int test3 = SSE_TEST_COMPARISON(m_mask_left);
-        if(test3 == 0) {
-            break;
-        }
-      }
-
-      if(need_rpavg || need_weightavg) {
-        union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
-        //protect the unroll pragma in case compiler is not icc.
-#if  __INTEL_COMPILER
+                /* Check if all the possible pairs are in the last bin. But only run
+                   this check if not evaluating same cell pairs or when simply counting 
+                   the pairs (no rpavg requested)  */
+                if(same_cell == 0 && need_rpavg == 0 && need_weightavg == 0) {
+                    const SSE_FLOATS m_last_bin = SSE_BITWISE_AND(m_mask_left, SSE_COMPARE_FLOATS_GE(r2, m_rupp_sqr[nbin-1]));
+                    if(SSE_TEST_COMPARISON(m_last_bin) == num_left) { /* all the valid pairs are in the last bin */
+                        npairs[nbin-1] += num_left;/* add the total number of pairs to the last bin and continue j-loop*/
+                        continue;
+                    }
+                }
+                
+                r2 = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
+            }
+            
+            SSE_FLOATS m_rpbin = SSE_SETZERO_FLOAT();
+            if(need_rpavg) {
+                union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
+            }
+            if(need_weightavg){
+                union_mweight.m_weights = sse_weight_func(&pair);
+            }
+            
+            for(int kbin=nbin-1;kbin>=1;kbin--) {
+                SSE_FLOATS m1 = SSE_COMPARE_FLOATS_GE(r2,m_rupp_sqr[kbin-1]);
+                SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m1,m_mask_left);
+                m_mask_left = SSE_COMPARE_FLOATS_LT(r2,m_rupp_sqr[kbin-1]);
+                int test2  = SSE_TEST_COMPARISON(m_bin_mask);
+                npairs[kbin] += SSE_BIT_COUNT_INT(test2);
+                if(need_rpavg || need_weightavg) {
+                    m_rpbin = SSE_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
+                }
+                int test3 = SSE_TEST_COMPARISON(m_mask_left);
+                if(test3 == 0) {
+                    break;
+                }
+            }
+            
+            if(need_rpavg || need_weightavg) {
+                union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
+                //protect the unroll pragma in case compiler is not icc.
+#if  __INTEL_COMqPILER
 #pragma unroll(SSE_NVEC)
 #endif
-        for(int jj=0;jj<SSE_NVEC;jj++) {
-          const int kbin = union_rpbin.ibin[jj];
-          if(need_rpavg){
-            const DOUBLE r = union_mDperp.Dperp[jj];
-            rpavg[kbin] += r;
-          }
-          if(need_weightavg){
-            const DOUBLE weight = union_mweight.weights[jj];
-            weightavg[kbin] += weight;
-          }
-
-        }
-      } //rpavg
-    }//j loop over N1, increments of SSE_NVEC			
-
-    for(;j<N1;j++) {
+                for(int jj=0;jj<SSE_NVEC;jj++) {
+                    const int kbin = union_rpbin.ibin[jj];
+                    if(need_rpavg){
+                        const DOUBLE r = union_mDperp.Dperp[jj];
+                        rpavg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        const DOUBLE weight = union_mweight.weights[jj];
+                        weightavg[kbin] += weight;
+                    }
+                    
+                }
+            } //rpavg
+        }//j loop over N1, increments of SSE_NVEC			
+        
+        for(;j<N1;j++) {
 #ifdef COUNT_VECTORIZED
-        serial_npairs++;
+            serial_npairs++;
 #endif
-        const DOUBLE dx = *localx1++ - xpos;
-        const DOUBLE dy = *localy1++ - ypos;
-        const DOUBLE dz = *localz1++ - zpos;
-        for(int w = 0; w < pair.num_weights; w++){
-          pair.weights1[w].d = *local_w1.weights[w]++;
-        }
-
-        if(dz >= pimax) break;
-        
-        const DOUBLE r2 = dx*dx + dy*dy;
-        if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
-        
-        if(need_weightavg) {
-            pair.dx.d = dx;
-            pair.dy.d = dy;
-            pair.dz.d = dz;
-        }
-
-        const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
-        const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
-        for(int kbin=nbin-1;kbin>=1;kbin--){
-            if(r2 >= rupp_sqr[kbin-1]) {
-                npairs[kbin]++;
-                if(need_rpavg){
-                    rpavg[kbin] += r;
-                }
-                if(need_weightavg){
-                    weightavg[kbin] += pairweight;
-                }
-                break;
+            const DOUBLE dx = *localx1++ - xpos;
+            const DOUBLE dy = *localy1++ - ypos;
+            const DOUBLE dz = *localz1++ - zpos;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
             }
-        }//searching for kbin loop
+            
+            if(dz >= max_dz) break;
+            
+            const DOUBLE r2 = dx*dx + dy*dy;
+            if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
+            
+            if(need_weightavg) {
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+            }
+            
+            const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
+            const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
+            for(int kbin=nbin-1;kbin>=1;kbin--){
+                if(r2 >= rupp_sqr[kbin-1]) {
+                    npairs[kbin]++;
+                    if(need_rpavg){
+                        rpavg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        weightavg[kbin] += pairweight;
+                    }
+                    break;
+                }
+            }//searching for kbin loop
+        }
     }
-  }
     uint64_t npairs_found = 0;
-	for(int i=0;i<nbin;i++) {
-		src_npairs[i] += npairs[i];
+    for(int i=0;i<nbin;i++) {
+        src_npairs[i] += npairs[i];
         npairs_found += npairs[i];
         if(need_rpavg) {
-          src_rpavg[i] += rpavg[i];
+            src_rpavg[i] += rpavg[i];
         }
         if(need_weightavg) {
             src_weightavg[i] += weightavg[i];
         }
-	}
-  
+    }
+    
 #ifdef COUNT_VECTORIZED  
-  struct timespec tcell_end;
-  current_utc_time(&tcell_end);
-  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell);
+    struct timespec tcell_end;
+    current_utc_time(&tcell_end);
+    int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+    fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell);
 #endif
-
-  return EXIT_SUCCESS;
+    
+    return EXIT_SUCCESS;
 }
 
 #endif //__SSE4_2__
@@ -1151,134 +1257,157 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
     const uint64_t vectorized_npairs=0;
 #endif
     
-  /*----------------- FALLBACK CODE --------------------*/
-  uint64_t npairs[nbin];
-  DOUBLE rpavg[nbin], weightavg[nbin];
-  const int32_t need_rpavg = src_rpavg != NULL;
-  const int32_t need_weightavg = src_weightavg != NULL;
-  for(int i=0;i<nbin;i++) {
-    npairs[i]=0;
-    if(need_rpavg) {
-      rpavg[i]=0.0;
+    /*----------------- FALLBACK CODE --------------------*/
+    uint64_t npairs[nbin];
+    DOUBLE rpavg[nbin], weightavg[nbin];
+    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_weightavg = src_weightavg != NULL;
+    for(int i=0;i<nbin;i++) {
+        npairs[i]=0;
+        if(need_rpavg) {
+            rpavg[i]=0.0;
+        }
+        if(need_weightavg){
+            weightavg[i]=0.;
+        }
     }
+  
+    // A copy whose pointers we can advance
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
+    pair_struct_DOUBLE pair = {.num_weights=0};
+    weight_func_t_DOUBLE weight_func = NULL;
     if(need_weightavg){
-      weightavg[i]=0.;
+        // Same particle list, new copy of num_weights pointers into that list
+        local_w0 = *weights0;
+        local_w1 = *weights1;
+        
+        pair.num_weights = local_w0.num_weights;
+        
+        weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
-  }
-  
-  // A copy whose pointers we can advance
-  weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
-                       local_w1 = {.weights={NULL}, .num_weights=0};
-  pair_struct_DOUBLE pair = {.num_weights=0};
-  weight_func_t_DOUBLE weight_func = NULL;
-  if(need_weightavg){
-      // Same particle list, new copy of num_weights pointers into that list
-      local_w0 = *weights0;
-      local_w1 = *weights1;
-      
-      pair.num_weights = local_w0.num_weights;
-      
-      weight_func = get_weight_func_by_method_DOUBLE(weight_method);
-  }
+    
+    /* naive implementation that is guaranteed to compile */
+    const DOUBLE *zstart = z1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE max_dz = pimax;
+    for(int64_t i=0;i<N0;i++) {
+        const DOUBLE xpos = *x0++ + off_xwrap;
+        const DOUBLE ypos = *y0++ + off_ywrap;
+        const DOUBLE zpos = *z0++ + off_zwrap;
+        for(int w = 0; w < pair.num_weights; w++){
+            pair.weights0[w].d = *local_w0.weights[w]++;
+        }
+        
 
-  
-  /* naive implementation that is guaranteed to compile */
-  int64_t nleft=N1, n_off = 0;
-  for(int64_t i=0;i<N0;i++) {
-      const DOUBLE xpos = *x0++ + off_xwrap;
-      const DOUBLE ypos = *y0++ + off_ywrap;
-      const DOUBLE zpos = *z0++ + off_zwrap;
-      for(int w = 0; w < pair.num_weights; w++){
-          pair.weights0[w].d = *local_w0.weights[w]++;
-      }
 
-      /* If in the same cell, unique pairs are guaranteed by not including the current particle */      
-      if(same_cell == 1) {
-          z1++; n_off++;
-          nleft--;
-      } else {
-          /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
-          while(nleft > 0) {
-              /*Particles are sorted on 'z', in increasing order */
-              const DOUBLE dz = *z1 - zpos;
-              if(dz > -pimax) break;
-              z1++; n_off++;
-              nleft--;
-          }
-          /*If no particle in the second cell satisfies distance constraints on 'dz' for the current 'i'th particle in first cell, 
-            then there can be no more pairs from any particles in the first cell (since the first cell is also sorted in increasing order in 'z')
-          */
-          if(nleft == 0) {
-              i=N0;
-              break;
-          }
-      }
-      DOUBLE *localz1 = z1;
-      DOUBLE *localx1 = x1 + n_off;
-      DOUBLE *localy1 = y1 + n_off;
-      for(int w = 0; w < pair.num_weights; w++){
-        local_w1.weights[w] = weights1->weights[w] + n_off;
-      }
-      
-      for(int64_t j=0;j<nleft;j++) {
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
+        }
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
+        }
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
+            }
+        }
+        
+        const int64_t n_off = z1 - zstart;
+        const int64_t nleft = N1 - n_off;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + n_off;
+        DOUBLE *localy1 = y1 + n_off;
+        for(int w = 0; w < pair.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + n_off;
+        }
+        
+        for(int64_t j=0;j<nleft;j++) {
 #ifdef COUNT_VECTORIZED
-          serial_npairs++;
+            serial_npairs++;
 #endif
-          const DOUBLE dx = *localx1++ - xpos;
-          const DOUBLE dy = *localy1++ - ypos;
-          const DOUBLE dz = *localz1++ - zpos;
-          for(int w = 0; w < pair.num_weights; w++){
-            pair.weights1[w].d = *local_w1.weights[w]++;
-          }
-
-          if(dz >=pimax) break;
-          
-          const DOUBLE r2 = dx*dx + dy*dy;
-          if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
-          
-          if(need_weightavg){
-              pair.dx.d = dx;
-              pair.dy.d = dy;
-              pair.dz.d = dz;
-          }
-
-          const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
-          const DOUBLE pairweight = need_weightavg ? weight_func(&pair) : ZERO;
-          
-          for(int kbin=nbin-1;kbin>=1;kbin--){
-              if(r2 >= rupp_sqr[kbin-1]) {
-                  npairs[kbin]++;
-                  if(need_rpavg) {
-                      rpavg[kbin] += r;
-                  }
-                  if(need_weightavg){
-                    weightavg[kbin] += pairweight;
-                  }
-                  break;
-              }
-          }//searching for kbin loop                                                               
-      }
-  }
-  
-  uint64_t npairs_found = 0;
-  for(int i=0;i<nbin;i++) {
-    src_npairs[i] += npairs[i];
-    npairs_found += npairs[i];
-    if(need_rpavg) {
-      src_rpavg[i] += rpavg[i];
+            const DOUBLE dx = *localx1++ - xpos;
+            const DOUBLE dy = *localy1++ - ypos;
+            const DOUBLE dz = *localz1++ - zpos;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
+            }
+            
+            if(dz >= max_dz) break;
+            
+            const DOUBLE r2 = dx*dx + dy*dy;
+            if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
+            
+            if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
+            }
+            
+            const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
+            const DOUBLE pairweight = need_weightavg ? weight_func(&pair) : ZERO;
+            
+            for(int kbin=nbin-1;kbin>=1;kbin--){
+                if(r2 >= rupp_sqr[kbin-1]) {
+                    npairs[kbin]++;
+                    if(need_rpavg) {
+                        rpavg[kbin] += r;
+                    }
+                    if(need_weightavg){
+                        weightavg[kbin] += pairweight;
+                    }
+                    break;
+                }
+            }//searching for kbin loop                                                               
+        }
     }
-    if(need_weightavg){
-      src_weightavg[i] += weightavg[i];
+    
+    uint64_t npairs_found = 0;
+    for(int i=0;i<nbin;i++) {
+        src_npairs[i] += npairs[i];
+        npairs_found += npairs[i];
+        if(need_rpavg) {
+            src_rpavg[i] += rpavg[i];
+        }
+        if(need_weightavg){
+            src_weightavg[i] += weightavg[i];
+        }
     }
-  }
-  
+    
 #ifdef COUNT_VECTORIZED
-  struct timespec tcell_end;
-  current_utc_time(&tcell_end);
-  int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
-  fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell);
+    struct timespec tcell_end;
+    current_utc_time(&tcell_end);
+    int64_t dt = (int64_t) REALTIME_ELAPSED_NS(tcell_start,tcell_end);
+    fprintf(stderr,"%5"PRId64" %5"PRId64" %12"PRId64" %12"PRIu64" %12"PRIu64" %12"PRIu64" %2d\n", N0, N1, dt, vectorized_npairs, serial_npairs, npairs_found, same_cell);
 #endif
   
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
     /*----------------- FALLBACK CODE --------------------*/
 }

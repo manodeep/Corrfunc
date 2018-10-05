@@ -526,6 +526,7 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                                             const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                             const int nmesh_x, const int nmesh_y, const int nmesh_z,
                                             const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                            const int enable_min_sep_opt,
                                             const int autocorr, const int periodic)
 {
   const int64_t nx_ngb = 2*xbin_refine_factor + 1;
@@ -599,16 +600,22 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                 continue;
             }
 
-            const int min_xdiff = abs(iix) > 1 ? abs(iix)-1:0;
-            const int min_ydiff = abs(iiy) > 1 ? abs(iiy)-1:0;
-            
             const int64_t ngb_index = first->num_ngb;
             XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
                     "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
             first->ngb_cells[ngb_index] = &(lattice2[icell2]);
-            first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
-            first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
-            
+            if(enable_min_sep_opt) {
+                const int round_iix_towards_zero = iix < 0 ? +1:(iix > 0 ? -1:0);
+                const int round_iiy_towards_zero = iiy < 0 ? +1:(iiy > 0 ? -1:0);
+                const int min_xdiff = iix + round_iix_towards_zero;/* min_xdiff can be signed*/
+                const int min_ydiff = iiy + round_iiy_towards_zero;/* min_ydiff can be signed*/
+                
+                first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
+                first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
+            } else {
+                first->ngb_min_dx[ngb_index] = ZERO;
+                first->ngb_min_dy[ngb_index] = ZERO;
+            }
             //Note the xwrap/ywraps do not have memory allocated for them in the
             //non-periodic case. 
             if(periodic == 1) {
