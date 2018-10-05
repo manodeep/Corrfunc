@@ -333,7 +333,7 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
             DOUBLE *Z = first->z;
             DOUBLE *CZ = first->cz;
             
-            SGLIB_ARRAY_QUICK_SORT(DOUBLE, CZ, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+            SGLIB_ARRAY_QUICK_SORT(DOUBLE, Z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
         }
     }
@@ -357,13 +357,13 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
                                                   struct cellarray_mocks_index_particles_DOUBLE *lattice2, const int64_t totncells,
                                                   const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                                   const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                                                  const DOUBLE xbinsize, const DOUBLE ybinsize, const int enable_min_sep_opt, 
                                                   const int autocorr)
 {
   const int64_t nx_ngb = 2*xbin_refine_factor + 1;
   const int64_t ny_ngb = 2*ybin_refine_factor + 1;
   const int64_t nz_ngb = 2*zbin_refine_factor + 1;
   const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
-
 
   for(int64_t icell=0;icell<totncells;icell++) {
     struct cellarray_mocks_index_particles_DOUBLE *first = &(lattice1[icell]);
@@ -377,7 +377,11 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
     
     first->num_ngb = 0;
     first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
-    if(first->ngb_cells == NULL) {
+    first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
+    first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
+    if(first->ngb_cells == NULL || first->ngb_min_dx == NULL || first->ngb_min_dy == NULL) {
+        fprintf(stderr,"Error: Could not allocate memory for storing neighbouring cell indices and the min. separations. "
+                "Reducing bin refine factors might help\n");
         return EXIT_FAILURE;
     }
     
@@ -401,10 +405,22 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
               if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements==0) {
                   continue;
               }
+
               const int64_t ngb_index = first->num_ngb;
               XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
                       "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
               first->ngb_cells[ngb_index] = &(lattice2[icell2]);
+              if(enable_min_sep_opt) {
+                  const int round_iix_towards_zero = iix < 0 ? +1:(iix > 0 ? -1:0);
+                  const int round_iiy_towards_zero = iiy < 0 ? +1:(iiy > 0 ? -1:0);
+                  const int min_xdiff = iix + round_iix_towards_zero;/* min_xdiff can be signed*/
+                  const int min_ydiff = iiy + round_iiy_towards_zero;/* min_ydiff can be signed*/
+                  first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
+                  first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
+              } else {
+                  first->ngb_min_dx[ngb_index] = ZERO;
+                  first->ngb_min_dy[ngb_index] = ZERO;
+              }
               
               //There are no periodic boundary conditions for mocks
               first->num_ngb++;

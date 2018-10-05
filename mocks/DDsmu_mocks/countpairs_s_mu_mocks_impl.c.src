@@ -513,9 +513,15 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
     {
+        const DOUBLE xbinsize = xdiff/nmesh_x;
+        const DOUBLE ybinsize = ydiff/nmesh_y;
         int status = assign_ngb_cells_mocks_index_particles_DOUBLE(lattice1, lattice2, totncells,
-                                                                   options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                                   options->bin_refine_factors[0],
+                                                                   options->bin_refine_factors[1],
+                                                                   options->bin_refine_factors[2],
                                                                    nmesh_x, nmesh_y, nmesh_z,
+                                                                   xbinsize, ybinsize,
+                                                                   options->enable_min_sep_opt,
                                                                    autocorr);
         if(status != EXIT_SUCCESS) {
             free_cellarray_mocks_index_particles_DOUBLE(lattice1, totncells);
@@ -628,6 +634,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                              options->fast_divide_and_NR_steps,
                                                                              smax, smin, nsbin,
                                                                              nmu_bins, supp_sqr, mu_max,
+                                                                             ZERO, ZERO, /*min_xdiff, min_ydiff are 0 for same_cell*/
                                                                              this_savg, npairs,
                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
@@ -641,6 +648,9 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                     if(second->nelements == 0) {
                         continue;
                     }
+                    const DOUBLE min_xdiff = first->ngb_min_dx[ngb];
+                    const DOUBLE min_ydiff = first->ngb_min_dy[ngb];
+
                     const int same_cell = 0;
                     DOUBLE *x2 = second->x;
                     DOUBLE *y2 = second->y;
@@ -656,6 +666,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                              options->fast_divide_and_NR_steps,
                                                                              smax, smin, nsbin,
                                                                              nmu_bins, supp_sqr, mu_max,
+                                                                             min_xdiff, min_ydiff,
                                                                              this_savg, npairs,
                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly

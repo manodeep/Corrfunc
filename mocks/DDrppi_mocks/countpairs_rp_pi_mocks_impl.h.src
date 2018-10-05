@@ -26,7 +26,8 @@ extern "C" {
                                                     const int same_cell,
                                                     const unsigned int fast_divide_and_NR_steps,
                                                     const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin,
-                                                    const int npibin, const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep, 
+                                                    const int npibin, const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
+                                                    const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
                                                     DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                     DOUBLE *src_weightavg, const weight_method_t weight_method);
     

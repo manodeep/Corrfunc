@@ -5,6 +5,10 @@
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
+
+  Changed in v2.3: Particles are now sorted in Cartesian 'z' positions.
+                   Previously particles were sorted in comoving distance, 'd'
+
 */
 
 
@@ -20,19 +24,21 @@
 
 #include "weight_functions_DOUBLE.h"
 
+
 #ifdef __AVX512F__
 #include "avx512_calls.h"
 
 static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
-								  DOUBLE *d0, const weight_struct_DOUBLE *weights0,
-								  const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, 
-								  DOUBLE *d1, const weight_struct_DOUBLE *weights1,
-								  const int same_cell,
-								  const unsigned int fast_divide_and_NR_steps,
-								  const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
-								  const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
-								  DOUBLE *src_rpavg,
-								  uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                                  DOUBLE *d0, const weight_struct_DOUBLE *weights0,
+                                                                  const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, 
+                                                                  DOUBLE *d1, const weight_struct_DOUBLE *weights1,
+                                                                  const int same_cell,
+                                                                  const unsigned int fast_divide_and_NR_steps,
+                                                                  const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
+                                                                  const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
+                                                                  const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
+                                                                  DOUBLE *src_rpavg,
+                                                                  uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -82,8 +88,9 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
       avx512_weight_func   = get_avx512_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    const DOUBLE *dend = d1 + N1;
-    const DOUBLE *dstart = d1;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE *zstart = z1;
+    const DOUBLE max_dz = SQRT(max_sep*max_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -96,23 +103,51 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
             pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
         }
 
-        if(same_cell == 1) {
-            d1++;
-        } else {
-            while(d1 != dend && (*d1 - dpos) <= -max_sep) {
-                d1++;
-            }
-            if(d1 == dend) {
-                i = N0;
-                break;
-            }
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
         }
         
-        const int64_t n_off = d1 - dstart;
-        DOUBLE *locald1 = d1;
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
+        }
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
+            }
+        }
+
+        const int64_t n_off = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *locald1 = d1 + n_off;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
-        DOUBLE *localz1 = z1 + n_off;
         for(int w = 0; w < local_w1.num_weights; w++){
             local_w1.weights[w] = weights1->weights[w] + n_off;
         }
@@ -122,6 +157,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
         const AVX512_FLOATS m_zpos    = AVX512_SET_FLOAT(zpos);
         const AVX512_FLOATS m_dpos    = AVX512_SET_FLOAT(dpos);
 
+        const AVX512_FLOATS m_max_dz = AVX512_SET_FLOAT(max_dz);
         const AVX512_FLOATS m_sqr_pimax  = AVX512_SET_FLOAT(sqr_pimax);
         const AVX512_FLOATS m_sqr_rpmax  = AVX512_SET_FLOAT(sqr_rpmax);
         const AVX512_FLOATS m_sqr_max_sep = AVX512_SET_FLOAT(sqr_max_sep);
@@ -182,6 +218,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                
             */
             
+
             const AVX512_FLOATS m_s_dot_l =  AVX512_FMA_SUBTRACT_FLOATS(m_d2, m_d2, AVX512_SQUARE_FLOAT(m_dpos)); /* := d2^2 - dpos^2 */
             const AVX512_FLOATS m_sqr_s_dot_l = AVX512_SQUARE_FLOAT(m_s_dot_l);
             const AVX512_FLOATS m_sqr_sep = AVX512_FMA_ADD_FLOATS(m_perpx, m_perpx, AVX512_FMA_ADD_FLOATS(m_perpy, m_perpy, 
@@ -190,6 +227,15 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
             //The 3-d separation (| s.s |)^2 *must* be less than (pimax^2 + rpmax^2). If not, one of the
             //constraints for counting the pair (i.e., rp < rpmax, \pi < pimax) must be violated and
             //we would discard the pair.
+
+            /* Since the particles are sorted on 'z', we can check if any of the dz values >= max_dz */
+            const AVX512_MASK m_mask_dz = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_perpz, m_max_dz,_CMP_GE_OQ);
+            if(m_mask_dz > 0) {
+                /* this means the next chunk of particles can not be within 's' */
+                j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
+            }
+            
+
             const AVX512_MASK m_mask_3d_sep = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_sep, m_sqr_max_sep, _CMP_LT_OQ);
             const AVX512_FLOATS m_sqr_norm_l = AVX512_FMA_ADD_FLOATS(m_parx, m_parx, 
                                                                      AVX512_FMA_ADD_FLOATS(m_pary, m_pary, AVX512_SQUARE_FLOAT(m_parz)));
@@ -299,6 +345,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                                                                const unsigned int fast_divide_and_NR_steps,
                                                                const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
                                                                const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
+                                                               const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
                                                                DOUBLE *src_rpavg,
                                                                uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -355,8 +402,10 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
         fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    const DOUBLE *dstart = d1;
-    const DOUBLE last_d1 = d1[N1-1];
+
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE *zstart = z1;
+    const DOUBLE max_dz = SQRT(max_sep*max_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -368,6 +417,8 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             // The advancement of the local_w0.weights[w] pointer should always mirror x0.
             pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
         }
+
+
 
         /* are there any pairs possible with this particle and ANY
            of the j'th particles?
@@ -382,36 +433,39 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((dpos - last_d1) >= max_sep) {
-            i = N1;
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
             break;
         }
-
+        
         /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
-           j' particles. The min. difference in the z-positions between this i'th particle and ANY
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
            of the remaining j'th particles, is the difference between the current j'th particle and
            the current i'th particle (since all remaining j'th particles will have a larger value for
-           the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
            the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
            particle
         */
-        const DOUBLE this_d = *d1 - dpos;
-        if(this_d >= max_sep) {
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
             continue;
         }
         
+        /* Okay so there MAY be a pair */
         if(same_cell == 1) {
-            d1++; 
+            z1++;
         } else {
-            while((*d1 - dpos) <= -max_sep) {
-                d1++;
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
             }
         }
-        int64_t j = d1 - dstart;
-        DOUBLE *locald1 = d1;
+
+        int64_t j = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *locald1 = d1 + j;
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
-        DOUBLE *localz1 = z1 + j;
+
         for(int w = 0; w < local_w1.num_weights; w++){
             local_w1.weights[w] = weights1->weights[w] + j;
         }
@@ -425,6 +479,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
         const AVX_FLOATS m_sqr_rpmax  = AVX_SET_FLOAT(sqr_rpmax);
         const AVX_FLOATS m_sqr_max_sep = AVX_SET_FLOAT(sqr_max_sep);
         /* const AVX_FLOATS m_max_sep = AVX_SET_FLOAT(max_sep); */
+        const AVX_FLOATS m_max_dz = AVX_SET_FLOAT(max_dz);
         const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
         const AVX_FLOATS m_sqr_rpmin  = AVX_SET_FLOAT(sqr_rpmin);
         const AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
@@ -458,17 +513,21 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const AVX_FLOATS m_parx = AVX_ADD_FLOATS(m_x2, m_xpos);
             const AVX_FLOATS m_pary = AVX_ADD_FLOATS(m_y2, m_ypos);
             const AVX_FLOATS m_parz = AVX_ADD_FLOATS(m_z2, m_zpos);
-
+            
+            
+            /* Since the particles are sorted on 'z', we can check if any of the dz values >= max_dz */
+            const AVX_FLOATS m_mask_dz = AVX_COMPARE_FLOATS(m_perpz, m_max_dz,_CMP_GE_OQ);
+            if(AVX_TEST_COMPARISON(m_mask_dz) > 0) {
+                /* this means the next chunk of particles can not be within 's' */
+                j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
+            }
+            
+            
+            
             AVX_FLOATS m_sqr_Dpar, m_sqr_Dperp;
             {
                 const AVX_FLOATS m_s_dot_l = AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
                 const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);
-                
-                /* const AVX_FLOATS m_quad_max_sep_mask = AVX_COMPARE_FLOATS(m_sqr_s_dot_l, AVX_SQUARE_FLOAT(m_sqr_max_sep), _CMP_LT_OQ); */
-                /* if(AVX_TEST_COMPARISON(m_sqr_max_sep_mask) == 0) { */
-                /*     j = N1; */
-                /*     break; */
-                /* } */
                 
                 const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
                 const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
@@ -511,7 +570,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                    macro is defined in `avx_calls.h`
                  */
                 CHECK_AND_FAST_DIVIDE_AVX(m_sqr_Dpar, m_sqr_s_dot_l, m_sqr_norm_l, fast_divide_and_NR_steps);
-               
+
                 m_sqr_Dperp = AVX_SUBTRACT_FLOATS(m_sqr_sep,m_sqr_Dpar);
             }
 
@@ -598,10 +657,12 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const DOUBLE perpx = xpos - *localx1;
             const DOUBLE perpy = ypos - *localy1;
             const DOUBLE perpz = zpos - *localz1;
-            const DOUBLE dot_product = dpos*dpos - (*locald1) * (*locald1);//parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
-            /* if(dot_product * dot_product >= sqr_max_sep) { */
-            /*     break; */
-            /* }  */
+
+            if(perpz >= max_dz) {
+                break;
+            }
+
+            const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);//parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
             localx1++;localy1++;localz1++;locald1++;
             
             for(int w = 0; w < pair.num_weights; w++){
@@ -611,11 +672,11 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_max_sep) continue;
 
-            /* const DOUBLE dot_product = (parx*perpx+pary*perpy+parz*perpz); */
-            const DOUBLE norm = (parx*parx+pary*pary+parz*parz);
-            const DOUBLE tmp = dot_product * dot_product;
-            if(tmp >= norm*sqr_pimax) continue;
-            const DOUBLE sqr_Dpar = tmp/norm;
+            /* const DOUBLE s_dot_l = (parx*perpx+pary*perpy+parz*perpz); */
+            const DOUBLE sqr_norm_l = (parx*parx+pary*pary+parz*parz);
+            const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
+            if(sqr_s_dot_l >= sqr_norm_l*sqr_pimax) continue;
+            const DOUBLE sqr_Dpar = sqr_s_dot_l/sqr_norm_l;
             const int pibin  = (sqr_Dpar >= sqr_pimax) ? npibin:(int) (SQRT(sqr_Dpar)*inv_dpi);
             const DOUBLE sqr_Dperp  = sqr_s - sqr_Dpar;
             if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
@@ -676,6 +737,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                                                                const unsigned int fast_divide_and_NR_steps,
                                                                const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
                                                                const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
+                                                               const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
                                                                DOUBLE *src_rpavg,
                                                                uint64_t *src_npairs,
                                                                DOUBLE *src_weightavg, const weight_method_t weight_method)
@@ -735,7 +797,9 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
       fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    int64_t prev_j=0, n_off = 0;
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE *zstart = z1;
+    const DOUBLE max_dz = SQRT(max_sep*max_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -748,27 +812,53 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
         }
 
-        int64_t j;
-        if(same_cell == 1) {
-            d1++; n_off++;
-            j = i+1;
-        } else {
-            for(;prev_j<N1;prev_j++) {
-                const DOUBLE dz = *d1 - dpos;
-                if(dz > -max_sep) break;
-                d1++; n_off++;
-            }
-            if(prev_j == N1) {
-                break;
-            }
-            j = prev_j;
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
         }
-        DOUBLE *locald1 = d1;
-        DOUBLE *localx1 = x1 + n_off;
-        DOUBLE *localy1 = y1 + n_off;
-        DOUBLE *localz1 = z1 + n_off;
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
+        }
+        
+        /* Okay so there MAY be a pair */
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
+            }
+        }
+
+        int64_t j = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *locald1 = d1 + j;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + n_off;
+            local_w1.weights[w] = weights1->weights[w] + j;
         }
         
         const SSE_FLOATS m_xpos    = SSE_SET_FLOAT(xpos);
@@ -776,20 +866,10 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
         const SSE_FLOATS m_zpos    = SSE_SET_FLOAT(zpos);
         const SSE_FLOATS m_dpos    = SSE_SET_FLOAT(dpos);
 
-        union int8 {
-            SSE_INTS m_ibin;
-            int ibin[SSE_NVEC];
-        };
-
-
-        union float8{
-            SSE_FLOATS m_Dperp;
-            DOUBLE Dperp[SSE_NVEC];
-        };
-
         const SSE_FLOATS m_sqr_pimax  = SSE_SET_FLOAT(sqr_pimax);
         const SSE_FLOATS m_sqr_rpmax  = SSE_SET_FLOAT(sqr_rpmax);
         const SSE_FLOATS m_sqr_max_sep = SSE_SET_FLOAT(sqr_max_sep);
+        const SSE_FLOATS m_max_dz = SSE_SET_FLOAT(max_dz);
         const SSE_FLOATS m_inv_dpi    = SSE_SET_FLOAT(inv_dpi);
         const SSE_FLOATS m_sqr_rpmin  = SSE_SET_FLOAT(sqr_rpmin);
         const SSE_FLOATS m_npibin     = SSE_SET_FLOAT((DOUBLE) npibin);
@@ -812,16 +892,18 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 local_w1.weights[w] += SSE_NVEC;
             }
 
-            union float4_weights{
-                SSE_FLOATS m_weights;
-                DOUBLE weights[SSE_NVEC];
-            };
             union float4_weights union_mweight;
 
             const SSE_FLOATS m_perpx = SSE_SUBTRACT_FLOATS(m_xpos, m_x2);
             const SSE_FLOATS m_perpy = SSE_SUBTRACT_FLOATS(m_ypos, m_y2);
             const SSE_FLOATS m_perpz = SSE_SUBTRACT_FLOATS(m_zpos, m_z2);
-            
+
+            const SSE_FLOATS m_mask_dz = SSE_COMPARE_FLOATS_GE(m_perpz, m_max_dz);
+            if(SSE_TEST_COMPARISON(m_mask_dz) > 0 ) {
+                /* this means the next chunk of particles can not be within 's' */
+                j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
+            }
+
             const SSE_FLOATS m_parx = SSE_ADD_FLOATS(m_x2, m_xpos);
             const SSE_FLOATS m_pary = SSE_ADD_FLOATS(m_y2, m_ypos);
             const SSE_FLOATS m_parz = SSE_ADD_FLOATS(m_z2, m_zpos);
@@ -829,15 +911,6 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             SSE_FLOATS m_sqr_Dpar, m_sqr_Dperp;
             {
                 const SSE_FLOATS m_s_dot_l =  SSE_SUBTRACT_FLOATS(SSE_SQUARE_FLOAT(m_d2), SSE_SQUARE_FLOAT(m_dpos));
-                /* const SSE_FLOATS m_s_dot_l_mask = SSE_COMPARE_FLOATS_LT(m_s_dot_l, m_sqr_max_sep); */
-                /* if(SSE_TEST_COMPARISON(m_s_dot_l_mask) == 0) { */
-                /*     j = N1; */
-                /*     break; */
-                /* } */
-
-                /* const SSE_FLOATS m_term1 = SSE_MULTIPLY_FLOATS(m_parx, m_perpx); */
-                /* const SSE_FLOATS m_term2 = SSE_MULTIPLY_FLOATS(m_pary, m_perpy); */
-                /* const SSE_FLOATS m_term3 = SSE_MULTIPLY_FLOATS(m_parz, m_perpz); */
                 const SSE_FLOATS m_sqr_s_dot_l = SSE_SQUARE_FLOAT(m_s_dot_l);
 
                 const SSE_FLOATS m_sqr_perpx = SSE_SQUARE_FLOAT(m_perpx);
@@ -869,9 +942,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 m_sqr_Dperp = SSE_SUBTRACT_FLOATS(m_sqr_sep,m_sqr_Dpar);
             }
 
-
             const SSE_FLOATS m_Dpar = SSE_SQRT_FLOAT(m_sqr_Dpar);
-
             SSE_FLOATS m_mask_left;
             //Do the mask filters in a separate scope
             {
@@ -888,7 +959,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 m_sqr_Dperp = SSE_BLEND_FLOATS_WITH_MASK(m_zero,m_sqr_Dperp,m_mask_left);
                 m_sqr_Dpar  = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_pimax,m_sqr_Dpar,m_mask_left);
             }
-            union float8 union_mDperp;
+            union float4 union_mDperp;
             if(need_rpavg) {
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(m_sqr_Dperp);
             }
@@ -922,7 +993,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             const SSE_FLOATS m_pibin = SSE_BLEND_FLOATS_WITH_MASK(m_npibin, m_tmp2, m_mask);
             const SSE_FLOATS m_npibin_p1 = SSE_ADD_FLOATS(m_npibin,m_one);
             const SSE_FLOATS m_binproduct = SSE_ADD_FLOATS(SSE_MULTIPLY_FLOATS(m_rpbin,m_npibin_p1),m_pibin);
-            union int8 union_finalbin;
+            union int4 union_finalbin;
             union_finalbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_binproduct);
 
 #if  __INTEL_COMPILER
@@ -951,10 +1022,11 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             const DOUBLE perpx = xpos - *localx1;
             const DOUBLE perpy = ypos - *localy1;
             const DOUBLE perpz = zpos - *localz1;
-            const DOUBLE dot_product = dpos*dpos - (*locald1) * (*locald1);//parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
-            /* if(dot_product * dot_product >= sqr_max_sep) { */
-            /*     break; */
-            /* }  */
+            if(perpz >= max_dz) {
+                break;
+            }
+            
+            const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);//parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
             localx1++;localy1++;localz1++;locald1++;
             
             for(int w = 0; w < pair.num_weights; w++){
@@ -964,11 +1036,10 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_max_sep) continue;
 
-            const DOUBLE norm = (parx*parx + pary*pary + parz*parz);
-            const DOUBLE tmp = dot_product * dot_product;
-            if(tmp >= sqr_pimax * norm) continue;
-            const DOUBLE sqr_Dpar = (dot_product * dot_product)/norm;
-
+            const DOUBLE sqr_norm_l = (parx*parx + pary*pary + parz*parz);
+            const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
+            if(sqr_s_dot_l >= sqr_pimax * sqr_norm_l) continue;
+            const DOUBLE sqr_Dpar = sqr_s_dot_l/sqr_norm_l;
 
             const int pibin  = (sqr_Dpar >= sqr_pimax) ? npibin:(int) (SQRT(sqr_Dpar)*inv_dpi);
             const DOUBLE sqr_Dperp  = sqr_s - sqr_Dpar;
@@ -1026,6 +1097,7 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                                                          const unsigned int fast_divide_and_NR_steps,
                                                          const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin,
                                                          const int npibin, const DOUBLE *rupp_sqr, const DOUBLE pimax, const DOUBLE max_sep,
+                                                         const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
                                                          DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                          DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -1076,7 +1148,11 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 
     const DOUBLE dpi = pimax/npibin;
     const DOUBLE inv_dpi = 1.0/dpi;
-    int64_t nleft=N1, n_off = 0;
+
+
+    const DOUBLE last_z1 = z1[N1-1];
+    const DOUBLE *zstart = z1;
+    const DOUBLE max_dz = SQRT(max_sep*max_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -1086,36 +1162,57 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             pair.weights0[w].d = *local_w0.weights[w]++;
         }
 
-        /* If in the same cell, unique pairs are guaranteed by not including the current particle */
+
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if((zpos - last_z1) >= max_dz) {
+            i = N0;
+            break;
+        }
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_dz) {
+            continue;
+        }
+        
+        /* Okay so there MAY be a pair */
         if(same_cell == 1) {
-            d1++; n_off++;
-            nleft--;
+            z1++;
         } else {
-            /* For a different cell, all pairs are unique pairs, since two cells are only opened for pairs once (accounted for in the assign_ngb_cells function)*/
-            while(nleft > 0) {
-                /*Particles are sorted on 'd', in increasing order */
-                const DOUBLE dz = *d1 - dpos;
-                if(dz > -max_sep) break;
-                d1++; n_off++;
-                nleft--;
-            }
-            /*If no particle in the second cell satisfies distance constraints on 'dz' for the current 'i'th particle in first cell, 
-              then there can be no more pairs from any particles in the first cell (since the first cell is also sorted in increasing order in 'd')
-             */
-            if(nleft == 0) {
-                i=N0;
-                break;
+            while((*z1 - zpos) <= -max_dz) {
+                z1++;
             }
         }
 
+        const int64_t n_off = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *locald1 = d1 + n_off;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
-        DOUBLE *localz1 = z1 + n_off;
-        DOUBLE *locald1 = d1;
-        for(int w = 0; w < pair.num_weights; w++){
+        for(int w = 0; w < local_w1.num_weights; w++){
             local_w1.weights[w] = weights1->weights[w] + n_off;
         }
 
+        const int64_t nleft = N1 - n_off;
         for(int64_t j=0;j<nleft;j++){
             const DOUBLE parx = xpos + *localx1;
             const DOUBLE pary = ypos + *localy1;
@@ -1124,7 +1221,12 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             const DOUBLE perpx = xpos - *localx1;
             const DOUBLE perpy = ypos - *localy1;
             const DOUBLE perpz = zpos - *localz1;
-            const DOUBLE dot_product = dpos*dpos - (*locald1) * (*locald1);//parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
+
+            if(perpz >= max_dz) {
+                break;
+            }
+            
+            const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);//parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) ==> d1^2 - d2^2
             localx1++;localy1++;localz1++;locald1++;
             
             for(int w = 0; w < pair.num_weights; w++){
@@ -1136,14 +1238,13 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                 continue;
             }
 
-            /* const DOUBLE dot_product  = (parx*perpx+pary*perpy+parz*perpz);//this is simply d1^2 - d2^2 */
-            const DOUBLE norm = (parx*parx+pary*pary+parz*parz);
-            const DOUBLE tmp = dot_product * dot_product;
+            const DOUBLE sqr_norm_l = (parx*parx + pary*pary + parz*parz);
+            const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
             //Checking for sqr_Dpar >= sqr_pimax before actually dividing.
-            if(tmp >= norm*sqr_pimax) continue;
+            if(sqr_s_dot_l >= sqr_norm_l*sqr_pimax) continue;
 
             //Okay need to divide then !
-            const DOUBLE sqr_Dpar = tmp/norm;
+            const DOUBLE sqr_Dpar = sqr_s_dot_l/sqr_norm_l;
             const int pibin  = (sqr_Dpar >= sqr_pimax) ? npibin:(int) (SQRT(sqr_Dpar)*inv_dpi);
             const DOUBLE sqr_Dperp  = sqr_s - sqr_Dpar;
             if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
