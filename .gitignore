@@ -33,6 +33,7 @@ bin/*
 include/*
 run_correlations
 test_*period*
+*output*integration*
 *.tgz
 cov-int
 *.gcno
