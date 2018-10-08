@@ -345,7 +345,7 @@ static PyMethodDef module_methods[] = {
          "   values, then pass in double precision arrays for the particle positions.\n"
          "\n"
          "fast_divide_and_NR_steps: integer (default 0)\n"
-         "   Replaces the division in ``AVX`` implementation with an\n"
+         "   Replaces the division in ``AVX512F`` and ``AVX`` implementation with an\n"
          "   approximate reciprocal, followed by ``fast_divide_and_NR_steps`` "
          "   Newton-Raphson step. Can improve \n"
          "   runtime by ~15-20%. Value of 0 keeps the standard division.\n"
@@ -1075,6 +1075,8 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     options.periodic = 0;
     options.fast_divide_and_NR_steps=0;
     options.c_api_timer = 0;
+    options.enable_min_sep_opt = 1;
+    
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
@@ -1107,13 +1109,14 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
+        "enable_min_sep_opt",
         "c_api_timer",
-        "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK (enum) */
+        "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK (enum) */
         "weight_type",
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!O!O!bbbbbbbhbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!O!O!bbbbbbbhbbis", kwlist,
                                        &autocorr,&cosmology,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1129,6 +1132,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                        &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
+                                       &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
                                        &weighting_method_str)
@@ -1400,6 +1404,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
     options.instruction_set = -1;
     options.periodic = 0;
     options.fast_divide_and_NR_steps=0;
+    options.enable_min_sep_opt = 1;
     options.c_api_timer = 0;
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
@@ -1435,13 +1440,14 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
+        "enable_min_sep_opt",
         "c_api_timer",
-        "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK (enum) */
+        "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK (enum) */
         "weight_type",
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidisO!O!O!|O!O!O!O!O!bbbbbbbhbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidisO!O!O!|O!O!O!O!O!bbbbbbbhbbis", kwlist,
                                        &autocorr,&cosmology,&nthreads,&mu_max,&nmu_bins,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1457,6 +1463,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
                                        &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
+                                       &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
                                        &weighting_method_str)
@@ -1748,7 +1755,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         "dec_refine_factor",
         "max_cells_per_dim",
         "c_api_timer",
-        "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
+        "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
         "weight_type",
         NULL
     };
