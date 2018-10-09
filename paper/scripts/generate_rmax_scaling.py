@@ -3,8 +3,10 @@ from __future__ import print_function
 import numpy as np
 
 import Corrfunc
-
 from Corrfunc.io import read_catalog
+
+from utils import convert_numpy_bytes_to_unicode
+
 import os.path as path
 from os.path import join as pjoin, abspath, dirname
 import time
@@ -95,7 +97,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     from Corrfunc.theory import DD, DDrppi, wp, xi
     allkeys = [#'DDrppi', 'DD',
                'wp', 'xi']
-    allisa = ['avx', 'sse42', 'fallback']
+    allisa = ['avx512f', 'avx', 'sse42', 'fallback']
     if keys is None:
         keys = allkeys
     else:
@@ -124,8 +126,8 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     nthreads = max_threads
     
     dtype = np.dtype([('repeat', np.int),
-                      ('name', 'S16'),
-                      ('isa', 'S16'),
+                      ('name', 'U16'),
+                      ('isa', 'U16'),
                       ('rmax', np.float),
                       ('nthreads', np.int),
                       ('runtime', np.float),
@@ -244,7 +246,7 @@ def benchmark_mocks_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                #'DDtheta (DD)',
                'DDrppi (DR)',
                'DDtheta (DR)']
-    allisa = ['avx', 'sse42', 'fallback']
+    allisa = ['avx512f', 'avx', 'sse42', 'fallback']
     if keys is None:
         keys = allkeys
     else:
@@ -279,8 +281,8 @@ def benchmark_mocks_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     nthreads = max_threads
     
     dtype = np.dtype([('repeat', np.int),
-                      ('name', 'S16'),
-                      ('isa', 'S16'),
+                      ('name', 'U16'),
+                      ('isa', 'U16'),
                       ('rmax', np.float),
                       ('nthreads', np.int),
                       ('runtime', np.float),
@@ -412,17 +414,17 @@ def benchmark_mocks_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     return keys, isa, runtimes
 
 if len(sys.argv) == 1:
-    #print("Running theory benchmarks")
-    #keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=3)
-    #np.savez('theory_scaling_rmax.npz', keys=keys, isa=isa,
-    #         runtimes=runtimes)
-    #print("Theory: runtimes = {0}".format(runtimes))
-
-    print("Running mocks benchmarks")
-    keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=3)
-    np.savez('mocks_scaling_rmax.npz', keys=keys, isa=isa,
+    print("Running theory benchmarks")
+    keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=3)
+    np.savez('theory_scaling_rmax.npz', keys=keys, isa=isa,
              runtimes=runtimes)
-    print("Mocks: runtimes = {0}".format(runtimes))
+    print("Theory: runtimes = {0}".format(runtimes))
+
+    #print("Running mocks benchmarks")
+    #keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=3)
+    #np.savez('mocks_scaling_rmax.npz', keys=keys, isa=isa,
+    #         runtimes=runtimes)
+    #print("Mocks: runtimes = {0}".format(runtimes))
     
 else:
     timings_file = sys.argv[1]
@@ -433,6 +435,8 @@ else:
         keys = xx['keys']
         isa = xx['isa']
         runtimes = xx['runtimes']
+        runtimes = convert_numpy_bytes_to_unicode(runtimes)
+
     except KeyError:
         print("Error: Invalid timings file = `{0}' passed in the "
               "command-line ".format(timings_file))
@@ -444,7 +448,7 @@ else:
     else:
         all_rmax = np.array(sorted(list(set(runtimes['rmax']))))
     min_rmax = min(all_rmax)
-    if 'theory' in timings_file:
+    if not mock:
         output_file = pjoin(dirname(__file__), '../tables/',
                             'timings_Mr19_rmax_theory.tex')
     else:
@@ -514,6 +518,8 @@ else:
     
     # Begin plotting
     plt_scaling = False  # do we ever want to plot scalings for rmax?
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     import seaborn
     seaborn.set_style('ticks')
@@ -548,7 +554,7 @@ else:
         axes[0].set_ylim(2e-1,1e2)
     for mod,ax,box,maxes in zip(keys,axes,boxes,maxes):
         ax.set_title(plt_mod[mod], position=(0.1,0.8), loc='left')
-        plt_isa = {'avx':'AVX', 'sse42':'SSE 4.2', 'fallback':'Fallback'}
+        plt_isa = {'avx512f':'AVX-512', 'avx':'AVX', 'sse42':'SSE 4.2', 'fallback':'Fallback'}
         for run_isa in isa:
             rt = []
             s_ind = (runtimes['rmax'] == min_rmax) & \
@@ -576,7 +582,6 @@ else:
         plty = 3e0*(pltx/pltx[-2])**2.
         axes[1].loglog(pltx, plty, ':', c='k')
         axes[1].annotate(r'$\propto \theta_\mathrm{max}^2$', xy=(.7, .05), xycoords='axes fraction')
-        axes[1].legend(loc='upper right')
     else:
         # BigO scaling lines
         pltx = np.concatenate([all_rmax, [all_rmax[-1]*10]])
@@ -587,6 +592,7 @@ else:
         pltx = np.concatenate([all_rmax, [all_rmax[-1]*10]])
         plty = 1e1*(pltx/pltx[-2])**3.
         axes[1].loglog(pltx/420., plty, ':', c='k')
+        axes[1].legend(loc='upper center')
     
     fig_fn = '{}.pdf'.format('.'.join(path.basename(timings_file).split('.')[:-1]))
     fig.tight_layout()

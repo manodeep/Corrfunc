@@ -950,7 +950,9 @@ def is_native_endian(array):
 
 
 import wurlitzer
+from contextlib import contextmanager
 
+@contextmanager
 def sys_pipes():
     '''
     We can use the Wurlitzer package to redirect stdout and stderr
@@ -971,7 +973,16 @@ def sys_pipes():
 
     kwargs = {'stdout':None if sys.stdout.isatty() else sys.stdout,
               'stderr':None if sys.stderr.isatty() else sys.stderr }
-    return wurlitzer.pipes(**kwargs)
+
+    # Redirection might break for any number of reasons, like
+    # stdout/err already being closed/redirected.  We probably
+    # prefer not to crash in that case and instead continue
+    # without any redirection.
+    try:
+        with wurlitzer.pipes(**kwargs):
+          yield
+    except:
+        yield
     
 if __name__ == '__main__':
     import doctest

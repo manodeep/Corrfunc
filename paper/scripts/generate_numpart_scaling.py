@@ -4,8 +4,10 @@ from __future__ import print_function
 import numpy as np
 
 import Corrfunc
-
 from Corrfunc.io import read_catalog
+
+from utils import convert_numpy_bytes_to_unicode
+
 from os.path import join as pjoin, abspath, dirname
 import time
 import sys
@@ -76,7 +78,7 @@ def benchmark_theory_threads_all(numpart_frac=[0.001, 0.005, 0.01, 0.05, 0.1, 0.
     from Corrfunc.theory import DD, DDrppi, wp, xi
     allkeys = [#'DD', 'DDrppi',
                'wp', 'xi']
-    allisa = ['avx', 'sse42', 'fallback']
+    allisa = ['avx512f', 'avx', 'sse42', 'fallback']
     if keys is None:
         keys = allkeys
     else:
@@ -111,8 +113,8 @@ def benchmark_theory_threads_all(numpart_frac=[0.001, 0.005, 0.01, 0.05, 0.1, 0.
     nthreads = max_threads
     
     dtype = np.dtype([('repeat', np.int),
-                      ('name', 'S16'),
-                      ('isa', 'S16'),
+                      ('name', 'U16'),
+                      ('isa', 'U16'),
                       ('rmax', np.float),
                       ('ndata',np.int),
                       ('nrand',np.int),
@@ -253,7 +255,7 @@ def benchmark_mocks_threads_all(numpart_frac=[0.001, 0.005, 0.01, 0.05, 0.1, 0.2
                'DDrppi (DR)',
                'DDtheta (DR)'
               ]
-    allisa = ['avx', 'sse42', 'fallback']
+    allisa = ['avx512f', 'avx', 'sse42', 'fallback']
     if keys is None:
         keys = allkeys
     else:
@@ -294,8 +296,8 @@ def benchmark_mocks_threads_all(numpart_frac=[0.001, 0.005, 0.01, 0.05, 0.1, 0.2
 
     nthreads = max_threads
     dtype = np.dtype([('repeat', np.int),
-                      ('name', 'S16'),
-                      ('isa', 'S16'),
+                      ('name', 'U16'),
+                      ('isa', 'U16'),
                       ('rmax', np.float),
                       ('ndata',np.int),
                       ('nrand',np.int),
@@ -439,17 +441,17 @@ def benchmark_mocks_threads_all(numpart_frac=[0.001, 0.005, 0.01, 0.05, 0.1, 0.2
     return keys, isa, runtimes
 
 if len(sys.argv) == 1:
-    #print("Running theory benchmarks")
-    #keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=3)
-    #np.savez('theory_scaling_numpart.npz', keys=keys, isa=isa,
-    #         runtimes=runtimes)
-    #print("Theory: runtimes = {0}".format(runtimes))
-
-    print("Running mocks benchmarks")
-    keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=3)
-    np.savez('mocks_scaling_numpart.npz', keys=keys, isa=isa,
+    print("Running theory benchmarks")
+    keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=3)
+    np.savez('theory_scaling_numpart.npz', keys=keys, isa=isa,
              runtimes=runtimes)
-    print("Mocks: runtimes = {0}".format(runtimes))
+    print("Theory: runtimes = {0}".format(runtimes))
+
+    #print("Running mocks benchmarks")
+    #keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=3)
+    #np.savez('mocks_scaling_numpart.npz', keys=keys, isa=isa,
+    #         runtimes=runtimes)
+    #print("Mocks: runtimes = {0}".format(runtimes))
     
 else:
     timings_file = sys.argv[1]
@@ -464,6 +466,8 @@ else:
         except KeyError:
             # Previous versions of this script used 'all_runtimes'
             runtimes = xx['all_runtimes']
+
+        runtimes = convert_numpy_bytes_to_unicode(runtimes)
             
     except KeyError:
         print("Error: Invalid timings file = `{0}' passed in the "
@@ -544,6 +548,8 @@ else:
     
     # Begin plotting
     plt_scaling = False  # do we ever want to plot scalings for Npart?
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     import seaborn
     seaborn.set_style('ticks')
@@ -570,7 +576,7 @@ else:
         else:
             ax.set_xlim(1e3, 2e6)
             ax.set_ylim(1e-3,500.)
-        plt_isa = {'avx':'AVX', 'sse42':'SSE 4.2', 'fallback':'Fallback'}
+        plt_isa = {'avx512f':'AVX-512', 'avx':'AVX', 'sse42':'SSE 4.2', 'fallback':'Fallback'}
         for run_isa in isa:
             rt = []
             s_ind = (runtimes['ndata'] == min_np) & \
@@ -587,16 +593,16 @@ else:
             
             ax.loglog(all_np, rt, label=plt_isa[run_isa])
             
-            if 'avx' in run_isa:
+            if 'avx' == run_isa:
                 pltx = np.concatenate([all_np, [all_np[-1]*10]])
                 plty = rt[-1]*(.6*pltx/pltx[-2])**2.
                 ax.loglog(pltx, plty, ':', c='k')
         
     if mock:
         axes[0].annotate(r'$\propto N^2$', xy=(.4, .1), xycoords='axes fraction')
-        axes[1].legend(loc='upper right')
     else:
         axes[0].annotate(r'$\propto N^2$', xy=(.55, .1), xycoords='axes fraction')
+        axes[1].legend(loc='upper center')
     #axes[0].get_xaxis().set_major_locator(plt.MaxNLocator(integer=True))
     
     fig_fn = '{}.pdf'.format('.'.join(path.basename(timings_file).split('.')[:-1]))
