@@ -292,6 +292,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells,
                                                              options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                                              nmesh_x, nmesh_y, nmesh_z,
+                                                             xmin, ymin, zmin,
                                                              boxsize, boxsize, boxsize,
                                                              options->enable_min_sep_opt,
                                                              options->autocorr, options->periodic);//options->autocorr == 1 and options->periodic == 1

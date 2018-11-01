@@ -67,16 +67,21 @@ void free_cellarray_index_particles_DOUBLE(cellarray_index_particles_DOUBLE *lat
             free(lattice[i].weights.weights[w]);
         }
 
-
+        /* Probably shouldn't be NULL (but might be while doing cleanup after malloc failure)*/
+        free(lattice[i].ngb_cells);
+        
         /* Might be NULL but free(NULL) is fine*/
         free(lattice[i].xwrap);
         free(lattice[i].ywrap);
         free(lattice[i].zwrap);
 
-        /* Might be NULL but free(NULL) is fine*/
-        free(lattice[i].ngb_cells);
+        /* Might be NULL but free(NULL) is fine (only allocated if enable_min_sep_opt is passed)*/
         free(lattice[i].ngb_min_dx);
         free(lattice[i].ngb_min_dy);
+        free(lattice[i].ngb_min_dz);
+        free(lattice[i].ngb_closest_icell_xpos);
+        free(lattice[i].ngb_closest_icell_ypos);
+        free(lattice[i].ngb_closest_icell_zpos);
     }
     free(lattice);
 }
@@ -372,6 +377,10 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
         lattice[index].ngb_cells = NULL;
         lattice[index].ngb_min_dx = NULL;
         lattice[index].ngb_min_dy = NULL;
+        lattice[index].ngb_min_dz = NULL;
+        lattice[index].ngb_closest_icell_xpos = NULL;
+        lattice[index].ngb_closest_icell_ypos = NULL;
+        lattice[index].ngb_closest_icell_zpos = NULL;
         lattice[index].xwrap = NULL;
         lattice[index].ywrap = NULL;
         lattice[index].zwrap = NULL;
@@ -525,108 +534,131 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                                             const int64_t totncells,
                                             const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                             const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                                            const DOUBLE xmin, const DOUBLE ymin, const DOUBLE zmin,
                                             const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
                                             const int enable_min_sep_opt,
                                             const int autocorr, const int periodic)
 {
-  const int64_t nx_ngb = 2*xbin_refine_factor + 1;
-  const int64_t ny_ngb = 2*ybin_refine_factor + 1;
-  const int64_t nz_ngb = 2*zbin_refine_factor + 1;
-  const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
+    const int64_t nx_ngb = 2*xbin_refine_factor + 1;
+    const int64_t ny_ngb = 2*ybin_refine_factor + 1;
+    const int64_t nz_ngb = 2*zbin_refine_factor + 1;
+    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
-  const DOUBLE xbinsize = xdiff/nmesh_x;
-  const DOUBLE ybinsize = ydiff/nmesh_y;
-  
-  for(int64_t icell=0;icell<totncells;icell++) {
-    struct cellarray_index_particles_DOUBLE *first = &(lattice1[icell]);
-    if(first->nelements == 0) continue;
-    const int iz = icell % nmesh_z;
-    const int ix = icell / (nmesh_y * nmesh_z );
-    const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
-    XRETURN(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz), EXIT_FAILURE,
+    const DOUBLE xbinsize = xdiff/nmesh_x;
+    const DOUBLE ybinsize = ydiff/nmesh_y;
+    const DOUBLE zbinsize = zdiff/nmesh_z;
+    
+    for(int64_t icell=0;icell<totncells;icell++) {
+        struct cellarray_index_particles_DOUBLE *first = &(lattice1[icell]);
+        if(first->nelements == 0) continue;
+        const int iz = icell % nmesh_z;
+        const int ix = icell / (nmesh_y * nmesh_z );
+        const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
+        XRETURN(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz), EXIT_FAILURE,
             ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
-            icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
-    
-    first->num_ngb = 0;
-    if(periodic == 1) {
-      first->xwrap = my_malloc(sizeof(*(first->xwrap)), max_ngb_cells);
-      first->ywrap = my_malloc(sizeof(*(first->ywrap)), max_ngb_cells);
-      first->zwrap = my_malloc(sizeof(*(first->zwrap)), max_ngb_cells);
-      if(first->xwrap == NULL || first->ywrap == NULL || first->zwrap == NULL)  {
-          return EXIT_FAILURE;
-      }
-    } else {
-        first->xwrap = NULL;
-        first->ywrap = NULL;
-        first->zwrap = NULL;
-    }
-    first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
-    first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
-    first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
-    if(first->ngb_cells == NULL || first->ngb_min_dx == NULL || first->ngb_min_dy == NULL) {
-        fprintf(stderr,"Error: Could not allocate memory for storing neighbouring cell indices and the min. separations. "
-                "Reducing bin refine factors might help\n");
-        return EXIT_FAILURE;
-    }
-    
-    for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
-      const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;
-      const int non_periodic_ix = ix + iix;
-      const int iiix = (periodic == 1) ? periodic_ix:non_periodic_ix;
-      if(iiix < 0 || iiix >= nmesh_x) continue;
-      const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
-      
-      for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
-        const int periodic_iy = (iy + iiy + nmesh_y) % nmesh_y;
-        const int non_periodic_iy = iy + iiy;
-        const int iiiy = (periodic == 1) ? periodic_iy:non_periodic_iy;
-        if(iiiy < 0 || iiiy >= nmesh_y) continue;
-        const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
-          const int start_iz = -zbin_refine_factor;
-          for(int64_t iiz=start_iz;iiz<=zbin_refine_factor;iiz++){
-            const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
-            const int non_periodic_iz = iz + iiz;
-            const int iiiz = (periodic == 1) ? periodic_iz:non_periodic_iz;
-            if(iiiz < 0 || iiiz >= nmesh_z) continue;
-            
-            const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
-            const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
-            
-            //For cases where we are not double-counting (i.e., wp and xi), the same-cell
-            //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
-            //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
-            //kernels in that case! Also, if the second cell has no particles, then just skip it
-            if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements == 0) {
-                continue;
+                icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
+        
+        first->num_ngb = 0;
+        if(periodic == 1) {
+            first->xwrap = my_malloc(sizeof(*(first->xwrap)), max_ngb_cells);
+            first->ywrap = my_malloc(sizeof(*(first->ywrap)), max_ngb_cells);
+            first->zwrap = my_malloc(sizeof(*(first->zwrap)), max_ngb_cells);
+            if(first->xwrap == NULL || first->ywrap == NULL || first->zwrap == NULL)  {
+                return EXIT_FAILURE;
             }
+        } else {
+            first->xwrap = NULL;
+            first->ywrap = NULL;
+            first->zwrap = NULL;
+        }
+        first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+        if(first->ngb_cells == NULL) {      
+            fprintf(stderr,"Error: Could not allocate memory for storing neighbouring cell indices. "
+                    "Reducing bin refine factors might help\n");
+            return EXIT_FAILURE;
+        }
+        
+        if(enable_min_sep_opt) {
+            first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
+            first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
+            first->ngb_min_dz = my_malloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
+            first->ngb_closest_icell_xpos = my_malloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
+            first->ngb_closest_icell_ypos = my_malloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
+            first->ngb_closest_icell_zpos = my_malloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
+            if(first->ngb_min_dx == NULL || first->ngb_min_dy == NULL || first->ngb_min_dz == NULL ||
+               first->ngb_closest_icell_xpos == NULL || first->ngb_closest_icell_ypos == NULL || first->ngb_closest_icell_zpos == NULL) {
+                fprintf(stderr,"Error: Could not allocate memory for storing additional quantities for optimizations related to min. separation between cell-pairs.\n"
+                        "Reducing bin refine factors and/or disabling optimizations for minimum separations between cell-pairs might help\n");
+                return EXIT_FAILURE;
+            }
+        }
+        
+        for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
+            const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;
+            const int non_periodic_ix = ix + iix;
+            const int iiix = (periodic == 1) ? periodic_ix:non_periodic_ix;
+            if(iiix < 0 || iiix >= nmesh_x) continue;
+            const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
+            
+            for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
+                const int periodic_iy = (iy + iiy + nmesh_y) % nmesh_y;
+                const int non_periodic_iy = iy + iiy;
+                const int iiiy = (periodic == 1) ? periodic_iy:non_periodic_iy;
+                if(iiiy < 0 || iiiy >= nmesh_y) continue;
+                const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
+                for(int64_t iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++){
+                    const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
+                    const int non_periodic_iz = iz + iiz;
+                    const int iiiz = (periodic == 1) ? periodic_iz:non_periodic_iz;
+                    if(iiiz < 0 || iiiz >= nmesh_z) continue;
+                    
+                    const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
+                    const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
+                    
+                    //For cases where we are not double-counting (e.g., wp and xi), the same-cell
+                    //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
+                    //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
+                    //kernels in that case! Also, if the second cell has no particles, then just skip it
+                    if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements == 0) {
+                        continue;
+                    }
+                    
+                    const int64_t ngb_index = first->num_ngb;
+                    XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
+                            "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
+                    first->ngb_cells[ngb_index] = &(lattice2[icell2]);
+                    if(enable_min_sep_opt) {
+                        const int round_iix_towards_zero = iix < 0 ? +1:(iix > 0 ? -1:0);
+                        const int round_iiy_towards_zero = iiy < 0 ? +1:(iiy > 0 ? -1:0);
+                        const int round_iiz_towards_zero = iiz < 0 ? +1:(iiz > 0 ? -1:0);
+                        const int min_xdiff = iix + round_iix_towards_zero;/* min_xdiff can be signed*/
+                        const int min_ydiff = iiy + round_iiy_towards_zero;/* min_ydiff can be signed*/
+                        const int min_zdiff = iiz + round_iiz_towards_zero;
+                        
+                        first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
+                        first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
+                        first->ngb_min_dz[ngb_index] = min_zdiff * zbinsize;
 
-            const int64_t ngb_index = first->num_ngb;
-            XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
-                    "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
-            first->ngb_cells[ngb_index] = &(lattice2[icell2]);
-            if(enable_min_sep_opt) {
-                const int round_iix_towards_zero = iix < 0 ? +1:(iix > 0 ? -1:0);
-                const int round_iiy_towards_zero = iiy < 0 ? +1:(iiy > 0 ? -1:0);
-                const int min_xdiff = iix + round_iix_towards_zero;/* min_xdiff can be signed*/
-                const int min_ydiff = iiy + round_iiy_towards_zero;/* min_ydiff can be signed*/
-                
-                first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
-                first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
-            } else {
-                first->ngb_min_dx[ngb_index] = ZERO;
-                first->ngb_min_dy[ngb_index] = ZERO;
+                        /* Check for periodic boundary conditions....etc*/
+                        const DOUBLE x_low = xmin + ix*xbinsize + off_xwrap, x_hi = x_low + xbinsize;
+                        const DOUBLE y_low = ymin + iy*ybinsize + off_ywrap, y_hi = y_low + ybinsize;
+                        const DOUBLE z_low = zmin + iz*zbinsize + off_zwrap, z_hi = z_low + zbinsize;
+                        first->ngb_closest_icell_xpos[ngb_index] = iix < 0 ? x_low:(iix > 0 ? x_hi:ZERO);
+                        first->ngb_closest_icell_ypos[ngb_index] = iiy < 0 ? y_low:(iiy > 0 ? y_hi:ZERO);
+                        first->ngb_closest_icell_zpos[ngb_index] = iiz < 0 ? z_low:(iiz > 0 ? z_hi:ZERO);
+                    } 
+
+                    //Note the xwrap/ywraps do not have memory allocated for them in the
+                    //non-periodic case. 
+                    if(periodic == 1) {
+                        first->xwrap[ngb_index] = off_xwrap;
+                        first->ywrap[ngb_index] = off_ywrap;
+                        first->zwrap[ngb_index] = off_zwrap;
+                    } 
+                    first->num_ngb++;
+                }
             }
-            //Note the xwrap/ywraps do not have memory allocated for them in the
-            //non-periodic case. 
-            if(periodic == 1) {
-              first->xwrap[ngb_index] = off_xwrap;
-              first->ywrap[ngb_index] = off_ywrap;
-              first->zwrap[ngb_index] = off_zwrap;
-            } 
-            first->num_ngb++;
-          }
-      }
-    }
+        }
   }
   
   return EXIT_SUCCESS;
