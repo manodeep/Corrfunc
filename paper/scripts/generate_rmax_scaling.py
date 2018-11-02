@@ -124,6 +124,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     autocorr = 1
     boxsize = 420.0
     nthreads = max_threads
+    enable_min_sep_opt = False
     
     dtype = np.dtype([('repeat', np.int),
                       ('name', 'U16'),
@@ -154,7 +155,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                         t0 = time.time()
                         _, api_time = DD(autocorr, nthreads, bins, x, y, z,
                                          verbose=True, c_api_timer=True,
-                                         isa=run_isa)
+                                         isa=run_isa, enable_min_sep_opt=enable_min_sep_opt)
                         t1 = time.time()
                         runtimes['name'][index] = 'DD'
                         runtimes['isa'][index] = run_isa
@@ -175,7 +176,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                         _, api_time = DDrppi(autocorr, nthreads, pimax,
                                              bins, x, y, z,
                                              verbose=True, c_api_timer=True,
-                                             isa=run_isa)
+                                             isa=run_isa, enable_min_sep_opt=enable_min_sep_opt)
                         t1 = time.time()
                         runtimes['name'][index] = 'DDrppi'
                         runtimes['isa'][index] = run_isa
@@ -196,7 +197,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                         _, api_time = wp(boxsize, pimax, nthreads,
                                          bins, x, y, z,
                                          verbose=True, c_api_timer=True,
-                                         isa=run_isa)
+                                         isa=run_isa, enable_min_sep_opt=enable_min_sep_opt)
                         t1 = time.time()
                         runtimes['name'][index] = 'wp'
                         runtimes['isa'][index] = run_isa
@@ -216,7 +217,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                         t0 = time.time()
                         _, api_time = xi(boxsize, nthreads, bins, x, y, z,
                                          verbose=True, c_api_timer=True,
-                                         isa=run_isa)
+                                         isa=run_isa, enable_min_sep_opt=enable_min_sep_opt)
                         t1 = time.time()
                         runtimes['name'][index] = 'xi'
                         runtimes['isa'][index] = run_isa
