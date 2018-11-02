@@ -333,6 +333,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         int status = assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
                                                              options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                                              nmesh_x, nmesh_y, nmesh_z,
+                                                             xmin, ymin, zmin,
                                                              xdiff, ydiff, zdiff,
                                                              options->enable_min_sep_opt,                                                             
                                                              autocorr, options->periodic);
@@ -501,8 +502,11 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                         off_zwrap = first->zwrap[ngb];
                     }
                     const int64_t N2 = second->nelements;
-                    const DOUBLE min_xdiff = first->ngb_min_dx[ngb];
-                    const DOUBLE min_ydiff = first->ngb_min_dy[ngb];
+                    DOUBLE min_xdiff = ZERO, min_ydiff = ZERO;
+                    if(options->enable_min_sep_opt) {                                                           
+                        min_xdiff = first->ngb_min_dx[ngb];
+                        min_ydiff = first->ngb_min_dy[ngb];
+                    }
                     DOUBLE *this_savg = NULL;
                     DOUBLE *this_weightavg = NULL;
                     if(options->need_avg_sep) {

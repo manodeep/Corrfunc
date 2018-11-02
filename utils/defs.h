@@ -301,7 +301,9 @@ static inline struct config_options get_config_options(void)
     options.link_in_dec=1;
 #endif
 
+#ifdef ENABLE_MIN_SEP_OPT    
     options.enable_min_sep_opt=1;/* optimizations based on min. separation between cell-pairs. Enabled by default */
+#endif
     
 #ifdef FAST_ACOS
     options.fast_acos=1;
