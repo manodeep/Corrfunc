@@ -11,7 +11,7 @@
 CC := 
 
 #### Add any compiler specific flags you want
-CFLAGS ?=
+CFLAGS ?= -DINTEGRATION_TESTS -DENABLE_MIN_SEP_OPT
 
 #### Add any compiler specific link flags you want
 CLINK ?=

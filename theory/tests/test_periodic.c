@@ -604,7 +604,7 @@ int main(int argc, char **argv)
                                            "Mr19 DD (periodic)",
                                            "Mr19 wp (periodic)",
                                            "Mr19 vpf (periodic)",
-                                           "Mr19 xi periodic)",
+                                           "Mr19 xi (periodic)",
                                            "Mr19 DDsmu (periodic)",
                                            "CMASS DDrppi DD (periodic)",
                                            "CMASS DDrppi DR (periodic)",
