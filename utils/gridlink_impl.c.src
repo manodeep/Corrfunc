@@ -374,6 +374,13 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
         }
 
         lattice[index].nelements=0;
+        lattice[index].xbounds[0] = xmax;
+        lattice[index].xbounds[1] = xmin;
+        lattice[index].ybounds[0] = ymax;
+        lattice[index].ybounds[1] = ymin;
+        lattice[index].zbounds[0] = zmax;
+        lattice[index].zbounds[1] = zmin;
+        
         lattice[index].ngb_cells = NULL;
         lattice[index].ngb_min_dx = NULL;
         lattice[index].ngb_min_dy = NULL;
@@ -481,6 +488,15 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
         for(int w = 0; w < lattice[index].weights.num_weights; w++){
             lattice[index].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
         }
+
+        lattice[index].xbounds[0] = x[i] < lattice[index].xbounds[0] ? x[i]:lattice[index].xbounds[0];
+        lattice[index].ybounds[0] = y[i] < lattice[index].ybounds[0] ? y[i]:lattice[index].ybounds[0];
+        lattice[index].zbounds[0] = z[i] < lattice[index].zbounds[0] ? z[i]:lattice[index].zbounds[0];
+
+        lattice[index].xbounds[1] = x[i] > lattice[index].xbounds[1] ? x[i]:lattice[index].xbounds[1];
+        lattice[index].ybounds[1] = y[i] > lattice[index].ybounds[1] ? y[i]:lattice[index].ybounds[1];
+        lattice[index].zbounds[1] = z[i] > lattice[index].zbounds[1] ? z[i]:lattice[index].zbounds[1];
+
         lattice[index].nelements++;
     }
     free(nallocated);
@@ -531,11 +547,12 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
 
 
 int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOUBLE *lattice1, struct cellarray_index_particles_DOUBLE *lattice2,
-                                            const int64_t totncells,
+                                            const int64_t totncells, 
                                             const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                             const int nmesh_x, const int nmesh_y, const int nmesh_z,
                                             const DOUBLE xmin, const DOUBLE ymin, const DOUBLE zmin,
                                             const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                            const DOUBLE max_3D_sep, const DOUBLE max_2D_sep,
                                             const int enable_min_sep_opt,
                                             const int autocorr, const int periodic)
 {
@@ -646,6 +663,49 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                         first->ngb_closest_icell_xpos[ngb_index] = iix < 0 ? x_low:(iix > 0 ? x_hi:ZERO);
                         first->ngb_closest_icell_ypos[ngb_index] = iiy < 0 ? y_low:(iiy > 0 ? y_hi:ZERO);
                         first->ngb_closest_icell_zpos[ngb_index] = iiz < 0 ? z_low:(iiz > 0 ? z_hi:ZERO);
+                        if(max_3D_sep > 0) {
+                            cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
+                            const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:(iix > 0 ? first->xbounds[1]:ZERO);
+                            const DOUBLE second_x = iix < 0 ? second->xbounds[1]:(iix > 0 ? second->xbounds[0]:ZERO);
+                            const DOUBLE dx = first_x + off_xwrap - second_x;
+                            const DOUBLE second_x_low = xmin + iiix*xbinsize, second_x_hi =  xmin + (iiix + 1)*xbinsize;
+                            const DOUBLE second_x_diff_from_cell_edge = iix < 0 ? (second->xbounds[1]-second_x_hi):(second_x_low-second->xbounds[0]);
+                            first->ngb_min_dx[ngb_index] += (iix < 0 ? -second_x_diff_from_cell_edge:(iix > 0 ? second_x_diff_from_cell_edge:ZERO));
+                            
+                            const DOUBLE first_y  = iiy < 0 ? first->ybounds[0]:(iiy > 0 ? first->ybounds[1]:ZERO);
+                            const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:(iiy > 0 ? second->ybounds[0]:ZERO);
+                            const DOUBLE dy = first_y + off_ywrap - second_y;
+                            const DOUBLE second_y_low = ymin + iiiy*ybinsize, second_y_hi =  ymin + (iiiy + 1)*ybinsize;
+                            const DOUBLE second_y_diff_from_cell_edge = iiy < 0 ? (second->ybounds[1]-second_y_hi):(second_y_low-second->ybounds[0]);
+                            first->ngb_min_dy[ngb_index] += (iiy < 0 ? -second_y_diff_from_cell_edge:(iiy > 0 ? second_y_diff_from_cell_edge:ZERO));
+
+                            const DOUBLE first_z  = iiz < 0 ? first->zbounds[0]:(iiz > 0 ? first->zbounds[1]:ZERO);
+                            const DOUBLE second_z = iiz < 0 ? second->zbounds[1]:(iiz > 0 ? second->zbounds[0]:ZERO);
+                            const DOUBLE dz = first_z + off_zwrap - second_z;
+                            const DOUBLE second_z_low = zmin + iiiz*zbinsize, second_z_hi =  zmin + (iiiz + 1)*zbinsize;
+                            const DOUBLE second_z_diff_from_cell_edge = iiz < 0 ? (second->zbounds[1]-second_z_hi):(second_z_low-second->zbounds[0]);
+                            first->ngb_min_dz[ngb_index] += (iiz < 0 ? -second_z_diff_from_cell_edge:(iiz > 0 ? second_z_diff_from_cell_edge:ZERO));
+
+                            const DOUBLE sqr_min_sep_cells = dx*dx + dy*dy + dz*dz;
+                            if(sqr_min_sep_cells >= max_3D_sep*max_3D_sep) {
+                                continue;
+                            }
+                        } else if (max_2D_sep > 0) {
+                            cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
+                            const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:first->xbounds[1];
+                            const DOUBLE second_x = iix < 0 ? second->xbounds[1]:second->xbounds[0];
+                            const DOUBLE dx = first_x + off_xwrap - second_x;
+
+                            const DOUBLE first_y  = iiy < 0 ? first->ybounds[0]:first->ybounds[1];
+                            const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:second->ybounds[0];
+                            const DOUBLE dy = first_y + off_ywrap - second_y;
+
+                            const DOUBLE sqr_min_sep_cells = dx*dx + dy*dy;
+                            if(sqr_min_sep_cells > max_2D_sep*max_2D_sep) {
+                                continue; 
+                            }
+
+                        }
                     } 
 
                     //Note the xwrap/ywraps do not have memory allocated for them in the

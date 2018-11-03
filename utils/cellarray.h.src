@@ -35,6 +35,9 @@ struct cellarray_index_particles_DOUBLE{
     DOUBLE *y;
     DOUBLE *z;
     weight_struct_DOUBLE weights;
+    DOUBLE xbounds[2];
+    DOUBLE ybounds[2];
+    DOUBLE zbounds[2];
     cellarray_index_particles_DOUBLE **ngb_cells;
     DOUBLE *ngb_min_dx;
     DOUBLE *ngb_min_dy;

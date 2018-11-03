@@ -36,8 +36,8 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
     (void) sqr_rmax, (void) sqr_rmin;
                                               
 #ifdef COUNT_VECTORIZED
-    struct timespec tcell_start;
-    current_utc_time(&tcell_start);
+                                              struct timespec tcell_start;
+                                              current_utc_time(&tcell_start);
     uint64_t serial_npairs = 0, vectorized_npairs=0;
 #endif
     
@@ -105,10 +105,10 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
         if(same_cell == 1) {
             z2++;
         } else {
-            if(min_xdiff != 0 || min_ydiff != 0 || min_zdiff != 0) {
-                const DOUBLE dx = min_xdiff != 0 ? FABS(min_xdiff) + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff != 0 ? FABS(min_ydiff) + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff != 0 ? FABS(min_zdiff) + FABS(zpos - closest_icell_zpos):min_zdiff;
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
                 const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
                 if(sqr_min_sep_this_point >= sqr_rmax) {
                     continue;
@@ -374,10 +374,10 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
         if(same_cell == 1) {
             z2++;
         } else {
-            if(min_xdiff != 0 || min_ydiff != 0 || min_zdiff != 0) {
-                const DOUBLE dx = min_xdiff != 0 ? FABS(min_xdiff) + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff != 0 ? FABS(min_ydiff) + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff != 0 ? FABS(min_zdiff) + FABS(zpos - closest_icell_zpos):min_zdiff;
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
                 const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
                 if(sqr_min_sep_this_point >= sqr_rmax) {
                     continue;
@@ -679,10 +679,10 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
         if(same_cell == 1) {
             z1++;
         } else {
-            if(min_xdiff != 0 || min_ydiff != 0 || min_zdiff != 0) {
-                const DOUBLE dx = min_xdiff != 0 ? FABS(min_xdiff) + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff != 0 ? FABS(min_ydiff) + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff != 0 ? FABS(min_zdiff) + FABS(zpos - closest_icell_zpos):min_zdiff;
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
                 const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
                 if(sqr_min_sep_this_point >= sqr_rmax) {
                     continue;
@@ -956,10 +956,10 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
         if(same_cell == 1) {
             z1++;
         } else {
-            if(min_xdiff != 0 || min_ydiff != 0 || min_zdiff != 0) {
-                const DOUBLE dx = min_xdiff != 0 ? FABS(min_xdiff) + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff != 0 ? FABS(min_ydiff) + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff != 0 ? FABS(min_zdiff) + FABS(zpos - closest_icell_zpos):min_zdiff;
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
                 sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
                 if(sqr_min_sep_this_point >= sqr_rmax) {
                     continue;
@@ -1008,12 +1008,10 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
+            if(dz >= max_dz) break;
 
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
             localx1++;localy1++;localz1++;
-            
-            if(dz >= max_dz) break;
-            
             
             if(r2 >= sqr_rmax || r2 < sqr_rmin) continue;
             if(need_weightavg){

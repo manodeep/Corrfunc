@@ -68,6 +68,7 @@ extern "C" {
                                                      const int nmesh_x, const int nmesh_y, const int nmesh_z,
                                                      const DOUBLE xmin, const DOUBLE ymin, const DOUBLE zmin,
                                                      const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                                     const DOUBLE max_3D_sep, const DOUBLE max_2D_sep,
                                                      const int enable_min_sep_opt,
                                                      const int double_count, const int periodic);
   extern void free_cellarray_index_particles_DOUBLE(cellarray_index_particles_DOUBLE *lattice, const int64_t totncells);
