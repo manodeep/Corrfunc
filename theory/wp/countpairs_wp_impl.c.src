@@ -294,6 +294,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                                                              nmesh_x, nmesh_y, nmesh_z,
                                                              xmin, ymin, zmin,
                                                              boxsize, boxsize, boxsize,
+                                                             -1.0, rpmax, 
                                                              options->enable_min_sep_opt,
                                                              options->autocorr, options->periodic);//options->autocorr == 1 and options->periodic == 1
         if(status != EXIT_SUCCESS) {
