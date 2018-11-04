@@ -267,7 +267,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                                                              nmesh_x, nmesh_y, nmesh_z,
                                                              xmin, ymin, zmin,
                                                              boxsize, boxsize, boxsize,
-                                                             rmax, -1.0, 
+                                                             rmax, -1.0, -1.0,/*max_3D_sep, max_2D_sep, max_1D_sep*/ 
                                                              options->enable_min_sep_opt,                                                             
                                                              options->autocorr, options->periodic);
         if(status != EXIT_SUCCESS) {
@@ -403,7 +403,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                 }
                 int status = xi_function_DOUBLE(x1, y1, z1, weights1, N1,
                                                 x1, y1, z1, weights1, N1, same_cell, 
-                                                sqr_rmax, sqr_rmin, nbins, rupp_sqr, rmax,
+                                                sqr_rmax, sqr_rmin, nbins, rupp_sqr, 
                                                 ZERO, ZERO, ZERO, /* periodic wrap */
                                                 ZERO, ZERO, ZERO, /* min x, y, z diff */
                                                 ZERO, ZERO, ZERO, /* closest x, y, z in first cell */
@@ -440,7 +440,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                     same_cell = 0;
                     status = xi_function_DOUBLE(x1, y1, z1, weights1, N1,
                                                 x2, y2, z2, weights2, N2, same_cell, 
-                                                sqr_rmax, sqr_rmin, nbins, rupp_sqr, rmax,
+                                                sqr_rmax, sqr_rmin, nbins, rupp_sqr,
                                                 off_xwrap, off_ywrap, off_zwrap,
                                                 min_xdiff, min_ydiff, min_zdiff, 
                                                 closest_icell_xpos, closest_icell_ypos, closest_icell_zpos,

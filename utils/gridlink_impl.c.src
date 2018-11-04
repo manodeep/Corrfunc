@@ -552,7 +552,7 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                                             const int nmesh_x, const int nmesh_y, const int nmesh_z,
                                             const DOUBLE xmin, const DOUBLE ymin, const DOUBLE zmin,
                                             const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
-                                            const DOUBLE max_3D_sep, const DOUBLE max_2D_sep,
+                                            const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
                                             const int enable_min_sep_opt,
                                             const int autocorr, const int periodic)
 {
@@ -690,7 +690,12 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                             if(sqr_min_sep_cells >= max_3D_sep*max_3D_sep) {
                                 continue;
                             }
-                        } else if (max_2D_sep > 0) {
+                        }
+
+
+                        /* in a separate if (rather than an else with the previous if for max_3D_sep)
+                           so that conditions can be chained */
+                        if (max_2D_sep > 0) {
                             cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
                             const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:first->xbounds[1];
                             const DOUBLE second_x = iix < 0 ? second->xbounds[1]:second->xbounds[0];
@@ -702,9 +707,25 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
 
                             const DOUBLE sqr_min_sep_cells = dx*dx + dy*dy;
                             if(sqr_min_sep_cells > max_2D_sep*max_2D_sep) {
-                                continue; 
+                                continue;
                             }
+                        }
 
+                        /* in a separate if (rather than an else with the previous if for max_3D_sep)
+                           so that conditions can be chained */
+                        if(max_1D_sep > 0) {
+                            cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
+                            const DOUBLE first_z  = iiz < 0 ? first->zbounds[0]:(iiz > 0 ? first->zbounds[1]:ZERO);
+                            const DOUBLE second_z = iiz < 0 ? second->zbounds[1]:(iiz > 0 ? second->zbounds[0]:ZERO);
+                            const DOUBLE dz = first_z + off_zwrap - second_z;
+                            const DOUBLE second_z_low = zmin + iiiz*zbinsize, second_z_hi =  zmin + (iiiz + 1)*zbinsize;
+                            const DOUBLE second_z_diff_from_cell_edge = iiz < 0 ? (second->zbounds[1]-second_z_hi):(second_z_low-second->zbounds[0]);
+                            first->ngb_min_dz[ngb_index] += (iiz < 0 ? -second_z_diff_from_cell_edge:(iiz > 0 ? second_z_diff_from_cell_edge:ZERO));
+
+                            const DOUBLE sqr_min_sep_cells = dz*dz;
+                            if(sqr_min_sep_cells >= max_1D_sep*max_1D_sep) {
+                                continue;
+                            }
                         }
                     } 
 
@@ -714,7 +735,9 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                         first->xwrap[ngb_index] = off_xwrap;
                         first->ywrap[ngb_index] = off_ywrap;
                         first->zwrap[ngb_index] = off_zwrap;
-                    } 
+                    }
+
+
                     first->num_ngb++;
                 }
             }

@@ -319,7 +319,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
                                                              nmesh_x, nmesh_y, nmesh_z,
                                                              xmin, ymin, zmin,
                                                              xdiff, ydiff, zdiff,
-                                                             -1.0, rpmax, 
+                                                             -1.0, rpmax, pimax,/*max_3D_sep, max_2D_sep, max_1D_sep*/ 
                                                              options->enable_min_sep_opt,
                                                              autocorr, options->periodic);
         if(status != EXIT_SUCCESS) {

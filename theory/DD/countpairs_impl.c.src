@@ -310,7 +310,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                                                              nmesh_x, nmesh_y, nmesh_z,
                                                              xmin, ymin, zmin,
                                                              xdiff, ydiff, zdiff,
-                                                             rpmax, -1.0, /*max_3D_sep, and max_2D_sep */
+                                                             rpmax, -1.0, -1.0, /*max_3D_sep, max_2D_sep, max_1D_sep*/
                                                              options->enable_min_sep_opt,
                                                              autocorr, options->periodic);
         if(status != EXIT_SUCCESS) {
