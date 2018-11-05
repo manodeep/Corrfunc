@@ -34,7 +34,6 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
                                               DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     (void) sqr_rmin;
-                                              
 #ifdef COUNT_VECTORIZED
     struct timespec tcell_start;
     current_utc_time(&tcell_start);
@@ -76,7 +75,6 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
 
     const DOUBLE *zstart = z2, *zend = z2 + N2;
     const DOUBLE max_all_dz = SQRT(sqr_rmax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
-    DOUBLE *z2_min = z2;
     for(int64_t i=0;i<N1;i++) {
         const DOUBLE xpos = *x1++ + off_xwrap;
         const DOUBLE ypos = *y1++ + off_ywrap;
@@ -97,29 +95,14 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
            the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
            particle
         */
-        const DOUBLE this_dz = *z2_min - zpos;
+        const DOUBLE this_dz = *z2 - zpos;
         if(this_dz > max_all_dz) {
             continue;
         }
 
-        DOUBLE sqr_min_sep_this_point = -1.0;
         if(same_cell == 1) {
             z2++;
-            z2_min++;
         } else {
-            // Now "fast forward" in the list of secondary particles to find the first one that satsifies the max_all_dz constraint
-            // We don't consider the i particle's x,y information yet, because those aren't sorted
-            DOUBLE target_z = zpos - max_all_dz;
-            while(z2_min < zend && *z2_min < target_z) {
-                z2_min++;
-            }
-            // If no j particle satsifies the constraint for this i particle,
-            // then the same holds true for all future i particles because they are sorted in increasing z order
-            if(z2_min == zend) {
-                i = N2;
-                break;
-            }
-
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             // Thus, `z1` marks the constraint for just this i particle, while `z2_min` marks it for all future i particles
@@ -127,29 +110,30 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
                 const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
                 const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
                 const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
+                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
                 if(sqr_min_sep_this_point >= sqr_rmax) {
                     continue;
                 }
                 max_dz = SQRT(sqr_rmax - dx*dx - dy*dy);
             }
-            
-            target_z = zpos - max_dz;
-            z2 = z2_min;
-            while(z2 < zend && *z2 < target_z) {
+
+            // Now "fast forward" in the list of secondary particles to find the first one that satsifies the max_all_dz constraint
+            // We don't consider the i particle's x,y information yet, because those aren't sorted
+            DOUBLE target_z = zpos - max_all_dz;
+            while(z2 < zend && *z2 <= target_z) {
                 z2++;
             }
+       } /* end of same_cell if condition*/
 
-            /* if we have reached the end of the secondary z-particles, then
-               there are no valid pairs for this primary particle but there
-               could be for another primary particle (the distinction between z2_min
-               and z2)
-             */
-            if(z2 == zend) {
-                continue;
-            }
-        } /* end of same_cell if condition*/
+        /* If no j particle satsifies the constraint for this i particle,
+         then the same holds true for all future i particles because they are sorted in increasing z order,
+         or we are in the same_cell and there are no remaining particles */
+        if(z2 == zend) {
+            i = N1;
+            break;
+        } 
 
+        
         const int64_t n_off = z2 - zstart;
         DOUBLE *localz2 = z2;
         DOUBLE *localx2 = x2 + n_off;
@@ -354,7 +338,6 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
 
     const DOUBLE *zstart = z2, *zend = z2 + N2;
     const DOUBLE max_all_dz = SQRT(sqr_rmax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
-    DOUBLE *z2_min = z2;
     for(int64_t i=0;i<N1;i++) {
         const DOUBLE xpos = *x1++ + off_xwrap;
         const DOUBLE ypos = *y1++ + off_ywrap;
@@ -375,29 +358,14 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
            the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
            particle
         */
-        const DOUBLE this_dz = *z2_min - zpos;
+        const DOUBLE this_dz = *z2 - zpos;
         if(this_dz > max_all_dz) {
             continue;
         }
 
-        DOUBLE sqr_min_sep_this_point = -1.0;
         if(same_cell == 1) {
             z2++;
-            z2_min++;
         } else {
-            // Now "fast forward" in the list of secondary particles to find the first one that satsifies the max_all_dz constraint
-            // We don't consider the i particle's x,y information yet, because those aren't sorted
-            DOUBLE target_z = zpos - max_all_dz;
-            while(z2_min < zend && *z2_min < target_z) {
-                z2_min++;
-            }
-            // If no j particle satsifies the constraint for this i particle,
-            // then the same holds true for all future i particles because they are sorted in increasing z order
-            if(z2_min == zend) {
-                i = N2;
-                break;
-            }
-
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             // Thus, `z1` marks the constraint for just this i particle, while `z2_min` marks it for all future i particles
@@ -405,29 +373,29 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
                 const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
                 const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
+                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
                 if(sqr_min_sep_this_point >= sqr_rmax) {
                     continue;
                 }
                 max_dz = SQRT(sqr_rmax - dx*dx - dy*dy);
             }
-            
-            target_z = zpos - max_dz;
-            z2 = z2_min;
-            while(z2 < zend && *z2 < target_z) {
-                z2++;
-            }
 
-            /* if we have reached the end of the secondary z-particles, then
-               there are no valid pairs for this primary particle but there
-               could be for another primary particle (the distinction between z2_min
-               and z2)
-             */
-            if(z2 == zend) {
-                continue;
+            // Now "fast forward" in the list of secondary particles to find the first one that satsifies the max_all_dz constraint
+            // We don't consider the i particle's x,y information yet, because those aren't sorted
+            DOUBLE target_z = zpos - max_all_dz;
+            while(z2 < zend && *z2 <= target_z) {
+                z2++;
             }
         } /* end of same_cell if condition*/
 
+        /* If no j particle satsifies the constraint for this i particle,
+         then the same holds true for all future i particles because they are sorted in increasing z order,
+         or we are in the same_cell and there are no remaining particles */
+        if(z2 == zend) {
+            i = N1;
+            break;
+        } 
+        
         int64_t j = z2 - zstart;
         DOUBLE *localz2 = z2;
         DOUBLE *localx2 = x2 + j;
@@ -666,7 +634,6 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 
     const DOUBLE *zstart = z1, *zend = z1 + N1;
     const DOUBLE max_all_dz = SQRT(sqr_rmax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
-    DOUBLE *z1_min = z1;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -687,29 +654,14 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
            the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
            particle
         */
-        const DOUBLE this_dz = *z1_min - zpos;
+        const DOUBLE this_dz = *z1 - zpos;
         if(this_dz > max_all_dz) {
             continue;
         }
 
-        DOUBLE sqr_min_sep_this_point = -1.0;
         if(same_cell == 1) {
             z1++;
-            z1_min++;
         } else {
-            // Now "fast forward" in the list of secondary particles to find the first one that satsifies the max_all_dz constraint
-            // We don't consider the i particle's x,y information yet, because those aren't sorted
-            DOUBLE target_z = zpos - max_all_dz;
-            while(z1_min < zend && *z1_min < target_z) {
-                z1_min++;
-            }
-            // If no j particle satsifies the constraint for this i particle,
-            // then the same holds true for all future i particles because they are sorted in increasing z order
-            if(z1_min == zend) {
-                i = N0;
-                break;
-            }
-
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             // Thus, `z1` marks the constraint for just this i particle, while `z1_min` marks it for all future i particles
@@ -717,28 +669,28 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
                 const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
                 const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
+                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
                 if(sqr_min_sep_this_point >= sqr_rmax) {
                     continue;
                 }
                 max_dz = SQRT(sqr_rmax - dx*dx - dy*dy);
             }
-            
-            target_z = zpos - max_dz;
-            z1 = z1_min;
-            while(z1 < zend && *z1 < target_z) {
+
+            // Now "fast forward" in the list of secondary particles to find the first one that satsifies the max_all_dz constraint
+            // We don't consider the i particle's x,y information yet, because those aren't sorted
+            DOUBLE target_z = zpos - max_all_dz;
+            while(z1 < zend && *z1 <= target_z) {
                 z1++;
             }
-
-            /* if we have reached the end of the secondary z-particles, then
-               there are no valid pairs for this primary particle but there
-               could be for another primary particle (the distinction between z1_min
-               and z1) */
-            if(z1 == zend) {
-                continue;
-            }
-            
         } /* end of same_cell if condition*/
+
+        /* If no j particle satsifies the constraint for this i particle,
+         then the same holds true for all future i particles because they are sorted in increasing z order,
+         or we are in the same_cell and there are no remaining particles */
+        if(z1 == zend) {
+            i = N0;
+            break;
+        } 
 
         int64_t j = z1 - zstart;
         DOUBLE *localz1 = z1;
@@ -952,7 +904,6 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
     const DOUBLE *zstart = z1;
     const DOUBLE *zend = z1 + N1;
     const DOUBLE max_all_dz = SQRT(sqr_rmax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
-    DOUBLE *z1_min = z1;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -970,29 +921,14 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
            the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
            particle
         */
-        const DOUBLE this_dz = *z1_min - zpos;
+        const DOUBLE this_dz = *z1 - zpos;
         if(this_dz > max_all_dz) {
             continue;
         }
 
-        DOUBLE sqr_min_sep_this_point = -1.0;
         if(same_cell == 1) {
             z1++;
-            z1_min++;
         } else {
-            // Now "fast forward" in the list of secondary particles to find the first one that satsifies the max_all_dz constraint
-            // We don't consider the i particle's x,y information yet, because those aren't sorted
-            DOUBLE target_z = zpos - max_all_dz;
-            while(z1_min < zend && *z1_min < target_z) {
-                z1_min++;
-            }
-            // If no j particle satsifies the constraint for this i particle,
-            // then the same holds true for all future i particles because they are sorted in increasing z order
-            if(z1_min == zend) {
-                i = N0;
-                break;
-            }
-
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             // Thus, `z1` marks the constraint for just this i particle, while `z1_min` marks it for all future i particles
@@ -1000,29 +936,29 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
                 const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
                 const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
                 const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
+                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
                 if(sqr_min_sep_this_point >= sqr_rmax) {
                     continue;
                 }
                 max_dz = SQRT(sqr_rmax - dx*dx - dy*dy);
             }
-            
-            target_z = zpos - max_dz;
-            z1 = z1_min;
-            while(z1 < zend && *z1 < target_z) {
+
+            // Now "fast forward" in the list of secondary particles to find the first one that satsifies the max_all_dz constraint
+            // We don't consider the i particle's x,y information yet, because those aren't sorted
+            DOUBLE target_z = zpos - max_all_dz;
+            while(z1 < zend && *z1 <= target_z) {
                 z1++;
             }
-
-            /* if we have reached the end of the secondary z-particles, then
-               there are no valid pairs for this primary particle but there
-               could be for another primary particle (the distinction between z1_min
-               and z1) */
-            if(z1 == zend) {
-                continue;
-            }
-            
         } /* end of same_cell if condition*/
 
+        /* If no j particle satsifies the constraint for this i particle,
+         then the same holds true for all future i particles because they are sorted in increasing z order,
+         or we are in the same_cell and there are no remaining particles */
+        if(z1 == zend) {
+            i = N0;
+            break;
+        } 
+        
         const int64_t n_off = z1 - zstart;
         const int64_t nleft = zend - z1;
         DOUBLE *localz1 = z1;
