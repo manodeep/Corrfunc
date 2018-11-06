@@ -464,7 +464,8 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                                                             same_cell,
                                                             sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
                                                             ZERO, ZERO, ZERO, /* offsets to do periodic wrapping */
-                                                            ZERO, ZERO, /* min separations in x & y */
+                                                            ZERO, ZERO, ZERO, /* min separations in x & y & z*/
+                                                            ZERO, ZERO, ZERO, /* closest icell xyz pos*/
                                                             this_rpavg, npairs,
                                                             this_weightavg, extra->weight_method);
               /* This actually causes a race condition under OpenMP - but mostly
@@ -489,12 +490,17 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
               off_ywrap = first->ywrap[ngb];
               off_zwrap = first->zwrap[ngb];
             }
-
-            DOUBLE min_xdiff = ZERO, min_ydiff = ZERO;
+            DOUBLE min_xdiff = ZERO, min_ydiff = ZERO, min_zdiff = ZERO;
+            DOUBLE closest_icell_xpos = ZERO, closest_icell_ypos = ZERO, closest_icell_zpos = ZERO;
             if(options->enable_min_sep_opt) {                                                           
-                min_xdiff = first->ngb_min_dx[ngb];
-                min_ydiff = first->ngb_min_dy[ngb];
+                min_xdiff = FABS(first->ngb_min_dx[ngb]);
+                min_ydiff = FABS(first->ngb_min_dy[ngb]);
+                min_zdiff = FABS(first->ngb_min_dz[ngb]);
+                closest_icell_xpos = first->ngb_closest_icell_xpos[ngb];
+                closest_icell_ypos = first->ngb_closest_icell_ypos[ngb];
+                closest_icell_zpos = first->ngb_closest_icell_zpos[ngb];
             }
+
             DOUBLE *x2 = second->x;
             DOUBLE *y2 = second->y;
             DOUBLE *z2 = second->z;
@@ -514,7 +520,8 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                                                           same_cell,
                                                           sqr_rpmax, sqr_rpmin, nrpbin, rupp_sqr, pimax, //pimax is simply rpmax cast to DOUBLE
                                                           off_xwrap, off_ywrap, off_zwrap,
-                                                          min_xdiff, min_ydiff, 
+                                                          min_xdiff, min_ydiff, min_zdiff, 
+                                                          closest_icell_xpos, closest_icell_ypos, closest_icell_zpos,
                                                           this_rpavg,npairs,
                                                           this_weightavg, extra->weight_method);
             /* This actually causes a race condition under OpenMP - but mostly
