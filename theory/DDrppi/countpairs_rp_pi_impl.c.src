@@ -458,10 +458,12 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
                     }
                     const int status = countpairs_rp_pi_function_DOUBLE(N1, x1, y1, z1, weights1,
                                                                         N1, x1, y1, z1, weights1,
-                                                                        same_cell
-                                                                        ,sqr_rpmax, sqr_rpmin, nrpbin, npibin, rupp_sqr, pimax
-                                                                        ,ZERO, ZERO, ZERO
-                                                                        ,this_rpavg, npairs,
+                                                                        same_cell,
+                                                                        sqr_rpmax, sqr_rpmin, nrpbin, npibin, rupp_sqr, pimax,
+                                                                        ZERO, ZERO, ZERO,/* xyz periodic wrap*/
+                                                                        ZERO, ZERO, ZERO, /* min x, y, z diff */
+                                                                        ZERO, ZERO, ZERO, /* closest x, y, z in first cell */
+                                                                        this_rpavg, npairs,
                                                                         this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
                        I care that an error occurred - rather than the exact value of
@@ -484,6 +486,17 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
                         off_ywrap = first->ywrap[ngb];
                         off_zwrap = first->zwrap[ngb];
                     }
+                    DOUBLE min_xdiff = ZERO, min_ydiff = ZERO, min_zdiff = ZERO;
+                    DOUBLE closest_icell_xpos = ZERO, closest_icell_ypos = ZERO, closest_icell_zpos = ZERO;
+                    if(options->enable_min_sep_opt) {                                                           
+                        min_xdiff = FABS(first->ngb_min_dx[ngb]);
+                        min_ydiff = FABS(first->ngb_min_dy[ngb]);
+                        min_zdiff = FABS(first->ngb_min_dz[ngb]);
+                        closest_icell_xpos = first->ngb_closest_icell_xpos[ngb];
+                        closest_icell_ypos = first->ngb_closest_icell_ypos[ngb];
+                        closest_icell_zpos = first->ngb_closest_icell_zpos[ngb];
+                    }
+
                     const int64_t N2 = second->nelements;
                     DOUBLE *this_rpavg = NULL;
                     DOUBLE *this_weightavg = NULL;
@@ -497,6 +510,8 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
                                                                         N2, x2, y2, z2, weights2, same_cell,
                                                                         sqr_rpmax, sqr_rpmin, nrpbin, npibin, rupp_sqr, pimax,
                                                                         off_xwrap, off_ywrap, off_zwrap,
+                                                                        min_xdiff, min_ydiff, min_zdiff, 
+                                                                        closest_icell_xpos, closest_icell_ypos, closest_icell_zpos,
                                                                         this_rpavg, npairs,
                                                                         this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
