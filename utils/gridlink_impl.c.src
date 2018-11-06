@@ -697,13 +697,19 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                            so that conditions can be chained */
                         if (max_2D_sep > 0) {
                             cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
-                            const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:first->xbounds[1];
-                            const DOUBLE second_x = iix < 0 ? second->xbounds[1]:second->xbounds[0];
+                            const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:(iix > 0 ? first->xbounds[1]:ZERO);
+                            const DOUBLE second_x = iix < 0 ? second->xbounds[1]:(iix > 0 ? second->xbounds[0]:ZERO);
                             const DOUBLE dx = first_x + off_xwrap - second_x;
-
-                            const DOUBLE first_y  = iiy < 0 ? first->ybounds[0]:first->ybounds[1];
-                            const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:second->ybounds[0];
+                            const DOUBLE second_x_low = xmin + iiix*xbinsize, second_x_hi =  xmin + (iiix + 1)*xbinsize;
+                            const DOUBLE second_x_diff_from_cell_edge = iix < 0 ? (second->xbounds[1]-second_x_hi):(second_x_low-second->xbounds[0]);
+                            first->ngb_min_dx[ngb_index] += (iix < 0 ? -second_x_diff_from_cell_edge:(iix > 0 ? second_x_diff_from_cell_edge:ZERO));
+                            
+                            const DOUBLE first_y  = iiy < 0 ? first->ybounds[0]:(iiy > 0 ? first->ybounds[1]:ZERO);
+                            const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:(iiy > 0 ? second->ybounds[0]:ZERO);
                             const DOUBLE dy = first_y + off_ywrap - second_y;
+                            const DOUBLE second_y_low = ymin + iiiy*ybinsize, second_y_hi =  ymin + (iiiy + 1)*ybinsize;
+                            const DOUBLE second_y_diff_from_cell_edge = iiy < 0 ? (second->ybounds[1]-second_y_hi):(second_y_low-second->ybounds[0]);
+                            first->ngb_min_dy[ngb_index] += (iiy < 0 ? -second_y_diff_from_cell_edge:(iiy > 0 ? second_y_diff_from_cell_edge:ZERO));
 
                             const DOUBLE sqr_min_sep_cells = dx*dx + dy*dy;
                             if(sqr_min_sep_cells > max_2D_sep*max_2D_sep) {
