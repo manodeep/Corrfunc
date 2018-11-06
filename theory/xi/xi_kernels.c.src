@@ -114,8 +114,9 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
                     continue;
                 }
                 max_dz = SQRT(sqr_rmax - dx*dx - dy*dy);
+                if((*z2 - zpos) >= max_dz) continue;
             }
-
+            
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
             // We don't consider the i particle's x,y information yet, because those aren't sorted
             DOUBLE target_z = zpos - max_all_dz;
@@ -124,7 +125,6 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
             }
         } /* end of same_cell if condition*/
 
-        
         // If no j particle satisfies the constraint for this i particle,
         // then the same holds true for all future i particles because they are sorted in increasing z order
         if(z2 == zend) {
@@ -375,8 +375,9 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                     continue;
                 }
                 max_dz = SQRT(sqr_rmax - dx*dx - dy*dy);
+                if((*z2 - zpos) >= max_dz) continue;
             }
-
+            
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
             // We don't consider the i particle's x,y information yet, because those aren't sorted
             DOUBLE target_z = zpos - max_all_dz;
@@ -669,8 +670,9 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                     continue;
                 }
                 max_dz = SQRT(sqr_rmax - dx*dx - dy*dy);
+                if((*z1 - zpos) >= max_dz) continue;
             }
-
+            
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
             // We don't consider the i particle's x,y information yet, because those aren't sorted
             DOUBLE target_z = zpos - max_all_dz;
@@ -933,6 +935,7 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
                     continue;
                 }
                 max_dz = SQRT(sqr_rmax - dx*dx - dy*dy);
+                if((*z1 - zpos) >= max_dz) continue;
             }
 
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
