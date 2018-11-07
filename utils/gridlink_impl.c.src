@@ -650,8 +650,8 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                         const int round_iiz_towards_zero = iiz < 0 ? +1:(iiz > 0 ? -1:0);
                         const int min_xdiff = iix + round_iix_towards_zero;/* min_xdiff can be signed*/
                         const int min_ydiff = iiy + round_iiy_towards_zero;/* min_ydiff can be signed*/
-                        const int min_zdiff = iiz + round_iiz_towards_zero;
-                        
+                        const int min_zdiff = iiz + round_iiz_towards_zero;/* min_zdiff can be signed*/
+
                         first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
                         first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
                         first->ngb_min_dz[ngb_index] = min_zdiff * zbinsize;
@@ -660,80 +660,121 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                         const DOUBLE x_low = xmin + ix*xbinsize + off_xwrap, x_hi = x_low + xbinsize;
                         const DOUBLE y_low = ymin + iy*ybinsize + off_ywrap, y_hi = y_low + ybinsize;
                         const DOUBLE z_low = zmin + iz*zbinsize + off_zwrap, z_hi = z_low + zbinsize;
+
                         first->ngb_closest_icell_xpos[ngb_index] = iix < 0 ? x_low:(iix > 0 ? x_hi:ZERO);
                         first->ngb_closest_icell_ypos[ngb_index] = iiy < 0 ? y_low:(iiy > 0 ? y_hi:ZERO);
                         first->ngb_closest_icell_zpos[ngb_index] = iiz < 0 ? z_low:(iiz > 0 ? z_hi:ZERO);
+
+                        int min_dx_updated = 0, min_dy_updated = 0, min_dz_updated = 0;
                         if(max_3D_sep > 0) {
+                            DOUBLE dx=ZERO, dy=ZERO, dz=ZERO;
                             cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
-                            const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:(iix > 0 ? first->xbounds[1]:ZERO);
-                            const DOUBLE second_x = iix < 0 ? second->xbounds[1]:(iix > 0 ? second->xbounds[0]:ZERO);
-                            const DOUBLE dx = first_x + off_xwrap - second_x;
-                            const DOUBLE second_x_low = xmin + iiix*xbinsize, second_x_hi =  xmin + (iiix + 1)*xbinsize;
-                            const DOUBLE second_x_diff_from_cell_edge = iix < 0 ? (second->xbounds[1]-second_x_hi):(second_x_low-second->xbounds[0]);
-                            first->ngb_min_dx[ngb_index] += (iix < 0 ? -second_x_diff_from_cell_edge:(iix > 0 ? second_x_diff_from_cell_edge:ZERO));
+                            if(min_xdiff != 0) {
+                                const DOUBLE first_x  = min_xdiff < 0 ? first->xbounds[0]:first->xbounds[1];
+                                const DOUBLE second_x = min_xdiff < 0 ? second->xbounds[1]:second->xbounds[0];
+                                dx = first_x + off_xwrap - second_x;
+
+                                /* should always evaluate to true but kept here as defensive coding should someone
+                                   accidentally paste the 2D/1D separation conditions before the 3D sep */
+                                if(min_dx_updated == 0) {
+                                    const DOUBLE second_x_low = xmin + iiix*xbinsize, second_x_hi =  xmin + (iiix + 1)*xbinsize;
+                                    /*second_xdiff has the same sign as xdiff -> we can directly add to the signed ngb_min_dx */
+                                    const DOUBLE second_x_diff_from_cell_edge = min_xdiff < 0 ? second->xbounds[1]-second_x_hi:second->xbounds[0]-second_x_low;
+                                    first->ngb_min_dx[ngb_index] += second_x_diff_from_cell_edge;
+                                    min_dx_updated = 1;
+                                }
+                            }
                             
-                            const DOUBLE first_y  = iiy < 0 ? first->ybounds[0]:(iiy > 0 ? first->ybounds[1]:ZERO);
-                            const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:(iiy > 0 ? second->ybounds[0]:ZERO);
-                            const DOUBLE dy = first_y + off_ywrap - second_y;
-                            const DOUBLE second_y_low = ymin + iiiy*ybinsize, second_y_hi =  ymin + (iiiy + 1)*ybinsize;
-                            const DOUBLE second_y_diff_from_cell_edge = iiy < 0 ? (second->ybounds[1]-second_y_hi):(second_y_low-second->ybounds[0]);
-                            first->ngb_min_dy[ngb_index] += (iiy < 0 ? -second_y_diff_from_cell_edge:(iiy > 0 ? second_y_diff_from_cell_edge:ZERO));
+                            if(min_ydiff != 0) {
+                                const DOUBLE first_y  = min_ydiff < 0 ? first->ybounds[0]:first->ybounds[1];
+                                const DOUBLE second_y = min_ydiff < 0 ? second->ybounds[1]:second->ybounds[0];
+                                dy = first_y + off_ywrap - second_y;
+                                if(min_dy_updated == 0) {
+                                    const DOUBLE second_y_low = ymin + iiiy*ybinsize, second_y_hi =  ymin + (iiiy + 1)*ybinsize;
+                                    /*second_ydiff has the same sign as ydiff -> we can directly add to the signed ngb_min_dy */
+                                    const DOUBLE second_y_diff_from_cell_edge = min_ydiff < 0 ? second->ybounds[1]-second_y_hi:second->ybounds[0]-second_y_low;
+                                    first->ngb_min_dy[ngb_index] += second_y_diff_from_cell_edge;
+                                    min_dy_updated = 1;
+                                }
+                            }
 
-                            const DOUBLE first_z  = iiz < 0 ? first->zbounds[0]:(iiz > 0 ? first->zbounds[1]:ZERO);
-                            const DOUBLE second_z = iiz < 0 ? second->zbounds[1]:(iiz > 0 ? second->zbounds[0]:ZERO);
-                            const DOUBLE dz = first_z + off_zwrap - second_z;
-                            const DOUBLE second_z_low = zmin + iiiz*zbinsize, second_z_hi =  zmin + (iiiz + 1)*zbinsize;
-                            const DOUBLE second_z_diff_from_cell_edge = iiz < 0 ? (second->zbounds[1]-second_z_hi):(second_z_low-second->zbounds[0]);
-                            first->ngb_min_dz[ngb_index] += (iiz < 0 ? -second_z_diff_from_cell_edge:(iiz > 0 ? second_z_diff_from_cell_edge:ZERO));
-
+                            if(min_zdiff != 0) {
+                                const DOUBLE first_z  = min_zdiff < 0 ? first->zbounds[0]:first->zbounds[1];
+                                const DOUBLE second_z = min_zdiff < 0 ? second->zbounds[1]:second->zbounds[0];
+                                dz = first_z + off_zwrap - second_z;
+                                if(min_dz_updated == 0) {
+                                    const DOUBLE second_z_low = zmin + iiiz*zbinsize, second_z_hi =  zmin + (iiiz + 1)*zbinsize;
+                                    const DOUBLE second_z_diff_from_cell_edge = min_zdiff < 0 ? second->zbounds[1]-second_z_hi:second->zbounds[0]-second_z_low;
+                                    first->ngb_min_dz[ngb_index] += second_z_diff_from_cell_edge;
+                                    min_dz_updated = 1;
+                                }
+                            }
+                            
                             const DOUBLE sqr_min_sep_cells = dx*dx + dy*dy + dz*dz;
                             if(sqr_min_sep_cells >= max_3D_sep*max_3D_sep) {
                                 continue;
                             }
-                        }
+                        }/* end of condition for max_3D_sep */
 
 
                         /* in a separate if (rather than an else with the previous if for max_3D_sep)
                            so that conditions can be chained */
-                        if (max_2D_sep > 0) {
+                        if(max_2D_sep > 0) {
+                            DOUBLE dx=ZERO, dy=ZERO;
                             cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
-                            const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:(iix > 0 ? first->xbounds[1]:ZERO);
-                            const DOUBLE second_x = iix < 0 ? second->xbounds[1]:(iix > 0 ? second->xbounds[0]:ZERO);
-                            const DOUBLE dx = first_x + off_xwrap - second_x;
-                            const DOUBLE second_x_low = xmin + iiix*xbinsize, second_x_hi =  xmin + (iiix + 1)*xbinsize;
-                            const DOUBLE second_x_diff_from_cell_edge = iix < 0 ? (second->xbounds[1]-second_x_hi):(second_x_low-second->xbounds[0]);
-                            first->ngb_min_dx[ngb_index] += (iix < 0 ? -second_x_diff_from_cell_edge:(iix > 0 ? second_x_diff_from_cell_edge:ZERO));
+                            if(min_xdiff != 0) {
+                                const DOUBLE first_x  = min_xdiff < 0 ? first->xbounds[0]:first->xbounds[1];
+                                const DOUBLE second_x = min_xdiff < 0 ? second->xbounds[1]:second->xbounds[0];
+                                dx = first_x + off_xwrap - second_x;
+                                if(min_dx_updated == 0) {
+                                    const DOUBLE second_x_low = xmin + iiix*xbinsize, second_x_hi =  xmin + (iiix + 1)*xbinsize;
+                                    /*second_xdiff has the same sign as xdiff -> we can directly add to the signed ngb_min_dx */
+                                    const DOUBLE second_x_diff_from_cell_edge = min_xdiff < 0 ? second->xbounds[1]-second_x_hi:second->xbounds[0]-second_x_low;
+                                    first->ngb_min_dx[ngb_index] += second_x_diff_from_cell_edge;
+                                    min_dx_updated = 1;
+                                }
+                            }
                             
-                            const DOUBLE first_y  = iiy < 0 ? first->ybounds[0]:(iiy > 0 ? first->ybounds[1]:ZERO);
-                            const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:(iiy > 0 ? second->ybounds[0]:ZERO);
-                            const DOUBLE dy = first_y + off_ywrap - second_y;
-                            const DOUBLE second_y_low = ymin + iiiy*ybinsize, second_y_hi =  ymin + (iiiy + 1)*ybinsize;
-                            const DOUBLE second_y_diff_from_cell_edge = iiy < 0 ? (second->ybounds[1]-second_y_hi):(second_y_low-second->ybounds[0]);
-                            first->ngb_min_dy[ngb_index] += (iiy < 0 ? -second_y_diff_from_cell_edge:(iiy > 0 ? second_y_diff_from_cell_edge:ZERO));
+                            if(min_ydiff != 0) {
+                                const DOUBLE first_y  = min_ydiff < 0 ? first->ybounds[0]:first->ybounds[1];
+                                const DOUBLE second_y = min_ydiff < 0 ? second->ybounds[1]:second->ybounds[0];
+                                dy = first_y + off_ywrap - second_y;
+                                if(min_dx_updated == 0) {
+                                    const DOUBLE second_y_low = ymin + iiiy*ybinsize, second_y_hi =  ymin + (iiiy + 1)*ybinsize;
+                                    /*second_ydiff has the same sign as ydiff -> we can directly add to the signed ngb_min_dy */
+                                    const DOUBLE second_y_diff_from_cell_edge = min_ydiff < 0 ? second->ybounds[1]-second_y_hi:second->ybounds[0]-second_y_low;
+                                    first->ngb_min_dy[ngb_index] += second_y_diff_from_cell_edge;
+                                    min_dy_updated = 1;
+                                }
+                            }
 
                             const DOUBLE sqr_min_sep_cells = dx*dx + dy*dy;
-                            if(sqr_min_sep_cells > max_2D_sep*max_2D_sep) {
+                            if(sqr_min_sep_cells >= max_2D_sep*max_2D_sep) {
                                 continue;
                             }
-                        }
+                        } /* end of if condition for max_2D_sep */
 
                         /* in a separate if (rather than an else with the previous if for max_3D_sep)
                            so that conditions can be chained */
                         if(max_1D_sep > 0) {
-                            cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
-                            const DOUBLE first_z  = iiz < 0 ? first->zbounds[0]:(iiz > 0 ? first->zbounds[1]:ZERO);
-                            const DOUBLE second_z = iiz < 0 ? second->zbounds[1]:(iiz > 0 ? second->zbounds[0]:ZERO);
-                            const DOUBLE dz = first_z + off_zwrap - second_z;
-                            const DOUBLE second_z_low = zmin + iiiz*zbinsize, second_z_hi =  zmin + (iiiz + 1)*zbinsize;
-                            const DOUBLE second_z_diff_from_cell_edge = iiz < 0 ? (second->zbounds[1]-second_z_hi):(second_z_low-second->zbounds[0]);
-                            first->ngb_min_dz[ngb_index] += (iiz < 0 ? -second_z_diff_from_cell_edge:(iiz > 0 ? second_z_diff_from_cell_edge:ZERO));
-
-                            const DOUBLE sqr_min_sep_cells = dz*dz;
-                            if(sqr_min_sep_cells >= max_1D_sep*max_1D_sep) {
-                                continue;
+                            if(min_zdiff != 0) {
+                                cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
+                                const DOUBLE first_z  = min_zdiff < 0 ? first->zbounds[0]:first->zbounds[1];
+                                const DOUBLE second_z = min_zdiff < 0 ? second->zbounds[1]:second->zbounds[0];
+                                const DOUBLE dz = first_z + off_zwrap - second_z;
+                                if(min_dz_updated == 0) {
+                                    const DOUBLE second_z_low = zmin + iiiz*zbinsize, second_z_hi =  zmin + (iiiz + 1)*zbinsize;
+                                    const DOUBLE second_z_diff_from_cell_edge = min_zdiff < 0 ? second->zbounds[1]-second_z_hi:second->zbounds[0]-second_z_low;
+                                    first->ngb_min_dz[ngb_index] += second_z_diff_from_cell_edge;
+                                    min_dz_updated = 1;
+                                }
+                                const DOUBLE sqr_min_sep_cells = dz*dz;
+                                if(sqr_min_sep_cells >= max_1D_sep*max_1D_sep) {
+                                    continue;
+                                }
                             }
-                        }
-                    } 
+                        } /* end of if condition for max_1D_sep */
+                    }/* end of if condition for enable_min_sep_opt*/ 
 
                     //Note the xwrap/ywraps do not have memory allocated for them in the
                     //non-periodic case. 
