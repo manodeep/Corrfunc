@@ -959,9 +959,9 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
         }
         
         for(int64_t j=0;j<nleft;j++) {
-            const DOUBLE dx = *localx1 - xpos;
-            const DOUBLE dy = *localy1 - ypos;
-            const DOUBLE dz = *localz1 - zpos;
+            const DOUBLE dx = *localx1++ - xpos;
+            const DOUBLE dy = *localy1++ - ypos;
+            const DOUBLE dz = *localz1++ - zpos;
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
@@ -969,7 +969,6 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
             if(dz >= max_dz) break;
 
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
-            localx1++;localy1++;localz1++;
             
             if(r2 >= sqr_rmax || r2 < sqr_rmin) continue;
             if(need_weightavg){
