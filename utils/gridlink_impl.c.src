@@ -643,7 +643,6 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                     const int64_t ngb_index = first->num_ngb;
                     XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
                             "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
-                    first->ngb_cells[ngb_index] = &(lattice2[icell2]);
                     if(enable_min_sep_opt) {
                         const int round_iix_towards_zero = iix < 0 ? +1:(iix > 0 ? -1:0);
                         const int round_iiy_towards_zero = iiy < 0 ? +1:(iiy > 0 ? -1:0);
@@ -749,6 +748,9 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                         first->zwrap[ngb_index] = off_zwrap;
                     }
 
+                    //If we have reached here, then this cell *MIGHT* have a pair. We
+                    //need to add to the neighbour list
+                    first->ngb_cells[ngb_index] = &(lattice2[icell2]);
                     first->num_ngb++;
                 }
             }
