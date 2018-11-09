@@ -948,7 +948,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             }
 
             if(dz <= -pimax) continue;
-            if(dz >= max_dz) break;
+            if(dz >= pimax) break;
             
             const DOUBLE r2 = dx*dx + dy*dy;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {

@@ -463,7 +463,6 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
             const AVX_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
             const AVX_FLOATS m_inv_dpi    = AVX_SET_FLOAT(inv_dpi);
-            const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
             const AVX_FLOATS m_npibin     = AVX_SET_FLOAT((DOUBLE) npibin);
             const AVX_FLOATS m_one    = AVX_SET_FLOAT((DOUBLE) 1);
 
@@ -568,7 +567,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             
         //remainder loop 
         for(;j<N1;j++){
-            const DOUBLE dz = *localz1++ - zpos;
+            DOUBLE dz = *localz1++ - zpos;
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
             for(int w = 0; w < pair.num_weights; w++){
@@ -915,7 +914,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
         for(;j<N1;j++) {
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
-            const DOUBLE dz = *localz1++ - zpos;
+            DOUBLE dz = *localz1++ - zpos;
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
@@ -1110,7 +1109,7 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
         for(int64_t j=0;j<nleft;j++) {
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
-            const DOUBLE dz = *localz1++ - zpos;
+            DOUBLE dz = *localz1++ - zpos;
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
