@@ -72,7 +72,6 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
     }
     
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_dz = pimax;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -98,7 +97,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if((zpos - last_z1) >= pimax) {
             i = N0;
             break;
         }
@@ -113,7 +112,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
            particle
      */
         const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
+        if(this_dz >= pimax) {
             continue;
         }
         
@@ -124,17 +123,16 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy;
-                if(sqr_min_sep_this_point >= sqr_rpmax) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy;
+                if(sqr_min_sep_this_point >= sqr_rpmax || min_dz >= pimax) {
                     continue;
                 }
-                if(dz >= max_dz) continue;
             }
 
-            const DOUBLE target_z = zpos - max_dz;
+            const DOUBLE target_z = zpos - pimax;
             while(z1 < zend && *z1 <= target_z) {
                 z1++;
             }
@@ -184,7 +182,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
                 local_w1.weights[w] += AVX512_NVEC;
             }
             
-            const AVX512_FLOATS m_max_dz = AVX512_SET_FLOAT(max_dz);
+            const AVX512_FLOATS m_pimax = AVX512_SET_FLOAT(pimax);
             const AVX512_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
             const AVX512_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
             
@@ -204,14 +202,19 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
             //the z2 arrays are sorted in increasing order. which means
             //the z2 value will increase in any future iteration of j.
             //that implies the zdiff values are also monotonically increasing
-            //Therefore, if any of the zdiff values >= max_dz (==pimax), then
-            //no future iteration in j can produce a zdiff value less than max_dz.
-            AVX512_MASK m_mask_geq_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_max_dz,_CMP_GE_OQ);
+            //Therefore, if any of the zdiff values >= pimax, then
+            //no future iteration in j can produce a zdiff value less than pimax.
+            //If the dz values are all <= -pimax, then we can continue with the next iteration
+            //since there are no pairs in this chunk
+            const AVX512_MASK m_neg_pimax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff, -m_pimax,_CMP_GT_OQ);
+            if(m_neg_pimax_mask == 0) continue;
+
+            AVX512_MASK m_mask_geq_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_pimax,_CMP_GE_OQ);
             if(m_mask_geq_pimax > 0) {
                 j = N1;//but do not break yet, this chunk might contain valid pairs
             }
             
-            AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_max_dz,_CMP_LT_OS);
+            AVX512_MASK m_mask_pimax = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff,m_pimax,_CMP_LT_OS);
             if(m_mask_pimax == 0) {
                 //None of the dz^2 values satisfies dz^2 < pimax^2
                 // => no pairs can be added -> break out of j-loop
@@ -362,7 +365,6 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
     }
     
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_dz = pimax;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -388,7 +390,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if((zpos - last_z1) >= pimax) {
             i = N0;
             break;
         }
@@ -403,7 +405,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
            particle
         */
         const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
+        if(this_dz >= pimax) {
             continue;
         }
         
@@ -414,17 +416,16 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy;
-                if(sqr_min_sep_this_point >= sqr_rpmax) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy;
+                if(sqr_min_sep_this_point >= sqr_rpmax || min_dz >= pimax) {
                     continue;
                 }
-                if(dz >= max_dz) continue;
             }
 
-            const DOUBLE target_z = zpos - max_dz;
+            const DOUBLE target_z = zpos - pimax;
             while(z1 < zend && *z1 <= target_z) {
                 z1++;
             }
@@ -470,7 +471,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                 local_w1.weights[w] += AVX2_NVEC;
             }
             
-            const AVX2_FLOATS m_max_dz = AVX2_SET_FLOAT(max_dz);
+            const AVX2_FLOATS m_pimax = AVX2_SET_FLOAT(pimax);
             const AVX2_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
             const AVX2_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
             
@@ -483,7 +484,11 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                 pair.dy.a = m_ydiff;
                 pair.dz.a = m_zdiff;
             }
-            
+            const AVX2_FLOATS m_neg_pimax_mask = AVX_COMPARE_FLOATS(m_zdiff,-m_pimax,_CMP_GT_OQ);
+            if(AVX2_TEST_COMPARISON(m_neg_pimax_mask)==0) {
+                continue;
+            }
+
             const AVX2_FLOATS m_sqr_xdiff = AVX2_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
             AVX2_FLOATS r2  = AVX2_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);
             
@@ -493,15 +498,15 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                 //the z2 arrays are sorted in increasing order. which means
                 //the z2 value will increase in any future iteration of j.
                 //that implies the zdiff values are also monotonically increasing
-                //Therefore, if any of the zdiff values >= max_dz (==pimax), then
+                //Therefore, if any of the zdiff values >= pimax (==pimax), then
                 //no future iteration in j can produce a zdiff value less than pimax.
-                const AVX2_FLOATS m_mask_geq_pimax = AVX2_COMPARE_FLOATS(m_zdiff,m_max_dz,_CMP_GE_OQ);
+                const AVX2_FLOATS m_mask_geq_pimax = AVX2_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_GE_OQ);
                 if(AVX2_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
                     j=N1;//but do not break, there might be valid pairs in this chunk
                 }
 
                 
-                AVX2_FLOATS m_mask_pimax = AVX2_COMPARE_FLOATS(m_zdiff,m_max_dz,_CMP_LT_OS);
+                AVX2_FLOATS m_mask_pimax = AVX2_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
                 if(AVX2_TEST_COMPARISON(m_mask_pimax) == 0) {
                     //None of the dz^2 values satisfies dz^2 < pimax^2
                     // => no pairs can be added -> continue and process the next NVEC
@@ -553,7 +558,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
             }
             
             if(need_rpavg || need_weightavg) {
-                union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
+                union_rpbin.m_ibin = AVX2_TRUNCATE_FLOAT_TO_INT(m_rpbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
 #pragma unroll(AVX2_NVEC)
@@ -584,10 +589,9 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            
-            if(dz >= max_dz) {
-                break;
-            } 
+
+            if(dz <= -pimax) continue;
+            if(dz >= pimax) break;
             
             const DOUBLE r2 = dx*dx + dy*dy;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
@@ -705,7 +709,6 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
     }
     
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_dz = pimax;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -731,7 +734,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if((zpos - last_z1) >= pimax) {
             i = N0;
             break;
         }
@@ -746,7 +749,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
            particle
         */
         const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
+        if(this_dz >= pimax) {
             continue;
         }
         
@@ -757,17 +760,16 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy;
-                if(sqr_min_sep_this_point >= sqr_rpmax) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy;
+                if(sqr_min_sep_this_point >= sqr_rpmax || min_dz >= pimax) {
                     continue;
                 }
-                if(dz >= max_dz) continue;
             }
 
-            const DOUBLE target_z = zpos - max_dz;
+            const DOUBLE target_z = zpos - pimax;
             while(z1 < zend && *z1 <= target_z) {
                 z1++;
             }
@@ -814,8 +816,8 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
                 local_w1.weights[w] += AVX_NVEC;
             }
-
-            const AVX_FLOATS m_max_dz = AVX_SET_FLOAT(max_dz);
+            
+            const AVX_FLOATS m_pimax = AVX_SET_FLOAT(pimax);
             const AVX_FLOATS m_sqr_rpmax = m_rupp_sqr[nbin-1];
             const AVX_FLOATS m_sqr_rpmin = m_rupp_sqr[0];
             
@@ -828,7 +830,11 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 pair.dy.a = m_ydiff;
                 pair.dz.a = m_zdiff;
             }
-      
+            const AVX_FLOATS m_neg_pimax_mask = AVX_COMPARE_FLOATS(m_zdiff,-m_pimax,_CMP_GT_OQ);
+            if(AVX_TEST_COMPARISON(m_neg_pimax_mask)==0) {
+                continue;
+            }
+
             const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
             const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(m_ydiff);  //(y0 - y[j])^2
             AVX_FLOATS r2  = AVX_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
@@ -840,14 +846,14 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 //the z2 arrays are sorted in increasing order. which means
                 //the z2 value will increase in any future iteration of j.
                 //that implies the zdiff values are also monotonically increasing
-                //Therefore, if any of the zdiff values are >= max_dz (==pimax), then
+                //Therefore, if any of the zdiff values are >= pimax (==pimax), then
                 //no future iteration in j can produce a zdiff value less than pimax.
-                const AVX_FLOATS m_mask_geq_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_max_dz,_CMP_GE_OQ);
+                const AVX_FLOATS m_mask_geq_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_GE_OQ);
                 if(AVX_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
                     j=N1;//but do not break yet, this chunk might contain valid pairs
                 }
                                 
-                AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_max_dz,_CMP_LT_OS);
+                AVX_FLOATS m_mask_pimax = AVX_COMPARE_FLOATS(m_zdiff,m_pimax,_CMP_LT_OS);
                 if(AVX_TEST_COMPARISON(m_mask_pimax) == 0) {
                     //None of the dz^2 values satisfies dz^2 < pimax^2
                     // => no pairs can be added -> continue and process the next NVEC
@@ -941,9 +947,8 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
 
-            if(dz >= max_dz) {
-                break;
-            } 
+            if(dz <= -pimax) continue;
+            if(dz >= max_dz) break;
             
             const DOUBLE r2 = dx*dx + dy*dy;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
@@ -956,7 +961,6 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 pair.dz.d = dz;
             }
 
-            
             const DOUBLE r = need_rpavg ? SQRT(r2):ZERO;
             const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
             for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -1061,7 +1065,6 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
     }
     
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_dz = pimax;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -1087,7 +1090,7 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if((zpos - last_z1) >= pimax) {
             i = N0;
             break;
         }
@@ -1102,7 +1105,7 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
            particle
         */
         const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
+        if(this_dz >= pimax) {
             continue;
         }
         
@@ -1113,17 +1116,16 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy;
-                if(sqr_min_sep_this_point >= sqr_rpmax) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy;
+                if(sqr_min_sep_this_point >= sqr_rpmax || min_dz >= pimax) {
                     continue;
                 }
-                if(dz >= max_dz) continue;
             }
 
-            const DOUBLE target_z = zpos - max_dz;
+            const DOUBLE target_z = zpos - pimax;
             while(z1 < zend && *z1 <= target_z) {
                 z1++;
             }
@@ -1170,40 +1172,40 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             union int4 union_rpbin;
             union float4 union_mDperp;
             union float4_weights union_mweight;
-            
-
       
-            const SSE_FLOATS m_max_dz = SSE_SET_FLOAT(max_dz);
+            const SSE_FLOATS m_pimax = SSE_SET_FLOAT(pimax);
             const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
             const SSE_FLOATS m_sqr_rpmin = SSE_SET_FLOAT(sqr_rpmin);
             
             const SSE_FLOATS m_xdiff = SSE_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
             const SSE_FLOATS m_ydiff = SSE_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
             const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
-            
-            const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(m_xdiff);
-            const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(m_ydiff);
-            //const SSE_FLOATS m_sqr_zdiff = SSE_SQUARE_FLOAT(m_zdiff);
-            
             if(need_weightavg){
                 pair.dx.s = m_xdiff;
                 pair.dy.s = m_ydiff;
                 pair.dz.s = m_zdiff;
             }
+            const SSE_FLOATS m_neg_pimax_mask = SSE_COMPARE_FLOATS_GT(m_zdiff,-m_pimax);
+            if(SSE_TEST_COMPARISON(m_neg_pimax_mask)==0) {
+                continue;
+            }
+            
+            const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(m_xdiff);
+            const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(m_ydiff);
             
             SSE_FLOATS r2  = SSE_ADD_FLOATS(m_sqr_xdiff,m_sqr_ydiff);
             SSE_FLOATS m_mask_left;
             {
                 /* See in previous sections for explanation. z is sorted -> if any
-                   element of the chunk is >= max_dz (==pimax), then none in any
+                   element of the chunk is >= pimax (==pimax), then none in any
                    following chunks can contain dz < pimax.
                  */
-                SSE_FLOATS m_mask_geq_pimax = SSE_COMPARE_FLOATS_GE(m_zdiff,m_max_dz);
+                SSE_FLOATS m_mask_geq_pimax = SSE_COMPARE_FLOATS_GE(m_zdiff,m_pimax);
                 if(SSE_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
                     j = N1;//but do not break yet since there might be valid pairs in this chunk
                 }
 
-                SSE_FLOATS m_mask_pimax = SSE_COMPARE_FLOATS_LT(m_zdiff,m_max_dz);
+                SSE_FLOATS m_mask_pimax = SSE_COMPARE_FLOATS_LT(m_zdiff,m_pimax);
                 if(SSE_TEST_COMPARISON(m_mask_pimax) == 0) {
                     j = N1;
                     break;
@@ -1249,10 +1251,7 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 if(need_rpavg || need_weightavg) {
                     m_rpbin = SSE_BLEND_FLOATS_WITH_MASK(m_rpbin,m_kbin[kbin], m_bin_mask);
                 }
-                int test3 = SSE_TEST_COMPARISON(m_mask_left);
-                if(test3 == 0) {
-                    break;
-                }
+                if(SSE_TEST_COMPARISON(m_mask_left) == 0) break;
             }
             
             if(need_rpavg || need_weightavg) {
@@ -1286,8 +1285,9 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            
-            if(dz >= max_dz) break;
+
+            if(dz <= -pimax) continue;
+            if(dz >= pimax) break;
             
             const DOUBLE r2 = dx*dx + dy*dy;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
@@ -1388,8 +1388,6 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
     
     /* naive implementation that is guaranteed to compile */
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    /* const DOUBLE last_z1 = z1[N1-1]; */
-    const DOUBLE max_dz = pimax;
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++ + off_xwrap;
         const DOUBLE ypos = *y0++ + off_ywrap;
@@ -1413,7 +1411,7 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if((zpos - last_z1) >= pimax) {
             i = N0;
             break;
         }
@@ -1428,7 +1426,7 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
            particle
         */
         const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
+        if(this_dz >= pimax) {
             continue;
         }
         
@@ -1439,17 +1437,16 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy;
-                if(sqr_min_sep_this_point >= sqr_rpmax) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy;
+                if(sqr_min_sep_this_point >= sqr_rpmax || min_dz >= pimax) {
                     continue;
                 }
-                if(dz >= max_dz) continue;
             }
 
-            const DOUBLE target_z = zpos - max_dz;
+            const DOUBLE target_z = zpos - pimax;
             while(z1 < zend && *z1 <= target_z) {
                 z1++;
             }
@@ -1482,8 +1479,9 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            
-            if(dz >= max_dz) break;
+
+            if(dz <= -pimax) continue;
+            if(dz >= pimax) break;
             
             const DOUBLE r2 = dx*dx + dy*dy;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;

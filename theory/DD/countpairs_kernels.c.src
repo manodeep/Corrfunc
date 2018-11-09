@@ -107,15 +107,14 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
                 if(sqr_min_sep_this_point >= sqr_rpmax) {
                     continue;
                 }
-                max_dz = SQRT(sqr_rpmax - dx*dx - dy*dy);
-                if((*z1 - zpos) >= max_dz) continue;
+                max_dz = SQRT(sqr_rpmax - min_dx*min_dx - min_dy*min_dy);
             }
         
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
@@ -182,6 +181,8 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
                 pair.dy.a512 = m_ydiff;
                 pair.dz.a512 = m_zdiff;
             }
+            const AVX512_MASK m_neg_max_dz_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff, -m_max_dz,_CMP_GT_OQ);
+            if(m_neg_max_dz_mask == 0) continue;
       
             const AVX512_FLOATS m_sqr_xdiff = AVX512_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
             const AVX512_FLOATS x2py2  = AVX512_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);/* dy*dy + dx^2*/
@@ -368,15 +369,14 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
                 if(sqr_min_sep_this_point >= sqr_rpmax) {
                     continue;
                 }
-                max_dz = SQRT(sqr_rpmax - dx*dx - dy*dy);
-                if((*z1 - zpos) >= max_dz) continue;
+                max_dz = SQRT(sqr_rpmax - min_dx*min_dx - min_dy*min_dy);
             }
             
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
@@ -436,7 +436,12 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
                 pair.dy.a = m_ydiff;
                 pair.dz.a = m_zdiff;
             }
-      
+
+            const AVX_FLOATS m_neg_max_dz_mask = AVX_COMPARE_FLOATS(m_zdiff,-m_max_dz,_CMP_GT_OQ);
+            if(AVX_TEST_COMPARISON(m_neg_max_dz_mask)==0) {
+                continue;
+            }
+
             const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
             const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(m_ydiff);  //(y0 - y[j])^2
             const AVX_FLOATS m_sqr_zdiff = AVX_SQUARE_FLOAT(m_zdiff);
@@ -537,9 +542,8 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
 
-            if(dz >= rpmax) {
-                break;
-            }
+            if(dz <= -max_dz) continue;
+            if(dz >= rpmax) break;
             
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
@@ -681,15 +685,14 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
           // Now add the x,y information to further limit the range of secondaries for this particle
           // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
           if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-              const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-              const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-              const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-              const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
+              const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+              const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+              const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+              const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
               if(sqr_min_sep_this_point >= sqr_rpmax) {
                   continue;
               }
-              max_dz = SQRT(sqr_rpmax - dx*dx - dy*dy);
-              if((*z1 - zpos) >= max_dz) continue;
+              max_dz = SQRT(sqr_rpmax - min_dx*min_dx - min_dy*min_dy);
           }
         
           // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
@@ -715,18 +718,10 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
       }
       
       for(;j<=(N1 - SSE_NVEC);j+=SSE_NVEC){
-          union int4{
-              SSE_INTS m_ibin;
-              int ibin[SSE_NVEC];
-          };
           union int4 union_rpbin;
-      
-          union float4{
-              SSE_FLOATS m_Dperp;
-              DOUBLE Dperp[SSE_NVEC];
-          };
           union float4 union_mDperp;
-
+          union float4_weights union_mweight;
+          
           const SSE_FLOATS m_xpos = SSE_SET_FLOAT(xpos);
           const SSE_FLOATS m_ypos = SSE_SET_FLOAT(ypos);
           const SSE_FLOATS m_zpos = SSE_SET_FLOAT(zpos);
@@ -744,12 +739,6 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
               local_w1.weights[w] += SSE_NVEC;
           }
 
-          union float4_weights{
-              SSE_FLOATS m_weights;
-              DOUBLE weights[SSE_NVEC];
-          };
-          union float4_weights union_mweight;
-            
           const SSE_FLOATS m_max_dz = SSE_SET_FLOAT(max_dz);
           const SSE_FLOATS m_sqr_rpmax = SSE_SET_FLOAT(sqr_rpmax);
           const SSE_FLOATS m_sqr_rpmin = SSE_SET_FLOAT(sqr_rpmin);
@@ -757,6 +746,11 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
           const SSE_FLOATS m_xdiff = SSE_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
           const SSE_FLOATS m_ydiff = SSE_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
           const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
+
+          const SSE_FLOATS m_neg_max_dz_mask = SSE_COMPARE_FLOATS_GT(m_zdiff,-m_max_dz);
+          if(SSE_TEST_COMPARISON(m_neg_max_dz_mask)==0) {
+              continue;
+          }
 
           const SSE_FLOATS m_mask_geq_pimax = SSE_COMPARE_FLOATS_GE(m_zdiff,m_max_dz);
           if(SSE_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
@@ -836,7 +830,8 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
               pair.weights1[w].d = *local_w1.weights[w]++;
           }
 
-          if(dz >= rpmax) break;
+          if(dz <= -max_dz) continue;
+          if(dz >= max_dz) break;
       
           const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
           if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
@@ -959,15 +954,14 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
             if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = dx*dx + dy*dy + dz*dz;
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
                 if(sqr_min_sep_this_point >= sqr_rpmax) {
                     continue;
                 }
-                max_dz = SQRT(sqr_rpmax - dx*dx - dy*dy);
-                if((*z1 - zpos) >= max_dz) continue;
+                max_dz = SQRT(sqr_rpmax - min_dx*min_dx - min_dy*min_dy);
             }
         
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
@@ -1001,7 +995,8 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
             
-            if(dz >= max_all_dz) break;
+            if(dz <= -max_dz) continue;
+            if(dz >= max_dz) break;
       
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;

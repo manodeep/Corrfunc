@@ -32,7 +32,6 @@ static inline int vpf_avx512_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restr
         counts[i] = 0;
     }
     const DOUBLE rstep = rmax/(DOUBLE)nbin ;
-    const DOUBLE inv_rstep = ((DOUBLE) 1.0)/rstep;
     const DOUBLE rmax_sqr = rmax*rmax;
 
     AVX512_FLOATS m_rmax_sqr = AVX512_SET_FLOAT(rmax_sqr);
