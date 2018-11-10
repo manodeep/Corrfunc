@@ -53,8 +53,12 @@ extern "C" {
                                                              struct cellarray_mocks_index_particles_DOUBLE *lattice2, const int64_t totncells,
                                                              const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                                              const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                                             const DOUBLE xbinsize, const DOUBLE ybinsize, const int enable_min_sep_opt,
+                                                             const DOUBLE xmin, const DOUBLE ymin, const DOUBLE zmin,
+                                                             const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                                             const DOUBLE max_3D_sep,
+                                                             const int enable_min_sep_opt,
                                                              const int autocorr);
+
     extern void free_cellarray_mocks_index_particles_DOUBLE(cellarray_mocks_index_particles_DOUBLE *lattice, const int64_t totncells);
     /* End of functions related to DDrppi_mocks */
 

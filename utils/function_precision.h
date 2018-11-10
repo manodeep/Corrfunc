@@ -53,7 +53,8 @@ extern "C" {
 #endif//AVX
 
 
-  
+#include <float.h>
+    
 #ifdef DOUBLE_PREC
 #define DOUBLE double
 #define REAL_FORMAT "lf"
@@ -70,6 +71,7 @@ extern "C" {
 #define ASIN   asin
 #define POW    pow
 #define ABS    fabs
+#define MAX_POSITIVE_FLOAT DBL_MAX
 #else
 #define DOUBLE float
 #define REAL_FORMAT "f"
@@ -86,6 +88,7 @@ extern "C" {
 #define ASIN   asinf
 #define POW    powf
 #define ABS    fabsf
+#define MAX_POSITIVE_FLOAT FLT_MAX
 #endif
 
 #ifdef __cplusplus

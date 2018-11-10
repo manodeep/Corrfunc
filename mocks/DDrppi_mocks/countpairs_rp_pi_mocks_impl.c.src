@@ -515,14 +515,14 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
     {
-        const DOUBLE xbinsize = xdiff/nmesh_x;
-        const DOUBLE ybinsize = ydiff/nmesh_y;
         int status = assign_ngb_cells_mocks_index_particles_DOUBLE(lattice1, lattice2, totncells,
                                                                    options->bin_refine_factors[0],
                                                                    options->bin_refine_factors[1],
                                                                    options->bin_refine_factors[2],
                                                                    nmesh_x, nmesh_y, nmesh_z,
-                                                                   xbinsize, ybinsize,
+                                                                   xmin, ymin, zmin,
+                                                                   xdiff, ydiff, zdiff,
+                                                                   max_sep,
                                                                    options->enable_min_sep_opt,
                                                                    autocorr);
         if(status != EXIT_SUCCESS) {
@@ -635,8 +635,9 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                                                                               same_cell,
                                                                               options->fast_divide_and_NR_steps,
                                                                               sqr_rpmax, sqr_rpmin, nrpbin,
-                                                                              npibin, rupp_sqr, pimax,max_sep,
-                                                                              ZERO, ZERO,
+                                                                              npibin, rupp_sqr, pimax,
+                                                                              ZERO, ZERO, ZERO, /* min xyz diff */
+                                                                              ZERO, ZERO, ZERO, /* closest xyz positions */
                                                                               this_rpavg, npairs,
                                                                               this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
@@ -659,16 +660,25 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                     const int64_t N2 = second->nelements;
                     DOUBLE *this_rpavg = options->need_avg_sep ? &(rpavg[0]):NULL;
                     DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    const DOUBLE min_xdiff = first->ngb_min_dx[ngb];
-                    const DOUBLE min_ydiff = first->ngb_min_dy[ngb];
-                    
+
+                    DOUBLE min_xdiff = ZERO, min_ydiff = ZERO, min_zdiff = ZERO;
+                    DOUBLE closest_icell_xpos = ZERO, closest_icell_ypos = ZERO, closest_icell_zpos = ZERO;
+                    if(options->enable_min_sep_opt) {                                                           
+                        min_xdiff = FABS(first->ngb_min_dx[ngb]);
+                        min_ydiff = FABS(first->ngb_min_dy[ngb]);
+                        min_zdiff = FABS(first->ngb_min_dz[ngb]);
+                        closest_icell_xpos = first->ngb_closest_icell_xpos[ngb];
+                        closest_icell_ypos = first->ngb_closest_icell_ypos[ngb];
+                        closest_icell_zpos = first->ngb_closest_icell_zpos[ngb];
+                    }
                     const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
                                                                               N2, x2, y2, z2, d2, weights2,
                                                                               same_cell,
                                                                               options->fast_divide_and_NR_steps,
                                                                               sqr_rpmax, sqr_rpmin, nrpbin,
-                                                                              npibin, rupp_sqr, pimax,max_sep,
-                                                                              min_xdiff, min_ydiff,
+                                                                              npibin, rupp_sqr, pimax,
+                                                                              min_xdiff, min_ydiff, min_zdiff,
+                                                                              closest_icell_xpos, closest_icell_ypos, closest_icell_zpos,
                                                                               this_rpavg, npairs,
                                                                               this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly

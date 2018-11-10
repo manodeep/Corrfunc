@@ -38,11 +38,15 @@ void free_cellarray_mocks_index_particles_DOUBLE(cellarray_mocks_index_particles
         for(int w = 0; w < lattice[i].weights.num_weights; w++){
             free(lattice[i].weights.weights[w]);
         }
-
-        /* Might be NULL but free(NULL) is fine*/
         free(lattice[i].ngb_cells);
+
+        /* Might be NULL but free(NULL) is fine (only allocated if enable_min_sep_opt is passed)*/
         free(lattice[i].ngb_min_dx);
         free(lattice[i].ngb_min_dy);
+        free(lattice[i].ngb_min_dz);
+        free(lattice[i].ngb_closest_icell_xpos);
+        free(lattice[i].ngb_closest_icell_ypos);
+        free(lattice[i].ngb_closest_icell_zpos);
     }
     free(lattice);
 }
@@ -208,9 +212,20 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
         }
         nallocated[index] = expected_n;
         lattice[index].nelements=0;
+        lattice[index].xbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[index].xbounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[index].ybounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[index].ybounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[index].zbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[index].zbounds[1] = -MAX_POSITIVE_FLOAT;
+        
         lattice[index].ngb_cells = NULL;
         lattice[index].ngb_min_dx = NULL;
-        lattice[index].ngb_min_dy = NULL;        
+        lattice[index].ngb_min_dy = NULL;
+        lattice[index].ngb_min_dz = NULL;
+        lattice[index].ngb_closest_icell_xpos = NULL;
+        lattice[index].ngb_closest_icell_ypos = NULL;
+        lattice[index].ngb_closest_icell_zpos = NULL;
     }
 
     const DOUBLE xinv=1.0/xbinsize;
@@ -306,6 +321,14 @@ cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(c
             lattice[index].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
         }
 
+        lattice[index].xbounds[0] = x[i] < lattice[index].xbounds[0] ? x[i]:lattice[index].xbounds[0];
+        lattice[index].ybounds[0] = y[i] < lattice[index].ybounds[0] ? y[i]:lattice[index].ybounds[0];
+        lattice[index].zbounds[0] = z[i] < lattice[index].zbounds[0] ? z[i]:lattice[index].zbounds[0];
+
+        lattice[index].xbounds[1] = x[i] > lattice[index].xbounds[1] ? x[i]:lattice[index].xbounds[1];
+        lattice[index].ybounds[1] = y[i] > lattice[index].ybounds[1] ? y[i]:lattice[index].ybounds[1];
+        lattice[index].zbounds[1] = z[i] > lattice[index].zbounds[1] ? z[i]:lattice[index].zbounds[1];
+
         lattice[index].nelements++;
     }
     free(nallocated);
@@ -357,79 +380,162 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
                                                   struct cellarray_mocks_index_particles_DOUBLE *lattice2, const int64_t totncells,
                                                   const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                                   const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                                  const DOUBLE xbinsize, const DOUBLE ybinsize, const int enable_min_sep_opt, 
+                                                  const DOUBLE xmin, const DOUBLE ymin, const DOUBLE zmin,
+                                                  const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                                  const DOUBLE max_3D_sep, 
+                                                  const int enable_min_sep_opt,
                                                   const int autocorr)
 {
-  const int64_t nx_ngb = 2*xbin_refine_factor + 1;
-  const int64_t ny_ngb = 2*ybin_refine_factor + 1;
-  const int64_t nz_ngb = 2*zbin_refine_factor + 1;
-  const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
+    const int64_t nx_ngb = 2*xbin_refine_factor + 1;
+    const int64_t ny_ngb = 2*ybin_refine_factor + 1;
+    const int64_t nz_ngb = 2*zbin_refine_factor + 1;
+    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
-  for(int64_t icell=0;icell<totncells;icell++) {
-    struct cellarray_mocks_index_particles_DOUBLE *first = &(lattice1[icell]);
-    if(first->nelements == 0) continue;
-    const int iz = icell % nmesh_z;
-    const int ix = icell / (nmesh_y * nmesh_z );
-    const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
-    XRETURN(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz), EXIT_FAILURE,
-            ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
-            icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
-    
-    first->num_ngb = 0;
-    first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
-    first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
-    first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
-    if(first->ngb_cells == NULL || first->ngb_min_dx == NULL || first->ngb_min_dy == NULL) {
-        fprintf(stderr,"Error: Could not allocate memory for storing neighbouring cell indices and the min. separations. "
-                "Reducing bin refine factors might help\n");
-        return EXIT_FAILURE;
-    }
-    
-    for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
-      const int iiix = ix + iix;
-      if(iiix < 0 || iiix >= nmesh_x) continue;
-      
-      for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
-          const int iiiy = iy + iiy;
-          if(iiiy < 0 || iiiy >= nmesh_y) continue;
-          for(int64_t iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++){
-              const int iiiz = iz + iiz;
-              if(iiiz < 0 || iiiz >= nmesh_z) continue;
-            
-              const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
-            
-              //For cases where we are not double-counting (i.e., wp and xi), the same-cell
-              //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
-              //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
-              //kernels in that case!
-              if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements==0) {
-                  continue;
-              }
-
-              const int64_t ngb_index = first->num_ngb;
-              XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
-                      "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
-              first->ngb_cells[ngb_index] = &(lattice2[icell2]);
-              if(enable_min_sep_opt) {
-                  const int round_iix_towards_zero = iix < 0 ? +1:(iix > 0 ? -1:0);
-                  const int round_iiy_towards_zero = iiy < 0 ? +1:(iiy > 0 ? -1:0);
-                  const int min_xdiff = iix + round_iix_towards_zero;/* min_xdiff can be signed*/
-                  const int min_ydiff = iiy + round_iiy_towards_zero;/* min_ydiff can be signed*/
-                  first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
-                  first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
-              } else {
-                  first->ngb_min_dx[ngb_index] = ZERO;
-                  first->ngb_min_dy[ngb_index] = ZERO;
-              }
-              
-              //There are no periodic boundary conditions for mocks
-              first->num_ngb++;
-          }
-      }
-    }
-  }
+    const DOUBLE xbinsize = xdiff/nmesh_x;
+    const DOUBLE ybinsize = ydiff/nmesh_y;
+    const DOUBLE zbinsize = zdiff/nmesh_z;
   
-  return EXIT_SUCCESS;
+    for(int64_t icell=0;icell<totncells;icell++) {
+        struct cellarray_mocks_index_particles_DOUBLE *first = &(lattice1[icell]);
+        if(first->nelements == 0) continue;
+        const int iz = icell % nmesh_z;
+        const int ix = icell / (nmesh_y * nmesh_z );
+        const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
+        XRETURN(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz), EXIT_FAILURE,
+                ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
+                icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
+    
+        first->num_ngb = 0;
+        first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
+        if(first->ngb_cells == NULL) {      
+            fprintf(stderr,"Error: Could not allocate memory for storing neighbouring cell indices. "
+                    "Reducing bin refine factors might help\n");
+            return EXIT_FAILURE;
+        }
+    
+        if(enable_min_sep_opt) {
+            first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
+            first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
+            first->ngb_min_dz = my_malloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
+            first->ngb_closest_icell_xpos = my_malloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
+            first->ngb_closest_icell_ypos = my_malloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
+            first->ngb_closest_icell_zpos = my_malloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
+            if(first->ngb_min_dx == NULL || first->ngb_min_dy == NULL || first->ngb_min_dz == NULL ||
+               first->ngb_closest_icell_xpos == NULL || first->ngb_closest_icell_ypos == NULL || first->ngb_closest_icell_zpos == NULL) {
+                fprintf(stderr,"Error: Could not allocate memory for storing additional quantities for optimizations related to min. separation between cell-pairs.\n"
+                        "Reducing bin refine factors and/or disabling optimizations for minimum separations between cell-pairs might help\n");
+                return EXIT_FAILURE;
+            }
+        }
+    
+    
+        for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
+            const int iiix = ix + iix;
+            if(iiix < 0 || iiix >= nmesh_x) continue;
+      
+            for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
+                const int iiiy = iy + iiy;
+                if(iiiy < 0 || iiiy >= nmesh_y) continue;
+                for(int64_t iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++){
+                    const int iiiz = iz + iiz;
+                    if(iiiz < 0 || iiiz >= nmesh_z) continue;
+            
+                    const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
+            
+                    //For cases where we are not double-counting (i.e., wp and xi), the same-cell
+                    //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
+                    //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
+                    //kernels in that case!
+                    if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements==0) {
+                        continue;
+                    }
+
+                    const int64_t ngb_index = first->num_ngb;
+                    XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
+                            "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
+                    if(enable_min_sep_opt) {
+                        const int round_iix_towards_zero = iix < 0 ? +1:(iix > 0 ? -1:0);
+                        const int round_iiy_towards_zero = iiy < 0 ? +1:(iiy > 0 ? -1:0);
+                        const int round_iiz_towards_zero = iiz < 0 ? +1:(iiz > 0 ? -1:0);
+                        const int min_xdiff = iix + round_iix_towards_zero;/* min_xdiff can be signed*/
+                        const int min_ydiff = iiy + round_iiy_towards_zero;/* min_ydiff can be signed*/
+                        const int min_zdiff = iiz + round_iiz_towards_zero;/* min_zdiff can be signed*/
+                  
+                        first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
+                        first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
+                        first->ngb_min_dz[ngb_index] = min_zdiff * zbinsize;
+                  
+                        /* Check for periodic boundary conditions....etc*/
+                        const DOUBLE x_low = xmin + ix*xbinsize, x_hi = x_low + xbinsize;
+                        const DOUBLE y_low = ymin + iy*ybinsize, y_hi = y_low + ybinsize;
+                        const DOUBLE z_low = zmin + iz*zbinsize, z_hi = z_low + zbinsize;
+                  
+                        first->ngb_closest_icell_xpos[ngb_index] = iix < 0 ? x_low:(iix > 0 ? x_hi:ZERO);
+                        first->ngb_closest_icell_ypos[ngb_index] = iiy < 0 ? y_low:(iiy > 0 ? y_hi:ZERO);
+                        first->ngb_closest_icell_zpos[ngb_index] = iiz < 0 ? z_low:(iiz > 0 ? z_hi:ZERO);
+                  
+                        int update_min_dx=0,update_min_dy=0,update_min_dz=0;
+                        const cellarray_mocks_index_particles_DOUBLE *second =  &(lattice2[icell2]);
+                        //chose lower bound if secondary cell is to the left (smaller x), else upper
+                        const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:first->xbounds[1];//second condition also contains iix==0
+                        //chose upper bound if primary cell is to the right (larger x), else lower
+                        const DOUBLE second_x = iix < 0 ? second->xbounds[1]:second->xbounds[0];//second condition also contains iix==0
+                        const DOUBLE min_dx = iix != 0 ? (first_x - second_x):ZERO;//ensure min_dx == 0 for iix ==0
+                  
+                        //repeat for min_dy
+                        const DOUBLE first_y  = iiy < 0 ? first->ybounds[0]:first->ybounds[1];//second condition also contains iiy==0
+                        const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:second->ybounds[0];//second condition also contains iiy==0
+                        const DOUBLE min_dy = iiy != 0  ? (first_y - second_y):ZERO;//ensure min_dy == 0 for iiy ==0
+                  
+                        //repeat for min_dz
+                        const DOUBLE first_z  = iiz < 0 ? first->zbounds[0]:first->zbounds[1];//second condition also contains iiz==0
+                        const DOUBLE second_z = iiz < 0 ? second->zbounds[1]:second->zbounds[0];//second condition also contains iiz==0
+                        const DOUBLE min_dz = iiz != 0 ? (first_z - second_z):ZERO;//ensure min_dz == 0 for iiz ==0
+                  
+                        if(max_3D_sep > 0) {
+                            const DOUBLE sqr_min_sep_cells = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                            if(sqr_min_sep_cells >= max_3D_sep*max_3D_sep) {
+                                continue;
+                            }
+                            update_min_dx = iix != 0;
+                            update_min_dy = iiy != 0;
+                            update_min_dz = iiz != 0;
+                        }/* end of condition for max_3D_sep */
+                        /*Update the ngb_mindx/dy/dz if necessary */
+                        if(update_min_dx == 1) {
+                            const DOUBLE second_x_low = xmin + iiix*xbinsize, second_x_hi =  xmin + (iiix + 1)*xbinsize;
+                            /*second_xdiff has the same sign as min_xdiff -> we can directly add to the signed ngb_min_dx */
+                            const DOUBLE second_x_diff_from_cell_edge = iix < 0 ? second->xbounds[1]-second_x_hi:second->xbounds[0]-second_x_low;
+                            first->ngb_min_dx[ngb_index] += second_x_diff_from_cell_edge;
+                        }
+                  
+                        if(update_min_dy == 1) {
+                            const DOUBLE second_y_low = ymin + iiiy*ybinsize, second_y_hi =  ymin + (iiiy + 1)*ybinsize;
+                            /*second_ydiff has the same sign as min_ydiff -> we can directly add to the signed ngb_min_dy */
+                            const DOUBLE second_y_diff_from_cell_edge = iiy < 0 ? second->ybounds[1]-second_y_hi:second->ybounds[0]-second_y_low;
+                            first->ngb_min_dy[ngb_index] += second_y_diff_from_cell_edge;
+                        }
+                  
+                        if(update_min_dz == 1) {
+                            const DOUBLE second_z_low = zmin + iiiz*zbinsize, second_z_hi =  zmin + (iiiz + 1)*zbinsize;
+                            /*second_ydiff has the same sign as min_zdiff -> we can directly add to the signed ngb_min_dz */
+                            const DOUBLE second_z_diff_from_cell_edge = iiz < 0 ? second->zbounds[1]-second_z_hi:second->zbounds[0]-second_z_low;
+                            first->ngb_min_dz[ngb_index] += second_z_diff_from_cell_edge;
+                        }
+                        /* Finished updating the ngb_mindx/dy/dz */
+                        
+                    }/* end of if condition for enable_min_sep_opt*/ 
+
+                    //If we have reached here, then this cell *MIGHT* have a pair. We
+                    //need to add to the neighbour list
+                    first->ngb_cells[ngb_index] = &(lattice2[icell2]);
+                    first->num_ngb++; //Update the number of neighbour cells. 
+                }
+            }
+        }
+    }
+  
+    return EXIT_SUCCESS;
 }    
 
 
