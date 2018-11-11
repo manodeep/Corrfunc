@@ -513,14 +513,14 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
     {
-        const DOUBLE xbinsize = xdiff/nmesh_x;
-        const DOUBLE ybinsize = ydiff/nmesh_y;
         int status = assign_ngb_cells_mocks_index_particles_DOUBLE(lattice1, lattice2, totncells,
                                                                    options->bin_refine_factors[0],
                                                                    options->bin_refine_factors[1],
                                                                    options->bin_refine_factors[2],
                                                                    nmesh_x, nmesh_y, nmesh_z,
-                                                                   xbinsize, ybinsize,
+                                                                   xmin, ymin, zmin,
+                                                                   xdiff, ydiff, zdiff,
+                                                                   smax,
                                                                    options->enable_min_sep_opt,
                                                                    autocorr);
         if(status != EXIT_SUCCESS) {
