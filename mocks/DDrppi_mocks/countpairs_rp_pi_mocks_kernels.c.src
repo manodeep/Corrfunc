@@ -151,7 +151,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                cells)
         */
         if(z1 == zend) {
-            i = N1;
+            i = N0;
             break;
         }
 
@@ -480,7 +480,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
            cells)
         */
         if(z1 == zend) {
-            i = N1;
+            i = N0;
             break;
         }
         
