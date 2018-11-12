@@ -12,6 +12,7 @@ env:
   global:
     - NUMPY_VERSION=1.12
     - DOCTEST=TRUE
+    - INTEGRATION_TEST=FALSE
     - INSTALL_LIBGFORTRAN=FALSE
 
 addons: 
@@ -128,6 +129,14 @@ matrix:
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
+    - os: linux
+      dist: trusty
+      sudo: required
+      compiler: gcc
+      env: COMPILER=gcc PYTHON_VERSION=3.6 INTEGRATION_TEST=TRUE DOCTEST=FALSE
+      before_install:
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        
 install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -142,6 +151,7 @@ install:
         
 script:
   - make tests CC=$COMPILER
+  - if [[ "${INTEGRATION_TEST}" == "TRUE" ]]; then export CFLAGS=-DINTEGRATION_TESTS && make distclean && make tests CC=$COMPILER ; fi
   - make -C docs html
   - if [[ "${DOCTEST}" == "TRUE" ]]; then make -C docs doctest ; fi
 
