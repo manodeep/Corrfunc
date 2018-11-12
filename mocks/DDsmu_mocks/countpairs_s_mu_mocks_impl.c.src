@@ -634,7 +634,8 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                              options->fast_divide_and_NR_steps,
                                                                              smax, smin, nsbin,
                                                                              nmu_bins, supp_sqr, mu_max,
-                                                                             ZERO, ZERO, /*min_xdiff, min_ydiff are 0 for same_cell*/
+                                                                             ZERO, ZERO, ZERO, /* min xyz diff */
+                                                                             ZERO, ZERO, ZERO, /* closest xyz positions */
                                                                              this_savg, npairs,
                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly
@@ -648,8 +649,16 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                     if(second->nelements == 0) {
                         continue;
                     }
-                    const DOUBLE min_xdiff = first->ngb_min_dx[ngb];
-                    const DOUBLE min_ydiff = first->ngb_min_dy[ngb];
+                    DOUBLE min_xdiff = ZERO, min_ydiff = ZERO, min_zdiff = ZERO;
+                    DOUBLE closest_icell_xpos = ZERO, closest_icell_ypos = ZERO, closest_icell_zpos = ZERO;
+                    if(options->enable_min_sep_opt) {                                                           
+                        min_xdiff = FABS(first->ngb_min_dx[ngb]);
+                        min_ydiff = FABS(first->ngb_min_dy[ngb]);
+                        min_zdiff = FABS(first->ngb_min_dz[ngb]);
+                        closest_icell_xpos = first->ngb_closest_icell_xpos[ngb];
+                        closest_icell_ypos = first->ngb_closest_icell_ypos[ngb];
+                        closest_icell_zpos = first->ngb_closest_icell_zpos[ngb];
+                    }
 
                     const int same_cell = 0;
                     DOUBLE *x2 = second->x;
@@ -666,7 +675,8 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                              options->fast_divide_and_NR_steps,
                                                                              smax, smin, nsbin,
                                                                              nmu_bins, supp_sqr, mu_max,
-                                                                             min_xdiff, min_ydiff,
+                                                                             min_xdiff, min_ydiff, min_zdiff,
+                                                                             closest_icell_xpos, closest_icell_ypos, closest_icell_zpos,
                                                                              this_savg, npairs,
                                                                              this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly

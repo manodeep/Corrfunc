@@ -28,7 +28,8 @@ extern "C" {
                                                     const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                     const int nmu_bins, const DOUBLE *supp_sqr,
                                                     const DOUBLE mu_max,
-                                                    const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
+                                                    const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                                    const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                     DOUBLE *src_savg, uint64_t *src_npairs,
                                                     DOUBLE *src_weightavg, const weight_method_t weight_method);
 

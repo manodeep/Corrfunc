@@ -31,7 +31,8 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                                                                  const unsigned int fast_divide_and_NR_steps,
                                                                  const DOUBLE smax, const DOUBLE smin, const int nsbin,const int nmu_bins,
                                                                  const DOUBLE *supp_sqr, const DOUBLE mu_max,
-                                                                 const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
+                                                                 const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                                                 const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                                  DOUBLE *src_savg,
                                                                  uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -85,9 +86,8 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
         avx512_weight_func = get_avx512_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    const DOUBLE last_z1 = z1[N1-1];
-    const DOUBLE *zstart = z1;
-    const DOUBLE max_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE *zstart = z1, *zend = z1 + N1;
+    const DOUBLE max_all_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -100,6 +100,42 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
             pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
         }
 
+        DOUBLE max_dz = max_all_dz;
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_all_dz) {
+            continue;
+        }
+
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_this_point >= sqr_smax) {
+                    continue;
+                }
+                max_dz = SQRT(sqr_smax - min_dx*min_dx - min_dy*min_dy);
+            }
+
+            const DOUBLE target_z = zpos - max_all_dz;
+            while(z1 != zend && *z1 <= target_z) {
+                z1++;
+            }
+
+        }/* end of same_cell if condition*/
+
         /* are there any pairs possible with this particle and ANY
            of the j'th particles?
            Since both z0 and z1 are sorted in increasing order,
@@ -111,33 +147,11 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
            to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
            
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
-           cells)
+               cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if(z1 == zend) {
             i = N0;
             break;
-        }
-        
-        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
-           j' particles. The min. difference in the d-positions between this i'th particle and ANY
-           of the remaining j'th particles, is the difference between the current j'th particle and
-           the current i'th particle (since all remaining j'th particles will have a larger value for
-           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
-           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
-           particle
-        */
-        const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
-            continue;
-        }
-        
-        /* Okay so there MAY be a pair */
-        if(same_cell == 1) {
-            z1++;
-        } else {
-            while((*z1 - zpos) <= -max_dz) {
-                z1++;
-            }
         }
 
         const int64_t n_off = z1 - zstart;
@@ -181,9 +195,12 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
             union_finalbin.m_ibin = AVX512_SETZERO_INT();
             union_mDperp.m_Dperp = AVX512_SETZERO_FLOAT();
             
-            const AVX512_FLOATS m_perpx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_xpos, m_x1);
-            const AVX512_FLOATS m_perpy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_ypos, m_y1);
-            const AVX512_FLOATS m_perpz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_zpos, m_z1);
+            const AVX512_FLOATS m_perpx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_x1, m_xpos);
+            const AVX512_FLOATS m_perpy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_y1, m_ypos);
+            const AVX512_FLOATS m_perpz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_z1, m_zpos);
+
+            const AVX512_MASK m_neg_pimax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_perpz, -m_max_dz,_CMP_GT_OQ);
+            if(m_neg_pimax_mask == 0) continue;
             
             const AVX512_FLOATS m_parx = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_x1, m_xpos);
             const AVX512_FLOATS m_pary = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_y1, m_ypos);
@@ -318,7 +335,8 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                                                               const unsigned int fast_divide_and_NR_steps,
                                                               const DOUBLE smax, const DOUBLE smin, const int nsbin,const int nmu_bins,
                                                               const DOUBLE *supp_sqr, const DOUBLE mu_max,
-                                                              const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
+                                                              const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                                              const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                               DOUBLE *src_savg,
                                                               uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -376,9 +394,8 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
         fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    const DOUBLE last_z1 = z1[N1-1];
-    const DOUBLE *zstart = z1;
-    const DOUBLE max_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE *zstart = z1, *zend = z1 + N1;
+    const DOUBLE max_all_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -391,6 +408,40 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
         }
 
+        DOUBLE max_dz = max_all_dz;
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_all_dz) {
+            continue;
+        }
+
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_this_point >= sqr_smax) {
+                    continue;
+                }
+                max_dz = SQRT(sqr_smax - min_dx*min_dx - min_dy*min_dy);
+            }
+
+            const DOUBLE target_z = zpos - max_all_dz;
+            while(z1 != zend && *z1 <= target_z) {
+                z1++;
+            }
+        }/* end of same_cell if condition*/
 
         /* are there any pairs possible with this particle and ANY
            of the j'th particles?
@@ -405,31 +456,9 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if(z1 == zend) {
             i = N0;
             break;
-        }
-        
-        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
-           j' particles. The min. difference in the d-positions between this i'th particle and ANY
-           of the remaining j'th particles, is the difference between the current j'th particle and
-           the current i'th particle (since all remaining j'th particles will have a larger value for
-           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
-           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
-           particle
-        */
-        const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
-            continue;
-        }
-        
-        /* Okay so there MAY be a pair */
-        if(same_cell == 1) {
-            z1++;
-        } else {
-            while((*z1 - zpos) <= -max_dz) {
-                z1++;
-            }
         }
 
         int64_t j = z1 - zstart;
@@ -475,10 +504,13 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 local_w1.weights[w] += AVX_NVEC;
             }
             
-            const AVX_FLOATS m_perpx = AVX_SUBTRACT_FLOATS(m_xpos, m_x2);
-            const AVX_FLOATS m_perpy = AVX_SUBTRACT_FLOATS(m_ypos, m_y2);
-            const AVX_FLOATS m_perpz = AVX_SUBTRACT_FLOATS(m_zpos, m_z2);
+            const AVX_FLOATS m_perpx = AVX_SUBTRACT_FLOATS(m_x2, m_xpos);
+            const AVX_FLOATS m_perpy = AVX_SUBTRACT_FLOATS(m_y2, m_ypos);
+            const AVX_FLOATS m_perpz = AVX_SUBTRACT_FLOATS(m_z2, m_zpos);
             
+            const AVX_FLOATS m_neg_pimax_mask = AVX_COMPARE_FLOATS(m_perpz,-m_max_dz,_CMP_GT_OQ);
+            if(AVX_TEST_COMPARISON(m_neg_pimax_mask)==0) continue;
+
             const AVX_FLOATS m_parx = AVX_ADD_FLOATS(m_x2, m_xpos);
             const AVX_FLOATS m_pary = AVX_ADD_FLOATS(m_y2, m_ypos);
             const AVX_FLOATS m_parz = AVX_ADD_FLOATS(m_z2, m_zpos);
@@ -595,11 +627,10 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE pary = ypos + *localy1;
             const DOUBLE parz = zpos + *localz1;
             
-            const DOUBLE perpx = xpos - *localx1;
-            const DOUBLE perpy = ypos - *localy1;
-            const DOUBLE perpz = zpos - *localz1;
+            const DOUBLE perpx = *localx1++ - xpos;
+            const DOUBLE perpy = *localy1++ - ypos;
+            const DOUBLE perpz = *localz1++ - zpos;
 
-            if(perpz >= max_dz) break;
             /*
               s := (perpx, perpy, perpz)
               l := 1/2 (parx, pary, parz)  //ignoring the factor 1/2 since it cancels out in both numerator and denominator
@@ -610,13 +641,14 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
               := d1^2 - d2^2
             */
             const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);// s \dot l
-            
-            localx1++;localy1++;localz1++;locald1++;
+            locald1++;
             
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            
+
+            if(perpz <= -max_dz) continue;
+            if(perpz >= max_dz) break;
             
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
@@ -680,7 +712,8 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
                                                               const unsigned int fast_divide_and_NR_steps,
                                                               const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                               const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
-                                                              const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
+                                                              const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                                              const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                               DOUBLE *src_savg, uint64_t *src_npairs,
                                                               DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -738,9 +771,8 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
       fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
-    const DOUBLE last_z1 = z1[N1-1];
-    const DOUBLE *zstart = z1;
-    const DOUBLE max_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE *zstart = z1, *zend = z1 + N1;
+    const DOUBLE max_all_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -754,6 +786,42 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
         }
 
 
+        DOUBLE max_dz = max_all_dz;
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_all_dz) {
+            continue;
+        }
+
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_this_point >= sqr_smax) {
+                    continue;
+                }
+                max_dz = SQRT(sqr_smax - min_dx*min_dx - min_dy*min_dy);
+            }
+
+            const DOUBLE target_z = zpos - max_all_dz;
+            while(z1 != zend && *z1 <= target_z) {
+                z1++;
+            }
+        }/* end of same_cell if condition*/
+
+        
         /* are there any pairs possible with this particle and ANY
            of the j'th particles?
            Since both z0 and z1 are sorted in increasing order,
@@ -767,31 +835,9 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if(z1 == zend) {
             i = N0;
             break;
-        }
-        
-        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
-           j' particles. The min. difference in the d-positions between this i'th particle and ANY
-           of the remaining j'th particles, is the difference between the current j'th particle and
-           the current i'th particle (since all remaining j'th particles will have a larger value for
-           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
-           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
-           particle
-        */
-        const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
-            continue;
-        }
-        
-        /* Okay so there MAY be a pair */
-        if(same_cell == 1) {
-            z1++;
-        } else {
-            while((*z1 - zpos) <= -max_dz) {
-                z1++;
-            }
         }
 
         int64_t j = z1 - zstart;
@@ -837,9 +883,11 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             union float4 union_msep;
             union float4_weights union_mweight;
 
-            const SSE_FLOATS m_perpx = SSE_SUBTRACT_FLOATS(m_xpos, m_x2);
-            const SSE_FLOATS m_perpy = SSE_SUBTRACT_FLOATS(m_ypos, m_y2);
-            const SSE_FLOATS m_perpz = SSE_SUBTRACT_FLOATS(m_zpos, m_z2);
+            const SSE_FLOATS m_perpx = SSE_SUBTRACT_FLOATS(m_x2, m_xpos);
+            const SSE_FLOATS m_perpy = SSE_SUBTRACT_FLOATS(m_y2, m_ypos);
+            const SSE_FLOATS m_perpz = SSE_SUBTRACT_FLOATS(m_z2, m_zpos);
+            const SSE_FLOATS m_neg_pimax_mask = SSE_COMPARE_FLOATS_GT(m_perpz,-m_max_dz);
+            if(SSE_TEST_COMPARISON(m_neg_pimax_mask)==0) continue;
 
             const SSE_FLOATS m_parx = SSE_ADD_FLOATS(m_x2, m_xpos);
             const SSE_FLOATS m_pary = SSE_ADD_FLOATS(m_y2, m_ypos);
@@ -949,19 +997,20 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE pary = ypos + *localy1;
             const DOUBLE parz = zpos + *localz1;
 
-            const DOUBLE perpx = xpos - *localx1;
-            const DOUBLE perpy = ypos - *localy1;
-            const DOUBLE perpz = zpos - *localz1;
-
+            const DOUBLE perpx = *localx1++ - xpos;
+            const DOUBLE perpy = *localy1++ - ypos;
+            const DOUBLE perpz = *localz1++ - zpos;
+            
             if(perpz >= max_dz) break;
             
             //parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
             const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);
-            localx1++;localy1++;localz1++;locald1++;
+            locald1++;
 
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
+            if(perpz <= -max_dz) continue;
 
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
@@ -1025,7 +1074,8 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
                                                         const unsigned int fast_divide_and_NR_steps,
                                                         const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                         const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
-                                                        const DOUBLE min_xdiff, const DOUBLE min_ydiff, 
+                                                        const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                                        const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                         DOUBLE *src_savg, uint64_t *src_npairs,
                                                         DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -1077,10 +1127,8 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
     const DOUBLE dmu = mu_max/(DOUBLE) nmu_bins;
     const DOUBLE inv_dmu = 1.0/dmu;
 
-
-    const DOUBLE last_z1 = z1[N1-1];
-    const DOUBLE *zstart = z1;
-    const DOUBLE max_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE *zstart = z1, *zend = z1 + N1;
+    const DOUBLE max_all_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -1090,6 +1138,40 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
             pair.weights0[w].d = *local_w0.weights[w]++;
         }
 
+        DOUBLE max_dz = max_all_dz;
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_all_dz) {
+            continue;
+        }
+
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_this_point >= sqr_smax) {
+                    continue;
+                }
+                max_dz = SQRT(sqr_smax - min_dx*min_dx - min_dy*min_dy);
+            }
+
+            const DOUBLE target_z = zpos - max_all_dz;
+            while(z1 != zend && *z1 <= target_z) {
+                z1++;
+            }
+        }/* end of same_cell if condition*/
 
         /* are there any pairs possible with this particle and ANY
            of the j'th particles?
@@ -1104,31 +1186,9 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
-        if((zpos - last_z1) >= max_dz) {
+        if(z1 == zend) {
             i = N0;
             break;
-        }
-        
-        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
-           j' particles. The min. difference in the d-positions between this i'th particle and ANY
-           of the remaining j'th particles, is the difference between the current j'th particle and
-           the current i'th particle (since all remaining j'th particles will have a larger value for
-           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
-           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
-           particle
-        */
-        const DOUBLE this_dz = *z1 - zpos;
-        if(this_dz >= max_dz) {
-            continue;
-        }
-        
-        /* Okay so there MAY be a pair */
-        if(same_cell == 1) {
-            z1++;
-        } else {
-            while((*z1 - zpos) <= -max_dz) {
-                z1++;
-            }
         }
 
         const int64_t n_off = z1 - zstart;
@@ -1146,20 +1206,21 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
             const DOUBLE pary = ypos + *localy1;
             const DOUBLE parz = zpos + *localz1;
 
-            const DOUBLE perpx = xpos - *localx1;
-            const DOUBLE perpy = ypos - *localy1;
-            const DOUBLE perpz = zpos - *localz1;
+            const DOUBLE perpx = *localx1++ - xpos;
+            const DOUBLE perpy = *localy1++ - ypos;
+            const DOUBLE perpz = *localz1++ - zpos;
 
             if(perpz >= max_dz) break;
 
             //parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
             const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);
-            localx1++;localy1++;localz1++;locald1++;
+            locald1++;
 
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-
+            if(perpz <= -max_dz) continue;
+            
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
 
