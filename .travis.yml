@@ -153,4 +153,4 @@ script:
   - make tests CC=$COMPILER
   - make -C docs html
   - if [[ "${DOCTEST}" == "TRUE" ]]; then make -C docs doctest ; fi
-  - if [[ "${INTEGRATION_TEST}" == "TRUE" ]]; then export CFLAGS=-DINTEGRATION_TESTS && make distclean && make -r CC=$COMPILER && make tests CC=$COMPILER; fi
+  - if [[ "${INTEGRATION_TEST}" == "TRUE" ]]; then export CFLAGS=-DINTEGRATION_TESTS && make distclean && make -r CC=$COMPILER && make tests CC=$COMPILER ; fi
