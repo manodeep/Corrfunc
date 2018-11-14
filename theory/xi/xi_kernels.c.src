@@ -105,16 +105,14 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
         } else {
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
-            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
-                if(sqr_min_sep_this_point >= sqr_rmax) {
-                    continue;
-                }
-                max_dz = SQRT(sqr_rmax - min_dx*min_dx - min_dy*min_dy);
+            const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+            const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+            const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+            const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+            if(sqr_min_sep_this_point >= sqr_rmax) {
+                continue;
             }
+            max_dz = SQRT(sqr_rmax - min_dx*min_dx - min_dy*min_dy);
             
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
             // We don't consider the i particle's x,y information yet, because those aren't sorted
@@ -362,16 +360,14 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
         } else {
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
-            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
-                if(sqr_min_sep_this_point >= sqr_rmax) {
-                    continue;
-                }
-                max_dz = SQRT(sqr_rmax - min_dx*min_dx - min_dy*min_dy);
+            const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+            const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+            const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+            const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+            if(sqr_min_sep_this_point >= sqr_rmax) {
+                continue;
             }
+            max_dz = SQRT(sqr_rmax - min_dx*min_dx - min_dy*min_dy);
             
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
             // We don't consider the i particle's x,y information yet, because those aren't sorted
@@ -657,16 +653,14 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
         } else {
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
-            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
-                if(sqr_min_sep_this_point >= sqr_rmax) {
-                    continue;
-                }
-                max_dz = SQRT(sqr_rmax - min_dx*min_dx - min_dy*min_dy);
+            const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+            const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+            const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+            const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+            if(sqr_min_sep_this_point >= sqr_rmax) {
+                continue;
             }
+            max_dz = SQRT(sqr_rmax - min_dx*min_dx - min_dy*min_dy);
             
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
             // We don't consider the i particle's x,y information yet, because those aren't sorted
@@ -923,16 +917,14 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
         } else {
             // Now add the x,y information to further limit the range of secondaries for this particle
             // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
-            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
-                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
-                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
-                const DOUBLE min_dz = min_zdiff > 0 ? min_zdiff + FABS(zpos - closest_icell_zpos):min_zdiff;
-                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
-                if(sqr_min_sep_this_point >= sqr_rmax) {
-                    continue;
-                }
-                max_dz = SQRT(sqr_rmax - min_dx*min_dx - min_dy*min_dy);
+            const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+            const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+            const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+            const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+            if(sqr_min_sep_this_point >= sqr_rmax) {
+                continue;
             }
+            max_dz = SQRT(sqr_rmax - min_dx*min_dx - min_dy*min_dy);
 
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
             // We don't consider the i particle's x,y information yet, because those aren't sorted
@@ -965,7 +957,7 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            /* if(dz <= -max_dz) continue; */
+            if(dz <= -max_dz) continue;
             if(dz >= max_dz) break;
 
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
