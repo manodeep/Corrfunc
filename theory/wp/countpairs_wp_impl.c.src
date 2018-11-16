@@ -620,7 +620,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         pair_struct_DOUBLE pair = {.num_weights = extra->weights0.num_weights,
                                    .dx.d=0., .dy.d=0., .dz.d=0.,  // always 0 separation
                                    .parx.d=0., .pary.d=0., .parz.d=0.};
-        for(int j = 0; j < ND; j++){
+        for(int64_t j = 0; j < ND; j++){
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights0[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
                 pair.weights1[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
