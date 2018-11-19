@@ -304,8 +304,14 @@ extern "C" {
 #define AVX512_MAX_FLOATS(X,Y)               _mm512_max_pd(X,Y)
 
 //Absolute value
+#if __GNUC__ > 8
 #define AVX512_ABS_FLOAT(X)                  _mm512_abs_pd(X)
-
+#else
+    //there was a bug for the function proto-type
+    //for _mm512_abs_pd -- see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=87467
+    //Need to protect the user
+#define AVX512_ABS_FLOAT(X)                  _mm512_max_pd(X,_mm512_sub_pd(_mm512_setzero_pd(), X))
+#endif
   
  //Casting (does not actual convert between types)
 #define AVX512_CAST_FLOAT_TO_INT(X)          _mm512_castpd_si512(X)
