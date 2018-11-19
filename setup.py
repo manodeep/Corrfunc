@@ -569,3 +569,4 @@ def setup_packages():
 
 if __name__ == '__main__':
     setup_packages()
+    del builtins.__CORRFUNC_SETUP__
