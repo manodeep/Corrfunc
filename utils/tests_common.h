@@ -24,7 +24,7 @@
 
 #ifdef INTEGRATION_TESTS
 
-#warning "Running (SLOW) integration tests"
+#pragma message("Running (SLOW) integration tests")
 
 /* Define the instruction sets that are supported by the compiler */
 const isa valid_instruction_sets[] = {FALLBACK
