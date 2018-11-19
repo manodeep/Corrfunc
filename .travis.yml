@@ -145,12 +145,14 @@ install:
   - conda install -q --yes numpy=$NUMPY_VERSION sphinx || conda install -q --yes -c conda-forge numpy=$NUMPY_VERSION sphinx
   - conda install -q --yes -c conda-forge gsl
   - if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi
+  - if [[ "${INTEGRATION_TEST}" == "TRUE" ]]; then export CFLAGS=-DINTEGRATION_TESTS ; fi
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
   - python setup.py install
         
 script:
+  - echo $CFLAGS
   - make tests CC=$COMPILER
   - make -C docs html
   - if [[ "${DOCTEST}" == "TRUE" ]]; then make -C docs doctest ; fi
-  - if [[ "${INTEGRATION_TEST}" == "TRUE" ]]; then export CFLAGS=-DINTEGRATION_TESTS && make distclean && make -r CC=$COMPILER && make tests CC=$COMPILER ; fi
+
