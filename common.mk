@@ -343,17 +343,18 @@ ifeq ($(DO_CHECKS), 1)
         else
           # I dislike being warned multiple times but the compiler warning will not
           # be visible if the entire codebase is being compiled. 
-          # export WARNING_PRINTED ?= 0
-	        # ifeq ($(WARNING_PRINTED), 0)
-          $(warning $(ccmagenta) $$CC = ${CC} does not support OpenMP - please use gcc/icc for compiling with openmp. Removing $(ccblue)"USE_OMP"$(ccmagenta) from compile options. $(ccreset))
-          infovar := "OPT:=$$(filter-out -DUSE_OMP,$$(OPT))"
-          $(info If you are sure your version of $(ccblue)"clang"$(ccreset) ($(ccblue) must be >= 3.7, NOT Apple clang$(ccreset)) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
-          $(info You might have to add in the include path (path to $(ccblue)"omp.h"$(ccreset)) to $(ccblue)"CFLAGS"$(ccreset) and the runtime library path to $(ccblue)"CLINK"$(ccreset) at the top of $(ccgreen)"common.mk"$(ccreset))
+          export WARNING_PRINTED ?= 0
+          ifeq ($(WARNING_PRINTED), 0)
+            $(warning $(ccmagenta) $$CC = ${CC} does not support OpenMP - please use gcc/icc for compiling with openmp. Removing $(ccblue)"USE_OMP"$(ccmagenta) from compile options. $(ccreset))
+            infovar := "OPT:=$$(filter-out -DUSE_OMP,$$(OPT))"
+            $(info If you are sure your version of $(ccblue)"clang"$(ccreset) ($(ccblue) must be >= 3.7, NOT Apple clang$(ccreset)) does support OpenMP, then comment out the line $(ccred) $(infovar) $(ccmagenta) in the file $(ccgreen)"common.mk"$(ccreset))
+            $(info You might have to add in the include path (path to $(ccblue)"omp.h"$(ccreset)) to $(ccblue)"CFLAGS"$(ccreset) and the runtime library path to $(ccblue)"CLINK"$(ccreset) at the top of $(ccgreen)"common.mk"$(ccreset))
 
-          # comment out the following line if your version of clang definitely supports OpenMP
-          OPT:=$(filter-out -DUSE_OMP,$(OPT))
-          # export WARNING_PRINTED := 1
-         endif # CLANG_OMP_AVAIL is not 1
+            # comment out the following line if your version of clang definitely supports OpenMP
+            OPT:=$(filter-out -DUSE_OMP,$(OPT))
+            export WARNING_PRINTED := 1
+          endif
+        endif # CLANG_OMP_AVAIL is not 1
       endif # USE_OMP
     endif # CC is clang
 
