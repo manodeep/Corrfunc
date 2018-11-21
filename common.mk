@@ -299,10 +299,14 @@ ifeq ($(DO_CHECKS), 1)
           # Apple clang/gcc does not support OpenMP
           ifeq (Apple, $(findstring Apple, $(CC_VERSION)))
             CLANG_OMP_AVAIL:= false
-            $(warning $(ccmagenta)Compiler is Apple clang and does not support OpenMP$(ccreset))
-            $(info $(ccmagenta)If you want OpenMP support, please install clang with OpenMP support$(ccreset))
-            $(info $(ccmagenta)For homebrew, use $(ccgreen)"brew update && (brew outdated xctool || brew upgrade xctool) && brew tap homebrew/versions && brew install clang-omp"$(ccreset))
-            $(info $(ccmagenta)For Macports, use $(ccgreen)"sudo port install clang-3.8 +assertions +debug + openmp"$(ccreset))
+            export CLANG_OMP_WARNING_PRINTED ?= 0
+            ifeq ($(CLANG_OMP_WARNING_PRINTED), 0) 
+              $(warning $(ccmagenta)Compiler is Apple clang and does not support OpenMP$(ccreset))
+              $(info $(ccmagenta)If you want OpenMP support, please install clang with OpenMP support$(ccreset))
+              $(info $(ccmagenta)For homebrew, use $(ccgreen)"brew update && (brew outdated xctool || brew upgrade xctool) && brew tap homebrew/versions && brew install clang-omp"$(ccreset))
+              $(info $(ccmagenta)For Macports, use $(ccgreen)"sudo port install clang-3.8 +assertions +debug + openmp"$(ccreset))
+              export CLANG_OMP_WARNING_PRINTED := 1
+            endif
             export APPLE_CLANG := 1
           else
             ## Need to do a version check clang >= 3.7 supports OpenMP. If it is Apple clang, then it doesn't support OpenMP.
