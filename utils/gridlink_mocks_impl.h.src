@@ -73,14 +73,19 @@ extern "C" {
                                                                           const DOUBLE thetamax,
                                                                           int64_t *totncells,
                                                                           const struct config_options *options)__attribute__((warn_unused_result));
-    extern int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
+    extern int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1,
+                                                        cellarray_mocks_index_wtheta_DOUBLE *lattice2,
                                                         const int64_t totncells,
+                                                        const DOUBLE thetamax,
+                                                        const DOUBLE dec_min, const DOUBLE dec_max,
                                                         const int dec_refine_factor,
+                                                        const int enable_min_sep_opt,
                                                         const int autocorr);
         
     extern cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t np,
                                                                                     const DOUBLE *ra, const DOUBLE *dec,
-                                                                                    const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, const weight_struct *weights,
+                                                                                    const DOUBLE *X, const DOUBLE *Y,
+                                                                                    const DOUBLE *Z, const weight_struct *weights,
                                                                                     const DOUBLE ra_min,const DOUBLE ra_max,
                                                                                     const DOUBLE dec_min, const DOUBLE dec_max,
                                                                                     const int max_ra_size,
@@ -94,12 +99,16 @@ extern "C" {
                                                                                     int **ngrid_ra,
                                                                                     const struct config_options *options)__attribute__((warn_unused_result));
 
-    extern int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
-                                                           const int64_t totncells, 
+    extern int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1,
+                                                           cellarray_mocks_index_wtheta_DOUBLE *lattice2,
+                                                           const int64_t totncells,
+                                                           const DOUBLE thetamax,
                                                            const int ra_refine_factor, const int dec_refine_factor,
                                                            const int nmesh_dec, const int max_nmesh_ra,
-                                                           const DOUBLE ra_min, const DOUBLE ra_diff,
+                                                           const DOUBLE dec_min, const DOUBLE dec_max,
+                                                           const DOUBLE ra_min, const DOUBLE ra_max,
                                                            const int *nmesh_grid_ra,
+                                                           const int enable_min_sep_opt,
                                                            const int autocorr);
     
     extern void free_cellarray_mocks_index_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice, const int64_t totncells);

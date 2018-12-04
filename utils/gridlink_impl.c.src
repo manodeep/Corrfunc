@@ -374,12 +374,12 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
         }
 
         lattice[index].nelements=0;
-        lattice[index].xbounds[0] = xmax;
-        lattice[index].xbounds[1] = xmin;
-        lattice[index].ybounds[0] = ymax;
-        lattice[index].ybounds[1] = ymin;
-        lattice[index].zbounds[0] = zmax;
-        lattice[index].zbounds[1] = zmin;
+        lattice[index].xbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[index].xbounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[index].ybounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[index].ybounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[index].zbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[index].zbounds[1] = -MAX_POSITIVE_FLOAT;
         
         lattice[index].ngb_cells = NULL;
         lattice[index].ngb_min_dx = NULL;

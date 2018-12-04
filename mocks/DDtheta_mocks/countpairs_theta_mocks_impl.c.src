@@ -315,8 +315,10 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
                                                                         options->fast_acos,
                                                                         costhetamax, costhetamin, nthetabin,
                                                                         costheta_upp,
-                                                                        this_thetaavg,
-                                                                        npairs, this_weightavg, extra->weight_method);
+                                                                        ZERO, ZERO, ZERO, /* min xyz diff */
+                                                                        ZERO, ZERO, ZERO, /* closest xyz positions */
+                                                                        this_thetaavg, npairs,
+                                                                        this_weightavg, extra->weight_method);
                     abort_status |= status;
                 } //N1 loop
             } //abort_status condition
@@ -665,13 +667,14 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
         /* lattice1 and lattice2 should have been assigned. Might be NULL though */
         if(status == EXIT_SUCCESS) {
-            const DOUBLE ra_diff = ra_max - ra_min;
             /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
             status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells, 
                                                                  options->bin_refine_factors[0], options->bin_refine_factors[1],
                                                                  nmesh_dec, max_nmesh_ra,
-                                                                 ra_min, ra_diff,
+                                                                 dec_min, dec_max,
+                                                                 ra_min, ra_max,
                                                                  nmesh_grid_ra,
+                                                                 options->enable_min_sep_opt,
                                                                  autocorr);
             if(status == EXIT_SUCCESS) {
                 free(nmesh_grid_ra);//don't need this anymore either
@@ -725,7 +728,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         
         if(status == EXIT_SUCCESS) {
             //The lattice structures are identical -> try to assign ngb cells
-            status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1, lattice2, totncells, options->bin_refine_factors[1], autocorr);
+            status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1,
+                                                              lattice2,
+                                                              totncells,
+                                                              dec_min, dec_max,
+                                                              options->bin_refine_factors[1],
+                                                              options->enable_min_sep_opt,
+                                                              autocorr);
         }
             
         if(status != EXIT_SUCCESS) {
@@ -885,6 +894,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                                               options->fast_acos,
                                                                               costhetamax, costhetamin, nthetabin,
                                                                               costheta_upp,
+                                                                              ZERO, ZERO, ZERO, /* min xyz diff */
+                                                                              ZERO, ZERO, ZERO, /* closest xyz positions */
                                                                               this_thetaavg, npairs, 
                                                                               this_weightavg, extra->weight_method);
 
@@ -910,12 +921,26 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                         this_thetaavg = thetaavg;
                     }
                     DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+
+                    DOUBLE min_xdiff = ZERO, min_ydiff = ZERO, min_zdiff = ZERO;
+                    DOUBLE closest_icell_xpos = ZERO, closest_icell_ypos = ZERO, closest_icell_zpos = ZERO;
+                    if(options->enable_min_sep_opt) {                                                           
+                        min_xdiff = FABS(first->ngb_min_dx[ngb]);
+                        min_ydiff = FABS(first->ngb_min_dy[ngb]);
+                        min_zdiff = FABS(first->ngb_min_dz[ngb]);
+                        closest_icell_xpos = first->ngb_closest_icell_xpos[ngb];
+                        closest_icell_ypos = first->ngb_closest_icell_ypos[ngb];
+                        closest_icell_zpos = first->ngb_closest_icell_zpos[ngb];
+                    }
+                    
                     const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
                                                                               N2, x2, y2, z2, weights2,
                                                                               same_cell,
                                                                               options->fast_acos,
                                                                               costhetamax, costhetamin, nthetabin,
-                                                                              costheta_upp,
+                                                                              costheta_upp, 
+                                                                              min_xdiff, min_ydiff, min_zdiff,
+                                                                              closest_icell_xpos, closest_icell_ypos, closest_icell_zpos,
                                                                               this_thetaavg, npairs,
                                                                               this_weightavg, extra->weight_method);
                     /* This actually causes a race condition under OpenMP - but mostly

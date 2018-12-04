@@ -65,6 +65,14 @@ void free_cellarray_mocks_index_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBL
         }
         /* Might be NULL but free(NULL) is fine*/
         free(lattice[i].ngb_cells);
+
+        /* Might be NULL but free(NULL) is fine (only allocated if enable_min_sep_opt is passed)*/
+        free(lattice[i].ngb_min_dx);
+        free(lattice[i].ngb_min_dy);
+        free(lattice[i].ngb_min_dz);
+        free(lattice[i].ngb_closest_icell_xpos);
+        free(lattice[i].ngb_closest_icell_ypos);
+        free(lattice[i].ngb_closest_icell_zpos);
     }
     free(lattice);
 }
@@ -131,7 +139,8 @@ void get_max_min_ra_dec_DOUBLE(const int64_t ND1, const DOUBLE *RA, const DOUBLE
 
 
 cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(const int64_t np,
-                                                                               const DOUBLE *x, const DOUBLE *y, const DOUBLE *z, const DOUBLE *cz, const weight_struct *weights,
+                                                                               const DOUBLE *x, const DOUBLE *y, const DOUBLE *z, 
+                                                                               const DOUBLE *cz, const weight_struct *weights,
                                                                                const DOUBLE xmin, const DOUBLE xmax,
                                                                                const DOUBLE ymin, const DOUBLE ymax,
                                                                                const DOUBLE zmin, const DOUBLE zmax,
@@ -436,6 +445,7 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
             for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
                 const int iiiy = iy + iiy;
                 if(iiiy < 0 || iiiy >= nmesh_y) continue;
+
                 for(int64_t iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++){
                     const int iiiz = iz + iiz;
                     if(iiiz < 0 || iiiz >= nmesh_z) continue;
@@ -539,6 +549,7 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
 }    
 
 
+/* Create the lattice simply based on declination */
 cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int64_t np,
                                                                       const DOUBLE *ra, const DOUBLE *dec,
                                                                       const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, const weight_struct *weights,
@@ -596,35 +607,55 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
     }
     totnbytes += sizeof(*lattice)*ngrid_dec;
     totnbytes += sizeof(*nallocated)*ngrid_dec;
-    for(int j=0;j<ngrid_dec;j++) {
+    for(int icell=0;icell<ngrid_dec;icell++) {
         const size_t memsize = sizeof(DOUBLE);
-        lattice[j].x = my_malloc(memsize,expected_n);
-        lattice[j].y = my_malloc(memsize,expected_n);
-        lattice[j].z = my_malloc(memsize,expected_n);
+        lattice[icell].x = my_malloc(memsize,expected_n);
+        lattice[icell].y = my_malloc(memsize,expected_n);
+        lattice[icell].z = my_malloc(memsize,expected_n);
         
         // Now do the same for the weights
-        lattice[j].weights.num_weights = (weights == NULL) ? 0 : weights->num_weights;
+        lattice[icell].weights.num_weights = (weights == NULL) ? 0 : weights->num_weights;
         int w_alloc_status = EXIT_SUCCESS;
-        for(int w = 0; w < lattice[j].weights.num_weights; w++){
-          lattice[j].weights.weights[w] = (DOUBLE *) my_malloc(memsize, expected_n);
-          if(lattice[j].weights.weights[w] == NULL){
-            w_alloc_status = EXIT_FAILURE;
-          }
+        for(int w = 0; w < lattice[icell].weights.num_weights; w++){
+            lattice[icell].weights.weights[w] = (DOUBLE *) my_malloc(memsize, expected_n);
+            if(lattice[icell].weights.weights[w] == NULL){
+                w_alloc_status = EXIT_FAILURE;
+            }
         }
         
-        if(lattice[j].x == NULL || lattice[j].y == NULL || lattice[j].z == NULL || w_alloc_status == EXIT_FAILURE) {
-            for(int k=j;k>=0;k--) {
+        if(lattice[icell].x == NULL || lattice[icell].y == NULL || lattice[icell].z == NULL || w_alloc_status == EXIT_FAILURE) {
+            for(int k=icell;k>=0;k--) {
                 free(lattice[k].x);free(lattice[k].y);free(lattice[k].z);
             }
-            for(int w = 0; w < lattice[j].weights.num_weights; w++){
-                free(lattice[j].weights.weights[w]);
+            for(int w = 0; w < lattice[icell].weights.num_weights; w++){
+                free(lattice[icell].weights.weights[w]);
             }
             free(lattice);
             return NULL;
         }
-        lattice[j].nelements=0;
-        lattice[j].ngb_cells=NULL;
-        nallocated[j] = expected_n;
+        lattice[icell].nelements=0;
+        lattice[icell].dec_bounds[0]=MAX_POSITIVE_FLOAT;
+        lattice[icell].dec_bounds[1]=-MAX_POSITIVE_FLOAT;
+        lattice[icell].ra_bounds[0]=MAX_POSITIVE_FLOAT;
+        lattice[icell].ra_bounds[1]=-MAX_POSITIVE_FLOAT;
+        lattice[icell].xbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].xbounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[icell].ybounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].ybounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[icell].zbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].zbounds[1] = -MAX_POSITIVE_FLOAT;
+
+        lattice[icell].ngb_cells=NULL;
+        lattice[icell].ngb_min_dx = NULL;
+        lattice[icell].ngb_min_dy = NULL;
+        lattice[icell].ngb_min_dz = NULL;
+        lattice[icell].ngb_closest_icell_xpos = NULL;
+        lattice[icell].ngb_closest_icell_ypos = NULL;
+        lattice[icell].ngb_closest_icell_zpos = NULL;
+        lattice[icell].num_ngb=0;
+        lattice[icell].ngb_allocated=0;
+
+        nallocated[icell] = expected_n;
         totnbytes += 3 * memsize * expected_n;
     }
 
@@ -654,21 +685,21 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
                 
                 w_alloc_status = EXIT_SUCCESS;
                 for(int w = 0; w < lattice[idec].weights.num_weights; w++){
-                  DOUBLE *newweights = (DOUBLE *) my_realloc(lattice[idec].weights.weights[w], memsize, expected_n, "lattice.weights");
-                  if(newweights == NULL){
-                    w_alloc_status = EXIT_FAILURE;
-                  } else {
-                    lattice[idec].weights.weights[w] = newweights;
-                  }
+                    DOUBLE *newweights = (DOUBLE *) my_realloc(lattice[idec].weights.weights[w], memsize, expected_n, "lattice.weights");
+                    if(newweights == NULL){
+                        w_alloc_status = EXIT_FAILURE;
+                    } else {
+                        lattice[idec].weights.weights[w] = newweights;
+                    }
                 }
                 
                 if(posx == NULL || posy == NULL || posz == NULL || w_alloc_status == EXIT_FAILURE) {
                     expected_n--;
                 }
             } while(expected_n > nallocated[idec] && (posx == NULL ||
-                                                       posy == NULL ||
-                                                       posz == NULL || 
-                                                       w_alloc_status == EXIT_FAILURE));
+                                                      posy == NULL ||
+                                                      posz == NULL || 
+                                                      w_alloc_status == EXIT_FAILURE));
             
             if(expected_n == nallocated[idec]) {
                 /*realloc failed. free memory and return */
@@ -693,6 +724,21 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
         for(int w = 0; w < lattice[idec].weights.num_weights; w++){
             lattice[idec].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
         }
+
+        lattice[idec].dec_bounds[0] = dec[i] < lattice[idec].dec_bounds[0] ? dec[i]:lattice[idec].dec_bounds[0];
+        lattice[idec].dec_bounds[1] = dec[i] > lattice[idec].dec_bounds[1] ? dec[i]:lattice[idec].dec_bounds[1];
+        
+        lattice[idec].ra_bounds[0] = ra[i] < lattice[idec].ra_bounds[0] ? ra[i]:lattice[idec].ra_bounds[0];
+        lattice[idec].ra_bounds[1] = ra[i] > lattice[idec].ra_bounds[1] ? ra[i]:lattice[idec].ra_bounds[1];
+        
+        lattice[idec].xbounds[0] = X[i] < lattice[idec].xbounds[0] ? X[i]:lattice[idec].xbounds[0];
+        lattice[idec].ybounds[0] = Y[i] < lattice[idec].ybounds[0] ? Y[i]:lattice[idec].ybounds[0];
+        lattice[idec].zbounds[0] = Z[i] < lattice[idec].zbounds[0] ? Z[i]:lattice[idec].zbounds[0];
+
+        lattice[idec].xbounds[1] = X[i] > lattice[idec].xbounds[1] ? X[i]:lattice[idec].xbounds[1];
+        lattice[idec].ybounds[1] = Y[i] > lattice[idec].ybounds[1] ? Y[i]:lattice[idec].ybounds[1];
+        lattice[idec].zbounds[1] = Z[i] > lattice[idec].zbounds[1] ? Z[i]:lattice[idec].zbounds[1];
+        
         lattice[idec].nelements++;
     }
     free(nallocated);
@@ -703,17 +749,17 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
             if(first->nelements == 0) continue;
 #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,x,i,j); \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,y,i,j);           \
-                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);\
-                for(int w = 0; w < first->weights.num_weights; w++){ \
-                    SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->weights.weights[w],i,j);\
-                }\
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,z,i,j);           \
+                for(int w = 0; w < first->weights.num_weights; w++){    \
+                    SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->weights.weights[w],i,j); \
+                }                                                       \
             }
             
-                DOUBLE *x = first->x;
-                DOUBLE *y = first->y;
-                DOUBLE *z = first->z;
+            DOUBLE *x = first->x;
+            DOUBLE *y = first->y;
+            DOUBLE *z = first->z;
                 
-                SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+            SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
             
         }
@@ -725,24 +771,54 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int6
         fprintf(stderr,"%s> expected_n = %"PRId64" ngrid (declination) = %d np=%"PRId64" Memory required = %0.2lf MB. Time taken = %7.3lf sec \n",
                 __FUNCTION__,expected_n,ngrid_dec,np,totnbytes/1024.0/1024.,ADD_DIFF_TIME(t0,t1));
     }
-
+    
     return lattice;
 }
 
-int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
+int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1,
+                                             cellarray_mocks_index_wtheta_DOUBLE *lattice2,
                                              const int64_t totncells,
+                                             const DOUBLE thetamax,
+                                             const DOUBLE dec_min, const DOUBLE dec_max,
                                              const int dec_refine_factor,
+                                             const int enable_min_sep_opt,
                                              const int autocorr)
 {
-
-    /* This ngb is a trivial function. Loop over +- idec from every cell. And that's a neighbour */
+    /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
+    /*    C = 2.0 * SIN(thetamax/2)
+       -> C^2 = 4.0 * SIN^2 (thetamax/2.0)
+       -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
+       -> C^2 = 2.0 * (1 - COS(thetamax))
+     */
+    const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - COSD(thetamax));
+    
+    /* This ngb is a trivial function. Loop over +- idec from every cell. And that's a neighbour cell */
     const int64_t max_ngb_cells = 2*dec_refine_factor + 1;
+    const DOUBLE dec_binsize = (dec_max - dec_min)/totncells;
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_mocks_index_wtheta_DOUBLE *first = &(lattice1[icell]);
         first->num_ngb = 0;
         if(first->nelements == 0) continue;
+
+        if(enable_min_sep_opt) {
+            first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
+            first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
+            first->ngb_min_dz = my_malloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
+            first->ngb_closest_icell_xpos = my_malloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
+            first->ngb_closest_icell_ypos = my_malloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
+            first->ngb_closest_icell_zpos = my_malloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
+            if(first->ngb_min_dx == NULL || first->ngb_min_dy == NULL || first->ngb_min_dz == NULL ||
+               first->ngb_closest_icell_xpos == NULL || first->ngb_closest_icell_ypos == NULL || first->ngb_closest_icell_zpos == NULL) {
+                fprintf(stderr,"Error: Could not allocate memory for storing additional quantities for optimizations related to min. separation between cell-pairs.\n"
+                        "Reducing bin refine factors and/or disabling optimizations for minimum separations between cell-pairs might help\n");
+                return EXIT_FAILURE;
+            }
+        }
+    
         first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
         if(first->ngb_cells == NULL) {
+            fprintf(stderr,"Error: Could not allocate memory to hold neighbouring cells. Requested memory = %zu\n",
+                    sizeof(*(first->ngb_cells))*max_ngb_cells);
             return EXIT_FAILURE;
         }
         
@@ -751,12 +827,31 @@ int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE
             
             if(icell2 < 0 || icell2 >= totncells) continue;
             if(lattice2[icell2].nelements==0 || (autocorr == 1 && icell2 >= icell)) continue;
-            
+
             const int64_t ngb_index = first->num_ngb;
             /* I could easily use realloc first->ngb_cells but this condition triggering means there is a bug 
                in the original max_ngb_cells calculation. Hence the "failure" */
             XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
                     "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
+
+            if(enable_min_sep_opt) {
+                const DOUBLE dec_low = dec_min + icell2*dec_binsize, dec_hi = dec_low + dec_binsize;
+                const DOUBLE z_low = COSD(dec_low), z_hi = COSD(dec_hi);
+                first->ngb_closest_icell_xpos[ngb_index] = ZERO;
+                first->ngb_closest_icell_ypos[ngb_index] = ZERO;
+                first->ngb_closest_icell_zpos[ngb_index] = idec < 0 ? z_low:(idec > 0 ? z_hi:ZERO);
+
+                const DOUBLE min_dx = ZERO, min_dy = ZERO;
+                const DOUBLE first_z  = idec < 0 ? first->zbounds[0]:first->zbounds[1];
+                const DOUBLE second_z = idec < 0 ? second->zbounds[1]:second->zbounds[0];
+                const DOUBLE min_dz = idec != 0 ? (first_z - second_z):ZERO;
+
+                const DOUBLE sqr_min_sep_cells = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_cells >= sqr_max_chord_sep) {
+                    continue;
+                }
+            }
+            
             first->ngb_cells[ngb_index] = &(lattice2[icell2]);
             first->num_ngb++;
         }
@@ -839,10 +934,11 @@ int64_t check_any_points_in_range_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *fi
 #endif //if 0 -> commented out experimental and non-functional sections
 
 
-
+/* Create the lattice based on declination first, and then on right ascension */
 cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t np,
                                                                          const DOUBLE *ra, const DOUBLE *dec,
-                                                                         const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, const weight_struct *weights,
+                                                                         const DOUBLE *X, const DOUBLE *Y,
+                                                                         const DOUBLE *Z, const weight_struct *weights,
                                                                          const DOUBLE ra_min,const DOUBLE ra_max,
                                                                          const DOUBLE dec_min, const DOUBLE dec_max,
                                                                          const int max_ra_size,
@@ -1007,8 +1103,17 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
         lattice[icell].x = NULL;
         lattice[icell].y = NULL;
         lattice[icell].z = NULL;
-        lattice[icell].ra_min=1e10;
-        lattice[icell].ra_max=-1e10;
+        lattice[icell].dec_bounds[0]=MAX_POSITIVE_FLOAT;
+        lattice[icell].dec_bounds[1]=-MAX_POSITIVE_FLOAT;
+        lattice[icell].ra_bounds[0]=MAX_POSITIVE_FLOAT;
+        lattice[icell].ra_bounds[1]=-MAX_POSITIVE_FLOAT;
+        lattice[icell].xbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].xbounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[icell].ybounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].ybounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[icell].zbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].zbounds[1] = -MAX_POSITIVE_FLOAT;
+
         lattice[icell].ngb_cells = NULL;
         lattice[icell].nelements=0;
         lattice[icell].num_ngb=0;
@@ -1125,10 +1230,21 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
         for(int w = 0; w < lattice[index].weights.num_weights; w++){
             lattice[index].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
         }
-        lattice[index].nelements++;
+        lattice[index].dec_bounds[0] = dec[i] < lattice[index].dec_bounds[0] ? dec[i]:lattice[index].dec_bounds[0];
+        lattice[index].dec_bounds[1] = dec[i] > lattice[index].dec_bounds[1] ? dec[i]:lattice[index].dec_bounds[1];
+        
+        lattice[index].ra_bounds[0] = ra[i] < lattice[index].ra_bounds[0] ? ra[i]:lattice[index].ra_bounds[0];
+        lattice[index].ra_bounds[1] = ra[i] > lattice[index].ra_bounds[1] ? ra[i]:lattice[index].ra_bounds[1];
 
-        lattice[index].ra_min = ra[i] < lattice[index].ra_min ? ra[i]:lattice[index].ra_min;
-        lattice[index].ra_max = ra[i] > lattice[index].ra_max ? ra[i]:lattice[index].ra_max;
+        lattice[index].xbounds[0] = X[i] < lattice[index].xbounds[0] ? X[i]:lattice[index].xbounds[0];
+        lattice[index].ybounds[0] = Y[i] < lattice[index].ybounds[0] ? Y[i]:lattice[index].ybounds[0];
+        lattice[index].zbounds[0] = Z[i] < lattice[index].zbounds[0] ? Z[i]:lattice[index].zbounds[0];
+
+        lattice[index].xbounds[1] = X[i] > lattice[index].xbounds[1] ? X[i]:lattice[index].xbounds[1];
+        lattice[index].ybounds[1] = Y[i] > lattice[index].ybounds[1] ? Y[i]:lattice[index].ybounds[1];
+        lattice[index].zbounds[1] = Z[i] > lattice[index].zbounds[1] ? Z[i]:lattice[index].zbounds[1];
+
+        lattice[index].nelements++;
     }
     free(nallocated);
     free(ra_offset_for_dec);
@@ -1149,7 +1265,8 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
                 DOUBLE *y = first->y;
                 DOUBLE *z = first->z;
 
-                //Sorting on z -> equivalent to sorting on declination (since z := sin(dec) is a monotonic mapping in -90 <= dec <= 90, the domain for dec)
+                //Sorting on z -> equivalent to sorting on declination
+                //(since z := sin(dec) is a monotonic mapping in -90 <= dec <= 90, the domain for dec)
                 SGLIB_ARRAY_QUICK_SORT(DOUBLE, z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
             
@@ -1166,17 +1283,26 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
 }
 
 
-int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1, cellarray_mocks_index_wtheta_DOUBLE *lattice2,
-                                                const int64_t totncells, 
+int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1,
+                                                cellarray_mocks_index_wtheta_DOUBLE *lattice2,
+                                                const int64_t totncells,
+                                                const DOUBLE thetamax,
                                                 const int ra_refine_factor, const int dec_refine_factor,
                                                 const int ngrid_dec, const int max_ngrid_ra,
-                                                const DOUBLE ra_min, const DOUBLE ra_diff,
+                                                const DOUBLE dec_min, const DOUBLE dec_max,
+                                                const DOUBLE ra_min, const DOUBLE ra_max,
                                                 const int *ngrid_ra,
+                                                const int enable_min_sep_opt,
                                                 const int autocorr)
 {
     const int max_dec_ngb = 2*dec_refine_factor + 1;
     const int max_ra_ngb  = 2*ra_refine_factor + 1;
-    const int max_ngb_cells = max_dec_ngb * max_ra_ngb;//There might be additional cells on either end for cases where RA position changes between first and second cells
+    /* There might be additional cells on either end for cases where RA
+       position changes between first and second cells */
+    const int max_ngb_cells = max_dec_ngb * max_ra_ngb;
+
+    const DOUBLE dec_diff = dec_max - dec_min;
+    const DOUBLE ra_diff = ra_max - ra_min;
     const DOUBLE inv_ra_diff = 1.0/ra_diff;
     XRETURN( totncells <= max_ngrid_ra*ngrid_dec, EXIT_FAILURE,
              "Total number of cells = %"PRId64" can be at most the product of max RA cells = %d and the number of DEC cells = %d\n",
@@ -1224,8 +1350,8 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                    if the "first" cell particle had a declination for this_dec (rather than idec) */
                 //include one additional cell -> will get pruned if the separation is too large *and* never be duplicated
                 //brute force approach would be to simply loop from 0 to ngrid_ra[this_dec] and prune away.
-                const int min_ra_this_dec = (int) (ngrid_ra[this_dec] * (first->ra_min - ra_min) * inv_ra_diff) - 1;
-                const int max_ra_this_dec = (int) (ngrid_ra[this_dec] * (first->ra_max - ra_min) * inv_ra_diff) + 1;
+                const int min_ra_this_dec = (int) (ngrid_ra[this_dec] * (first->ra_bounds[0] - ra_min) * inv_ra_diff) - 1;
+                const int max_ra_this_dec = (int) (ngrid_ra[this_dec] * (first->ra_bounds[1] - ra_min) * inv_ra_diff) + 1;
 
                 for(int iira=min_ra_this_dec-ra_refine_factor;iira<=max_ra_this_dec+ra_refine_factor;iira++) {
                     int this_ra = iira + ngrid_ra[this_dec];

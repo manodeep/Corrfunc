@@ -21,43 +21,52 @@ extern "C" {
 #include "weight_defs_DOUBLE.h"
 
 
-    /* Used for DDrppi_mocks */
-    typedef struct cellarray_mocks_index_particles_DOUBLE cellarray_mocks_index_particles_DOUBLE;
-    struct cellarray_mocks_index_particles_DOUBLE{
-        int64_t nelements;
-        int64_t num_ngb;
-        DOUBLE *x;
-        DOUBLE *y;
-        DOUBLE *z;
-        DOUBLE *cz;//co-moving distance
-        weight_struct_DOUBLE weights;
-        DOUBLE xbounds[2];
-        DOUBLE ybounds[2];
-        DOUBLE zbounds[2];
-        cellarray_mocks_index_particles_DOUBLE **ngb_cells;
-        DOUBLE *ngb_min_dx;
-        DOUBLE *ngb_min_dy;
-        DOUBLE *ngb_min_dz;
-        DOUBLE *ngb_closest_icell_xpos;
-        DOUBLE *ngb_closest_icell_ypos;
-        DOUBLE *ngb_closest_icell_zpos;
-    };
-
-    /* Used for wtheta */
-    typedef struct cellarray_mocks_index_wtheta_DOUBLE cellarray_mocks_index_wtheta_DOUBLE;
-    struct cellarray_mocks_index_wtheta_DOUBLE{
-        int64_t nelements;
-        DOUBLE *x;
-        DOUBLE *y;
-        DOUBLE *z;
-        weight_struct_DOUBLE weights;
-        DOUBLE ra_min;
-        DOUBLE ra_max;
-        int num_ngb;
-        int ngb_allocated;
-        cellarray_mocks_index_wtheta_DOUBLE **ngb_cells;
-    };
-
+/* Used for DDrppi_mocks */
+typedef struct cellarray_mocks_index_particles_DOUBLE cellarray_mocks_index_particles_DOUBLE;
+struct cellarray_mocks_index_particles_DOUBLE{
+    int64_t nelements;
+    int64_t num_ngb;
+    DOUBLE *x;
+    DOUBLE *y;
+    DOUBLE *z;
+    DOUBLE *cz;//co-moving distance
+    weight_struct_DOUBLE weights;
+    DOUBLE xbounds[2];
+    DOUBLE ybounds[2];
+    DOUBLE zbounds[2];
+    cellarray_mocks_index_particles_DOUBLE **ngb_cells;
+    DOUBLE *ngb_min_dx;
+    DOUBLE *ngb_min_dy;
+    DOUBLE *ngb_min_dz;
+    DOUBLE *ngb_closest_icell_xpos;
+    DOUBLE *ngb_closest_icell_ypos;
+    DOUBLE *ngb_closest_icell_zpos;
+};
+    
+/* Used for wtheta */
+typedef struct cellarray_mocks_index_wtheta_DOUBLE cellarray_mocks_index_wtheta_DOUBLE;
+struct cellarray_mocks_index_wtheta_DOUBLE{
+    int64_t nelements;
+    DOUBLE *x;
+    DOUBLE *y;
+    DOUBLE *z;
+    weight_struct_DOUBLE weights;
+    DOUBLE dec_bounds[2];
+    DOUBLE ra_bounds[2];
+    DOUBLE xbounds[2];
+    DOUBLE ybounds[2];
+    DOUBLE zbounds[2];
+    int num_ngb;
+    int ngb_allocated;
+    cellarray_mocks_index_wtheta_DOUBLE **ngb_cells;
+    DOUBLE *ngb_min_dx;
+    DOUBLE *ngb_min_dy;
+    DOUBLE *ngb_min_dz;
+    DOUBLE *ngb_closest_icell_xpos;
+    DOUBLE *ngb_closest_icell_ypos;
+    DOUBLE *ngb_closest_icell_zpos;
+};
+    
 #ifdef __cplusplus
 }
 #endif

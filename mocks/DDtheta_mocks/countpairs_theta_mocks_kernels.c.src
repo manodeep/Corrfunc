@@ -21,14 +21,17 @@
 
 
 
-static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
-                                                         const int same_cell,
-                                                         const int order,
-                                                         const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
-                                                         const DOUBLE *costheta_upp, 
-                                                         DOUBLE *src_rpavg,
-                                                         uint64_t *src_npairs,
+static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
+                                                         DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1,
+                                                         DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                         const int same_cell, const int order, 
+                                                         const DOUBLE costhetamax, const DOUBLE costhetamin,
+                                                         const int nthetabin, const DOUBLE *costheta_upp, 
+                                                         const DOUBLE min_xdiff, const DOUBLE min_ydiff,
+                                                         const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
+                                                         const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
+                                                         DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                          DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
@@ -159,14 +162,17 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 #if defined(__SSE4_2__)
 #include "sse_calls.h"
 
-static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
-                                                                const int same_cell,
-                                                                const int order,
-                                                                const DOUBLE costhetamax, const DOUBLE costhetamin,  const int nthetabin,
-                                                                const DOUBLE *costheta_upp, 
-                                                                DOUBLE *src_rpavg,
-                                                                uint64_t *src_npairs,
+static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
+                                                                DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1,
+                                                                DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                                const int same_cell, const int order, 
+                                                                const DOUBLE costhetamax, const DOUBLE costhetamin,
+                                                                const int nthetabin, const DOUBLE *costheta_upp, 
+                                                                const DOUBLE min_xdiff, const DOUBLE min_ydiff,
+                                                                const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
+                                                                const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
+                                                                DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                                 DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
@@ -181,8 +187,13 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
     if(N1 < 2*SSE_NVEC) {
       return countpairs_theta_mocks_fallback_DOUBLE(N0, x0, y0, z0, weights0,
                                                     N1, x1, y1, z1, weights1,
-                                                    same_cell, order, costhetamax, costhetamin, nthetabin,
-                                                    costheta_upp, src_rpavg, src_npairs, src_weightavg, weight_method);
+                                                    same_cell, order,
+                                                    costhetamax, costhetamin,
+                                                    nthetabin, costheta_upp,
+                                                    min_xdiff, min_ydiff,
+                                                    min_zdiff, closest_icell_xpos,
+                                                    closest_icell_ypos, closest_icell_zpos,
+                                                    src_rpavg, src_npairs, src_weightavg, weight_method);
     }
     
     const int32_t need_rpavg = src_rpavg != NULL;
@@ -408,12 +419,16 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
 #if defined(__AVX__)
 #include "avx_calls.h"
 
-static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
-                                                                const int same_cell, 
-                                                                const int order,
-                                                                const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
-                                                                const DOUBLE *costheta_upp, 
+static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
+                                                                DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                                const int64_t N1, DOUBLE *x1, DOUBLE *y1,
+                                                                DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                                const int same_cell, const int order, 
+                                                                const DOUBLE costhetamax, const DOUBLE costhetamin,
+                                                                const int nthetabin, const DOUBLE *costheta_upp, 
+                                                                const DOUBLE min_xdiff, const DOUBLE min_ydiff,
+                                                                const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
+                                                                const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                                 DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                                 DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -428,8 +443,13 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
     if(N1 < 2*AVX_NVEC) {
       return countpairs_theta_mocks_fallback_DOUBLE(N0, x0, y0, z0, weights0,
                                                     N1, x1, y1, z1, weights1,
-                                                    same_cell, order, costhetamax, costhetamin, nthetabin,
-                                                    costheta_upp, src_rpavg, src_npairs, src_weightavg, weight_method);
+                                                    same_cell, order,
+                                                    costhetamax, costhetamin,
+                                                    nthetabin, costheta_upp,
+                                                    min_xdiff, min_ydiff,
+                                                    min_zdiff, closest_icell_xpos,
+                                                    closest_icell_ypos, closest_icell_zpos,
+                                                    src_rpavg, src_npairs, src_weightavg, weight_method);
     }
 
     
@@ -656,12 +676,16 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
 #if defined(__AVX512F__)
 #include "avx512_calls.h"
 
-static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
-                                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
-                                                                   const int same_cell, 
-                                                                   const int order,
-                                                                   const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
-                                                                   const DOUBLE *costheta_upp, 
+static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
+                                                                   DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1,
+                                                                   DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                                   const int same_cell, const int order, 
+                                                                   const DOUBLE costhetamax, const DOUBLE costhetamin,
+                                                                   const int nthetabin, const DOUBLE *costheta_upp, 
+                                                                   const DOUBLE min_xdiff, const DOUBLE min_ydiff,
+                                                                   const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
+                                                                   const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                                    DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                                    DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -677,8 +701,13 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
     if(N1 < 2*AVX512_NVEC) {
       return countpairs_theta_mocks_fallback_DOUBLE(N0, x0, y0, z0, weights0,
                                                     N1, x1, y1, z1, weights1,
-                                                    same_cell, order, costhetamax, costhetamin, nthetabin,
-                                                    costheta_upp, src_rpavg, src_npairs, src_weightavg, weight_method);
+                                                    same_cell, order,
+                                                    costhetamax, costhetamin,
+                                                    nthetabin, costheta_upp,
+                                                    min_xdiff, min_ydiff,
+                                                    min_zdiff, closest_icell_xpos,
+                                                    closest_icell_ypos, closest_icell_zpos,
+                                                    src_rpavg, src_npairs, src_weightavg, weight_method);
     }
 #endif
     
