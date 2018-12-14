@@ -177,6 +177,8 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
     return function;
 }
 
+
+#include "sglib.h"
 static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
                                                             const int numthreads,
@@ -191,7 +193,8 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
-    
+
+  
     // If no extra options were passed, create dummy options
     // This allows us to pass arguments like "extra->weights0" below;
     // they'll just be NULLs, which is the correct behavior
@@ -211,6 +214,36 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
 #else
     (void) numthreads;
 #endif
+    
+    
+#define MULTIPLE_ARRAY_EXCHANGER(type, a, i, j)  { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, x0, i, j); \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, y0, i, j);               \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, z0, i, j);               \
+        for(int w = 0; w < extra->weights0.num_weights; w++) {          \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, (DOUBLE *) extra->weights0.weights[w], i, j); \
+        }                                                               \
+    }
+    
+    //Sorting on z -> equivalent to sorting on declination
+    //(since z := sin(dec) is a monotonic mapping in -90 <= dec <= 90, the domain for dec)
+    SGLIB_ARRAY_QUICK_SORT(DOUBLE, z0, N0, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+#undef MULTIPLE_ARRAY_EXCHANGER
+    
+    if(x0 != x1) {
+#define MULTIPLE_ARRAY_EXCHANGER(type, a, i, j)  { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, x1, i, j); \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, y1, i, j);           \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, z1, i, j);           \
+            for(int w = 0; w < extra->weights1.num_weights; w++){       \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, (DOUBLE *) extra->weights1.weights[w], i, j); \
+            }                                                           \
+        }
+        
+        //Sorting on z -> equivalent to sorting on declination
+        //(since z := sin(dec) is a monotonic mapping in -90 <= dec <= 90, the domain for dec)
+        SGLIB_ARRAY_QUICK_SORT(DOUBLE, z1, N1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+#undef MULTIPLE_ARRAY_EXCHANGER
+    }
+    
     
     struct timeval t0;
     if(options->c_api_timer) {
@@ -538,7 +571,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         return EXIT_FAILURE;
     }
     
-    for(int i=0;i<ND1;i++) {
+    for(int64_t i=0;i<ND1;i++) {
         X1[i] = COSD(dec1[i])*COSD(ra1[i]) ;
         Y1[i] = COSD(dec1[i])*SIND(ra1[i]) ;
         Z1[i] = SIND(dec1[i]);
@@ -668,10 +701,11 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         /* lattice1 and lattice2 should have been assigned. Might be NULL though */
         if(status == EXIT_SUCCESS) {
             /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
-            status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells, 
+            status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1,
+                                                                 lattice2,
+                                                                 totncells, thetamax,
                                                                  options->bin_refine_factors[0], options->bin_refine_factors[1],
                                                                  nmesh_dec, max_nmesh_ra,
-                                                                 dec_min, dec_max,
                                                                  ra_min, ra_max,
                                                                  nmesh_grid_ra,
                                                                  options->enable_min_sep_opt,
@@ -731,7 +765,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1,
                                                               lattice2,
                                                               totncells,
-                                                              dec_min, dec_max,
+                                                              thetamax,
                                                               options->bin_refine_factors[1],
                                                               options->enable_min_sep_opt,
                                                               autocorr);

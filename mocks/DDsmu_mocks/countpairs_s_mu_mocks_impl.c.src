@@ -518,8 +518,6 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                    options->bin_refine_factors[1],
                                                                    options->bin_refine_factors[2],
                                                                    nmesh_x, nmesh_y, nmesh_z,
-                                                                   xmin, ymin, zmin,
-                                                                   xdiff, ydiff, zdiff,
                                                                    smax,
                                                                    options->enable_min_sep_opt,
                                                                    autocorr);

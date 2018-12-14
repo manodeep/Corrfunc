@@ -127,12 +127,100 @@ const int min_bin_ref = 1, max_bin_ref = 4;
            options.instruction_set = old_isa;                           \
            options.enable_min_sep_opt = old_min_sep_opt;                \
     } while(0)
+
+    //wtheta has 3 implementations (brute-force, link-in-dec and link-in-dec + link-in-ra)
+    //For developer testing, multiple bin refine factors are tested as well as the
+    //all three of the linking logic.
+
+    // (dec_link, ra_link) == (0, 0) -> brute-force
+    // (dec_link, ra_link) == (1, 0) -> dec-linking only
+    // (dec_link, ra_link) == (1, 1) -> dec + ra linking
+
+    /* The order of the for loop breaks the convention "RA before DEC"
+       -- This is because the binning in RA can only be done if the binning
+       in DEC is enabled. Therefore, it makes more sense to loop in RA *only*
+       after the DEC binning is decided.
+     */
+
+#define BEGIN_DDTHETA_INTEGRATION_TEST_SECTION                               \
+    do {                                                                     \
+        struct timespec t0, t1;                                              \
+        const isa old_isa = options.instruction_set;                         \
+        const int old_min_sep_opt = options.enable_min_sep_opt;              \
+        int dotest = 1;                                                      \
+        for(int iset=0;iset<num_instructions;iset++) {                       \
+            options.instruction_set = valid_instruction_sets[iset];          \
+            for(int dec_link=0;dec_link<=1;dec_link++) {                     \
+                for(int ra_link=0;ra_link <= dec_link; ra_link++) {          \
+                    int fastest_bin_ref[] = {1, 1, 1};                       \
+                    int fastest_isa = 0;                                     \
+                    double fastest_time = 1e30;                              \
+                    for(int ra_bin_ref=min_bin_ref;ra_bin_ref<=max_bin_ref;ra_bin_ref++) { \
+                        for(int dec_bin_ref=min_bin_ref;dec_bin_ref<=max_bin_ref;dec_bin_ref++) { \
+                            for(int enable_min_sep_opt=0;enable_min_sep_opt<=1;enable_min_sep_opt++) { \
+                                if(dotest == 1) {                            \
+                                    if(dec_link == 0 && ra_link == 0 && (dec_bin_ref != min_bin_ref || ra_bin_ref != min_bin_ref || enable_min_sep_opt != 0)) continue; \
+                                    if(dec_link == 1 && ra_link == 0 && ra_bin_ref != min_bin_ref) continue; \
+                                    const int bf[] = {ra_bin_ref, dec_bin_ref, -1}; \
+                                    set_custom_bin_refine_factors(&options, bf); \
+                                    options.link_in_dec=dec_link;             \
+                                    options.link_in_ra=ra_link;               \
+                                    options.enable_min_sep_opt = enable_min_sep_opt; \
+                                    if(dec_link == 1) {                 \
+                                        fprintf(stderr,"Running with (dec, ra)-linking = (%1d, %1d), (dec, ra) bin-ref = (%d, %d) isa = %s " \
+                                                "and min. sep. opt. %8s ...", \
+                                                dec_link, ra_link,      \
+                                                options.bin_refine_factors[1], \
+                                                options.bin_refine_factors[0], \
+                                                isa_name[iset],enable_min_sep_opt == 0 ? "DISABLED":"ENABLED"); \
+                                    }                                   \
+                                    current_utc_time(&t0);              \
+                            
+
+/* Clean up the integration tests (close the loops and check for error) */
+#define END_DDTHETA_INTEGRATION_TEST_SECTION                                  \
+                                    current_utc_time(&t1);                    \
+                                    double time_to_run = REALTIME_ELAPSED_NS(t0, t1); \
+                                    if(time_to_run < fastest_time) {          \
+                                        fastest_time = time_to_run;           \
+                                        fastest_isa = iset;                   \
+                                        memcpy(&fastest_bin_ref, &bf, sizeof(bf)); \
+                                    }                                         \
+                                    if(ret != EXIT_SUCCESS) {                 \
+                                        fprintf(stderr, ANSI_COLOR_RED "FAILED"); \
+                                        dotest = 1;/* change back to 0*/ \
+                                    } else {                                  \
+                                        fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
+                                    }                                         \
+                                    fprintf(stderr, ANSI_COLOR_RESET ". Time taken = %8.2lf seconds \n", time_to_run * 1e-9); \
+                                } /* closes dotest */                         \
+                            } /* closes min-sep-opt*/                         \
+                        } /* dec_bin_ref*/                                    \
+                    } /* ra_bin_ref*/                                         \
+                    if(ret == EXIT_SUCCESS) {                                 \
+                        fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d} and instruction_set = %s"  ANSI_COLOR_RESET "\n", \
+                            fastest_time*1e-9,                                \
+                            fastest_bin_ref[0],                               \
+                            fastest_bin_ref[1],                               \
+                            isa_name[fastest_isa]);                           \
+                    } /* closes ret==EXIT_SUCCESS */                          \
+                } /* ra_link loop */                                          \
+            } /*dec_link loop */                                              \
+        } /* isa loop */                                                      \
+        reset_bin_refine_factors(&options);                                   \
+        options.instruction_set = old_isa;                                    \
+        options.enable_min_sep_opt = old_min_sep_opt;                         \
+    } while(0)
+
 #else
 /* Running regular tests -> no need for exhaustive testing */
 #define BEGIN_INTEGRATION_TEST_SECTION  do {                               
 #define END_INTEGRATION_TEST_SECTION    } while(0)
+          
+#define BEGIN_DDTHETA_INTEGRATION_TEST_SECTION do {
+#define END_DDTHETA_INTEGRATION_TEST_SECTION   } while(0)
 
-#endif
+#endif/*INTEGRATION_TESTS*/
 
 
 #ifdef _OPENMP

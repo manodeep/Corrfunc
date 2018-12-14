@@ -389,8 +389,6 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
                                                   struct cellarray_mocks_index_particles_DOUBLE *lattice2, const int64_t totncells,
                                                   const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                                   const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                                  const DOUBLE xmin, const DOUBLE ymin, const DOUBLE zmin,
-                                                  const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
                                                   const DOUBLE max_3D_sep, 
                                                   const int enable_min_sep_opt,
                                                   const int autocorr)
@@ -400,10 +398,6 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
-    const DOUBLE xbinsize = xdiff/nmesh_x;
-    const DOUBLE ybinsize = ydiff/nmesh_y;
-    const DOUBLE zbinsize = zdiff/nmesh_z;
-  
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_mocks_index_particles_DOUBLE *first = &(lattice1[icell]);
         if(first->nelements == 0) continue;
@@ -423,12 +417,12 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
         }
     
         if(enable_min_sep_opt) {
-            first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
-            first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
-            first->ngb_min_dz = my_malloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
-            first->ngb_closest_icell_xpos = my_malloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
-            first->ngb_closest_icell_ypos = my_malloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
-            first->ngb_closest_icell_zpos = my_malloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
+            first->ngb_min_dx = my_calloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
+            first->ngb_min_dy = my_calloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
+            first->ngb_min_dz = my_calloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
+            first->ngb_closest_icell_xpos = my_calloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
+            first->ngb_closest_icell_ypos = my_calloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
+            first->ngb_closest_icell_zpos = my_calloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
             if(first->ngb_min_dx == NULL || first->ngb_min_dy == NULL || first->ngb_min_dz == NULL ||
                first->ngb_closest_icell_xpos == NULL || first->ngb_closest_icell_ypos == NULL || first->ngb_closest_icell_zpos == NULL) {
                 fprintf(stderr,"Error: Could not allocate memory for storing additional quantities for optimizations related to min. separation between cell-pairs.\n"
@@ -463,78 +457,41 @@ int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_p
                     const int64_t ngb_index = first->num_ngb;
                     XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
                             "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
-                    if(enable_min_sep_opt) {
-                        const int round_iix_towards_zero = iix < 0 ? +1:(iix > 0 ? -1:0);
-                        const int round_iiy_towards_zero = iiy < 0 ? +1:(iiy > 0 ? -1:0);
-                        const int round_iiz_towards_zero = iiz < 0 ? +1:(iiz > 0 ? -1:0);
-                        const int min_xdiff = iix + round_iix_towards_zero;/* min_xdiff can be signed*/
-                        const int min_ydiff = iiy + round_iiy_towards_zero;/* min_ydiff can be signed*/
-                        const int min_zdiff = iiz + round_iiz_towards_zero;/* min_zdiff can be signed*/
-                  
-                        first->ngb_min_dx[ngb_index] = min_xdiff * xbinsize;
-                        first->ngb_min_dy[ngb_index] = min_ydiff * ybinsize;
-                        first->ngb_min_dz[ngb_index] = min_zdiff * zbinsize;
-                  
+                    if(enable_min_sep_opt && max_3D_sep > 0) {
                         /* Check for periodic boundary conditions....etc*/
-                        const DOUBLE x_low = xmin + ix*xbinsize, x_hi = x_low + xbinsize;
-                        const DOUBLE y_low = ymin + iy*ybinsize, y_hi = y_low + ybinsize;
-                        const DOUBLE z_low = zmin + iz*zbinsize, z_hi = z_low + zbinsize;
+                        const DOUBLE x_low = first->xbounds[0], x_hi = first->xbounds[1];
+                        const DOUBLE y_low = first->ybounds[0], y_hi = first->ybounds[1];
+                        const DOUBLE z_low = first->zbounds[0], z_hi = first->zbounds[1];
                   
                         first->ngb_closest_icell_xpos[ngb_index] = iix < 0 ? x_low:(iix > 0 ? x_hi:ZERO);
                         first->ngb_closest_icell_ypos[ngb_index] = iiy < 0 ? y_low:(iiy > 0 ? y_hi:ZERO);
                         first->ngb_closest_icell_zpos[ngb_index] = iiz < 0 ? z_low:(iiz > 0 ? z_hi:ZERO);
                   
-                        int update_min_dx=0,update_min_dy=0,update_min_dz=0;
                         const cellarray_mocks_index_particles_DOUBLE *second =  &(lattice2[icell2]);
                         //chose lower bound if secondary cell is to the left (smaller x), else upper
-                        const DOUBLE first_x  = iix < 0 ? first->xbounds[0]:first->xbounds[1];//second condition also contains iix==0
+                        const DOUBLE first_x  = iix < 0 ? x_low:x_hi;//second condition also contains iix==0
                         //chose upper bound if primary cell is to the right (larger x), else lower
                         const DOUBLE second_x = iix < 0 ? second->xbounds[1]:second->xbounds[0];//second condition also contains iix==0
                         const DOUBLE min_dx = iix != 0 ? (first_x - second_x):ZERO;//ensure min_dx == 0 for iix ==0
                   
                         //repeat for min_dy
-                        const DOUBLE first_y  = iiy < 0 ? first->ybounds[0]:first->ybounds[1];//second condition also contains iiy==0
+                        const DOUBLE first_y  = iiy < 0 ? y_low:y_hi;//second condition also contains iiy==0
                         const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:second->ybounds[0];//second condition also contains iiy==0
                         const DOUBLE min_dy = iiy != 0  ? (first_y - second_y):ZERO;//ensure min_dy == 0 for iiy ==0
                   
                         //repeat for min_dz
-                        const DOUBLE first_z  = iiz < 0 ? first->zbounds[0]:first->zbounds[1];//second condition also contains iiz==0
+                        const DOUBLE first_z  = iiz < 0 ? z_low:z_hi;//second condition also contains iiz==0
                         const DOUBLE second_z = iiz < 0 ? second->zbounds[1]:second->zbounds[0];//second condition also contains iiz==0
                         const DOUBLE min_dz = iiz != 0 ? (first_z - second_z):ZERO;//ensure min_dz == 0 for iiz ==0
                   
-                        if(max_3D_sep > 0) {
-                            const DOUBLE sqr_min_sep_cells = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
-                            if(sqr_min_sep_cells >= max_3D_sep*max_3D_sep) {
-                                continue;
-                            }
-                            update_min_dx = iix != 0;
-                            update_min_dy = iiy != 0;
-                            update_min_dz = iiz != 0;
-                        }/* end of condition for max_3D_sep */
-                        /*Update the ngb_mindx/dy/dz if necessary */
-                        if(update_min_dx == 1) {
-                            const DOUBLE second_x_low = xmin + iiix*xbinsize, second_x_hi =  xmin + (iiix + 1)*xbinsize;
-                            /*second_xdiff has the same sign as min_xdiff -> we can directly add to the signed ngb_min_dx */
-                            const DOUBLE second_x_diff_from_cell_edge = iix < 0 ? second->xbounds[1]-second_x_hi:second->xbounds[0]-second_x_low;
-                            first->ngb_min_dx[ngb_index] += second_x_diff_from_cell_edge;
+                        const DOUBLE sqr_min_sep_cells = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                        if(sqr_min_sep_cells >= max_3D_sep*max_3D_sep) {
+                            continue;
                         }
-                  
-                        if(update_min_dy == 1) {
-                            const DOUBLE second_y_low = ymin + iiiy*ybinsize, second_y_hi =  ymin + (iiiy + 1)*ybinsize;
-                            /*second_ydiff has the same sign as min_ydiff -> we can directly add to the signed ngb_min_dy */
-                            const DOUBLE second_y_diff_from_cell_edge = iiy < 0 ? second->ybounds[1]-second_y_hi:second->ybounds[0]-second_y_low;
-                            first->ngb_min_dy[ngb_index] += second_y_diff_from_cell_edge;
-                        }
-                  
-                        if(update_min_dz == 1) {
-                            const DOUBLE second_z_low = zmin + iiiz*zbinsize, second_z_hi =  zmin + (iiiz + 1)*zbinsize;
-                            /*second_ydiff has the same sign as min_zdiff -> we can directly add to the signed ngb_min_dz */
-                            const DOUBLE second_z_diff_from_cell_edge = iiz < 0 ? second->zbounds[1]-second_z_hi:second->zbounds[0]-second_z_low;
-                            first->ngb_min_dz[ngb_index] += second_z_diff_from_cell_edge;
-                        }
-                        /* Finished updating the ngb_mindx/dy/dz */
-                        
-                    }/* end of if condition for enable_min_sep_opt*/ 
+                        first->ngb_min_dx[ngb_index] = min_dx;
+                        first->ngb_min_dy[ngb_index] = min_dy;
+                        first->ngb_min_dz[ngb_index] = min_dz;
+                    }/* end of if condition for enable_min_sep_opt and max_3D_sep > 0 */ 
 
                     //If we have reached here, then this cell *MIGHT* have a pair. We
                     //need to add to the neighbour list
@@ -779,7 +736,6 @@ int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE
                                              cellarray_mocks_index_wtheta_DOUBLE *lattice2,
                                              const int64_t totncells,
                                              const DOUBLE thetamax,
-                                             const DOUBLE dec_min, const DOUBLE dec_max,
                                              const int dec_refine_factor,
                                              const int enable_min_sep_opt,
                                              const int autocorr)
@@ -794,19 +750,18 @@ int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE
     
     /* This ngb is a trivial function. Loop over +- idec from every cell. And that's a neighbour cell */
     const int64_t max_ngb_cells = 2*dec_refine_factor + 1;
-    const DOUBLE dec_binsize = (dec_max - dec_min)/totncells;
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_mocks_index_wtheta_DOUBLE *first = &(lattice1[icell]);
         first->num_ngb = 0;
         if(first->nelements == 0) continue;
 
         if(enable_min_sep_opt) {
-            first->ngb_min_dx = my_malloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
-            first->ngb_min_dy = my_malloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
-            first->ngb_min_dz = my_malloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
-            first->ngb_closest_icell_xpos = my_malloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
-            first->ngb_closest_icell_ypos = my_malloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
-            first->ngb_closest_icell_zpos = my_malloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
+            first->ngb_min_dx = my_calloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
+            first->ngb_min_dy = my_calloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
+            first->ngb_min_dz = my_calloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
+            first->ngb_closest_icell_xpos = my_calloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
+            first->ngb_closest_icell_ypos = my_calloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
+            first->ngb_closest_icell_zpos = my_calloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
             if(first->ngb_min_dx == NULL || first->ngb_min_dy == NULL || first->ngb_min_dz == NULL ||
                first->ngb_closest_icell_xpos == NULL || first->ngb_closest_icell_ypos == NULL || first->ngb_closest_icell_zpos == NULL) {
                 fprintf(stderr,"Error: Could not allocate memory for storing additional quantities for optimizations related to min. separation between cell-pairs.\n"
@@ -817,7 +772,7 @@ int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE
     
         first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
         if(first->ngb_cells == NULL) {
-            fprintf(stderr,"Error: Could not allocate memory to hold neighbouring cells. Requested memory = %zu\n",
+            fprintf(stderr,"Error: Could not allocate memory to hold neighbouring cells. Requested memory = %"PRIu64"\n",
                     sizeof(*(first->ngb_cells))*max_ngb_cells);
             return EXIT_FAILURE;
         }
@@ -834,24 +789,31 @@ int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE
             XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
                     "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
 
-            if(enable_min_sep_opt) {
-                const DOUBLE dec_low = dec_min + icell2*dec_binsize, dec_hi = dec_low + dec_binsize;
-                const DOUBLE z_low = COSD(dec_low), z_hi = COSD(dec_hi);
+            const cellarray_mocks_index_wtheta_DOUBLE *second = &(lattice2[icell2]);
+            if(enable_min_sep_opt && idec != 0) {
+                const DOUBLE first_z_low = first->zbounds[0], first_z_hi = first->zbounds[1];
+                const DOUBLE second_z_low = second->zbounds[0], second_z_hi = second->zbounds[1];
+                
                 first->ngb_closest_icell_xpos[ngb_index] = ZERO;
                 first->ngb_closest_icell_ypos[ngb_index] = ZERO;
-                first->ngb_closest_icell_zpos[ngb_index] = idec < 0 ? z_low:(idec > 0 ? z_hi:ZERO);
-
+                first->ngb_closest_icell_zpos[ngb_index] = idec < 0 ? first_z_low:first_z_hi;
+                
+                first->ngb_min_dx[ngb_index] = ZERO;
+                first->ngb_min_dy[ngb_index] = ZERO;
+                first->ngb_min_dz[ngb_index] = idec < 0 ? (second_z_hi - first_z_low):(second_z_low - first_z_hi);
+                
                 const DOUBLE min_dx = ZERO, min_dy = ZERO;
-                const DOUBLE first_z  = idec < 0 ? first->zbounds[0]:first->zbounds[1];
+                const DOUBLE first_z  = idec < 0 ? first_z_low:first_z_hi;
                 const DOUBLE second_z = idec < 0 ? second->zbounds[1]:second->zbounds[0];
-                const DOUBLE min_dz = idec != 0 ? (first_z - second_z):ZERO;
-
+                const DOUBLE min_dz = (first_z - second_z);
                 const DOUBLE sqr_min_sep_cells = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
                 if(sqr_min_sep_cells >= sqr_max_chord_sep) {
+                    fprintf(stderr,"icell = %"PRId64 "icell2 = %"PRId64" are not within min separation\n",
+                            icell, icell2);
                     continue;
                 }
             }
-            
+
             first->ngb_cells[ngb_index] = &(lattice2[icell2]);
             first->num_ngb++;
         }
@@ -973,8 +935,12 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     
     
     /* Validate the point distribution requested */
-    XRETURN(dec_diff > 0.0, NULL, "All of the points can not be at the same declination. Declination difference = %"REAL_FORMAT" must be non-zero\n", dec_diff);
-    XRETURN(ra_diff > 0.0, NULL, "All of the points can not be at the same RA. RA difference = %"REAL_FORMAT" must be non-zero\n", ra_diff);
+    XRETURN(dec_diff > 0.0, NULL,
+            "All of the points can not be at the same declination. Declination difference = %"REAL_FORMAT" must be non-zero\n",
+            dec_diff);
+    XRETURN(ra_diff > 0.0, NULL,
+            "All of the points can not be at the same RA. RA difference = %"REAL_FORMAT" must be non-zero\n",
+            ra_diff);
 
     /* Protect against accidental edits */
     XRETURN(MEMORY_INCREASE_FAC >= 1.0, NULL, "Memory increase factor = %lf must be >=1 \n",MEMORY_INCREASE_FAC);
@@ -1282,6 +1248,28 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
     return lattice;
 }
 
+DOUBLE find_closest_pos_DOUBLE(const DOUBLE first_xbounds[2], const DOUBLE second_xbounds[2], DOUBLE *closest_pos0)
+{
+    *closest_pos0 = ZERO;
+    if(first_xbounds[0] <= second_xbounds[1]
+       && second_xbounds[0] <= first_xbounds[1]) {
+        return ZERO;
+    }
+    
+    DOUBLE min_dx = FABS(first_xbounds[0] - second_xbounds[0]);
+    for(int i=0;i<2;i++) {
+        for(int j=0;j<2;j++) {
+            const DOUBLE dx = FABS(first_xbounds[i] - second_xbounds[j]);
+            if(dx < min_dx) {
+                *closest_pos0 = first_xbounds[i];
+                min_dx = dx;
+            }
+        }
+    }
+
+    return min_dx;
+}
+
 
 int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1,
                                                 cellarray_mocks_index_wtheta_DOUBLE *lattice2,
@@ -1289,19 +1277,25 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                                                 const DOUBLE thetamax,
                                                 const int ra_refine_factor, const int dec_refine_factor,
                                                 const int ngrid_dec, const int max_ngrid_ra,
-                                                const DOUBLE dec_min, const DOUBLE dec_max,
                                                 const DOUBLE ra_min, const DOUBLE ra_max,
                                                 const int *ngrid_ra,
                                                 const int enable_min_sep_opt,
                                                 const int autocorr)
 {
+    /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
+    /*    C = 2.0 * SIN(thetamax/2)
+       -> C^2 = 4.0 * SIN^2 (thetamax/2.0)
+       -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
+       -> C^2 = 2.0 * (1 - COS(thetamax))
+     */
+    const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - COSD(thetamax));
+    
     const int max_dec_ngb = 2*dec_refine_factor + 1;
-    const int max_ra_ngb  = 2*ra_refine_factor + 1;
+    const int max_ra_ngb  = 2*ra_refine_factor + 3;
     /* There might be additional cells on either end for cases where RA
        position changes between first and second cells */
     const int max_ngb_cells = max_dec_ngb * max_ra_ngb;
 
-    const DOUBLE dec_diff = dec_max - dec_min;
     const DOUBLE ra_diff = ra_max - ra_min;
     const DOUBLE inv_ra_diff = 1.0/ra_diff;
     XRETURN( totncells <= max_ngrid_ra*ngrid_dec, EXIT_FAILURE,
@@ -1326,7 +1320,6 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
     XRETURN( totncells == offset, EXIT_FAILURE,
              "Total number of cells = %"PRId64" must be exactly equal to the sum of number of RA cells over all declinations = %"PRId64"\n",
              totncells, offset);
-     
     
     for(int idec=0;idec<ngrid_dec;idec++) {
         for(int ira=0;ira<ngrid_ra[idec];ira++) {
@@ -1335,6 +1328,21 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
             struct cellarray_mocks_index_wtheta_DOUBLE *first = &(lattice1[icell]);
             if(first->nelements == 0) continue;
             
+            if(enable_min_sep_opt) {
+                first->ngb_min_dx = my_calloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
+                first->ngb_min_dy = my_calloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
+                first->ngb_min_dz = my_calloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
+                first->ngb_closest_icell_xpos = my_calloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
+                first->ngb_closest_icell_ypos = my_calloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
+                first->ngb_closest_icell_zpos = my_calloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
+                if(first->ngb_min_dx == NULL || first->ngb_min_dy == NULL || first->ngb_min_dz == NULL ||
+                   first->ngb_closest_icell_xpos == NULL || first->ngb_closest_icell_ypos == NULL || first->ngb_closest_icell_zpos == NULL) {
+                    fprintf(stderr,"Error: Could not allocate memory for storing additional quantities for optimizations related to min. separation between cell-pairs.\n"
+                            "Reducing bin refine factors and/or disabling optimizations for minimum separations between cell-pairs might help\n");
+                    return EXIT_FAILURE;
+                }
+            }
+
             first->num_ngb = 0;
             first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)), max_ngb_cells);
             XRETURN(first->ngb_cells != NULL, EXIT_FAILURE,
@@ -1342,8 +1350,8 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                     max_ngb_cells, sizeof(*(first->ngb_cells)) * max_ngb_cells);
             first->ngb_allocated = max_ngb_cells;
             
-            for(int i=-dec_refine_factor;i<=dec_refine_factor;i++){
-                const int this_dec = idec + i;
+            for(int dec_refine=-dec_refine_factor;dec_refine<=dec_refine_factor;dec_refine++){
+                const int this_dec = idec + dec_refine;
                 if(this_dec < 0 || this_dec >= ngrid_dec) continue;
 
                 /* Figure out what is the min and max RA cell that any particle in "first" cell could be in 
@@ -1372,7 +1380,7 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                             "index for ngb cell = %"PRId64" should be less total number of cells = %"PRId64"\n",
                             icell2, totncells);
 
-                    struct cellarray_mocks_index_wtheta_DOUBLE *second = &(lattice2[icell2]);
+                    const struct cellarray_mocks_index_wtheta_DOUBLE *second = &(lattice2[icell2]);
                     //For cases where we are not double-counting (i.e., auto-corrs), the same-cell
                     //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
                     //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
@@ -1402,18 +1410,50 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                             expected_n++;
                         }
                         
-                        cellarray_mocks_index_wtheta_DOUBLE **ngb = NULL;
+                        int reduce_n;
                         //realloc into ngb; however, if realloc fails then first->ngb_cells in untouched and NULL is returned
                         //in ngb. In that case, re-try with a lower number of cells [quantified by 'expected_n']
                         //with the hope that a lower realloc will succeed. However, 'expected_n' must be at least  num_ngb + 1,
                         //otherwise assigning 'second' will be a memory access violation. 
                         do{
+                            reduce_n=0;
+
+                            cellarray_mocks_index_wtheta_DOUBLE **ngb = NULL;
+                            DOUBLE *tmp = NULL;
+
                             ngb = my_realloc(first->ngb_cells, sizeof(*(first->ngb_cells)), expected_n,"lattice.ngb_cells");
                             first->ngb_cells = (ngb == NULL) ? first->ngb_cells:ngb;
-                            if(ngb == NULL) {
+                            if(ngb == NULL) reduce_n = 1;
+
+                            tmp = my_realloc(first->ngb_min_dx, sizeof(*(first->ngb_min_dx)), expected_n, "lattice.ngb_min_dx");
+                            first->ngb_min_dx = (tmp == NULL) ? first->ngb_min_dx:tmp;
+                            if(tmp == NULL) reduce_n = 1;
+
+                            tmp = my_realloc(first->ngb_min_dy, sizeof(*(first->ngb_min_dy)), expected_n, "lattice.ngb_min_dy");
+                            first->ngb_min_dy = (tmp == NULL) ? first->ngb_min_dy:tmp;
+                            if(tmp == NULL) reduce_n = 1;
+
+                            tmp = my_realloc(first->ngb_min_dz, sizeof(*(first->ngb_min_dz)), expected_n, "lattice.ngb_min_dz");
+                            first->ngb_min_dz = (tmp == NULL) ? first->ngb_min_dz:tmp;
+                            if(tmp == NULL) reduce_n = 1;
+
+                            tmp = my_realloc(first->ngb_closest_icell_xpos, sizeof(*(first->ngb_closest_icell_xpos)), expected_n, "lattice.ngb_closest_icell_xpos");
+                            first->ngb_closest_icell_xpos = (tmp == NULL) ? first->ngb_closest_icell_xpos:tmp;
+                            if(tmp == NULL) reduce_n = 1;
+                            
+                            tmp = my_realloc(first->ngb_closest_icell_ypos, sizeof(*(first->ngb_closest_icell_ypos)), expected_n, "lattice.ngb_closest_icell_ypos");
+                            first->ngb_closest_icell_ypos = (tmp == NULL) ? first->ngb_closest_icell_ypos:tmp;
+                            if(tmp == NULL) reduce_n = 1;
+
+                            tmp = my_realloc(first->ngb_closest_icell_zpos, sizeof(*(first->ngb_closest_icell_zpos)), expected_n, "lattice.ngb_closest_icell_zpos");
+                            first->ngb_closest_icell_zpos = (tmp == NULL) ? first->ngb_closest_icell_zpos:tmp;
+                            if(tmp == NULL) reduce_n = 1;
+
+                            if(reduce_n) {
                                 expected_n--;
                             }
-                        } while(expected_n > first->num_ngb && ngb == NULL);
+                            
+                        } while(expected_n > first->num_ngb && reduce_n==1);
 
                         if(expected_n <= first->num_ngb) { //the condition could have been '==' but I included '<=' since those are errors as well
                             /*realloc failed. return error */
@@ -1427,12 +1467,113 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                         first->ngb_allocated = expected_n;
                     }
                     
-                    XRETURN(first->num_ngb < first->ngb_allocated, EXIT_FAILURE,
-                            "Not enough memory allocated to assign the neighbour cell at index = %d should be less than number of ngb cells allocated = %d\n",
+                    XRETURN(first->num_ngb < first->ngb_allocated && first->num_ngb >= 0, EXIT_FAILURE,
+                            "Not enough memory allocated to assign the neighbour cell at index = %d should "
+                            "be less than number of ngb cells allocated = %d and also be a valid index (>= 0)\n",
                             first->num_ngb, first->ngb_allocated);
 
-                    const int ngb_index = first->num_ngb;
-                    first->ngb_cells[ngb_index] = second;
+                    const int64_t ngb_index = first->num_ngb;
+                    if(enable_min_sep_opt) {
+                        if(ngb_index < 0 || ngb_index >= first->ngb_allocated) {
+                            fprintf(stderr,"ngb_index = %"PRId64" is wrong\n", ngb_index);
+                            return EXIT_FAILURE;
+                        }
+                        DOUBLE closest_pos0;
+                        const DOUBLE min_dx = find_closest_pos_DOUBLE(first->xbounds, second->xbounds, &closest_pos0);
+                        first->ngb_closest_icell_xpos[ngb_index] = ira != this_ra ? closest_pos0:ZERO;
+                        first->ngb_min_dx[ngb_index] = min_dx;
+
+                        const DOUBLE min_dy = find_closest_pos_DOUBLE(first->ybounds, second->ybounds, &closest_pos0);
+                        first->ngb_closest_icell_ypos[ngb_index] = ira != this_ra ? closest_pos0:ZERO;
+                        first->ngb_min_dy[ngb_index] = min_dy;
+
+                        const DOUBLE min_dz = find_closest_pos_DOUBLE(first->zbounds, second->zbounds, &closest_pos0);
+                        first->ngb_closest_icell_zpos[ngb_index] = idec != this_dec ? closest_pos0:ZERO;
+                        first->ngb_min_dz[ngb_index] = min_dz;
+
+                        const DOUBLE sqr_min_sep_cells = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                        if(sqr_min_sep_cells >= sqr_max_chord_sep) {
+                            /* fprintf(stderr,"icell = %"PRId64 " icell2 = %"PRId64" are not within min separation\n", */
+                            /*         icell, icell2); */
+                            /* fprintf(stderr,"first: dec_bounds = (%g, %g); ra_bounds = (%g, %g)\n", */
+                            /*         first->dec_bounds[0], first->dec_bounds[1], */
+                            /*         first->ra_bounds[0], first->ra_bounds[1]); */
+                            /* fprintf(stderr,"first: xbounds = (%g, %g); ybounds = (%g, %g) zbounds = (%g, %g)\n", */
+                            /*         first->xbounds[0], first->xbounds[1], */
+                            /*         first->ybounds[0], first->ybounds[1], */
+                            /*         first->zbounds[0], first->zbounds[1]); */
+                            /* fprintf(stderr,"second: dec_bounds = (%g, %g); ra_bounds = (%g, %g)\n", */
+                            /*         second->dec_bounds[0], second->dec_bounds[1], */
+                            /*         second->ra_bounds[0], second->ra_bounds[1]); */
+                            /* fprintf(stderr,"second: xbounds = (%g, %g); ybounds = (%g, %g) zbounds = (%g, %g)\n", */
+                            /*         second->xbounds[0], second->xbounds[1], */
+                            /*         second->ybounds[0], second->ybounds[1], */
+                            /*         second->zbounds[0], second->zbounds[1]); */
+#if 0
+                            const DOUBLE costhetamax = COSD(thetamax);
+                            int print=0;
+                            for(int64_t i=0;i<first->nelements;i++) {
+                                const DOUBLE x1 = first->x[i];
+                                const DOUBLE y1 = first->y[i];
+                                const DOUBLE z1 = first->z[i];
+                                for(int64_t j=0;j<second->nelements;j++) {
+                                    const DOUBLE x2 = second->x[j];
+                                    const DOUBLE y2 = second->y[j];
+                                    const DOUBLE z2 = second->z[j];
+                                    const DOUBLE dx = FABS(x2-x1);
+                                    const DOUBLE dy = FABS(y2-y1);
+                                    const DOUBLE dz = FABS(z2-z1);
+
+                                    if(dx < FABS(min_dx)) {
+                                        fprintf(stderr,"dx = %g is smaller than min_dx = %g\n", dx, FABS(min_dx));
+                                        fprintf(stderr,"x1 = %g, x2 = %g\n", x1, x2);
+                                        print=1;
+                                    }
+                                    if(dy < FABS(min_dy)) {
+                                        fprintf(stderr,"dy = %g is smaller than min_dy = %g\n", dy, FABS(min_dy));
+                                        fprintf(stderr,"y1 = %g, y2 = %g\n", y1, y2);
+                                        print=1;
+                                    }
+                                    if(dz < FABS(min_dz)) {
+                                        fprintf(stderr,"dz = %g is smaller than min_dz = %g\n", dz, FABS(min_dz));
+                                        fprintf(stderr,"z1 = %g, z2 = %g\n", z1, z2);
+                                        print=1;
+                                    }
+
+                                    if(print) {
+                                        fprintf(stderr,"first: xbounds = (%g, %g); ybounds = (%g, %g) zbounds = (%g, %g)\n",
+                                                first->xbounds[0], first->xbounds[1],
+                                                first->ybounds[0], first->ybounds[1],
+                                                first->zbounds[0], first->zbounds[1]);
+                                        fprintf(stderr,"second: xbounds = (%g, %g); ybounds = (%g, %g) zbounds = (%g, %g)\n",
+                                                second->xbounds[0], second->xbounds[1],
+                                                second->ybounds[0], second->ybounds[1],
+                                                second->zbounds[0], second->zbounds[1]);
+                                        
+                                        const DOUBLE min_dx1 = find_closest_pos_DOUBLE(first->xbounds, second->xbounds, &closest_pos0);
+                                        fprintf(stderr,"first: closest_pos = %g, second: min_dx = %g\n", closest_pos0, min_dx1);
+                                        print=0;
+                                    }
+
+
+                                    /* const DOUBLE sqr_sep = (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1); */
+                                    /* if(sqr_sep <= sqr_max_chord_sep) { */
+                                    /*     fprintf(stderr,"Found pair within sqr_max_chord_sep\n"); */
+                                    /*     fprintf(stderr,"sqr_sep = %g sqr_max_chord_sep = %g\n", sqr_sep, sqr_max_chord_sep); */
+                                    /* } */
+                                    const DOUBLE costheta = x1*x2 + y1*y2 + z1*z2;
+                                    if(costheta > costhetamax) {
+                                        fprintf(stderr,"Found pair within thetamax\n");
+                                        fprintf(stderr,"costheta = %g costhetamax = %g\n", costheta, costhetamax);
+                                        fprintf(stderr,"theta = %g thetamax = %g\n", ACOS(costheta)*180.0/M_PI, thetamax);
+                                    }
+                                }
+                            }
+#endif
+                            continue;
+                        }
+                    }/* end of if condition for enable_min_sep_opt*/
+                    first->ngb_cells[ngb_index] = &lattice2[icell2];
                     first->num_ngb++;
                 }//loop over possible range of RA values in this dec bin for the original RA bin in first
             }//loop over neighbouring DEC cells

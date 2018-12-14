@@ -236,138 +236,52 @@ int test_DDtheta_mocks(const char *correct_outputfile)
     extra.weights0.weights[0] = weights1;
     extra.weights1.weights[0] = weights2;
     
-#ifdef INTEGRATION_TESTS
-    //wtheta has 3 implementations (brute-force, link-in-dec and link-in-dec + link-in-ra)
-    //For developer testing, multiple bin refine factors are tested as well as the
-    //all three of the linking logic.
-
-    // (dec_link, ra_link) == (0, 0) -> brute-force
-    // (dec_link, ra_link) == (1, 0) -> dec-linking only
-    // (dec_link, ra_link) == (1, 1) -> dec + ra linking
-
-    /* The order of the for loop breaks the convention "RA before DEC"
-       -- This is because the binning in RA can only be done if the binning
-       in DEC is enabled. Therefore, it makes more sense to loop in RA *only*
-       after the DEC binning is decided.
-     */
-    struct timespec t0, t1;
-    const isa old_isa = options.instruction_set;
-    int dotest = 1;
-    // Check the specific implementations for each instruction set
-    for(int iset=0;iset<num_instructions;iset++) {
-        options.instruction_set = valid_instruction_sets[iset];
-        for(int dec_link=0;dec_link<=1;dec_link++) {
-            for(int ra_link=0;ra_link <= dec_link; ra_link++) {
-                int fastest_bin_ref[] = {1, 1, 1};
-                int fastest_isa = 0;
-                double fastest_time = 1e30;
-                for(int ra_bin_ref=min_bin_ref;ra_bin_ref<=max_bin_ref;ra_bin_ref++) {
-                    for(int dec_bin_ref=min_bin_ref;dec_bin_ref<=max_bin_ref;dec_bin_ref++) {
-
-                        if(dotest == 1) {
-                            if(dec_link == 0 && ra_link == 0) continue;//I have checked the brute force
-                            
-                            //bin refine factor has no impact on brute-force -> only check brute-force once
-                            if(dec_link == 0 && ra_link == 0 && (dec_bin_ref != min_bin_ref || ra_bin_ref != min_bin_ref)) continue;
-                            
-                            const int bf[] = {ra_bin_ref, dec_bin_ref, -1};
-                            set_custom_bin_refine_factors(&options, bf);
-                            
-                            options.link_in_dec=dec_link;
-                            options.link_in_ra=ra_link;
-
-                            fprintf(stderr,"Running with dec-linking = %d ra-linking = %d bin-ref = (%d, %d) and instruction set = %s ",
-                                    dec_link, ra_link,
-                                    options.bin_refine_factors[0],
-                                    options.bin_refine_factors[1],
-                                    isa_name[iset]);
-                            
-                            current_utc_time(&t0);
-#else
-   {
-       options.link_in_dec = 1;
-       options.link_in_ra = 1;
-#endif
-
-
-                            int status = countpairs_theta_mocks(ND1,RA1,DEC1,
-                                                                ND2,RA2,DEC2,
-                                                                nthreads,
-                                                                autocorr,
-                                                                angular_binfile,
-                                                                &results,
-                                                                &options,
-                                                                &extra);
-                            
-                            if(status != EXIT_SUCCESS) {
-                                return status;
-                            }
-                            
-                            /*---Output-Pairs-------------------------------------*/
-                            FILE *fp=my_fopen(correct_outputfile,"r");
-                            if(fp == NULL) {
-                                free_results_countpairs_theta(&results);
-                                return EXIT_FAILURE;
-                            }
-                            for(int i=1;i<results.nbin;i++) {
-                                uint64_t npairs;
-                                double theta_avg, weightavg;
-                                ret = EXIT_FAILURE;
-                                int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &theta_avg, &weightavg);
-                                if(nitems != 3) {
-                                    ret = EXIT_FAILURE;//not required but showing intent
-                                    break;
-                                }
-                                int floats_equal = AlmostEqualRelativeAndAbs_double(theta_avg, results.theta_avg[i], maxdiff, maxreldiff);
-                                int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
-                                
-                                //Check for exact equality of npairs and float "equality" for theta_avg
-                                if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
-                                    ret = EXIT_SUCCESS;
-                                } else {
-                                    ret = EXIT_FAILURE;//not required but showing intent
-                                    fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
-                                    fprintf(stderr,"Failed. True thetaavg = %e Computed thetaavg = %e. floats_equal = %d\n", theta_avg, results.theta_avg[i], floats_equal);
-                                    fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. floats_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
-                                    break;
-                                }
-                            }
-                            fclose(fp);
-
-#ifdef INTEGRATION_TESTS
-                            current_utc_time(&t1);                      
-                            double time_to_run = REALTIME_ELAPSED_NS(t0, t1); 
-                            if(time_to_run < fastest_time) {
-                                fastest_time = time_to_run;
-                                fastest_isa = iset;
-                                memcpy(&fastest_bin_ref, &bf, sizeof(bf));
-                            }
-                            if(ret != EXIT_SUCCESS) {                   
-                                fprintf(stderr, ANSI_COLOR_RED "FAILED"); 
-                                dotest = 0;                             
-                            } else {                                    
-                                fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); 
-                            }
-                            fprintf(stderr, ANSI_COLOR_RESET ". Time taken = %8.2lf seconds \n", time_to_run * 1e-9);
-                        } //dotest if condition
-                    }//loop over declination bin refine factors
-                }//loop over ra bin refine factors
-                if(ret == EXIT_SUCCESS) {                                        
-                    fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d} and instruction_set = %s" ANSI_COLOR_RESET "\n",
-                            fastest_time*1e-9,                                          
-                            fastest_bin_ref[0],                                         
-                            fastest_bin_ref[1],                                         
-                            isa_name[fastest_isa]);
-                }
-            }//loop over ra link
-        }//loop over dec link
-    }//iset loop (instruction sets)
-    options.instruction_set = old_isa;
-    reset_bin_refine_factors(&options);
-#else
-    }
-#endif
-    
+    BEGIN_DDTHETA_INTEGRATION_TEST_SECTION;
+        int status = countpairs_theta_mocks(ND1,RA1,DEC1,
+                                            ND2,RA2,DEC2,
+                                            nthreads,
+                                            autocorr,
+                                            angular_binfile,
+                                            &results,
+                                            &options,
+                                            &extra);
+        
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+        
+        /*---Output-Pairs-------------------------------------*/
+        FILE *fp=my_fopen(correct_outputfile,"r");
+        if(fp == NULL) {
+            free_results_countpairs_theta(&results);
+            return EXIT_FAILURE;
+        }
+        for(int i=1;i<results.nbin;i++) {
+            uint64_t npairs;
+            double theta_avg, weightavg;
+            ret = EXIT_FAILURE;
+            int nitems = fscanf(fp,"%"SCNu64" %lf %*f %*f %lf%*[^\n]", &npairs, &theta_avg, &weightavg);
+            if(nitems != 3) {
+                ret = EXIT_FAILURE;//not required but showing intent
+                break;
+            }
+            int floats_equal = AlmostEqualRelativeAndAbs_double(theta_avg, results.theta_avg[i], maxdiff, maxreldiff);
+            int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
+            
+            //Check for exact equality of npairs and float "equality" for theta_avg
+            if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
+                ret = EXIT_SUCCESS;
+            } else {
+                ret = EXIT_FAILURE;//not required but showing intent
+                fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
+                fprintf(stderr,"Failed. True thetaavg = %e Computed thetaavg = %e. floats_equal = %d\n", theta_avg, results.theta_avg[i], floats_equal);
+                fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. floats_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
+                break;
+            }
+        }
+        fclose(fp);
+    END_DDTHETA_INTEGRATION_TEST_SECTION;
+        
     if(ret != EXIT_SUCCESS) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         double theta_low = results.theta_upp[0];

@@ -42,6 +42,14 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
         return EXIT_FAILURE;
     }
 
+    /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
+    /*    C = 2.0 * SIN(thetamax/2)
+       -> C^2 = 4.0 * SIN^2 (thetamax/2.0)
+       -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
+       -> C^2 = 2.0 * (1 - COS(thetamax))
+     */
+    const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - costhetamax);
+    
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
     uint64_t npairs[nthetabin];
@@ -57,8 +65,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
     }
 
     // A copy whose pointers we can advance
-    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
-                         local_w1 = {.weights={NULL}, .num_weights=0};
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
     pair_struct_DOUBLE pair = {.num_weights=0};
     weight_func_t_DOUBLE weight_func = NULL;
     if(need_weightavg){
@@ -71,65 +78,136 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
         weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
+    const DOUBLE *zstart = z1, *zend = z1 + N1;
+    const DOUBLE max_all_dz = SQRT(sqr_max_chord_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
-      const DOUBLE xpos = *x0++;
-      const DOUBLE ypos = *y0++;
-      const DOUBLE zpos = *z0++;
-      for(int w = 0; w < pair.num_weights; w++){
-          pair.weights0[w].d = *local_w0.weights[w]++;
-      }
+        const DOUBLE xpos = *x0++;
+        const DOUBLE ypos = *y0++;
+        const DOUBLE zpos = *z0++;
+        for(int w = 0; w < pair.num_weights; w++){
+            pair.weights0[w].d = *local_w0.weights[w]++;
+        }
+        
+        DOUBLE max_dz = max_all_dz;
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_all_dz) {
+            continue;
+        }
 
-      int64_t j = (same_cell == 1) ? (i+1):0;
-      DOUBLE *localz1 = z1 + j;
-      DOUBLE *localx1 = x1 + j;
-      DOUBLE *localy1 = y1 + j;
-      for(int w = 0; w < pair.num_weights; w++){
-          local_w1.weights[w] = weights1->weights[w] + j;
-      }
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_this_point >= sqr_max_chord_sep) {
+                    continue;
+                }
+                max_dz = SQRT(sqr_max_chord_sep - min_dx*min_dx - min_dy*min_dy);
+            }
 
-      for(;j<N1;j++) {
-          const DOUBLE x2 = *localx1++;
-          const DOUBLE y2 = *localy1++;
-          const DOUBLE z2 = *localz1++;
-          
-          const DOUBLE dx1_dx2 = xpos * x2;
-          const DOUBLE dy1_dy2 = ypos * y2;
-          const DOUBLE dz1_dz2 = zpos * z2;
-          
-          for(int w = 0; w < pair.num_weights; w++){
-              pair.weights1[w].d = *local_w1.weights[w]++;
-          }
+            const DOUBLE target_z = zpos - max_all_dz;
+            while(z1 != zend && *z1 <= target_z) {
+                z1++;
+            }
+        }/* end of same_cell if condition*/
 
-          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
-          if(costheta > costhetamin || costheta <= costhetamax) {
-              continue;
-          }
-          DOUBLE theta, pairweight;
-          if(need_rpavg) {
-              if(order) {
-                  theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
-              } else {
-                  theta =  INV_PI_OVER_180*ACOS(costheta);                
-              }
-          }
-          if(need_weightavg){
-              // These are only used for passing to weights
-              // Too expensive?
-          
-              // perpx
-              pair.dx.d = xpos - x2;
-              pair.dy.d = ypos - y2;
-              pair.dz.d = zpos - z2;
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if(z1 == zend) {
+            i = N0;
+            break;
+        }
+        
+        const int64_t n_off = z1 - zstart;
+        const int64_t Nleft = N1 - n_off;
+      
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + n_off;
+        DOUBLE *localy1 = y1 + n_off;
+        for(int w = 0; w < pair.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + n_off;
+        }
+        
+        for(int64_t j=0;j<Nleft;j++) {
+            const DOUBLE x2 = *localx1++;
+            const DOUBLE y2 = *localy1++;
+            const DOUBLE z2 = *localz1++;
+            
+            const DOUBLE dx = x2 - xpos;
+            const DOUBLE dy = y2 - ypos;
+            const DOUBLE dz = z2 - zpos;
+            
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
+            }
+
+            /* particles are sorted on z, all future j particles will have larger value in localz1 -> perpz will be
+               larger. therefore, if current perpz >= max_dz, all future iterations will also be larger. we can
+               terminate the loop */
+            if(dz < -max_dz) continue;
+            if(dz >= max_dz) break;
+            
+            const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
+            if(sqr_chord_sep >= sqr_max_chord_sep) {
+                continue;
+            }
+
+            DOUBLE theta=ZERO, pairweight=ZERO;
+            DOUBLE costheta = (1.0 - 0.5*sqr_chord_sep);
+            /* DOUBLE costheta = x2*xpos + y2*ypos + z2*zpos; */
+            if (costheta < -1.0) costheta = -1.0;
+            if (costheta > 1.0) costheta = 1.0;
+            
+            if(costheta > costhetamin || costheta <= costhetamax) continue;
+
+            if(need_rpavg) {
+                if(order) {
+                    theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
+                } else {
+                    theta =  INV_PI_OVER_180*ACOS(costheta);                
+                }
+            }
+            if(need_weightavg){
+                // These are only used for passing to weights
+                // Too expensive?
+                
+                // perpx
+                pair.dx.d = xpos - x2;
+                pair.dy.d = ypos - y2;
+                pair.dz.d = zpos - z2;
               
-              // parx
-              pair.parx.d = xpos + x2;
-              pair.pary.d = ypos + y2;
-              pair.parz.d = zpos + z2;
-                                
-              pairweight = weight_func(&pair);
-          }
-          
-          for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+                // parx
+                pair.parx.d = x2 + xpos;//dz := z2 - zpos -> z2 = dz + zpos -> zpos + z2 == (dz + zpos) + zpos
+                pair.pary.d = y2 + ypos;
+                pair.parz.d = z2 + zpos;
+                
+                pairweight = weight_func(&pair);
+            }
+            
+            for(int ibin=nthetabin-1;ibin>=1;ibin--) {
               if(costheta <= costheta_upp[ibin-1]) {
                   npairs[ibin]++;
                   if(need_rpavg) {
@@ -140,10 +218,10 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                   }
                   break;
               }
-          }//ibin loop
-      }//end of j-loop
+            }//ibin loop
+        }//end of j-loop
     }//i loop
-
+    
     for(int i=0;i<nthetabin;i++) {
         src_npairs[i] += npairs[i];
         if(need_rpavg) {
@@ -198,6 +276,15 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
     
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
+
+    /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
+    /*    C = 2.0 * SIN(thetamax/2)
+       -> C^2 = 4.0 * SIN^2 (thetamax/2.0)
+       -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
+       -> C^2 = 2.0 * (1 - COS(thetamax))
+     */
+    const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - costhetamax);
+
     uint64_t npairs[nthetabin];
     DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
     SSE_FLOATS m_costheta_upp[nthetabin] ;
@@ -236,159 +323,229 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
       fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
+    const DOUBLE *zstart = z1, *zend = z1 + N1;
+    const DOUBLE max_all_dz = SQRT(sqr_max_chord_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
-      const DOUBLE xpos = *x0++;
-      const DOUBLE ypos = *y0++;
-      const DOUBLE zpos = *z0++;
-      for(int w = 0; w < pair.num_weights; w++){
+        const DOUBLE xpos = *x0++;
+        const DOUBLE ypos = *y0++;
+        const DOUBLE zpos = *z0++;
+        for(int w = 0; w < pair.num_weights; w++){
             // local_w0.weights[w] is a pointer to a float in the particle list of weights,
             // just as x0 is a pointer into the list of x-positions.
             // The advancement of the local_w0.weights[w] pointer should always mirror x0.
             pair.weights0[w].s = SSE_SET_FLOAT(*local_w0.weights[w]++);
-      }
+        }
       
-      const SSE_FLOATS m_x1 = SSE_SET_FLOAT(xpos);
-      const SSE_FLOATS m_y1 = SSE_SET_FLOAT(ypos);
-      const SSE_FLOATS m_z1 = SSE_SET_FLOAT(zpos);
-      
-      int64_t j = (same_cell == 1) ? (i+1):0;
-      DOUBLE *localz1 = z1 + j;
-      DOUBLE *localx1 = x1 + j;
-      DOUBLE *localy1 = y1 + j;
-      for(int w = 0; w < local_w1.num_weights; w++){
+        DOUBLE max_dz = max_all_dz;
+        
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_all_dz) {
+            continue;
+        }
+
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_this_point >= sqr_max_chord_sep) {
+                    continue;
+                }
+                max_dz = SQRT(sqr_max_chord_sep - min_dx*min_dx - min_dy*min_dy);
+            }
+
+            const DOUBLE target_z = zpos - max_all_dz;
+            while(z1 != zend && *z1 <= target_z) {
+                z1++;
+            }
+        }/* end of same_cell if condition*/
+
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
+           
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if(z1 == zend) {
+            i = N0;
+            break;
+        }
+        
+        int64_t j = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
+        for(int w = 0; w < pair.num_weights; w++){
             local_w1.weights[w] = weights1->weights[w] + j;
         }
 
-      for(;j<=(N1-SSE_NVEC);j+=SSE_NVEC){
-          union int4 union_rpbin;
-          union float4 union_mDperp;
-          union float4_weights union_mweight;
-
-          const SSE_FLOATS m_costhetamax=SSE_SET_FLOAT(costhetamax);
-          const SSE_FLOATS m_costhetamin=SSE_SET_FLOAT(costhetamin);
+        const SSE_FLOATS m_x1 = SSE_SET_FLOAT(xpos);
+        const SSE_FLOATS m_y1 = SSE_SET_FLOAT(ypos);
+        const SSE_FLOATS m_z1 = SSE_SET_FLOAT(zpos);
+        for(;j<=(N1-SSE_NVEC);j+=SSE_NVEC){
+            union int4 union_rpbin;
+            union float4 union_mDperp;
+            union float4_weights union_mweight;
+            
+            const SSE_FLOATS m_costhetamax=SSE_SET_FLOAT(costhetamax);
+            const SSE_FLOATS m_costhetamin=SSE_SET_FLOAT(costhetamin);
+            const SSE_FLOATS m_max_dz = SSE_SET_FLOAT(max_dz);
+            
+            const SSE_FLOATS m_x2 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
+            const SSE_FLOATS m_y2 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
+            const SSE_FLOATS m_z2 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
+            
+            localx1 += SSE_NVEC;localy1 += SSE_NVEC;localz1 += SSE_NVEC;
           
-          const SSE_FLOATS m_x2 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
-          const SSE_FLOATS m_y2 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
-          const SSE_FLOATS m_z2 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
-          
-          localx1 += SSE_NVEC;localy1 += SSE_NVEC;localz1 += SSE_NVEC;
-          
-          for(int w = 0; w < pair.num_weights; w++){
+            for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
                 local_w1.weights[w] += SSE_NVEC;
-          }
-          
-          const SSE_FLOATS m_tmp1 = SSE_MULTIPLY_FLOATS(m_x2,m_x1);
-          const SSE_FLOATS m_tmp2 = SSE_MULTIPLY_FLOATS(m_y2,m_y1);
-          const SSE_FLOATS m_tmp3 = SSE_MULTIPLY_FLOATS(m_z2,m_z1);
-          const SSE_FLOATS m_costheta = SSE_ADD_FLOATS(m_tmp1,SSE_ADD_FLOATS(m_tmp2,m_tmp3));
-          SSE_FLOATS m_mask_left = SSE_BITWISE_AND(SSE_COMPARE_FLOATS_GT(m_costheta,m_costhetamax),
-                                                   SSE_COMPARE_FLOATS_LE(m_costheta,m_costhetamin));
-          if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
-              continue;
-          }
-          
-          SSE_FLOATS m_thetabin;
-          if(need_rpavg || need_weightavg){
-              m_thetabin = SSE_SETZERO_FLOAT();
-          }
-          if(need_rpavg) {
-              //first do the acos to get the actual angles
-              const SSE_FLOATS m_inv_pi_over_180 = SSE_SET_FLOAT(INV_PI_OVER_180);
-              const SSE_FLOATS m_theta = SSE_ARC_COSINE(m_costheta, order);
-              union_mDperp.m_Dperp = SSE_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
-          }
-          if(need_weightavg){
-              // These are only used for passing to weights
-              // Too expensive?
+            }
 
-              // perpx
-              pair.dx.s = SSE_SUBTRACT_FLOATS(m_x1,m_x2);
-              pair.dy.s = SSE_SUBTRACT_FLOATS(m_y1,m_y2);
-              pair.dz.s = SSE_SUBTRACT_FLOATS(m_z1,m_z2);
-              
-              // parx
-              pair.parx.s = SSE_ADD_FLOATS(m_x2,m_x1);
-              pair.pary.s = SSE_ADD_FLOATS(m_y2,m_y1);
-              pair.parz.s = SSE_ADD_FLOATS(m_z2,m_z1);
+            const SSE_FLOATS m_dx = SSE_SUBTRACT_FLOATS(m_x2, m_x1);
+            const SSE_FLOATS m_dy = SSE_SUBTRACT_FLOATS(m_y2, m_y1);
+            const SSE_FLOATS m_dz = SSE_SUBTRACT_FLOATS(m_z2, m_z1);
+            
+            const SSE_FLOATS m_neg_pimax_mask = SSE_COMPARE_FLOATS_GT(m_dz,-m_max_dz);
+            if(SSE_TEST_COMPARISON(m_neg_pimax_mask)==0) continue;
 
-              union_mweight.m_weights = sse_weight_func(&pair);
-          }
-          
-          for(int kbin=nthetabin-1;kbin>=1;kbin--) {
-              const SSE_FLOATS m1 = SSE_COMPARE_FLOATS_LE(m_costheta,m_costheta_upp[kbin-1]);
-              const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m1,m_mask_left);
-              const int test = SSE_TEST_COMPARISON(m_bin_mask);
-              if(need_rpavg || need_weightavg) {
-                  m_thetabin = SSE_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
-              }
-              
-              npairs[kbin] += SSE_BIT_COUNT_INT(test);
-              m_mask_left = SSE_COMPARE_FLOATS_GT(m_costheta,m_costheta_upp[kbin-1]);
-              if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
-                  break;
-              }
-          }
-          
-          if(need_rpavg || need_weightavg) {
-              union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_thetabin);
+            const SSE_FLOATS m_mask_dz = SSE_COMPARE_FLOATS_GE(m_dz, m_max_dz);
+            if(SSE_TEST_COMPARISON(m_mask_dz) > 0 ) {
+                /* this means the next chunk of particles can not be within 's' */
+                j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
+            }
+
+            const SSE_FLOATS m_sqr_dx = SSE_SQUARE_FLOAT(m_dx);
+            const SSE_FLOATS m_sqr_dy = SSE_SQUARE_FLOAT(m_dy);
+            const SSE_FLOATS m_sqr_dz = SSE_SQUARE_FLOAT(m_dz);
+            const SSE_FLOATS m_sqr_sep = SSE_ADD_FLOATS(m_sqr_dx, SSE_ADD_FLOATS(m_sqr_dy, m_sqr_dz));
+            const SSE_FLOATS m_costheta = SSE_SUBTRACT_FLOATS(SSE_SET_FLOAT(1.0),
+                                                              SSE_MULTIPLY_FLOATS(SSE_SET_FLOAT(0.5), m_sqr_sep));
+            SSE_FLOATS m_mask_left = SSE_BITWISE_AND(SSE_COMPARE_FLOATS_GT(m_costheta,m_costhetamax),
+                                                     SSE_COMPARE_FLOATS_LE(m_costheta,m_costhetamin));
+            if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
+                continue;
+            }
+            
+            SSE_FLOATS m_thetabin;
+            if(need_rpavg || need_weightavg){
+                m_thetabin = SSE_SETZERO_FLOAT();
+            }
+            if(need_rpavg) {
+                //first do the acos to get the actual angles
+                const SSE_FLOATS m_inv_pi_over_180 = SSE_SET_FLOAT(INV_PI_OVER_180);
+                const SSE_FLOATS m_theta = SSE_ARC_COSINE(m_costheta, order);
+                union_mDperp.m_Dperp = SSE_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
+            }
+            if(need_weightavg){
+                // These are only used for passing to weights
+                // Too expensive?
+                
+                // perpx
+                pair.dx.s = m_dx;
+                pair.dy.s = m_dy;
+                pair.dz.s = m_dz;
+                
+                // parx
+                pair.parx.s = SSE_ADD_FLOATS(m_x2,m_x1);
+                pair.pary.s = SSE_ADD_FLOATS(m_y2,m_y1);
+                pair.parz.s = SSE_ADD_FLOATS(m_z2,m_z1);
+
+                union_mweight.m_weights = sse_weight_func(&pair);
+            }
+            
+            for(int kbin=nthetabin-1;kbin>=1;kbin--) {
+                const SSE_FLOATS m1 = SSE_COMPARE_FLOATS_LE(m_costheta,m_costheta_upp[kbin-1]);
+                const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m1,m_mask_left);
+                const int test = SSE_TEST_COMPARISON(m_bin_mask);
+                if(need_rpavg || need_weightavg) {
+                    m_thetabin = SSE_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
+                }
+                
+                npairs[kbin] += SSE_BIT_COUNT_INT(test);
+                m_mask_left = SSE_COMPARE_FLOATS_GT(m_costheta,m_costheta_upp[kbin-1]);
+                if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
+                    break;
+                }
+            }
+            
+            if(need_rpavg || need_weightavg) {
+                union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_thetabin);
 #if  __INTEL_COMPILER
 #pragma unroll(SSE_NVEC)
 #endif
-              for(int jj=0;jj<SSE_NVEC;jj++) {
-                  const int kbin = union_rpbin.ibin[jj];
-                  if(need_rpavg){
-                      const DOUBLE theta = union_mDperp.Dperp[jj];
-                      thetaavg[kbin] += theta;
-                  }
-                  if(need_weightavg){
-                      const DOUBLE weight = union_mweight.weights[jj];
-                      weightavg[kbin] += weight;
-                  }
-              }
-          }
-      }//SSE_NVEC loop
+                for(int jj=0;jj<SSE_NVEC;jj++) {
+                    const int kbin = union_rpbin.ibin[jj];
+                    if(need_rpavg){
+                        const DOUBLE theta = union_mDperp.Dperp[jj];
+                        thetaavg[kbin] += theta;
+                    }
+                    if(need_weightavg){
+                        const DOUBLE weight = union_mweight.weights[jj];
+                        weightavg[kbin] += weight;
+                    }
+                }
+            }
+        }//SSE_NVEC loop
         
       //Take care of the remainder
-      for(;j<N1;j++) {
-          const DOUBLE x2 = *localx1++;
-          const DOUBLE y2 = *localy1++;
-          const DOUBLE z2 = *localz1++;
-          for(int w = 0; w < pair.num_weights; w++){
-              pair.weights1[w].d = *local_w1.weights[w]++;
-          }
-          
-          const DOUBLE dx1_dx2 = xpos * x2;
-          const DOUBLE dy1_dy2 = ypos * y2;
-          const DOUBLE dz1_dz2 = zpos * z2;
-          
-          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
-          if(costheta > costhetamin || costheta <= costhetamax) {
-              continue;
-          }
-          DOUBLE theta, pairweight;
-          if(need_rpavg) {
-              if(order) {
-                theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
-              } else {
-                theta =  INV_PI_OVER_180*ACOS(costheta) ;
-              }
-          }
-          if(need_weightavg){
-              pair.dx.d = xpos - x2;
-              pair.dy.d = ypos - y2;
-              pair.dz.d = zpos - z2;
+        for(;j<N1;j++) {
+            const DOUBLE dx = *localx1++ - xpos;
+            const DOUBLE dy = *localy1++ - ypos;
+            const DOUBLE dz = *localz1++ - zpos;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].d = *local_w1.weights[w]++;
+            }
+
+            if(dz < -max_dz) continue;
+            if(dz >= max_dz) break;
+            
+            const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
+            const DOUBLE costheta = (1.0 - 0.5*sqr_chord_sep);
+            if(costheta > costhetamin || costheta <= costhetamax) {
+                continue;
+            }
+            DOUBLE theta, pairweight;
+            if(need_rpavg) {
+                if(order) {
+                    theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
+                } else {
+                    theta =  INV_PI_OVER_180*ACOS(costheta) ;
+                }
+            }
+            if(need_weightavg){
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
                 
-              pair.parx.d = xpos + x2;
-              pair.pary.d = ypos + y2;
-              pair.parz.d = zpos + z2;
-
-              pairweight = fallback_weight_func(&pair);
-          }
-
-          
-          for(int ibin=nthetabin-1;ibin>=1;ibin--) {
-              if(costheta <= costheta_upp[ibin-1]) {
+                pair.parx.d = xpos + (xpos + dx);
+                pair.pary.d = ypos + (ypos + dy);
+                pair.parz.d = zpos + (zpos + dz);
+                
+                pairweight = fallback_weight_func(&pair);
+            }
+            
+            
+            for(int ibin=nthetabin-1;ibin>=1;ibin--) {
+                if(costheta <= costheta_upp[ibin-1]) {
                   npairs[ibin]++;
                   if(need_rpavg) {
                       thetaavg[ibin] += theta;
@@ -397,9 +554,9 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
                       weightavg[ibin] += pairweight;
                   }
                   break;
-              }
-          }
-      }//end of remainder loop
+                }
+            }
+        }//end of remainder loop
     }//i loop
     
     for(int i=0;i<nthetabin;i++) {
@@ -411,6 +568,7 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
             src_weightavg[i] += weightavg[i];
         }
     }
+    
     return EXIT_SUCCESS;
 }
 #endif //SSE4.2
@@ -455,6 +613,15 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
     
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
+
+    /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
+    /*    C = 2.0 * SIN(thetamax/2)
+       -> C^2 = 4.0 * SIN^2 (thetamax/2.0)
+       -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
+       -> C^2 = 2.0 * (1 - COS(thetamax))
+     */
+    const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - costhetamax);
+    
     uint64_t npairs[nthetabin];
     DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
     AVX_FLOATS m_kbin[nthetabin];
@@ -472,8 +639,7 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
     }
     
     // A copy whose pointers we can advance
-    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
-                         local_w1 = {.weights={NULL}, .num_weights=0};
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
     pair_struct_DOUBLE pair = {.num_weights=0};
     avx_weight_func_t_DOUBLE avx_weight_func = NULL;
     weight_func_t_DOUBLE fallback_weight_func = NULL;
@@ -488,85 +654,154 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
         fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
+
+    const DOUBLE *zstart = z1, *zend = z1 + N1;
+    const DOUBLE max_all_dz = SQRT(sqr_max_chord_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
-      const DOUBLE xpos = *x0++;
-      const DOUBLE ypos = *y0++;
-      const DOUBLE zpos = *z0++;
-      for(int w = 0; w < pair.num_weights; w++){
+        const DOUBLE xpos = *x0++;
+        const DOUBLE ypos = *y0++;
+        const DOUBLE zpos = *z0++;
+        for(int w = 0; w < pair.num_weights; w++){
             // local_w0.weights[w] is a pointer to a float in the particle list of weights,
             // just as x0 is a pointer into the list of x-positions.
             // The advancement of the local_w0.weights[w] pointer should always mirror x0.
             pair.weights0[w].a = AVX_SET_FLOAT(*(local_w0.weights[w])++);
-      }
-      
-      const AVX_FLOATS m_x1 = AVX_SET_FLOAT(xpos);
-      const AVX_FLOATS m_y1 = AVX_SET_FLOAT(ypos);
-      const AVX_FLOATS m_z1 = AVX_SET_FLOAT(zpos);
+        }
+        
+        DOUBLE max_dz = max_all_dz;
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_all_dz) {
+            continue;
+        }
 
-      int64_t j = (same_cell == 1) ? (i + 1):0;
-      DOUBLE *localz1 = z1 + j;
-      DOUBLE *localx1 = x1 + j;
-      DOUBLE *localy1 = y1 + j;
-      for(int w = 0; w < local_w1.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + j;
-      }
-     
-      for(;j<=(N1-AVX_NVEC);j+=AVX_NVEC){
-          union int8 union_rpbin;
-          union float8 union_mDperp;
-          union float8_weights union_mweight;
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_this_point >= sqr_max_chord_sep) {
+                    continue;
+                }
+                max_dz = SQRT(sqr_max_chord_sep - min_dx*min_dx - min_dy*min_dy);
+            }
 
-          const AVX_FLOATS m_costhetamax=AVX_SET_FLOAT(costhetamax);
-          const AVX_FLOATS m_costhetamin = AVX_SET_FLOAT(costhetamin);
-              
-          const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
-          const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
-          const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
+            const DOUBLE target_z = zpos - max_all_dz;
+            while(z1 != zend && *z1 <= target_z) {
+                z1++;
+            }
+        }/* end of same_cell if condition*/
 
-          localx1 += AVX_NVEC;
-          localy1 += AVX_NVEC;
-          localz1 += AVX_NVEC;
-          
-          for(int w = 0; w < pair.num_weights; w++){
-              pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
-              local_w1.weights[w] += AVX_NVEC;
-          }
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
            
-          const AVX_FLOATS m_tmp1 = AVX_MULTIPLY_FLOATS(m_x2,m_x1);
-          const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_y2,m_y1);
-          const AVX_FLOATS m_tmp3 = AVX_MULTIPLY_FLOATS(m_z2,m_z1);
-          const AVX_FLOATS m_costheta = AVX_ADD_FLOATS(m_tmp1,AVX_ADD_FLOATS(m_tmp2,m_tmp3));
-          
-          AVX_FLOATS m_mask_left = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_costheta,m_costhetamax,_CMP_GT_OS),
-                                                   AVX_COMPARE_FLOATS(m_costheta,m_costhetamin,_CMP_LE_OS));
-          if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
-              continue;
-          }
-          
-          AVX_FLOATS m_thetabin;
-          if(need_rpavg || need_weightavg) {
-              m_thetabin = AVX_SETZERO_FLOAT();
-          }
-          if(need_rpavg){
-              //first do the acos to get the actual angles
-              const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
-              const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta, order);
-              union_mDperp.m_Dperp = AVX_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
-          }
-          
-          if(need_weightavg){
-              // These are only used for passing to weights
-              // Too expensive?
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if(z1 == zend) {
+            i = N0;
+            break;
+        }
+        
+        int64_t j = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + j;
+        DOUBLE *localy1 = y1 + j;
+        for(int w = 0; w < pair.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + j;
+        }
 
-              // perpx
-              pair.dx.a = AVX_SUBTRACT_FLOATS(m_x1,m_x2);
-              pair.dy.a = AVX_SUBTRACT_FLOATS(m_y1,m_y2);
-              pair.dz.a = AVX_SUBTRACT_FLOATS(m_z1,m_z2);
-              
-              // parx
-              pair.parx.a = AVX_ADD_FLOATS(m_x2,m_x1);
-              pair.pary.a = AVX_ADD_FLOATS(m_y2,m_y1);
-              pair.parz.a = AVX_ADD_FLOATS(m_z2,m_z1);
+        const AVX_FLOATS m_x1 = AVX_SET_FLOAT(xpos);
+        const AVX_FLOATS m_y1 = AVX_SET_FLOAT(ypos);
+        const AVX_FLOATS m_z1 = AVX_SET_FLOAT(zpos);
+        for(;j<=(N1-AVX_NVEC);j+=AVX_NVEC){
+            union int8 union_rpbin;
+            union float8 union_mDperp;
+            union float8_weights union_mweight;
+            
+
+
+
+            const AVX_FLOATS m_costhetamax = AVX_SET_FLOAT(costhetamax);
+            const AVX_FLOATS m_costhetamin = AVX_SET_FLOAT(costhetamin);
+            const AVX_FLOATS m_max_dz = AVX_SET_FLOAT(max_dz);
+            
+            const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
+            const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
+            const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
+            
+            localx1 += AVX_NVEC;localy1 += AVX_NVEC;localz1 += AVX_NVEC;
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
+                local_w1.weights[w] += AVX_NVEC;
+            }
+            
+            const AVX_FLOATS m_dx = AVX_SUBTRACT_FLOATS(m_x2, m_x1);
+            const AVX_FLOATS m_dy = AVX_SUBTRACT_FLOATS(m_y2, m_y1);
+            const AVX_FLOATS m_dz = AVX_SUBTRACT_FLOATS(m_z2, m_z1);
+            
+            const AVX_FLOATS m_neg_pimax_mask = AVX_COMPARE_FLOATS(m_dz,-m_max_dz, _CMP_GT_OQ);
+            if(AVX_TEST_COMPARISON(m_neg_pimax_mask)==0) continue;
+
+            const AVX_FLOATS m_mask_dz = AVX_COMPARE_FLOATS(m_dz, m_max_dz, _CMP_GT_OQ);
+            if(AVX_TEST_COMPARISON(m_mask_dz) > 0 ) {
+                /* this means the next chunk of particles can not be within 's' */
+                j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
+            }
+
+            const AVX_FLOATS m_sqr_dx = AVX_SQUARE_FLOAT(m_dx);
+            const AVX_FLOATS m_sqr_dy = AVX_SQUARE_FLOAT(m_dy);
+            const AVX_FLOATS m_sqr_dz = AVX_SQUARE_FLOAT(m_dz);
+            const AVX_FLOATS m_sqr_sep = AVX_ADD_FLOATS(m_sqr_dx, AVX_ADD_FLOATS(m_sqr_dy, m_sqr_dz));
+            const AVX_FLOATS m_costheta = AVX_SUBTRACT_FLOATS(AVX_SET_FLOAT(1.0),
+                                                              AVX_MULTIPLY_FLOATS(AVX_SET_FLOAT(0.5), m_sqr_sep));
+            AVX_FLOATS m_mask_left = AVX_BITWISE_AND(AVX_COMPARE_FLOATS(m_costheta,m_costhetamax,_CMP_GT_OS),
+                                                     AVX_COMPARE_FLOATS(m_costheta,m_costhetamin,_CMP_LE_OS));
+            if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+                continue;
+            }
+            
+            AVX_FLOATS m_thetabin;
+            if(need_rpavg || need_weightavg) {
+                m_thetabin = AVX_SETZERO_FLOAT();
+            }
+            if(need_rpavg){
+                //first do the acos to get the actual angles
+                const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
+                const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta, order);
+                union_mDperp.m_Dperp = AVX_MULTIPLY_FLOATS(m_theta,m_inv_pi_over_180);
+            }
+            
+            if(need_weightavg){
+                // These are only used for passing to weights
+                // Too expensive?
+                
+                // perpx
+                pair.dx.a = AVX_SUBTRACT_FLOATS(m_x1,m_x2);
+                pair.dy.a = AVX_SUBTRACT_FLOATS(m_y1,m_y2);
+                pair.dz.a = AVX_SUBTRACT_FLOATS(m_z1,m_z2);
+                
+                // parx
+                pair.parx.a = AVX_ADD_FLOATS(m_x2,m_x1);
+                pair.pary.a = AVX_ADD_FLOATS(m_y2,m_y1);
+                pair.parz.a = AVX_ADD_FLOATS(m_z2,m_z1);
 
               union_mweight.m_weights = avx_weight_func(&pair);
           }
@@ -608,18 +843,18 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
 
       //Take care of the remainder
       for(;j<N1;j++) {
-          const DOUBLE x2 = *localx1++;
-          const DOUBLE y2 = *localy1++;
-          const DOUBLE z2 = *localz1++;
+          const DOUBLE dx = *localx1++ - xpos;
+          const DOUBLE dy = *localy1++ - ypos;
+          const DOUBLE dz = *localz1++ - zpos;
           
-          const DOUBLE dx1_dx2 = xpos * x2;
-          const DOUBLE dy1_dy2 = ypos * y2;
-          const DOUBLE dz1_dz2 = zpos * z2;
           for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
           }
+          if(dz < -max_dz) continue;
+          if(dz >= max_dz) break;
           
-          const DOUBLE costheta = dx1_dx2 + dy1_dy2 + dz1_dz2;
+          const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
+          const DOUBLE costheta = (1.0 - 0.5*sqr_chord_sep);
           if(costheta > costhetamin || costheta <= costhetamax) {
               continue;
           }
@@ -632,16 +867,16 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
               }
           }
           if(need_weightavg){
-                pair.dx.d = xpos - x2;
-                pair.dy.d = ypos - y2;
-                pair.dz.d = zpos - z2;
-                
-                pair.parx.d = xpos + x2;
-                pair.pary.d = ypos + y2;
-                pair.parz.d = zpos + z2;
+              pair.dx.d = dx;
+              pair.dy.d = dy;
+              pair.dz.d = dz;
+              
+              pair.parx.d = (xpos + dx) + xpos;
+              pair.pary.d = (ypos + dy) + ypos;
+              pair.parz.d = (zpos + dz) + zpos;
 
-                pairweight = fallback_weight_func(&pair);
-            }
+              pairweight = fallback_weight_func(&pair);
+          }
           
           for(int ibin=nthetabin-1;ibin>=1;ibin--) {
               if(costheta <= costheta_upp[ibin-1]) {
@@ -729,8 +964,7 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
     }
     
     // A copy whose pointers we can advance
-    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, 
-                         local_w1 = {.weights={NULL}, .num_weights=0};
+    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
     pair_struct_DOUBLE pair = {.num_weights=0};
     avx512_weight_func_t_DOUBLE avx512_weight_func = NULL;
     if(need_weightavg){
@@ -742,116 +976,181 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
         avx512_weight_func = get_avx512_weight_func_by_method_DOUBLE(weight_method);
     }
 
+
+    const DOUBLE *zstart = z1, *zend = z1 + N1;
+    const DOUBLE max_all_dz = SQRT(sqr_max_chord_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
-      const DOUBLE xpos = *x0++;
-      const DOUBLE ypos = *y0++;
-      const DOUBLE zpos = *z0++;
-      for(int w = 0; w < pair.num_weights; w++){
+        const DOUBLE xpos = *x0++;
+        const DOUBLE ypos = *y0++;
+        const DOUBLE zpos = *z0++;
+        for(int w = 0; w < pair.num_weights; w++){
             // local_w0.weights[w] is a pointer to a float in the particle list of weights,
             // just as x0 is a pointer into the list of x-positions.
             // The advancement of the local_w0.weights[w] pointer should always mirror x0.
             pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
-      }
+        }
       
-      const AVX512_FLOATS m_xpos = AVX512_SET_FLOAT(xpos);
-      const AVX512_FLOATS m_ypos = AVX512_SET_FLOAT(ypos);
-      const AVX512_FLOATS m_zpos = AVX512_SET_FLOAT(zpos);
+        DOUBLE max_dz = max_all_dz;
+        /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+           j' particles. The min. difference in the d-positions between this i'th particle and ANY
+           of the remaining j'th particles, is the difference between the current j'th particle and
+           the current i'th particle (since all remaining j'th particles will have a larger value for
+           the z-ordinate and therefore a larger difference to zpos). if this `dsep` does not satisfy
+           the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+           particle
+        */
+        const DOUBLE this_dz = *z1 - zpos;
+        if(this_dz >= max_all_dz) {
+            continue;
+        }
 
-      const int64_t n_off = (same_cell == 1) ? (i + 1):0;
-      DOUBLE *localz1 = z1 + n_off;
-      DOUBLE *localx1 = x1 + n_off;
-      DOUBLE *localy1 = y1 + n_off;
-      for(int w = 0; w < local_w1.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + n_off;
-      }
+        if(same_cell == 1) {
+            z1++;
+        } else {
+            if(min_xdiff > 0 || min_ydiff > 0 || min_zdiff > 0) {
+                const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+                const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+                const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+                const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+                if(sqr_min_sep_this_point >= sqr_max_chord_sep) {
+                    continue;
+                }
+                max_dz = SQRT(sqr_max_chord_sep - min_dx*min_dx - min_dy*min_dy);
+            }
 
-      for(int64_t j=n_off;j<N1;j+=AVX512_NVEC) {
-          AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
-          const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
-          const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
-          const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
-          
-          union int16 union_rpbin;
-          union float16 union_mDperp;
-          union float16_weights union_mweight;
+            const DOUBLE target_z = zpos - max_all_dz;
+            while(z1 != zend && *z1 <= target_z) {
+                z1++;
+            }
+        }/* end of same_cell if condition*/
 
-          const AVX512_FLOATS m_costhetamax=AVX512_SET_FLOAT(costhetamax);
-          const AVX512_FLOATS m_costhetamin = AVX512_SET_FLOAT(costhetamin);
-              
-          localx1 += AVX512_NVEC;
-          localy1 += AVX512_NVEC;
-          localz1 += AVX512_NVEC;
-          
-          for(int w = 0; w < pair.num_weights; w++){
-              pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
-              local_w1.weights[w] += AVX512_NVEC;
-          }
+        /* are there any pairs possible with this particle and ANY
+           of the j'th particles?
+           Since both z0 and z1 are sorted in increasing order,
+           the largest value for z1 is stored in last_z1. Therefore,
+           the smallest difference between ANY of the remaining i'th particle
+           and ANY of the j'th particle is:
+           the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
+           and the last j'th particle. Therefore, if this difference is already too large
+           to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
            
-          const AVX512_FLOATS m_x1_x2 = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_xpos,m_x1);
-          const AVX512_FLOATS m_y1_y2_p_x1_x2 = AVX512_MASKZ_FMA_ADD_FLOATS(m_ypos, m_mask_left, m_y1, m_x1_x2);
-          const AVX512_FLOATS m_costheta = AVX512_MASKZ_FMA_ADD_FLOATS(m_zpos, m_mask_left, m_z1, m_y1_y2_p_x1_x2);
-          
-          m_mask_left = AVX512_MASK_BITWISE_AND(AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costhetamax,_CMP_GT_OS),
-                                                AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costhetamin,_CMP_LE_OS));
-          if(m_mask_left == 0) {
-              continue;
-          }
-          
-          if(need_rpavg){
-              //first do the acos to get the actual angles
-              const AVX512_FLOATS m_inv_pi_over_180 = AVX512_SET_FLOAT(INV_PI_OVER_180);
-              const AVX512_FLOATS m_theta = AVX512_ARC_COSINE(m_costheta, order);
-              union_mDperp.m_Dperp = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_theta,m_inv_pi_over_180);
-          }
-          
-          if(need_weightavg){
-              // These are only used for passing to weights
-              // Too expensive?
+           --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
+           cells)
+        */
+        if(z1 == zend) {
+            i = N0;
+            break;
+        }
+        
+        const int64_t n_off = z1 - zstart;
+        DOUBLE *localz1 = z1;
+        DOUBLE *localx1 = x1 + n_off;
+        DOUBLE *localy1 = y1 + n_off;
+        for(int w = 0; w < local_w1.num_weights; w++){
+            local_w1.weights[w] = weights1->weights[w] + n_off;
+        }
 
-              // perpx
-              pair.dx.a512 = AVX512_SUBTRACT_FLOATS(m_xpos,m_x1);
-              pair.dy.a512 = AVX512_SUBTRACT_FLOATS(m_ypos,m_y1);
-              pair.dz.a512 = AVX512_SUBTRACT_FLOATS(m_zpos,m_z1);
-              
-              // parx
-              pair.parx.a512 = AVX512_ADD_FLOATS(m_x1,m_xpos);
-              pair.pary.a512 = AVX512_ADD_FLOATS(m_y1,m_ypos);
-              pair.parz.a512 = AVX512_ADD_FLOATS(m_z1,m_zpos);
+        const AVX512_FLOATS m_xpos = AVX512_SET_FLOAT(xpos);
+        const AVX512_FLOATS m_ypos = AVX512_SET_FLOAT(ypos);
+        const AVX512_FLOATS m_zpos = AVX512_SET_FLOAT(zpos);
 
-              union_mweight.m_weights = avx512_weight_func(&pair);
-          }
+        const AVX512_FLOATS m_max_dz = AVX512_SET_FLOAT(max_dz);
+        for(int64_t j=n_off;j<N1;j+=AVX512_NVEC) {
+            AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
+            const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
+            const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
+            const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
+            
+            union int16 union_rpbin;
+            union float16 union_mDperp;
+            union float16_weights union_mweight;
+            
+            const AVX512_FLOATS m_costhetamax=AVX512_SET_FLOAT(costhetamax);
+            const AVX512_FLOATS m_costhetamin = AVX512_SET_FLOAT(costhetamin);
+            
+            localx1 += AVX512_NVEC;
+            localy1 += AVX512_NVEC;
+            localz1 += AVX512_NVEC;
+            
+            for(int w = 0; w < pair.num_weights; w++){
+                pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
+                local_w1.weights[w] += AVX512_NVEC;
+            }
+            
 
-          AVX512_INTS m_thetabin = AVX512_SETZERO_INT();
-          //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
-          // at the beginning of the loop. 
-          for(int kbin=nthetabin-1;kbin>=1;kbin--) {
-              const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OQ);
-              npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
-              if(need_rpavg || need_weightavg) {
-                  m_thetabin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_thetabin, AVX512_SET_INT(kbin));
-              }
-              m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
-              if(m_mask_left == 0) {
-                  break;
-              }
-          }//backwards loop over the bins
-          
-          if(need_rpavg || need_weightavg) {
-              union_rpbin.m_ibin = m_thetabin;
+            const AVX512_FLOATS m_dx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_x2, m_xpos);
+            const AVX512_FLOATS m_dy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_y2, m_ypos);
+            const AVX512_FLOATS m_dz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_z2, m_zpos);
+
+            const AVX512_MASK m_neg_pimax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_dz, -m_max_dz,_CMP_GT_OQ);
+            if(m_neg_pimax_mask == 0) continue;
+            
+            const AVX512_FLOATS m_sqr_dx = AVX512_MASKZ_SQUARE_FLOAT(m_mask_left, m_dx);
+            const AVX512_FLOATS m_sqr_dx_sqr_dy = AVX512_MASKZ_FMA_ADD_FLOATS(m_dy, m_mask_left, m_dy, m_sqr_dx);
+            const AVX512_FLOATS m_sqr_chord_sep = AVX512_MASKZ_FMA_ADD_FLOATS(m_dz, m_mask_left, m_dz, m_sqr_dx_sqr_dy);
+            const AVX512_FLOATS m_half_sqr_sep = AVX512_MULTIPLY_FLOATS(AVX512_SET_FLOAT((DOUBLE) 0.5, m_sqr_chord_sep));
+            const AVX512_FLOATS m_costheta = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, AVX512_SET_FLOAT((DOUBLE) 1.0), m_half_sqr_sep);
+            m_mask_left = AVX512_MASK_BITWISE_AND(AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costhetamax,_CMP_GT_OS),
+                                                  AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costhetamin,_CMP_LE_OS));
+            if(m_mask_left == 0) {
+                continue;
+            }
+            
+            if(need_rpavg){
+                //first do the acos to get the actual angles
+                const AVX512_FLOATS m_inv_pi_over_180 = AVX512_SET_FLOAT(INV_PI_OVER_180);
+                const AVX512_FLOATS m_theta = AVX512_ARC_COSINE(m_costheta, order);
+                union_mDperp.m_Dperp = AVX512_MASKZ_MULTIPLY_FLOATS(m_mask_left, m_theta,m_inv_pi_over_180);
+            }
+            
+            if(need_weightavg){
+                // These are only used for passing to weights
+                // Too expensive?
+                
+                // perpx
+                pair.dx.a512 = m_dx;
+                pair.dy.a512 = m_dy;
+                pair.dz.a512 = m_dz;
+                
+                // parx
+                pair.parx.a512 = AVX512_ADD_FLOATS(m_x1,m_xpos);
+                pair.pary.a512 = AVX512_ADD_FLOATS(m_y1,m_ypos);
+                pair.parz.a512 = AVX512_ADD_FLOATS(m_z1,m_zpos);
+                
+                union_mweight.m_weights = avx512_weight_func(&pair);
+            }
+            
+            AVX512_INTS m_thetabin = AVX512_SETZERO_INT();
+            //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
+            // at the beginning of the loop. 
+            for(int kbin=nthetabin-1;kbin>=1;kbin--) {
+                const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OQ);
+                npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
+                if(need_rpavg || need_weightavg) {
+                    m_thetabin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_thetabin, AVX512_SET_INT(kbin));
+                }
+                m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
+                if(m_mask_left == 0) {
+                    break;
+                }
+            }//backwards loop over the bins
+            
+            if(need_rpavg || need_weightavg) {
+                union_rpbin.m_ibin = m_thetabin;
 #if  __INTEL_COMPILER
 #pragma unroll(AVX512_NVEC)
 #endif
-              for(int jj=0;jj<AVX512_NVEC;jj++) {
-                  const int kbin = union_rpbin.ibin[jj];
-                  if(need_rpavg) {
-                      thetaavg[kbin] += union_mDperp.Dperp[jj];
-                  }
+                for(int jj=0;jj<AVX512_NVEC;jj++) {
+                    const int kbin = union_rpbin.ibin[jj];
+                    if(need_rpavg) {
+                        thetaavg[kbin] += union_mDperp.Dperp[jj];
+                    }
                   if(need_weightavg) {
                       weightavg[kbin] += union_mweight.weights[jj];
                   }
-              }//loop over all the SIMD lanes
-          }//if rpavg or weightavg are needed
-      }//loop over second set of particles (j loop)
+                }//loop over all the SIMD lanes
+            }//if rpavg or weightavg are needed
+        }//loop over second set of particles (j loop)
     }//loop over first set of particles (i loop)
     
     for(int i=0;i<nthetabin;i++) {
@@ -863,6 +1162,7 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
             src_weightavg[i] += weightavg[i];
         }
     }
+    
     return EXIT_SUCCESS;
 }
 

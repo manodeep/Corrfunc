@@ -53,8 +53,6 @@ extern "C" {
                                                              struct cellarray_mocks_index_particles_DOUBLE *lattice2, const int64_t totncells,
                                                              const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                                              const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                                             const DOUBLE xmin, const DOUBLE ymin, const DOUBLE zmin,
-                                                             const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
                                                              const DOUBLE max_3D_sep,
                                                              const int enable_min_sep_opt,
                                                              const int autocorr);
@@ -77,7 +75,6 @@ extern "C" {
                                                         cellarray_mocks_index_wtheta_DOUBLE *lattice2,
                                                         const int64_t totncells,
                                                         const DOUBLE thetamax,
-                                                        const DOUBLE dec_min, const DOUBLE dec_max,
                                                         const int dec_refine_factor,
                                                         const int enable_min_sep_opt,
                                                         const int autocorr);
@@ -99,13 +96,14 @@ extern "C" {
                                                                                     int **ngrid_ra,
                                                                                     const struct config_options *options)__attribute__((warn_unused_result));
 
+
+    extern DOUBLE find_closest_pos_DOUBLE(const DOUBLE first_xbounds[2], const DOUBLE second_xbounds[2], DOUBLE *closest_pos0);
     extern int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1,
                                                            cellarray_mocks_index_wtheta_DOUBLE *lattice2,
                                                            const int64_t totncells,
                                                            const DOUBLE thetamax,
                                                            const int ra_refine_factor, const int dec_refine_factor,
                                                            const int nmesh_dec, const int max_nmesh_ra,
-                                                           const DOUBLE dec_min, const DOUBLE dec_max,
                                                            const DOUBLE ra_min, const DOUBLE ra_max,
                                                            const int *nmesh_grid_ra,
                                                            const int enable_min_sep_opt,

@@ -331,9 +331,9 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
     //Generate the unique set of neighbouring cells to count over.
     {
         int status = assign_ngb_cells_index_particles_DOUBLE(lattice1, lattice2, totncells,
-                                                             options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                             options->bin_refine_factors[0], options->bin_refine_factors[1],
+                                                             options->bin_refine_factors[2],
                                                              nmesh_x, nmesh_y, nmesh_z,
-                                                             xmin, ymin, zmin,
                                                              xdiff, ydiff, zdiff,
                                                              smax, -1.0, pimax,/*max_3D_sep, max_2D_sep, max_1D_sep*/ 
                                                              options->enable_min_sep_opt,                                                             

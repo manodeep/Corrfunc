@@ -263,9 +263,9 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 
     {
         int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells,
-                                                             options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                             options->bin_refine_factors[0], options->bin_refine_factors[1],
+                                                             options->bin_refine_factors[2],
                                                              nmesh_x, nmesh_y, nmesh_z,
-                                                             xmin, ymin, zmin,
                                                              boxsize, boxsize, boxsize,
                                                              rmax, -1.0, -1.0,/*max_3D_sep, max_2D_sep, max_1D_sep*/ 
                                                              options->enable_min_sep_opt,                                                             
