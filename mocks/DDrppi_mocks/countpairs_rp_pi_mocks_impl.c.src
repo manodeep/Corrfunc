@@ -422,7 +422,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
+    cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                                                              xmin, xmax,
                                                                                              ymin, ymax,
                                                                                              zmin, zmax,
@@ -454,7 +454,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
           }
           
           free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-          lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
+          lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                            xmin, xmax,
                                                            ymin, ymax,
                                                            zmin, zmax,
@@ -479,7 +479,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     cellarray_mocks_index_particles_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_mocks_index_particles_DOUBLE(ND2, X2, Y2, Z2, D2, &(extra->weights1),
+        lattice2 = gridlink_mocks_index_particles_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
                                                          xmin, xmax,
                                                          ymin, ymax,
                                                          zmin, zmax,
@@ -620,7 +620,6 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                 DOUBLE *x1 = first->x;
                 DOUBLE *y1 = first->y;
                 DOUBLE *z1 = first->z;
-                DOUBLE *d1 = first->cz;
                 const weight_struct_DOUBLE *weights1 = &(first->weights);
                 const int64_t N1 = first->nelements;
 
@@ -628,8 +627,8 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                     int same_cell = 1;
                     DOUBLE *this_rpavg = options->need_avg_sep ? &(rpavg[0]):NULL;
                     DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
-                                                                              N1, x1, y1, z1, d1, weights1,
+                    const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                                              N1, x1, y1, z1, weights1,
                                                                               same_cell,
                                                                               options->fast_divide_and_NR_steps,
                                                                               sqr_rpmax, sqr_rpmin, nrpbin,
@@ -653,7 +652,6 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                     DOUBLE *x2 = second->x;
                     DOUBLE *y2 = second->y;
                     DOUBLE *z2 = second->z;
-                    DOUBLE *d2 = second->cz;
                     const weight_struct_DOUBLE *weights2 = &(second->weights);
                     const int64_t N2 = second->nelements;
                     DOUBLE *this_rpavg = options->need_avg_sep ? &(rpavg[0]):NULL;
@@ -669,8 +667,8 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                         closest_icell_ypos = first->ngb_closest_icell_ypos[ngb];
                         closest_icell_zpos = first->ngb_closest_icell_zpos[ngb];
                     }
-                    const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
-                                                                              N2, x2, y2, z2, d2, weights2,
+                    const int status = countpairs_rp_pi_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                                              N2, x2, y2, z2, weights2,
                                                                               same_cell,
                                                                               options->fast_divide_and_NR_steps,
                                                                               sqr_rpmax, sqr_rpmin, nrpbin,

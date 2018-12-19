@@ -429,7 +429,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
+    cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                                                              xmin, xmax, ymin, ymax, zmin, zmax,
                                                                                              smax, smax, smax,
                                                                                              options->bin_refine_factors[0],
@@ -445,17 +445,19 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     const double avg_np = ((double)ND1)/(nmesh_x*nmesh_y*nmesh_z);
     const int8_t max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
     if((max_nmesh <= BOOST_CELL_THRESH || avg_np >= BOOST_NUMPART_THRESH)
-        && max_nmesh < options->max_cells_per_dim) {
-      fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
-      if(get_bin_refine_scheme(options) == BINNING_DFL) {
+       && max_nmesh < options->max_cells_per_dim) {
+        if(options->verbose) {
+            fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
+        }
+        if(get_bin_refine_scheme(options) == BINNING_DFL) {
             fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
             // Only boost the first two dimensions.  Prevents excessive refinement.
             for(int i=0;i<2;i++) {
-              options->bin_refine_factors[i] += BOOST_BIN_REF;
+                options->bin_refine_factors[i] += BOOST_BIN_REF;
             }
-
+            
             free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-            lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, D1, &(extra->weights0),
+            lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                              xmin, xmax, ymin, ymax, zmin, zmax,
                                                              smax, smax, smax,
                                                              options->bin_refine_factors[0],
@@ -467,17 +469,18 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                 return EXIT_FAILURE;
             }
         } else {
-            fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
-                  "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
-                  options->bin_refine_factors[1], options->bin_refine_factors[2]);
-
+            if(options->verbose) {
+                fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
+                        "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
+                        options->bin_refine_factors[1], options->bin_refine_factors[2]);
+            }
         }
     }
 
     cellarray_mocks_index_particles_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_mocks_index_particles_DOUBLE(ND2, X2, Y2, Z2, D2, &(extra->weights1),
+        lattice2 = gridlink_mocks_index_particles_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
                                                          xmin, xmax,
                                                          ymin, ymax,
                                                          zmin, zmax,
@@ -618,7 +621,6 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                 DOUBLE *x1 = first->x;
                 DOUBLE *y1 = first->y;
                 DOUBLE *z1 = first->z;
-                DOUBLE *d1 = first->cz;
                 const weight_struct_DOUBLE *weights1 = &(first->weights);
                 const int64_t N1 = first->nelements;
 
@@ -626,8 +628,8 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                     int same_cell = 1;
                     DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
                     DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
-                                                                             N1, x1, y1, z1, d1, weights1,
+                    const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                                             N1, x1, y1, z1, weights1,
                                                                              same_cell,
                                                                              options->fast_divide_and_NR_steps,
                                                                              smax, smin, nsbin,
@@ -662,13 +664,12 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                     DOUBLE *x2 = second->x;
                     DOUBLE *y2 = second->y;
                     DOUBLE *z2 = second->z;
-                    DOUBLE *d2 = second->cz;
                     const weight_struct_DOUBLE *weights2 = &(second->weights);
                     const int64_t N2 = second->nelements;
                     DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
                     DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, d1, weights1,
-                                                                             N2, x2, y2, z2, d2, weights2,
+                    const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
+                                                                             N2, x2, y2, z2, weights2,
                                                                              same_cell,
                                                                              options->fast_divide_and_NR_steps,
                                                                              smax, smin, nsbin,

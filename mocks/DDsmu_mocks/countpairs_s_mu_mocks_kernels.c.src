@@ -23,9 +23,9 @@
 #if defined(__AVX512F__)
 #include "avx512_calls.h"
 
-static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0,
+static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                                                                  const weight_struct_DOUBLE *weights0,
-                                                                 const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1,
+                                                                 const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, 
                                                                  const weight_struct_DOUBLE *weights1,
                                                                  const int same_cell,
                                                                  const unsigned int fast_divide_and_NR_steps,
@@ -92,7 +92,6 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
-        const DOUBLE dpos = *d0++;
         for(int w = 0; w < pair.num_weights; w++){
             // local_w0.weights[w] is a pointer to a float in the particle list of weights,
             // just as x0 is a pointer into the list of x-positions.
@@ -156,7 +155,6 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
 
         const int64_t n_off = z1 - zstart;
         DOUBLE *localz1 = z1;
-        DOUBLE *locald1 = d1 + n_off;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
         for(int w = 0; w < local_w1.num_weights; w++){
@@ -166,7 +164,6 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
         AVX512_FLOATS m_xpos = AVX512_SET_FLOAT(xpos);
         AVX512_FLOATS m_ypos = AVX512_SET_FLOAT(ypos);
         AVX512_FLOATS m_zpos = AVX512_SET_FLOAT(zpos);
-        AVX512_FLOATS m_dpos = AVX512_SET_FLOAT(dpos);
 
         const AVX512_FLOATS m_max_dz = AVX512_SET_FLOAT(max_dz);
         const AVX512_FLOATS m_sqr_smax = AVX512_SET_FLOAT(sqr_smax);
@@ -177,12 +174,10 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
             const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
             const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
             const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
-            const AVX512_FLOATS m_d1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, locald1);
             
             localx1 += AVX512_NVEC;
             localy1 += AVX512_NVEC;
             localz1 += AVX512_NVEC;
-            locald1 += AVX512_NVEC;
             
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
@@ -224,8 +219,11 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                 j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
             }
             
-            const AVX512_FLOATS m_s_dot_l =  AVX512_FMA_SUBTRACT_FLOATS(m_d1, m_d1, AVX512_SQUARE_FLOAT(m_dpos)); /* := d2^2 - dpos^2 */
+            const AVX512_FLOATS m_term1 = AVX512_MULTIPLY_FLOATS(m_parx, m_perpx);
+            const AVX512_FLOATS m_term2 = AVX512_MULTIPLY_FLOATS(m_pary, m_perpy);
+            const AVX512_FLOATS m_s_dot_l = AVX512_FMA_ADD_FLOATS(m_parz, m_perpz, AVX512_ADD_FLOATS(m_term1, m_term2));
             const AVX512_FLOATS m_sqr_s_dot_l = AVX512_SQUARE_FLOAT(m_s_dot_l);
+
             /*s^2 = dx^2 + dy^2 + dz^2*/
             const AVX512_FLOATS m_sqr_s = AVX512_FMA_ADD_FLOATS(m_perpx, m_perpx,
                                                                 AVX512_FMA_ADD_FLOATS(m_perpy, m_perpy, 
@@ -329,14 +327,17 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
 #if defined(__AVX__)
 #include "avx_calls.h"
 
-static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
-                                                              const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
+static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
+                                                              const weight_struct_DOUBLE *weights0,
+                                                              const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
+                                                              const weight_struct_DOUBLE *weights1,
                                                               const int same_cell,
                                                               const unsigned int fast_divide_and_NR_steps,
                                                               const DOUBLE smax, const DOUBLE smin, const int nsbin,const int nmu_bins,
                                                               const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                               const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
-                                                              const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
+                                                              const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
+                                                              const DOUBLE closest_icell_zpos,
                                                               DOUBLE *src_savg,
                                                               uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -400,7 +401,6 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
-        const DOUBLE dpos = *d0++;
         for(int w = 0; w < pair.num_weights; w++){
             // local_w0.weights[w] is a pointer to a float in the particle list of weights,
             // just as x0 is a pointer into the list of x-positions.
@@ -463,7 +463,6 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 
         int64_t j = z1 - zstart;
         DOUBLE *localz1 = z1;
-        DOUBLE *locald1 = d1 + j;
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
@@ -473,7 +472,6 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
         AVX_FLOATS m_xpos = AVX_SET_FLOAT(xpos);
         AVX_FLOATS m_ypos = AVX_SET_FLOAT(ypos);
         AVX_FLOATS m_zpos = AVX_SET_FLOAT(zpos);
-        AVX_FLOATS m_dpos = AVX_SET_FLOAT(dpos);
 
         const AVX_FLOATS m_max_dz = AVX_SET_FLOAT(max_dz);
         const AVX_FLOATS m_sqr_smax = AVX_SET_FLOAT(sqr_smax);
@@ -492,12 +490,10 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
             const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
             const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
-            const AVX_FLOATS m_d2 = AVX_LOAD_FLOATS_UNALIGNED(locald1);
             
             localx1 += AVX_NVEC;
             localy1 += AVX_NVEC;
             localz1 += AVX_NVEC;
-            locald1 += AVX_NVEC;
             
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
@@ -531,8 +527,12 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
             := d1^2 - d2^2
             */
-            const AVX_FLOATS m_s_dot_l =  AVX_SUBTRACT_FLOATS(AVX_SQUARE_FLOAT(m_d2), AVX_SQUARE_FLOAT(m_dpos));
+            const AVX_FLOATS m_term1 = AVX_MULTIPLY_FLOATS(m_parx, m_perpx);
+            const AVX_FLOATS m_term2 = AVX_MULTIPLY_FLOATS(m_pary, m_perpy);
+            const AVX_FLOATS m_term3 = AVX_MULTIPLY_FLOATS(m_parz, m_perpz);
+            const AVX_FLOATS m_s_dot_l = AVX_ADD_FLOATS(m_term3, AVX_ADD_FLOATS(m_term2, m_term1));
             const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);// numerator := |s.l|^2
+            
             const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
             const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
             const AVX_FLOATS m_sqr_perpz = AVX_SQUARE_FLOAT(m_perpz);
@@ -640,8 +640,6 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
               := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
               := d1^2 - d2^2
             */
-            const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);// s \dot l
-            locald1++;
             
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
@@ -652,10 +650,11 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
-            
-            const DOUBLE norm_l = (parx*parx + pary*pary + parz*parz);// := |l|^2
+
+            const DOUBLE s_dot_l = parx*perpx + pary*perpy + parz*perpz;
+            const DOUBLE sqr_l = parx*parx + pary*pary + parz*parz;// := |l|^2
             const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
-            const DOUBLE sqr_mu = sqr_s_dot_l/(norm_l * sqr_s);
+            const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);
             DOUBLE s, pairweight;
             if(need_savg) {
@@ -706,14 +705,17 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 #if defined(__SSE4_2__)
 #include "sse_calls.h"
 
-static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
-                                                              const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
+static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
+                                                              const weight_struct_DOUBLE *weights0,
+                                                              const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
+                                                              const weight_struct_DOUBLE *weights1,
                                                               const int same_cell,
                                                               const unsigned int fast_divide_and_NR_steps,
                                                               const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                               const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                               const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
-                                                              const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
+                                                              const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
+                                                              const DOUBLE closest_icell_zpos,
                                                               DOUBLE *src_savg, uint64_t *src_npairs,
                                                               DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -777,7 +779,6 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
-        const DOUBLE dpos = *d0++;
         for(int w = 0; w < pair.num_weights; w++){
             // local_w0.weights[w] is a pointer to a float in the particle list of weights,
             // just as x0 is a pointer into the list of x-positions.
@@ -842,7 +843,6 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
         int64_t j = z1 - zstart;
         DOUBLE *localz1 = z1;
-        DOUBLE *locald1 = d1 + j;
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
@@ -852,7 +852,6 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
         const SSE_FLOATS m_xpos = SSE_SET_FLOAT(xpos);
         const SSE_FLOATS m_ypos = SSE_SET_FLOAT(ypos);
         const SSE_FLOATS m_zpos = SSE_SET_FLOAT(zpos);
-        const SSE_FLOATS m_dpos = SSE_SET_FLOAT(dpos);
 
         const SSE_FLOATS m_max_dz = SSE_SET_FLOAT(max_dz);
         const SSE_FLOATS m_sqr_smax = SSE_SET_FLOAT(sqr_smax);
@@ -867,13 +866,11 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             const SSE_FLOATS m_x2 = SSE_LOAD_FLOATS_UNALIGNED(localx1);
             const SSE_FLOATS m_y2 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
             const SSE_FLOATS m_z2 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
-            const SSE_FLOATS m_d2 = SSE_LOAD_FLOATS_UNALIGNED(locald1);
 
             localx1 += SSE_NVEC;
             localy1 += SSE_NVEC;
             localz1 += SSE_NVEC;
-            locald1 += SSE_NVEC;
-
+            
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
                 local_w1.weights[w] += SSE_NVEC;
@@ -902,7 +899,11 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             
             SSE_FLOATS m_sqr_s, m_sqr_mu;
             {
-                const SSE_FLOATS m_s_dot_l =  SSE_SUBTRACT_FLOATS(SSE_SQUARE_FLOAT(m_d2), SSE_SQUARE_FLOAT(m_dpos));
+                const SSE_FLOATS m_term1 = SSE_MULTIPLY_FLOATS(m_parx, m_perpx);
+                const SSE_FLOATS m_term2 = SSE_MULTIPLY_FLOATS(m_pary, m_perpy);
+                const SSE_FLOATS m_term3 = SSE_MULTIPLY_FLOATS(m_parz, m_perpz);
+                const SSE_FLOATS m_s_dot_l = SSE_ADD_FLOATS(m_term3, SSE_ADD_FLOATS(m_term2, m_term1));
+
                 const SSE_FLOATS m_sqr_s_dot_l = SSE_SQUARE_FLOAT(m_s_dot_l);
                 const SSE_FLOATS m_sqr_perpx = SSE_SQUARE_FLOAT(m_perpx);
                 const SSE_FLOATS m_sqr_perpy = SSE_SQUARE_FLOAT(m_perpy);
@@ -1001,23 +1002,20 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE perpy = *localy1++ - ypos;
             const DOUBLE perpz = *localz1++ - zpos;
             
-            if(perpz >= max_dz) break;
-            
-            //parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
-            const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);
-            locald1++;
-
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            if(perpz <= -max_dz) continue;
 
+            if(perpz <= -max_dz) continue;
+            if(perpz >= max_dz) break;
+            
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
 
-            const DOUBLE norm_l = (parx*parx + pary*pary + parz*parz);
+            const DOUBLE s_dot_l = parx*perpx + pary*perpy + parz*perpz;
+            const DOUBLE sqr_l = parx*parx + pary*pary + parz*parz;
             const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
-            const DOUBLE sqr_mu = sqr_s_dot_l/(norm_l * sqr_s);
+            const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);
             DOUBLE s, pairweight;
             if(need_savg) {
@@ -1068,14 +1066,15 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
 
 
-static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, DOUBLE *d0, const weight_struct_DOUBLE *weights0,
-                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, DOUBLE *d1, const weight_struct_DOUBLE *weights1,
+static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                        const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                         const int same_cell,
                                                         const unsigned int fast_divide_and_NR_steps,
                                                         const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                         const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                         const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
-                                                        const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
+                                                        const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
+                                                        const DOUBLE closest_icell_zpos,
                                                         DOUBLE *src_savg, uint64_t *src_npairs,
                                                         DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
@@ -1133,7 +1132,6 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
-        const DOUBLE dpos = *d0++;//d is the co-moving distance
         for(int w = 0; w < pair.num_weights; w++){
             pair.weights0[w].d = *local_w0.weights[w]++;
         }
@@ -1196,7 +1194,6 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
         DOUBLE *localz1 = z1;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
-        DOUBLE *locald1 = d1 + n_off;
         for(int w = 0; w < pair.num_weights; w++){
             local_w1.weights[w] = weights1->weights[w] + n_off;
         }
@@ -1210,21 +1207,18 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
             const DOUBLE perpy = *localy1++ - ypos;
             const DOUBLE perpz = *localz1++ - zpos;
 
-            if(perpz >= max_dz) break;
-
-            //parx*perpx + pary*perpy + parz*perpz == (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2) == d1^2 - d2^2
-            const DOUBLE s_dot_l = dpos*dpos - (*locald1) * (*locald1);
-            locald1++;
-
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
+            
             if(perpz <= -max_dz) continue;
+            if(perpz >= max_dz) break;
             
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
 
-            const DOUBLE sqr_l = (parx*parx + pary*pary + parz*parz);
+            const DOUBLE s_dot_l = parx*perpx + pary*perpy + parz*perpz;
+            const DOUBLE sqr_l = parx*parx + pary*pary + parz*parz;
             const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
             const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);

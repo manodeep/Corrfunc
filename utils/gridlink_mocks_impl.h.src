@@ -34,7 +34,8 @@ extern "C" {
     
     /* Functions related to DDrppi_mocks */
     extern cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(const int64_t np,
-                                                                                          const DOUBLE *x, const DOUBLE *y, const DOUBLE *z, const DOUBLE *cz, const weight_struct *weights,
+                                                                                          const DOUBLE *x, const DOUBLE *y, const DOUBLE *z,
+                                                                                          const weight_struct *weights,
                                                                                           const DOUBLE xmin, const DOUBLE xmax,
                                                                                           const DOUBLE ymin, const DOUBLE ymax,
                                                                                           const DOUBLE zmin, const DOUBLE zmax,

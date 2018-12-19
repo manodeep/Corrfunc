@@ -29,7 +29,6 @@ struct cellarray_mocks_index_particles_DOUBLE{
     DOUBLE *x;
     DOUBLE *y;
     DOUBLE *z;
-    DOUBLE *cz;//co-moving distance
     weight_struct_DOUBLE weights;
     DOUBLE xbounds[2];
     DOUBLE ybounds[2];
