@@ -175,11 +175,13 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                 continue;
             }
 
-            DOUBLE theta=ZERO, pairweight=ZERO;
-            DOUBLE costheta = (1.0 - 0.5*sqr_chord_sep);
+            DOUBLE theta, pairweight;
+            const DOUBLE one = (DOUBLE) 1.0, half = (DOUBLE) 0.5;
+            
+            DOUBLE costheta = (one - half*sqr_chord_sep);
             /* DOUBLE costheta = x2*xpos + y2*ypos + z2*zpos; */
-            if (costheta < -1.0) costheta = -1.0;
-            if (costheta > 1.0) costheta = 1.0;
+            if (costheta < -one) costheta = -one;
+            if (costheta > one) costheta = one;
             
             if(costheta > costhetamin || costheta <= costhetamax) continue;
 
@@ -948,6 +950,15 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
     
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
+
+    /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
+    /*    C = 2.0 * SIN(thetamax/2)
+       -> C^2 = 4.0 * SIN^2 (thetamax/2.0)
+       -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
+       -> C^2 = 2.0 * (1 - COS(thetamax))
+     */
+    const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - costhetamax);
+
     uint64_t npairs[nthetabin];
     DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
     if(need_rpavg || need_weightavg){
@@ -1078,9 +1089,9 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
             }
             
 
-            const AVX512_FLOATS m_dx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_x2, m_xpos);
-            const AVX512_FLOATS m_dy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_y2, m_ypos);
-            const AVX512_FLOATS m_dz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_z2, m_zpos);
+            const AVX512_FLOATS m_dx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_x1, m_xpos);
+            const AVX512_FLOATS m_dy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_y1, m_ypos);
+            const AVX512_FLOATS m_dz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_z1, m_zpos);
 
             const AVX512_MASK m_neg_pimax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_dz, -m_max_dz,_CMP_GT_OQ);
             if(m_neg_pimax_mask == 0) continue;
@@ -1088,7 +1099,7 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
             const AVX512_FLOATS m_sqr_dx = AVX512_MASKZ_SQUARE_FLOAT(m_mask_left, m_dx);
             const AVX512_FLOATS m_sqr_dx_sqr_dy = AVX512_MASKZ_FMA_ADD_FLOATS(m_dy, m_mask_left, m_dy, m_sqr_dx);
             const AVX512_FLOATS m_sqr_chord_sep = AVX512_MASKZ_FMA_ADD_FLOATS(m_dz, m_mask_left, m_dz, m_sqr_dx_sqr_dy);
-            const AVX512_FLOATS m_half_sqr_sep = AVX512_MULTIPLY_FLOATS(AVX512_SET_FLOAT((DOUBLE) 0.5, m_sqr_chord_sep));
+            const AVX512_FLOATS m_half_sqr_sep = AVX512_MULTIPLY_FLOATS(AVX512_SET_FLOAT((DOUBLE) 0.5), m_sqr_chord_sep);
             const AVX512_FLOATS m_costheta = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, AVX512_SET_FLOAT((DOUBLE) 1.0), m_half_sqr_sep);
             m_mask_left = AVX512_MASK_BITWISE_AND(AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costhetamax,_CMP_GT_OS),
                                                   AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costhetamin,_CMP_LE_OS));

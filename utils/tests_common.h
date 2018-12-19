@@ -188,7 +188,7 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                                     }                                         \
                                     if(ret != EXIT_SUCCESS) {                 \
                                         fprintf(stderr, ANSI_COLOR_RED "FAILED"); \
-                                        dotest = 1;/* change back to 0*/ \
+                                        dotest = 1;/* change back to 0 once DDtheta on min_sep branch passes */ \
                                     } else {                                  \
                                         fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
                                     }                                         \
