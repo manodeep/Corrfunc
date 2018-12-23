@@ -593,15 +593,34 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             Y2[i] = COSD(dec2[i])*SIND(ra2[i]) ;
             Z2[i] = SIND(dec2[i]);
         }
-    } else {
-        // We might call the brute-force pair couter, which knows nothing about autocorrelations
-        // so set up the weight pointers for the second set of particles
-        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
-            extra->weights1.weights[w] = extra->weights0.weights[w];
-        }
     }
 
     if(options->link_in_dec==0 && options->link_in_ra==0) {
+        // The positions and weights are going to be rearranged inside brute force!
+        // The pos are temporary so we don't care.
+        // Create and pass a temporary copy of the weights too; otherwise they will get de-synced from the original pos.
+        // TODO: Long term, the "right" way to do this while avoiding a memcpy is to somehow sort the original RA/DEC
+        // But if we're using the brute-force counter then we probably don't care about performance anyway...
+
+        weight_struct weights0_backup = extra->weights0;
+        weight_struct weights1_backup = extra->weights1;
+
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            extra->weights0.weights[w] = my_malloc(sizeof(DOUBLE), ND1);
+            memcpy(extra->weights0.weights[w], weights0_backup.weights[w], sizeof(DOUBLE)*ND1);
+        }
+
+        if(autocorr){
+            // The brute-force pair counter knows nothing about autocorrelations
+            // So make the weight pointers for the second set just point to the first set
+            extra->weights1 = extra->weights0;
+        } else {
+            for(int64_t w = 0; w < extra->weights1.num_weights; w++){
+                extra->weights1.weights[w] = my_malloc(sizeof(DOUBLE), ND2);
+                memcpy(extra->weights1.weights[w], weights1_backup.weights[w], sizeof(DOUBLE)*ND2);
+            }
+        }
+
         //this is equivalent to brute force calculating on the entire dataset
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
@@ -615,8 +634,19 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         free(X1);free(Y1);free(Z1);
         if(autocorr == 0) {
             free(X2);free(Y2);free(Z2);
+            for(int64_t w = 0; w < extra->weights1.num_weights; w++){
+                free(extra->weights1.weights[w]);
+            }
         }
         free(theta_upp);
+
+        // Free the temporary weights copy and restore the original pointers
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            free(extra->weights0.weights[w]);
+        }
+        extra->weights0 = weights0_backup;
+        extra->weights1 = weights1_backup;
+
         return status;
     }
 
@@ -788,6 +818,30 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
        Probably out of memory -> Run a brute force */
     if(lattice1 == NULL || lattice2 == NULL) {
         fprintf(stderr,"In %s> Could not construct the 3-D lattice structure. Defaulting to brute-force\n",__FUNCTION__);
+
+        // Pass temporary weights
+        // TODO: this code is duplicated from above.
+        // But putting it inside the kernel would enforce the de-syncing behavior, which we would hope to remove long-term
+
+        weight_struct weights0_backup = extra->weights0;
+        weight_struct weights1_backup = extra->weights1;
+
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            extra->weights0.weights[w] = my_malloc(sizeof(DOUBLE), ND1);
+            memcpy(extra->weights0.weights[w], weights0_backup.weights[w], sizeof(DOUBLE)*ND1);
+        }
+
+        if(autocorr){
+            // The brute-force pair counter knows nothing about autocorrelations
+            // So make the weight pointers for the second set just point to the first set
+            extra->weights1 = extra->weights0;
+        } else {
+            for(int64_t w = 0; w < extra->weights1.num_weights; w++){
+                extra->weights1.weights[w] = my_malloc(sizeof(DOUBLE), ND2);
+                memcpy(extra->weights1.weights[w], weights1_backup.weights[w], sizeof(DOUBLE)*ND2);
+            }
+        }
+
         //this is equivalent to brute force calculating on the entire dataset
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
@@ -801,8 +855,19 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         free(X1);free(Y1);free(Z1);
         if(autocorr == 0) {
             free(X2);free(Y2);free(Z2);
+            for(int64_t w = 0; w < extra->weights1.num_weights; w++){
+                free(extra->weights1.weights[w]);
+            }
         }
         free(theta_upp);
+
+        // Free the temporary weights copy and restore the original pointers
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            free(extra->weights0.weights[w]);
+        }
+        extra->weights0 = weights0_backup;
+        extra->weights1 = weights1_backup;
+        
         return status;
     }
 
