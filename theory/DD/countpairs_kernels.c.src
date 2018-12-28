@@ -86,7 +86,7 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
             pair.weights0[w].a512 = AVX512_SET_FLOAT(*(local_w0.weights[w])++);
         }
         DOUBLE max_dz = max_all_dz;
-
+        
         /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
            j' particles. The min. difference in the z-positions between this i'th particle and ANY
            of the remaining j'th particles, is the difference between the current j'th particle and
@@ -114,7 +114,7 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
                 continue;
             }
             max_dz = SQRT(sqr_rpmax - min_dx*min_dx - min_dy*min_dy);
-        
+            
             // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
             // We don't consider the i particle's x,y information yet, because those aren't sorted
             const DOUBLE target_z = zpos - max_all_dz;
@@ -130,8 +130,13 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
             break;
         }
 
-        const int64_t n_off = z1 - zstart;
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *localz1 <= target_z) {
+            localz1++;
+        }
+        
+        const int64_t n_off = localz1 - zstart;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
         for(int w = 0; w < local_w1.num_weights; w++){
@@ -179,8 +184,6 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
                 pair.dy.a512 = m_ydiff;
                 pair.dz.a512 = m_zdiff;
             }
-            const AVX512_MASK m_neg_max_dz_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff, -m_max_dz,_CMP_GT_OQ);
-            if(m_neg_max_dz_mask == 0) continue;
       
             const AVX512_FLOATS m_sqr_xdiff = AVX512_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
             const AVX512_FLOATS x2py2  = AVX512_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_xdiff);/* dy*dy + dx^2*/
@@ -389,8 +392,13 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             break;
         }
 
-        int64_t j = z1 - zstart;
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *localz1 <= target_z) {
+            localz1++;
+        }
+
+        int64_t j = localz1 - zstart;
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
@@ -431,11 +439,6 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
                 pair.dx.a = m_xdiff;
                 pair.dy.a = m_ydiff;
                 pair.dz.a = m_zdiff;
-            }
-
-            const AVX_FLOATS m_neg_max_dz_mask = AVX_COMPARE_FLOATS(m_zdiff,-m_max_dz,_CMP_GT_OQ);
-            if(AVX_TEST_COMPARISON(m_neg_max_dz_mask)==0) {
-                continue;
             }
 
             const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
@@ -537,9 +540,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-
-            if(dz <= -max_dz) continue;
-            if(dz >= rpmax) break;
+            if(dz >= max_dz) break;
             
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) {
@@ -702,9 +703,14 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
           i = N0;
           break;
       }
-      
-      int64_t j = z1 - zstart;
+
       DOUBLE *localz1 = z1;
+      const DOUBLE target_z = zpos - max_dz;
+      while(localz1 != zend && *localz1 <= target_z) {
+          localz1++;
+      }
+      
+      int64_t j = localz1 - zstart;
       DOUBLE *localx1 = x1 + j;
       DOUBLE *localy1 = y1 + j;
       for(int w = 0; w < local_w1.num_weights; w++){
@@ -740,11 +746,6 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
           const SSE_FLOATS m_xdiff = SSE_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
           const SSE_FLOATS m_ydiff = SSE_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
           const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
-
-          const SSE_FLOATS m_neg_max_dz_mask = SSE_COMPARE_FLOATS_GT(m_zdiff,-m_max_dz);
-          if(SSE_TEST_COMPARISON(m_neg_max_dz_mask)==0) {
-              continue;
-          }
 
           const SSE_FLOATS m_mask_geq_pimax = SSE_COMPARE_FLOATS_GE(m_zdiff,m_max_dz);
           if(SSE_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
@@ -824,7 +825,6 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
               pair.weights1[w].d = *local_w1.weights[w]++;
           }
 
-          if(dz <= -max_dz) continue;
           if(dz >= max_dz) break;
       
           const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
@@ -969,10 +969,15 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
             i = N0;
             break;
         }
-    
-        const int64_t n_off = z1 - zstart;
-        const int64_t nleft = zend - z1;
+
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *localz1 <= target_z) {
+            localz1++;
+        }
+
+        const int64_t n_off = localz1 - zstart;
+        const int64_t nleft = zend - localz1;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
         for(int w = 0; w < pair.num_weights; w++){
@@ -987,7 +992,6 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
             
-            if(dz <= -max_dz) continue;
             if(dz >= max_dz) break;
       
             const DOUBLE r2 = dx*dx + dy*dy + dz*dz;

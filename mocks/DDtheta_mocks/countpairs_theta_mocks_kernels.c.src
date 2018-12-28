@@ -145,7 +145,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 
         DOUBLE *localz1 = z1;
         const DOUBLE target_z = zpos - max_dz;
-        while(localz1 != zend && *z1 <= target_z) {
+        while(localz1 != zend && *localz1 <= target_z) {
             localz1++;
         }
         
@@ -400,7 +400,7 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
 
         DOUBLE *localz1 = z1;
         const DOUBLE target_z = zpos - max_dz;
-        while(localz1 != zend && *z1 <= target_z) {
+        while(localz1 != zend && *localz1 <= target_z) {
             localz1++;
         }
 
@@ -735,7 +735,7 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
 
         DOUBLE *localz1 = z1;
         const DOUBLE target_z = zpos - max_dz;
-        while(localz1 != zend && *z1 <= target_z) {
+        while(localz1 != zend && *localz1 <= target_z) {
             localz1++;
         }
         
@@ -1066,7 +1066,7 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
 
         DOUBLE *localz1 = z1;
         const DOUBLE target_z = zpos - max_dz;
-        while(localz1 != zend && *z1 <= target_z) {
+        while(localz1 != zend && *localz1 <= target_z) {
             localz1++;
         }
         
