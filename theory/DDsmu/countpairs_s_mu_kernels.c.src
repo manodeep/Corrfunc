@@ -162,8 +162,14 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
             break;
         }
 
-        const int64_t n_off = z1 - zstart;
+
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *localz1 <= target_z) {
+            localz1++;
+        }
+
+        const int64_t n_off = localz1 - zstart;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
 
@@ -202,8 +208,6 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
             const AVX512_FLOATS m_xdiff = AVX512_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x1[j:j+NVEC-1] - x0)
             const AVX512_FLOATS m_ydiff = AVX512_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y1[j:j+NVEC-1] - y0)
             const AVX512_FLOATS m_zdiff = AVX512_SUBTRACT_FLOATS(m_z1, m_zpos);  //(z1[j:j+NVEC-1] - z0)
-            const AVX512_MASK m_neg_max_dz_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_zdiff, -m_max_dz,_CMP_GT_OQ);
-            if(m_neg_max_dz_mask == 0) continue;
 
             const AVX512_FLOATS m_sqr_zdiff = AVX512_SQUARE_FLOAT(m_zdiff);  //(z[j] - z0)^2
             const AVX512_FLOATS m_sqr_z_p_sqr_y = AVX512_FMA_ADD_FLOATS(m_ydiff, m_ydiff, m_sqr_zdiff);  //dy*dy + dz^2
@@ -452,8 +456,13 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             break;
         }
 
-        int64_t j = z1 - zstart;
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *localz1 <= target_z) {
+            localz1++;
+        }
+        
+        int64_t j = localz1 - zstart;
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
@@ -493,11 +502,6 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const AVX_FLOATS m_xdiff = AVX_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
             const AVX_FLOATS m_ydiff = AVX_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
             const AVX_FLOATS m_zdiff = AVX_SUBTRACT_FLOATS(m_z1, m_zpos);  //z1[j:j+NVEC-1] - z0
-
-            const AVX_FLOATS m_neg_max_dz_mask = AVX_COMPARE_FLOATS(m_zdiff,-m_max_dz,_CMP_GT_OQ);
-            if(AVX_TEST_COMPARISON(m_neg_max_dz_mask)==0) {
-                continue;
-            }
 
             const AVX_FLOATS m_sqr_xdiff = AVX_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
             const AVX_FLOATS m_sqr_ydiff = AVX_SQUARE_FLOAT(m_ydiff);  //(y0 - y[j])^2
@@ -607,8 +611,6 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-
-            if(dz <= -max_dz) continue;
             if(dz >= max_dz) break;
 
             const DOUBLE sqr_dx_dy = dx*dx + dy*dy;
@@ -813,8 +815,13 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             break;
         }
 
-        int64_t j = z1 - zstart;
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *localz1 <= target_z) {
+            localz1++;
+        }
+        
+        int64_t j = localz1 - zstart;
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < local_w1.num_weights; w++){
@@ -856,11 +863,6 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const SSE_FLOATS m_xdiff = SSE_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
             const SSE_FLOATS m_ydiff = SSE_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
             const SSE_FLOATS m_zdiff = SSE_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
-
-            const SSE_FLOATS m_neg_max_dz_mask = SSE_COMPARE_FLOATS_GT(m_zdiff,-m_max_dz);
-            if(SSE_TEST_COMPARISON(m_neg_max_dz_mask)==0) {
-                continue;
-            }
 
             const SSE_FLOATS m_sqr_xdiff = SSE_SQUARE_FLOAT(m_xdiff);
             const SSE_FLOATS m_sqr_ydiff = SSE_SQUARE_FLOAT(m_ydiff);
@@ -959,7 +961,6 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            if(dz <= -max_dz) continue;
             if(dz >= max_dz) break;
 
             const DOUBLE sqr_dx_dy = dx*dx + dy*dy;
@@ -1148,9 +1149,14 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
             break;
         }
 
-        const int64_t n_off = z1 - zstart;
-        const int64_t nleft = N1 - n_off;
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *localz1 <= target_z) {
+            localz1++;
+        }
+        
+        const int64_t n_off = localz1 - zstart;
+        const int64_t nleft = N1 - n_off;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
         for(int w = 0; w < pair.num_weights; w++){
@@ -1164,7 +1170,6 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            if(dz <= -max_dz) continue;
             if(dz >= max_dz) break;
 
             const DOUBLE sqr_dx_dy = dx*dx + dy*dy;
