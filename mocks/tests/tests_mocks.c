@@ -273,10 +273,17 @@ int test_DDtheta_mocks(const char *correct_outputfile)
                 ret = EXIT_SUCCESS;
             } else {
                 ret = EXIT_FAILURE;//not required but showing intent
-                fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[i]);
-                fprintf(stderr,"Failed. True thetaavg = %e Computed thetaavg = %e. floats_equal = %d\n", theta_avg, results.theta_avg[i], floats_equal);
-                fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. floats_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
-                break;
+                if(npairs != results.npairs[i]) {
+                    fprintf(stderr,"Failed (bin #%2d). True npairs = %"PRIu64 " Computed npairs = %"PRIu64"\n", i, npairs, results.npairs[i]);
+                }
+                if(floats_equal != EXIT_SUCCESS) {
+                    fprintf(stderr,"Failed (bin #%2d). True thetaavg = %e Computed thetaavg = %e\n", i, theta_avg, results.theta_avg[i]);
+                }
+                if(weights_equal != EXIT_SUCCESS) {
+                    fprintf(stderr,"Failed (bin #%2d). True weightavg = %e Computed weightavg = %e.\n",
+                            i, weightavg, results.weightavg[i]);
+                }
+                /* break; */
             }
         }
         fclose(fp);

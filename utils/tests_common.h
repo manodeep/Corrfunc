@@ -150,7 +150,7 @@ const int min_bin_ref = 1, max_bin_ref = 4;
         int dotest = 1;                                                      \
         for(int iset=0;iset<num_instructions;iset++) {                       \
             options.instruction_set = valid_instruction_sets[iset];          \
-            for(int dec_link=0;dec_link<=1;dec_link++) {                     \
+            for(int dec_link=0;dec_link <= 1;dec_link++) {                   \
                 for(int ra_link=0;ra_link <= dec_link; ra_link++) {          \
                     int fastest_bin_ref[] = {1, 1, 1};                       \
                     int fastest_isa = 0;                                     \
@@ -167,12 +167,12 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                                     options.link_in_ra=ra_link;               \
                                     options.enable_min_sep_opt = enable_min_sep_opt; \
                                     if(dec_link == 1) {                 \
-                                        fprintf(stderr,"Running with (dec, ra)-linking = (%1d, %1d), (dec, ra) bin-ref = (%d, %d) isa = %s " \
+                                        fprintf(stderr,"Running with (dec, ra)-linking = (%1d, %1d), (dec, ra) bin-ref = (%d, %d) "\
                                                 "and min. sep. opt. %8s ...", \
                                                 dec_link, ra_link,      \
                                                 options.bin_refine_factors[1], \
                                                 options.bin_refine_factors[0], \
-                                                isa_name[iset],enable_min_sep_opt == 0 ? "DISABLED":"ENABLED"); \
+                                                enable_min_sep_opt == 0 ? "DISABLED":"ENABLED"); \
                                     }                                   \
                                     current_utc_time(&t0);              \
                             
@@ -188,11 +188,11 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                                     }                                         \
                                     if(ret != EXIT_SUCCESS) {                 \
                                         fprintf(stderr, ANSI_COLOR_RED "FAILED"); \
-                                        dotest = 1;/* change back to 0 once DDtheta on min_sep branch passes */ \
+                                        dotest = 0;                           \
                                     } else {                                  \
                                         fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
                                     }                                         \
-                                    fprintf(stderr, ANSI_COLOR_RESET ". Time taken = %8.2lf seconds \n", time_to_run * 1e-9); \
+                                    fprintf(stderr, ANSI_COLOR_RESET " (isa = %s). Time taken = %8.2lf seconds \n", isa_name[iset],time_to_run * 1e-9); \
                                 } /* closes dotest */                         \
                             } /* closes min-sep-opt*/                         \
                         } /* dec_bin_ref*/                                    \
