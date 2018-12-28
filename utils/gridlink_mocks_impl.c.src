@@ -1244,12 +1244,14 @@ cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const i
 DOUBLE find_closest_pos_DOUBLE(const DOUBLE first_xbounds[2], const DOUBLE second_xbounds[2], DOUBLE *closest_pos0)
 {
     *closest_pos0 = ZERO;
+    /* if the limits are overlapping then the minimum possible separation is 0 */
     if(first_xbounds[0] <= second_xbounds[1]
        && second_xbounds[0] <= first_xbounds[1]) {
         return ZERO;
     }
-    
+
     DOUBLE min_dx = FABS(first_xbounds[0] - second_xbounds[0]);
+    *closest_pos0 = first_xbounds[0];
     for(int i=0;i<2;i++) {
         for(int j=0;j<2;j++) {
             const DOUBLE dx = FABS(first_xbounds[i] - second_xbounds[j]);
@@ -1473,15 +1475,15 @@ int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOU
                         }
                         DOUBLE closest_pos0;
                         const DOUBLE min_dx = find_closest_pos_DOUBLE(first->xbounds, second->xbounds, &closest_pos0);
-                        first->ngb_closest_icell_xpos[ngb_index] = ira != this_ra ? closest_pos0:ZERO;
+                        first->ngb_closest_icell_xpos[ngb_index] = closest_pos0;
                         first->ngb_min_dx[ngb_index] = min_dx;
 
                         const DOUBLE min_dy = find_closest_pos_DOUBLE(first->ybounds, second->ybounds, &closest_pos0);
-                        first->ngb_closest_icell_ypos[ngb_index] = ira != this_ra ? closest_pos0:ZERO;
+                        first->ngb_closest_icell_ypos[ngb_index] = closest_pos0;
                         first->ngb_min_dy[ngb_index] = min_dy;
 
                         const DOUBLE min_dz = find_closest_pos_DOUBLE(first->zbounds, second->zbounds, &closest_pos0);
-                        first->ngb_closest_icell_zpos[ngb_index] = idec != this_dec ? closest_pos0:ZERO;
+                        first->ngb_closest_icell_zpos[ngb_index] = closest_pos0;
                         first->ngb_min_dz[ngb_index] = min_dz;
 
                         const DOUBLE sqr_min_sep_cells = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;

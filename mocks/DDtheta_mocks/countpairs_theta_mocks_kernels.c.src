@@ -48,7 +48,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
        -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
        -> C^2 = 2.0 * (1 - COS(thetamax))
      */
-    const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - costhetamax);
+    const DOUBLE sqr_max_chord_sep = ((DOUBLE) 2.0) * (((DOUBLE) 1.0) - costhetamax);
     
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
@@ -140,11 +140,16 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             i = N0;
             break;
         }
-        
-        const int64_t n_off = z1 - zstart;
-        const int64_t Nleft = N1 - n_off;
-      
+
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *z1 <= target_z) {
+            localz1++;
+        }
+        
+        const int64_t n_off = localz1 - zstart;
+        const int64_t Nleft = N1 - n_off;
+        
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
         for(int w = 0; w < pair.num_weights; w++){
@@ -167,7 +172,6 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             /* particles are sorted on z, all future j particles will have larger value in localz1 -> perpz will be
                larger. therefore, if current perpz >= max_dz, all future iterations will also be larger. we can
                terminate the loop */
-            if(dz < -max_dz) continue;
             if(dz >= max_dz) break;
             
             const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
@@ -197,9 +201,9 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                 // Too expensive?
                 
                 // perpx
-                pair.dx.d = xpos - x2;
-                pair.dy.d = ypos - y2;
-                pair.dz.d = zpos - z2;
+                pair.dx.d = dx;
+                pair.dy.d = dy;
+                pair.dz.d = dz;
               
                 // parx
                 pair.parx.d = x2 + xpos;//dz := z2 - zpos -> z2 = dz + zpos -> zpos + z2 == (dz + zpos) + zpos
@@ -391,8 +395,14 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
             break;
         }
         
-        int64_t j = z1 - zstart;
+
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *z1 <= target_z) {
+            localz1++;
+        }
+
+        int64_t j = localz1 - zstart;
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < pair.num_weights; w++){
@@ -415,7 +425,9 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
             const SSE_FLOATS m_y2 = SSE_LOAD_FLOATS_UNALIGNED(localy1);
             const SSE_FLOATS m_z2 = SSE_LOAD_FLOATS_UNALIGNED(localz1);
             
-            localx1 += SSE_NVEC;localy1 += SSE_NVEC;localz1 += SSE_NVEC;
+            localx1 += SSE_NVEC;
+            localy1 += SSE_NVEC;
+            localz1 += SSE_NVEC;
           
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
@@ -426,9 +438,6 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
             const SSE_FLOATS m_dy = SSE_SUBTRACT_FLOATS(m_y2, m_y1);
             const SSE_FLOATS m_dz = SSE_SUBTRACT_FLOATS(m_z2, m_z1);
             
-            const SSE_FLOATS m_neg_pimax_mask = SSE_COMPARE_FLOATS_GT(m_dz,-m_max_dz);
-            if(SSE_TEST_COMPARISON(m_neg_pimax_mask)==0) continue;
-
             const SSE_FLOATS m_mask_dz = SSE_COMPARE_FLOATS_GE(m_dz, m_max_dz);
             if(SSE_TEST_COMPARISON(m_mask_dz) > 0 ) {
                 /* this means the next chunk of particles can not be within 's' */
@@ -517,11 +526,11 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
 
-            if(dz < -max_dz) continue;
             if(dz >= max_dz) break;
             
             const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
-            const DOUBLE costheta = (1.0 - 0.5*sqr_chord_sep);
+            const DOUBLE one = (DOUBLE) 1.0, half = (DOUBLE) 0.5;
+            const DOUBLE costheta = (one - half*sqr_chord_sep);
             if(costheta > costhetamin || costheta <= costhetamax) {
                 continue;
             }
@@ -721,9 +730,14 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
             i = N0;
             break;
         }
-        
-        int64_t j = z1 - zstart;
+
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *z1 <= target_z) {
+            localz1++;
+        }
+        
+        int64_t j = localz1 - zstart;
         DOUBLE *localx1 = x1 + j;
         DOUBLE *localy1 = y1 + j;
         for(int w = 0; w < pair.num_weights; w++){
@@ -738,9 +752,6 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
             union float8 union_mDperp;
             union float8_weights union_mweight;
             
-
-
-
             const AVX_FLOATS m_costhetamax = AVX_SET_FLOAT(costhetamax);
             const AVX_FLOATS m_costhetamin = AVX_SET_FLOAT(costhetamin);
             const AVX_FLOATS m_max_dz = AVX_SET_FLOAT(max_dz);
@@ -759,9 +770,6 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
             const AVX_FLOATS m_dy = AVX_SUBTRACT_FLOATS(m_y2, m_y1);
             const AVX_FLOATS m_dz = AVX_SUBTRACT_FLOATS(m_z2, m_z1);
             
-            const AVX_FLOATS m_neg_pimax_mask = AVX_COMPARE_FLOATS(m_dz,-m_max_dz, _CMP_GT_OQ);
-            if(AVX_TEST_COMPARISON(m_neg_pimax_mask)==0) continue;
-
             const AVX_FLOATS m_mask_dz = AVX_COMPARE_FLOATS(m_dz, m_max_dz, _CMP_GT_OQ);
             if(AVX_TEST_COMPARISON(m_mask_dz) > 0 ) {
                 /* this means the next chunk of particles can not be within 's' */
@@ -796,9 +804,9 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
                 // Too expensive?
                 
                 // perpx
-                pair.dx.a = AVX_SUBTRACT_FLOATS(m_x1,m_x2);
-                pair.dy.a = AVX_SUBTRACT_FLOATS(m_y1,m_y2);
-                pair.dz.a = AVX_SUBTRACT_FLOATS(m_z1,m_z2);
+                pair.dx.a = m_dx;
+                pair.dy.a = m_dy;
+                pair.dz.a = m_dz;
                 
                 // parx
                 pair.parx.a = AVX_ADD_FLOATS(m_x2,m_x1);
@@ -852,11 +860,11 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
           for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
           }
-          if(dz < -max_dz) continue;
           if(dz >= max_dz) break;
           
           const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
-          const DOUBLE costheta = (1.0 - 0.5*sqr_chord_sep);
+          const DOUBLE one = (DOUBLE) 1.0, half = (DOUBLE) 0.5;
+          const DOUBLE costheta = (one - half*sqr_chord_sep);
           if(costheta > costhetamin || costheta <= costhetamax) {
               continue;
           }
@@ -1052,9 +1060,15 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
             i = N0;
             break;
         }
-        
-        const int64_t n_off = z1 - zstart;
+
+
         DOUBLE *localz1 = z1;
+        const DOUBLE target_z = zpos - max_dz;
+        while(localz1 != zend && *z1 <= target_z) {
+            localz1++;
+        }
+        
+        const int64_t n_off = localz1 - zstart;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
         for(int w = 0; w < local_w1.num_weights; w++){
@@ -1093,8 +1107,11 @@ static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t
             const AVX512_FLOATS m_dy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_y1, m_ypos);
             const AVX512_FLOATS m_dz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_z1, m_zpos);
 
-            const AVX512_MASK m_neg_pimax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_dz, -m_max_dz,_CMP_GT_OQ);
-            if(m_neg_pimax_mask == 0) continue;
+            const AVX512_MASK m_mask_dz = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_dz, m_max_dz, _CMP_GT_OQ);
+            if(m_mask_dz > 0 ) {
+                /* this means the next chunk of particles can not be within 's' */
+                j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
+            }
             
             const AVX512_FLOATS m_sqr_dx = AVX512_MASKZ_SQUARE_FLOAT(m_mask_left, m_dx);
             const AVX512_FLOATS m_sqr_dx_sqr_dy = AVX512_MASKZ_FMA_ADD_FLOATS(m_dy, m_mask_left, m_dy, m_sqr_dx);
