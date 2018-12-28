@@ -155,8 +155,8 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                     int fastest_bin_ref[] = {1, 1, 1};                       \
                     int fastest_isa = 0;                                     \
                     double fastest_time = 1e30;                              \
-                    for(int ra_bin_ref=min_bin_ref;ra_bin_ref<=max_bin_ref;ra_bin_ref++) { \
-                        for(int dec_bin_ref=min_bin_ref;dec_bin_ref<=max_bin_ref;dec_bin_ref++) { \
+                    for(int dec_bin_ref=min_bin_ref;dec_bin_ref<=max_bin_ref;dec_bin_ref++) { \
+                        for(int ra_bin_ref=min_bin_ref;ra_bin_ref<=max_bin_ref;ra_bin_ref++) { \
                             for(int enable_min_sep_opt=0;enable_min_sep_opt<=1;enable_min_sep_opt++) { \
                                 if(dotest == 1) {                            \
                                     if(dec_link == 0 && ra_link == 0 && (dec_bin_ref != min_bin_ref || ra_bin_ref != min_bin_ref || enable_min_sep_opt != 0)) continue; \
@@ -198,10 +198,10 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                         } /* dec_bin_ref*/                                    \
                     } /* ra_bin_ref*/                                         \
                     if(ret == EXIT_SUCCESS) {                                 \
-                        fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d} and instruction_set = %s"  ANSI_COLOR_RESET "\n", \
+                        fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with (dec, ra) bin-ref = {%d, %d} and instruction_set = %s"  ANSI_COLOR_RESET "\n", \
                             fastest_time*1e-9,                                \
-                            fastest_bin_ref[0],                               \
                             fastest_bin_ref[1],                               \
+                            fastest_bin_ref[0],                               \
                             isa_name[fastest_isa]);                           \
                     } /* closes ret==EXIT_SUCCESS */                          \
                 } /* ra_link loop */                                          \
