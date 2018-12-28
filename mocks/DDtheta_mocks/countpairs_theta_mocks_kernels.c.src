@@ -47,6 +47,8 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
        -> C^2 = 4.0 * SIN^2 (thetamax/2.0)
        -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
        -> C^2 = 2.0 * (1 - COS(thetamax))
+
+       -> COS(theta) = (1 - 0.5*C^2)
      */
     const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - costhetamax);
     

@@ -437,7 +437,9 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     }
 
     /* If there too few cells (BOOST_CELL_THRESH is ~10), and the number of cells can be increased, then boost bin refine factor by ~1*/
-    const double avg_np = ((double)ND1)/(nmesh_x*nmesh_y*nmesh_z);
+    const double avg_np1 = ((double)ND1)/(nmesh_x*nmesh_y*nmesh_z);
+    const double avg_np2 = ((double)ND2)/(nmesh_x*nmesh_y*nmesh_z);
+    const double avg_np = avg_np1 > avg_np2 ? avg_np1:avg_np2;
     const int8_t max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
     if((max_nmesh <= BOOST_CELL_THRESH || avg_np >= BOOST_NUMPART_THRESH)
         && max_nmesh < options->max_cells_per_dim) {
