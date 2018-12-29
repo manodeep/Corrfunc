@@ -403,50 +403,9 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     }
 #endif//USE_OMP
 
-    //The code does not double count for autocorrelations
-    //which means the npairs and rpavg values need to be doubled;
-    if(autocorr == 1) {
-        const uint64_t int_fac = 2;
-        const DOUBLE dbl_fac = (DOUBLE) 2.0;
-        for(int i=0;i<nthetabin;i++) {
-            npairs[i] *= int_fac;
-            if(options->need_avg_sep) {
-                thetaavg[i] *= dbl_fac;
-            }
-            if(need_weightavg) {
-                weightavg[i] *= dbl_fac;
-            }
-        }
 
-        /* Is the min. requested separation 0.0 ?*/
-        /* The comparison is '<=' rather than '==' only to silence
-           the compiler  */
-        if(theta_upp[0] <= 0.0) {
-            /* Then, add all the self-pairs. This ensures that 
-               a cross-correlation with two identical datasets 
-               produces the same result as the auto-correlation  */
-            npairs[1] += ND1; //npairs[1] contains the first valid bin.
-            
-            // Increasing npairs affects rpavg and weightavg.
-            // We don't need to add anything to rpavg; all the self-pairs have 0 separation!
-            // The self-pairs have non-zero weight, though.  So, fix that here.
-            if(need_weightavg){
-                // Keep in mind this is an autocorrelation (i.e. only one particle set to consider)
-                weight_func_t_DOUBLE weight_func = get_weight_func_by_method_DOUBLE(extra->weight_method);
-                pair_struct_DOUBLE pair = {.num_weights = extra->weights0.num_weights,
-                                           .dx.d=0., .dy.d=0., .dz.d=0.,  // always 0 separation
-                                           .parx.d=0., .pary.d=0., .parz.d=0.};
-                for(int64_t j = 0; j < ND1; j++){
-                    for(int w = 0; w < pair.num_weights; w++){
-                        pair.weights0[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
-                        pair.weights1[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
-                    }
-                    weightavg[1] += weight_func(&pair);
-                }
-            }
-        }
-    }
-    
+    /* Do not add in the corrections for rmin == 0.0 and AUTOCORR
+       The brute-force ALWAYS computes a cross-correlation   */
     for(int i=1;i<nthetabin;i++) {
         if(npairs[i] > 0) {
             if(options->need_avg_sep) {
