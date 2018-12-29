@@ -235,10 +235,14 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
       const int8_t max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
       if((max_nmesh <= BOOST_CELL_THRESH || avg_np >= BOOST_NUMPART_THRESH)
             && max_nmesh < options->max_cells_per_dim) {
-          fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
+          if(options->verbose) {
+              fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
+          }
           if(get_bin_refine_scheme(options) == BINNING_DFL) {
-            fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
-            fprintf(stderr,"xmin = %lf xmax=%lf rmax = %lf\n", xmin, xmax, rmax);
+              if(options->verbose) {
+                  fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
+                  fprintf(stderr,"xmin = %lf xmax=%lf rmax = %lf\n", xmin, xmax, rmax);
+              }
             free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
             // Only boost the first two dimensions.  Prevents excessive refinement.
             for(int i=0;i<2;i++) {
@@ -254,10 +258,12 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
             }
           
         } else {
-          fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
-                  "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
-                  options->bin_refine_factors[1], options->bin_refine_factors[2]);
-        }
+              if(options->verbose) {
+                  fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
+                          "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
+                          options->bin_refine_factors[1], options->bin_refine_factors[2]);
+              }
+          }
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 

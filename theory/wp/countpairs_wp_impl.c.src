@@ -261,31 +261,37 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
       const double avg_np = ((double)ND)/(nmesh_x*nmesh_y*nmesh_z);
       const int8_t max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
       if((max_nmesh <= BOOST_CELL_THRESH || avg_np >= BOOST_NUMPART_THRESH)
-        && max_nmesh < options->max_cells_per_dim) {
-        fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
-        if(get_bin_refine_scheme(options) == BINNING_DFL) {
-          fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
-          fprintf(stderr,"xmin = %lf xmax=%lf rpmax = %lf\n", xmin, xmax, rpmax);
-          free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-          // Only boost the first two dimensions.  Prevents excessive refinement.
-          for(int i=0;i<2;i++) {
-              options->bin_refine_factors[i] += BOOST_BIN_REF;
+         && max_nmesh < options->max_cells_per_dim) {
+          if(options->verbose) {
+              fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
           }
-          lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, &(extra->weights0),
-                                                     xmin, xmax, ymin, ymax, zmin, zmax,
-                                                     rpmax, rpmax, pimax,
-                                                     options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
-                                                     &nmesh_x, &nmesh_y, &nmesh_z, options);
-          if(lattice == NULL) {
-              return EXIT_FAILURE;
+          if(get_bin_refine_scheme(options) == BINNING_DFL) {
+              if(options->verbose) {
+                  fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
+                  fprintf(stderr,"xmin = %lf xmax=%lf rpmax = %lf\n", xmin, xmax, rpmax);
+              }
+              free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+              // Only boost the first two dimensions.  Prevents excessive refinement.
+              for(int i=0;i<2;i++) {
+                  options->bin_refine_factors[i] += BOOST_BIN_REF;
+              }
+              lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, &(extra->weights0),
+                                                        xmin, xmax, ymin, ymax, zmin, zmax,
+                                                        rpmax, rpmax, pimax,
+                                                        options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                        &nmesh_x, &nmesh_y, &nmesh_z, options);
+              if(lattice == NULL) {
+                  return EXIT_FAILURE;
+              }
+              
+          } else {
+              if(options->verbose) {
+                  fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
+                          "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
+                          options->bin_refine_factors[1], options->bin_refine_factors[2]);
+              }
           }
-          
-        } else {
-            fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
-                  "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
-                  options->bin_refine_factors[1], options->bin_refine_factors[2]);
-        }
-    }
+      }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
     /* Setup pointers for the neighbouring cells */
     {
