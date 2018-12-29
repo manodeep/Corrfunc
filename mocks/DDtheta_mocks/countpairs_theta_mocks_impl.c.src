@@ -417,7 +417,6 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
         }
     }
 
-
     //prepare results
     //Pack in the results
     results->nbin = nthetabin;
@@ -425,6 +424,11 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     results->theta_upp = my_malloc(sizeof(*(results->theta_upp))  , nthetabin);
     results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
     results->weightavg = my_malloc(sizeof(*(results->weightavg))  , nthetabin);
+    if(results->npairs == NULL || results->theta_upp == NULL || results->theta_avg == NULL || results->weightavg == NULL) {
+        fprintf(stderr,"Error: Could not allocate memory for %d nbins to hold the results of the pair-counting\n", nthetabin);
+        free_results_countpairs_theta(results);
+        return EXIT_FAILURE;
+    }
 
     for(int i=0;i<nthetabin;i++) {
         results->npairs[i] = npairs[i];
@@ -610,7 +614,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
         for(int64_t w = 0; w < extra->weights0.num_weights; w++){
             extra->weights0.weights[w] = my_malloc(sizeof(DOUBLE), ND1);
+            if(extra->weights0.weights[w] == NULL) {
+                fprintf(stderr,"Error: Could not allocate memory for %"PRId64" particles in dataset #1. Required memory = %"PRIu64" bytes\n",
+                        ND1, sizeof(DOUBLE)*ND1);
+                return EXIT_FAILURE;
+            }
             memcpy(extra->weights0.weights[w], weights0_backup.weights[w], sizeof(DOUBLE)*ND1);
+            
         }
 
         if(autocorr){
@@ -620,6 +630,11 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         } else {
             for(int64_t w = 0; w < extra->weights1.num_weights; w++){
                 extra->weights1.weights[w] = my_malloc(sizeof(DOUBLE), ND2);
+                if(extra->weights0.weights[w] == NULL) {
+                    fprintf(stderr,"Error: Could not allocate memory for %"PRId64" particles in dataset #2. Required memory = %"PRIu64" bytes\n",
+                            ND2, sizeof(DOUBLE)*ND2);
+                    return EXIT_FAILURE;
+                }
                 memcpy(extra->weights1.weights[w], weights1_backup.weights[w], sizeof(DOUBLE)*ND2);
             }
         }
@@ -1186,6 +1201,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
     results->weightavg  = my_calloc(sizeof(*(results->weightavg))  , nthetabin);
     if(results->npairs == NULL || results->theta_upp == NULL || results->theta_avg == NULL || results->weightavg == NULL) {
+        fprintf(stderr,"Error: Could not allocate memory for %d nbins to hold the results of the pair-counting\n", nthetabin);
         free_results_countpairs_theta(results);
         free(theta_upp);
         return EXIT_FAILURE;
