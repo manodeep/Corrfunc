@@ -949,7 +949,7 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
         }
 
         const int64_t n_off = localz1 - zstart;
-        const int64_t nleft = zend - z1;
+        const int64_t nleft = zend - localz1;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
         for(int w = 0; w < pair.num_weights; w++){
