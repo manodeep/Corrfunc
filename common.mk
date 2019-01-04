@@ -335,8 +335,8 @@ ifeq ($(DO_CHECKS), 1)
                   $(warning With $(ccblue)"clang-3.8"$(ccreset), You might see this $(ccred)$(CLANG_LD_ERROR)$(ccreset) error with the final linking step.)
                   $(info Use this command to fix the issue $(ccmagenta) "sudo install_name_tool -change @executable_path/../lib/libLTO.dylib @rpath/../lib/libLTO.dylib /opt/local/libexec/ld64/ld-latest"$(ccreset))
                   $(info You can see the bug report here $(ccmagenta)"https://trac.macports.org/ticket/50853"$(ccreset))
-                  export CLANG_LD_WARNING_PRINTED := 1
                 endif #clang-3.8
+                export CLANG_LD_WARNING_PRINTED := 1
               endif #clang warning printed
             endif #Darwin
           endif #Apple clang. If at some point Apple clang supports OpenMP, then there will need to be an else above this endif. 
