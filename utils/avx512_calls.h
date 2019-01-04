@@ -65,6 +65,7 @@ extern "C" {
 #define AVX512_SET_INT(X)                                _mm512_set1_epi32(X)
 #define AVX512_SETZERO_INT()                             _mm512_setzero_epi32()
 
+        
 #if 0
 /* commenting out the integer math operations since they are either cumbersome or produce results of different SIMD widths*/    
 #define AVX512_ADD_INTS(X, Y)                            _mm512_add_epi32(X, Y) 
@@ -74,6 +75,7 @@ extern "C" {
 #define AVX512_MULTIPLY_INTS(X, Y)                                 _mm512_mul_epi32(X, Y) 
 #define AVX512_MASK_MULTIPLY_INTS(FALSEVALS, MASK, X, Y)           _mm512_mask_mul_epi32(FALSEVALS, MASK, X, Y)
 #define AVX512_MASKZ_MULTIPLY_INTS(MASK, X, Y)                     _mm512_maskz_mul_epi32(MASK, X, Y)
+#define AVX512_MASKZ_MULTIPLY_INTS_LOW32(MASK, X, Y)               _mm512_maskz_mullo_epi32(MASK, X, Y)
 #endif  /*end of integer math*/
 
 #define AVX512_SETZERO_FLOAT()                                    _mm512_setzero_ps()
@@ -200,13 +202,17 @@ extern "C" {
 
 #define AVX512_MASK_MULTIPLY_INTS(FALSEVALS, MASK, X, Y)          _mm256_mask_mul_epi32(FALSEVALS, MASK, X, Y)
 #define AVX512_MASKZ_MULTIPLY_INTS(MASK, X, Y)                    _mm256_maskz_mul_epi32(MASK, X, Y)
-
+#define AVX512_MASKZ_MULTIPLY_INTS_LOW32(MASK, X, Y)              _mm256_maskz_mullo_epi32(MASK, X, Y)
+        
 #elif defined(__AVX512F__)
 #define AVX512_MASK_ADD_INTS(FALSEVALS, MASK, X, Y)               _mm512_castsi512_si256(_mm512_mask_add_epi32(_mm512_castsi256_si512(FALSEVALS), MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
 #define AVX512_MASKZ_ADD_INTS(MASK, X, Y)                         _mm512_castsi512_si256(_mm512_maskz_add_epi32(MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
 
 #define AVX512_MASK_MULTIPLY_INTS(FALSEVALS, MASK, X, Y)          _mm512_castsi512_si256(_mm512_mask_mul_epi32(_mm512_castsi256_si512(FALSEVALS), MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
 #define AVX512_MASKZ_MULTIPLY_INTS(MASK, X, Y)                    _mm512_castsi512_si256(_mm512_maskz_mul_epi32(MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
+
+#define AVX512_MASKZ_MULTIPLY_INTS_LOW32(MASK, X, Y)              _mm512_castsi512_si256(_mm512_maskz_mullo_epi32(MASK, _mm512_castsi256_si512(X), _mm512_castsi256_si512(Y)))
+
 #endif
 #endif /* commenting out the int math operations since they are either cumbersome or produce results of different SIMD widths*/
 
