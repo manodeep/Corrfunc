@@ -1,4 +1,5 @@
-# Description
+Description
+------------
 
 This `theory` directory contains a set of codes to measure the following correlation measures in a cosmological box: 
 
