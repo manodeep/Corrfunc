@@ -254,7 +254,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
 
   /* If there too few cells (BOOST_CELL_THRESH is ~10), and the number of cells can be increased, then boost bin refine factor by ~1*/
   const double avg_np = ((double)ND1)/(nmesh_x*nmesh_y*nmesh_z);
-  const int8_t max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
+  const int max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
   if((max_nmesh <= BOOST_CELL_THRESH || avg_np >= BOOST_NUMPART_THRESH)
         && max_nmesh < options->max_cells_per_dim) {
       if(options->verbose) {
