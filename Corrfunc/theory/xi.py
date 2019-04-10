@@ -32,20 +32,20 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
 
 
     .. note:: Pairs are double-counted. And if ``rmin`` is set to
-       0.0, then all the self-pairs (i'th particle with itself) are
-       added to the first bin => minimum number of pairs in the first bin
-       is the total number of particles.
+        0.0, then all the self-pairs (i'th particle with itself) are
+        added to the first bin => minimum number of pairs in the first bin
+        is the total number of particles.
 
 
     Parameters
     -----------
 
     boxsize: double
-       A double-precision value for the boxsize of the simulation
-       in same units as the particle positions and the ``r`` bins.
+        A double-precision value for the boxsize of the simulation
+        in same units as the particle positions and the ``r`` bins.
 
     nthreads: integer
-       Number of threads to use.
+        Number of threads to use.
 
     binfile: string or an list/array of floats
         For string input: filename specifying the ``r`` bins for
@@ -60,75 +60,80 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
         array does not need to be sorted.         
 
     X/Y/Z: arraytype, real (float/double)
-       Particle positions in the 3 axes. Must be within [0, boxsize]
-       and specified in the same units as ``rp_bins`` and boxsize. All
-       3 arrays must be of the same floating-point type.
+        Particle positions in the 3 axes. Must be within [0, boxsize]
+        and specified in the same units as ``rp_bins`` and boxsize. All
+        3 arrays must be of the same floating-point type.
 
-       Calculations will be done in the same precision as these arrays,
-       i.e., calculations will be in floating point if XYZ are single
-       precision arrays (C float type); or in double-precision if XYZ
-       are double precision arrays (C double type).
+        Calculations will be done in the same precision as these arrays,
+        i.e., calculations will be in floating point if XYZ are single
+        precision arrays (C float type); or in double-precision if XYZ
+        are double precision arrays (C double type).
        
     weights: array_like, real (float/double), optional
-       A scalar, or an array of weights of shape (n_weights, n_positions) or 
-       (n_positions,). `weight_type` specifies how these weights are used; 
-       results are returned in the `weightavg` field.
+        A scalar, or an array of weights of shape (n_weights, n_positions) or 
+        (n_positions,). ``weight_type`` specifies how these weights are used; 
+        results are returned in the ``weightavg`` field.
 
     verbose: boolean (default false)
-       Boolean flag to control output of informational messages
+        Boolean flag to control output of informational messages
 
     output_ravg: boolean (default false)
-       Boolean flag to output the average ``r`` for each bin. Code will
-       run slower if you set this flag. 
+        Boolean flag to output the average ``r`` for each bin. Code will
+        run slower if you set this flag. 
 
-       Note: If you are calculating in single-precision, ``rpavg`` will 
-       suffer from numerical loss of precision and can not be trusted. If 
-       you need accurate ``rpavg`` values, then pass in double precision 
-       arrays for the particle positions.
-
+        Note: If you are calculating in single-precision, ``rpavg`` will 
+        suffer from numerical loss of precision and can not be trusted. If 
+        you need accurate ``rpavg`` values, then pass in double precision 
+        arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
-       Controls the refinement on the cell sizes. Can have up to a 20% impact
-       on runtime.
+        Controls the refinement on the cell sizes. Can have up to a 20% impact
+        on runtime.
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
-       Controls the maximum number of cells per dimension. Total number of
-       cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
-       too small relative to the boxsize (and increasing helps the runtime).
+        Controls the maximum number of cells per dimension. Total number of
+        cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
+        too small relative to the boxsize (and increasing helps the runtime).
 
     copy_particle_positions: boolean (default True)
-       Boolean flag to make a copy of the particle positions
-       If set to False, the particles will be re-ordered in-place
+        Boolean flag to make a copy of the particle positions
+        If set to False, the particles will be re-ordered in-place
+
+
     .. versionadded:: 2.3.0
 
     reorder_particles_to_original: boolean (default False)
-       Boolean flag to put the particles back into original input order after
-       calculations are complete. Only relevant when
-       ``copy_particle_positions`` is set to False
+        Boolean flag to put the particles back into original input order after
+        calculations are complete. Only relevant when
+        ``copy_particle_positions`` is set to False
+
+
     .. versionadded:: 2.3.0
 
     enable_min_sep_opt: boolean (default true)
-       Boolean flag to allow optimizations based on min. separation between
-       pairs of cells. Here to allow for comparison studies.
+        Boolean flag to allow optimizations based on min. separation between
+        pairs of cells. Here to allow for comparison studies.
+
+
     .. versionadded:: 2.3.0
 
     c_api_timer: boolean (default false)
-       Boolean flag to measure actual time spent in the C libraries. Here
-       to allow for benchmarking and scaling studies.
+        Boolean flag to measure actual time spent in the C libraries. Here
+        to allow for benchmarking and scaling studies.
 
     isa: string, case-insensitive (default ``fastest``)
-       Controls the runtime dispatch for the instruction set to use. Possible
-       options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+        Controls the runtime dispatch for the instruction set to use. Possible
+        options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
-       Setting isa to ``fastest`` will pick the fastest available instruction
-       set on the current computer. However, if you set ``isa`` to, say,
-       ``avx`` and ``avx`` is not available on the computer, then the code will
-       revert to using ``fallback`` (even though ``sse42`` might be available).
+        Setting isa to ``fastest`` will pick the fastest available instruction
+        set on the current computer. However, if you set ``isa`` to, say,
+        ``avx`` and ``avx`` is not available on the computer, then the code will
+        revert to using ``fallback`` (even though ``sse42`` might be available).
 
-       Unless you are benchmarking the different instruction sets, you should
-       always leave ``isa`` to the default value. And if you *are*
-       benchmarking, then the string supplied here gets translated into an
-       ``enum`` for the instruction set defined in ``utils/defs.h``.
+        Unless you are benchmarking the different instruction sets, you should
+        always leave ``isa`` to the default value. And if you *are*
+        benchmarking, then the string supplied here gets translated into an
+        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
     weight_type: string, optional, Default: None.
         The type of weighting to apply.  One of ["pair_product", None].  
@@ -138,12 +143,12 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
     --------
 
     results: Numpy structured array
-       A numpy structured array containing [rmin, rmax, ravg, xi, npairs, weightavg] for
-       each radial specified in the ``binfile``. If ``output_ravg`` is not
-       set then ``ravg`` will be set to 0.0 for all bins; similarly for ``weightavg``.
-       ``xi`` contains the correlation function while ``npairs`` contains the number of
-       pairs in that bin.  If using weights, ``xi`` will be weighted while ``npairs``
-       will not be.
+        A numpy structured array containing [rmin, rmax, ravg, xi, npairs, weightavg] for
+        each radial specified in the ``binfile``. If ``output_ravg`` is not
+        set then ``ravg`` will be set to 0.0 for all bins; similarly for ``weightavg``.
+        ``xi`` contains the correlation function while ``npairs`` contains the number of
+        pairs in that bin.  If using weights, ``xi`` will be weighted while ``npairs``
+        will not be.
 
     api_time: float, optional
         Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent

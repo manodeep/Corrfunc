@@ -34,9 +34,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
 
     .. note:: This module only returns pair counts and not the actual
-       correlation function :math:`\\xi(s, \mu)`. See the
-       utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` 
-       for computing :math:`\\xi(s, \mu)` from the pair counts.
+        correlation function :math:`\\xi(s, \mu)`. See the
+        utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` 
+        for computing :math:`\\xi(s, \mu)` from the pair counts.
 
     .. versionadded:: 2.1.0
 
@@ -82,8 +82,8 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     weights1: array_like, real (float/double), optional
         A scalar, or an array of weights of shape (n_weights, n_positions) or
-        (n_positions,). `weight_type` specifies how these weights are used;
-        results are returned in the `weightavg` field.  If only one of
+        (n_positions,). ``weight_type`` specifies how these weights are used;
+        results are returned in the ``weightavg`` field.  If only one of
         weights1 and weights2 is specified, the other will be set to uniform
         weights.
 
@@ -129,19 +129,25 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         too small relative to the boxsize (and increasing helps the runtime).
 
     copy_particle_positions: boolean (default True)
-       Boolean flag to make a copy of the particle positions
-       If set to False, the particles will be re-ordered in-place
+        Boolean flag to make a copy of the particle positions
+        If set to False, the particles will be re-ordered in-place
+
+
     .. versionadded:: 2.3.0
 
     reorder_particles_to_original: boolean (default False)
-       Boolean flag to put the particles back into original input order after
-       calculations are complete. Only relevant when
-       ``copy_particle_positions`` is set to False
+        Boolean flag to put the particles back into original input order after
+        calculations are complete. Only relevant when
+        ``copy_particle_positions`` is set to False
+
+
     .. versionadded:: 2.3.0
 
     enable_min_sep_opt: boolean (default true)
-       Boolean flag to allow optimizations based on min. separation between
-       pairs of cells. Here to allow for comparison studies.
+        Boolean flag to allow optimizations based on min. separation between
+        pairs of cells. Here to allow for comparison studies.
+
+
     .. versionadded:: 2.3.0
 
     c_api_timer : boolean (default false)
@@ -149,18 +155,18 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         to allow for benchmarking and scaling studies.
 
     isa: string, case-insensitive (default ``fastest``)
-       Controls the runtime dispatch for the instruction set to use. Possible
-       options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+        Controls the runtime dispatch for the instruction set to use. Possible
+        options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+ 
+        Setting isa to ``fastest`` will pick the fastest available instruction
+        set on the current computer. However, if you set ``isa`` to, say,
+        ``avx`` and ``avx`` is not available on the computer, then the code will
+        revert to using ``fallback`` (even though ``sse42`` might be available).
 
-       Setting isa to ``fastest`` will pick the fastest available instruction
-       set on the current computer. However, if you set ``isa`` to, say,
-       ``avx`` and ``avx`` is not available on the computer, then the code will
-       revert to using ``fallback`` (even though ``sse42`` might be available).
-
-       Unless you are benchmarking the different instruction sets, you should
-       always leave ``isa`` to the default value. And if you *are*
-       benchmarking, then the string supplied here gets translated into an
-       ``enum`` for the instruction set defined in ``utils/defs.h``.
+        Unless you are benchmarking the different instruction sets, you should
+        always leave ``isa`` to the default value. And if you *are*
+        benchmarking, then the string supplied here gets translated into an
+        ``enum`` for the instruction set defined in ``utils/defs.h``.
 
     weight_type : str, optional
         The type of pair weighting to apply.
