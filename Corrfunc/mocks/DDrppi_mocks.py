@@ -189,7 +189,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     enable_min_sep_opt: boolean (default true)
        Boolean flag to allow optimizations based on min. separation between
        pairs of cells. Here to allow for comparison studies.
-    
+
     c_api_timer : boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
@@ -216,17 +216,17 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
     results : Numpy structured array
 
-        A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs, weightavg]
-        for each radial bin specified in the ``binfile``. If ``output_ravg`` is
-        not set, then ``rpavg`` will be set to 0.0 for all bins; similarly for
-        ``weightavg``. ``npairs``
-        contains the number of pairs in that bin and can be used to compute the
-        actual :math:`\\xi(r_p, \pi)` or :math:`wp(rp)` by combining with
+        A numpy structured array containing [rpmin, rpmax, rpavg, pimax,
+        npairs, weightavg] for each radial bin specified in the ``binfile``.
+        If ``output_ravg`` is not set, then ``rpavg`` will be set to 0.0 for
+        all bins; similarly for ``weightavg``. ``npairs`` contains the number
+        of pairs in that bin and can be used to compute the actual
+        :math:`\\xi(r_p, \pi)` or :math:`wp(rp)` by combining with
         (DR, RR) counts.
 
     api_time : float, optional
-        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
-        spent within the C library and ignores all python overhead.
+        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
+        the time spent within the C library and ignores all python overhead.
 
     Example
     --------

@@ -74,8 +74,8 @@ const int min_bin_ref = 1, max_bin_ref = 4;
            int dotest = 1;                                              \
            const isa old_isa = options.instruction_set;                 \
            const int old_min_sep_opt = options.enable_min_sep_opt;      \
-           const int old_copy_parts  = options.copy_particle_positions;      \           
-           const int old_reorder_parts  = options.reorder_particles_to_original;      \
+           const int old_copy_parts  = options.copy_particle_positions;      \
+           const int old_reorder_parts  = options.reorder_particles_to_original; \
            options.reorder_particles_to_original = 1;                              \
            struct timespec t0, t1;                                      \
            for(int iset=0;iset<num_instructions;iset++) {               \
@@ -122,8 +122,8 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                            }/*bin ref z*/                   \
                        }/*bin ref y*/                   \
                    }/*bin ref x*/                                           \
-               }/* copy particle positions*/                                           \                                   
-               if(ret == EXIT_SUCCESS) {                                \
+               }/* copy particle positions*/                                           \
+               if(ret == EXIT_SUCCESS) {        \
                    fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d, %d}" ANSI_COLOR_RESET "\n", \
                            fastest_time*1e-9,                           \
                            fastest_bin_ref[0],                          \

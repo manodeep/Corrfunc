@@ -191,7 +191,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
     enable_min_sep_opt: boolean (default true)
        Boolean flag to allow optimizations based on min. separation between
        pairs of cells. Here to allow for comparison studies.
-    
+
     c_api_timer: boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
@@ -209,7 +209,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-    
+
     weight_type: string, optional (default None)
         The type of weighting to apply.  One of ["pair_product", None].
 

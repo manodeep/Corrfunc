@@ -7,6 +7,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import sys
 from os.path import exists as file_exists
+import wurlitzer
+from contextlib import contextmanager
 
 __all__ = ['convert_3d_counts_to_cf', 'convert_rp_pi_counts_to_wp',
            'translate_isa_string_to_enum', 'return_file_with_rbins',
@@ -949,9 +951,6 @@ def is_native_endian(array):
     return (array_is_little_endian == system_is_little_endian) or (array.dtype.byteorder == '=')
 
 
-import wurlitzer
-from contextlib import contextmanager
-
 @contextmanager
 def sys_pipes():
     '''
@@ -980,7 +979,7 @@ def sys_pipes():
     # without any redirection.
     try:
         with wurlitzer.pipes(**kwargs):
-          yield
+            yield
     except:
         yield
     

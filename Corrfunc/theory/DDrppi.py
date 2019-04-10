@@ -126,19 +126,19 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     copy_particle_positions: boolean (default True)
        Boolean flag to make a copy of the particle positions
        If set to False, the particles will be re-ordered in-place
-    .. versionadded:: 2.3.0    
+    .. versionadded:: 2.3.0
 
     reorder_particles_to_original: boolean (default False)
        Boolean flag to put the particles back into original input order after
        calculations are complete. Only relevant when
        ``copy_particle_positions`` is set to False
-    .. versionadded:: 2.3.0         
-    
+    .. versionadded:: 2.3.0
+
     enable_min_sep_opt: boolean (default true)
        Boolean flag to allow optimizations based on min. separation between
        pairs of cells. Here to allow for comparison studies.
     .. versionadded:: 2.3.0
-    
+
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.

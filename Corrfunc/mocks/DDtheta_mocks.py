@@ -179,7 +179,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     weight_type : string, optional (default None)
         The type of weighting to apply.  One of ["pair_product", None].
-    
+
     Returns
     --------
 
