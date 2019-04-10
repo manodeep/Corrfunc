@@ -353,6 +353,15 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
     }//loop over number of spheres
     
     gsl_rng_free (rng);
+
+    if(options->copy_particle_positions == 0 && options->reorder_particles_to_original) {
+        int64_t *original_index = lattice[0].original_index;
+        int status = reorder_particles_back_into_original_order_DOUBLE(np, original_index, X, Y, Z);
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
+
     free_cellarray_DOUBLE(lattice, totncells);
     if(interrupt_status_vpf_DOUBLE != EXIT_SUCCESS) {
         matrix_free((void **) pN, nbin);

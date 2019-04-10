@@ -248,7 +248,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 
     //set up the 3-d grid structure. Each element of the structure contains a
     //pointer to the cellarray structure that itself contains all the points
-    cellarray_index_particles_DOUBLE *lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, &(extra->weights0),
+    cellarray_weights_DOUBLE *lattice = gridlink_weights_DOUBLE(ND, X, Y, Z, &(extra->weights0),
                                                                                 xmin, xmax, ymin, ymax, zmin, zmax,
                                                                                 rpmax, rpmax, pimax,
                                                                                 options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
@@ -270,12 +270,12 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                   fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
                   fprintf(stderr,"xmin = %lf xmax=%lf rpmax = %lf\n", xmin, xmax, rpmax);
               }
-              free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+              free_cellarray_weights_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
               // Only boost the first two dimensions.  Prevents excessive refinement.
               for(int i=0;i<2;i++) {
                   options->bin_refine_factors[i] += BOOST_BIN_REF;
               }
-              lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, &(extra->weights0),
+              lattice = gridlink_weights_DOUBLE(ND, X, Y, Z, &(extra->weights0),
                                                         xmin, xmax, ymin, ymax, zmin, zmax,
                                                         rpmax, rpmax, pimax,
                                                         options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
@@ -293,42 +293,34 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
           }
       }
     const int64_t totncells = nmesh_x*nmesh_y*(int64_t) nmesh_z;
-    /* Setup pointers for the neighbouring cells */
-    {
-        int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells,
-                                                             options->bin_refine_factors[0], options->bin_refine_factors[1],
-                                                             options->bin_refine_factors[2],
-                                                             nmesh_x, nmesh_y, nmesh_z,
-                                                             boxsize, boxsize, boxsize,
-                                                             -1.0, rpmax, pimax,/*max_3D_sep, max_2D_sep, max_1D_sep*/ 
-                                                             options->enable_min_sep_opt,
-                                                             options->autocorr, options->periodic);//options->autocorr == 1 and options->periodic == 1
-        if(status != EXIT_SUCCESS) {
-            free_cellarray_index_particles_DOUBLE(lattice, totncells);
-            free(rupp);
-            return status;
-        }
+
+    int64_t num_cell_pairs = 0;
+    struct cell_pair_DOUBLE *all_cell_pairs = generate_cell_pairs_DOUBLE(lattice, lattice, totncells,
+                                                                         &num_cell_pairs,
+                                                                         options->bin_refine_factors[0], options->bin_refine_factors[1],
+                                                                         options->bin_refine_factors[2],
+                                                                         nmesh_x, nmesh_y, nmesh_z,
+                                                                         boxsize, boxsize, boxsize,
+                                                                         -1.0, rpmax, pimax,/*max_3D_sep, max_2D_sep, max_1D_sep*/ 
+                                                                         options->enable_min_sep_opt,
+                                                                         options->autocorr, options->periodic);//options->autocorr == 1 and options->periodic == 1
+
+    if(all_cell_pairs == NULL) {
+        free_cellarray_weights_DOUBLE(lattice, totncells);
+        free(rupp);
+        return EXIT_FAILURE;
     }
 
     /* runtime dispatch - get the function pointer */
     wp_func_ptr_DOUBLE wp_function_DOUBLE = wp_driver_DOUBLE(options);
     if(wp_function_DOUBLE == NULL) {
-        free_cellarray_index_particles_DOUBLE(lattice, totncells);
+        free_cellarray_weights_DOUBLE(lattice, totncells);
         free(rupp);
         return EXIT_FAILURE;
     }
 
-    struct api_cell_timings *thread_timings=NULL;
-    const int64_t nx_ngb = 2*options->bin_refine_factors[0] + 1;
-    const int64_t ny_ngb = 2*options->bin_refine_factors[1] + 1;
-    const int64_t nz_ngb = 2*options->bin_refine_factors[2] + 1;
-    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
     if(options->c_cell_timer) {
-        thread_timings = my_calloc(sizeof(*thread_timings), totncells * max_ngb_cells);
-        if(thread_timings==NULL) {
-            fprintf(stderr,"Warning: Could not allocate memory for *per cell* timings...disabling\n");
-            options->c_cell_timer=0;
-        }
+        allocate_cell_timer(options, num_cell_pairs);
     }
     
 #if defined(_OPENMP)
@@ -346,7 +338,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     if(all_npairs == NULL ||
        (options->need_avg_sep && all_rpavg == NULL) ||
        (need_weightavg && all_weightavg == NULL)) {
-        free_cellarray_index_particles_DOUBLE(lattice, totncells);
+        free_cellarray_weights_DOUBLE(lattice, totncells);
         matrix_free((void **)all_npairs, numthreads);
         if(options->need_avg_sep) {
             matrix_free((void **)all_rpavg, numthreads);
@@ -378,7 +370,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     int interrupted=0;
     int64_t numdone=0;
     if(options->verbose) {
-        init_my_progressbar(totncells,&interrupted);
+        init_my_progressbar(num_cell_pairs, &interrupted);
     }
 
     
@@ -392,21 +384,21 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         }
         DOUBLE rpavg[nrpbins];
         DOUBLE weightavg[nrpbins];
-      
+        
         for(int i=0;i<nrpbins;i++) {
-          npairs[i] = 0;
-          if(options->need_avg_sep) {
-            rpavg[i] = 0.0;
-          }
-          if(need_weightavg) {
-            weightavg[i] = 0.0;
-          }
+            npairs[i] = 0;
+            if(options->need_avg_sep) {
+                rpavg[i] = 0.0;
+            }
+            if(need_weightavg) {
+                weightavg[i] = 0.0;
+            }
         }
 
 
 #pragma omp for schedule(dynamic) nowait
 #endif//OpenMP
-        for(int index1=0;index1<totncells;index1++) {
+        for(int64_t icellpair=0;icellpair<num_cell_pairs;icellpair++) {
 
 #if defined(_OPENMP)            
 #pragma omp flush (abort_status, interrupt_status_wp_DOUBLE)
@@ -425,102 +417,41 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 #endif
                     numdone++;
                 }
-                
-                
-                /* First do the same-cell calculations */
-                const cellarray_index_particles_DOUBLE *first  = &(lattice[index1]);
-                if(first->nelements == 0) {
-                    continue;
-                }
-                
-                int same_cell = 1;
-                DOUBLE *x1 = first->x;
-                DOUBLE *y1 = first->y;
-                DOUBLE *z1 = first->z;
-                const weight_struct_DOUBLE *weights1 = &(first->weights);
-                const int64_t N1 = first->nelements;
-                DOUBLE *this_rpavg = NULL;
-                DOUBLE *this_weightavg = NULL;
-                if(options->need_avg_sep) {
-                    this_rpavg = rpavg;
-                }
-                if(need_weightavg) {
-                  this_weightavg = weightavg;
-                }
+
+                struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[icellpair];
+                DOUBLE *this_rpavg = options->need_avg_sep ? rpavg:NULL;
+                DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
                 struct timespec tcell_start;
-                struct api_cell_timings *base_cell = &(thread_timings[index1 * max_ngb_cells]);
                 if(options->c_cell_timer){
                     current_utc_time(&tcell_start);
                 }
+
+                const int status = wp_function_DOUBLE(this_cell_pair->x1, this_cell_pair->y1, this_cell_pair->z1,
+                                                      this_cell_pair->weights1, this_cell_pair->N1, 
+                                                      this_cell_pair->x2, this_cell_pair->y2, this_cell_pair->z2,
+                                                      this_cell_pair->weights2, this_cell_pair->N2, 
+                                                      this_cell_pair->same_cell,
+                                                      sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
+                                                      this_cell_pair->xwrap, this_cell_pair->ywrap, this_cell_pair->zwrap,
+                                                      this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz, 
+                                                      this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
+                                                      this_rpavg, npairs,
+                                                      this_weightavg, extra->weight_method);
                 
-                int status = wp_function_DOUBLE(x1, y1, z1, weights1, N1,
-                                                x1, y1, z1, weights1, N1, same_cell,
-                                                sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                                ZERO, ZERO, ZERO,/* xyz periodic wrap*/
-                                                ZERO, ZERO, ZERO, /* min x, y, z diff */
-                                                ZERO, ZERO, ZERO, /* closest x, y, z in first cell */
-                                                this_rpavg, npairs,
-                                                this_weightavg, extra->weight_method);
-                /* This actually causes a race condition under OpenMP - but mostly 
-                   I care that an error occurred - rather than the exact value of 
+                /* This actually causes a race condition under OpenMP - but mostly
+                   I care that an error occurred - rather than the exact value of
                    the error status */
-                abort_status = abort_status | status;
+                abort_status |= status;
                 if(options->c_cell_timer) {
                     struct timespec tcell_end;
                     current_utc_time(&tcell_end);
                     double time_in_ns = REALTIME_ELAPSED_NS(tcell_start, tcell_end);
-                    ASSIGN_CELL_TIMINGS(base_cell, N1, N1, time_in_ns, tid, index1, index1);
-                    base_cell++;
+                    struct api_cell_timings *base_cell = &(options->cell_timings[icellpair]);
+                    ASSIGN_CELL_TIMINGS(base_cell, this_cell_pair->N1, this_cell_pair->N2, time_in_ns,
+                                        tid, this_cell_pair->cellindex1, this_cell_pair->cellindex2);
                 }
-                
-                for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
-                    cellarray_index_particles_DOUBLE *second = first->ngb_cells[ngb];
-                    const int second_cellindex = second - lattice;
-                    DOUBLE *x2 = second->x;
-                    DOUBLE *y2 = second->y;
-                    DOUBLE *z2 = second->z;
-                    const weight_struct_DOUBLE *weights2 = &(second->weights);
-                    const int64_t N2 = second->nelements;
-                    const DOUBLE off_xwrap = first->xwrap[ngb];
-                    const DOUBLE off_ywrap = first->ywrap[ngb];
-                    const DOUBLE off_zwrap = first->zwrap[ngb];
-                    DOUBLE min_xdiff = ZERO, min_ydiff = ZERO, min_zdiff = ZERO;
-                    DOUBLE closest_icell_xpos = ZERO, closest_icell_ypos = ZERO, closest_icell_zpos = ZERO;
-                    if(options->enable_min_sep_opt) {                                                           
-                        min_xdiff = FABS(first->ngb_min_dx[ngb]);
-                        min_ydiff = FABS(first->ngb_min_dy[ngb]);
-                        min_zdiff = FABS(first->ngb_min_dz[ngb]);
-                        closest_icell_xpos = first->ngb_closest_icell_xpos[ngb];
-                        closest_icell_ypos = first->ngb_closest_icell_ypos[ngb];
-                        closest_icell_zpos = first->ngb_closest_icell_zpos[ngb];
-                    }
-                    
-                    same_cell = 0;
-                    if(options->c_cell_timer){
-                        current_utc_time(&tcell_start);
-                    }
-                    status = wp_function_DOUBLE(x1, y1, z1, weights1, N1,
-                                                x2, y2, z2, weights2, N2, same_cell,
-                                                sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
-                                                off_xwrap, off_ywrap, off_zwrap,
-                                                min_xdiff, min_ydiff, min_zdiff, 
-                                                closest_icell_xpos, closest_icell_ypos, closest_icell_zpos,
-                                                this_rpavg, npairs,
-                                                this_weightavg, extra->weight_method);
-                    /* This actually causes a race condition under OpenMP - but mostly 
-                       I care that an error occurred - rather than the exact value of 
-                       the error status */
-                    abort_status = abort_status | status;
-                    if(options->c_cell_timer) {
-                        struct timespec tcell_end;
-                        current_utc_time(&tcell_end);
-                        double time_in_ns = REALTIME_ELAPSED_NS(tcell_start, tcell_end);
-                        ASSIGN_CELL_TIMINGS(base_cell, N1, N2, time_in_ns, tid, index1, second_cellindex);
-                        base_cell++;
-                    }
-                }//ngb loop
-            }//error occurred somewhere in the called functions: abort_status is set
-        }//index1 loop
+            }//abort-status
+        } //icellpair loop over num_cell_pairs
 
 #if defined(_OPENMP)
         for(int j=0;j<nrpbins;j++) {
@@ -534,7 +465,17 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         }
     }//omp parallel
 #endif
-    free_cellarray_index_particles_DOUBLE(lattice, totncells);
+
+    free(all_cell_pairs);
+    if(options->copy_particle_positions == 0 && options->reorder_particles_to_original) {
+        int64_t *original_index = lattice[0].original_index;
+        int status = reorder_particles_back_into_original_order_weights_DOUBLE(ND, original_index, X, Y, Z, &(extra->weights0));
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
+
+    free_cellarray_weights_DOUBLE(lattice, totncells);
     if(abort_status != EXIT_SUCCESS || interrupt_status_wp_DOUBLE != EXIT_SUCCESS) {
       /* Cleanup memory here if aborting */
       free(rupp);
@@ -720,11 +661,5 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         options->c_api_time = REALTIME_ELAPSED_NS(t0, t1);
     }
 
-    if(options->c_cell_timer) {
-        assign_cell_timer(thread_timings, totncells, max_ngb_cells, options);
-        
-        /* The per-cell timings have been already saved, free */
-        free(thread_timings);
-    }
     return EXIT_SUCCESS;
 }
