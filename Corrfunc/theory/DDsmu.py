@@ -24,7 +24,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
           enable_min_sep_opt=True,
           c_api_timer=False, isa=r'fastest', weight_type=None):
     """
-    Calculate the 2-D pair-counts corresponding to the redshift-space 
+    Calculate the 2-D pair-counts corresponding to the redshift-space
     correlation function, :math:`\\xi(s, \mu)` Pairs which are separated
     by less than the ``s`` bins (specified in ``binfile``) in 3-D, and
     less than ``s*mu_max`` in the Z-dimension are counted.
@@ -35,7 +35,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     .. note:: This module only returns pair counts and not the actual
         correlation function :math:`\\xi(s, \mu)`. See the
-        utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` 
+        utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf`
         for computing :math:`\\xi(s, \mu)` from the pair counts.
 
     .. versionadded:: 2.1.0
@@ -62,12 +62,12 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
         input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.         
+        array does not need to be sorted.
 
     mu_max: double. Must be in range (0.0, 1.0]
-        A double-precision value for the maximum cosine of the angular 
-        separation from the line of sight (LOS). Here, LOS is taken to be 
-        along the Z direction. 
+        A double-precision value for the maximum cosine of the angular
+        separation from the line of sight (LOS). Here, LOS is taken to be
+        along the Z direction.
 
         Note: Only pairs with :math:`0 <= \cos(\\theta_{LOS}) < \mu_{max}`
         are counted (no equality).
@@ -111,20 +111,21 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         run slower if you set this flag. Also, note, if you are calculating
         in single-precision, ``s`` will suffer from numerical loss of
         precision and can not be trusted. If you need accurate ``s``
-        values, then pass in double precision arrays for the particle positions.
+        values, then pass in double precision arrays for the particle
+        positions.
 
     fast_divide_and_NR_steps: integer (default 0)
         Replaces the division in ``AVX`` implementation with an approximate
         reciprocal, followed by ``fast_divide_and_NR_steps`` of Newton-Raphson.
         Can improve runtime by ~15-20% on older computers. Value of 0 uses
         the standard division operation.
-    
+
     (xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3])
         Controls the refinement on the cell sizes. Can have up to a 20% impact
         on runtime.
 
     max_cells_per_dim: integer (default 100, typical values in [50-300])
-        Controls the maximum number of cells per dimension. Total number of 
+        Controls the maximum number of cells per dimension. Total number of
         cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
         too small relative to the boxsize (and increasing helps the runtime).
 
@@ -151,19 +152,18 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
 
-    isa: string, case-insensitive (default ``fastest``)
-        Controls the runtime dispatch for the instruction set to use. Possible
-        options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
- 
+    isa: string (default ``fastest``)
+        Controls the runtime dispatch for the instruction set to use. Options
+        are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+
         Setting isa to ``fastest`` will pick the fastest available instruction
         set on the current computer. However, if you set ``isa`` to, say,
-        ``avx`` and ``avx`` is not available on the computer, then the code will
-        revert to using ``fallback`` (even though ``sse42`` might be available).
-
-        Unless you are benchmarking the different instruction sets, you should
-        always leave ``isa`` to the default value. And if you *are*
-        benchmarking, then the string supplied here gets translated into an
-        ``enum`` for the instruction set defined in ``utils/defs.h``.
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).  Unless you are benchmarking the different instruction
+        sets, you should always leave ``isa`` to the default value. And if
+        you *are* benchmarking, then the string supplied here gets translated
+        into an ``enum`` for the instruction set defined in ``utils/defs.h``.
 
     weight_type : str, optional
         The type of pair weighting to apply.
@@ -173,14 +173,15 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
     Returns
     --------
     results : A python list
-        A python list containing ``nmu_bins`` of [smin, smax, savg, mu_max, npairs, weightavg]
-        for each spatial bin specified in the ``binfile``. There will be a total of ``nmu_bins``
-        ranging from [0, ``mu_max``) *per* spatial bin. If ``output_savg`` is not set, then ``savg``
-        will be set to 0.0 for all bins; similarly for ``weight_avg``. ``npairs``
+        A python list containing ``nmu_bins`` of [smin, smax, savg, mu_max,
+        npairs, weightavg] for each spatial bin specified in the ``binfile``.
+        There will be a total of ``nmu_bins`` ranging from [0, ``mu_max``)
+        *per* spatial bin. If ``output_savg`` is not set, then ``savg`` will
+        be set to 0.0 for all bins; similarly for ``weight_avg``. ``npairs``
         contains the number of pairs in that bin.
 
-    time : if ``c_api_timer`` is set, then the return value contains the time spent
-        in the API; otherwise time is set to 0.0
+    time : if ``c_api_timer`` is set, then the return value contains the time
+        spent in the API; otherwise time is set to 0.0
 
     Example
     -------
@@ -258,8 +259,11 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         raise ImportError(msg)
 
     import numpy as np
+    from warnings import warn
     from Corrfunc.utils import translate_isa_string_to_enum,\
-        return_file_with_rbins, sys_pipes
+        return_file_with_rbins, convert_to_native_endian,\
+        is_native_endian, sys_pipes
+
     from future.utils import bytes_to_native_str
 
     # Broadcast scalar weights to arrays
@@ -280,23 +284,26 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "
         "angle and should be within (0.0, 1.0]".format(mu_max)
         raise ValueError(msg)
-        
+
     if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                 "computing cross-correlation"
             raise ValueError(msg)
 
-        # If only one set of points has weights, set the other to uniform weights
+        # If only one set of points has weights, set the other to uniform
+        # weights
         if weights1 is None and weights2 is not None:
             weights1 = np.ones_like(weights2)
         if weights2 is None and weights1 is not None:
             weights2 = np.ones_like(weights1)
 
-    else:
-        X2 = np.empty(1)
-        Y2 = np.empty(1)
-        Z2 = np.empty(1)
+    # Warn about non-native endian arrays
+    if not all(is_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2,
+                                                 Z2, weights2]):
+        warn("One or more input array has non-native endianness!  A copy will"\
+             " be made with the correct endianness.")
+    X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [convert_to_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]]
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
