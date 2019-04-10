@@ -335,6 +335,8 @@ int main(int argc, char **argv)
     options.need_avg_sep=1;
     options.verbose=0;
     options.periodic=0;
+    options.copy_particle_positions=1;
+    options.reorder_particles_to_original=1;
     options.fast_divide_and_NR_steps=0;
     options.float_type=sizeof(double);
     
