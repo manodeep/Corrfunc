@@ -19,6 +19,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         verbose=False, periodic=True, boxsize=0.0,
         xbin_refine_factor=1, ybin_refine_factor=1,
         zbin_refine_factor=1, max_cells_per_dim=100,
+        copy_particle_positions=True, reorder_particles_to_original=False,
         c_api_timer=False, isa=r'fastest'):
     """
     Function to compute the counts-in-cells on 3-D real-space points.
@@ -102,6 +103,17 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
        cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
        too small relative to the boxsize (and increasing helps the runtime).
 
+    copy_particle_positions: boolean (default True)
+       Boolean flag to make a copy of the particle positions
+       If set to False, the particles will be re-ordered in-place
+    .. versionadded:: 2.3.0    
+
+    reorder_particles_to_original: boolean (default False)
+       Boolean flag to put the particles back into original input order after
+       calculations are complete. Only relevant when
+       ``copy_particle_positions`` is set to False
+    .. versionadded:: 2.3.0         
+    
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
        to allow for benchmarking and scaling studies.

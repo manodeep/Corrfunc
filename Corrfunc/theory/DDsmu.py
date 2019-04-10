@@ -13,12 +13,14 @@ __author__ = ('Manodeep Sinha', 'Nick Hand')
 __all__ = ('DDsmu', )
 
 
-def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=None,
+def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
+          X1, Y1, Z1, weights1=None,
           periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
           verbose=False, boxsize=0.0, output_savg=False,
           fast_divide_and_NR_steps=0,
           xbin_refine_factor=2, ybin_refine_factor=2,
           zbin_refine_factor=1, max_cells_per_dim=100,
+          copy_particle_positions=True, reorder_particles_to_original=False,
           enable_min_sep_opt=True,
           c_api_timer=False, isa=r'fastest', weight_type=None):
     """
@@ -78,9 +80,12 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         The array of X/Y/Z positions for the first set of points.
         Calculations are done in the precision of the supplied arrays.
 
-    weights1 : array-like, real (float/double), shape (n_particles,) or \
-        (n_weights_per_particle,n_particles), optional
-        Weights for computing a weighted pair count.
+    weights1: array_like, real (float/double), optional
+        A scalar, or an array of weights of shape (n_weights, n_positions) or
+        (n_positions,). `weight_type` specifies how these weights are used;
+        results are returned in the `weightavg` field.  If only one of
+        weights1 and weights2 is specified, the other will be set to uniform
+        weights.
 
     periodic : boolean
         Boolean flag to indicate periodic boundary conditions.
@@ -89,9 +94,8 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         Array of XYZ positions for the second set of points. *Must* be the same
         precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
 
-    weights2 : array-like, real (float/double), shape (n_particles,) or \
-        (n_weights_per_particle,n_particles), optional
-        Weights for computing a weighted pair count.
+    weights2: array-like, real (float/double), optional
+        Same as weights1, but for the second set of positions
 
     verbose : boolean (default false)
         Boolean flag to control output of informational messages
@@ -124,9 +128,21 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=No
         cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
         too small relative to the boxsize (and increasing helps the runtime).
 
+    copy_particle_positions: boolean (default True)
+       Boolean flag to make a copy of the particle positions
+       If set to False, the particles will be re-ordered in-place
+    .. versionadded:: 2.3.0    
+
+    reorder_particles_to_original: boolean (default False)
+       Boolean flag to put the particles back into original input order after
+       calculations are complete. Only relevant when
+       ``copy_particle_positions`` is set to False
+    .. versionadded:: 2.3.0         
+    
     enable_min_sep_opt: boolean (default true)
        Boolean flag to allow optimizations based on min. separation between
        pairs of cells. Here to allow for comparison studies.
+    .. versionadded:: 2.3.0
     
     c_api_timer : boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here

@@ -287,6 +287,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        weights=None, weight_type=None, verbose=False, output_rpavg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
+       copy_particle_positions=True, reorder_particles_to_original=False,
        enable_min_sep_opt=True,
        c_api_timer=False, c_cell_timer=False, isa='fastest'):
     """
@@ -346,9 +347,9 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        are double precision arrays (C double type).
        
     weights: array_like, real (float/double), optional
-       A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
-       `weight_type` specifies how these weights are used; results are returned
-       in the `weightavg` field.
+        A scalar, or an array of weights of shape (n_weights, n_positions) or
+        (n_positions,). `weight_type` specifies how these weights are used;
+        results are returned in the `weightavg` field. 
 
     verbose: boolean (default false)
        Boolean flag to control output of informational messages
@@ -372,9 +373,21 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
        too small relative to the boxsize (and increasing helps the runtime).
 
+    copy_particle_positions: boolean (default True)
+       Boolean flag to make a copy of the particle positions
+       If set to False, the particles will be re-ordered in-place
+    .. versionadded:: 2.3.0    
+
+    reorder_particles_to_original: boolean (default False)
+       Boolean flag to put the particles back into original input order after
+       calculations are complete. Only relevant when
+       ``copy_particle_positions`` is set to False
+    .. versionadded:: 2.3.0         
+    
     enable_min_sep_opt: boolean (default true)
        Boolean flag to allow optimizations based on min. separation between
        pairs of cells. Here to allow for comparison studies.
+    .. versionadded:: 2.3.0
     
     c_api_timer: boolean (default false)
        Boolean flag to measure actual time spent in the C libraries. Here
@@ -402,9 +415,8 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
        
-    weight_type: string, optional
-         The type of weighting to apply.  One of ["pair_product", None].  Default: None.
-
+    weight_type: string, optional.  Default: None.
+         The type of weighting to apply.  One of ["pair_product", None]. 
 
     Returns
     --------
@@ -412,14 +424,14 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     results: Numpy structured array
        A numpy structured array containing [rpmin, rpmax, rpavg, wp, npairs, weightavg]
        for each radial specified in the ``binfile``. If ``output_rpavg`` is not
-       set then ``rpavg`` will be set to 0.0 for all bins; similarly for ``weightavg``.
-       ``wp`` contains the projected correlation function while ``npairs`` contains the
-       number of unique pairs in that bin.  If using weights, ``wp`` will be weighted
-       while ``npairs`` will not be.
+       set then ``rpavg`` will be set to 0.0 for all bins; similarly for
+       ``weightavg``. ``wp`` contains the projected correlation function while
+       ``npairs`` contains the number of unique pairs in that bin.  If using
+       weights, ``wp`` will be weighted while ``npairs`` will not be.
        
     api_time: float, optional
-       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time spent
-       within the C library and ignores all python overhead.
+       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
+       the time spent within the C library and ignores all python overhead.
        
     cell_time: list, optional
        Only returned if ``c_cell_timer`` is set. Contains
