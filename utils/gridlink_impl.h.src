@@ -30,7 +30,7 @@ extern "C" {
   
 
   extern cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
-                                            const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
+                                            DOUBLE *x, DOUBLE *y, DOUBLE *z,
                                             const DOUBLE xmin, const DOUBLE xmax,
                                             const DOUBLE ymin, const DOUBLE ymax,
                                             const DOUBLE zmin, const DOUBLE zmax,
@@ -47,30 +47,39 @@ extern "C" {
   extern void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells);
     
 
-  extern cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t np,
-                                                                            const DOUBLE *x, const DOUBLE *y, const DOUBLE *z, const weight_struct *weights,
-                                                                            const DOUBLE xmin, const DOUBLE xmax,
-                                                                            const DOUBLE ymin, const DOUBLE ymax,
-                                                                            const DOUBLE zmin, const DOUBLE zmax,
-                                                                            const DOUBLE max_x_size,
-                                                                            const DOUBLE max_y_size,
-                                                                            const DOUBLE max_z_size,
-                                                                            const int xbin_refine_factor,
-                                                                            const int ybin_refine_factor,
-                                                                            const int zbin_refine_factor,
-                                                                            int *nlattice_x,
-                                                                            int *nlattice_y,
-                                                                            int *nlattice_z,
-                                                                            const struct config_options *options) __attribute__((warn_unused_result));
-  extern int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOUBLE *lattice1, struct cellarray_index_particles_DOUBLE *lattice2,
-                                                     const int64_t totncells,
-                                                     const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
-                                                     const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                                     const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
-                                                     const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
-                                                     const int enable_min_sep_opt,
-                                                     const int double_count, const int periodic);
-  extern void free_cellarray_index_particles_DOUBLE(cellarray_index_particles_DOUBLE *lattice, const int64_t totncells);
+  extern cellarray_weights_DOUBLE * gridlink_weights_DOUBLE(const int64_t np,
+                                                            DOUBLE *x, DOUBLE *y, DOUBLE *z, weight_struct *weights,
+                                                            const DOUBLE xmin, const DOUBLE xmax,
+                                                            const DOUBLE ymin, const DOUBLE ymax,
+                                                            const DOUBLE zmin, const DOUBLE zmax,
+                                                            const DOUBLE max_x_size,
+                                                            const DOUBLE max_y_size,
+                                                            const DOUBLE max_z_size,
+                                                            const int xbin_refine_factor,
+                                                            const int ybin_refine_factor,
+                                                            const int zbin_refine_factor,
+                                                            int *nlattice_x,
+                                                            int *nlattice_y,
+                                                            int *nlattice_z,
+                                                            const struct config_options *options) __attribute__((warn_unused_result));
+
+    struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_weights_DOUBLE *lattice1,
+                                                         struct cellarray_weights_DOUBLE *lattice2,
+                                                         const int64_t totncells, 
+                                                         int64_t *ncell_pairs,
+                                                         const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
+                                                         const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                                                         const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                                         const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
+                                                         const int enable_min_sep_opt,
+                                                         const int autocorr,
+                                                         const int periodic) __attribute__((warn_unused_result));
+
+    extern int reorder_particles_back_into_original_order_DOUBLE(const int64_t np, int64_t *original_indices, DOUBLE *X, DOUBLE *Y, DOUBLE *Z);
+    extern int reorder_particles_back_into_original_order_weights_DOUBLE(const int64_t np, int64_t *original_indices, DOUBLE *X, DOUBLE *Y,
+                                                                         DOUBLE *Z, weight_struct *weights);
+
+    extern void free_cellarray_weights_DOUBLE(cellarray_weights_DOUBLE *lattice, const int64_t totncells);
   
 #ifdef __cplusplus
 }

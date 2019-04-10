@@ -24,6 +24,9 @@
 
 #define MEMORY_INCREASE_FAC   1.2
 
+#define CONVERT_3D_INDEX_TO_LINEAR(ix, iy, iz, nx, ny, nz)           {ix*ny*nz + iy*nz + iz}
+
+
 int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax, const DOUBLE rmax, const int refine_factor, const int max_ncells, DOUBLE *xbinsize, int *nlattice, const struct config_options *options)
 {
     const DOUBLE xdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:(xmax-xmin);
@@ -46,46 +49,49 @@ int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax, const DOUBLE rmax, c
 
 void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
 {
-    for(int64_t i=0;i<totncells;i++) {
-        free(lattice[i].x);
-        free(lattice[i].y);
-        free(lattice[i].z);
-    }
-    free(lattice);
-}
-
-
-void free_cellarray_index_particles_DOUBLE(cellarray_index_particles_DOUBLE *lattice, const int64_t totncells)
-{
-    
-    for(int64_t i=0;i<totncells;i++){
-
-        free(lattice[i].x);
-        free(lattice[i].y);
-        free(lattice[i].z);
-        for(int w = 0; w < lattice[i].weights.num_weights; w++){
-            free(lattice[i].weights.weights[w]);
+    //In the case where we have not requested to copy particle positions,
+    //the memory address for the 'original_indices' from gridlink will be
+    //at the first cell. We need to free this memory to avoid a leak
+    if(lattice[0].owns_memory == 0) {
+        free(lattice[0].original_index);
+    } else {
+        for(int64_t i=0;i<totncells;i++) {
+            if(lattice[i].owns_memory) {
+                free(lattice[i].x);
+                free(lattice[i].y);
+                free(lattice[i].z);
+                free(lattice[i].original_index);
+            }
         }
-
-        /* Probably shouldn't be NULL (but might be while doing cleanup after malloc failure)*/
-        free(lattice[i].ngb_cells);
-        
-        /* Might be NULL but free(NULL) is fine*/
-        free(lattice[i].xwrap);
-        free(lattice[i].ywrap);
-        free(lattice[i].zwrap);
-
-        /* Might be NULL but free(NULL) is fine (only allocated if enable_min_sep_opt is passed)*/
-        free(lattice[i].ngb_min_dx);
-        free(lattice[i].ngb_min_dy);
-        free(lattice[i].ngb_min_dz);
-        free(lattice[i].ngb_closest_icell_xpos);
-        free(lattice[i].ngb_closest_icell_ypos);
-        free(lattice[i].ngb_closest_icell_zpos);
     }
+            
     free(lattice);
 }
 
+
+void free_cellarray_weights_DOUBLE(cellarray_weights_DOUBLE *lattice, const int64_t totncells)
+{
+    //In the case where we have not requested to copy particle positions,
+    //the memory address for the 'original_indices' from gridlink will be
+    //at the first cell. We need to free this memory to avoid a leak
+    if(lattice[0].owns_memory == 0) {
+        free(lattice[0].original_index);
+    } else {
+        for(int64_t i=0;i<totncells;i++){
+            if(lattice[i].owns_memory) {
+                free(lattice[i].x);
+                free(lattice[i].y);
+                free(lattice[i].z);
+                for(int w = 0; w < lattice[i].weights.num_weights; w++){
+                    free(lattice[i].weights.weights[w]);
+                }
+                free(lattice[i].original_index);
+            }
+        }
+    }
+
+    free(lattice);
+}
 
 void get_max_min_DOUBLE(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
                         DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z)
@@ -107,9 +113,73 @@ void get_max_min_DOUBLE(const int64_t ND1, const DOUBLE * restrict X1, const DOU
     *max_x=xmax;*max_y=ymax;*max_z=zmax;
 }
 
+/* Need SGLIB to simultaneously sort the particles */
+#include "sglib.h"
 
-cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
-                                   const DOUBLE *x,const DOUBLE *y,const DOUBLE *z,
+
+int reorder_particles_back_into_original_order_DOUBLE(const int64_t np, int64_t *original_indices, DOUBLE *X, DOUBLE *Y, DOUBLE *Z)
+{
+    if(original_indices == NULL || X == NULL || Y == NULL || Z == NULL) {
+        fprintf(stderr,"Error: In %s> While re-ordering the particles back into their input order, the passed pointers "
+                "can not be NULL. May be this function does not need to be called ?\n"
+                "Please check the value of 'copy_positions' in the 'struct config_options'. This function "
+                "should only be called when 'copy_positions' is set to 0", __FUNCTION__);
+        return EXIT_FAILURE;
+    }
+    
+    // Now sort the particles based on their original index in the input arrays
+    // That will re-order the particles back into the original input order!
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, X, i, j);                \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Y, i, j);                \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Z, i, j);                \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_indices, i, j); \
+    }
+        
+    //Since the particles might be coming from an already sorted array - quicksort might degenerate to
+    //an O(N^2) process -- use the heap-sort to be safe.
+    SGLIB_ARRAY_QUICK_SORT(int64_t, original_indices, np, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+
+#undef MULTIPLE_ARRAY_EXCHANGER
+
+    return EXIT_SUCCESS;
+}
+
+
+int reorder_particles_back_into_original_order_weights_DOUBLE(const int64_t np, int64_t *original_indices, DOUBLE *X, DOUBLE *Y, DOUBLE *Z, weight_struct *weights)
+{
+    if(original_indices == NULL || X == NULL || Y == NULL || Z == NULL || weights == NULL) {
+        fprintf(stderr,"Error: In %s> While re-ordering the particles back into their input order, the passed pointers "
+                "can not be NULL. May be this function does not need to be called ?\n"
+                "Please check the value of 'copy_positions' in the 'struct config_options'. This function "
+                "should only be called when 'copy_positions' is set to 0", __FUNCTION__);
+        return EXIT_FAILURE;
+    }
+    
+    // Now sort the particles based on their original index in the input arrays
+    // That will re-order the particles back into the original input order!
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, X, i, j);                \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Y, i, j);                \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Z, i, j);                \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_indices, i, j); \
+        for(int w = 0; w < weights->num_weights; w++) {                 \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, ((DOUBLE *) weights->weights[w]), i, j); \
+        }                                                               \
+    }
+        
+    //Since the particles might be coming from an already sorted array - quicksort might degenerate to
+    //an O(N^2) process -- use the heap-sort to be safe.
+    SGLIB_ARRAY_QUICK_SORT(int64_t, original_indices, np, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+
+#undef MULTIPLE_ARRAY_EXCHANGER
+
+    return EXIT_SUCCESS;
+}
+
+
+cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
+                                   DOUBLE *X, DOUBLE *Y, DOUBLE *Z,
                                    const DOUBLE xmin, const DOUBLE xmax,
                                    const DOUBLE ymin, const DOUBLE ymax,
                                    const DOUBLE zmin, const DOUBLE zmax,
@@ -133,10 +203,10 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
     XRETURN((xmax-xmin) > 0.0, NULL, "All of the points can not be at the same X position. (xmax-xmin) = %"REAL_FORMAT" must be non-zero\n", (xmax-xmin));
     XRETURN((ymax-ymin) > 0.0, NULL, "All of the points can not be at the same Y position. (ymax-ymin) = %"REAL_FORMAT" must be non-zero\n", (ymax-ymin));
     XRETURN((zmax-zmin) > 0.0, NULL, "All of the points can not be at the same Z position. (zmax-zmin) = %"REAL_FORMAT" must be non-zero\n", (zmax-zmin));
-    XRETURN(np > 0, NULL, "Number of points =%"PRId64" must be >0\n", np);
-    XRETURN(x != NULL, NULL, "X must be a valid array \n");
-    XRETURN(y != NULL, NULL, "Y must be a valid array \n");
-    XRETURN(z != NULL, NULL, "Z must be a valid array \n");
+    XRETURN(NPART > 0, NULL, "Number of points =%"PRId64" must be >0\n", NPART);
+    XRETURN(X != NULL, NULL, "X must be a valid array \n");
+    XRETURN(Y != NULL, NULL, "Y must be a valid array \n");
+    XRETURN(Z != NULL, NULL, "Z must be a valid array \n");
     XRETURN(xbin_refine_factor >= 1, NULL, "xbin refine factor = %d must be at least 1\n", xbin_refine_factor);
     XRETURN(ybin_refine_factor >= 1, NULL, "ybin refine factor = %d must be at least 1\n", ybin_refine_factor);
     XRETURN(zbin_refine_factor >= 1, NULL, "zbin refine factor = %d must be at least 1\n", zbin_refine_factor);
@@ -151,9 +221,9 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
       gettimeofday(&t0,NULL);
     }
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
+    const int xstatus = get_binsize_DOUBLE(xmin, xmax, max_x_size, xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
+    const int ystatus = get_binsize_DOUBLE(ymin, ymax, max_y_size, ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
+    const int zstatus = get_binsize_DOUBLE(zmin, zmax, max_z_size, zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
     if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
       return NULL;
     }
@@ -166,7 +236,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
 
     const DOUBLE cell_volume=xbinsize*ybinsize*zbinsize;
     const DOUBLE box_volume=xdiff*ydiff*zdiff;
-    int64_t expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
+    int64_t expected_n=(int64_t)( NPART * cell_volume/box_volume * MEMORY_INCREASE_FAC);
     expected_n=expected_n < 2 ? 2:expected_n;
 
     if(options->verbose) {
@@ -174,105 +244,220 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
     }
     
     cellarray_DOUBLE *lattice = (cellarray_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
-    int64_t *nallocated = (int64_t *)  my_malloc(sizeof(*nallocated), totncells);
-    if(lattice == NULL || nallocated == NULL) {
+    int64_t *all_cell_indices = NULL;
+    int64_t *original_indices =  NULL; 
+    int64_t *nallocated = NULL;//to keep track of how many particles have been allocated per cell (only when creating a copy of particle positions)
+    if(options->copy_particle_positions) {
+        nallocated = (int64_t *) my_malloc(sizeof(*nallocated), totncells);
+    } else {
+        all_cell_indices = (int64_t *) my_malloc(sizeof(*all_cell_indices), NPART);
+        original_indices = (int64_t *) my_malloc(sizeof(*original_indices), NPART);
+    }
+    if(lattice == NULL ||
+       (options->copy_particle_positions == 0 && all_cell_indices == NULL) ||
+       (options->copy_particle_positions == 0 && original_indices == NULL) ||
+       (options->copy_particle_positions && nallocated == NULL)) {
+
         free(lattice);free(nallocated);
+        fprintf(stderr,"Error: In %s> Could not allocate memory for creating the lattice and associated arrays\n", __FUNCTION__);
         return NULL;
     }
-
+    
     /*
       Allocate memory for each of the fields in cellarray. Since we haven't processed the data yet,
       expected_n is a reasonable guess as to the number of points in the cell.
     */
-    for (int64_t index=0;index<totncells;index++) {
-        const size_t memsize=sizeof(DOUBLE);
-        lattice[index].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
-        lattice[index].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
-        lattice[index].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
-        if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL)  {
-            for(int64_t j=index;j>=0;j--) {
-                free(lattice[j].x);free(lattice[j].y);free(lattice[j].z);
+    for (int64_t icell=0;icell<totncells;icell++) {
+        lattice[icell].nelements = 0;
+        lattice[icell].owns_memory = 0;
+        if(options->copy_particle_positions) {
+            lattice[icell].original_index = my_malloc(sizeof(lattice[icell].original_index[0]), expected_n);
+            XRETURN(lattice[icell].original_index != NULL, NULL, "Error in %s> Could not allocate memory for holding the original "
+                    "indices for particles. (allocating for %"PRId64" particles \n", __FUNCTION__, expected_n);
+        
+            const size_t memsize=sizeof(DOUBLE);
+            lattice[icell].x = my_malloc(memsize, expected_n);//This allocates extra and is wasteful
+            lattice[icell].y = my_malloc(memsize, expected_n);//This allocates extra and is wasteful
+            lattice[icell].z = my_malloc(memsize, expected_n);//This allocates extra and is wasteful
+            if(lattice[icell].x == NULL || lattice[icell].y == NULL || lattice[icell].z == NULL)  {
+                fprintf(stderr,"Error in %s> Could not allocate memory for holding the original "
+                        "indices for particles in cell %"PRId64". (allocating for %"PRId64" particles \n",
+                        __FUNCTION__, icell, expected_n);
+                for(int64_t j=icell;j>=0;j--) {
+                    free(lattice[j].x);free(lattice[j].y);free(lattice[j].z);free(lattice[j].original_index);
+                }
+                free(nallocated);free(lattice);
+                return NULL;
             }
-            free(nallocated);free(lattice);
-            return NULL;
+            lattice[icell].owns_memory = 1;//we have allocated this memory -- will need to free at the end
+            nallocated[icell] = expected_n;
         }
-
-        lattice[index].nelements=0;
-        nallocated[index] = expected_n;
     }
 
     const DOUBLE xinv=1.0/xbinsize;
     const DOUBLE yinv=1.0/ybinsize;
     const DOUBLE zinv=1.0/zbinsize;
 
-    for (int64_t i=0;i<np;i++)  {
-        int ix=(int)((x[i]-xmin)*xinv) ;
-        int iy=(int)((y[i]-ymin)*yinv) ;
-        int iz=(int)((z[i]-zmin)*zinv) ;
+    for (int64_t i=0;i<NPART;i++)  {
+        int ix=(int)((X[i]-xmin)*xinv) ;
+        int iy=(int)((Y[i]-ymin)*yinv) ;
+        int iz=(int)((Z[i]-zmin)*zinv) ;
         if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
         if (iy>nmesh_y-1)  iy--;
         if (iz>nmesh_z-1)  iz--;
-        XRETURN(x[i] >= xmin && x[i] <= xmax, NULL, "x[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, x[i], xmin, xmax);
-        XRETURN(y[i] >= ymin && y[i] <= ymax, NULL, "y[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, y[i], ymin, ymax);
-        XRETURN(z[i] >= zmin && z[i] <= zmax, NULL, "z[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, z[i], zmin, zmax);
+        XRETURN(X[i] >= xmin && X[i] <= xmax, NULL, "x[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
+                i, X[i], xmin, xmax);
+        XRETURN(Y[i] >= ymin && Y[i] <= ymax, NULL, "y[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
+                i, Y[i], ymin, ymax);
+        XRETURN(Z[i] >= zmin && Z[i] <= zmax, NULL, "z[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
+                i, Z[i], zmin, zmax);
         XRETURN(ix >= 0 && ix < nmesh_x, NULL, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
         XRETURN(iy >= 0 && iy < nmesh_y, NULL, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
         XRETURN(iz >= 0 && iz < nmesh_z, NULL, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
 
-        int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
+        const int64_t cellindex = CONVERT_3D_INDEX_TO_LINEAR(ix, iy, iz, nmesh_x, nmesh_y, nmesh_z);
+        if(options->copy_particle_positions == 0) {
+            all_cell_indices[i] = cellindex;
+            original_indices[i] = i;
+        } else {
 
-        if(lattice[index].nelements == nallocated[index]) {
-            expected_n = nallocated[index]*MEMORY_INCREASE_FAC;
-
-            //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
-            //This way, we only increase by a very few particles
-            // at a time. Smaller memory footprint
-            while(expected_n <= nallocated[index])
-                expected_n++;
-
-            const size_t memsize=sizeof(DOUBLE);
-            DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
-            do {
-                posx = my_realloc(lattice[index].x,memsize,expected_n,"lattice.x");
-                posy = my_realloc(lattice[index].y,memsize,expected_n,"lattice.y");
-                posz = my_realloc(lattice[index].z,memsize,expected_n,"lattice.z");
-                if(posx == NULL || posy == NULL || posz == NULL) {
-                    expected_n--;
+            //Check if memory has to be re-allocated
+            if(lattice[cellindex].nelements == nallocated[cellindex]) {
+                expected_n = nallocated[cellindex]*MEMORY_INCREASE_FAC;
+                
+                //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
+                //This way, we only increase by a very few particles
+                // at a time. Smaller memory footprint
+                while(expected_n <= nallocated[cellindex]) {
+                    expected_n++;
                 }
-                lattice[index].x = (posx == NULL) ? lattice[index].x:posx;
-                lattice[index].y = (posy == NULL) ? lattice[index].y:posy;
-                lattice[index].z = (posz == NULL) ? lattice[index].z:posz;
-            } while(expected_n > nallocated[index] && (posx == NULL ||
-                                                       posy == NULL ||
-                                                       posz == NULL));
-            
-            if(expected_n == nallocated[index]) {
-                /*realloc failed. free memory and return */
-                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
-                        __FUNCTION__, np);
-                free_cellarray_DOUBLE(lattice, totncells);
-                free(nallocated);
-                return NULL;
-            }
-            nallocated[index] = expected_n;
+                
+                DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
+                int64_t *orig_index = NULL;
+                do {
+                    orig_index = my_realloc(lattice[cellindex].original_index, sizeof(*orig_index), expected_n,"lattice.original_index");
+                    lattice[cellindex].original_index = (orig_index == NULL) ? lattice[cellindex].original_index:orig_index;
+                    if(options->copy_particle_positions) {
+                        posx = my_realloc(lattice[cellindex].x, sizeof(*posx), expected_n, "lattice.x");
+                        posy = my_realloc(lattice[cellindex].y, sizeof(*posy), expected_n, "lattice.y");
+                        posz = my_realloc(lattice[cellindex].z, sizeof(*posz), expected_n, "lattice.z");
+                        
+                        lattice[cellindex].x = (posx == NULL) ? lattice[cellindex].x:posx;
+                        lattice[cellindex].y = (posy == NULL) ? lattice[cellindex].y:posy;
+                        lattice[cellindex].z = (posz == NULL) ? lattice[cellindex].z:posz;
+                    }
+                    
+                    if(orig_index == NULL || posx == NULL || posy == NULL || posz == NULL) {
+                        expected_n--;
+                    }
+                } while(expected_n > nallocated[cellindex] && (orig_index == NULL || 
+                                                               posx == NULL ||
+                                                               posy == NULL ||
+                                                               posz == NULL));
+                
+                if(expected_n == nallocated[cellindex]) {
+                    /*realloc failed. free memory and return */
+                    fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                            __FUNCTION__, NPART);
+                    free_cellarray_DOUBLE(lattice, totncells);
+                    free(nallocated);
+                    return NULL;
+                }
+                nallocated[cellindex] = expected_n;
+            } //finished reallocating if necessary
+
+            //Check that there is sufficient space to assign the new particle
+            XRETURN(lattice[cellindex].nelements < nallocated[cellindex], NULL, 
+                    ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
+                    cellindex, lattice[cellindex].nelements, nallocated[cellindex]);
+            const int64_t ipos = lattice[cellindex].nelements;
+            lattice[cellindex].original_index[ipos] = i;//this is the original index for the particle position in the input array
+            lattice[cellindex].x[ipos] = X[i];
+            lattice[cellindex].y[ipos] = Y[i];
+            lattice[cellindex].z[ipos] = Z[i];
         }
-        XRETURN(lattice[index].nelements < nallocated[index], NULL, 
-                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
-                index, lattice[index].nelements, nallocated[index]);
 
-        const int64_t ipos = lattice[index].nelements;
-        lattice[index].x[ipos] = x[i];
-        lattice[index].y[ipos] = y[i];
-        lattice[index].z[ipos] = z[i];
-        lattice[index].nelements++;
-    }
-    free(nallocated);
+        //Need to increment the number of particles
+        lattice[cellindex].nelements++;
+    }//loop over nparticles
 
-    //You can free the extra memory reserved by the mallocs by looping over totncells and doing a realloc(lattice[index].x,sizeof(DOUBLE),lattice[index].nelements,"lattice.x")
+    if(options->copy_particle_positions) {
+        //All the particle positions have already been copied -> do not need to re-allocate any more
+        //You can free the extra memory reserved by the mallocs by looping over totncells
+        //and doing a realloc(lattice[cellindex].x,sizeof(DOUBLE),lattice[cellindex].nelements,"lattice.x")
+        free(nallocated);
+    } else {
+        // We have been told to work with the particle positions in-place i.e., not create a copy
+        // of the particle positions within the lattice. Therefore, now we have to sort the
+        // input particle positions to get them to be contiguous in their respective 3D cell
+        if(sizeof(*(lattice->original_index)) != sizeof(*original_indices)) {
+            fprintf(stderr, "Error: In %s> The array to track the indices of input particle positions "
+                    "should be the same size as the indices themselves\n", __FUNCTION__);
+            fprintf(stderr,"Perhaps check that these two variables are the same type\n");
+            fprintf(stderr,"'original_index' within the 'struct cellarray', defined in 'cellarray.h.src' and \n");
+            fprintf(stderr,"'original_indices' defined within function '%s' in file '%s'\n", __FUNCTION__, __FILE__);
+            return NULL;
+        }
+        
+        
+        // First sort all particles into their respective cell-indices
+        // also simultaneously swap the other associated array
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, X, i, j);            \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Y, i, j);            \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Z, i, j);            \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_indices, i, j); \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, all_cell_indices, i, j); \
+        }
+        
+        //Since the particles might be coming from an already sorted array - quicksort might degenerate to
+        //a O(N^2) process -- use the heap-sort to be safe.
+        SGLIB_ARRAY_QUICK_SORT(int64_t, all_cell_indices, NPART, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+        //Now the particles are sorted contiguously according to their respective cellindex
+        //We need to fix up the x/y/z pointers at the beginning of each cell to point to the right places
+#undef MULTIPLE_ARRAY_EXCHANGER
+        free(all_cell_indices);
+        
+        int64_t nelements_so_far = 0;
+        for(int64_t icell=0;icell<totncells;icell++) {
+            cellarray_DOUBLE *first=&(lattice[icell]);
+            first->x = X + nelements_so_far;//take the base pointer address and add however many particles that have appeared summed across all previous cells
+            first->y = Y + nelements_so_far;
+            first->z = Z + nelements_so_far;
+            first->original_index = original_indices + nelements_so_far;
+            nelements_so_far += first->nelements;
+        }
+    }//end of options->copy_particle_positions == 0
 
+
+    //Now that the particle positions can be accessed from each cell,
+    //we can sort the particles based on their z-positions (if requested)
+    if(options->sort_on_z) {
+#if defined(_OPENMP)
+#pragma omp parallel for schedule(dynamic)
+#endif
+        for(int64_t icell=0;icell<totncells;icell++) {
+            const cellarray_DOUBLE *first=&(lattice[icell]);
+            if(first->nelements == 0) continue; 
+            DOUBLE *x1 = first->x;
+            DOUBLE *y1 = first->y;
+            DOUBLE *z1 = first->z;
+            int64_t *original_index = first->original_index;
+            
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, x1, i, j);           \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, y1, i, j);           \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, z1, i, j);           \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_index, i, j); \
+            }
+            
+            SGLIB_ARRAY_QUICK_SORT(DOUBLE, z1, first->nelements, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+            
+#undef MULTIPLE_ARRAY_EXCHANGER
+        }//loop over cells
+    } //sorting particles in each cell on z
+    
+        
     *nlattice_x=nmesh_x;
     *nlattice_y=nmesh_y;
     *nlattice_z=nmesh_z;
@@ -288,24 +473,21 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
 
 
 
-/* Need SGLIB to simultaneously sort the particles */
-#include "sglib.h"
-
-cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t np,
-                                                                   const DOUBLE *x, const DOUBLE *y, const DOUBLE *z, const weight_struct *weights,
-                                                                   const DOUBLE xmin, const DOUBLE xmax,
-                                                                   const DOUBLE ymin, const DOUBLE ymax,
-                                                                   const DOUBLE zmin, const DOUBLE zmax,
-                                                                   const DOUBLE max_x_size,
-                                                                   const DOUBLE max_y_size,
-                                                                   const DOUBLE max_z_size,
-                                                                   const int xbin_refine_factor,
-                                                                   const int ybin_refine_factor,
-                                                                   const int zbin_refine_factor,
-                                                                   int *nlattice_x,
-                                                                   int *nlattice_y,
-                                                                   int *nlattice_z,
-                                                                   const struct config_options *options)
+cellarray_weights_DOUBLE * gridlink_weights_DOUBLE(const int64_t NPART,
+                                                   DOUBLE *X, DOUBLE *Y, DOUBLE *Z, weight_struct *WEIGHTS,
+                                                   const DOUBLE xmin, const DOUBLE xmax,
+                                                   const DOUBLE ymin, const DOUBLE ymax,
+                                                   const DOUBLE zmin, const DOUBLE zmax,
+                                                   const DOUBLE max_x_size,
+                                                   const DOUBLE max_y_size,
+                                                   const DOUBLE max_z_size,
+                                                   const int xbin_refine_factor,
+                                                   const int ybin_refine_factor,
+                                                   const int zbin_refine_factor,
+                                                   int *nlattice_x,
+                                                   int *nlattice_y,
+                                                   int *nlattice_z,
+                                                   const struct config_options *options)
 {
 
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
@@ -330,208 +512,279 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
     const DOUBLE ydiff = (options->periodic && options->boxsize > 0) ? options->boxsize:ymax-ymin;
     const DOUBLE zdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:zmax-zmin;
 
-    const DOUBLE cell_volume=xbinsize*ybinsize*zbinsize;
-    const DOUBLE box_volume=xdiff*ydiff*zdiff;
-    int64_t expected_n=(int64_t)(np*cell_volume/box_volume*MEMORY_INCREASE_FAC);
+    const DOUBLE cell_volume = xbinsize * ybinsize * zbinsize;
+    const DOUBLE box_volume = xdiff * ydiff * zdiff;
+    int64_t expected_n=(int64_t)(NPART * cell_volume/box_volume * MEMORY_INCREASE_FAC);
     expected_n=expected_n < 2 ? 2:expected_n;
 
     if(options->verbose) {
       fprintf(stderr,"In %s> Running with [nmesh_x, nmesh_y, nmesh_z]  = %d,%d,%d. ",__FUNCTION__,nmesh_x,nmesh_y,nmesh_z);
     }
 
-    cellarray_index_particles_DOUBLE *lattice  = (cellarray_index_particles_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
-    int64_t *nallocated = (int64_t *)       my_malloc(sizeof(*nallocated)      , totncells);
-    if(lattice == NULL || nallocated == NULL) {
+    cellarray_weights_DOUBLE *lattice  = (cellarray_weights_DOUBLE *) my_malloc(sizeof(*lattice), totncells);
+    int64_t *all_cell_indices = NULL;
+    int64_t *original_indices =  NULL; 
+    int64_t *nallocated = NULL;//to keep track of how many particles have been allocated per cell (only when creating a copy of particle positions)
+    if(options->copy_particle_positions) {
+        nallocated = (int64_t *) my_malloc(sizeof(*nallocated), totncells);
+    } else {
+        all_cell_indices = (int64_t *) my_malloc(sizeof(*all_cell_indices), NPART);
+        original_indices = (int64_t *) my_malloc(sizeof(*original_indices), NPART);
+    }
+    if(lattice == NULL ||
+       (options->copy_particle_positions == 0 && all_cell_indices == NULL) ||
+       (options->copy_particle_positions == 0 && original_indices == NULL) ||
+       (options->copy_particle_positions && nallocated == NULL)) {
+
         free(lattice);free(nallocated);
+        fprintf(stderr,"Error: In %s> Could not allocate memory for creating the lattice and associated arrays\n", __FUNCTION__);
         return NULL;
     }
     
-    for (int64_t index=0;index<totncells;index++) {
-        const size_t memsize=sizeof(DOUBLE);
-        lattice[index].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
-        lattice[index].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
-        lattice[index].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
-        
-        // Now do the same for the weights
-        lattice[index].weights.num_weights = (weights == NULL) ? 0 : weights->num_weights;
-        int w_alloc_status = EXIT_SUCCESS;
-        for(int w = 0; w < lattice[index].weights.num_weights; w++){
-          lattice[index].weights.weights[w] = (DOUBLE *) my_malloc(memsize, expected_n);
-          if(lattice[index].weights.weights[w] == NULL){
-            w_alloc_status = EXIT_FAILURE;
-          }
-        }
-        
-        if(lattice[index].x == NULL || lattice[index].y == NULL || lattice[index].z == NULL || w_alloc_status == EXIT_FAILURE) {
-            for(int64_t j=index;j>=0;j--) {
-                free(lattice[j].x);free(lattice[j].y);free(lattice[j].z);
-                for(int w = 0; w < lattice[index].weights.num_weights; w++){
-                  free(lattice[index].weights.weights[w]);
+    for (int64_t icell=0;icell<totncells;icell++) {
+        lattice[icell].nelements = 0;
+        lattice[icell].owns_memory = 0;
+        lattice[icell].weights.num_weights = (WEIGHTS == NULL) ? 0 : WEIGHTS->num_weights;
+        lattice[icell].xbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].xbounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[icell].ybounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].ybounds[1] = -MAX_POSITIVE_FLOAT;
+        lattice[icell].zbounds[0] = MAX_POSITIVE_FLOAT;
+        lattice[icell].zbounds[1] = -MAX_POSITIVE_FLOAT;
+
+        if(options->copy_particle_positions) {
+            lattice[icell].original_index = my_malloc(sizeof(lattice[icell].original_index[0]), expected_n);
+            XRETURN(lattice[icell].original_index != NULL, NULL, "Error in %s> Could not allocate memory for holding the original "
+                    "indices for particles. (allocating for %"PRId64" particles \n", __FUNCTION__, expected_n);
+
+            const size_t memsize=sizeof(DOUBLE);
+            lattice[icell].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+            lattice[icell].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+            lattice[icell].z = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
+            
+            // Now do the same for the weights
+            int w_alloc_status = EXIT_SUCCESS;
+            for(int w = 0; w < lattice[icell].weights.num_weights; w++){
+                lattice[icell].weights.weights[w] = (DOUBLE *) my_malloc(memsize, expected_n);
+                if(lattice[icell].weights.weights[w] == NULL){
+                    w_alloc_status = EXIT_FAILURE;
                 }
             }
-            free(nallocated);free(lattice);
-            return NULL;
-        }
-
-        lattice[index].nelements=0;
-        lattice[index].xbounds[0] = MAX_POSITIVE_FLOAT;
-        lattice[index].xbounds[1] = -MAX_POSITIVE_FLOAT;
-        lattice[index].ybounds[0] = MAX_POSITIVE_FLOAT;
-        lattice[index].ybounds[1] = -MAX_POSITIVE_FLOAT;
-        lattice[index].zbounds[0] = MAX_POSITIVE_FLOAT;
-        lattice[index].zbounds[1] = -MAX_POSITIVE_FLOAT;
         
-        lattice[index].ngb_cells = NULL;
-        lattice[index].ngb_min_dx = NULL;
-        lattice[index].ngb_min_dy = NULL;
-        lattice[index].ngb_min_dz = NULL;
-        lattice[index].ngb_closest_icell_xpos = NULL;
-        lattice[index].ngb_closest_icell_ypos = NULL;
-        lattice[index].ngb_closest_icell_zpos = NULL;
-        lattice[index].xwrap = NULL;
-        lattice[index].ywrap = NULL;
-        lattice[index].zwrap = NULL;
-        nallocated[index] = expected_n;
-    }
+            if(lattice[icell].x == NULL || lattice[icell].y == NULL || lattice[icell].z == NULL || w_alloc_status == EXIT_FAILURE) {
+                for(int64_t j=icell;j>=0;j--) {
+                    free(lattice[j].x);free(lattice[j].y);free(lattice[j].z);
+                    for(int w = 0; w < lattice[icell].weights.num_weights; w++){
+                        free(lattice[icell].weights.weights[w]);
+                    }
+                }
+                free(nallocated);free(lattice);
+                return NULL;
+            }
+            nallocated[icell] = expected_n;
+        }//if condition when creating a copy of the particle positions 
+    }//end of loop over totncells
 
     const DOUBLE xinv=1.0/xbinsize;
     const DOUBLE yinv=1.0/ybinsize;
     const DOUBLE zinv=1.0/zbinsize;
 
-    for (int64_t i=0;i<np;i++)  {
-        int ix=(int)((x[i]-xmin)*xinv) ;
-        int iy=(int)((y[i]-ymin)*yinv) ;
-        int iz=(int)((z[i]-zmin)*zinv) ;
+    for (int64_t i=0;i<NPART;i++)  {
+        int ix=(int)((X[i]-xmin)*xinv) ;
+        int iy=(int)((Y[i]-ymin)*yinv) ;
+        int iz=(int)((Z[i]-zmin)*zinv) ;
 
         if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
         if (iy>nmesh_y-1)  iy--;
         if (iz>nmesh_z-1)  iz--;
-        XRETURN(x[i] >= xmin && x[i] <= xmax, NULL, 
+        XRETURN(X[i] >= xmin && X[i] <= xmax, NULL, 
                "x[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-               i, x[i], xmin, xmax);
-        XRETURN(y[i] >= ymin && y[i] <= ymax, NULL, 
+                i, X[i], xmin, xmax);
+        XRETURN(Y[i] >= ymin && Y[i] <= ymax, NULL, 
                "y[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-               i, y[i], ymin, ymax);
-        XRETURN(z[i] >= zmin && z[i] <= zmax, NULL, 
+               i, Y[i], ymin, ymax);
+        XRETURN(Z[i] >= zmin && Z[i] <= zmax, NULL, 
                "z[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-               i, z[i], zmin, zmax);
+               i, Z[i], zmin, zmax);
         
         XRETURN(ix >= 0 && ix < nmesh_x, NULL, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
         XRETURN(iy >= 0 && iy < nmesh_y, NULL, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
         XRETURN(iz >= 0 && iz < nmesh_z, NULL, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
 
-        const int64_t index = ix*nmesh_y*nmesh_z + iy*nmesh_z + iz;
-
-        if(lattice[index].nelements == nallocated[index]) {
-            expected_n = nallocated[index]*MEMORY_INCREASE_FAC;
-
-            //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
-            //This way, we only increase by a very few particles
-            // at a time. Smaller memory footprint
-            while(expected_n <= nallocated[index])
-                expected_n++;
-
-            const size_t memsize=sizeof(DOUBLE);
-            DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
-            int w_alloc_status;
-            do {
-                posx = my_realloc(lattice[index].x,memsize,expected_n,"lattice.x");
-                posy = my_realloc(lattice[index].y,memsize,expected_n,"lattice.y");
-                posz = my_realloc(lattice[index].z,memsize,expected_n,"lattice.z");
-              
-                if(posx != NULL){
-                  lattice[index].x = posx;
-                }
-                if(posy != NULL){
-                  lattice[index].y = posy;
-                }
-                if(posz != NULL){
-                  lattice[index].z = posz;
-                }
-                
-                w_alloc_status = EXIT_SUCCESS;
-                for(int w = 0; w < lattice[index].weights.num_weights; w++){
-                  DOUBLE *newweights = (DOUBLE *) my_realloc(lattice[index].weights.weights[w], memsize, expected_n, "lattice.weights");
-                  if(newweights == NULL){
-                    w_alloc_status = EXIT_FAILURE;
-                  } else {
-                    lattice[index].weights.weights[w] = newweights;
-                  }
-                }
-                
-                if(posx == NULL || posy == NULL || posz == NULL || w_alloc_status == EXIT_FAILURE) {
-                    expected_n--;
-                }
-            } while(expected_n > nallocated[index] && (posx == NULL ||
-                                                       posy == NULL ||
-                                                       posz == NULL ||
-                                                       w_alloc_status == EXIT_FAILURE));
+        const int64_t icell = CONVERT_3D_INDEX_TO_LINEAR(ix, iy, iz, nmesh_x, nmesh_y, nmesh_z);
+        if(options->copy_particle_positions == 0) {
+            all_cell_indices[i] = icell;
+            original_indices[i] = i;
+        } else {
             
-            if(expected_n == nallocated[index]) {
-                /*realloc failed. free memory and return */
-                fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
-                        __FUNCTION__, np);
-                free_cellarray_index_particles_DOUBLE(lattice, totncells);
-                free(nallocated);
-                return NULL;
+            //check if we need to reallocate
+            if(lattice[icell].nelements == nallocated[icell]) {
+                expected_n = nallocated[icell]*MEMORY_INCREASE_FAC;
+                
+                //In case expected_n is 1 or MEMORY_INCREASE_FAC is 1.
+                //This way, we only increase by a very few particles
+                // at a time. Smaller memory footprint
+                while(expected_n <= nallocated[icell])
+                    expected_n++;
+                
+                DOUBLE *posx=NULL, *posy=NULL, *posz=NULL;
+                int64_t *orig_index=NULL;
+                int w_alloc_status;
+                do {
+                    
+                    posx = my_realloc(lattice[icell].x, sizeof(DOUBLE), expected_n, "lattice.x");
+                    posy = my_realloc(lattice[icell].y, sizeof(DOUBLE), expected_n, "lattice.y");
+                    posz = my_realloc(lattice[icell].z, sizeof(DOUBLE), expected_n, "lattice.z");
+                    orig_index = my_realloc(lattice[icell].original_index, sizeof(lattice[icell].original_index[0]), expected_n, "lattice.x");
+                    
+                    lattice[icell].x = (posx == NULL) ? lattice[icell].x:posx;
+                    lattice[icell].y = (posy == NULL) ? lattice[icell].y:posy;
+                    lattice[icell].z = (posz == NULL) ? lattice[icell].z:posz;
+                    lattice[icell].original_index = (orig_index == NULL) ? lattice[icell].original_index:orig_index;
+                    
+                    w_alloc_status = EXIT_SUCCESS;
+                    for(int w = 0; w < lattice[icell].weights.num_weights; w++){
+                        DOUBLE *newweights = (DOUBLE *) my_realloc(lattice[icell].weights.weights[w], sizeof(DOUBLE), expected_n, "lattice.weights");
+                        if(newweights == NULL){
+                            w_alloc_status = EXIT_FAILURE;
+                        } else {
+                            lattice[icell].weights.weights[w] = newweights;
+                        }
+                    }
+                    
+                    if(posx == NULL || posy == NULL || posz == NULL || orig_index == NULL ||w_alloc_status == EXIT_FAILURE) {
+                        expected_n--;
+                    }
+                } while(expected_n > nallocated[icell] && (posx == NULL ||
+                                                           posy == NULL ||
+                                                           posz == NULL ||
+                                                           orig_index == NULL || 
+                                                           w_alloc_status == EXIT_FAILURE));
+                
+                if(expected_n == nallocated[icell]) {
+                    /*realloc failed. free memory and return */
+                    fprintf(stderr,"In %s> Reallocation failed,  randomly subsampling the input particle set (currently at %"PRId64" particles) might help\n",
+                            __FUNCTION__, NPART);
+                    free_cellarray_weights_DOUBLE(lattice, totncells);
+                    free(nallocated);
+                    return NULL;
+                }
+                nallocated[icell] = expected_n;
+            }// successfully re-allocated memory to hold new particles (at least one more)
+        
+            XRETURN(lattice[icell].nelements < nallocated[icell], NULL, 
+                    ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
+                    icell, lattice[icell].nelements, nallocated[icell]);
+            
+            const int64_t ipos = lattice[icell].nelements;
+            lattice[icell].x[ipos] = X[i];
+            lattice[icell].y[ipos] = Y[i];
+            lattice[icell].z[ipos] = Z[i];
+            lattice[icell].original_index[ipos] = i;
+            for(int w = 0; w < lattice[icell].weights.num_weights; w++){
+                lattice[icell].weights.weights[w][ipos] = ((DOUBLE *) WEIGHTS->weights[w])[i];
             }
-            nallocated[index] = expected_n;
-        }
-        XRETURN(lattice[index].nelements < nallocated[index], NULL, 
-                ANSI_COLOR_RED"BUG: lattice[%"PRId64"].nelements = %"PRId64" must be less than allocated memory = %"PRId64 ANSI_COLOR_RESET"\n",
-                index, lattice[index].nelements, nallocated[index]);
-
-        const int64_t ipos = lattice[index].nelements;
-        lattice[index].x[ipos] = x[i];
-        lattice[index].y[ipos] = y[i];
-        lattice[index].z[ipos] = z[i];
-        for(int w = 0; w < lattice[index].weights.num_weights; w++){
-            lattice[index].weights.weights[w][ipos] = ((DOUBLE *)weights->weights[w])[i];
         }
 
-        lattice[index].xbounds[0] = x[i] < lattice[index].xbounds[0] ? x[i]:lattice[index].xbounds[0];
-        lattice[index].ybounds[0] = y[i] < lattice[index].ybounds[0] ? y[i]:lattice[index].ybounds[0];
-        lattice[index].zbounds[0] = z[i] < lattice[index].zbounds[0] ? z[i]:lattice[index].zbounds[0];
+        //Store the particle bounds
+        lattice[icell].xbounds[0] = X[i] < lattice[icell].xbounds[0] ? X[i]:lattice[icell].xbounds[0];
+        lattice[icell].ybounds[0] = Y[i] < lattice[icell].ybounds[0] ? Y[i]:lattice[icell].ybounds[0];
+        lattice[icell].zbounds[0] = Z[i] < lattice[icell].zbounds[0] ? Z[i]:lattice[icell].zbounds[0];
 
-        lattice[index].xbounds[1] = x[i] > lattice[index].xbounds[1] ? x[i]:lattice[index].xbounds[1];
-        lattice[index].ybounds[1] = y[i] > lattice[index].ybounds[1] ? y[i]:lattice[index].ybounds[1];
-        lattice[index].zbounds[1] = z[i] > lattice[index].zbounds[1] ? z[i]:lattice[index].zbounds[1];
+        lattice[icell].xbounds[1] = X[i] > lattice[icell].xbounds[1] ? X[i]:lattice[icell].xbounds[1];
+        lattice[icell].ybounds[1] = Y[i] > lattice[icell].ybounds[1] ? Y[i]:lattice[icell].ybounds[1];
+        lattice[icell].zbounds[1] = Z[i] > lattice[icell].zbounds[1] ? Z[i]:lattice[icell].zbounds[1];
 
-        lattice[index].nelements++;
+        lattice[icell].nelements++;
     }
-    free(nallocated);
 
+    if(options->copy_particle_positions) {
+        //All the particle positions have already been copied -> do not need to re-allocate any more
+        //You can free the extra memory reserved by the mallocs by looping over totncells
+        //and doing a realloc(lattice[cellindex].x,sizeof(DOUBLE),lattice[cellindex].nelements,"lattice.x")
+        free(nallocated);
+    } else {
+        // We have been told to work with the particle positions in-place i.e., not create a copy
+        // of the particle positions within the lattice. Therefore, now we have to sort the
+        // input particle positions to get them to be contiguous in their respective 3D cell
+        if(sizeof(*(lattice->original_index)) != sizeof(*original_indices)) {
+            fprintf(stderr, "Error: In %s> The array to track the indices of input particle positions "
+                    "should be the same size as the indices themselves\n", __FUNCTION__);
+            fprintf(stderr,"Perhaps check that these two variables are the same type\n");
+            fprintf(stderr,"'original_index' within the 'struct cellarray', defined in 'cellarray.h.src' and \n");
+            fprintf(stderr,"'original_indices' defined within function '%s' in file '%s'\n", __FUNCTION__, __FILE__);
+            return NULL;
+        }
+        
+        // First sort all particles into their respective cell-indices
+        // also simultaneously swap the other associated array
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, X, i, j);            \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Y, i, j);            \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Z, i, j);            \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_indices, i, j); \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, all_cell_indices, i, j); \
+            for(int w = 0; w < WEIGHTS->num_weights; w++) {             \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, ((DOUBLE *) WEIGHTS->weights[w]), i, j); \
+            }                                                           \
+        }
+        
+        //Since the particles might be coming from an already sorted array - quicksort might degenerate to
+        //a O(N^2) process -- use the heap-sort to be safe.
+        SGLIB_ARRAY_QUICK_SORT(int64_t, all_cell_indices, NPART, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+        //Now the particles are sorted contiguously according to their respective cellindex
+        //We need to fix up the x/y/z pointers at the beginning of each cell to point to the right places
+#undef MULTIPLE_ARRAY_EXCHANGER
+
+        free(all_cell_indices);//Done with re-ordering the particles
+        
+        int64_t nelements_so_far = 0;
+        for(int64_t icell=0;icell<totncells;icell++) {
+            cellarray_weights_DOUBLE *first=&(lattice[icell]);
+            first->x = X + nelements_so_far;//take the base pointer address and add however many particles that have appeared summed across all previous cells
+            first->y = Y + nelements_so_far;
+            first->z = Z + nelements_so_far;
+            first->original_index = original_indices + nelements_so_far;
+            for(int w = 0; w < WEIGHTS->num_weights; w++) {             
+                first->weights.weights[w] = ((DOUBLE *) WEIGHTS->weights[w]) + nelements_so_far;
+            }
+            nelements_so_far += first->nelements;
+        }
+        XRETURN(nelements_so_far == NPART, NULL,
+                "Error in %s> Expected to assign all particles = %"PRId64" into cells but only seem "
+                "to have assigned %"PRId64". Perhaps, there are some edge cases with floating point accuracy\n",
+                __FUNCTION__, NPART, nelements_so_far);
+        
+    }//end of options->copy_particle_positions == 0
+    
     /* Do we need to sort the particles in Z ? */
     if(options->sort_on_z) {
 #if defined(_OPENMP)
 #pragma omp parallel for schedule(dynamic)
 #endif
         for(int64_t icell=0;icell<totncells;icell++) {
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,X,i,j);        \
-                                               SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Y,i,j);        \
-                                               SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,Z,i,j);        \
-                                               for(int w = 0; w < first->weights.num_weights; w++){ \
-                                                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE,first->weights.weights[w],i,j);\
-                                               }\
-                                             }
-
-            const cellarray_index_particles_DOUBLE *first=&(lattice[icell]);
+            const cellarray_weights_DOUBLE *first=&(lattice[icell]);
             if(first->nelements == 0) continue; 
             
-            DOUBLE *X = first->x;
-            DOUBLE *Y = first->y;
-            DOUBLE *Z = first->z;
+            DOUBLE *x1 = first->x;
+            DOUBLE *y1 = first->y;
+            DOUBLE *z1 = first->z;
+            int64_t *original_index = first->original_index;
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, x1, i, j);        \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, y1, i, j);        \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, z1, i, j);        \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_index, i, j); \
+                for(int w = 0; w < first->weights.num_weights; w++){    \
+                    SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, ((DOUBLE *)first->weights.weights[w]), i, j); \
+                }                                                       \
+            }
             
-            SGLIB_ARRAY_QUICK_SORT(DOUBLE, Z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+            SGLIB_ARRAY_QUICK_SORT(DOUBLE, z1, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
 #undef MULTIPLE_ARRAY_EXCHANGER
         }
     }
 
-
-    
-    //You can free the extra memory reserved by the mallocs by looping over totncells
-    //and doing a realloc(lattice[index].x,sizeof(DOUBLE),lattice[index].nelements,"lattice.x")
-    
     *nlattice_x=nmesh_x;
     *nlattice_y=nmesh_y;
     *nlattice_z=nmesh_z;
@@ -545,65 +798,40 @@ cellarray_index_particles_DOUBLE * gridlink_index_particles_DOUBLE(const int64_t
 }
 
 
-
-int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOUBLE *lattice1, struct cellarray_index_particles_DOUBLE *lattice2,
-                                            const int64_t totncells, 
-                                            const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
-                                            const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                            const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
-                                            const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
-                                            const int enable_min_sep_opt,
-                                            const int autocorr, const int periodic)
+struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_weights_DOUBLE *lattice1,
+                                                     struct cellarray_weights_DOUBLE *lattice2,
+                                                     const int64_t totncells,
+                                                     int64_t *ncell_pairs,
+                                                     const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
+                                                     const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                                                     const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                                     const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
+                                                     const int enable_min_sep_opt,
+                                                     const int autocorr,
+                                                     const int periodic)
 {
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
     const int64_t ny_ngb = 2*ybin_refine_factor + 1;
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
 
+    const int64_t max_num_cell_pairs = totncells * max_ngb_cells;
+    int64_t num_cell_pairs = 0;
+    struct cell_pair_DOUBLE *all_cell_pairs = malloc(max_num_cell_pairs * sizeof(*all_cell_pairs));
+    XRETURN(all_cell_pairs != NULL, NULL,
+            "Error: Could not allocate memory for storing all the cell pairs. "
+            "Reducing bin refine factors might help. Requested for %"PRId64" elements "
+            "with each element of size %zu bytes\n", max_num_cell_pairs, sizeof(all_cell_pairs));
+    
     for(int64_t icell=0;icell<totncells;icell++) {
-        struct cellarray_index_particles_DOUBLE *first = &(lattice1[icell]);
+        struct cellarray_weights_DOUBLE *first = &(lattice1[icell]);
         if(first->nelements == 0) continue;
         const int iz = icell % nmesh_z;
         const int ix = icell / (nmesh_y * nmesh_z );
         const int iy = (icell - iz - ix*nmesh_z*nmesh_y)/nmesh_z;
-        XRETURN(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz), EXIT_FAILURE,
+        XRETURN(icell == (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz), NULL,
             ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
                 icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
-        
-        first->num_ngb = 0;
-        if(periodic == 1) {
-            first->xwrap = my_malloc(sizeof(*(first->xwrap)), max_ngb_cells);
-            first->ywrap = my_malloc(sizeof(*(first->ywrap)), max_ngb_cells);
-            first->zwrap = my_malloc(sizeof(*(first->zwrap)), max_ngb_cells);
-            if(first->xwrap == NULL || first->ywrap == NULL || first->zwrap == NULL)  {
-                return EXIT_FAILURE;
-            }
-        } else {
-            first->xwrap = NULL;
-            first->ywrap = NULL;
-            first->zwrap = NULL;
-        }
-        first->ngb_cells = my_malloc(sizeof(*(first->ngb_cells)) , max_ngb_cells);
-        if(first->ngb_cells == NULL) {      
-            fprintf(stderr,"Error: Could not allocate memory for storing neighbouring cell indices. "
-                    "Reducing bin refine factors might help\n");
-            return EXIT_FAILURE;
-        }
-        
-        if(enable_min_sep_opt) {
-            first->ngb_min_dx = my_calloc(sizeof(*(first->ngb_min_dx)), max_ngb_cells);
-            first->ngb_min_dy = my_calloc(sizeof(*(first->ngb_min_dy)), max_ngb_cells);
-            first->ngb_min_dz = my_calloc(sizeof(*(first->ngb_min_dz)), max_ngb_cells);
-            first->ngb_closest_icell_xpos = my_calloc(sizeof(*(first->ngb_closest_icell_xpos)), max_ngb_cells);
-            first->ngb_closest_icell_ypos = my_calloc(sizeof(*(first->ngb_closest_icell_ypos)), max_ngb_cells);
-            first->ngb_closest_icell_zpos = my_calloc(sizeof(*(first->ngb_closest_icell_zpos)), max_ngb_cells);
-            if(first->ngb_min_dx == NULL || first->ngb_min_dy == NULL || first->ngb_min_dz == NULL ||
-               first->ngb_closest_icell_xpos == NULL || first->ngb_closest_icell_ypos == NULL || first->ngb_closest_icell_zpos == NULL) {
-                fprintf(stderr,"Error: Could not allocate memory for storing additional quantities for optimizations related to min. separation between cell-pairs.\n"
-                        "Reducing bin refine factors and/or disabling optimizations for minimum separations between cell-pairs might help\n");
-                return EXIT_FAILURE;
-            }
-        }
         
         for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
             const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;
@@ -627,43 +855,42 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                     const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
                     const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
                     
-                    //For cases where we are not double-counting (e.g., wp and xi), the same-cell
-                    //must always be evaluated. In all other cases, (i.e., where double-counting is occurring)
-                    //is used, include that in the ngb_cells! The interface is a lot cleaner in the double-counting
-                    //kernels in that case! Also, if the second cell has no particles, then just skip it
-                    if((autocorr == 1 && icell2 >= icell) || lattice2[icell2].nelements == 0) {
+                    //Since we are creating a giant array with all possible cell-pairs, we need
+                    //to account for cases where an auto-correlation is occurring within the same cell.
+                    //To do so, means 'same_cell', 'min_dx/dy/dz', and 'closest_x1/y1/z1' must all be
+                    //set here. Also, if the second cell has no particles, then just skip it
+                    if((autocorr == 1 && icell2 > icell) || lattice2[icell2].nelements == 0) {
                         continue;
                     }
                     
-                    const int64_t ngb_index = first->num_ngb;
-                    XRETURN(ngb_index < max_ngb_cells, EXIT_FAILURE,
-                            "ngb index = %"PRId64" should be less than max_ngb = %"PRId64"\n", ngb_index, max_ngb_cells);
+                    struct cellarray_weights_DOUBLE *second = &(lattice2[icell2]);
+                    DOUBLE closest_x1 = ZERO, closest_y1 = ZERO, closest_z1 = ZERO;
+                    DOUBLE min_dx = ZERO, min_dy = ZERO, min_dz = ZERO;
                     if(enable_min_sep_opt) {
                         /* Adjust for periodic boundary conditions */
                         const DOUBLE x_low = first->xbounds[0] + off_xwrap, x_hi = first->xbounds[1] + off_xwrap;
                         const DOUBLE y_low = first->ybounds[0] + off_ywrap, y_hi = first->ybounds[1] + off_ywrap;
                         const DOUBLE z_low = first->zbounds[0] + off_zwrap, z_hi = first->zbounds[1] + off_zwrap;
+                        
+                        closest_x1 = iix < 0 ? x_low:(iix > 0 ? x_hi:ZERO);
+                        closest_y1 = iiy < 0 ? y_low:(iiy > 0 ? y_hi:ZERO);
+                        closest_z1 = iiz < 0 ? z_low:(iiz > 0 ? z_hi:ZERO);
 
-                        first->ngb_closest_icell_xpos[ngb_index] = iix < 0 ? x_low:(iix > 0 ? x_hi:ZERO);
-                        first->ngb_closest_icell_ypos[ngb_index] = iiy < 0 ? y_low:(iiy > 0 ? y_hi:ZERO);
-                        first->ngb_closest_icell_zpos[ngb_index] = iiz < 0 ? z_low:(iiz > 0 ? z_hi:ZERO);
-
-                        const cellarray_index_particles_DOUBLE *second =  &(lattice2[icell2]);
                         //chose lower bound if secondary cell is to the left (smaller x), else upper
                         const DOUBLE first_x  = iix < 0 ? x_low:x_hi;//second condition also contains iix==0
                         //chose upper bound if primary cell is to the right (larger x), else lower
                         const DOUBLE second_x = iix < 0 ? second->xbounds[1]:second->xbounds[0];//second condition also contains iix==0
-                        const DOUBLE min_dx = iix != 0 ? (first_x - second_x):ZERO;//ensure min_dx == 0 for iix ==0
+                        min_dx = iix != 0 ? (first_x - second_x):ZERO;//ensure min_dx == 0 for iix ==0
 
                         //repeat for min_dy
                         const DOUBLE first_y  = iiy < 0 ? y_low:y_hi;//second condition also contains iix==0
                         const DOUBLE second_y = iiy < 0 ? second->ybounds[1]:second->ybounds[0];//second condition also contains iix==0
-                        const DOUBLE min_dy = iiy != 0  ? (first_y - second_y):ZERO;//ensure min_dy == 0 for iiy ==0
+                        min_dy = iiy != 0  ? (first_y - second_y):ZERO;//ensure min_dy == 0 for iiy ==0
 
                         //repeat for min_dz
                         const DOUBLE first_z  = iiz < 0 ? z_low:z_hi;//second condition also contains iix==0
                         const DOUBLE second_z = iiz < 0 ? second->zbounds[1]:second->zbounds[0];//second condition also contains iix==0
-                        const DOUBLE min_dz = iiz != 0 ? (first_z - second_z):ZERO;//ensure min_dz == 0 for iiz ==0
+                        min_dz = iiz != 0 ? (first_z - second_z):ZERO;//ensure min_dz == 0 for iiz ==0
                         
                         if(max_3D_sep > 0) {
                             const DOUBLE sqr_min_sep_cells = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
@@ -690,31 +917,57 @@ int assign_ngb_cells_index_particles_DOUBLE(struct cellarray_index_particles_DOU
                                 continue;
                             }
                         } /* end of if condition for max_1D_sep */
+                    } /* end of if condition for enable_min_sep_opt*/ 
 
-                        if(max_3D_sep > 0 || max_2D_sep > 0 || max_1D_sep > 0) {
-                            first->ngb_min_dx[ngb_index] = min_dx;
-                            first->ngb_min_dy[ngb_index] = min_dy;
-                            first->ngb_min_dz[ngb_index] = min_dz;
-                        }
-                    }/* end of if condition for enable_min_sep_opt*/ 
-
-                    //Note the xwrap/ywraps do not have memory allocated for them in the
-                    //non-periodic case. 
-                    if(periodic == 1) {
-                        first->xwrap[ngb_index] = off_xwrap;
-                        first->ywrap[ngb_index] = off_ywrap;
-                        first->zwrap[ngb_index] = off_zwrap;
-                    }
-
+                    
+                    XRETURN(num_cell_pairs < max_num_cell_pairs, NULL,
+                            "Error: Assigning this existing cell-pair would require accessing invalid memory.\n"
+                            "Expected that the total number of cell pairs can be at most %"PRId64" but "
+                            "currently have number of cell pairs = %"PRId64"\n", max_num_cell_pairs, num_cell_pairs);
                     //If we have reached here, then this cell *MIGHT* have a pair. We
-                    //need to add to the neighbour list
-                    first->ngb_cells[ngb_index] = &(lattice2[icell2]);
-                    first->num_ngb++;
-                }
-            }
-        }
-  }
-  
-  return EXIT_SUCCESS;
+                    //need to add a cell-pair to the array of all cell-pairs
+                    struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[num_cell_pairs];
+                    this_cell_pair->N1 = first->nelements;
+                    this_cell_pair->x1 = first->x;
+                    this_cell_pair->y1 = first->y;
+                    this_cell_pair->z1 = first->z;
+                    this_cell_pair->orig_index1 = first->original_index;
+                    this_cell_pair->weights1 = &first->weights;
+                    this_cell_pair->cellindex1 = icell;
+                    
+                    this_cell_pair->N2 = second->nelements;
+                    this_cell_pair->x2 = second->x;
+                    this_cell_pair->y2 = second->y;
+                    this_cell_pair->z2 = second->z;
+                    this_cell_pair->orig_index2 = second->original_index;
+                    this_cell_pair->weights2 = &second->weights;
+                    this_cell_pair->cellindex2 = icell2;
+                    
+                    this_cell_pair->xwrap = off_xwrap;
+                    this_cell_pair->ywrap = off_ywrap;
+                    this_cell_pair->zwrap = off_zwrap;
+
+                    this_cell_pair->min_dx = min_dx;
+                    this_cell_pair->min_dy = min_dy;
+                    this_cell_pair->min_dz = min_dz;
+                    
+                    this_cell_pair->closest_x1 = closest_x1;
+                    this_cell_pair->closest_y1 = closest_y1;
+                    this_cell_pair->closest_z1 = closest_z1;
+
+                    this_cell_pair->xbin_offset = iix;
+                    this_cell_pair->ybin_offset = iiy;
+                    this_cell_pair->zbin_offset = iiz;
+ 
+                    this_cell_pair->same_cell = (autocorr == 1 && icell2 == icell) ? 1:0;
+                    
+                    num_cell_pairs++;
+                } //looping over neighbours in Z
+            } //looping over neighbours along Y
+        }//looping over neighbours along X
+    }
+    
+    *ncell_pairs = num_cell_pairs;
+    return all_cell_pairs;
 }    
 

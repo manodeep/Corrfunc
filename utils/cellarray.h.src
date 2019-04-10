@@ -20,37 +20,77 @@ extern "C" {
 #include "weight_defs_DOUBLE.h"
 
 typedef struct{
-  DOUBLE *x;
-  DOUBLE *y;
-  DOUBLE *z;
-  int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting 
+    int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting
+    
+    DOUBLE *x;
+    DOUBLE *y;
+    DOUBLE *z;
+    int64_t *original_index;//the input order for particles
+    uint8_t owns_memory;// boolean flag if the x/y/z pointers were separately malloc'ed -> need to be freed once calculations are done
+    uint8_t unused[7];//to maintain alignment explicitly (the compiler would insert this anyway)
 } cellarray_DOUBLE;/* this struct is only used by the vpf routine */
 
 
-typedef struct cellarray_index_particles_DOUBLE cellarray_index_particles_DOUBLE;
-struct cellarray_index_particles_DOUBLE{
+typedef struct cellarray_weights_DOUBLE cellarray_weights_DOUBLE;
+struct cellarray_weights_DOUBLE{
     int64_t nelements;//Here the xyz positions will be stored in their individual pointers. More amenable to sorting -> used by wp and xi
-    int64_t num_ngb;
     DOUBLE *x;
     DOUBLE *y;
     DOUBLE *z;
     weight_struct_DOUBLE weights;
-    DOUBLE xbounds[2];
+    DOUBLE xbounds[2];//xmin and xmax for entire cell
     DOUBLE ybounds[2];
     DOUBLE zbounds[2];
-    cellarray_index_particles_DOUBLE **ngb_cells;
-    DOUBLE *ngb_min_dx;
-    DOUBLE *ngb_min_dy;
-    DOUBLE *ngb_min_dz;
-    DOUBLE *ngb_closest_icell_xpos;
-    DOUBLE *ngb_closest_icell_ypos;
-    DOUBLE *ngb_closest_icell_zpos;
-    DOUBLE *xwrap;
-    DOUBLE *ywrap;
-    DOUBLE *zwrap;
+
+    int64_t *original_index;//the input order for particles
+    uint8_t owns_memory;// boolean flag if the x/y/z pointers were separately malloc'ed -> need to be freed once calculations are done
+    
+    /*
+      boolean flag (only relevant when external particle positions
+      are used) to re-order particles back into original order
+      after calculations are done. Only relevant if external
+      pointers are being used for x/y/z
+    */
+
+    uint8_t unused[7];//to maintain alignment explicitly (the compiler would insert this anyway)
 };
 
-  
+struct cell_pair_DOUBLE{
+    int64_t N1;
+    DOUBLE *x1;
+    DOUBLE *y1;
+    DOUBLE *z1;
+    int64_t *orig_index1;
+    weight_struct_DOUBLE *weights1;
+    int64_t cellindex1;
+
+    int64_t N2;
+    DOUBLE *x2;
+    DOUBLE *y2;
+    DOUBLE *z2;
+    int64_t *orig_index2;
+    weight_struct_DOUBLE *weights2;
+    int64_t cellindex2;
+    
+    DOUBLE xwrap;
+    DOUBLE ywrap;
+    DOUBLE zwrap;
+
+    DOUBLE min_dx;
+    DOUBLE min_dy;
+    DOUBLE min_dz;
+
+    DOUBLE closest_x1;
+    DOUBLE closest_y1;
+    DOUBLE closest_z1;
+
+    int8_t same_cell;
+    int16_t xbin_offset;
+    int16_t ybin_offset;
+    int16_t zbin_offset;
+    int8_t unused;//explicitly adding here for alignment 
+};
+
 #ifdef __cplusplus
 }
 #endif

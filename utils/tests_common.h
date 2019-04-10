@@ -74,47 +74,55 @@ const int min_bin_ref = 1, max_bin_ref = 4;
            int dotest = 1;                                              \
            const isa old_isa = options.instruction_set;                 \
            const int old_min_sep_opt = options.enable_min_sep_opt;      \
+           const int old_copy_parts  = options.copy_particle_positions;      \           
+           const int old_reorder_parts  = options.reorder_particles_to_original;      \
+           options.reorder_particles_to_original = 1;                              \
            struct timespec t0, t1;                                      \
            for(int iset=0;iset<num_instructions;iset++) {               \
                int fastest_bin_ref[] = {1, 1, 1};                       \
                double fastest_time = 1e30;                              \
                options.instruction_set = valid_instruction_sets[iset];  \
-               for(int bfx=min_bin_ref;bfx<=max_bin_ref;bfx++) {         \
-                   for(int bfy=min_bin_ref;bfy<=max_bin_ref;bfy++) {     \
-                       for(int bfz=min_bin_ref;bfz<=max_bin_ref;bfz++) { \
-                           for(int enable_min_sep_opt=0;enable_min_sep_opt<=1;enable_min_sep_opt++) { \
-                               if(dotest == 1) {                        \
-                                   const int bf[] = {bfx, bfy, bfz};    \
-                                   set_custom_bin_refine_factors(&options, bf); \
-                                   options.enable_min_sep_opt = enable_min_sep_opt; \
-                                   fprintf(stderr,"Running with bin refs = (%d, %d, %d) and instruction set = %s and min. sep. optimizations %8s ...", \
-                                           options.bin_refine_factors[0], \
-                                           options.bin_refine_factors[1], \
-                                           options.bin_refine_factors[2], \
-                                           isa_name[iset], enable_min_sep_opt == 0 ? "DISABLED":"ENABLED"); \
-                                   current_utc_time(&t0);
+               for(int copy_parts=0;copy_parts < 2; copy_parts++) {     \
+                   options.copy_particle_positions = copy_parts;  \
+                   for(int bfx=min_bin_ref;bfx<=max_bin_ref;bfx++) {    \
+                       for(int bfy=min_bin_ref;bfy<=max_bin_ref;bfy++) { \
+                           for(int bfz=min_bin_ref;bfz<=max_bin_ref;bfz++) { \
+                               for(int enable_min_sep_opt=0;enable_min_sep_opt<=1;enable_min_sep_opt++) { \
+                                   if(dotest == 1) {                    \
+                                       const int bf[] = {bfx, bfy, bfz}; \
+                                       set_custom_bin_refine_factors(&options, bf); \
+                                       options.enable_min_sep_opt = enable_min_sep_opt; \
+                                       fprintf(stderr,"Bin refs = (%d, %d, %d), instruction set = %s, duplicating particle pos = %s, and min. sep. opt %8s ...", \
+                                               options.bin_refine_factors[0], \
+                                               options.bin_refine_factors[1], \
+                                               options.bin_refine_factors[2], \
+                                               isa_name[iset],          \
+                                               copy_parts == 1 ? "TRUE":"FALSE", \
+                                               enable_min_sep_opt == 0 ? "DISABLED":"ENABLED"); \
+                                       current_utc_time(&t0);
 
 
 /* Clean up the integration tests (close the loops and check for error) */
 #define END_INTEGRATION_TEST_SECTION                                    \
-                                   current_utc_time(&t1);                   \
-                                   double time_to_run = REALTIME_ELAPSED_NS(t0, t1); \
-                                   if(time_to_run < fastest_time) {     \
-                                       fastest_time = time_to_run;      \
-                                       memcpy(&fastest_bin_ref, &bf, sizeof(bf)); \
-                                   }                                    \
-                                   if(ret != EXIT_SUCCESS) {            \
-                                       fprintf(stderr, ANSI_COLOR_RED "FAILED"); \
-                                       dotest = 0;                      \
-                                   } else {                             \
-                                       fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
-                                   }                                    \
-                                   fprintf(stderr, ANSI_COLOR_RESET ". Time taken = %8.2lf seconds \n", time_to_run * 1e-9); \
-                               } /* close the enable_min_sep_opt condition*/ \
-                           }/* close the dotest if condition*/          \
-                       }/*bin ref z*/                                   \
-                   }/*bin ref y*/                                       \
-               }/*bin ref x*/                                           \
+                                       current_utc_time(&t1);                                              \
+                                       double time_to_run = REALTIME_ELAPSED_NS(t0, t1); \
+                                       if(time_to_run < fastest_time) { \
+                                           fastest_time = time_to_run;  \
+                                           memcpy(&fastest_bin_ref, &bf, sizeof(bf)); \
+                                       }                                \
+                                       if(ret != EXIT_SUCCESS) {        \
+                                           fprintf(stderr, ANSI_COLOR_RED "FAILED"); \
+                                           dotest = 0;                  \
+                                       } else {                         \
+                                           fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
+                                       }                                \
+                                       fprintf(stderr, ANSI_COLOR_RESET ". Time taken = %8.2lf seconds \n", time_to_run * 1e-9); \
+                                   } /* close the enable_min_sep_opt condition*/ \
+                               }/* close the dotest if condition*/ \
+                           }/*bin ref z*/                   \
+                       }/*bin ref y*/                   \
+                   }/*bin ref x*/                                           \
+               }/* copy particle positions*/                                           \                                   
                if(ret == EXIT_SUCCESS) {                                \
                    fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d, %d}" ANSI_COLOR_RESET "\n", \
                            fastest_time*1e-9,                           \
@@ -126,6 +134,8 @@ const int min_bin_ref = 1, max_bin_ref = 4;
            reset_bin_refine_factors(&options);                          \
            options.instruction_set = old_isa;                           \
            options.enable_min_sep_opt = old_min_sep_opt;                \
+           options.copy_particle_positions = old_copy_parts;            \
+           options.reorder_particles_to_original = old_reorder_parts;   \
     } while(0)
 
     //wtheta has 3 implementations (brute-force, link-in-dec and link-in-dec + link-in-ra)

@@ -139,11 +139,19 @@ struct config_options
     uint8_t enable_min_sep_opt;/* Whether to enable min. separation optimizations introduced in v2.3*/
     
     int8_t bin_refine_factors[3];/* Array for the custom bin refine factors in each dim 
-                                   xyz for theory routines and ra/dec/cz for mocks
-                                   Must be signed integers since some for loops might use -bin_refine_factor
-                                   as the starting point */
+                                    xyz for theory routines and ra/dec/cz for mocks
+                                    Must be signed integers since some for loops might use -bin_refine_factor
+                                    as the starting point */
 
     uint16_t max_cells_per_dim;/* max number of cells per dimension. same for both theory and mocks */
+
+    uint8_t copy_particle_positions;/* whether to make a copy of the particle positions */
+    uint8_t reorder_particles_to_original;/* if the computations are done in-place (i.e., without making a copy of the particle positions),
+                                             then during the computation itself, the particle will have to be ordered to be contiguous according
+                                             to their 3D (or 2D in angular) lattice. Setting this option means the particles will be returned
+                                             back to their input order after the computation is done. Only has an effect when
+                                             `copy_particle_positions` is False. 
+                                           */
     union{
         uint32_t binning_flags;/* flag for all linking features, 
                                   Will contain OR'ed flags from enum from `binning_scheme`
@@ -157,7 +165,7 @@ struct config_options
     /* Note that the math here assumes no padding bytes, that's because of the 
        order in which the fields are declared (largest to smallest alignments)  */
     uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - 3*sizeof(int)
-                     - sizeof(uint16_t) - 14*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
+                     - sizeof(uint16_t) - 16*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
 };
 
 static inline void set_bin_refine_scheme(struct config_options *options, const int8_t flag)
@@ -301,7 +309,8 @@ static inline struct config_options get_config_options(void)
     options.link_in_dec=1;
 #endif
 
-#ifdef ENABLE_MIN_SEP_OPT    
+#ifdef ENABLE_MIN_SEP_OPT
+    //Introduced in Corrfunc v2.3
     options.enable_min_sep_opt=1;/* optimizations based on min. separation between cell-pairs. Enabled by default */
 #endif
     
@@ -313,6 +322,23 @@ static inline struct config_options get_config_options(void)
     options.is_comoving_dist=1;
 #endif
 
+#ifdef COPY_PARTICLE_POSITIONS    
+    /* Config options introduced in Corrfunc v2.3*/
+    options.copy_particle_positions = 1;/* make a copy of particle positions (by default) */
+#else
+    // Using the input particles -> positions will have to re-ordered
+    // Setting the next option will mean that the particles will be re-ordered
+    // into their input order when the calculation completes. Usually relevant when
+    // there are other "properties" arrays for the same particle; and changing the
+    // positions would 
+#ifdef REORDER_PARTICLES_TO_ORIGINAL    
+    options.reorder_particles_to_original = 1;/* only relevant when copy_particle_positions is set to 0 ->
+                                                 then the particles are put back into their input order after
+                                                 the calculations are done */
+#endif //Reorder particles back into input order    
+#endif //Create a copy of particle positions (doubles the memory usage)
+
+    
     /* For the thread timings */
     options.totncells_timings = 0;
     /* If the API level timers are requested, then 
@@ -420,48 +446,35 @@ static inline void free_cell_timings(struct config_options *options)
     if(options->totncells_timings > 0 && options->cell_timings != NULL) {
         free(options->cell_timings);
     }
+    options->totncells_timings = 0;
+    
+    return;
 }    
 
-static inline void assign_cell_timer(struct api_cell_timings *cell_timings, const int64_t totncells, const int max_ngb_cells, struct config_options *options)
+static inline void allocate_cell_timer(struct config_options *options, const int64_t num_cell_pairs)
 {
-    int64_t totncells_timings=0;
-    for(int64_t index1=0;index1<totncells;index1++) {
-        for(int ingb=0;ingb<max_ngb_cells;ingb++) {
-            int index = index1 * max_ngb_cells + ingb;
-            struct api_cell_timings *t = &(cell_timings[index]);
-            if(t->time_in_ns > 0) {
-                totncells_timings++;
-            }
-        }
+    if(options->totncells_timings >= num_cell_pairs) return;
+    
+    free_cell_timings(options);
+    options->cell_timings = calloc(num_cell_pairs, sizeof(*(options->cell_timings)));
+    if(options->cell_timings == NULL) {
+        fprintf(stderr,"Warning: In %s> Could not allocate memory to store the API timings per cell. \n",
+                __FUNCTION__);
+    } else {
+        options->totncells_timings = num_cell_pairs;
     }
+
+    return;
+}
+
+static inline void assign_cell_timer(struct api_cell_timings *cell_timings, const int64_t num_cell_pairs, struct config_options *options)
+{
     /* Does the existing thread timings pointer have enough memory allocated ?*/
-    if(options->totncells_timings < totncells_timings) {
-        options->totncells_timings = 0;
-        
-        /* Not enough memory -> need to reallocate*/
-        free(options->cell_timings);
-        options->cell_timings = calloc(totncells_timings, sizeof(*(options->cell_timings)));
-        if(options->cell_timings == NULL) {
-            fprintf(stderr,"Warning: In %s> Could not allocate memory to store the API timings per cell. \n",
-                    __FUNCTION__);
-        } else {
-            options->totncells_timings = totncells_timings;
-        }
-    } 
+    allocate_cell_timer(options, num_cell_pairs);
     
     /* This looks like a repeated "if" condition but it is not. Covers the case for the calloc failure above */
-    if(options->totncells_timings >= totncells_timings) {
-        /* Okay, enough memory to assign the thread timings */
-        struct api_cell_timings *t = options->cell_timings;
-        for(int64_t index1=0;index1<totncells;index1++) {
-            for(int ingb=0;ingb<max_ngb_cells;ingb++) {
-                int index = index1 * max_ngb_cells + ingb;
-                if(cell_timings[index].time_in_ns > 0) {
-                    *t = cell_timings[index];
-                    t++;
-                }
-            }
-        }
+    if(options->totncells_timings >= num_cell_pairs) {
+        memmove(options->cell_timings, cell_timings, sizeof(struct api_cell_timings) * num_cell_pairs);
     }
 }
     
