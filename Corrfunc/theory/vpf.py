@@ -90,7 +90,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
 
     (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
         Controls the refinement on the cell sizes. Can have up to a 20% impact
-        on runtime. 
+        on runtime.
 
         Note: Since the counts in spheres calculation is symmetric
         in all 3 dimensions, the defaults are different from the clustering
@@ -118,19 +118,18 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
 
-    isa: string, case-insensitive (default ``fastest``)
-        Controls the runtime dispatch for the instruction set to use. Possible
-        options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+    isa: string (default ``fastest``)
+        Controls the runtime dispatch for the instruction set to use. Options
+        are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
         Setting isa to ``fastest`` will pick the fastest available instruction
         set on the current computer. However, if you set ``isa`` to, say,
-        ``avx`` and ``avx`` is not available on the computer, then the code will
-        revert to using ``fallback`` (even though ``sse42`` might be available).
-
-        Unless you are benchmarking the different instruction sets, you should
-        always leave ``isa`` to the default value. And if you *are*
-        benchmarking, then the string supplied here gets translated into an
-        ``enum`` for the instruction set defined in ``utils/defs.h``.
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).  Unless you are benchmarking the different instruction
+        sets, you should always leave ``isa`` to the default value. And if
+        you *are* benchmarking, then the string supplied here gets translated
+        into an ``enum`` for the instruction set defined in ``utils/defs.h``.
 
     Returns
     --------
@@ -142,8 +141,8 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         ``numpN`` elements in the ``pN`` array. Each element of this array
         contains the probability that a sphere of radius ``rmax`` contains
         *exactly* ``N`` galaxies. For example, pN[0] (p0, the void probibility
-        function) is the probability that a sphere of radius ``rmax`` contains 0
-        galaxies.
+        function) is the probability that a sphere of radius ``rmax`` contains
+        zero galaxies.
 
         if ``c_api_timer`` is set, then the return value is a tuple containing
         (results, api_time). ``api_time`` measures only the time spent within
@@ -221,10 +220,11 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
               "{3}. Reduce rmax or Nspheres"\
               .format(nspheres, rmax, nspheres * volume_sphere, volume)
         raise ValueError(msg)
-        
+
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [X, Y, Z]):
-        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+        warn("One or more input array has non-native endianness!  A copy will"\
+             " be made with the correct endianness.")
     X, Y, Z = [convert_to_native_endian(arr) for arr in [X, Y, Z]]
 
     integer_isa = translate_isa_string_to_enum(isa)

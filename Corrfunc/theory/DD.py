@@ -23,15 +23,15 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
-    
+
     If ``weights`` are provided, the resulting pair counts are weighted.  The
     weighting scheme depends on ``weight_type``.
 
 
     .. note:: This module only returns pair counts and not the actual
-        correlation function :math:`\\xi(r)`. See 
-        :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` for computing 
-        for computing :math:`\\xi(r)` from the pair counts returned.
+        correlation function :math:`\\xi(r)`. See
+        :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` for computing
+        :math:`\\xi(r)` from the pair counts returned.
 
 
     Parameters
@@ -55,12 +55,12 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
         input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.         
-    
+        array does not need to be sorted.
+
     X1/Y1/Z1: array_like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
         Calculations are done in the precision of the supplied arrays.
-        
+
     weights1: array_like, real (float/double), optional
         A scalar, or an array of weights of shape (n_weights, n_positions) or
         (n_positions,). ``weight_type`` specifies how these weights are used;
@@ -89,11 +89,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     output_ravg: boolean (default false)
         Boolean flag to output the average ``r`` for each bin. Code will
-        run slower if you set this flag. 
+        run slower if you set this flag.
 
-        Note: If you are calculating in single-precision, ``ravg`` will 
-        suffer from numerical loss of precision and can not be trusted. 
-        If you need accurate ``ravg`` values, then pass in double precision 
+        Note: If you are calculating in single-precision, ``ravg`` will
+        suffer from numerical loss of precision and can not be trusted.
+        If you need accurate ``ravg`` values, then pass in double precision
         arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
@@ -117,7 +117,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         ``copy_particle_positions`` is set to False
 
         .. versionadded:: 2.3.0
-    
+
     enable_min_sep_opt: boolean (default true)
         Boolean flag to allow optimizations based on min. separation between
         pairs of cells. Here to allow for comparison studies.
@@ -128,36 +128,36 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
 
-    isa: string, case-insensitive (default ``fastest``)
-        Controls the runtime dispatch for the instruction set to use. Possible
-        options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+    isa: string (default ``fastest``)
+        Controls the runtime dispatch for the instruction set to use. Options
+        are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
         Setting isa to ``fastest`` will pick the fastest available instruction
         set on the current computer. However, if you set ``isa`` to, say,
-        ``avx`` and ``avx`` is not available on the computer, then the code will
-        revert to using ``fallback`` (even though ``sse42`` might be available).
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).  Unless you are benchmarking the different instruction
+        sets, you should always leave ``isa`` to the default value. And if
+        you *are* benchmarking, then the string supplied here gets translated
+        into an ``enum`` for the instruction set defined in ``utils/defs.h``.
 
-        Unless you are benchmarking the different instruction sets, you should
-        always leave ``isa`` to the default value. And if you *are*
-        benchmarking, then the string supplied here gets translated into an
-        ``enum`` for the instruction set defined in ``utils/defs.h``.
-    
-    weight_type: string, optional
-        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
+    weight_type: string, optional. Default: None.
+        The type of weighting to apply.  One of ["pair_product", None].
 
     Returns
     --------
 
     results: Numpy structured array
-        A numpy structured array containing [rmin, rmax, ravg, npairs, weightavg]
-        for each radial bin specified in the ``binfile``. If ``output_ravg`` is
-        not set, then ``ravg`` will be set to 0.0 for all bins; similarly for
-        ``weightavg``. ``npairs`` contains the number of pairs in that bin and can
-        be used to compute the actual :math:`\\xi(r)` by combining with (DR, RR) counts.
+        A numpy structured array containing [rmin, rmax, ravg, npairs,
+        weightavg] for each radial bin specified in the ``binfile``. If
+        ``output_ravg`` is not set, then ``ravg`` will be set to 0.0 for all
+        bins; similarly for ``weightavg``. ``npairs`` contains the number of
+        pairs in that bin and can be used to compute the actual
+        :math:`\\xi(r)` by combining with (DR, RR) counts.
 
     api_time: float, optional
-        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
-        spent within the C library and ignores all python overhead.
+        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
+        the time spent within the C library and ignores all python overhead.
 
     Example
     --------
@@ -212,30 +212,33 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         return_file_with_rbins, convert_to_native_endian,\
         is_native_endian, sys_pipes
     from future.utils import bytes_to_native_str
-    
+
     # Broadcast scalar weights to arrays
     if weights1 is not None:
         weights1 = np.atleast_1d(weights1)
     if weights2 is not None:
         weights2 = np.atleast_1d(weights2)
-        
+
     if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
-            
-        # If only one set of points has weights, set the other to uniform weights
+
+        # If only one set of points has weights, set the other to uniform
+        # weights
         if weights1 is None and weights2 is not None:
             weights1 = np.ones_like(weights2)
         if weights2 is None and weights1 is not None:
             weights2 = np.ones_like(weights1)
-            
+
     # Warn about non-native endian arrays
-    if not all(is_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]):
-        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+    if not all(is_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2,
+                                                 Z2, weights2]):
+        warn("One or more input array has non-native endianness!  A copy will"\
+             " be made with the correct endianness.")
     X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [convert_to_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]]
-        
+
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights1', 'weights2', 'weight_type', 'X2', 'Y2', 'Z2']:

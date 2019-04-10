@@ -34,7 +34,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     pimax: double
         A double-precision value for the maximum separation along
-        the Z-dimension. 
+        the Z-dimension.
 
         Note: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
@@ -51,7 +51,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
         input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.         
+        array does not need to be sorted.
 
     X/Y/Z: arraytype, real (float/double)
         Particle positions in the 3 axes. Must be within [0, boxsize]
@@ -68,11 +68,11 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     output_rpavg: boolean (default false)
         Boolean flag to output the average ``rp`` for each bin. Code will
-        run slower if you set this flag. 
+        run slower if you set this flag.
 
-        Note: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
+        Note: If you are calculating in single-precision, ``rpavg`` will
+        suffer from numerical loss of precision and can not be trusted. If
+        you need accurate ``rpavg`` values, then pass in double precision
         arrays for the particle positions.
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
@@ -81,23 +81,22 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
         too small relative to the boxsize (and increasing helps the runtime).
 
     isa: string (default ``fastest``)
-        Controls the runtime dispatch for the instruction set to use. Possible
-        options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
+        Controls the runtime dispatch for the instruction set to use. Options
+        are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
         Setting isa to ``fastest`` will pick the fastest available instruction
         set on the current computer. However, if you set ``isa`` to, say,
-        ``avx`` and ``avx`` is not available on the computer, then the code will
-        revert to using ``fallback`` (even though ``sse42`` might be available).
-
-        Unless you are benchmarking the different instruction sets, you should
-        always leave ``isa`` to the default value. And if you *are*
-        benchmarking, then the string supplied here gets translated into an
-        ``enum`` for the instruction set defined in ``utils/defs.h``.
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).  Unless you are benchmarking the different instruction
+        sets, you should always leave ``isa`` to the default value. And if
+        you *are* benchmarking, then the string supplied here gets translated
+        into an ``enum`` for the instruction set defined in ``utils/defs.h``.
 
     maxbinref: integer (default 3)
         The maximum ``bin refine factor`` to use along each dimension. From
         experience, values larger than 3 do not improve ``wp`` runtime.
-       
+
         Runtime of module scales as ``maxbinref^3``, so change the value of
         ``maxbinref`` with caution.
 
@@ -108,7 +107,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     return_runtimes: boolean (default ``false``)
         If set, also returns the array of runtimes.
-    
+
     Returns
     --------
     (nx, ny, nz) : tuple of integers
@@ -183,7 +182,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
     for ii, (nx, ny, nz) in enumerate(bin_ref_perms):
         total_runtime = 0.0
         total_sqr_runtime = 0.0
-        
+
         for _ in range(nrepeats):
             t0 = time.time()
             extn_results, _, _ = wp_extn(boxsize, pimax, nthreads,
@@ -204,11 +203,11 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
                 print(msg)
                 print("Continuing...")
                 continue
-                
+
             dt = (t1 - t0)
             total_runtime += dt
             total_sqr_runtime += dt*dt
-        
+
         avg_runtime = total_runtime/nrepeats
 
         # variance = E(X^2) - E^2(X)
@@ -230,7 +229,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
     results = (all_runtimes[0]['nx'],
                all_runtimes[0]['ny'],
                all_runtimes[0]['nz'])
-               
+
     optional_returns = return_runtimes
     if not optional_returns:
         ret = results
@@ -238,7 +237,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
         ret = (results, )
         if return_runtimes:
             ret += (all_runtimes, )
-    
+
     return ret
 
 
@@ -255,7 +254,7 @@ def _convert_cell_timer(cell_time_lst):
 
     cell_times : numpy structured array
         The following fields are present in the ``cell_times``:
-   
+
         N1 -> number of particles in cell 1
         N2 -> number of particles in cell 2
         time_in_ns -> time taken to compute all pairs between two cells
@@ -266,7 +265,7 @@ def _convert_cell_timer(cell_time_lst):
 
 
     """
-    
+
     import numpy as np
     from future.utils import bytes_to_native_str
 
@@ -294,7 +293,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     than the ``rp`` bins (specified in ``binfile``) in the
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted.
-    
+
     If ``weights`` are provided, the resulting correlation function
     is weighted.  The weighting scheme depends on ``weight_type``.
 
@@ -314,7 +313,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     pimax: double
         A double-precision value for the maximum separation along
-        the Z-dimension. 
+        the Z-dimension.
 
         Note: Only pairs with ``0 <= dz < pimax`` are counted (no equality).
 
@@ -331,7 +330,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
         input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.         
+        array does not need to be sorted.
 
     X/Y/Z: arraytype, real (float/double)
         Particle positions in the 3 axes. Must be within [0, boxsize]
@@ -342,7 +341,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         i.e., calculations will be in floating point if XYZ are single
         precision arrays (C float type); or in double-precision if XYZ
         are double precision arrays (C double type).
-       
+
     weights: array_like, real (float/double), optional
         A scalar, or an array of weights of shape (n_weights, n_positions) or
         (n_positions,). ``weight_type`` specifies how these weights are used;
@@ -355,9 +354,9 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         Boolean flag to output the average ``rp`` for each bin. Code will
         run slower if you set this flag.
 
-        Note: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
+        Note: If you are calculating in single-precision, ``rpavg`` will
+        suffer from numerical loss of precision and can not be trusted. If
+        you need accurate ``rpavg`` values, then pass in double precision
         arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
@@ -400,20 +399,19 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         cell pair. This timer can be used to study the instruction set
         efficiency, and load-balancing of the code.
 
-    isa: string, case-insensitive (default ``fastest``)
-        Controls the runtime dispatch for the instruction set to use. Possible
-        options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+    isa: string (default ``fastest``)
+        Controls the runtime dispatch for the instruction set to use. Options
+        are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
         Setting isa to ``fastest`` will pick the fastest available instruction
         set on the current computer. However, if you set ``isa`` to, say,
-        ``avx`` and ``avx`` is not available on the computer, then the code will
-        revert to using ``fallback`` (even though ``sse42`` might be available).
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).  Unless you are benchmarking the different instruction
+        sets, you should always leave ``isa`` to the default value. And if
+        you *are* benchmarking, then the string supplied here gets translated
+        into an ``enum`` for the instruction set defined in ``utils/defs.h``.
 
-        Unless you are benchmarking the different instruction sets, you should
-        always leave ``isa`` to the default value. And if you *are*
-        benchmarking, then the string supplied here gets translated into an
-        ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
     weight_type: string, optional.  Default: None.
         The type of weighting to apply.  One of ["pair_product", None].
 
@@ -421,17 +419,18 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     --------
 
     results: Numpy structured array
-        A numpy structured array containing [rpmin, rpmax, rpavg, wp, npairs, weightavg]
-        for each radial specified in the ``binfile``. If ``output_rpavg`` is not
-        set then ``rpavg`` will be set to 0.0 for all bins; similarly for
-        ``weightavg``. ``wp`` contains the projected correlation function while
-        ``npairs`` contains the number of unique pairs in that bin.  If using
-        weights, ``wp`` will be weighted while ``npairs`` will not be.
-       
+        A numpy structured array containing [rpmin, rpmax, rpavg, wp, npairs,
+        weightavg] for each radial specified in the ``binfile``. If
+        ``output_rpavg`` is not set then ``rpavg`` will be set to 0.0 for all
+        bins; similarly for ``weightavg``. ``wp`` contains the projected
+        correlation function while ``npairs`` contains the number of unique
+        pairs in that bin.  If using weights, ``wp`` will be weighted while
+        ``npairs`` will not be.
+
     api_time: float, optional
         Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
         the time spent within the C library and ignores all python overhead.
-       
+
     cell_time: list, optional
         Only returned if ``c_cell_timer`` is set. Contains
         detailed stats about each cell-pair visited during pair-counting,
@@ -439,7 +438,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         cell-indices for each cell in the pair, time (in nano-seconds) to
         process the pair and the thread-id for the thread that processed that
         cell-pair.
-       
+
     Example
     --------
 
@@ -494,23 +493,24 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
         is_native_endian, sys_pipes
-        
+
     # Broadcast scalar weights to arrays
     if weights is not None:
         weights = np.atleast_1d(weights)
-        
+
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [X, Y, Z, weights]):
-        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+        warn("One or more input array has non-native endianness!  A copy will"\
+             " be made with the correct endianness.")
     X, Y, Z, weights = [convert_to_native_endian(arr) for arr in [X, Y, Z, weights]]
-    
+
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights', 'weight_type']:
         v = locals()[k]
         if v is not None:
             kwargs[k] = v
-    
+
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     with sys_pipes():
@@ -555,7 +555,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
         if c_api_timer:
             ret += (api_time, )
-            
+
         if c_cell_timer:
             # Convert to numpy structured array
             np_cell_time = _convert_cell_timer(cell_time)

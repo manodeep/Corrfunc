@@ -27,7 +27,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     separated by less than the ``rp`` bins (specified in ``binfile``) in the
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted.
-    
+
     If ``weights`` are provided, the resulting pair counts are weighted.  The
     weighting scheme depends on ``weight_type``.
 
@@ -35,8 +35,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     .. note:: that this module only returns pair counts and not the actual
         correlation function :math:`\\xi(r_p, \pi)` or :math:`wp(r_p)`. See the
         utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` and
-        :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp` for computing 
-        :math:`\\xi(r_p, \pi)` and :math:`wp(r_p)` respectively from the 
+        :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp` for computing
+        :math:`\\xi(r_p, \pi)` and :math:`wp(r_p)` respectively from the
         pair counts.
 
 
@@ -53,7 +53,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
     pimax: double
         A double-precision value for the maximum separation along
-        the Z-dimension. 
+        the Z-dimension.
 
         Distances along the :math:``\\pi`` direction are binned with unit
         depth. For instance, if ``pimax=40``, then 40 bins will be created
@@ -71,7 +71,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
         input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.         
+        array does not need to be sorted.
 
     X1/Y1/Z1: array-like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
@@ -87,7 +87,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     X2/Y2/Z2: array-like, real (float/double)
         Array of XYZ positions for the second set of points. *Must* be the same
         precision as the X1/Y1/Z1 arrays. Only required when ``autocorr==0``.
-       
+
     weights2: array-like, real (float/double), optional
         Same as weights1, but for the second set of positions
 
@@ -105,11 +105,11 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
     output_rpavg: boolean (default false)
         Boolean flag to output the average ``rp`` for each bin. Code will
-        run slower if you set this flag. 
+        run slower if you set this flag.
 
-        Note: If you are calculating in single-precision, ``rpavg`` will 
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
+        Note: If you are calculating in single-precision, ``rpavg`` will
+        suffer from numerical loss of precision and can not be trusted. If
+        you need accurate ``rpavg`` values, then pass in double precision
         arrays for the particle positions.
 
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
@@ -144,36 +144,36 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
 
-    isa: string, case-insensitive (default ``fastest``)
-        Controls the runtime dispatch for the instruction set to use. Possible
-        options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+    isa: string (default ``fastest``)
+        Controls the runtime dispatch for the instruction set to use. Options
+        are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
         Setting isa to ``fastest`` will pick the fastest available instruction
         set on the current computer. However, if you set ``isa`` to, say,
-        ``avx`` and ``avx`` is not available on the computer, then the code will
-        revert to using ``fallback`` (even though ``sse42`` might be available).
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).  Unless you are benchmarking the different instruction
+        sets, you should always leave ``isa`` to the default value. And if
+        you *are* benchmarking, then the string supplied here gets translated
+        into an ``enum`` for the instruction set defined in ``utils/defs.h``.
 
-        Unless you are benchmarking the different instruction sets, you should
-        always leave ``isa`` to the default value. And if you *are*
-        benchmarking, then the string supplied here gets translated into an
-        ``enum`` for the instruction set defined in ``utils/defs.h``.
-       
-    weight_type: string, optional
-        The type of weighting to apply.  One of ["pair_product", None].  Default: None.
+    weight_type: string, optional. Default: None.
+        The type of weighting to apply.  One of ["pair_product", None].
 
     Returns
     --------
 
     results: Numpy structured array
-        A numpy structured array containing [rpmin, rpmax, rpavg, pimax, npairs, weightavg]
-        for each radial bin specified in the ``binfile``. If ``output_rpavg``
-        is not set, then ``rpavg`` will be set to 0.0 for all bins; similarly for
-        ``weightavg``. ``npairs`` contains the number of pairs in that bin and can
-        be used to compute :math:`\\xi(r_p, \pi)` by combining with (DR, RR) counts.
+        A numpy structured array containing [rpmin, rpmax, rpavg, pimax,
+        npairs, weightavg] for each radial bin specified in the ``binfile``.
+        If ``output_rpavg`` is not set, then ``rpavg`` will be set to 0.0 for
+        all bins; similarly for ``weightavg``. ``npairs`` contains the number
+        of pairs in that bin and can be used to compute :math:`\\xi(r_p, \pi)`
+        by combining with (DR, RR) counts.
 
     api_time: float, optional
-        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
-        spent within the C library and ignores all python overhead.
+        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
+        the time spent within the C library and ignores all python overhead.
 
     Example
     --------
@@ -243,7 +243,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
      16.753600  23.875500  20.454012       38.0       2458   1.000000
      16.753600  23.875500  20.585543       39.0       2394   1.000000
      16.753600  23.875500  20.504965       40.0       2500   1.000000
-    
+
     """
     try:
         from Corrfunc._countpairs import countpairs_rp_pi as DDrppi_extn
@@ -258,7 +258,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         return_file_with_rbins, convert_to_native_endian,\
         is_native_endian, sys_pipes
     from future.utils import bytes_to_native_str
-    
+
     # Broadcast scalar weights to arrays
     if weights1 is not None:
         weights1 = np.atleast_1d(weights1)
@@ -270,8 +270,9 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                 "computing cross-correlation"
             raise ValueError(msg)
-        
-        # If only one set of points has weights, set the other to uniform weights
+
+        # If only one set of points has weights, set the other to uniform
+        # weights
         if weights1 is None and weights2 is not None:
             weights1 = np.ones_like(weights2)
         if weights2 is None and weights1 is not None:
@@ -281,12 +282,13 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         X2 = np.empty(1)
         Y2 = np.empty(1)
         Z2 = np.empty(1)
-        
+
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]):
-        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
+        warn("One or more input array has non-native endianness!  A copy will"\
+             " be made with the correct endianness.")
     X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [convert_to_native_endian(arr) for arr in [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]]
-        
+
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights1', 'weights2', 'weight_type', 'X2', 'Y2', 'Z2']:
