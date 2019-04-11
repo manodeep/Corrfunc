@@ -354,7 +354,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
     
     gsl_rng_free (rng);
 
-    if(options->copy_particle_positions == 0 && options->reorder_particles_to_original) {
+    if(options->copy_particles == 0 && options->reorder_particles_to_original) {
         int64_t *original_index = lattice[0].original_index;
         int status = reorder_particles_back_into_original_order_DOUBLE(np, original_index, X, Y, Z);
         if(status != EXIT_SUCCESS) {

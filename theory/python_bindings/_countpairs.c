@@ -87,7 +87,7 @@ static PyMethodDef module_methods[] = {
      "countpairs(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, weight_type=None, periodic=True,\n"
      "           X2=None, Y2=None, Z2=None, weights2=None, verbose=False, boxsize=0.0,\n"
      "           output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
-     "           zbin_refine_factor=1, max_cells_per_dim=100, copy_particle_positions=True,\n"
+     "           zbin_refine_factor=1, max_cells_per_dim=100, copy_particles=True,\n"
      "           reorder_particles_to_original=False, enable_min_sep_opt=True,\n"
      "           c_api_timer=False, isa=-1)\n"
      "\n"
@@ -166,13 +166,13 @@ static PyMethodDef module_methods[] = {
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
      
-     "copy_particle_positions: boolean (default True)\n"
+     "copy_particles: boolean (default True)\n"
      "   Boolean flag to make a copy of the particle positions\n"
      "   If set to False, the particles will be re-ordered in-place\n\n"
 
      "reorder_particles_to_original: boolean (default False)\n"
      "   Boolean flag to put the particles back into original input order after calculations\n"
-     "   are complete. Only relevant when ``copy_particle_positions`` is set to False\n\n"
+     "   are complete. Only relevant when ``copy_particles`` is set to False\n\n"
      
      "enable_min_sep_opt: boolean (default true)\n"
      "   Boolean flag to allow optimizations based on min. separation between pairs \n"
@@ -225,7 +225,7 @@ static PyMethodDef module_methods[] = {
      "countpairs_rp_pi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None, weight_type=None,\n"
      "                 periodic=True, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,\n"
      "                 boxsize=0.0, output_rpavg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
-     "                 zbin_refine_factor=1, max_cells_per_dim=100, copy_particle_positions=True,\n"
+     "                 zbin_refine_factor=1, max_cells_per_dim=100, copy_particles=True,\n"
      "                 reorder_particles_to_original=False, enable_min_sep_opt=True,\n"
      "                 c_api_timer=False, isa=-1)\n"
      "\n"
@@ -314,13 +314,13 @@ static PyMethodDef module_methods[] = {
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
 
-     "copy_particle_positions: boolean (default True)\n"
+     "copy_particles: boolean (default True)\n"
      "   Boolean flag to make a copy of the particle positions\n"
      "   If set to False, the particles will be re-ordered in-place\n\n"
 
      "reorder_particles_to_original: boolean (default False)\n"
      "   Boolean flag to put the particles back into original input order after calculations\n"
-     "   are complete. Only relevant when ``copy_particle_positions`` is set to False\n\n"
+     "   are complete. Only relevant when ``copy_particles`` is set to False\n\n"
      
      "enable_min_sep_opt: boolean (default true)\n"
      "   Boolean flag to allow optimizations based on min. separation between pairs \n"
@@ -379,7 +379,7 @@ static PyMethodDef module_methods[] = {
     {"countpairs_wp"         ,(PyCFunction) countpairs_countpairs_wp    ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_wp(boxsize, pimax, nthreads, binfile, X, Y, Z, weights=None, weight_type=None, verbose=False,\n"
      "              output_rpavg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
-     "              zbin_refine_factor=1, max_cells_per_dim=100, copy_particle_positions=True,\n"
+     "              zbin_refine_factor=1, max_cells_per_dim=100, copy_particles=True,\n"
      "              reorder_particles_to_original=False, enable_min_sep_opt=True,\n"
      "              c_api_timer=False, c_cell_timer=False, isa=-1)\n\n"
 
@@ -458,13 +458,13 @@ static PyMethodDef module_methods[] = {
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
 
-     "copy_particle_positions: boolean (default True)\n"
+     "copy_particles: boolean (default True)\n"
      "   Boolean flag to make a copy of the particle positions\n"
      "   If set to False, the particles will be re-ordered in-place\n\n"
 
      "reorder_particles_to_original: boolean (default False)\n"
      "   Boolean flag to put the particles back into original input order after calculations\n"
-     "   are complete. Only relevant when ``copy_particle_positions`` is set to False\n\n"
+     "   are complete. Only relevant when ``copy_particles`` is set to False\n\n"
      
      "enable_min_sep_opt: boolean (default true)\n"
      "   Boolean flag to allow optimizations based on min. separation between pairs \n"
@@ -529,7 +529,7 @@ static PyMethodDef module_methods[] = {
     {"countpairs_xi"         ,(PyCFunction) countpairs_countpairs_xi    ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_xi(boxsize, nthreads, binfile, X, Y, Z, weights=None, weight_type=None, verbose=False,\n"
      "              output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
-     "              zbin_refine_factor=1, max_cells_per_dim=100, copy_particle_positions=True,\n"
+     "              zbin_refine_factor=1, max_cells_per_dim=100, copy_particles=True,\n"
      "              reorder_particles_to_original=False, enable_min_sep_opt=True,\n"
      "              c_api_timer=False, isa=-1)\n\n"
 
@@ -599,13 +599,13 @@ static PyMethodDef module_methods[] = {
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
 
-     "copy_particle_positions: boolean (default True)\n"
+     "copy_particles: boolean (default True)\n"
      "   Boolean flag to make a copy of the particle positions\n"
      "   If set to False, the particles will be re-ordered in-place\n\n"
 
      "reorder_particles_to_original: boolean (default False)\n"
      "   Boolean flag to put the particles back into original input order after calculations\n"
-     "   are complete. Only relevant when ``copy_particle_positions`` is set to False\n\n"
+     "   are complete. Only relevant when ``copy_particles`` is set to False\n\n"
      
      "enable_min_sep_opt: boolean (default true)\n"
      "   Boolean flag to allow optimizations based on min. separation between pairs \n"
@@ -659,7 +659,7 @@ static PyMethodDef module_methods[] = {
      "                periodic=True, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,\n"
      "                boxsize=0.0, output_savg=False, fast_divide_and_NR_steps=0,\n"
      "                xbin_refine_factor=2, ybin_refine_factor=2, zbin_refine_factor=1,\n"
-     "                max_cells_per_dim=100, copy_particle_positions=True,\n"
+     "                max_cells_per_dim=100, copy_particles=True,\n"
      "                reorder_particles_to_original=False, enable_min_sep_opt=True,\n"
      "                c_api_timer=False, isa=-1)\n"
      "\n"
@@ -754,13 +754,13 @@ static PyMethodDef module_methods[] = {
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
 
-     "copy_particle_positions: boolean (default True)\n"
+     "copy_particles: boolean (default True)\n"
      "   Boolean flag to make a copy of the particle positions\n"
      "   If set to False, the particles will be re-ordered in-place\n\n"
 
      "reorder_particles_to_original: boolean (default False)\n"
      "   Boolean flag to put the particles back into original input order after calculations\n"
-     "   are complete. Only relevant when ``copy_particle_positions`` is set to False\n\n"
+     "   are complete. Only relevant when ``copy_particles`` is set to False\n\n"
      
      "enable_min_sep_opt: boolean (default true)\n"
      "   Boolean flag to allow optimizations based on min. separation between pairs \n"
@@ -815,7 +815,7 @@ static PyMethodDef module_methods[] = {
      "countspheres_vpf(rmax, nbins, nspheres, numpN, seed,\n"
      "                 X, Y, Z, verbose=False, periodic=True,\n"
      "                 boxsize=0.0, xbin_refine_factor=1, ybin_refine_factor=1,\n"
-     "                 zbin_refine_factor=1, max_cells_per_dim=100, copy_particle_positions=True,\n"
+     "                 zbin_refine_factor=1, max_cells_per_dim=100, copy_particles=True,\n"
      "                 reorder_particles_to_original=False, c_api_timer=False, isa=-1)\n\n"
 
      "Calculates the fraction of random spheres that contain exactly *N* points, pN(r).\n\n"
@@ -884,13 +884,13 @@ static PyMethodDef module_methods[] = {
      "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "   relative to the boxsize (and increasing helps the runtime). \n\n"
 
-     "copy_particle_positions: boolean (default True)\n"
+     "copy_particles: boolean (default True)\n"
      "   Boolean flag to make a copy of the particle positions\n"
      "   If set to False, the particles will be re-ordered in-place\n\n"
 
      "reorder_particles_to_original: boolean (default False)\n"
      "   Boolean flag to put the particles back into original input order after calculations\n"
-     "   are complete. Only relevant when ``copy_particle_positions`` is set to False\n\n"
+     "   are complete. Only relevant when ``copy_particles`` is set to False\n\n"
      
      "c_api_timer : boolean (default false)\n"
      "   Boolean flag to measure actual time spent in the C libraries. Here\n"
@@ -1166,8 +1166,8 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     options.periodic = 1;
     options.need_avg_sep = 0;
     options.c_api_timer = 0;
-    options.copy_particle_positions = 1;
-    options.reorder_particles_to_original = 0;//not relevant when copy_particle_positions is True
+    options.copy_particles = 1;
+    options.reorder_particles_to_original = 0;//not relevant when copy_particles is True
     options.enable_min_sep_opt = 1;
 
     int8_t xbin_ref=options.bin_refine_factors[0],
@@ -1194,7 +1194,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
-        "copy_particle_positions",
+        "copy_particles",
         "reorder_particles_to_original",
         "enable_min_sep_opt",
         "c_api_timer",
@@ -1220,7 +1220,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
                                        &(options.need_avg_sep),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
-                                       &(options.copy_particle_positions),
+                                       &(options.copy_particles),
                                        &(options.reorder_particles_to_original),
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
@@ -1480,7 +1480,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     options.instruction_set = -1;
     options.periodic = 1;
     options.c_api_timer = 0;
-    options.copy_particle_positions = 1;
+    options.copy_particles = 1;
     options.reorder_particles_to_original = 0;
     options.enable_min_sep_opt = 1;
     int8_t xbin_ref=options.bin_refine_factors[0],
@@ -1508,7 +1508,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
-        "copy_particle_positions",
+        "copy_particles",
         "reorder_particles_to_original",
         "enable_min_sep_opt",
         "c_api_timer",
@@ -1533,7 +1533,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
                                        &(options.need_avg_sep),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
-                                       &(options.copy_particle_positions),
+                                       &(options.copy_particles),
                                        &(options.reorder_particles_to_original),
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
@@ -1788,7 +1788,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     options.instruction_set = -1;
     options.need_avg_sep = 0;
     options.periodic = 1;
-    options.copy_particle_positions = 1;
+    options.copy_particles = 1;
     options.reorder_particles_to_original = 0;
     options.enable_min_sep_opt = 1;
     options.c_api_timer = 0;
@@ -1813,7 +1813,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
-        "copy_particle_positions",
+        "copy_particles",
         "reorder_particles_to_original",
         "enable_min_sep_opt",
         "c_api_timer",
@@ -1833,7 +1833,7 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
                                       &(options.need_avg_sep),
                                       &xbin_ref, &ybin_ref, &zbin_ref,
                                       &(options.max_cells_per_dim),
-                                      &(options.copy_particle_positions),
+                                      &(options.copy_particles),
                                       &(options.reorder_particles_to_original),
                                       &(options.enable_min_sep_opt),
                                       &(options.c_api_timer),
@@ -2036,7 +2036,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     options.periodic=1;
     options.instruction_set = -1; //from enum
     options.c_api_timer = 0;
-    options.copy_particle_positions = 1;
+    options.copy_particles = 1;
     options.reorder_particles_to_original = 0;
     options.enable_min_sep_opt = 1;
     int8_t xbin_ref=options.bin_refine_factors[0],
@@ -2058,7 +2058,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
-        "copy_particle_positions",
+        "copy_particles",
         "reorder_particles_to_original",
         "enable_min_sep_opt",
         "c_api_timer",
@@ -2078,7 +2078,7 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
                                       &(options.need_avg_sep),
                                       &xbin_ref, &ybin_ref, &zbin_ref,
                                       &(options.max_cells_per_dim),
-                                      &(options.copy_particle_positions),
+                                      &(options.copy_particles),
                                       &(options.reorder_particles_to_original),
                                       &(options.enable_min_sep_opt),
                                       &(options.c_api_timer),
@@ -2268,7 +2268,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
     options.instruction_set = -1;
     options.periodic = 1;
     options.c_api_timer = 0;
-    options.copy_particle_positions = 1;
+    options.copy_particles = 1;
     options.reorder_particles_to_original = 0;
     options.enable_min_sep_opt = 1;        
     options.fast_divide_and_NR_steps = 0;
@@ -2299,7 +2299,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
-        "copy_particle_positions",
+        "copy_particles",
         "reorder_particles_to_original",
         "enable_min_sep_opt",
         "c_api_timer",
@@ -2325,7 +2325,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
                                        &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
-                                       &(options.copy_particle_positions),
+                                       &(options.copy_particles),
                                        &(options.reorder_particles_to_original),
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
@@ -2581,7 +2581,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     options.verbose = 0;
     options.periodic = 1;
     options.instruction_set = -1;
-    options.copy_particle_positions = 1;
+    options.copy_particles = 1;
     options.reorder_particles_to_original = 0;
     options.c_api_timer = 0;
 
@@ -2609,7 +2609,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
-        "copy_particle_positions",
+        "copy_particles",
         "reorder_particles_to_original",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
@@ -2627,7 +2627,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
                                       &(options.boxsize),
                                       &xbin_ref, &ybin_ref, &zbin_ref,
                                       &(options.max_cells_per_dim),
-                                      &(options.copy_particle_positions),
+                                      &(options.copy_particles),
                                       &(options.reorder_particles_to_original),
                                       &(options.c_api_timer),
                                       &(options.instruction_set))

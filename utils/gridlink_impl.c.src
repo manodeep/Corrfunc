@@ -247,16 +247,16 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     int64_t *all_cell_indices = NULL;
     int64_t *original_indices =  NULL; 
     int64_t *nallocated = NULL;//to keep track of how many particles have been allocated per cell (only when creating a copy of particle positions)
-    if(options->copy_particle_positions) {
+    if(options->copy_particles) {
         nallocated = (int64_t *) my_malloc(sizeof(*nallocated), totncells);
     } else {
         all_cell_indices = (int64_t *) my_malloc(sizeof(*all_cell_indices), NPART);
         original_indices = (int64_t *) my_malloc(sizeof(*original_indices), NPART);
     }
     if(lattice == NULL ||
-       (options->copy_particle_positions == 0 && all_cell_indices == NULL) ||
-       (options->copy_particle_positions == 0 && original_indices == NULL) ||
-       (options->copy_particle_positions && nallocated == NULL)) {
+       (options->copy_particles == 0 && all_cell_indices == NULL) ||
+       (options->copy_particles == 0 && original_indices == NULL) ||
+       (options->copy_particles && nallocated == NULL)) {
 
         free(lattice);free(nallocated);
         fprintf(stderr,"Error: In %s> Could not allocate memory for creating the lattice and associated arrays\n", __FUNCTION__);
@@ -270,7 +270,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     for (int64_t icell=0;icell<totncells;icell++) {
         lattice[icell].nelements = 0;
         lattice[icell].owns_memory = 0;
-        if(options->copy_particle_positions) {
+        if(options->copy_particles) {
             lattice[icell].original_index = my_malloc(sizeof(lattice[icell].original_index[0]), expected_n);
             XRETURN(lattice[icell].original_index != NULL, NULL, "Error in %s> Could not allocate memory for holding the original "
                     "indices for particles. (allocating for %"PRId64" particles \n", __FUNCTION__, expected_n);
@@ -316,7 +316,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         XRETURN(iz >= 0 && iz < nmesh_z, NULL, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
 
         const int64_t cellindex = CONVERT_3D_INDEX_TO_LINEAR(ix, iy, iz, nmesh_x, nmesh_y, nmesh_z);
-        if(options->copy_particle_positions == 0) {
+        if(options->copy_particles == 0) {
             all_cell_indices[i] = cellindex;
             original_indices[i] = i;
         } else {
@@ -337,7 +337,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                 do {
                     orig_index = my_realloc(lattice[cellindex].original_index, sizeof(*orig_index), expected_n,"lattice.original_index");
                     lattice[cellindex].original_index = (orig_index == NULL) ? lattice[cellindex].original_index:orig_index;
-                    if(options->copy_particle_positions) {
+                    if(options->copy_particles) {
                         posx = my_realloc(lattice[cellindex].x, sizeof(*posx), expected_n, "lattice.x");
                         posy = my_realloc(lattice[cellindex].y, sizeof(*posy), expected_n, "lattice.y");
                         posz = my_realloc(lattice[cellindex].z, sizeof(*posz), expected_n, "lattice.z");
@@ -381,7 +381,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         lattice[cellindex].nelements++;
     }//loop over nparticles
 
-    if(options->copy_particle_positions) {
+    if(options->copy_particles) {
         //All the particle positions have already been copied -> do not need to re-allocate any more
         //You can free the extra memory reserved by the mallocs by looping over totncells
         //and doing a realloc(lattice[cellindex].x,sizeof(DOUBLE),lattice[cellindex].nelements,"lattice.x")
@@ -427,7 +427,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
             first->original_index = original_indices + nelements_so_far;
             nelements_so_far += first->nelements;
         }
-    }//end of options->copy_particle_positions == 0
+    }//end of options->copy_particles == 0
 
 
     //Now that the particle positions can be accessed from each cell,
@@ -525,16 +525,16 @@ cellarray_weights_DOUBLE * gridlink_weights_DOUBLE(const int64_t NPART,
     int64_t *all_cell_indices = NULL;
     int64_t *original_indices =  NULL; 
     int64_t *nallocated = NULL;//to keep track of how many particles have been allocated per cell (only when creating a copy of particle positions)
-    if(options->copy_particle_positions) {
+    if(options->copy_particles) {
         nallocated = (int64_t *) my_malloc(sizeof(*nallocated), totncells);
     } else {
         all_cell_indices = (int64_t *) my_malloc(sizeof(*all_cell_indices), NPART);
         original_indices = (int64_t *) my_malloc(sizeof(*original_indices), NPART);
     }
     if(lattice == NULL ||
-       (options->copy_particle_positions == 0 && all_cell_indices == NULL) ||
-       (options->copy_particle_positions == 0 && original_indices == NULL) ||
-       (options->copy_particle_positions && nallocated == NULL)) {
+       (options->copy_particles == 0 && all_cell_indices == NULL) ||
+       (options->copy_particles == 0 && original_indices == NULL) ||
+       (options->copy_particles && nallocated == NULL)) {
 
         free(lattice);free(nallocated);
         fprintf(stderr,"Error: In %s> Could not allocate memory for creating the lattice and associated arrays\n", __FUNCTION__);
@@ -552,7 +552,7 @@ cellarray_weights_DOUBLE * gridlink_weights_DOUBLE(const int64_t NPART,
         lattice[icell].zbounds[0] = MAX_POSITIVE_FLOAT;
         lattice[icell].zbounds[1] = -MAX_POSITIVE_FLOAT;
 
-        if(options->copy_particle_positions) {
+        if(options->copy_particles) {
             lattice[icell].original_index = my_malloc(sizeof(lattice[icell].original_index[0]), expected_n);
             XRETURN(lattice[icell].original_index != NULL, NULL, "Error in %s> Could not allocate memory for holding the original "
                     "indices for particles. (allocating for %"PRId64" particles \n", __FUNCTION__, expected_n);
@@ -612,7 +612,7 @@ cellarray_weights_DOUBLE * gridlink_weights_DOUBLE(const int64_t NPART,
         XRETURN(iz >= 0 && iz < nmesh_z, NULL, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
 
         const int64_t icell = CONVERT_3D_INDEX_TO_LINEAR(ix, iy, iz, nmesh_x, nmesh_y, nmesh_z);
-        if(options->copy_particle_positions == 0) {
+        if(options->copy_particles == 0) {
             all_cell_indices[i] = icell;
             original_indices[i] = i;
         } else {
@@ -698,7 +698,7 @@ cellarray_weights_DOUBLE * gridlink_weights_DOUBLE(const int64_t NPART,
         lattice[icell].nelements++;
     }
 
-    if(options->copy_particle_positions) {
+    if(options->copy_particles) {
         //All the particle positions have already been copied -> do not need to re-allocate any more
         //You can free the extra memory reserved by the mallocs by looping over totncells
         //and doing a realloc(lattice[cellindex].x,sizeof(DOUBLE),lattice[cellindex].nelements,"lattice.x")
@@ -755,7 +755,7 @@ cellarray_weights_DOUBLE * gridlink_weights_DOUBLE(const int64_t NPART,
                 "to have assigned %"PRId64". Perhaps, there are some edge cases with floating point accuracy\n",
                 __FUNCTION__, NPART, nelements_so_far);
         
-    }//end of options->copy_particle_positions == 0
+    }//end of options->copy_particles == 0
     
     /* Do we need to sort the particles in Z ? */
     if(options->sort_on_z) {

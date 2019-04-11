@@ -486,7 +486,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
 
     free(all_cell_pairs);
     
-    if(options->copy_particle_positions == 0 && options->reorder_particles_to_original) {
+    if(options->copy_particles == 0 && options->reorder_particles_to_original) {
         int64_t *original_index = lattice1[0].original_index;
         int status = reorder_particles_back_into_original_order_weights_DOUBLE(ND1, original_index, X1, Y1, Z1, &(extra->weights0));
         if(status != EXIT_SUCCESS) {

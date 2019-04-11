@@ -467,7 +467,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 #endif
 
     free(all_cell_pairs);
-    if(options->copy_particle_positions == 0 && options->reorder_particles_to_original) {
+    if(options->copy_particles == 0 && options->reorder_particles_to_original) {
         int64_t *original_index = lattice[0].original_index;
         int status = reorder_particles_back_into_original_order_weights_DOUBLE(ND, original_index, X, Y, Z, &(extra->weights0));
         if(status != EXIT_SUCCESS) {

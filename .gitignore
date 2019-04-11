@@ -4,6 +4,7 @@
 *.a
 *.so
 *.so.*
+*.bak
 xx*
 yy*
 zz*

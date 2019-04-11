@@ -74,7 +74,7 @@ const int min_bin_ref = 1, max_bin_ref = 4;
            int dotest = 1;                                              \
            const isa old_isa = options.instruction_set;                 \
            const int old_min_sep_opt = options.enable_min_sep_opt;      \
-           const int old_copy_parts  = options.copy_particle_positions;      \
+           const int old_copy_parts  = options.copy_particles;      \
            const int old_reorder_parts  = options.reorder_particles_to_original; \
            options.reorder_particles_to_original = 1;                              \
            struct timespec t0, t1;                                      \
@@ -83,7 +83,7 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                double fastest_time = 1e30;                              \
                options.instruction_set = valid_instruction_sets[iset];  \
                for(int copy_parts=0;copy_parts < 2; copy_parts++) {     \
-                   options.copy_particle_positions = copy_parts;  \
+                   options.copy_particles = copy_parts;  \
                    for(int bfx=min_bin_ref;bfx<=max_bin_ref;bfx++) {    \
                        for(int bfy=min_bin_ref;bfy<=max_bin_ref;bfy++) { \
                            for(int bfz=min_bin_ref;bfz<=max_bin_ref;bfz++) { \
@@ -134,7 +134,7 @@ const int min_bin_ref = 1, max_bin_ref = 4;
            reset_bin_refine_factors(&options);                          \
            options.instruction_set = old_isa;                           \
            options.enable_min_sep_opt = old_min_sep_opt;                \
-           options.copy_particle_positions = old_copy_parts;            \
+           options.copy_particles = old_copy_parts;            \
            options.reorder_particles_to_original = old_reorder_parts;   \
     } while(0)
 

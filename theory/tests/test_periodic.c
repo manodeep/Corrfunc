@@ -577,7 +577,7 @@ int main(int argc, char **argv)
     options.verbose=0;
     options.periodic=1;
     options.fast_divide_and_NR_steps=0;
-    options.copy_particle_positions=1;
+    options.copy_particles=1;
     options.reorder_particles_to_original=1;
     options.float_type=sizeof(double);
 

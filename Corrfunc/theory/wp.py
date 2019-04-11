@@ -284,7 +284,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        weights=None, weight_type=None, verbose=False, output_rpavg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
-       copy_particle_positions=True, reorder_particles_to_original=False,
+       copy_particles=True, reorder_particles_to_original=False,
        enable_min_sep_opt=True,
        c_api_timer=False, c_cell_timer=False, isa='fastest'):
     """
@@ -368,7 +368,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
         too small relative to the boxsize (and increasing helps the runtime).
 
-    copy_particle_positions: boolean (default True)
+    copy_particles: boolean (default True)
         Boolean flag to make a copy of the particle positions
         If set to False, the particles will be re-ordered in-place
 
@@ -377,7 +377,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     reorder_particles_to_original: boolean (default False)
         Boolean flag to put the particles back into original input order after
         calculations are complete. Only relevant when
-        ``copy_particle_positions`` is set to False
+        ``copy_particles`` is set to False
 
         .. versionadded:: 2.3.0
 
