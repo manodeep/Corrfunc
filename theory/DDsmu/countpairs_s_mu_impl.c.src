@@ -35,7 +35,7 @@ void interrupt_handler_countpairs_s_mu_DOUBLE(int signo)
 {
     fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
     interrupt_status_DDsmu_DOUBLE = EXIT_FAILURE;
-}    
+}
 
 countpairs_s_mu_func_ptr_DOUBLE countpairs_s_mu_driver_DOUBLE(const struct config_options *options)
 {
@@ -44,16 +44,16 @@ countpairs_s_mu_func_ptr_DOUBLE countpairs_s_mu_driver_DOUBLE(const struct confi
     if(old_isa == options->instruction_set) {
         return function;
     }
-  
+
 
     /* Array of function pointers */
     countpairs_s_mu_func_ptr_DOUBLE allfunctions[] = {
 #ifdef __AVX512F__
       countpairs_s_mu_avx512_intrinsics_DOUBLE,
-#endif  
+#endif
 #ifdef __AVX__
       countpairs_s_mu_avx_intrinsics_DOUBLE,
-#endif			 
+#endif
 #ifdef __SSE4_2__
       countpairs_s_mu_sse_intrinsics_DOUBLE,
 #endif
@@ -67,20 +67,20 @@ countpairs_s_mu_func_ptr_DOUBLE countpairs_s_mu_driver_DOUBLE(const struct confi
 #endif
     int curr_offset = 0;
 
-    /* Check for AVX512F support */    
+    /* Check for AVX512F support */
     int avx512_offset = fallback_offset;
 #ifdef __AVX512F__
     avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
     curr_offset++;
 #endif
-    
+
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
 #ifdef __AVX__
     avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
     curr_offset++;
-#endif        
-    
+#endif
+
     /* Is the SSE function supported at runtime and enabled at compile-time?*/
     int sse_offset = fallback_offset;
 #ifdef __SSE4_2__
@@ -91,8 +91,8 @@ countpairs_s_mu_func_ptr_DOUBLE countpairs_s_mu_driver_DOUBLE(const struct confi
       fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
               curr_offset, fallback_offset);
       return NULL;
-    } 
-    
+    }
+
     int function_dispatch=0;
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
@@ -112,7 +112,7 @@ countpairs_s_mu_func_ptr_DOUBLE countpairs_s_mu_driver_DOUBLE(const struct confi
     }
     function = allfunctions[function_dispatch];
     old_isa = options->instruction_set;
-    
+
     if(options->verbose){
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
@@ -128,7 +128,7 @@ countpairs_s_mu_func_ptr_DOUBLE countpairs_s_mu_driver_DOUBLE(const struct confi
             return NULL;
         }
     }
-    
+
     return function;
 }
 
@@ -149,7 +149,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
-    
+
     // If no extra options were passed, create dummy options
     // This allows us to pass arguments like "extra->weights0" below;
     // they'll just be NULLs, which is the correct behavior
@@ -166,7 +166,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);
     }
-    
+
 #if defined(_OPENMP)
     omp_set_num_threads(numthreads);
 #else
@@ -186,7 +186,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
         options->max_cells_per_dim = NLATMAX;
     }
-    
+
     if(options->fast_divide_and_NR_steps >= MAX_FAST_DIVIDE_NR_STEPS) {
         fprintf(stderr, ANSI_COLOR_MAGENTA"Warning: The number of requested Newton-Raphson steps = %u is larger than max. allowed steps = %u."
                 " Switching to a standard divide"ANSI_COLOR_RESET"\n",
@@ -194,10 +194,10 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         options->fast_divide_and_NR_steps = 0;
     }
 
-    /* setup interrupt handler -> mostly useful during the python execution. 
+    /* setup interrupt handler -> mostly useful during the python execution.
        Let's Ctrl-C abort the extension  */
     SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_s_mu_DOUBLE);
-    
+
     /***********************
      *initializing the  bins
      ************************/
@@ -221,7 +221,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         fprintf(stderr,"Error: Number of mu bins = %d must be at least 1\n", nmu_bins);
         return EXIT_FAILURE;
     }
-    
+
     DOUBLE supp_sqr[nsbin];
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     for(int i=0; i < nsbin;i++) {
@@ -232,7 +232,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
     const DOUBLE sqr_smin=supp_sqr[0];
     const DOUBLE mu_max = (DOUBLE) max_mu;
     const DOUBLE pimax = smax*mu_max;
-    
+
     //Find the min/max of the data
     DOUBLE xmin=1e10,ymin=1e10,zmin=1e10;
     DOUBLE xmax=-1e10,ymax=-1e10,zmax=-1e10;
@@ -270,19 +270,19 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         }
     }
 
-    
+
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_weights_DOUBLE *lattice1 = gridlink_weights_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
-                                                                                 xmin, xmax, ymin, ymax, zmin, zmax,
-                                                                                 smax, smax, pimax, 
-                                                                                 options->bin_refine_factors[0], options->bin_refine_factors[1],
-                                                                                 options->bin_refine_factors[2],
-                                                                                 &nmesh_x, &nmesh_y, &nmesh_z, options);
+    cellarray_DOUBLE *lattice1 = gridlink_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
+                                                 xmin, xmax, ymin, ymax, zmin, zmax,
+                                                 smax, smax, pimax,
+                                                 options->bin_refine_factors[0], options->bin_refine_factors[1],
+                                                 options->bin_refine_factors[2],
+                                                 &nmesh_x, &nmesh_y, &nmesh_z, options);
     if(lattice1 == NULL) {
         return EXIT_FAILURE;
     }
-    
+
     /* If there too few cells (BOOST_CELL_THRESH is ~10), and the number of cells can be increased, then boost bin refine factor (by 2x)*/
     if(nmesh_x <= BOOST_CELL_THRESH && nmesh_y <= BOOST_CELL_THRESH && nmesh_z <= BOOST_CELL_THRESH
        && options->max_cells_per_dim >= BOOST_BIN_REF*BOOST_CELL_THRESH) {
@@ -292,13 +292,13 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                         __FUNCTION__, nmesh_x, nmesh_y, nmesh_z);
                 fprintf(stderr,"xmin = %lf xmax=%lf smax = %lf\n", xmin, xmax, smax);
             }
-            free_cellarray_weights_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+            free_cellarray_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
             for(int i=0;i<3;i++) {
                 options->bin_refine_factors[i] *= BOOST_BIN_REF;
             }
-            lattice1 = gridlink_weights_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
+            lattice1 = gridlink_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                        xmin, xmax, ymin, ymax, zmin, zmax,
-                                                       smax, smax, pimax, 
+                                                       smax, smax, pimax,
                                                        options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                                        &nmesh_x, &nmesh_y, &nmesh_z, options);
             if(lattice1 == NULL) {
@@ -314,14 +314,14 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         }
     }
 
-    cellarray_weights_DOUBLE *lattice2 = NULL;
+    cellarray_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_weights_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
-                                                   xmin, xmax, ymin, ymax, zmin, zmax,
-                                                   smax, smax, pimax, 
-                                                   options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
-                                                   &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
+        lattice2 = gridlink_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
+                                   xmin, xmax, ymin, ymax, zmin, zmax,
+                                   smax, smax, pimax,
+                                   options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                   &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
         if(lattice2 == NULL) {
             return EXIT_FAILURE;
         }
@@ -348,26 +348,26 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                                                                          autocorr,
                                                                          options->periodic);
     if(all_cell_pairs == NULL) {
-        free_cellarray_weights_DOUBLE(lattice1, totncells);
+        free_cellarray_DOUBLE(lattice1, totncells);
         if(autocorr == 0) {
-            free_cellarray_weights_DOUBLE(lattice2, totncells);
+            free_cellarray_DOUBLE(lattice2, totncells);
         }
         free(supp);
         return EXIT_FAILURE;
     }
 
-    
+
     /* runtime dispatch - get the function pointer */
     countpairs_s_mu_func_ptr_DOUBLE countpairs_s_mu_function_DOUBLE = countpairs_s_mu_driver_DOUBLE(options);
     if(countpairs_s_mu_function_DOUBLE == NULL) {
-        free_cellarray_weights_DOUBLE(lattice1, totncells);
+        free_cellarray_DOUBLE(lattice1, totncells);
         if(autocorr == 0) {
-            free_cellarray_weights_DOUBLE(lattice2, totncells);
+            free_cellarray_DOUBLE(lattice2, totncells);
         }
         free(supp);
         return EXIT_FAILURE;
     }
-    
+
 
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, totnbins);
@@ -379,13 +379,13 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
     if(need_weightavg) {
       all_weightavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,totnbins);
     }
-    
+
     if(all_npairs == NULL ||
        (options->need_avg_sep && all_savg == NULL) ||
        (need_weightavg && all_weightavg == NULL)) {
-        free_cellarray_weights_DOUBLE(lattice1, totncells);
+        free_cellarray_DOUBLE(lattice1, totncells);
         if(autocorr == 0) {
-            free_cellarray_weights_DOUBLE(lattice2, totncells);
+            free_cellarray_DOUBLE(lattice2, totncells);
         }
         matrix_free((void **)all_npairs, numthreads);
         if(options->need_avg_sep) {
@@ -445,15 +445,15 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
 #endif
             if(abort_status == EXIT_SUCCESS && interrupt_status_DDsmu_DOUBLE == EXIT_SUCCESS) {
                 //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
-                
+
                 /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
                 if(options->verbose) {
 #if defined(_OPENMP)
                     if (omp_get_thread_num() == 0)
 #endif
                         my_progressbar(numdone,&interrupted);
-                    
-                    
+
+
 #if defined(_OPENMP)
 #pragma omp atomic
 #endif
@@ -464,7 +464,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                 struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[icellpair];
                 DOUBLE *this_rpavg = options->need_avg_sep ? savg:NULL;
                 DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                
+
                 const int status = countpairs_s_mu_function_DOUBLE(this_cell_pair->N1, this_cell_pair->x1,
                                                                    this_cell_pair->y1, this_cell_pair->z1, this_cell_pair->weights1,
                                                                    this_cell_pair->N2, this_cell_pair->x2,
@@ -473,19 +473,19 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                                                                    options->fast_divide_and_NR_steps,
                                                                    sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max, pimax,
                                                                    this_cell_pair->xwrap, this_cell_pair->ywrap, this_cell_pair->zwrap,
-                                                                   this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz, 
+                                                                   this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                                    this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                                    this_rpavg, npairs,
                                                                    this_weightavg, extra->weight_method);
 
-                /* This actually causes a race condition under OpenMP - but mostly 
-                   I care that an error occurred - rather than the exact value of 
+                /* This actually causes a race condition under OpenMP - but mostly
+                   I care that an error occurred - rather than the exact value of
                    the error status */
                 abort_status |= status;
-                
+
             }//error occurred somewhere in the called functions: abort_status is set
         }//loop over cell-pairs
-        
+
 #if defined(_OPENMP)
         for(int i=0;i<totnbins;i++) {
             all_npairs[tid][i] = npairs[i];
@@ -502,13 +502,13 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
     free(all_cell_pairs);
     if(options->copy_particles == 0 && options->reorder_particles_to_original) {
         int64_t *original_index = lattice1[0].original_index;
-        int status = reorder_particles_back_into_original_order_weights_DOUBLE(ND1, original_index, X1, Y1, Z1, &(extra->weights0));
+        int status = reorder_particles_back_into_original_order_DOUBLE(ND1, original_index, X1, Y1, Z1, &(extra->weights0));
         if(status != EXIT_SUCCESS) {
             return status;
         }
         if(autocorr == 0) {
             original_index = lattice2[0].original_index;
-            status = reorder_particles_back_into_original_order_weights_DOUBLE(ND2, original_index, X2, Y2, Z2, &(extra->weights1));
+            status = reorder_particles_back_into_original_order_DOUBLE(ND2, original_index, X2, Y2, Z2, &(extra->weights1));
             if(status != EXIT_SUCCESS) {
                 return status;
             }
@@ -529,16 +529,16 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
 #endif
         return EXIT_FAILURE;
     }
-    
+
     if(options->verbose) {
         finish_myprogressbar(&interrupted);
     }
-    
+
 #if defined(_OPENMP)
     uint64_t npairs[totnbins];
     DOUBLE savg[totnbins];
     DOUBLE weightavg[totnbins];
-    
+
     for(int i=0;i<totnbins;i++) {
         npairs[i] = 0;
         if(options->need_avg_sep) {
@@ -590,11 +590,11 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
            the compiler  */
         if(supp[0] <= 0.0) {
             int index = (nmu_bins + 1);//first valid s bin (with 0-dpi depth in pi)
-            /* Then, add all the self-pairs. This ensures that 
-               a cross-correlation with two identical datasets 
+            /* Then, add all the self-pairs. This ensures that
+               a cross-correlation with two identical datasets
                produces the same result as the auto-correlation  */
             npairs[index] += ND1;
-            
+
             // Increasing npairs affects savg and weightavg.
             // We don't need to add anything to savg; all the self-pairs have 0 separation!
             // The self-pairs have non-zero weight, though.  So, fix that here.
@@ -615,7 +615,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         }
     }
 
-    
+
     for(int i=0;i<totnbins;i++) {
         if(npairs[i] > 0) {
             if(options->need_avg_sep) {
@@ -643,7 +643,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         free(supp);
         return EXIT_FAILURE;
     }
-    
+
     for(int i=0;i<nsbin;i++) {
         results->supp[i] = supp[i];
         for(int j=0;j<nmu_bins;j++) {
@@ -666,16 +666,16 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         }
     }
     free(supp);
-    
+
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
     reset_bin_refine_factors(options);
-    
+
     if(options->c_api_timer) {
         struct timeval t1;
         gettimeofday(&t1, NULL);
         options->c_api_time = ADD_DIFF_TIME(t0, t1);
     }
-    
+
     return EXIT_SUCCESS;
 }
