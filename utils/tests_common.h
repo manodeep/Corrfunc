@@ -82,17 +82,17 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                int fastest_bin_ref[] = {1, 1, 1};                       \
                double fastest_time = 1e30;                              \
                options.instruction_set = valid_instruction_sets[iset];  \
-               for(int copy_parts=0;copy_parts < 2; copy_parts++) {     \
-                   options.copy_particles = copy_parts;  \
-                   for(int bfx=min_bin_ref;bfx<=max_bin_ref;bfx++) {    \
-                       for(int bfy=min_bin_ref;bfy<=max_bin_ref;bfy++) { \
-                           for(int bfz=min_bin_ref;bfz<=max_bin_ref;bfz++) { \
-                               for(int enable_min_sep_opt=0;enable_min_sep_opt<=1;enable_min_sep_opt++) { \
+               for(int bfx=min_bin_ref;bfx<=max_bin_ref;bfx++) {    \
+                   for(int bfy=min_bin_ref;bfy<=max_bin_ref;bfy++) { \
+                       for(int bfz=min_bin_ref;bfz<=max_bin_ref;bfz++) { \
+                           for(int copy_parts=0;copy_parts < 2; copy_parts++) {     \
+                           options.copy_particles = copy_parts;  \
+                           for(int enable_min_sep_opt=0;enable_min_sep_opt<=1;enable_min_sep_opt++) { \
                                    if(dotest == 1) {                    \
                                        const int bf[] = {bfx, bfy, bfz}; \
                                        set_custom_bin_refine_factors(&options, bf); \
                                        options.enable_min_sep_opt = enable_min_sep_opt; \
-                                       fprintf(stderr,"Bin refs = (%d, %d, %d), instruction set = %s, duplicating particle pos = %s, and min. sep. opt %8s ...", \
+                                       fprintf(stderr,"Bin refs = (%d, %d, %d), instruction set = %s, duplicating particle pos = %5s, and min. sep. opt %8s ...", \
                                                options.bin_refine_factors[0], \
                                                options.bin_refine_factors[1], \
                                                options.bin_refine_factors[2], \
@@ -118,11 +118,11 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                                        }                                \
                                        fprintf(stderr, ANSI_COLOR_RESET ". Time taken = %8.2lf seconds \n", time_to_run * 1e-9); \
                                    } /* close the enable_min_sep_opt condition*/ \
-                               }/* close the dotest if condition*/ \
-                           }/*bin ref z*/                   \
-                       }/*bin ref y*/                   \
-                   }/*bin ref x*/                                           \
-               }/* copy particle positions*/                                           \
+                               }/* copy particle positions*/                                           \
+                           }/* close the dotest if condition*/ \
+                       }/*bin ref z*/                   \
+                   }/*bin ref y*/                   \
+               }/*bin ref x*/                                           \
                if(ret == EXIT_SUCCESS) {        \
                    fprintf(stderr, ANSI_COLOR_MAGENTA "Fastest time = %8.2lf seconds with bin-ref = {%d, %d, %d}" ANSI_COLOR_RESET "\n", \
                            fastest_time*1e-9,                           \
