@@ -42,22 +42,22 @@ static inline int vpf_avx512_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restr
     const AVX512_FLOATS m_xc    = AVX512_SET_FLOAT(xcen);
     const AVX512_FLOATS m_yc    = AVX512_SET_FLOAT(ycen);
     const AVX512_FLOATS m_zc    = AVX512_SET_FLOAT(zcen);
-    
+
     DOUBLE *localx2 = (DOUBLE *) X;
     DOUBLE *localy2 = (DOUBLE *) Y;
     DOUBLE *localz2 = (DOUBLE *) Z;
-    
+
     for(int64_t j=0;j<np;j+=AVX512_NVEC) {
         AVX512_MASK m_mask_left = (np - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[np-j];
-        
+
         const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx2);
         const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy2);
         const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz2);
-        
+
         localx2 += AVX512_NVEC;
         localy2 += AVX512_NVEC;
         localz2 += AVX512_NVEC;
-        
+
         const AVX512_FLOATS m_dx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_xc, m_x1);
         const AVX512_FLOATS m_dy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_yc, m_y1);
         const AVX512_FLOATS m_dz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_zc, m_z1);
@@ -70,13 +70,13 @@ static inline int vpf_avx512_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restr
         if(m_mask_left == 0) {
             continue;
         }
-        
+
         for(int k=nbin-1;k>=1;k--){
           const AVX512_MASK m_mask1 = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_r2,m_rupp_sqr[k],_CMP_LT_OS);
           const AVX512_MASK m_mask2 = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_r2,m_rupp_sqr[k-1],_CMP_GE_OS);
           const AVX512_MASK m_bin_mask = AVX512_MASK_BITWISE_AND(m_mask1,m_mask2);
           counts[k] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
-          m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y  
+          m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
           if(m_mask_left == 0) {
               break;
           } else if(k==1){
@@ -84,13 +84,13 @@ static inline int vpf_avx512_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restr
           }
         }
     }
-    
+
     for(int i=0;i<nbin;i++) {
         src_counts[i] += counts[i];
     }
 
     return EXIT_SUCCESS;
-}    
+}
 
 #endif //AVX512F
 
@@ -119,32 +119,32 @@ static inline int vpf_avx_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restrict
     const AVX_FLOATS m_xc    = AVX_SET_FLOAT(xcen);
     const AVX_FLOATS m_yc    = AVX_SET_FLOAT(ycen);
     const AVX_FLOATS m_zc    = AVX_SET_FLOAT(zcen);
-    
+
     DOUBLE *localx2 = (DOUBLE *) X;
     DOUBLE *localy2 = (DOUBLE *) Y;
     DOUBLE *localz2 = (DOUBLE *) Z;
-    
+
     int64_t j;
     for(j=0;j<=(np-AVX_NVEC);j+=AVX_NVEC) {
-        
+
         const AVX_FLOATS m_x1 = AVX_LOAD_FLOATS_UNALIGNED(localx2);
         const AVX_FLOATS m_y1 = AVX_LOAD_FLOATS_UNALIGNED(localy2);
         const AVX_FLOATS m_z1 = AVX_LOAD_FLOATS_UNALIGNED(localz2);
-        
+
         localx2 += AVX_NVEC;
         localy2 += AVX_NVEC;
         localz2 += AVX_NVEC;
-        
+
         const AVX_FLOATS m_dx = AVX_SUBTRACT_FLOATS(m_xc,m_x1);
         const AVX_FLOATS m_dy = AVX_SUBTRACT_FLOATS(m_yc,m_y1);
         const AVX_FLOATS m_dz = AVX_SUBTRACT_FLOATS(m_zc,m_z1);
-        
+
         const AVX_FLOATS m_r2 = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_dx),AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_dy),AVX_SQUARE_FLOAT(m_dz)));
         const AVX_FLOATS m_mask = AVX_COMPARE_FLOATS(m_r2,m_rmax_sqr,_CMP_LT_OS);
         if(AVX_TEST_COMPARISON(m_mask) == 0) {
             continue;
         }
-        
+
         for(int k=nbin-1;k>=1;k--){
             AVX_FLOATS m_mask1 = AVX_COMPARE_FLOATS(m_r2,m_rupp_sqr[k],_CMP_LT_OS);
             AVX_FLOATS m_mask2 = AVX_COMPARE_FLOATS(m_r2,m_rupp_sqr[k-1],_CMP_GE_OS);
@@ -160,8 +160,8 @@ static inline int vpf_avx_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restrict
             }
         }
     }
-    
-    
+
+
     //Take care of the rest
     for(;j<np;j++) {
         const DOUBLE dx = *localx2++ - xcen;
@@ -178,7 +178,7 @@ static inline int vpf_avx_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restrict
     }
 
     return EXIT_SUCCESS;
-}    
+}
 
 #endif //AVX
 
@@ -208,32 +208,32 @@ static inline int vpf_sse_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restrict
     const SSE_FLOATS m_xc    = SSE_SET_FLOAT(xcen);
     const SSE_FLOATS m_yc    = SSE_SET_FLOAT(ycen);
     const SSE_FLOATS m_zc    = SSE_SET_FLOAT(zcen);
-    
+
     DOUBLE *localx2 = (DOUBLE *) X;
     DOUBLE *localy2 = (DOUBLE *) Y;
     DOUBLE *localz2 = (DOUBLE *) Z;
-    
+
     int64_t j;
     for(j=0;j<=(np-SSE_NVEC);j+=SSE_NVEC) {
-        
+
         const SSE_FLOATS m_x1 = SSE_LOAD_FLOATS_UNALIGNED(localx2);
         const SSE_FLOATS m_y1 = SSE_LOAD_FLOATS_UNALIGNED(localy2);
         const SSE_FLOATS m_z1 = SSE_LOAD_FLOATS_UNALIGNED(localz2);
-        
+
         localx2 += SSE_NVEC;
         localy2 += SSE_NVEC;
         localz2 += SSE_NVEC;
-        
+
         const SSE_FLOATS m_dx = SSE_SUBTRACT_FLOATS(m_xc,m_x1);
         const SSE_FLOATS m_dy = SSE_SUBTRACT_FLOATS(m_yc,m_y1);
         const SSE_FLOATS m_dz = SSE_SUBTRACT_FLOATS(m_zc,m_z1);
-        
+
         const SSE_FLOATS m_r2 = SSE_ADD_FLOATS(SSE_SQUARE_FLOAT(m_dx),SSE_ADD_FLOATS(SSE_SQUARE_FLOAT(m_dy),SSE_SQUARE_FLOAT(m_dz)));
         const SSE_FLOATS m_mask = SSE_COMPARE_FLOATS_LT(m_r2,m_rmax_sqr);
         if(SSE_TEST_COMPARISON(m_mask) == 0) {
             continue;
         }
-        
+
         for(int k=nbin-1;k>=1;k--){
             SSE_FLOATS m_mask1 = SSE_COMPARE_FLOATS_LT(m_r2,m_rupp_sqr[k]);
             SSE_FLOATS m_mask2 = SSE_COMPARE_FLOATS_GE(m_r2,m_rupp_sqr[k-1]);
@@ -249,8 +249,8 @@ static inline int vpf_sse_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restrict
             }
         }
     }
-    
-    
+
+
     //Take care of the rest
     for(;j<np;j++) {
         const DOUBLE dx = *localx2++ - xcen;
@@ -267,7 +267,7 @@ static inline int vpf_sse_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restrict
     }
 
     return EXIT_SUCCESS;
-}    
+}
 #endif //SSE4.2
 
 
@@ -297,6 +297,6 @@ static inline int vpf_fallback_DOUBLE(const int64_t np, DOUBLE * restrict X, DOU
     for(int i=0;i<nbin;i++) {
         src_counts[i] += counts[i];
     }
-    
+
     return EXIT_SUCCESS;
 }

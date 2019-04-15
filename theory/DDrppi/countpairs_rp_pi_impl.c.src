@@ -213,8 +213,9 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
     const DOUBLE sqr_rpmin=rupp_sqr[0];
 
     //Find the min/max of the data
-    DOUBLE xmin=1e10,ymin=1e10,zmin=1e10;
-    DOUBLE xmax=-1e10,ymax=-1e10,zmax=-1e10;
+    DOUBLE xmin, xmax, ymin, ymax, zmin, zmax;
+    xmin = ymin = zmin = MAX_POSITIVE_FLOAT;
+    xmax = ymax = zmax = -MAX_POSITIVE_FLOAT;
     get_max_min_DOUBLE(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
 
     if(autocorr==0) {
