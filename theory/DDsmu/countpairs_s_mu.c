@@ -19,10 +19,15 @@ void free_results_s_mu(results_countpairs_s_mu *results)
     if(results==NULL)
         return;
 
-    free(results->npairs);
-    free(results->supp);
-    free(results->savg);
-    free(results->weightavg);
+    free(results->npairs);results->npairs = NULL;
+    free(results->supp);results->supp = NULL;
+    free(results->savg);results->savg = NULL;
+    free(results->weightavg);results->weightavg = NULL;
+
+    results->mu_max = 0.0;
+    results->mu_min = 0.0;
+    results->nsbin = 0;
+    results->nmu_bins = 0;
 }
 
 
@@ -32,7 +37,7 @@ int countpairs_s_mu(const int64_t ND1, void *X1, void *Y1, void *Z1,
                     const int autocorr,
                     const char *sbinfile,
                     const double mu_max,
-                    const int nmu_bins, 
+                    const int nmu_bins,
                     results_countpairs_s_mu *results,
                     struct config_options *options,
                     struct extra_options *extra)
@@ -47,7 +52,7 @@ int countpairs_s_mu(const int64_t ND1, void *X1, void *Y1, void *Z1,
         fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;
     }
-    
+
     if(options->float_type == sizeof(float)) {
         return countpairs_s_mu_float(ND1, (float *) X1, (float *) Y1, (float *) Z1,
                                      ND2, (float *) X2, (float *) Y2, (float *) Z2,

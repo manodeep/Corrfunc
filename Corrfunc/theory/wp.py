@@ -284,8 +284,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        weights=None, weight_type=None, verbose=False, output_rpavg=False,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
-       copy_particles=True, reorder_particles_to_original=False,
-       enable_min_sep_opt=True,
+       copy_particles=True, enable_min_sep_opt=True,
        c_api_timer=False, c_cell_timer=False, isa='fastest'):
     """
     Function to compute the projected correlation function in a
@@ -371,13 +370,6 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     copy_particles: boolean (default True)
         Boolean flag to make a copy of the particle positions
         If set to False, the particles will be re-ordered in-place
-
-        .. versionadded:: 2.3.0
-
-    reorder_particles_to_original: boolean (default False)
-        Boolean flag to put the particles back into original input order after
-        calculations are complete. Only relevant when
-        ``copy_particles`` is set to False
 
         .. versionadded:: 2.3.0
 

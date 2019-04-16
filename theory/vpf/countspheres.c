@@ -25,6 +25,11 @@ void free_results_countspheres(results_countspheres *results)
         return;
 
     matrix_free((void **) results->pN, results->nbin);
+    results->pN = NULL;
+    results->rmax = 0.0;
+    results->nbin = 0;
+    results->nc = 0;
+    results->num_pN = 0;
 }
 
 
@@ -42,7 +47,7 @@ int countspheres(const int64_t np, void * restrict X, void * restrict Y, void * 
                 __FUNCTION__, options->float_type);
         return EXIT_FAILURE;
     }
-    
+
     if( strncmp(options->version, STR(VERSION), sizeof(options->version)/sizeof(char)-1) != 0) {
         fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;

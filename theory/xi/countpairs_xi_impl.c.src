@@ -22,8 +22,8 @@
 #include "progressbar.h" //for the progressbar
 #include "cpu_features.h" //prototype instrset_detect required for runtime dispatch
 
-#include "cellarray_DOUBLE.h" //definition of struct cellarray*
 #include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
+#include "gridlink_utils_DOUBLE.h" //for associated helper routines
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -429,7 +429,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 #endif//openmp parallel
 
     free(all_cell_pairs);
-    if(options->copy_particles == 0 && options->reorder_particles_to_original) {
+    if(options->copy_particles == 0) {
         int64_t *original_index = lattice[0].original_index;
         int status = reorder_particles_back_into_original_order_DOUBLE(ND, original_index, X, Y, Z, &(extra->weights0));
         if(status != EXIT_SUCCESS) {

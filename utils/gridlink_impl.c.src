@@ -16,6 +16,9 @@
 #include "function_precision.h"
 #include "utils.h"
 
+/* Need SGLIB to simultaneously sort the particles */
+#include "sglib.h"
+#include "gridlink_utils_DOUBLE.h"
 #include "gridlink_impl_DOUBLE.h"
 
 #if defined(_OPENMP)
@@ -24,32 +27,14 @@
 
 #define MEMORY_INCREASE_FAC   1.2
 
+#ifndef CONVERT_3D_INDEX_TO_LINEAR
 #define CONVERT_3D_INDEX_TO_LINEAR(ix, iy, iz, nx, ny, nz)           {ix*ny*nz + iy*nz + iz}
+#endif
 
-
-int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax, const DOUBLE rmax, const int refine_factor, const int max_ncells, DOUBLE *xbinsize, int *nlattice, const struct config_options *options)
-{
-    const DOUBLE xdiff = (options->periodic && options->boxsize > 0) ? options->boxsize:(xmax-xmin);
-    int nmesh=(int)(refine_factor*xdiff/rmax) ;
-    nmesh = nmesh < 1 ? 1:nmesh;
-    if(options->periodic == 1) {
-        if (nmesh<(2*refine_factor+1))  {
-            fprintf(stderr,"%s> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",__FILE__,nmesh) ;
-            fprintf(stderr,"%s> Please reduce Rmax = %"REAL_FORMAT" to be a smaller fraction of the particle distribution region = %"REAL_FORMAT"\n",__FILE__,rmax, xdiff);
-            return EXIT_FAILURE;
-        }
-    }
-
-    if (nmesh>max_ncells)  nmesh=max_ncells;
-    *xbinsize = xdiff/nmesh;
-    *nlattice = nmesh;
-
-    return EXIT_SUCCESS;
-}
 
 void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
 {
-    //In the case where we have not requested to copy particle positions,
+    //In the case where we have not requested to copy particles.
     //the memory address for the 'original_indices' from gridlink will be
     //at the first cell. We need to free this memory to avoid a leak
     if(lattice[0].owns_memory == 0) {
@@ -60,72 +45,16 @@ void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
                 free(lattice[i].x);
                 free(lattice[i].y);
                 free(lattice[i].z);
+                free(lattice[i].original_index);
                 for(int w = 0; w < lattice[i].weights.num_weights; w++){
                     free(lattice[i].weights.weights[w]);
                 }
-                free(lattice[i].original_index);
             }
         }
     }
 
     free(lattice);
 }
-
-void get_max_min_DOUBLE(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
-                        DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z)
-{
-    DOUBLE xmin = *min_x, ymin = *min_y, zmin=*min_z;
-    DOUBLE xmax = *max_x, ymax = *max_y, zmax=*max_z;
-
-    for(int64_t i=0;i<ND1;i++) {
-        if(X1[i] < xmin) xmin=X1[i];
-        if(Y1[i] < ymin) ymin=Y1[i];
-        if(Z1[i] < zmin) zmin=Z1[i];
-
-
-        if(X1[i] > xmax) xmax=X1[i];
-        if(Y1[i] > ymax) ymax=Y1[i];
-        if(Z1[i] > zmax) zmax=Z1[i];
-    }
-    *min_x=xmin;*min_y=ymin;*min_z=zmin;
-    *max_x=xmax;*max_y=ymax;*max_z=zmax;
-}
-
-/* Need SGLIB to simultaneously sort the particles */
-#include "sglib.h"
-
-
-int reorder_particles_back_into_original_order_DOUBLE(const int64_t np, int64_t *original_indices, DOUBLE *X, DOUBLE *Y, DOUBLE *Z, weight_struct *weights)
-{
-    if(original_indices == NULL || X == NULL || Y == NULL || Z == NULL || weights == NULL) {
-        fprintf(stderr,"Error: In %s> While re-ordering the particles back into their input order, the passed pointers "
-                "can not be NULL. May be this function does not need to be called ?\n"
-                "Please check the value of 'copy_positions' in the 'struct config_options'. This function "
-                "should only be called when 'copy_positions' is set to 0", __FUNCTION__);
-        return EXIT_FAILURE;
-    }
-
-    // Now sort the particles based on their original index in the input arrays
-    // That will re-order the particles back into the original input order!
-#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
-        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, X, i, j);                \
-        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Y, i, j);                \
-        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Z, i, j);                \
-        SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_indices, i, j); \
-        for(int w = 0; w < weights->num_weights; w++) {                 \
-            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, ((DOUBLE *) weights->weights[w]), i, j); \
-        }                                                               \
-    }
-
-    //Since the particles might be coming from an already sorted array - quicksort might degenerate to
-    //an O(N^2) process -- use the heap-sort to be safe.
-    SGLIB_ARRAY_QUICK_SORT(int64_t, original_indices, np, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
-
-#undef MULTIPLE_ARRAY_EXCHANGER
-
-    return EXIT_SUCCESS;
-}
-
 
 cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                                    DOUBLE *X, DOUBLE *Y, DOUBLE *Z, weight_struct *WEIGHTS,
@@ -190,7 +119,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
        (options->copy_particles == 0 && original_indices == NULL) ||
        (options->copy_particles && nallocated == NULL)) {
 
-        free(lattice);free(nallocated);
+        free(lattice);free(nallocated);free(all_cell_indices);free(original_indices);
         fprintf(stderr,"Error: In %s> Could not allocate memory for creating the lattice and associated arrays\n", __FUNCTION__);
         return NULL;
     }
@@ -208,9 +137,6 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
 
         if(options->copy_particles) {
             lattice[icell].original_index = my_malloc(sizeof(lattice[icell].original_index[0]), expected_n);
-            XRETURN(lattice[icell].original_index != NULL, NULL, "Error in %s> Could not allocate memory for holding the original "
-                    "indices for particles. (allocating for %"PRId64" particles \n", __FUNCTION__, expected_n);
-
             const size_t memsize=sizeof(DOUBLE);
             lattice[icell].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
             lattice[icell].y = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
@@ -225,9 +151,10 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                 }
             }
 
-            if(lattice[icell].x == NULL || lattice[icell].y == NULL || lattice[icell].z == NULL || w_alloc_status == EXIT_FAILURE) {
+            if(lattice[icell].x == NULL || lattice[icell].y == NULL || lattice[icell].z == NULL ||
+               lattice[icell].original_index == NULL || w_alloc_status == EXIT_FAILURE) {
                 for(int64_t j=icell;j>=0;j--) {
-                    free(lattice[j].x);free(lattice[j].y);free(lattice[j].z);
+                    free(lattice[j].x);free(lattice[j].y);free(lattice[j].z);free(lattice[j].original_index);
                     for(int w = 0; w < lattice[icell].weights.num_weights; w++){
                         free(lattice[icell].weights.weights[w]);
                     }
@@ -383,9 +310,26 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
             }                                                           \
         }
 
-        //Since the particles might be coming from an already sorted array - quicksort might degenerate to
-        //a O(N^2) process -- use the heap-sort to be safe.
-        SGLIB_ARRAY_QUICK_SORT(int64_t, all_cell_indices, NPART, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+        //If the input-array is sorted exactly, then the quicksort will become a very-slow O(N^2)
+        //Try to protect the user.
+        int64_t num_sorted = 1;
+        for(int64_t ii=0;ii<NPART-1;ii++) {
+            //increment by 1 if the next element is greater than or equal to current
+            //decrement by 1 if the next element is smaller
+            num_sorted += (all_cell_indices[ii+1] >= all_cell_indices[ii]) ? +1:-1;
+        }
+
+        //Is there any sorting required?
+        if(num_sorted < NPART) {
+            //Since the particles might be coming from an already sorted array - quicksort might degenerate to
+            //a O(N^2) process -- heap-sort might be safer.
+            if(options->use_heap_sort || num_sorted > FRACTION_SORTED_REQD_TO_HEAP_SORT * NPART) {
+                SGLIB_ARRAY_HEAP_SORT(int64_t, all_cell_indices, NPART, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+            } else {
+                SGLIB_ARRAY_QUICK_SORT(int64_t, all_cell_indices, NPART, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+            }
+        }
+
         //Now the particles are sorted contiguously according to their respective cellindex
         //We need to fix up the x/y/z pointers at the beginning of each cell to point to the right places
 #undef MULTIPLE_ARRAY_EXCHANGER
@@ -420,23 +364,39 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
             const cellarray_DOUBLE *first=&(lattice[icell]);
             if(first->nelements == 0) continue;
 
-            DOUBLE *x1 = first->x;
-            DOUBLE *y1 = first->y;
-            DOUBLE *z1 = first->z;
-            int64_t *original_index = first->original_index;
 #define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
-                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, x1, i, j);        \
-                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, y1, i, j);        \
-                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, z1, i, j);        \
-                SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_index, i, j); \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->x, i, j); \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->y, i, j); \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->z, i, j); \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, first->original_index, i, j); \
                 for(int w = 0; w < first->weights.num_weights; w++){    \
                     SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, ((DOUBLE *)first->weights.weights[w]), i, j); \
                 }                                                       \
             }
 
-            SGLIB_ARRAY_QUICK_SORT(DOUBLE, z1, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+            //If the input-array is sorted exactly, then the quicksort will become a very-slow O(N^2)
+            //Try to protect the user.
+            int64_t num_sorted = 1;//an array containing exactly one element is always sorted
+            for(int64_t ii=0;ii<first->nelements-1;ii++) {
+                //increment by 1 if the next element is greater than or equal to current
+                //decrement by 1 if the next element is smaller
+                num_sorted += (first->z[ii+1] >= first->z[ii]) ? +1:-1;
+            }
+
+            //Check if there is any sorting to do
+            //If the input array is already sorted, then all_cell_indices will also be sorted
+            //which would result in num_sorted == first->nelements
+            if(num_sorted < first->nelements) {
+                //Since the particles might be coming from an already sorted array - quicksort might degenerate to
+                //a O(N^2) process -- heap-sort might be safer.
+                if(options->use_heap_sort || num_sorted > FRACTION_SORTED_REQD_TO_HEAP_SORT * first->nelements) {
+                    SGLIB_ARRAY_HEAP_SORT(DOUBLE, first->z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+                } else {
+                    SGLIB_ARRAY_QUICK_SORT(DOUBLE, first->z, first->nelements, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+                }
+            }//if sorting is required
 #undef MULTIPLE_ARRAY_EXCHANGER
-        }
+        }//loop over cells
     }
 
     *nlattice_x=nmesh_x;
@@ -471,7 +431,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
 
     const int64_t max_num_cell_pairs = totncells * max_ngb_cells;
     int64_t num_cell_pairs = 0;
-    struct cell_pair_DOUBLE *all_cell_pairs = malloc(max_num_cell_pairs * sizeof(*all_cell_pairs));
+    struct cell_pair_DOUBLE *all_cell_pairs = my_malloc(sizeof(*all_cell_pairs), max_num_cell_pairs);
     XRETURN(all_cell_pairs != NULL, NULL,
             "Error: Could not allocate memory for storing all the cell pairs. "
             "Reducing bin refine factors might help. Requested for %"PRId64" elements "

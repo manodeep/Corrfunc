@@ -30,32 +30,32 @@
 const isa valid_instruction_sets[] = {FALLBACK
 #ifdef __SSE4_2__
                                       ,SSE42
-#endif                                      
-#ifdef __AVX__                                      
+#endif
+#ifdef __AVX__
                                       ,AVX
-#endif                                      
-#ifdef __AVX2__                                      
+#endif
+#ifdef __AVX2__
                                       ,AVX2
-#endif                                      
-#ifdef __AVX512F__                                      
+#endif
+#ifdef __AVX512F__
                                       ,AVX512F
-#endif                                      
+#endif
 };
 
 /* Strings corresponding to the instruction sets in the array `valid_instruction_sets` */
 const char isa_name[][20] = {"FALLBACK"
-#ifdef __SSE4_2__                             
+#ifdef __SSE4_2__
                              ,"SSE42"
 #endif
-#ifdef __AVX__                             
+#ifdef __AVX__
                              , "AVX"
-#endif                             
-#ifdef __AVX2__                             
+#endif
+#ifdef __AVX2__
                              , "AVX2"
-#endif                             
-#ifdef __AVX512F__                             
+#endif
+#ifdef __AVX512F__
                              , "AVX512F"
-#endif                             
+#endif
 };
 
 /* This is a fun C tid-bit. The sizeof(valid_instruction_sets) refers to the total bytes
@@ -65,7 +65,7 @@ const int num_instructions = sizeof(valid_instruction_sets)/sizeof(valid_instruc
 
 /* The max. value of bin refine factor to probe. Each of bin refinements factors is set from [1, max_binref]
  (inclusive) */
-const int min_bin_ref = 1, max_bin_ref = 4;
+const int min_bin_ref = 1, max_bin_ref = 3;
 
 /* Macro to setup the loop over instruction sets, various bin factors and then run
  the tests */
@@ -75,8 +75,6 @@ const int min_bin_ref = 1, max_bin_ref = 4;
            const isa old_isa = options.instruction_set;                 \
            const int old_min_sep_opt = options.enable_min_sep_opt;      \
            const int old_copy_parts  = options.copy_particles;      \
-           const int old_reorder_parts  = options.reorder_particles_to_original; \
-           options.reorder_particles_to_original = 1;                              \
            struct timespec t0, t1;                                      \
            for(int iset=0;iset<num_instructions;iset++) {               \
                int fastest_bin_ref[] = {1, 1, 1};                       \
@@ -85,25 +83,24 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                for(int bfx=min_bin_ref;bfx<=max_bin_ref;bfx++) {    \
                    for(int bfy=min_bin_ref;bfy<=max_bin_ref;bfy++) { \
                        for(int bfz=min_bin_ref;bfz<=max_bin_ref;bfz++) { \
-                           for(int copy_parts=0;copy_parts < 2; copy_parts++) {     \
-                           options.copy_particles = copy_parts;  \
-                           for(int enable_min_sep_opt=0;enable_min_sep_opt<=1;enable_min_sep_opt++) { \
+                           for(int copy_parts=1;copy_parts >= 0; copy_parts--) { \
+                               options.copy_particles = copy_parts;         \
+                               for(int enable_min_sep_opt=0;enable_min_sep_opt<=1;enable_min_sep_opt++) { \
                                    if(dotest == 1) {                    \
                                        const int bf[] = {bfx, bfy, bfz}; \
                                        set_custom_bin_refine_factors(&options, bf); \
                                        options.enable_min_sep_opt = enable_min_sep_opt; \
-                                       fprintf(stderr,"Bin refs = (%d, %d, %d), instruction set = %s, duplicating particle pos = %5s, and min. sep. opt %8s ...", \
+                                       fprintf(stderr,"Bin refs = (%d, %d, %d), copy_particles = %5s, and min. sep. opt %8s ...", \
                                                options.bin_refine_factors[0], \
                                                options.bin_refine_factors[1], \
                                                options.bin_refine_factors[2], \
-                                               isa_name[iset],          \
                                                copy_parts == 1 ? "TRUE":"FALSE", \
                                                enable_min_sep_opt == 0 ? "DISABLED":"ENABLED"); \
                                        current_utc_time(&t0);
 
 
 /* Clean up the integration tests (close the loops and check for error) */
-#define END_INTEGRATION_TEST_SECTION                                    \
+#define END_INTEGRATION_TEST_SECTION(code_to_free_results_memory)                                  \
                                        current_utc_time(&t1);                                              \
                                        double time_to_run = REALTIME_ELAPSED_NS(t0, t1); \
                                        if(time_to_run < fastest_time) { \
@@ -116,7 +113,9 @@ const int min_bin_ref = 1, max_bin_ref = 4;
                                        } else {                         \
                                            fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
                                        }                                \
-                                       fprintf(stderr, ANSI_COLOR_RESET ". Time taken = %8.2lf seconds \n", time_to_run * 1e-9); \
+                                       fprintf(stderr, ANSI_COLOR_RESET " (isa = %s). Time = %6.2lf seconds \n", \
+                                               isa_name[iset],time_to_run * 1e-9); \
+                                       code_to_free_results_memory; /* whatever code is required to free the memory in results struct */         \
                                    } /* close the enable_min_sep_opt condition*/ \
                                }/* copy particle positions*/                                           \
                            }/* close the dotest if condition*/ \
@@ -135,7 +134,6 @@ const int min_bin_ref = 1, max_bin_ref = 4;
            options.instruction_set = old_isa;                           \
            options.enable_min_sep_opt = old_min_sep_opt;                \
            options.copy_particles = old_copy_parts;            \
-           options.reorder_particles_to_original = old_reorder_parts;   \
     } while(0)
 
     //wtheta has 3 implementations (brute-force, link-in-dec and link-in-dec + link-in-ra)
@@ -224,9 +222,9 @@ const int min_bin_ref = 1, max_bin_ref = 4;
 
 #else
 /* Running regular tests -> no need for exhaustive testing */
-#define BEGIN_INTEGRATION_TEST_SECTION  do {                               
-#define END_INTEGRATION_TEST_SECTION    } while(0)
-          
+#define BEGIN_INTEGRATION_TEST_SECTION  do {
+#define END_INTEGRATION_TEST_SECTION(code_to_free_results_memory)    } while(0)
+
 #define BEGIN_DDTHETA_INTEGRATION_TEST_SECTION do {
 #define END_DDTHETA_INTEGRATION_TEST_SECTION   } while(0)
 
@@ -249,4 +247,3 @@ double theory_mu_max=0.5;
 double mocks_mu_max=1.0;
 int nmu_bins=10;
 double boxsize=420.0;
-

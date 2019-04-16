@@ -114,7 +114,7 @@ struct config_options
 
     /* Options for theory*/
     uint8_t periodic; /* count in periodic mode? flag ignored for wp/xi */
-    uint8_t sort_on_z;/* option to sort particles based on their Z co-ordinate in gridlink*/
+    uint8_t sort_on_z;/* option to sort particles based on their Z co-ordinate in gridlink */
 
     /* For DDrppi_mocks and vpf*/
     uint8_t is_comoving_dist;/* flag to indicate cz is already co-moving distance */
@@ -146,12 +146,8 @@ struct config_options
     uint16_t max_cells_per_dim;/* max number of cells per dimension. same for both theory and mocks */
 
     uint8_t copy_particles;/* whether to make a copy of the particle positions */
-    uint8_t reorder_particles_to_original;/* if the computations are done in-place (i.e., without making a copy of the particle positions),
-                                             then during the computation itself, the particle will have to be ordered to be contiguous according
-                                             to their 3D (or 2D in angular) lattice. Setting this option means the particles will be returned
-                                             back to their input order after the computation is done. Only has an effect when
-                                             `copy_particles` is False.
-                                           */
+    uint8_t use_heap_sort;/* to allow using heap-sort instead of quicksort from sglib (relevant when the input particles are mostly sorted
+                           and consequently quicksort becomes an O(N^2) process */
     union{
         uint32_t binning_flags;/* flag for all linking features,
                                   Will contain OR'ed flags from enum from `binning_scheme`
@@ -331,13 +327,8 @@ static inline struct config_options get_config_options(void)
     // into their input order when the calculation completes. Usually relevant when
     // there are other "properties" arrays for the same particle; and changing the
     // positions would
-#ifdef REORDER_PARTICLES_TO_ORIGINAL
-    options.reorder_particles_to_original = 1;/* only relevant when copy_particles is set to 0 ->
-                                                 then the particles are put back into their input order after
-                                                 the calculations are done */
-#endif //Reorder particles back into input order
+    options.copy_particles = 0;
 #endif //Create a copy of particle positions (doubles the memory usage)
-
 
     /* For the thread timings */
     options.totncells_timings = 0;

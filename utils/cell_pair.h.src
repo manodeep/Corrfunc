@@ -47,8 +47,14 @@ struct cell_pair_DOUBLE{
     DOUBLE closest_z1;
 
     int8_t same_cell;
-    int16_t xbin_offset;
-    int16_t ybin_offset;
+    union{
+        int16_t xbin_offset;
+        int16_t ra_bin_offset;
+    };
+    union{
+        int16_t ybin_offset;
+        int16_t dec_bin_offset;
+    };
     int16_t zbin_offset;
     int8_t unused;//explicitly adding here for alignment
 };

@@ -16,14 +16,16 @@
 #include <gsl/gsl_rng.h>
 
 #include "countspheres_impl_DOUBLE.h" //function proto-type
+#include "vpf_kernels_DOUBLE.c" // the kernels
 
+#include "defs.h"
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
 #include "cellarray_DOUBLE.h" //definition of struct cellarray*
-#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
 #include "cpu_features.h"
 
-#include "vpf_kernels_DOUBLE.c"
+#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
+#include "gridlink_utils_DOUBLE.h" //for associated helper routines
 
 int interrupt_status_vpf_DOUBLE=EXIT_SUCCESS;
 
@@ -366,7 +368,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
 
     gsl_rng_free (rng);
 
-    if(options->copy_particles == 0 && options->reorder_particles_to_original) {
+    if(options->copy_particles == 0) {
         int64_t *original_index = lattice[0].original_index;
         int status = reorder_particles_back_into_original_order_DOUBLE(np, original_index, X, Y, Z, &(extra->weights0));
         if(status != EXIT_SUCCESS) {

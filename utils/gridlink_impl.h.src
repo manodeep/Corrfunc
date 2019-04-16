@@ -9,27 +9,16 @@
 
 #pragma once
 
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "cellarray_DOUBLE.h"
-#include "cell_pair_DOUBLE.h"
-
-#include <inttypes.h>
-
-    extern int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax,
-                                  const DOUBLE rmax,
-                                  const int refine_factor,
-                                  const int max_ncells,
-                                  DOUBLE *xbinsize,
-                                  int *nlattice,
-                                  const struct config_options *options)  __attribute__((warn_unused_result));
-
-    extern void get_max_min_DOUBLE(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
-                                   DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z);
-
+#include "defs.h"  //for definition of struct config_options
+#include "cellarray_DOUBLE.h" //for definition of struct cellarray_double/float
+#include "cell_pair_DOUBLE.h" //for definition of struct cell_pair_double/float
+#include "weight_defs_DOUBLE.h" //for definition of weight_struct
 
     extern cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
                                               DOUBLE *x, DOUBLE *y, DOUBLE *z, weight_struct *weights,
@@ -58,9 +47,6 @@ extern "C" {
                                                          const int enable_min_sep_opt,
                                                          const int autocorr,
                                                          const int periodic) __attribute__((warn_unused_result));
-
-    extern int reorder_particles_back_into_original_order_DOUBLE(const int64_t np, int64_t *original_indices, DOUBLE *X, DOUBLE *Y,
-                                                                 DOUBLE *Z, weight_struct *weights);
 
     extern void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells);
 

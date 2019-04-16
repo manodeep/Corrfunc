@@ -17,8 +17,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        X2=None, Y2=None, Z2=None, weights2=None, verbose=False, boxsize=0.0,
        output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
-       copy_particles=True, reorder_particles_to_original=False,
-       enable_min_sep_opt=True,
+       copy_particles=True, enable_min_sep_opt=True,
        c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
@@ -108,13 +107,6 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     copy_particles: boolean (default True)
         Boolean flag to make a copy of the particle positions
         If set to False, the particles will be re-ordered in-place
-
-        .. versionadded:: 2.3.0
-
-    reorder_particles_to_original: boolean (default False)
-        Boolean flag to put the particles back into original input order after
-        calculations are complete. Only relevant when
-        ``copy_particles`` is set to False
 
         .. versionadded:: 2.3.0
 
