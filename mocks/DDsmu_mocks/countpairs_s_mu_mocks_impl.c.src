@@ -14,12 +14,6 @@
 #include <unistd.h>
 #include <gsl/gsl_interp.h>
 
-
-#include "countpairs_s_mu_mocks_impl_DOUBLE.h"
-#include "countpairs_s_mu_mocks_kernels_DOUBLE.c"
-#include "cellarray_mocks_DOUBLE.h"
-#include "gridlink_mocks_impl_DOUBLE.h"
-
 #include "defs.h"
 #include "utils.h"
 #include "cosmology_params.h"
@@ -30,6 +24,13 @@
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
+
+#include "gridlink_mocks_impl_DOUBLE.h"
+#include "gridlink_utils_DOUBLE.h"
+
+#include "countpairs_s_mu_mocks_impl_DOUBLE.h"
+#include "countpairs_s_mu_mocks_kernels_DOUBLE.c"
+
 
 int interrupt_status_DDsmu_mocks_DOUBLE=EXIT_SUCCESS;
 
@@ -133,13 +134,13 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_s_mu_mocks_driver_DOUBLE(const struc
 #endif
     int curr_offset = 0;
 
-    /* Check for AVX512F support */    
+    /* Check for AVX512F support */
     int avx512_offset = fallback_offset;
 #ifdef __AVX512F__
     avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
     curr_offset++;
 #endif
-    
+
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
 #ifdef __AVX__
@@ -398,18 +399,21 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         Z2 = Z1;
     }
 
+    const DOUBLE sqr_smax = smax*smax;
+    const DOUBLE sqr_smin = smin*smin;
     DOUBLE supp_sqr[nsbin];
     for(int i=0; i < nsbin;i++) {
         supp_sqr[i] = supp[i]*supp[i];
     }
     const DOUBLE mu_max = (DOUBLE) max_mu;
 
-    DOUBLE xmin=1e10,ymin=1e10,zmin=1e10;
-    DOUBLE xmax=-1e10,ymax=-1e10,zmax=-1e10;
-    get_max_min_data_DOUBLE(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
+    DOUBLE xmin, xmax, ymin, ymax, zmin, zmax;
+    xmin = ymin = zmin = MAX_POSITIVE_FLOAT;
+    xmax = ymax = zmax = -MAX_POSITIVE_FLOAT;
+    get_max_min_DOUBLE(ND1, X1, Y1, Z1, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
 
     if(autocorr==0) {
-        get_max_min_data_DOUBLE(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
+        get_max_min_DOUBLE(ND2, X2, Y2, Z2, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
     }
 
     const DOUBLE xdiff = xmax-xmin;
@@ -429,14 +433,14 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_mocks_index_particles_DOUBLE *lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
-                                                                                             xmin, xmax, ymin, ymax, zmin, zmax,
-                                                                                             smax, smax, smax,
-                                                                                             options->bin_refine_factors[0],
-                                                                                             options->bin_refine_factors[1],
-                                                                                             options->bin_refine_factors[2],
-                                                                                             &nmesh_x, &nmesh_y, &nmesh_z,
-                                                                                             options);
+    cellarray_mocks_DOUBLE *lattice1 = gridlink_mocks_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
+                                                             xmin, xmax, ymin, ymax, zmin, zmax,
+                                                             smax, smax, smax,
+                                                             options->bin_refine_factors[0],
+                                                             options->bin_refine_factors[1],
+                                                             options->bin_refine_factors[2],
+                                                             &nmesh_x, &nmesh_y, &nmesh_z,
+                                                             options);
     if(lattice1 == NULL) {
         return EXIT_FAILURE;
     }
@@ -450,21 +454,23 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
             fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
         }
         if(get_bin_refine_scheme(options) == BINNING_DFL) {
-            fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
+            if(options->verbose) {
+                fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
+            }
             // Only boost the first two dimensions.  Prevents excessive refinement.
             for(int i=0;i<2;i++) {
                 options->bin_refine_factors[i] += BOOST_BIN_REF;
             }
-            
-            free_cellarray_mocks_index_particles_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
-            lattice1 = gridlink_mocks_index_particles_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
-                                                             xmin, xmax, ymin, ymax, zmin, zmax,
-                                                             smax, smax, smax,
-                                                             options->bin_refine_factors[0],
-                                                             options->bin_refine_factors[1],
-                                                             options->bin_refine_factors[2],
-                                                             &nmesh_x, &nmesh_y, &nmesh_z,
-                                                             options);
+
+            free_cellarray_mocks_DOUBLE(lattice1, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+            lattice1 = gridlink_mocks_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
+                                             xmin, xmax, ymin, ymax, zmin, zmax,
+                                             smax, smax, smax,
+                                             options->bin_refine_factors[0],
+                                             options->bin_refine_factors[1],
+                                             options->bin_refine_factors[2],
+                                             &nmesh_x, &nmesh_y, &nmesh_z,
+                                             options);
             if(lattice1 == NULL) {
                 return EXIT_FAILURE;
             }
@@ -477,18 +483,18 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         }
     }
 
-    cellarray_mocks_index_particles_DOUBLE *lattice2 = NULL;
+    cellarray_mocks_DOUBLE *lattice2 = NULL;
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
-        lattice2 = gridlink_mocks_index_particles_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
-                                                         xmin, xmax,
-                                                         ymin, ymax,
-                                                         zmin, zmax,
-                                                         smax, smax, smax,
-                                                         options->bin_refine_factors[0],
-                                                         options->bin_refine_factors[1],
-                                                         options->bin_refine_factors[2],
-                                                         &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
+        lattice2 = gridlink_mocks_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
+                                         xmin, xmax,
+                                         ymin, ymax,
+                                         zmin, zmax,
+                                         smax, smax, smax,
+                                         options->bin_refine_factors[0],
+                                         options->bin_refine_factors[1],
+                                         options->bin_refine_factors[2],
+                                         &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
         if(lattice2 == NULL) {
             return EXIT_FAILURE;
         }
@@ -500,9 +506,14 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     } else {
         lattice2 = lattice1;
     }
-    free(X1);free(Y1);free(Z1);
-    if(autocorr == 0) {
-        free(X2);free(Y2);free(Z2);
+
+    //If the particle positions are being copied, then the lattices contain a copy
+    // of the XYZ positions. The large NPART sized arrays are no longer required.
+    if(options->copy_particles) {
+        free(X1);free(Y1);free(Z1);
+        if(autocorr == 0) {
+            free(X2);free(Y2);free(Z2);
+        }
     }
 
     if(options->is_comoving_dist == 0) {
@@ -515,24 +526,27 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 
 
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-    {
-        int status = assign_ngb_cells_mocks_index_particles_DOUBLE(lattice1, lattice2, totncells,
-                                                                   options->bin_refine_factors[0],
-                                                                   options->bin_refine_factors[1],
-                                                                   options->bin_refine_factors[2],
-                                                                   nmesh_x, nmesh_y, nmesh_z,
-                                                                   smax,
-                                                                   options->enable_min_sep_opt,
-                                                                   autocorr);
-        if(status != EXIT_SUCCESS) {
-            free_cellarray_mocks_index_particles_DOUBLE(lattice1, totncells);
-            if(autocorr == 0) {
-                free_cellarray_mocks_index_particles_DOUBLE(lattice2, totncells);
-            }
-            free(supp);
-            return EXIT_FAILURE;
+
+    int64_t num_cell_pairs = 0;
+    struct cell_pair_DOUBLE *all_cell_pairs = generate_cell_pairs_mocks_DOUBLE(lattice1, lattice2, totncells,
+                                                                               &num_cell_pairs,
+                                                                               options->bin_refine_factors[0],
+                                                                               options->bin_refine_factors[1],
+                                                                               options->bin_refine_factors[2],
+                                                                               nmesh_x, nmesh_y, nmesh_z,
+                                                                               smax,
+                                                                               options->enable_min_sep_opt,
+                                                                               autocorr);
+    if(all_cell_pairs == NULL) {
+        free_cellarray_mocks_DOUBLE(lattice1, totncells);
+        if(autocorr == 0) {
+            free_cellarray_mocks_DOUBLE(lattice2, totncells);
         }
+        free(supp);
+        return EXIT_FAILURE;
     }
+
+
     /*---Gridlink-variables----------------*/
     const int totnbins = (nmu_bins+1)*(nsbin+1);
 #if defined(_OPENMP)
@@ -569,7 +583,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 
     int interrupted=0,numdone=0, abort_status=EXIT_SUCCESS;
     if(options->verbose) {
-        init_my_progressbar(totncells,&interrupted);
+        init_my_progressbar(num_cell_pairs, &interrupted);
     }
 
 
@@ -592,9 +606,8 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
 #pragma omp for  schedule(dynamic)
 #endif//USE_OMP
 
-        /*---Loop-over-Data1-particles--------------------*/
-        for(int64_t index1=0;index1<totncells;index1++) {
-
+        /*---Loop-over-all-cell-pairs--------------------*/
+        for(int64_t icellpair=0;icellpair<num_cell_pairs;icellpair++) {
 #if defined(_OPENMP)
 #pragma omp flush (abort_status, interrupt_status_DDsmu_mocks_DOUBLE)
 #endif
@@ -614,77 +627,30 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                     numdone++;
                 }
 
-                const cellarray_mocks_index_particles_DOUBLE *first  = &(lattice1[index1]);
-                if(first->nelements == 0) {
-                    continue;
-                }
-                DOUBLE *x1 = first->x;
-                DOUBLE *y1 = first->y;
-                DOUBLE *z1 = first->z;
-                const weight_struct_DOUBLE *weights1 = &(first->weights);
-                const int64_t N1 = first->nelements;
+                struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[icellpair];
+                DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
+                DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
 
-                if(autocorr == 1) {
-                    int same_cell = 1;
-                    DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
-                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
-                                                                             N1, x1, y1, z1, weights1,
-                                                                             same_cell,
-                                                                             options->fast_divide_and_NR_steps,
-                                                                             smax, smin, nsbin,
-                                                                             nmu_bins, supp_sqr, mu_max,
-                                                                             ZERO, ZERO, ZERO, /* min xyz diff */
-                                                                             ZERO, ZERO, ZERO, /* closest xyz positions */
-                                                                             this_savg, npairs,
-                                                                             this_weightavg, extra->weight_method);
-                    /* This actually causes a race condition under OpenMP - but mostly
-                       I care that an error occurred - rather than the exact value of
-                       the error status */
-                    abort_status |= status;
-                }
+                const int status = countpairs_s_mu_mocks_function_DOUBLE(this_cell_pair->N1, this_cell_pair->x1,
+                                                                         this_cell_pair->y1, this_cell_pair->z1, this_cell_pair->weights1,
+                                                                         this_cell_pair->N2, this_cell_pair->x2,
+                                                                         this_cell_pair->y2, this_cell_pair->z2, this_cell_pair->weights2,
+                                                                         this_cell_pair->same_cell,
+                                                                         options->fast_divide_and_NR_steps,
+                                                                         sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max,
+                                                                         this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
+                                                                         this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
+                                                                         this_savg, npairs,
+                                                                         this_weightavg, extra->weight_method);
 
-                for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
-                    const cellarray_mocks_index_particles_DOUBLE *second = first->ngb_cells[ngb];
-                    if(second->nelements == 0) {
-                        continue;
-                    }
-                    DOUBLE min_xdiff = ZERO, min_ydiff = ZERO, min_zdiff = ZERO;
-                    DOUBLE closest_icell_xpos = ZERO, closest_icell_ypos = ZERO, closest_icell_zpos = ZERO;
-                    if(options->enable_min_sep_opt) {                                                           
-                        min_xdiff = FABS(first->ngb_min_dx[ngb]);
-                        min_ydiff = FABS(first->ngb_min_dy[ngb]);
-                        min_zdiff = FABS(first->ngb_min_dz[ngb]);
-                        closest_icell_xpos = first->ngb_closest_icell_xpos[ngb];
-                        closest_icell_ypos = first->ngb_closest_icell_ypos[ngb];
-                        closest_icell_zpos = first->ngb_closest_icell_zpos[ngb];
-                    }
+                /* This actually causes a race condition under OpenMP - but mostly
+                   I care that an error occurred - rather than the exact value of
+                   the error status */
+                abort_status |= status;
 
-                    const int same_cell = 0;
-                    DOUBLE *x2 = second->x;
-                    DOUBLE *y2 = second->y;
-                    DOUBLE *z2 = second->z;
-                    const weight_struct_DOUBLE *weights2 = &(second->weights);
-                    const int64_t N2 = second->nelements;
-                    DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
-                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    const int status = countpairs_s_mu_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
-                                                                             N2, x2, y2, z2, weights2,
-                                                                             same_cell,
-                                                                             options->fast_divide_and_NR_steps,
-                                                                             smax, smin, nsbin,
-                                                                             nmu_bins, supp_sqr, mu_max,
-                                                                             min_xdiff, min_ydiff, min_zdiff,
-                                                                             closest_icell_xpos, closest_icell_ypos, closest_icell_zpos,
-                                                                             this_savg, npairs,
-                                                                             this_weightavg, extra->weight_method);
-                    /* This actually causes a race condition under OpenMP - but mostly
-                       I care that an error occurred - rather than the exact value of
-                       the error status */
-                    abort_status |= status;
-                }//loop over ngb cells
-            }//abort_status check
-        }//i loop over ND1 particles
+            }//abort-status
+        }//icellpair loop over num_cell_pairs
+
 #if defined(_OPENMP)
         for(int i=0;i<totnbins;i++) {
             all_npairs[tid][i] = npairs[i];
@@ -697,10 +663,28 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         }
     }//close the omp parallel region
 #endif//USE_OMP
+    free(all_cell_pairs);
 
-    free_cellarray_mocks_index_particles_DOUBLE(lattice1,totncells);
+    if(options->copy_particles == 0) {
+        free(X1);free(Y1);free(Z1);
+        int64_t *original_index = lattice1[0].original_index;
+        int status = reorder_particles_mocks_back_into_original_order_DOUBLE(ND1, original_index, &(extra->weights0));
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+        if(autocorr == 0) {
+            free(X2);free(Y2);free(Z2);
+            original_index = lattice2[0].original_index;
+            status = reorder_particles_mocks_back_into_original_order_DOUBLE(ND2, original_index, &(extra->weights1));
+            if(status != EXIT_SUCCESS) {
+                return status;
+            }
+        }
+    }
+
+    free_cellarray_mocks_DOUBLE(lattice1,totncells);
     if(autocorr == 0) {
-        free_cellarray_mocks_index_particles_DOUBLE(lattice2,totncells);
+        free_cellarray_mocks_DOUBLE(lattice2,totncells);
     }
 
     if(abort_status != EXIT_SUCCESS || interrupt_status_DDsmu_mocks_DOUBLE != EXIT_SUCCESS) {
@@ -776,11 +760,11 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         /* The comparison is '<=' rather than '==' only to silence
            the compiler  */
         if(supp[0] <= 0.0) {
-            /* Then, add all the self-pairs. This ensures that 
-               a cross-correlation with two identical datasets 
+            /* Then, add all the self-pairs. This ensures that
+               a cross-correlation with two identical datasets
                produces the same result as the auto-correlation  */
             npairs[1] += ND1; //npairs[1] contains the first valid bin.
-            
+
             // Increasing npairs affects rpavg and weightavg.
             // We don't need to add anything to rpavg; all the self-pairs have 0 separation!
             // The self-pairs have non-zero weight, though.  So, fix that here.

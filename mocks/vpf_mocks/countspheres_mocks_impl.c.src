@@ -15,16 +15,17 @@
 #include <gsl/gsl_interp.h>
 
 #include "defs.h"
-#include "cellarray_DOUBLE.h" //definition of struct cellarray* (NOTE theory versions of cellarray header)
-#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink (NOTE we are getting the theory gridlink)
 #include "cpu_features.h"
-#include "set_cosmo_dist.h"//cosmological distance calculations
-#include "cosmology_params.h"//init_cosmology
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
 
-#include "countspheres_mocks_impl_DOUBLE.h" //function proto-type
+#include "set_cosmo_dist.h"//cosmological distance calculations
+#include "cosmology_params.h"//init_cosmology
 
+#include "gridlink_utils_DOUBLE.h"
+#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink (NOTE we are getting the theory gridlink)
+
+#include "countspheres_mocks_impl_DOUBLE.h" //function proto-type
 #include "vpf_mocks_kernels_DOUBLE.c"
 
 int interrupt_status_vpf_mocks_DOUBLE=EXIT_SUCCESS;
@@ -33,7 +34,7 @@ void interrupt_handler_vpf_mocks_DOUBLE(int signo)
 {
     fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
     interrupt_status_vpf_mocks_DOUBLE = EXIT_FAILURE;
-}    
+}
 
 
 int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen,const DOUBLE smin,const DOUBLE inv_rcube,const DOUBLE rmax,
@@ -43,38 +44,48 @@ int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen
                            const int ybin_refine_factor,
                            const int zbin_refine_factor);
 
-vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *options) 
+vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *options)
 {
     static vpf_mocks_func_ptr_DOUBLE function = NULL;
     static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
-    } 
+    }
 
     //Seriously this is the declaration for the function pointers...here be dragons.
     vpf_mocks_func_ptr_DOUBLE allfunctions[] = {
-#ifdef __AVX__
-      vpf_mocks_avx_intrinsics_DOUBLE,
-#endif			 
-#ifdef __SSE4_2__
-      vpf_mocks_sse_intrinsics_DOUBLE,
+#ifdef __AVX512F__
+        vpf_mocks_avx512_intrinsics_DOUBLE,
 #endif
-      vpf_mocks_fallback_DOUBLE
+#ifdef __AVX__
+        vpf_mocks_avx_intrinsics_DOUBLE,
+#endif
+#ifdef __SSE4_2__
+        vpf_mocks_sse_intrinsics_DOUBLE,
+#endif
+        vpf_mocks_fallback_DOUBLE
     };
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
-#if defined(__AVX__) || defined __SSE4_2__
+#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = instrset_detect();
-#endif    
+#endif
     int curr_offset = 0;
-    
+
+    /* Check for AVX512F support */
+    int avx512_offset = fallback_offset;
+#ifdef __AVX512F__
+    avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
 #ifdef __AVX__
     avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
     curr_offset++;
-#endif        
-    
+#endif
+
     /* Is the SSE function supported at runtime and enabled at compile-time?*/
     int sse_offset = fallback_offset;
 #ifdef __SSE4_2__
@@ -85,13 +96,13 @@ vpf_mocks_func_ptr_DOUBLE vpf_mocks_driver_DOUBLE(const struct config_options *o
       fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
               curr_offset, fallback_offset);
       return NULL;
-    } 
-    
+    }
+
     int function_dispatch=0;
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):
+        case(AVX512F):function_dispatch=avx512_offset;break;
         case(AVX2):
         case(AVX): function_dispatch=avx_offset;break;
         case(SSE42):function_dispatch=sse_offset;break;
@@ -186,7 +197,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                               const int cosmology,
                               results_countspheres_mocks *results,
                               struct config_options *options, struct extra_options *extra)
-    
+
 {
     /* int ngrid; */
     int itry,isucceed;
@@ -197,6 +208,17 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
     XRETURN(nbin >=1, EXIT_FAILURE,"Number of bins=%d has to be at least 1", nbin);
     XRETURN(nc >=1,EXIT_FAILURE,"Number of spheres=%d has to be at least 1", nc);
     XRETURN(num_pN >= 1, EXIT_FAILURE,"Number of pN's=%d requested must be at least 1", num_pN);
+
+
+    // If no extra options were passed, create dummy options
+    // This allows us to pass arguments like "extra->weights0" below;
+    // they'll just be NULLs, which is the correct behavior
+    struct extra_options dummy_extra;
+    if(extra == NULL){
+        weight_method_t dummy_method = NONE;
+        dummy_extra = get_extra_options(dummy_method);
+        extra = &dummy_extra;
+    }
 
     /* Start cosmology */
     {
@@ -212,10 +234,10 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
         gettimeofday(&t0, NULL);
     }
 
-    /* setup interrupt handler -> mostly useful during the python execution. 
+    /* setup interrupt handler -> mostly useful during the python execution.
        Let's Ctrl-C abort the extension  */
     SETUP_INTERRUPT_HANDLERS(interrupt_handler_vpf_mocks_DOUBLE);
-    
+
     int need_randoms=0;
     int64_t num_centers_in_file=0;
     FILE *fpcen = fopen(centers_file,"r");
@@ -257,8 +279,8 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
         if(need_randoms == 1) {
             get_max_DOUBLE(Nran, RAND_CZ, &czmax);
         }
-        const double zmax = czmax * inv_speed_of_light + 0.01; 
-            
+        const double zmax = czmax * inv_speed_of_light + 0.01;
+
         //set up the interpolation for comoving distances
         const int workspace_size = 10000;
         redshifts=my_malloc(sizeof(*redshifts),workspace_size);
@@ -267,7 +289,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
             free(comoving_distance);free(redshifts);
             return EXIT_FAILURE;
         }
-        
+
         int Nzdc = set_cosmo_dist(zmax, workspace_size, redshifts, comoving_distance, cosmology);
         if(Nzdc < 0) {
             free(comoving_distance);free(redshifts);
@@ -282,45 +304,42 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
     DOUBLE *xgal = my_malloc(sizeof(*xgal), Ngal);
     DOUBLE *ygal = my_malloc(sizeof(*ygal), Ngal);
     DOUBLE *zgal = my_malloc(sizeof(*zgal), Ngal);
+    if(xgal == NULL || ygal == NULL || zgal == NULL) {
+        return EXIT_FAILURE;
+    }
     for(int64_t i=0;i<Ngal;i++) {
-        const DOUBLE new_phi   = RA[i];
-        const DOUBLE new_theta = DEC[i];
-        const DOUBLE new_cz    = CZ[i];
-        DOUBLE dc;
+        DOUBLE dc = CZ[i];
         if(options->is_comoving_dist == 0) {
-            dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
-        } else {
-            dc = new_cz;
+            dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, CZ[i]*inv_speed_of_light, accelerator);
         }
         if(dc>rcube) rcube = dc;
-            
-        xgal[i] = dc*COSD(new_theta)*COSD(new_phi) ;
-        ygal[i] = dc*COSD(new_theta)*SIND(new_phi) ;
-        zgal[i] = dc*SIND(new_theta) ;
+
+        xgal[i] = dc*COSD(DEC[i])*COSD(RA[i]) ;
+        ygal[i] = dc*COSD(DEC[i])*SIND(RA[i]) ;
+        zgal[i] = dc*SIND(DEC[i]) ;
     }
 
     DOUBLE *xran = NULL;
     DOUBLE *yran = NULL;
     DOUBLE *zran = NULL;
-    
+
     if (need_randoms == 1) {
         xran = my_malloc(sizeof(*xran), Nran);
         yran = my_malloc(sizeof(*yran), Nran);
         zran = my_malloc(sizeof(*zran), Nran);
+        if(xran == NULL || yran == NULL || zran == NULL) {
+            return EXIT_FAILURE;
+        }
         for(int64_t i=0;i<Nran;i++) {
-            const DOUBLE new_phi   = RAND_RA[i];
-            const DOUBLE new_theta = RAND_DEC[i];
-            const DOUBLE new_cz    = RAND_CZ[i];
-            DOUBLE dc;
+            DOUBLE dc = RAND_CZ[i];
             if(options->is_comoving_dist == 0) {
-                dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, new_cz*inv_speed_of_light, accelerator);
-            } else {
-                dc = new_cz;
+                dc = gsl_interp_eval(interpolation, redshifts, comoving_distance, RAND_CZ[i]*inv_speed_of_light, accelerator);
             }
-                
-            xran[i] = dc*COSD(new_theta)*COSD(new_phi) ;
-            yran[i] = dc*COSD(new_theta)*SIND(new_phi) ;
-            zran[i] = dc*SIND(new_theta);
+            if(dc>rcube) rcube = dc;
+
+            xran[i] = dc*COSD(RAND_DEC[i])*COSD(RAND_RA[i]) ;
+            yran[i] = dc*COSD(RAND_DEC[i])*SIND(RAND_RA[i]) ;
+            zran[i] = dc*SIND(RAND_DEC[i]);
         }
     }
 
@@ -329,13 +348,15 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
         gsl_interp_free(interpolation);
         gsl_interp_accel_free(accelerator);
     }
-    
+
     /*---Shift-coordinates--------------------------------*/
     if(options->verbose) {
         fprintf(stderr,"%s> maximum distance = %f. ",__FUNCTION__,rcube) ;
     }
 
     rcube = rcube + 1. ; //add buffer
+
+    //translate from -rcube, rcube to [0, 2*rcube]
     for(int i=0;i<Ngal;i++) {
         xgal[i] += rcube ;
         ygal[i] += rcube ;
@@ -370,14 +391,14 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
             break;/* all factors have been reset -> no point continuing with the loop */
         }
     }
-    
+
     cellarray_DOUBLE *randoms_lattice=NULL;//pointer to the full 3-d volume for randoms
     const DOUBLE xmin=0.0,xmax=rcube;
     const DOUBLE ymin=0.0,ymax=rcube;
     const DOUBLE zmin=0.0,zmax=rcube;
     const DOUBLE smin=0.0;
-    int nmesh_x,nmesh_y,nmesh_z;    
-    cellarray_DOUBLE *lattice = gridlink_DOUBLE(Ngal, xgal, ygal, zgal,
+    int nmesh_x,nmesh_y,nmesh_z;
+    cellarray_DOUBLE *lattice = gridlink_DOUBLE(Ngal, xgal, ygal, zgal, &(extra->weights0),
                                                 xmin, xmax,
                                                 ymin, ymax,
                                                 zmin, zmax,
@@ -387,11 +408,13 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                                                 options->bin_refine_factors[2],
                                                 &nmesh_x, &nmesh_y, &nmesh_z,
                                                 options);
-    free(xgal);free(ygal);free(zgal);
+    if(options->copy_particles) {
+        free(xgal);free(ygal);free(zgal);
+    }
 
     if(need_randoms == 1) {
         int nran_x,nran_y,nran_z;
-        randoms_lattice = gridlink_DOUBLE(Nran, xran, yran, zran,
+        randoms_lattice = gridlink_DOUBLE(Nran, xran, yran, zran, &(extra->weights1),
                                           xmin, xmax,
                                           ymin, ymax,
                                           zmin, zmax,
@@ -401,10 +424,12 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                                           options->bin_refine_factors[2],
                                           &nran_x, &nran_y, &nran_z,
                                           options);
-        XRETURN(nran_x == nmesh_x && nran_y == nmesh_y && nran_z == nmesh_z, EXIT_FAILURE, "The number of grid cells for randoms = (%d, %d, %d) should be identical to that in the data = (%d, %d, %d) \n", nran_x, nran_y, nran_z, nmesh_x, nmesh_y, nmesh_z);
+        XRETURN(nran_x == nmesh_x && nran_y == nmesh_y && nran_z == nmesh_z, EXIT_FAILURE,
+                "The number of grid cells for randoms = (%d, %d, %d) should be identical to that in the data = (%d, %d, %d) \n",
+                nran_x, nran_y, nran_z, nmesh_x, nmesh_y, nmesh_z);
     }
     const int64_t totncells = nmesh_x * (int64_t) nmesh_y * nmesh_z;
-    
+
     /*---Prepare-radial-arrays----------------------------*/
     uint64_t *counts = my_calloc(sizeof(*counts),nbin);
     DOUBLE **pN = (DOUBLE **) matrix_calloc(sizeof(DOUBLE), nbin, num_pN);
@@ -413,7 +438,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
     if(vpf_mocks_function_DOUBLE == NULL) {
         return EXIT_FAILURE;
     }
-    
+
     itry=0 ;
     isucceed=0 ;
     int ncenters_written=0;
@@ -421,9 +446,9 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
     if(options->verbose) {
         init_my_progressbar(nc, &interrupted);
     }
-    
+
     while(isucceed < nc && itry < Nran && interrupt_status_vpf_mocks_DOUBLE == EXIT_SUCCESS) {
-        
+
         if(options->verbose){
             my_progressbar(isucceed,&interrupted);
         }
@@ -495,7 +520,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                         DOUBLE *z2 = first->z;
                         int status = vpf_mocks_function_DOUBLE(first->nelements, x2, y2, z2,
                                                                xcen, ycen, zcen,
-                                                               rmax, nbin, 
+                                                               rmax, nbin,
                                                                counts);
                         if(status != EXIT_SUCCESS) {
                             matrix_free((void **) pN, nbin);
@@ -505,8 +530,8 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                 }
             }
 
-            
-            
+
+
             //Output the center into the file -> either
             if((need_randoms == 1 && isucceed > num_centers_in_file) || num_centers_in_file == 0) {
                 fprintf(fpcen,"%lf \t %lf \t %lf \t %lf\n",xcen,ycen,zcen,rmax);
@@ -533,16 +558,21 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
     }
     fclose(fpcen);
     free(counts);
+
+    if(options->copy_particles == 0) {
+        free(xgal);free(ygal);free(zgal);
+    }
+
     free_cellarray_DOUBLE(lattice, totncells);
     if(need_randoms == 1) {
-        free(xran);free(yran);free(zran);      
+        free(xran);free(yran);free(zran);
         free_cellarray_DOUBLE(randoms_lattice, totncells);
     }
     if(interrupt_status_vpf_mocks_DOUBLE != EXIT_SUCCESS) {
         matrix_free((void **) pN, nbin);
         return EXIT_FAILURE;
     }
-    
+
     if(options->verbose) {
         finish_myprogressbar(&interrupted);
         fprintf(stderr,"%s> Placed %d centers out of %d trials.\n",__FUNCTION__,isucceed,itry);

@@ -30,6 +30,8 @@ extern "C" {
     extern int reorder_particles_back_into_original_order_DOUBLE(const int64_t np, int64_t *original_indices, DOUBLE *X,
                                                                  DOUBLE *Y, DOUBLE *Z, weight_struct *weights);
 
+    extern int reorder_particles_mocks_back_into_original_order_DOUBLE(const int64_t np, int64_t *original_indices, weight_struct *weights);
+
     extern void get_max_min_ra_dec_DOUBLE(const int64_t ND1, const DOUBLE *RA, const DOUBLE *DEC,
                                           DOUBLE *ra_min, DOUBLE *dec_min, DOUBLE *ra_max, DOUBLE *dec_max);
 

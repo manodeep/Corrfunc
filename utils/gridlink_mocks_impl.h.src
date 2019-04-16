@@ -9,110 +9,102 @@
 
 #pragma once
 
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "defs.h"
-#include <inttypes.h>
 #include "cellarray_mocks_DOUBLE.h"
+#include "cell_pair_DOUBLE.h"
+#include "weight_defs_DOUBLE.h" //for definition of weight_struct
 
-    /* Common functions, if at all */
-    extern int get_binsize_data_DOUBLE(const DOUBLE xmin,const DOUBLE xmax,
-                                       const DOUBLE rmax,
-                                       const int refine_factor, const int max_ncells, DOUBLE *xbinsize, int *nlattice,
-                                       const struct config_options *options) __attribute__((warn_unused_result));
-    extern void get_max_min_data_DOUBLE(const int64_t ND1, const DOUBLE * restrict X1, const DOUBLE * restrict Y1, const DOUBLE * restrict Z1,
-                                        DOUBLE *min_x, DOUBLE *min_y, DOUBLE *min_z, DOUBLE *max_x, DOUBLE *max_y, DOUBLE *max_z);
-    
-    extern void get_max_min_ra_dec_DOUBLE(const int64_t ND1, const DOUBLE *ra, const DOUBLE *dec,
-                                          DOUBLE *ra_min, DOUBLE *dec_min, DOUBLE *ra_max, DOUBLE *dec_max);
+    /* Functions related to DDrppi_mocks/DDsmu_mocks */
+    extern cellarray_mocks_DOUBLE * gridlink_mocks_DOUBLE(const int64_t np,
+                                                          DOUBLE *x, DOUBLE *y, DOUBLE *z,
+                                                          const weight_struct *weights,
+                                                          const DOUBLE xmin, const DOUBLE xmax,
+                                                          const DOUBLE ymin, const DOUBLE ymax,
+                                                          const DOUBLE zmin, const DOUBLE zmax,
+                                                          const DOUBLE max_x_size,
+                                                          const DOUBLE max_y_size,
+                                                          const DOUBLE max_z_size,
+                                                          const int xbin_refine_factor,
+                                                          const int ybin_refine_factor,
+                                                          const int zbin_refine_factor,
+                                                          int *nlattice_x,
+                                                          int *nlattice_y,
+                                                          int *nlattice_z,
+                                                          const struct config_options *options)__attribute__((warn_unused_result));
 
-    extern DOUBLE get_max_ra_diff_two_cells_DOUBLE(const DOUBLE first_dec_vals[2], const DOUBLE second_dec_vals[2], const DOUBLE thetamax)  __attribute__((warn_unused_result));
-    extern int check_if_two_cells_are_within_ra_range_DOUBLE(DOUBLE first_ra_vals[2], DOUBLE second_ra_vals[2], const DOUBLE max_ra_diff) __attribute__((warn_unused_result));
-    
-    /* Functions related to DDrppi_mocks */
-    extern cellarray_mocks_index_particles_DOUBLE * gridlink_mocks_index_particles_DOUBLE(const int64_t np,
-                                                                                          const DOUBLE *x, const DOUBLE *y, const DOUBLE *z,
-                                                                                          const weight_struct *weights,
-                                                                                          const DOUBLE xmin, const DOUBLE xmax,
-                                                                                          const DOUBLE ymin, const DOUBLE ymax,
-                                                                                          const DOUBLE zmin, const DOUBLE zmax,
-                                                                                          const DOUBLE max_x_size,
-                                                                                          const DOUBLE max_y_size,
-                                                                                          const DOUBLE max_z_size,
-                                                                                          const int xbin_refine_factor,
-                                                                                          const int ybin_refine_factor,
-                                                                                          const int zbin_refine_factor,
-                                                                                          int *nlattice_x,
-                                                                                          int *nlattice_y,
-                                                                                          int *nlattice_z,
-                                                                                          const struct config_options *options)__attribute__((warn_unused_result));
+    extern struct cell_pair_DOUBLE * generate_cell_pairs_mocks_DOUBLE(struct cellarray_mocks_DOUBLE *lattice1,
+                                                                      struct cellarray_mocks_DOUBLE *lattice2,
+                                                                      const int64_t totncells,
+                                                                      int64_t *ncell_pairs,
+                                                                      const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
+                                                                      const int nmesh_x, const int nmesh_y, const int nmesh_z,
+                                                                      const DOUBLE max_3D_sep,
+                                                                      const int enable_min_sep_opt,
+                                                                      const int autocorr)__attribute__((warn_unused_result));
 
-    extern int assign_ngb_cells_mocks_index_particles_DOUBLE(struct cellarray_mocks_index_particles_DOUBLE *lattice1,
-                                                             struct cellarray_mocks_index_particles_DOUBLE *lattice2, const int64_t totncells,
-                                                             const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
-                                                             const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                                             const DOUBLE max_3D_sep,
-                                                             const int enable_min_sep_opt,
-                                                             const int autocorr);
-
-    extern void free_cellarray_mocks_index_particles_DOUBLE(cellarray_mocks_index_particles_DOUBLE *lattice, const int64_t totncells);
+    extern void free_cellarray_mocks_DOUBLE(cellarray_mocks_DOUBLE *lattice, const int64_t totncells);
     /* End of functions related to DDrppi_mocks */
 
-    
+
     /* Function declarations for DDtheta_mocks */
-    extern cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int64_t np,
-                                                                          const DOUBLE *ra, const DOUBLE *dec,
-                                                                          const DOUBLE *X, const DOUBLE *Y, const DOUBLE *Z, const weight_struct *weights,
-                                                                          const DOUBLE dec_min,const DOUBLE dec_max,
-                                                                          const DOUBLE max_dec_size,
-                                                                          const int dec_refine_factor,
-                                                                          const DOUBLE thetamax,
-                                                                          int64_t *totncells,
-                                                                          const struct config_options *options)__attribute__((warn_unused_result));
-    extern int assign_ngb_cells_index_wtheta_dec_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1,
-                                                        cellarray_mocks_index_wtheta_DOUBLE *lattice2,
-                                                        const int64_t totncells,
-                                                        const DOUBLE thetamax,
-                                                        const int dec_refine_factor,
-                                                        const int enable_min_sep_opt,
-                                                        const int autocorr);
-        
-    extern cellarray_mocks_index_wtheta_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t np,
-                                                                                    const DOUBLE *ra, const DOUBLE *dec,
-                                                                                    const DOUBLE *X, const DOUBLE *Y,
-                                                                                    const DOUBLE *Z, const weight_struct *weights,
-                                                                                    const DOUBLE ra_min,const DOUBLE ra_max,
-                                                                                    const DOUBLE dec_min, const DOUBLE dec_max,
-                                                                                    const int max_ra_size,
-                                                                                    const int max_dec_size,
-                                                                                    const int ra_refine_factor,
-                                                                                    const int dec_refine_factor,
-                                                                                    const DOUBLE thetamax,
-                                                                                    int64_t *totncells,
-                                                                                    int *ngrid_declination,
-                                                                                    int *max_nmesh_ra,
-                                                                                    int **ngrid_ra,
-                                                                                    const struct config_options *options)__attribute__((warn_unused_result));
+    extern cellarray_mocks_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int64_t NPART,
+                                                                    DOUBLE *RA, DOUBLE *DEC,
+                                                                    DOUBLE *X, DOUBLE *Y, DOUBLE *Z, weight_struct *WEIGHTS,
+                                                                    const DOUBLE dec_min,const DOUBLE dec_max,
+                                                                    const DOUBLE max_dec_size,
+                                                                    const int dec_refine_factor,
+                                                                    const DOUBLE thetamax,
+                                                                    int64_t *totncells,
+                                                                    const struct config_options *options)__attribute__((warn_unused_result));
+
+    extern struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_dec_DOUBLE(cellarray_mocks_DOUBLE *lattice1,
+                                                                                cellarray_mocks_DOUBLE *lattice2,
+                                                                                const int64_t totncells,
+                                                                                int64_t *ncell_pairs,
+                                                                                const DOUBLE thetamax,
+                                                                                const int dec_refine_factor,
+                                                                                const int enable_min_sep_opt,
+                                                                                const int autocorr) __attribute__((warn_unused_result));
 
 
-    extern DOUBLE find_closest_pos_DOUBLE(const DOUBLE first_xbounds[2], const DOUBLE second_xbounds[2], DOUBLE *closest_pos0);
-    extern int assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice1,
-                                                           cellarray_mocks_index_wtheta_DOUBLE *lattice2,
-                                                           const int64_t totncells,
-                                                           const DOUBLE thetamax,
-                                                           const int ra_refine_factor, const int dec_refine_factor,
-                                                           const int nmesh_dec, const int max_nmesh_ra,
-                                                           const DOUBLE ra_min, const DOUBLE ra_max,
-                                                           const int *nmesh_grid_ra,
-                                                           const int enable_min_sep_opt,
-                                                           const int autocorr);
-    
-    extern void free_cellarray_mocks_index_wtheta_DOUBLE(cellarray_mocks_index_wtheta_DOUBLE *lattice, const int64_t totncells);
-    
-    
+    extern cellarray_mocks_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t NPART,
+                                                                       DOUBLE *RA, DOUBLE *DEC,
+                                                                       DOUBLE *X, DOUBLE *Y,
+                                                                       DOUBLE *Z, weight_struct *WEIGHTS,
+                                                                       const DOUBLE ra_min,const DOUBLE ra_max,
+                                                                       const DOUBLE dec_min, const DOUBLE dec_max,
+                                                                       const int max_ra_size,
+                                                                       const int max_dec_size,
+                                                                       const int ra_refine_factor,
+                                                                       const int dec_refine_factor,
+                                                                       const DOUBLE thetamax,
+                                                                       int64_t *ncells,
+                                                                       int *ngrid_declination,
+                                                                       int *max_nmesh_ra,//not really required - serves as additional checking mechanism
+                                                                       int **ngrid_phi,//ngrid in ra, updates on caller -> hence the pointer to pointer
+                                                                       const struct config_options *options)  __attribute__((warn_unused_result));
+
+    extern struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_ra_dec_DOUBLE(cellarray_mocks_DOUBLE *lattice1,
+                                                                                   cellarray_mocks_DOUBLE *lattice2,
+                                                                                   const int64_t totncells,
+                                                                                   int64_t *ncell_pairs,
+                                                                                   const DOUBLE thetamax,
+                                                                                   const int ra_refine_factor, const int dec_refine_factor,
+                                                                                   const int nmesh_dec, const int max_nmesh_ra,
+                                                                                   const DOUBLE ra_min, const DOUBLE ra_max,
+                                                                                   const int *nmesh_grid_ra,
+                                                                                   const int enable_min_sep_opt,
+                                                                                   const int autocorr) __attribute__((warn_unused_result));
+
+    extern void free_cellarray_mocks_DOUBLE(cellarray_mocks_DOUBLE *lattice, const int64_t totncells);
+
+
 #ifdef __cplusplus
 }
 #endif

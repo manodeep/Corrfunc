@@ -157,3 +157,45 @@ int reorder_particles_back_into_original_order_DOUBLE(const int64_t np, int64_t 
 
     return EXIT_SUCCESS;
 }
+
+
+
+int reorder_particles_mocks_back_into_original_order_DOUBLE(const int64_t np, int64_t *original_indices, weight_struct *weights)
+{
+    if(original_indices == NULL || weights == NULL) {
+        fprintf(stderr,"Error: In %s> While re-ordering the particles back into their input order, the passed pointers "
+                "can not be NULL. May be this function does not need to be called ?\n"
+                "Please check the value of 'copy_positions' in the 'struct config_options'. This function "
+                "should only be called when 'copy_positions' is set to 0", __FUNCTION__);
+        return EXIT_FAILURE;
+    }
+
+    // Now sort the particles based on their original index in the input arrays
+    // That will re-order the particles back into the original input order!
+#define MULTIPLE_ARRAY_EXCHANGER(type,a,i,j) {                          \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_indices, i, j); \
+        for(int w = 0; w < weights->num_weights; w++) {                 \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, ((DOUBLE *) weights->weights[w]), i, j); \
+        }                                                               \
+    }
+
+    int64_t num_sorted = 1;//an array with 1 element is always sorted
+    for(int64_t ii=0;ii<np-1;ii++) {
+        num_sorted += original_indices[ii + 1] >= original_indices[ii] ? +1:-1;
+    }
+
+    //the list is already sorted -> nothing to do
+    if(num_sorted == np) {
+        return EXIT_SUCCESS;
+    }
+
+    //Since the particles might be coming from an already sorted array - quicksort might degenerate to
+    //an O(N^2) process -- use the heap-sort when the array is mostly sorted
+    if(num_sorted >= FRACTION_SORTED_REQD_TO_HEAP_SORT * np) {
+        SGLIB_ARRAY_HEAP_SORT(int64_t, original_indices, np, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+    } else {
+        SGLIB_ARRAY_QUICK_SORT(int64_t, original_indices, np, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
+    }
+
+    return EXIT_SUCCESS;
+}
