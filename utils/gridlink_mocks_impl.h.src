@@ -102,8 +102,6 @@ extern "C" {
                                                                                    const int enable_min_sep_opt,
                                                                                    const int autocorr) __attribute__((warn_unused_result));
 
-    extern void free_cellarray_mocks_DOUBLE(cellarray_mocks_DOUBLE *lattice, const int64_t totncells);
-
 
 #ifdef __cplusplus
 }
