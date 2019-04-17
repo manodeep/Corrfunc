@@ -172,8 +172,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         be set to 0.0 for all bins; similarly for ``weight_avg``. ``npairs``
         contains the number of pairs in that bin.
 
-    time : if ``c_api_timer`` is set, then the return value contains the time
-        spent in the API; otherwise time is set to 0.0
+    api_time: float, optional
+        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
+        the time spent within the C library and ignores all python overhead.
 
     Example
     -------
@@ -320,6 +321,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
                                   ybin_refine_factor=ybin_refine_factor,
                                   zbin_refine_factor=zbin_refine_factor,
                                   max_cells_per_dim=max_cells_per_dim,
+                                  copy_particles=copy_particles,
                                   enable_min_sep_opt=enable_min_sep_opt,
                                   c_api_timer=c_api_timer,
                                   isa=integer_isa, **kwargs)

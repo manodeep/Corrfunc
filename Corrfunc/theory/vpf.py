@@ -233,6 +233,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
                               ybin_refine_factor=ybin_refine_factor,
                               zbin_refine_factor=zbin_refine_factor,
                               max_cells_per_dim=max_cells_per_dim,
+                              copy_particles=copy_particles,
                               c_api_timer=c_api_timer,
                               isa=integer_isa)
     if extn_results is None:

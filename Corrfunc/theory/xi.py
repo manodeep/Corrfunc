@@ -225,6 +225,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
                              ybin_refine_factor=ybin_refine_factor,
                              zbin_refine_factor=zbin_refine_factor,
                              max_cells_per_dim=max_cells_per_dim,
+                             copy_particles=copy_particles,
                              enable_min_sep_opt=enable_min_sep_opt,
                              c_api_timer=c_api_timer,
                              isa=integer_isa, **kwargs)
