@@ -588,7 +588,7 @@ static PyMethodDef module_methods[] = {
      "                       verbose=False, is_comoving_dist=False,\n"
      "                       xbin_refine_factor=2, ybin_refine_factor=2, \n"
      "                       zbin_refine_factor=1, max_cells_per_dim=100, \n"
-     "                       c_api_timer=False, isa=-1)\n"
+     "                       copy_particles=1, c_api_timer=False, isa=-1)\n"
      "\n"
      "Calculates the fraction of random spheres that contain exactly *N* points, pN(r).\n"
      "Returns a numpy structured array containing the probability of a sphere of radius\n"
@@ -723,6 +723,10 @@ static PyMethodDef module_methods[] = {
      "    Controls the maximum number of cells per dimension. Total number of cells \n"
      "    can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
      "    relative to the boxsize (and increasing helps the runtime).\n\n"
+
+     "copy_particles: boolean (default True)\n"
+     "    Boolean flag to make a copy of the particle positions\n"
+     "    If set to False, the particles will be re-ordered in-place\n\n"
 
      "c_api_timer : boolean (default false)\n"
      "    Boolean flag to measure actual time spent in the C libraries. Here\n"
@@ -2070,6 +2074,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     options.is_comoving_dist = 0;
     options.verbose=0;
     options.instruction_set=-1;
+    options.copy_particles=1;
     options.c_api_timer=0;
 
     /* Reset the bin refine factors default (since the VPF is symmetric in XYZ, conceptually the binning should be identical in all three directions)*/
@@ -2100,13 +2105,14 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
+        "copy_particles",
         "c_api_timer",
-        "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
+        "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
         NULL
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|bbbbbhbi", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|bbbbbhbbi", kwlist,
                                        &rmax,&nbin,&num_spheres,&num_pN,&threshold_neighbors,&centers_file,&cosmology,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -2118,6 +2124,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
                                        &(options.verbose),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
+                                       &(options.copy_particles),
                                        &(options.c_api_timer),
                                        &(options.instruction_set))
 

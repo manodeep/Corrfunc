@@ -3,7 +3,7 @@
 
 """
 Python wrapper around the C extension for the pair counter in
-``mocks/DDrppi_mocks/``. This python wrapper is 
+``mocks/DDrppi_mocks/``. This python wrapper is
 :py:mod:`Corrfunc.mocks.DDrppi_mocks`
 """
 
@@ -22,7 +22,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                  fast_divide_and_NR_steps=0,
                  xbin_refine_factor=2, ybin_refine_factor=2,
                  zbin_refine_factor=1, max_cells_per_dim=100,
-                 enable_min_sep_opt=True,
+                 copy_particles=True, enable_min_sep_opt=True,
                  c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
@@ -32,7 +32,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     counted. The input positions are expected to be on-sky co-ordinates.
     This module is suitable for calculating correlation functions for mock
     catalogs.
-    
+
     If ``weights`` are provided, the resulting pair counts are weighted.  The
     weighting scheme depends on ``weight_type``.
 
@@ -43,8 +43,8 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     .. note:: that this module only returns pair counts and not the actual
        correlation function :math:`\\xi(r_p, \pi)` or :math:`wp(r_p)`. See the
        utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` and
-       :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp` for computing 
-       :math:`\\xi(r_p, \pi)` and :math:`wp(r_p)` respectively from the 
+       :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp` for computing
+       :math:`\\xi(r_p, \pi)` and :math:`wp(r_p)` respectively from the
        pair counts.
 
 
@@ -76,7 +76,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
     pimax : double
         A double-precision value for the maximum separation along
-        the Z-dimension. 
+        the Z-dimension.
 
         Distances along the :math:`\\pi` direction are binned with unit
         depth. For instance, if ``pimax=40``, then 40 bins will be created
@@ -93,7 +93,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
         input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.         
+        array does not need to be sorted.
 
     RA1 : array-like, real (float/double)
         The array of Right Ascensions for the first set of points. RA's
@@ -115,10 +115,10 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         Array of (Speed Of Light * Redshift) values for the first set of
         points. Code will try to detect cases where ``redshifts`` have been
         passed and multiply the entire array with the ``speed of light``.
- 
+
         If is_comoving_dist is set, then ``CZ1`` is interpreted as the
         co-moving distance, rather than `cz`.
-       
+
     weights1 : array_like, real (float/double), optional
         A scalar, or an array of weights of shape (n_weights, n_positions) or (n_positions,).
         `weight_type` specifies how these weights are used; results are returned
@@ -150,7 +150,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         co-moving distance, rather than `cz`.
 
         Must be of same precision type as RA1/DEC1/CZ1.
-        
+
     weights2 : array-like, real (float/double), optional
         Same as weights1, but for the second set of positions
 
@@ -165,10 +165,10 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     output_rpavg : boolean (default false)
         Boolean flag to output the average ``rp`` for each bin. Code will
         run slower if you set this flag.
-    
+
         If you are calculating in single-precision, ``rpavg`` will suffer
-        suffer from numerical loss of precision and can not be trusted. If 
-        you need accurate ``rpavg`` values, then pass in double precision 
+        suffer from numerical loss of precision and can not be trusted. If
+        you need accurate ``rpavg`` values, then pass in double precision
         arrays for the particle positions.
 
     fast_divide_and_NR_steps: integer (default 0)
@@ -176,7 +176,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         reciprocal, followed by ``fast_divide_and_NR_steps`` of Newton-Raphson.
         Can improve runtime by ~15-20% on older computers. Value of 0 uses
         the standard division operation.
-    
+
     (xyz)bin_refine_factor : integer, default is (2,2,1); typically within [1-3]
         Controls the refinement on the cell sizes. Can have up to a 20% impact
         on runtime.
@@ -186,9 +186,17 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
         too small relative to the boxsize (and increasing helps the runtime).
 
+    copy_particles: boolean (default True)
+        Boolean flag to make a copy of the particle positions
+        If set to False, the particles will be re-ordered in-place
+
+        .. versionadded:: 2.3.0
+
     enable_min_sep_opt: boolean (default true)
        Boolean flag to allow optimizations based on min. separation between
        pairs of cells. Here to allow for comparison studies.
+
+       .. versionadded:: 2.3.0
 
     c_api_timer : boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here
@@ -207,7 +215,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-        
+
     weight_type : string, optional (default None)
         The type of weighting to apply.  One of ["pair_product", None].
 
@@ -323,7 +331,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         return_file_with_rbins, convert_to_native_endian,\
         is_native_endian, sys_pipes
     from future.utils import bytes_to_native_str
-    
+
     # Broadcast scalar weights to arrays
     if weights1 is not None:
         weights1 = np.atleast_1d(weights1)
@@ -335,7 +343,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
             msg = "Must pass valid arrays for RA2/DEC2/CZ2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
-            
+
         # If only one set of points has weights, set the other to uniform weights
         if weights1 is None and weights2 is not None:
             weights1 = np.ones_like(weights2)
@@ -346,7 +354,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
         CZ2 = np.empty(1)
-        
+
     # Warn about non-native endian arrays
     if not all(is_native_endian(arr) for arr in [RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2]):
         warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
@@ -355,7 +363,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     fix_ra_dec(RA1, DEC1)
     if autocorr == 0:
         fix_ra_dec(RA2, DEC2)
-        
+
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2', 'CZ2']:
@@ -377,6 +385,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                                    ybin_refine_factor=ybin_refine_factor,
                                    zbin_refine_factor=zbin_refine_factor,
                                    max_cells_per_dim=max_cells_per_dim,
+                                   copy_particles=copy_particles,
                                    enable_min_sep_opt=enable_min_sep_opt,
                                    c_api_timer=c_api_timer,
                                    isa=integer_isa, **kwargs)
@@ -406,4 +415,3 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-    
