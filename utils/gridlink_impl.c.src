@@ -77,7 +77,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
 
     struct timeval t0;
     if(options->verbose) {
-      gettimeofday(&t0,NULL);
+        gettimeofday(&t0,NULL);
     }
 
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
