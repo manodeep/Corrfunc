@@ -154,6 +154,7 @@ int reorder_particles_back_into_original_order_DOUBLE(const int64_t np, int64_t 
     } else {
         SGLIB_ARRAY_QUICK_SORT(int64_t, original_indices, np, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
     }
+#undef MULTIPLE_ARRAY_EXCHANGER
 
     return EXIT_SUCCESS;
 }
@@ -196,6 +197,7 @@ int reorder_particles_mocks_back_into_original_order_DOUBLE(const int64_t np, in
     } else {
         SGLIB_ARRAY_QUICK_SORT(int64_t, original_indices, np, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
     }
+#undef MULTIPLE_ARRAY_EXCHANGER
 
     return EXIT_SUCCESS;
 }
