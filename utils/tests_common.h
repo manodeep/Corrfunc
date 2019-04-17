@@ -112,10 +112,10 @@ const int min_bin_ref = 1, max_bin_ref = 3;
                                            dotest = 0;                  \
                                        } else {                         \
                                            fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
+                                           code_to_free_results_memory; /* whatever code is required to free the memory in results struct */ \
                                        }                                \
                                        fprintf(stderr, ANSI_COLOR_RESET " (isa = %s). Time = %6.2lf seconds \n", \
                                                isa_name[iset],time_to_run * 1e-9); \
-                                       code_to_free_results_memory; /* whatever code is required to free the memory in results struct */         \
                                    } /* close the enable_min_sep_opt condition*/ \
                                }/* copy particle positions*/                                           \
                            }/* close the dotest if condition*/ \
@@ -207,10 +207,10 @@ const int min_bin_ref = 1, max_bin_ref = 3;
                                             dotest = 0;                           \
                                         } else {                                  \
                                             fprintf(stderr,ANSI_COLOR_GREEN "PASSED"); \
+                                            code_to_free_results_memory; /* whatever code is required to free the memory in results struct */ \
                                         }                                         \
                                         fprintf(stderr, ANSI_COLOR_RESET " (isa = %s). Time = %6.2lf seconds \n", \
                                                 isa_name[iset],time_to_run * 1e-9); \
-                                        code_to_free_results_memory; /* whatever code is required to free the memory in results struct */  \
                                     } /* closes dotest */                         \
                                 } /* cloeses copy_particles */   \
                             } /* closes min-sep-opt*/                         \
