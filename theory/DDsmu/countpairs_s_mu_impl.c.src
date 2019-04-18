@@ -516,6 +516,11 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         }
     }
 
+    free_cellarray_DOUBLE(lattice1, totncells);
+    if(autocorr == 0) {
+        free_cellarray_DOUBLE(lattice2, totncells);
+    }
+    
     if(abort_status != EXIT_SUCCESS || interrupt_status_DDsmu_DOUBLE != EXIT_SUCCESS) {
         /* Cleanup memory here if aborting */
         free(supp);
