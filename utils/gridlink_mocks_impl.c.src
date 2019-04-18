@@ -132,6 +132,7 @@ cellarray_mocks_DOUBLE * gridlink_mocks_DOUBLE(const int64_t NPART,
         lattice[icell].zbounds[1] = -MAX_POSITIVE_FLOAT;
 
         if(options->copy_particles) {
+            lattice[icell].owns_memory = 1;
             lattice[icell].original_index = my_malloc(sizeof(lattice[icell].original_index[0]), expected_n);
             XRETURN(lattice[icell].original_index != NULL, NULL, "Error in %s> Could not allocate memory for holding the original "
                     "indices for particles. (allocating for %"PRId64" particles \n", __FUNCTION__, expected_n);
@@ -643,6 +644,7 @@ cellarray_mocks_DOUBLE * gridlink_mocks_theta_dec_DOUBLE(const int64_t NPART,
         lattice[icell].ra_bounds[1]=-MAX_POSITIVE_FLOAT;
 
         if(options->copy_particles) {
+            lattice[icell].owns_memory = 1;
             const size_t memsize = sizeof(DOUBLE);
             lattice[icell].x = my_malloc(memsize,expected_n);
             lattice[icell].y = my_malloc(memsize,expected_n);

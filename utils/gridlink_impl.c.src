@@ -136,6 +136,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         lattice[icell].zbounds[1] = -MAX_POSITIVE_FLOAT;
 
         if(options->copy_particles) {
+            lattice[icell].owns_memory = 1;
             lattice[icell].original_index = my_malloc(sizeof(lattice[icell].original_index[0]), expected_n);
             const size_t memsize=sizeof(DOUBLE);
             lattice[icell].x = my_malloc(memsize,expected_n);//This allocates extra and is wasteful
