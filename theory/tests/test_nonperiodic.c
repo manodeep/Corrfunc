@@ -21,10 +21,10 @@ int test_nonperiodic_DDsmu(const char *correct_outputfile);
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
 
 //Global variables
-int ND1;
+int64_t ND1;
 double *X1=NULL,*Y1=NULL,*Z1=NULL,*weights1=NULL;
 
-int ND2;
+int64_t ND2;
 double *X2=NULL,*Y2=NULL,*Z2=NULL,*weights2=NULL;
 
 char current_file1[MAXLEN],current_file2[MAXLEN];

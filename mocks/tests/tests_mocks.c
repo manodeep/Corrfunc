@@ -31,10 +31,10 @@ int test_DDsmu_mocks(const char *correct_outputfile);
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
 
 //Global variables
-int ND1;
+int64_t ND1;
 double *RA1=NULL,*DEC1=NULL,*CZ1=NULL,*weights1=NULL;
 
-int ND2;
+int64_t ND2;
 double *RA2=NULL,*DEC2=NULL,*CZ2=NULL,*weights2=NULL;
 
 const int cosmology_flag=1;
