@@ -11,10 +11,10 @@
 CC :=
 
 #### Add any compiler specific flags you want
-CFLAGS ?=
+CFLAGS ?= 
 
 #### Add any compiler specific link flags you want
-CLINK ?=
+CLINK ?= 
 
 ## Set the python command (supply the full path to python you want to
 ## use, if different from directly calling `python` on the shell,
@@ -52,6 +52,14 @@ DO_CHECKS := 1
 CLEAN_CMDS := celan celna clean clena distclean realclean
 ifneq ($(filter $(CLEAN_CMDS),$(MAKECMDGOALS)),)
   DO_CHECKS := 0
+endif
+
+export RUNNING_TESTS ?= 0
+ifeq ($(RUNNING_TESTS), 0)
+  ifneq ($(filter tests,$(MAKECMDGOALS)),)
+    export RUNNING_TESTS := 1
+    $(info Setting RUNNING_TESTS to 1)
+  endif
 endif
 
 
@@ -363,6 +371,15 @@ ifeq ($(DO_CHECKS), 1)
     CFLAGS += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
     CFLAGS +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
     CFLAGS += -Wno-unused-local-typedefs ## to suppress the unused typedef warning for the compile time assert for sizeof(struct config_options)
+
+    # if TESTS are being run then add the -fsanitize options
+    ifeq ($(RUNNING_TESTS), 1)
+      ifeq ($(ON_CI), true)
+        CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+        CLINK += -fsanitize=leak -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+      endif
+    endif
+
     CLINK += -lm
   endif #not icc
 
