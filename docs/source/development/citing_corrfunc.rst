@@ -9,21 +9,39 @@ License and Citation Information
 Citing Corrfunc
 ------------------
 
-Corrfunc is currently preparing for its first "official" release (v2.0.0).
-The v2.0.0 release is accompanied with a code-release paper,
+
+Corrfunc v2.0.0 release is accompanied with a code-release paper,
 `ArXiv <http://arxiv.org/>`_. If you use
-Corrfunc modules in your analysis, please cite this code-release paper. While
-the paper is being written, you can cite Corrfunc with the Zenodo DOI::
+Corrfunc (v2.0.0 or earlier) modules in your analysis, please cite this code-release paper. While
+the paper is being written, you can cite Corrfunc with the ASCL entry::
 
-   @misc{manodeep_sinha_2016_55161,
-   author       = {Manodeep Sinha},
-   title        = {Corrfunc: Corrfunc-1.1.0},
-   month        = jun,
-   year         = 2016,
-   doi          = {10.5281/zenodo.55161},
-   url          = {{http://dx.doi.org/10.5281/zenodo.55161}}
+   @misc{2017ascl.soft03003S,
+   author = {{Sinha}, M. and {Garrison}, L.},
+   title = "{Corrfunc: Blazing fast correlation functions on the CPU}",
+   keywords = {Software},
+   howpublished = {Astrophysics Source Code Library},
+   year = 2017,
+   month = mar,
+   archivePrefix = "ascl",
+   eprint = {1703.003},
+   adsurl = {http://adsabs.harvard.edu/abs/2017ascl.soft03003S},
+   adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+   }
 
+If you use Corrfunc v2.3.0 or later, please cite both the v2.0.0 and the CCIS
+proceedings::
 
+  @misc{TBD,
+   author = {{Sinha}, M. and {Garrison}, L.},
+   title = "{Corrfunc: Blazing fast correlation functions with AVX512F SIMD Intrinsics}",
+   keywords = {Software},
+   howpublished = {Springer},
+   journal = {Communications in Computer and Information Science},
+   year = 2019,
+  }
+
+  
+  
 Corrfunc License
 ---------------------
 
