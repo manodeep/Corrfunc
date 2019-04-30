@@ -201,3 +201,36 @@ int reorder_particles_mocks_back_into_original_order_DOUBLE(const int64_t np, in
 
     return EXIT_SUCCESS;
 }
+
+
+
+void find_min_and_max_sqr_sep_between_cell_pairs_DOUBLE(const DOUBLE first_xbounds[2], const DOUBLE first_ybounds[2], const DOUBLE first_zbounds[2],
+                                                        const DOUBLE second_xbounds[2], const DOUBLE second_ybounds[2], const DOUBLE second_zbounds[2],
+                                                        DOUBLE *min_sqr_sep, DOUBLE *max_sqr_sep)
+{
+    DOUBLE min_sqr_sep = ZERO;
+
+    if (first_xbounds[0] > second_xbounds[1]) min_sqr_sep += (first_xbounds[0] - second_xbounds[1])*(first_xbounds[0] - second_xbounds[1]);
+    if (second_xbounds[0] > first_xbounds[1]) min_sqr_sep += (second_xbounds[0] - first_xbounds[1])*(second_xbounds[0] - first_xbounds[1]);
+
+    if (first_ybounds[0] > second_ybounds[1]) min_sqr_sep += (first_ybounds[0] - second_ybounds[1])*(first_ybounds[0] - second_ybounds[1]);
+    if (second_ybounds[0] > first_ybounds[1]) min_sqr_sep += (second_ybounds[0] - first_ybounds[1])*(second_ybounds[0] - first_ybounds[1]);
+
+    if (first_zbounds[0] > second_zbounds[1]) min_sqr_sep += (first_zbounds[0] - second_zbounds[1])*(first_zbounds[0] - second_zbounds[1]);
+    if (second_zbounds[0] > first_zbounds[1]) min_sqr_sep += (second_zbounds[0] - first_zbounds[1])*(second_zbounds[0] - first_zbounds[1]);
+
+    const DOUBLE xmin = MIN(first_xbounds[0], second_xbounds[0]);
+    const DOUBLE xmax = MAX(first_xbounds[1], second_xbounds[1]);
+
+    const DOUBLE ymin = MIN(first_ybounds[0], second_ybounds[0]);
+    const DOUBLE ymax = MAX(first_ybounds[1], second_ybounds[1]);
+
+    const DOUBLE zmin = MIN(first_zbounds[0], second_zbounds[0]);
+    const DOUBLE zmax = MAX(first_zbounds[1], second_zbounds[1]);
+
+    const DOUBLE max_sqr_sep = (xmax - xmin) * (xmax - xmin) + (ymax - ymin) * (ymax - ymin) + (zmax - zmin) * (zmax - zmin);
+
+    *min_sqr_sep = min_sqr_sep;
+    *max_sqr_sep = max_sqr_sep;
+
+}

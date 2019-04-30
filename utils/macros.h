@@ -19,6 +19,10 @@
 #define STR(x) STRINGIFY(x)
 
 
+#define MIN(X, Y)                        (( (X) < (Y)) ? (X):(Y))
+#define MAX(X, Y)                        (( (X) > (Y)) ? (X):(Y))
+
+
 #define ASSIGN_CELL_TIMINGS(thread_timings, nx1, nx2, timediff, tid, first_cellid, second_cellid) \
     {                                                                   \
         thread_timings->N1 = nx1;                                       \
