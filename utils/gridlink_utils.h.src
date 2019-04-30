@@ -39,7 +39,7 @@ extern "C" {
 
     extern void find_min_and_max_sqr_sep_between_cell_pairs_DOUBLE(const DOUBLE first_xbounds[2], const DOUBLE first_ybounds[2], const DOUBLE first_zbounds[2],
                                                                    const DOUBLE second_xbounds[2], const DOUBLE second_ybounds[2], const DOUBLE second_zbounds[2],
-                                                                   DOUBLE *min_sqr_sep, DOUBLE *max_sqr_sep);
+                                                                   DOUBLE *sqr_sep_min, DOUBLE *sqr_sep_max);
 
 #ifdef __cplusplus
 }
