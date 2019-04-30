@@ -373,12 +373,14 @@ ifeq ($(DO_CHECKS), 1)
     CFLAGS += -Wno-unused-local-typedefs ## to suppress the unused typedef warning for the compile time assert for sizeof(struct config_options)
 
     # if TESTS are being run then add the -fsanitize options
-    ifeq ($(RUNNING_TESTS), 1)
-      ifeq ($(ON_CI), true)
-        CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
-        CLINK += -fsanitize=leak -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
-      endif
-    endif
+    # Commented out for now -> need to overhaul testing infrastructure and
+    # toolchain. Otherwise, travis has compile failure due to unknown compiler options
+    # ifeq ($(RUNNING_TESTS), 1)
+    #   ifeq ($(ON_CI), true)
+    #     CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+    #     CLINK +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+    #   endif
+    # endif
 
     CLINK += -lm
   endif #not icc
@@ -528,6 +530,12 @@ ifeq ($(DO_CHECKS), 1)
   endif ## PYTHON_CHECKED
   ### Done with python checks
 
+  ifeq (INTEGRATION_TESTS, $(findstring INTEGRATION_TESTS, $(CFLAGS)))
+    ifeq ($(COMPILE_PYTHON_EXT), 1)
+      $(info $(ccmagenta)Disabling python extensions while running integration tests$(ccreset))
+      export COMPILE_PYTHON_EXT := 0
+    endif
+  endif
 
   ### The following sections are currently not relevant for the Corrfunc package
   ### but I do not want to have to figure this out again!
