@@ -1201,6 +1201,7 @@ cellarray_mocks_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t NPART,
         lattice[icell].y = NULL;
         lattice[icell].z = NULL;
         lattice[icell].original_index = NULL;
+        lattice[icell].owns_memory = 0;
 
         // Now do the same for the weights
         lattice[icell].weights.num_weights = (WEIGHTS == NULL) ? 0 : WEIGHTS->num_weights;
@@ -1223,7 +1224,7 @@ cellarray_mocks_DOUBLE * gridlink_mocks_theta_ra_dec_DOUBLE(const int64_t NPART,
             const int64_t ra_base = ra_offset_for_dec[idec];
             const int64_t icell = ra_base + ira;
             if(options->copy_particles) {
-                lattice[icell].original_index = my_malloc(sizeof(lattice[icell].original_index[0]), expected_n);
+                lattice[icell].owns_memory = 1;
                 const size_t memsize=sizeof(DOUBLE);
 
                 lattice[icell].x = my_malloc(memsize,expected_n);
