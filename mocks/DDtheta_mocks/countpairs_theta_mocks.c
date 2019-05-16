@@ -19,10 +19,12 @@ void free_results_countpairs_theta(results_countpairs_theta *results)
     if(results == NULL)
         return;
 
-    free(results->theta_upp);
-    free(results->npairs);
-    free(results->theta_avg);
-    free(results->weightavg);
+    free(results->theta_upp);results->theta_upp = NULL;
+    free(results->npairs);results->npairs = NULL;
+    free(results->theta_avg);results->theta_avg = NULL;
+    free(results->weightavg);results->weightavg = NULL;
+
+    results->nbin = 0;
 }
 
 
@@ -45,10 +47,10 @@ int countpairs_theta_mocks(const int64_t ND1, void *phi1, void *theta1,
         fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;
     }
-    
+
     if(options->float_type == sizeof(float)) {
-        return countpairs_theta_mocks_float(ND1, (float *) phi1, (float *) theta1, 
-                                            ND2, (float *) phi2, (float *) theta2, 
+        return countpairs_theta_mocks_float(ND1, (float *) phi1, (float *) theta1,
+                                            ND2, (float *) phi2, (float *) theta2,
                                             numthreads,
                                             autocorr,
                                             binfile,
@@ -56,8 +58,8 @@ int countpairs_theta_mocks(const int64_t ND1, void *phi1, void *theta1,
                                             options,
                                             extra);
     } else {
-        return countpairs_theta_mocks_double(ND1, (double *) phi1, (double *) theta1, 
-                                             ND2, (double *) phi2, (double *) theta2, 
+        return countpairs_theta_mocks_double(ND1, (double *) phi1, (double *) theta1,
+                                             ND2, (double *) phi2, (double *) theta2,
                                              numthreads,
                                              autocorr,
                                              binfile,

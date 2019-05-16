@@ -13,10 +13,12 @@
 extern "C" {
 #endif
 
+#define DEFAULT_CACHE_LINE_SIZE  64
+
 /*Taken from http://stackoverflow.com/questions/794632/programmatically-get-the-cache-line-size*/
 #include <stddef.h>
 size_t cache_line_size(void);
-    
+
 #ifdef __cplusplus
 }
 #endif

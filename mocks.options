@@ -4,6 +4,8 @@ OPT += -DOUTPUT_RPAVG  ### Enabling this DOES NOT cause too much of a runtime-hi
 
 OPT += -DENABLE_MIN_SEP_OPT ## Enable optimizations relating to min. separations between cell-pairs (introduced in v2.3)
 
+OPT += -DCOPY_PARTICLES ## Make a copy of particles positions and weights (doubles the memory required, introduced in v2.3)
+
 ### Specific options for wtheta (DDtheta_mocks.c)
 #OPT += -DOUTPUT_THETAAVG
 OPT += -DLINK_IN_DEC
@@ -15,7 +17,3 @@ OPT += -DDOUBLE_PREC
 
 #### If input distances are already in co-moving (relevant for DDrppi_mocks, DDsmu_mocks and vpf)
 #OPT += -DCOMOVING_DIST
-
-
-
-

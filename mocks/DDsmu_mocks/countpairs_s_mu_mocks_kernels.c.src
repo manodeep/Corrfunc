@@ -23,20 +23,20 @@
 #if defined(__AVX512F__)
 #include "avx512_calls.h"
 
-static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
+static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
                                                                  const weight_struct_DOUBLE *weights0,
-                                                                 const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, 
+                                                                 const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
                                                                  const weight_struct_DOUBLE *weights1,
                                                                  const int same_cell,
                                                                  const unsigned int fast_divide_and_NR_steps,
-                                                                 const DOUBLE smax, const DOUBLE smin, const int nsbin,const int nmu_bins,
+                                                                 const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,const int nmu_bins,
                                                                  const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                                  const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                                                  const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                                  DOUBLE *src_savg,
                                                                  uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
-    
+
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
@@ -50,8 +50,6 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     const DOUBLE sqr_mumax = mu_max*mu_max;
-    const DOUBLE sqr_smax  = smax*smax;
-    const DOUBLE sqr_smin  = smin*smin;
 
     AVX512_FLOATS m_supp_sqr[nsbin];
     for(int i=0;i<nsbin;i++) {
@@ -87,7 +85,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
     }
 
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_all_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE max_all_dz = SQRT(sqr_smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -100,7 +98,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
         }
 
         DOUBLE max_dz = max_all_dz;
-        
+
         /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
            j' particles. The min. difference in the d-positions between this i'th particle and ANY
            of the remaining j'th particles, is the difference between the current j'th particle and
@@ -142,7 +140,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
            the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
            and the last j'th particle. Therefore, if this difference is already too large
            to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
-           
+
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
                cells)
         */
@@ -178,29 +176,29 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
             const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
             const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
             const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
-            
+
             localx1 += AVX512_NVEC;
             localy1 += AVX512_NVEC;
             localz1 += AVX512_NVEC;
-            
+
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].a512 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, local_w1.weights[w]);
                 local_w1.weights[w] += AVX512_NVEC;
             }
-            
+
             union int16 union_finalbin;
             union float16 union_mDperp;
             union float16_weights union_mweight;
             union_finalbin.m_ibin = AVX512_SETZERO_INT();
             union_mDperp.m_Dperp = AVX512_SETZERO_FLOAT();
-            
+
             const AVX512_FLOATS m_perpx = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_x1, m_xpos);
             const AVX512_FLOATS m_perpy = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_y1, m_ypos);
             const AVX512_FLOATS m_perpz = AVX512_MASKZ_SUBTRACT_FLOATS(m_mask_left, m_z1, m_zpos);
 
             const AVX512_MASK m_neg_pimax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_perpz, -m_max_dz,_CMP_GT_OQ);
             if(m_neg_pimax_mask == 0) continue;
-            
+
             const AVX512_FLOATS m_parx = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_x1, m_xpos);
             const AVX512_FLOATS m_pary = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_y1, m_ypos);
             const AVX512_FLOATS m_parz = AVX512_MASKZ_ADD_FLOATS(m_mask_left, m_z1, m_zpos);
@@ -208,7 +206,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
             /*
             //Technically l := 1/2 (v1 + v2) but the factor of 1/2 occurs both in numerator and denominator
             and cancels out.
-                
+
             s \dot l := (parx*perpx + pary*perpy + parz*perp)
                      := (x1 + x2)*(x1 - x2) + (y1 + y2)*(y1 - y2) + (z1 + z2)*(z1 - z2)
                      := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
@@ -222,7 +220,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                 /* this means the next chunk of particles can not be within 's' */
                 j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
             }
-            
+
             const AVX512_FLOATS m_term1 = AVX512_MULTIPLY_FLOATS(m_parx, m_perpx);
             const AVX512_FLOATS m_term2 = AVX512_MULTIPLY_FLOATS(m_pary, m_perpy);
             const AVX512_FLOATS m_s_dot_l = AVX512_FMA_ADD_FLOATS(m_parz, m_perpz, AVX512_ADD_FLOATS(m_term1, m_term2));
@@ -230,24 +228,24 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
 
             /*s^2 = dx^2 + dy^2 + dz^2*/
             const AVX512_FLOATS m_sqr_s = AVX512_FMA_ADD_FLOATS(m_perpx, m_perpx,
-                                                                AVX512_FMA_ADD_FLOATS(m_perpy, m_perpy, 
+                                                                AVX512_FMA_ADD_FLOATS(m_perpy, m_perpy,
                                                                                       AVX512_SQUARE_FLOAT(m_perpz)));//3-d separation
-            
-            
+
+
             //Create a mask where s^2 < smax^2
             m_mask_left = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_s, m_sqr_smax, _CMP_LT_OQ);
             if(m_mask_left == 0) {
                 continue;
             }
-            const AVX512_FLOATS m_sqr_norm_l = AVX512_FMA_ADD_FLOATS(m_parx, m_parx, 
+            const AVX512_FLOATS m_sqr_norm_l = AVX512_FMA_ADD_FLOATS(m_parx, m_parx,
                                                                      AVX512_FMA_ADD_FLOATS(m_pary, m_pary,
                                                                                            AVX512_SQUARE_FLOAT(m_parz)));
-            
+
             // \mu^2 := cos^2(\theta_between_s_and_l) = |s.l|^2 / (|s|^2 * |l|^2)
             const AVX512_FLOATS m_sqr_norm_l_norm_s = AVX512_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
             AVX512_FLOATS m_sqr_mu = AVX512_SETZERO_FLOAT();
             CHECK_AND_FAST_DIVIDE_AVX512(m_sqr_mu, m_sqr_s_dot_l, m_sqr_norm_l_norm_s, m_mask_left, fast_divide_and_NR_steps);
-            
+
             const AVX512_FLOATS m_mu = AVX512_SQRT_FLOAT(m_sqr_mu);
             //Do the mask filters in a separate scope
             {
@@ -255,13 +253,13 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                 const AVX512_MASK m_smax_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_s, m_sqr_smax, _CMP_LT_OQ);
                 const AVX512_MASK m_smin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_s, m_sqr_smin, _CMP_GE_OQ);
                 const AVX512_MASK m_s_mask = AVX512_MASK_BITWISE_AND(m_smax_mask, m_smin_mask);
-                
+
                 m_mask_left = AVX512_MASK_BITWISE_AND(m_mask_mumax, m_s_mask);
                 if(m_mask_left==0) {
                     continue;
                 }
             }
-            
+
             if(need_savg) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_s);
             }
@@ -269,14 +267,14 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                 pair.dx.a512 = m_perpx;
                 pair.dy.a512 = m_perpy;
                 pair.dz.a512 = m_perpz;
-                
+
                 pair.parx.a512 = m_parx;
                 pair.pary.a512 = m_pary;
                 pair.parz.a512 = m_parz;
-                
+
                 union_mweight.m_weights = avx512_weight_func(&pair);
             }
-            
+
             const AVX512_MASK m_mask = m_mask_left;
             AVX512_FLOATS m_sbin     = AVX512_SETZERO_FLOAT();
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
@@ -310,9 +308,9 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                     weightavg[ibin] += union_mweight.weights[jj];
                 }
             }
-        }//loop over second set of particles 
-    }//loop over first set of particles 
-    
+        }//loop over second set of particles
+    }//loop over first set of particles
+
     for(int i=0;i<totnbins;i++) {
       src_npairs[i] += npairs[i];
       if(need_savg) {
@@ -337,7 +335,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                                                               const weight_struct_DOUBLE *weights1,
                                                               const int same_cell,
                                                               const unsigned int fast_divide_and_NR_steps,
-                                                              const DOUBLE smax, const DOUBLE smin, const int nsbin,const int nmu_bins,
+                                                              const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,const int nmu_bins,
                                                               const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                               const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                                               const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
@@ -358,8 +356,6 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     const DOUBLE sqr_mumax = mu_max*mu_max;
-    const DOUBLE sqr_smax  = smax*smax;
-    const DOUBLE sqr_smin  = smin*smin;
 
     AVX_FLOATS m_supp_sqr[nsbin];
     AVX_FLOATS m_kbin[nsbin];
@@ -400,7 +396,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
     }
 
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_all_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE max_all_dz = SQRT(sqr_smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -413,7 +409,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
         }
 
         DOUBLE max_dz = max_all_dz;
-        
+
         /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
            j' particles. The min. difference in the d-positions between this i'th particle and ANY
            of the remaining j'th particles, is the difference between the current j'th particle and
@@ -454,7 +450,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
            the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
            and the last j'th particle. Therefore, if this difference is already too large
            to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
-           
+
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
@@ -493,28 +489,28 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             union int8 union_finalbin;
             union float8 union_msep;
             union float8_weights union_mweight;
-            
+
             const AVX_FLOATS m_x2 = AVX_LOAD_FLOATS_UNALIGNED(localx1);
             const AVX_FLOATS m_y2 = AVX_LOAD_FLOATS_UNALIGNED(localy1);
             const AVX_FLOATS m_z2 = AVX_LOAD_FLOATS_UNALIGNED(localz1);
-            
+
             localx1 += AVX_NVEC;
             localy1 += AVX_NVEC;
             localz1 += AVX_NVEC;
-            
+
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].a = AVX_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
                 local_w1.weights[w] += AVX_NVEC;
             }
-            
+
             const AVX_FLOATS m_perpx = AVX_SUBTRACT_FLOATS(m_x2, m_xpos);
             const AVX_FLOATS m_perpy = AVX_SUBTRACT_FLOATS(m_y2, m_ypos);
             const AVX_FLOATS m_perpz = AVX_SUBTRACT_FLOATS(m_z2, m_zpos);
-            
+
             const AVX_FLOATS m_parx = AVX_ADD_FLOATS(m_x2, m_xpos);
             const AVX_FLOATS m_pary = AVX_ADD_FLOATS(m_y2, m_ypos);
             const AVX_FLOATS m_parz = AVX_ADD_FLOATS(m_z2, m_zpos);
-            
+
             /* Since the particles are sorted on 'z', we can check if any of the dz values >= max_dz */
             const AVX_FLOATS m_mask_dz = AVX_COMPARE_FLOATS(m_perpz, m_max_dz,_CMP_GE_OQ);
             if(AVX_TEST_COMPARISON(m_mask_dz) > 0) {
@@ -525,7 +521,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             /*
             //Technically l := 1/2 (v1 + v2) but the factor of 1/2 occurs both in numerator and denominator
             and cancels out.
-            
+
             s \dot l := (parx*perpx + pary*perpy + parz*perp)
             := (x1 + x2)*(x1 - x2) + (y1 + y2)*(y1 - y2) + (z1 + z2)*(z1 - z2)
             := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
@@ -536,12 +532,12 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const AVX_FLOATS m_term3 = AVX_MULTIPLY_FLOATS(m_parz, m_perpz);
             const AVX_FLOATS m_s_dot_l = AVX_ADD_FLOATS(m_term3, AVX_ADD_FLOATS(m_term2, m_term1));
             const AVX_FLOATS m_sqr_s_dot_l = AVX_SQUARE_FLOAT(m_s_dot_l);// numerator := |s.l|^2
-            
+
             const AVX_FLOATS m_sqr_perpx = AVX_SQUARE_FLOAT(m_perpx);
             const AVX_FLOATS m_sqr_perpy = AVX_SQUARE_FLOAT(m_perpy);
             const AVX_FLOATS m_sqr_perpz = AVX_SQUARE_FLOAT(m_perpz);
             AVX_FLOATS m_sqr_s = AVX_ADD_FLOATS(m_sqr_perpx, AVX_ADD_FLOATS(m_sqr_perpy, m_sqr_perpz));//3-d separation
-            
+
             //Create a mask where s^2 < smax^2
             const AVX_FLOATS m_mask_3d_sep = AVX_COMPARE_FLOATS(m_sqr_s, m_sqr_smax, _CMP_LT_OQ);
             if(AVX_TEST_COMPARISON(m_mask_3d_sep) == 0) {
@@ -550,14 +546,14 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const AVX_FLOATS m_sqr_norm_l = AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_parx),
                                                            AVX_ADD_FLOATS(AVX_SQUARE_FLOAT(m_pary),
                                                                           AVX_SQUARE_FLOAT(m_parz)));
-            
+
             // \mu^2 := cos^2(\theta_between_s_and_l) = |s.l|^2 / (|s|^2 * |l|^2)
             AVX_FLOATS m_sqr_mu = AVX_SETZERO_FLOAT();
             const AVX_FLOATS m_sqr_norm_l_norm_s = AVX_MULTIPLY_FLOATS(m_sqr_norm_l, m_sqr_s);
             CHECK_AND_FAST_DIVIDE_AVX(m_sqr_mu, m_sqr_s_dot_l, m_sqr_norm_l_norm_s, fast_divide_and_NR_steps);
-            
+
             const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(m_sqr_mu);
-            
+
             AVX_FLOATS m_mask_left;
             //Do the mask filters in a separate scope
             {
@@ -565,7 +561,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 const AVX_FLOATS m_smax_mask = AVX_COMPARE_FLOATS(m_sqr_s, m_sqr_smax, _CMP_LT_OQ);
                 const AVX_FLOATS m_smin_mask = AVX_COMPARE_FLOATS(m_sqr_s, m_sqr_smin, _CMP_GE_OQ);
                 const AVX_FLOATS m_s_mask = AVX_BITWISE_AND(m_smax_mask, m_smin_mask);
-                
+
                 m_mask_left = AVX_BITWISE_AND(m_mask_mumax, m_s_mask);
                 if(AVX_TEST_COMPARISON(m_mask_left)==0) {
                     continue;
@@ -573,7 +569,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 m_sqr_s = AVX_BLEND_FLOATS_WITH_MASK(m_zero,m_sqr_s,m_mask_left);
                 m_sqr_mu  = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax,m_sqr_mu,m_mask_left);
             }
-            
+
             if(need_savg) {
                 union_msep.m_Dperp = AVX_SQRT_FLOAT(m_sqr_s);
             }
@@ -581,14 +577,14 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 pair.dx.a = m_perpx;
                 pair.dy.a = m_perpy;
                 pair.dz.a = m_perpz;
-                
+
                 pair.parx.a = m_parx;
                 pair.pary.a = m_pary;
                 pair.parz.a = m_parz;
-                
+
                 union_mweight.m_weights = avx_weight_func(&pair);
             }
-            
+
             const AVX_FLOATS m_mask = m_mask_left;
             AVX_FLOATS m_sbin = AVX_SETZERO_FLOAT();
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
@@ -600,20 +596,20 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                     break;
                 }
             }
-            
+
             /* Compute the 1-D index to the [sbin, mubin] := sbin*(nmu_bins+1) + mubin */
             const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
             const AVX_FLOATS m_mubin = AVX_BLEND_FLOATS_WITH_MASK(m_nmu_bins, m_tmp2, m_mask);
             const AVX_FLOATS m_nmu_bins_p1 = AVX_ADD_FLOATS(m_nmu_bins,m_one);
             const AVX_FLOATS m_binproduct = AVX_ADD_FLOATS(AVX_MULTIPLY_FLOATS(m_sbin,m_nmu_bins_p1),m_mubin);
             union_finalbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_binproduct);
-            
+
 #if  __INTEL_COMPILER
 #pragma unroll(AVX_NVEC)
 #endif
             for(int jj=0;jj<AVX_NVEC;jj++) {
                 const int ibin=union_finalbin.ibin[jj];
-                
+
                 npairs[ibin]++;
                 if(need_savg) {
                     savg[ibin] += union_msep.Dperp[jj];
@@ -624,13 +620,13 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 }
             }
         }//AVX j loop
-        
+
         //Take care of the remainder
         for(;j<N1;j++) {
             const DOUBLE parx = xpos + *localx1;
             const DOUBLE pary = ypos + *localy1;
             const DOUBLE parz = zpos + *localz1;
-            
+
             const DOUBLE perpx = *localx1++ - xpos;
             const DOUBLE perpy = *localy1++ - ypos;
             const DOUBLE perpz = *localz1++ - zpos;
@@ -638,19 +634,19 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             /*
               s := (perpx, perpy, perpz)
               l := 1/2 (parx, pary, parz)  //ignoring the factor 1/2 since it cancels out in both numerator and denominator
-              
+
               s \dot l := (parx*perpx + pary*perpy + parz*perpz)
               := (x1 + x2)*(x1 - x2) + (y1 + y2)*(y1 - y2) + (z1 + z2)*(z1 - z2)
               := (x1^2 + y1^2 + z1^2) - (x2^2 + y2^2 + z2^2)
               := d1^2 - d2^2
             */
-            
+
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
 
             if(perpz >= max_dz) break;
-            
+
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
 
@@ -667,14 +663,14 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 pair.dx.d = perpx;
                 pair.dy.d = perpy;
                 pair.dz.d = perpz;
-                
+
                 pair.parx.d = parx;
                 pair.pary.d = pary;
                 pair.parz.d = parz;
-                
+
                 pairweight = fallback_weight_func(&pair);
             }
-	  
+
             for(int kbin=nsbin-1;kbin>=1;kbin--) {
                 if(sqr_s >= supp_sqr[kbin-1]) {
                     const int ibin = kbin*(nmu_bins+1) + mubin;
@@ -690,7 +686,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             }
         }//remainder jloop
     }//i-loop
-    
+
     for(int i=0;i<totnbins;i++) {
         src_npairs[i] += npairs[i];
         if(need_savg) {
@@ -714,7 +710,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
                                                               const weight_struct_DOUBLE *weights1,
                                                               const int same_cell,
                                                               const unsigned int fast_divide_and_NR_steps,
-                                                              const DOUBLE smax, const DOUBLE smin, const int nsbin,
+                                                              const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
                                                               const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                               const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                                               const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
@@ -735,8 +731,6 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     const DOUBLE sqr_mumax = mu_max*mu_max;
-    const DOUBLE sqr_smax  = smax*smax;
-    const DOUBLE sqr_smin  = smin*smin;
 
     SSE_FLOATS m_supp_sqr[nsbin];
     SSE_FLOATS m_kbin[nsbin];
@@ -777,7 +771,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
     }
 
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_all_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE max_all_dz = SQRT(sqr_smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -791,7 +785,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
 
         DOUBLE max_dz = max_all_dz;
-        
+
         /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
            j' particles. The min. difference in the d-positions between this i'th particle and ANY
            of the remaining j'th particles, is the difference between the current j'th particle and
@@ -823,7 +817,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             }
         }/* end of same_cell if condition*/
 
-        
+
         /* are there any pairs possible with this particle and ANY
            of the j'th particles?
            Since both z0 and z1 are sorted in increasing order,
@@ -833,7 +827,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
            the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
            and the last j'th particle. Therefore, if this difference is already too large
            to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
-           
+
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
@@ -876,7 +870,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             localx1 += SSE_NVEC;
             localy1 += SSE_NVEC;
             localz1 += SSE_NVEC;
-            
+
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].s = SSE_LOAD_FLOATS_UNALIGNED(local_w1.weights[w]);
                 local_w1.weights[w] += SSE_NVEC;
@@ -900,7 +894,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
                 j = N1;/* but do not break out of the loop because this chunk might contain valid pairs */
             }
 
-            
+
             SSE_FLOATS m_sqr_s, m_sqr_mu;
             {
                 const SSE_FLOATS m_term1 = SSE_MULTIPLY_FLOATS(m_parx, m_perpx);
@@ -1005,13 +999,13 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE perpx = *localx1++ - xpos;
             const DOUBLE perpy = *localy1++ - ypos;
             const DOUBLE perpz = *localz1++ - zpos;
-            
+
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
 
             if(perpz >= max_dz) break;
-            
+
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
 
@@ -1073,7 +1067,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                         const int same_cell,
                                                         const unsigned int fast_divide_and_NR_steps,
-                                                        const DOUBLE smax, const DOUBLE smin, const int nsbin,
+                                                        const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
                                                         const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max,
                                                         const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                                         const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
@@ -1089,13 +1083,10 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
         return EXIT_FAILURE;
     }
 
+    (void) fast_divide_and_NR_steps;//unused parameter but required to keep the same function signature amongst the kernels
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
 
-    (void) fast_divide_and_NR_steps;//unused parameter but required to keep the same function signature amongst the kernels
-
-    const DOUBLE sqr_smax  = smax*smax;
-    const DOUBLE sqr_smin  = smin*smin;
     const DOUBLE sqr_mumax = mu_max*mu_max;
 
     /*----------------- FALLBACK CODE --------------------*/
@@ -1130,7 +1121,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
     const DOUBLE inv_dmu = 1.0/dmu;
 
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_all_dz = SQRT(smax*smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE max_all_dz = SQRT(sqr_smax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -1140,7 +1131,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
         }
 
         DOUBLE max_dz = max_all_dz;
-        
+
         /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
            j' particles. The min. difference in the d-positions between this i'th particle and ANY
            of the remaining j'th particles, is the difference between the current j'th particle and
@@ -1181,7 +1172,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
            the current particle (i.e., the smallest remaining z-position among the 'i'-th dataset)
            and the last j'th particle. Therefore, if this difference is already too large
            to contain a valid pair, any remaining particle pairs CAN NOT be a valid pair
-           
+
            --> we can safely terminate the i-loop (i.e., terminate the calculation for this pair of
            cells)
         */
@@ -1216,9 +1207,9 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights1[w].d = *local_w1.weights[w]++;
             }
-            
+
             if(perpz >= max_dz) break;
-            
+
             const DOUBLE sqr_s = perpx*perpx + perpy*perpy + perpz*perpz;
             if(sqr_s >= sqr_smax || sqr_s < sqr_smin) continue;
 
@@ -1235,7 +1226,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
                 pair.dx.d = perpx;
                 pair.dy.d = perpy;
                 pair.dz.d = perpz;
-                
+
                 pair.parx.d = parx;
                 pair.pary.d = pary;
                 pair.parz.d = parz;

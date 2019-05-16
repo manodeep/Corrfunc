@@ -21,7 +21,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
                 fast_divide_and_NR_steps=0,
                 xbin_refine_factor=2, ybin_refine_factor=2,
                 zbin_refine_factor=1, max_cells_per_dim=100,
-                enable_min_sep_opt=True,
+                copy_particles=True, enable_min_sep_opt=True,
                 c_api_timer=False, isa='fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
@@ -39,14 +39,14 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 
     .. note:: This module only returns pair counts and not the actual
        correlation function :math:`\\xi(s, \mu)`. See the
-       utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` 
+       utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf`
        for computing :math:`\\xi(s, \mu)` from the pair counts.
-    
+
     .. versionadded:: 2.1.0
 
     Parameters
     ----------
-    
+
     autocorr: boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
         then the second set of particle positions are not required.
@@ -71,7 +71,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         enabled during library compilation.
 
     mu_max: double. Must be in range [0.0, 1.0]
-        A double-precision value for the maximum cosine of the angular 
+        A double-precision value for the maximum cosine of the angular
         separation from the line of sight (LOS). Here, ``mu`` is defined as
         the angle between ``s`` and ``l``. If :math:`v_1` and :math:`v_2`
         represent the vectors to each point constituting the pair, then
@@ -83,7 +83,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
     nmu_bins: int
         The number of linear ``mu`` bins, with the bins ranging from
         from (0, :math:`\mu_{max}`)
-    
+
     binfile: string or an list/array of floats
         For string input: filename specifying the ``s`` bins for
         ``DDsmu_mocks``. The file should contain white-space separated values
@@ -95,7 +95,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         bin-edges. For example,
         ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
         input specifying **14** (logarithmic) bins between 0.1 and 10.0. This
-        array does not need to be sorted.         
+        array does not need to be sorted.
 
     RA1: array-like, real (float/double)
         The array of Right Ascensions for the first set of points. RA's
@@ -178,7 +178,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         reciprocal, followed by ``fast_divide_and_NR_steps`` of Newton-Raphson.
         Can improve runtime by ~15-20% on older computers. Value of 0 uses
         the standard division operation.
-    
+
     (xyz)bin_refine_factor: integer, default is (2,2,1); typically within [1-3]
         Controls the refinement on the cell sizes. Can have up to a 20% impact
         on runtime.
@@ -188,17 +188,25 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
         too small relative to the boxsize (and increasing helps the runtime).
 
+    copy_particles: boolean (default True)
+        Boolean flag to make a copy of the particle positions
+        If set to False, the particles will be re-ordered in-place
+
+        .. versionadded:: 2.3.0
+
     enable_min_sep_opt: boolean (default true)
-       Boolean flag to allow optimizations based on min. separation between
-       pairs of cells. Here to allow for comparison studies.
-    
+        Boolean flag to allow optimizations based on min. separation between
+        pairs of cells. Here to allow for comparison studies.
+
+        .. versionadded:: 2.3.0
+
     c_api_timer: boolean (default false)
         Boolean flag to measure actual time spent in the C libraries. Here
         to allow for benchmarking and scaling studies.
 
     isa: string, case-insensitive (default ``fastest``)
-       Controls the runtime dispatch for the instruction set to use. Possible
-       options are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+       Controls the runtime dispatch for the instruction set to use. Options
+       are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
        Setting isa to ``fastest`` will pick the fastest available instruction
        set on the current computer. However, if you set ``isa`` to, say,
@@ -209,7 +217,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
        always leave ``isa`` to the default value. And if you *are*
        benchmarking, then the string supplied here gets translated into an
        ``enum`` for the instruction set defined in ``utils/defs.h``.
-    
+
     weight_type: string, optional (default None)
         The type of weighting to apply.  One of ["pair_product", None].
 
@@ -217,12 +225,14 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
     --------
 
     results: Numpy structured array
-        A numpy structured array containing [smin, smax, savg, mumax, npairs, weightavg]
-        for each separation bin specified in the ``binfile``. If ``output_savg`` is
-        not set, then ``savg`` will be set to 0.0 for all bins; similarly for
-        ``weightavg``. ``npairs`` contains the number of pairs in that bin and
-        can be used to compute the actual :math:`\\xi(s, \mu)` by combining
-        with (DR, RR) counts.
+        A numpy structured array containing [smin, smax, savg, mumax,
+        npairs, weightavg]. There are a total of ``nmu_bins`` in ``mu``
+        for each separation bin specified in the ``binfile``, with ``mumax``
+        being the upper limit of the ``mu`` bin. If ``output_savg`` is  not
+        set, then ``savg`` will be set to 0.0 for all bins; similarly for
+        ``weightavg``. ``npairs`` contains the number of pairs in that bin
+        and can be used to compute the actual :math:`\\xi(s, \mu)` by
+        combining with (DR, RR) counts.
 
     api_time: float, optional
         Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
@@ -253,13 +263,13 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
               "The code is expecting a scalar quantity (and not "\
               "not a list, array)".format(mu_max, np.size(mu_max))
         raise TypeError(msg)
-    
+
     # Check that mu_max is within (0.0, 1.0]
     if mu_max <= 0.0 or mu_max > 1.0:
         msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "
         "angle and should be within (0.0, 1.0]".format(mu_max)
         raise ValueError(msg)
-    
+
     if not autocorr:
         if RA2 is None or DEC2 is None or CZ2 is None:
             msg = "Must pass valid arrays for RA2/DEC2/CZ2 for "\
@@ -302,6 +312,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
                                   ybin_refine_factor=ybin_refine_factor,
                                   zbin_refine_factor=zbin_refine_factor,
                                   max_cells_per_dim=max_cells_per_dim,
+                                  copy_particles=copy_particles,
                                   enable_min_sep_opt=enable_min_sep_opt,
                                   c_api_timer=c_api_timer,
                                   isa=integer_isa, **kwargs)

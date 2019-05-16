@@ -77,156 +77,163 @@ static PyMethodDef module_methods[] = {
      "                       verbose=False, output_rpavg=False,\n"
      "                       fast_divide_and_NR_steps=0, xbin_refine_factor=2, \n"
      "                       ybin_refine_factor=2, zbin_refine_factor=1, \n"
-     "                       max_cells_per_dim=100, enable_min_sep_opt=True,\n"
-     "                       c_api_timer=False, isa=-1)\n"
-     "\n"
+     "                       max_cells_per_dim=100, copy_particles=True,\n"
+     "                       enable_min_sep_opt=True, c_api_timer=False, isa=-1)\n\n"
+
      "Calculate the 2-D pair-counts, "XI_CHAR"("RP_CHAR", "PI_CHAR"), auto/cross-correlation function given two\n"
      "sets of RA1/DEC1/CZ1 and RA2/DEC2/CZ2 arrays. This module is suitable for mock catalogs that have been\n"
      "created by carving out a survey footprint from simulated data. The module can also be used for actual\n"
      "observed galaxies, but you probably want to attach weights to the points to account for completeness etc.\n"
-     "Default bins in "PI_CHAR"\n"
-     "are set to 1.0 Mpc/h.\n"
-     "\n"
+     "Default bins in "PI_CHAR" are set to 1.0 Mpc/h.\n\n"
+
      "Note, that this module only returns pair counts and not the actual correlation function\n"
      ""XI_CHAR"("RP_CHAR", "PI_CHAR"). See the `~Corrfunc.utils.convert_3d_counts_to_cf.py and \n"
      "`~Corrfunc.utils.convert_rp_pi_counts_to_wp.py for computing "XI_CHAR"("RP_CHAR","PI_CHAR") \n"
      "and wp("RP_CHAR") from DD("RP_CHAR", "PI_CHAR").\n"
-     UNICODE_WARNING
-     "\n"
+     UNICODE_WARNING"\n\n"
+
      "Parameters\n"
      "----------\n"
-     "Every parameter can be passed as a keyword of the corresponding name.\n"
-     "\n"
+     "Every parameter can be passed as a keyword of the corresponding name.\n\n"
+
      "autocorr: boolean\n"
      "    Flag for auto/cross-correlation. If autocorr is not 0, the RA2/DEC2/CZ2 arrays\n"
-     "    are not used (but must still be passed, as RA1/DEC1/CZ1).\n"
-     "\n"
+     "    are not used (but must still be passed, as RA1/DEC1/CZ1).\n\n"
+
      "cosmology: integer\n"
      "    Integer to select cosmology. Pre-set values for (1,2) \n"
      "    1 -> LasDamas cosmology. Om=0.25,  Ol=0.75  (other values are not used)\n"
      "    2 -> Planck   cosmology. Om=0.302, Ol=0.698 \n"
      "    To setup a new cosmology, add an entry to the function, `init_cosmology` in \n"
-     "    `ROOT/utils/cosmology_params.c` and recompile the package.\n"
-     "\n"
+     "    `ROOT/utils/cosmology_params.c` and recompile the package.\n\n"
+
      "nthreads: integer\n"
      "    The number of OpenMP threads to use. Has no effect if OpenMP was not used\n"
-     "    during library compilation. \n"
-     "\n"
+     "    during library compilation. \n\n"
+
      ""PIMAX_CHAR": double (Mpc/h)\n"
      "    The max. integration distance along the "PI_CHAR" direction in Mpc/h. Typical\n"
-     "    values are in the range 40-100 Mpc/h.\n"
-     "\n"
+     "    values are in the range 40-100 Mpc/h.\n\n"
+
      "binfile: filename\n"
      "    Filename containing the radial bins for the correlation function. The file\n"
      "    is expected to contain white-space separated ``rpmin  rpmax`` with the bin\n"
      "    edges.  Units must be Mpc/h (see the ``bins`` file in the tests directory\n"
      "    for a sample). For usual logarithmic bins, ``logbins``in the root directory\n"
-     "    of this package will create a compatible ``binfile``.\n"
-     "\n"
+     "    of this package will create a compatible ``binfile``.\n\n"
+
      "RA1: array-like, float/double (default double)\n"
      "    The right-ascension of the galaxy, in the range [0, 360]. If there are\n"
      "    negative RA's in the supplied array (input RA in the range [-180, 180]),\n"
      "    then the code will shift the entire array by 180 to put RA's in the\n"
-     "    [0, 360] range.\n"
-     "\n"
+     "    [0, 360] range.\n\n"
+
      "DEC1: array-like, float/double (default double)\n"
      "    The declination of the galaxy, in the range [-90, 90]. If there are\n"
      "    declinations > 90 in the supplied array (input dec in the range [0, 180]),\n"
      "    then the code will shift the entire array by -90 to put declinations in\n"
      "    the [-90, 90] range. If the code finds declinations more than 180, then\n"
-     "    it assumes RA and DEC have been swapped and aborts with that message.\n"
-     "\n"
+     "    it assumes RA and DEC have been swapped and aborts with that message.\n\n"
+
      "CZ1: array-like, float/double (default double)\n"
      "    The redshift multiplied by speed of light for the galaxies. The code will\n"
      "    checks that cz has been supplied by comparing with a threshold (currently\n"
      "    set to 10, defined in function check_ra_dec_cz in file\n"
      "    `DDrppi_mocks/countpairs_rp_pi_mocks_impl.c.src`) and multiplies by the speed of light if\n"
      "    max z is less than that threshold. If you really want to change the speed\n"
-     "    of light, then edit the macro in `ROOT/utils/set_cosmo_dist.h`.\n"
-     "\n"
+     "    of light, then edit the macro in `ROOT/utils/set_cosmo_dist.h`.\n\n"
 
      "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
-     "   Weights for computing a weighted pair count.\n\n"
+     "    Weights for computing a weighted pair count.\n\n"
 
      "weight_type : str, optional\n"
-     "   The type of pair weighting to apply.\n"
-     "   Options: \"pair_product\", None\n"
-     "   Default: None.\n\n"
+     "    The type of pair weighting to apply.\n"
+     "    Options: \"pair_product\", None\n"
+     "    Default: None.\n\n"
 
      "RA2/DEC2/CZ2: float/double (default double)\n"
-     "    Same as for RA1/DEC1/CZ1\n"
-     "\n"
+     "    Same as for RA1/DEC1/CZ1\n\n"
 
      "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
-     "   Weights for computing a weighted pair count."
+     "    Weights for computing a weighted pair count.\n\n"
 
      "is_comoving_dist: boolean (default false)\n"
-     "   Boolean flag to indicate that ``cz`` values have already been\n"
-     "   converted into co-moving distances. This flag allows arbitrary\n"
-     "   cosmologies to be used in ``Corrfunc``.\n"
-     "\n"
-     "verbose : boolean (default false)\n"
-     "   Boolean flag to control output of informational messages\n"
-     "\n"
-     "output_rpavg : boolean (default false)\n"
-     "   Boolean flag to output the average ``rp`` for each bin. Code will\n"
-     "   run slightly slower if you set this flag. Also, note, if you are calculating\n"
-     "   in single-precision, ``rpavg`` will suffer from numerical loss of\n"
-     "   precision and can not be trusted. If you need accurate ``rpavg``\n"
-     "   values, then pass in double precision arrays for the particle positions.\n"
-     "\n"
-     "fast_divide_and_NR_steps: integer (default 0)\n"
-     "   Replaces the division in ``AVX512F`` and ``AVX`` implementation with an\n"
-     "   approximate reciprocal, followed by ``fast_divide_and_NR_steps`` "
-     "   Newton-Raphson step. Can improve \n"
-     "   runtime by ~15-20%. Value of 0 keeps the standard division.\n"
-     "\n"
-     "(xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3]) \n"
-     "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
-     "   on runtime. \n"
-     "\n"
-     "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
-     "   Controls the maximum number of cells per dimension. Total number of cells \n"
-     "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
-     "   relative to the boxsize (and increasing helps the runtime). \n"
-     "\n"
-     "enable_min_sep_opt: boolean (default true)\n"
-     "   Boolean flag to allow optimizations based on min. separation between pairs \n"
-     "   of cells. Here to allow for comparison studies.\n"
-     "\n"
-     "c_api_timer : boolean (default false)\n"
-     "   Boolean flag to measure actual time spent in the C libraries. Here\n"
-     "   to allow for benchmarking and scaling studies.\n"
-     "\n"
-     "isa : integer (default -1)\n"
-     "  Controls the runtime dispatch for the instruction set to use. Possible\n"
-     "  options are: [-1, AVX512F, AVX, SSE42, FALLBACK]\n\n"
-     "  Setting isa to -1 will pick the fastest available instruction\n"
-     "  set on the current computer. However, if you set ``isa`` to, say,\n"
-     "  ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
-     "  revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n\n"
+     "    Boolean flag to indicate that ``cz`` values have already been\n"
+     "    converted into co-moving distances. This flag allows arbitrary\n"
+     "    cosmologies to be used in ``Corrfunc``.\n\n"
 
-     "  Unless you are benchmarking the different instruction sets, you should\n"
-     "  always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
-     "  then the integer values correspond to the ``enum`` for the instruction set\n"
-     "  defined in ``utils/defs.h``.\n"
+     "verbose : boolean (default false)\n"
+     "    Boolean flag to control output of informational messages\n\n"
+
+     "output_rpavg : boolean (default false)\n"
+     "    Boolean flag to output the average ``rp`` for each bin. Code will\n"
+     "    run slightly slower if you set this flag. Also, note, if you are calculating\n"
+     "    in single-precision, ``rpavg`` will suffer from numerical loss of\n"
+     "    precision and can not be trusted. If you need accurate ``rpavg``\n"
+     "    values, then pass in double precision arrays for the particle positions.\n\n"
+
+     "fast_divide_and_NR_steps: integer (default 0)\n"
+     "    Replaces the division in ``AVX512F`` and ``AVX`` implementation with an\n"
+     "    approximate reciprocal, followed by ``fast_divide_and_NR_steps`` "
+     "    Newton-Raphson step. Can improve \n"
+     "    runtime by ~15-20%. Value of 0 keeps the standard division.\n\n"
+
+     "(xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3]) \n"
+     "    Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
+     "    on runtime. \n\n"
+
+     "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
+     "    Controls the maximum number of cells per dimension. Total number of cells \n"
+     "    can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
+     "    relative to the boxsize (and increasing helps the runtime). \n\n"
+
+     "copy_particles: boolean (default True)\n"
+     "    Boolean flag to make a copy of the particle positions\n"
+     "    If set to False, the particles will be re-ordered in-place\n\n"
+
+     "enable_min_sep_opt: boolean (default true)\n"
+     "    Boolean flag to allow optimizations based on min. separation between pairs \n"
+     "    of cells. Here to allow for comparison studies.\n\n"
+
+     "c_api_timer : boolean (default false)\n"
+     "    Boolean flag to measure actual time spent in the C libraries. Here\n"
+     "    to allow for benchmarking and scaling studies.\n\n"
+
+     "isa : integer (default -1)\n"
+     "    Controls the runtime dispatch for the instruction set to use. Possible\n"
+     "    options are: [-1, AVX512F, AVX, SSE42, FALLBACK]\n\n"
+     "    Setting isa to -1 will pick the fastest available instruction\n"
+     "    set on the current computer. However, if you set ``isa`` to, say,\n"
+     "    ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
+     "    revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n"
      "\n"
-     
+     "    Unless you are benchmarking the different instruction sets, you should\n"
+     "    always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
+     "    then the integer values correspond to the ``enum`` for the instruction set\n"
+     "    defined in ``utils/defs.h``.\n\n"
+
      "Returns\n"
-     "--------\n"
-     "\n"
-     "a Python list containing [rpmin, rpmax, rpavg, "PI_CHAR", npairs, weightavg] \n"
-     "for each "PI_CHAR"-bin (up to "PIMAX_CHAR") for each radial bin specified in\n"
-     "the ``binfile``. For instance, for a ``"PIMAX_CHAR"`` of 40.0 Mpc/h, each radial\n"
-     "bin will be split into 40 "PI_CHAR" bins (default "PI_CHAR" bin is 1.0). Thus, the\n"
-     "total number of items in the list is {(int) ``"PIMAX_CHAR"`` * number of rp bins}.\n"
-     "If ``output_rpavg`` is not set then ``rpavg`` will be set to 0.0 for all bins; similarly for ``weight_avg``. \n"
-     ""PI_CHAR" for each bin is the upper limit of the "PI_CHAR" values that were \n"
-     "considered in that ("RP_CHAR", "PI_CHAR") bin. ``npairs``contains the number of pairs\n"
-     "in that bin and can be used to compute the actual "XI_CHAR"("RP_CHAR", "PI_CHAR") by\n"
-     "combining with RR counts. The C struct is identical to the one in \n"
-     "`theory/DDrppi/countpairs_rp_pi.h`)\n"
-     "\n"
+     "--------\n\n"
+
+     "A tuple (results, time) \n\n"
+
+     "results : Python list \n"
+     "    Contains [rpmin, rpmax, rpavg, "PI_CHAR", npairs, weightavg] \n"
+     "    for each "PI_CHAR"-bin (up to "PIMAX_CHAR") for each radial bin specified in\n"
+     "    the ``binfile``. For instance, for a ``"PIMAX_CHAR"`` of 40.0 Mpc/h, each radial\n"
+     "    bin will be split into 40 "PI_CHAR" bins (default "PI_CHAR" bin is 1.0). Thus, the\n"
+     "    total number of items in the list is {(int) ``"PIMAX_CHAR"`` * number of rp bins}.\n"
+     "    If ``output_rpavg`` is not set then ``rpavg`` will be set to 0.0 for all bins; similarly for ``weight_avg``. \n"
+     "    "PI_CHAR" for each bin is the upper limit of the "PI_CHAR" values that were \n"
+     "    considered in that ("RP_CHAR", "PI_CHAR") bin. ``npairs``contains the number of pairs\n"
+     "    in that bin and can be used to compute the actual "XI_CHAR"("RP_CHAR", "PI_CHAR") by\n"
+     "    combining with RR counts. combining  DD, (DR) and RR counts. \n"
+     "    See ``~Corrfunc.utils.convert_3d_counts_to_cf``\n\n"
+
+     "time : double\n"
+     "    if ``c_api_timer`` is set, then the return value contains the time spent\n"
+     "    in the API; otherwise time is set to 0.0\n\n"
+
      "Example\n"
      "-------\n"
      ">>> import numpy as np\n"
@@ -243,166 +250,179 @@ static PyMethodDef module_methods[] = {
      "\n"
     },
     {"countpairs_s_mu_mocks"       ,(PyCFunction) countpairs_countpairs_s_mu_mocks ,METH_VARARGS | METH_KEYWORDS,
-         "countpairs_s_mu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,\n"
-         "                       RA1, DEC1, CZ1, weights1=None, weight_type=None,\n"
-         "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
-         "                       is_comoving_dist=False,\n"
-         "                       verbose=False, output_savg=False,\n"
-         "                       fast_divide_and_NR_steps=0, xbin_refine_factor=2, \n"
-         "                       ybin_refine_factor=2, zbin_refine_factor=1, \n"
-         "                       max_cells_per_dim=100, enable_min_sep_opt=True,\n"
-         "                       c_api_timer=False, isa=-1)\n"
-         "\n"
-         "Calculate the 2-D pair-counts, "XI_CHAR"(s, "MU_CHAR"), auto/cross-correlation function given two\n"
-         "sets of RA1/DEC1/CZ1 and RA2/DEC2/CZ2 arrays. This module is suitable for mock catalogs that have been\n"
-         "created by carving out a survey footprint from simulated data. The module can also be used for actual\n"
-         "observed galaxies, but you probably want to attach weights to the points to account for completeness etc.\n"
-         "\n"
-         UNICODE_WARNING
-         "\n"
-         "Parameters\n"
-         "----------\n"
-         "Every parameter can be passed as a keyword of the corresponding name.\n"
-         "\n"
-         "autocorr: boolean\n"
-         "    Flag for auto/cross-correlation. If autocorr is not 0, the RA2/DEC2/CZ2 arrays\n"
-         "    are not used (but must still be passed, as RA1/DEC1/CZ1).\n"
-         "\n"
-         "cosmology: integer\n"
-         "    Integer to select cosmology. Pre-set values for (1,2) \n"
-         "    1 -> LasDamas cosmology. Om=0.25,  Ol=0.75  (other values are not used)\n"
-         "    2 -> Planck   cosmology. Om=0.302, Ol=0.698 \n"
-         "    To setup a new cosmology, add an entry to the function, `init_cosmology` in \n"
-         "    `ROOT/utils/cosmology_params.c` and recompile the package.\n"
-         "\n"
-         "nthreads: integer\n"
-         "    The number of OpenMP threads to use. Has no effect if OpenMP was not used\n"
-         "    during library compilation. \n"
-         "\n"
-         "mu_max: double \n"
-         "    The maximum mu value to use; must be > 0 and <= 1.0\n"
-         "\n"
-         "nmu_bins: int \n"
-         "    The number of "MU_CHAR" bins to use, binning from [0.0, mumax)\n"
-         "\n"
-         "binfile: filename\n"
-         "    Filename containing the radial bins for the correlation function. The file\n"
-         "    is expected to contain white-space separated ``smin  smax`` with the bin\n"
-         "    edges.  Units must be Mpc/h (see the ``bins`` file in the tests directory\n"
-         "    for a sample). For usual logarithmic bins, ``logbins``in the root directory\n"
-         "    of this package will create a compatible ``binfile``.\n"
-         "\n"
-         "RA1: array-like, float/double (default double)\n"
-         "    The right-ascension of the galaxy, in the range [0, 360]. If there are\n"
-         "    negative RA's in the supplied array (input RA in the range [-180, 180]),\n"
-         "    then the code will shift the entire array by 180 to put RA's in the\n"
-         "    [0, 360] range.\n"
-         "\n"
-         "DEC1: array-like, float/double (default double)\n"
-         "    The declination of the galaxy, in the range [-90, 90]. If there are\n"
-         "    declinations > 90 in the supplied array (input dec in the range [0, 180]),\n"
-         "    then the code will shift the entire array by -90 to put declinations in\n"
-         "    the [-90, 90] range. If the code finds declinations more than 180, then\n"
-         "    it assumes RA and DEC have been swapped and aborts with that message.\n"
-         "\n"
-         "CZ1: array-like, float/double (default double)\n"
-         "    The redshift multiplied by speed of light for the galaxies. The code will\n"
-         "    checks that cz has been supplied by comparing with a threshold (currently\n"
-         "    set to 10, defined in function check_ra_dec_cz in file\n"
-         "    `DDrppi/countpairs_rp_pi_mocks_impl.c.src`) and multiplies by the speed of light if\n"
-         "    max z is less than that threshold. If you really want to change the speed\n"
-         "    of light, then edit the macro in `ROOT/utils/set_cosmo_dist.h`.\n"
-         "\n"
+     "countpairs_s_mu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,\n"
+     "                       RA1, DEC1, CZ1, weights1=None, weight_type=None,\n"
+     "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
+     "                       is_comoving_dist=False,\n"
+     "                       verbose=False, output_savg=False,\n"
+     "                       fast_divide_and_NR_steps=0, xbin_refine_factor=2, \n"
+     "                       ybin_refine_factor=2, zbin_refine_factor=1, \n"
+     "                       max_cells_per_dim=100, copy_particles=True, \n"
+     "                       enable_min_sep_opt=True, c_api_timer=False, isa=-1)\n\n"
 
-         "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
-         "   Weights for computing a weighted pair count.\n\n"
+     "Calculate the 2-D pair-counts, "XI_CHAR"(s, "MU_CHAR"), auto/cross-correlation function given two\n"
+     "sets of RA1/DEC1/CZ1 and RA2/DEC2/CZ2 arrays. This module is suitable for mock catalogs that have been\n"
+     "created by carving out a survey footprint from simulated data. The module can also be used for actual\n"
+     "observed galaxies, but you probably want to attach weights to the points to account for completeness etc.\n"
+     "\n"
+     UNICODE_WARNING
+     "\n"
+     "Parameters\n"
+     "----------\n"
+     "Every parameter can be passed as a keyword of the corresponding name.\n\n"
 
-         "weight_type : str, optional\n"
-         "   The type of pair weighting to apply.\n"
-         "   Options: \"pair_product\", None\n"
-         "   Default: None.\n\n"
+     "autocorr: boolean\n"
+     "    Flag for auto/cross-correlation. If autocorr is not 0, the RA2/DEC2/CZ2 arrays\n"
+     "    are not used (but must still be passed, as RA1/DEC1/CZ1).\n\n"
 
-         "RA2/DEC2/CZ2: float/double (default double)\n"
-         "    Same as for RA1/DEC1/CZ1\n"
-         "\n"
+     "cosmology: integer\n"
+     "    Integer to select cosmology. Pre-set values for (1,2) \n"
+     "    1 -> LasDamas cosmology. Om=0.25,  Ol=0.75  (other values are not used)\n"
+     "    2 -> Planck   cosmology. Om=0.302, Ol=0.698 \n"
+     "    To setup a new cosmology, add an entry to the function, `init_cosmology` in \n"
+     "    `ROOT/utils/cosmology_params.c` and recompile the package.\n\n"
 
-         "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
-         "   Weights for computing a weighted pair count."
+     "nthreads: integer\n"
+     "    The number of OpenMP threads to use. Has no effect if OpenMP was not used\n"
+     "    during library compilation. \n\n"
 
-         "is_comoving_dist: boolean (default false)\n"
-         "   Boolean flag to indicate that ``cz`` values have already been\n"
-         "   converted into co-moving distances. This flag allows arbitrary\n"
-         "   cosmologies to be used in ``Corrfunc``.\n"
-         "\n"
-         "verbose : boolean (default false)\n"
-         "   Boolean flag to control output of informational messages\n"
-         "\n"
-         "output_savg : boolean (default false)\n"
-         "   Boolean flag to output the average ``s`` for each bin. Code will\n"
-         "   run slightly slower if you set this flag. Also, note, if you are calculating\n"
-         "   in single-precision, ``savg`` will suffer from numerical loss of\n"
-         "   precision and can not be trusted. If you need accurate ``savg``\n"
-         "   values, then pass in double precision arrays for the particle positions.\n"
-         "\n"
-         "fast_divide_and_NR_steps: integer (default 0)\n"
-         "   Replaces the division in ``AVX512F`` and ``AVX`` implementation with an\n"
-         "   approximate reciprocal, followed by ``fast_divide_and_NR_steps`` "
-         "   Newton-Raphson step. Can improve \n"
-         "   runtime by ~15-20%. Value of 0 keeps the standard division.\n"
-         "\n"
-         "(xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3]) \n"
-         "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
-         "   on runtime. \n"
-         "\n"
-         "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
-         "   Controls the maximum number of cells per dimension. Total number of cells \n"
-         "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
-         "   relative to the boxsize (and increasing helps the runtime). \n"
-         "\n"
-         "enable_min_sep_opt: boolean (default true)\n"
-         "   Boolean flag to allow optimizations based on min. separation between pairs \n"
-         "   of cells. Here to allow for comparison studies.\n"
-         "\n"
-         "c_api_timer : boolean (default false)\n"
-         "   Boolean flag to measure actual time spent in the C libraries. Here\n"
-         "   to allow for benchmarking and scaling studies.\n"
-         "\n"
-         "isa : integer (default -1)\n"
-         "  Controls the runtime dispatch for the instruction set to use. Possible\n"
-         "  options are: [-1, AVX512F, AVX, SSE42, FALLBACK]\n\n"
-         "  Setting isa to -1 will pick the fastest available instruction\n"
-         "  set on the current computer. However, if you set ``isa`` to, say,\n"
-         "  ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
-         "  revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n\n"
+     "mu_max: double \n"
+     "    The maximum mu value to use; must be > 0 and <= 1.0\n\n"
 
-         "  Unless you are benchmarking the different instruction sets, you should\n"
-         "  always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
-         "  then the integer values correspond to the ``enum`` for the instruction set\n"
-         "  defined in ``utils/defs.h``.\n"
-         "\n"
-         "Returns\n"
-         "--------\n"
-         "\n"
-         "a Python list containing [smin, smax, savg, "MU_CHAR", npairs, weightavg] \n"
-         "for each "MU_CHAR"-bin (up to 1.0) for each radial bin specified in\n"
-         "the ``binfile``.\n"
-         "\n"
-         "Example\n"
-         "-------\n"
-         ">>> import numpy as np\n"
-         ">>> from Corrfunc._countpairs_mocks import countpairs_s_mu_mocks\n"
-         ">>> ra,dec,cz = np.genfromtxt('../mocks/tests/data/Mr19_mock_northonly.rdcz.dat',dtype=np.float,unpack=True)\n"
-         ">>> cosmology=1\n"
-         ">>> autocorr=1\n"
-         ">>> nthreads=4\n"
-         ">>> binfile='../mocks/tests/bins'\n"
-         ">>> nmu_bins=10\n"
-         ">>> mu_max=1.0\n"
-         ">>> (DDsmu, time) = countpairs_s_mu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,\n"
-         "                                            ra,dec,cz,ra,dec,cz,\n"
-         "                                            verbose=True)\n"
-         "\n"
-        },
+     "nmu_bins: int \n"
+     "    The number of "MU_CHAR" bins to use, binning from [0.0, mu_max)\n\n"
+
+     "binfile: filename\n"
+     "    Filename containing the radial bins for the correlation function. The file\n"
+     "    is expected to contain white-space separated ``smin  smax`` with the bin\n"
+     "    edges.  Units must be Mpc/h (see the ``bins`` file in the tests directory\n"
+     "    for a sample). For usual logarithmic bins, ``logbins``in the root directory\n"
+     "    of this package will create a compatible ``binfile``.\n\n"
+
+     "RA1: array-like, float/double (default double)\n"
+     "    The right-ascension of the galaxy, in the range [0, 360]. If there are\n"
+     "    negative RA's in the supplied array (input RA in the range [-180, 180]),\n"
+     "    then the code will shift the entire array by 180 to put RA's in the\n"
+     "    [0, 360] range.\n\n"
+
+     "DEC1: array-like, float/double (default double)\n"
+     "    The declination of the galaxy, in the range [-90, 90]. If there are\n"
+     "    declinations > 90 in the supplied array (input dec in the range [0, 180]),\n"
+     "    then the code will shift the entire array by -90 to put declinations in\n"
+     "    the [-90, 90] range. If the code finds declinations more than 180, then\n"
+     "    it assumes RA and DEC have been swapped and aborts with that message.\n\n"
+
+     "CZ1: array-like, float/double (default double)\n"
+     "    The redshift multiplied by speed of light for the galaxies. The code will\n"
+     "    checks that cz has been supplied by comparing with a threshold (currently\n"
+     "    set to 10, defined in function check_ra_dec_cz in file\n"
+     "    `DDrppi/countpairs_rp_pi_mocks_impl.c.src`) and multiplies by the speed of light if\n"
+     "    max z is less than that threshold. If you really want to change the speed\n"
+     "    of light, then edit the macro in `ROOT/utils/set_cosmo_dist.h`.\n\n"
+
+     "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
+     "    Weights for computing a weighted pair count.\n\n"
+
+     "weight_type : str, optional\n"
+     "    The type of pair weighting to apply.\n"
+     "    Options: \"pair_product\", None\n"
+     "    Default: None.\n\n"
+
+     "RA2/DEC2/CZ2: float/double (default double)\n"
+     "    Same as for RA1/DEC1/CZ1\n\n"
+
+     "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
+     "    Weights for computing a weighted pair count.\n\n"
+
+     "is_comoving_dist: boolean (default false)\n"
+     "    Boolean flag to indicate that ``cz`` values have already been\n"
+     "    converted into co-moving distances. This flag allows arbitrary\n"
+     "    cosmologies to be used in ``Corrfunc``.\n\n"
+
+     "verbose : boolean (default false)\n"
+     "    Boolean flag to control output of informational messages\n\n"
+
+     "output_savg : boolean (default false)\n"
+     "    Boolean flag to output the average ``s`` for each bin. Code will\n"
+     "    run slightly slower if you set this flag. Also, note, if you are calculating\n"
+     "    in single-precision, ``savg`` will suffer from numerical loss of\n"
+     "    precision and can not be trusted. If you need accurate ``savg``\n"
+     "    values, then pass in double precision arrays for the particle positions.\n\n"
+
+     "fast_divide_and_NR_steps: integer (default 0)\n"
+     "    Replaces the division in ``AVX512F`` and ``AVX`` implementation with an\n"
+     "    approximate reciprocal, followed by ``fast_divide_and_NR_steps`` "
+     "    Newton-Raphson step. Can improve \n"
+     "    runtime by ~15-20%. Value of 0 keeps the standard division.\n\n"
+
+     "(xyz)bin_refine_factor: integer (default (2,2,1) typical values in [1-3]) \n"
+     "    Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
+     "    on runtime. \n\n"
+
+     "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
+     "    Controls the maximum number of cells per dimension. Total number of cells \n"
+     "    can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
+     "    relative to the boxsize (and increasing helps the runtime).\n\n"
+
+     "copy_particles: boolean (default True)\n"
+     "    Boolean flag to make a copy of the particle positions\n"
+     "    If set to False, the particles will be re-ordered in-place\n\n"
+
+     "enable_min_sep_opt: boolean (default true)\n"
+     "    Boolean flag to allow optimizations based on min. separation between pairs \n"
+     "    of cells. Here to allow for comparison studies.\n\n"
+
+     "c_api_timer : boolean (default false)\n"
+     "    Boolean flag to measure actual time spent in the C libraries. Here\n"
+     "    to allow for benchmarking and scaling studies.\n\n"
+
+     "isa : integer (default -1)\n"
+     "    Controls the runtime dispatch for the instruction set to use. Possible\n"
+     "    options are: [-1, AVX512F, AVX, SSE42, FALLBACK]\n\n"
+     "    Setting isa to -1 will pick the fastest available instruction\n"
+     "    set on the current computer. However, if you set ``isa`` to, say,\n"
+     "    ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
+     "    revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n"
+     "\n"
+     "    Unless you are benchmarking the different instruction sets, you should\n"
+     "    always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
+     "    then the integer values correspond to the ``enum`` for the instruction set\n"
+     "    defined in ``utils/defs.h``.\n\n"
+
+     "Returns\n"
+     "--------\n\n"
+
+     "A tuple (results, time) \n\n"
+
+     "results : Python list \n"
+     "    Contains [smin, smax, savg, "MU_CHAR", npairs, weightavg] \n"
+     "    for each "MU_CHAR"-bin (up to 1.0) for each radial bin specified in\n"
+     "    the ``binfile``.  If ``output_savg`` is not set, then\n"
+     "    ``savg`` will be set to 0.0 for all bins; similarly for ``weightavg``.\n"
+     "    ``npairs`` contains the number of pairs in that bin and can be used to \n"
+     "    compute the actual "XI_CHAR"(s, "MU_CHAR") by combining  DD, (DR) and RR counts. \n"
+     "    See ``~Corrfunc.utils.convert_3d_counts_to_cf``\n\n"
+
+     "time : double\n"
+     "    if ``c_api_timer`` is set, then the return value contains the time spent\n"
+     "    in the API; otherwise time is set to 0.0\n\n"
+
+     "Example\n"
+     "-------\n"
+     ">>> import numpy as np\n"
+     ">>> from Corrfunc._countpairs_mocks import countpairs_s_mu_mocks\n"
+     ">>> ra,dec,cz = np.genfromtxt('../mocks/tests/data/Mr19_mock_northonly.rdcz.dat',dtype=np.float,unpack=True)\n"
+     ">>> cosmology=1\n"
+     ">>> autocorr=1\n"
+     ">>> nthreads=4\n"
+     ">>> binfile='../mocks/tests/bins'\n"
+     ">>> nmu_bins=10\n"
+     ">>> mu_max=1.0\n"
+     ">>> (DDsmu, time) = countpairs_s_mu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,\n"
+     "                                            ra,dec,cz,ra,dec,cz,\n"
+     "                                            verbose=True)\n"
+     "\n"
+    },
     {"countpairs_theta_mocks"       ,(PyCFunction) countpairs_countpairs_theta_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_theta_mocks(autocorr, nthreads, binfile,\n"
      "                       RA1, DEC1, weights1=None, weight_type=None,\n"
@@ -411,6 +431,7 @@ static PyMethodDef module_methods[] = {
      "                       verbose=False, output_thetaavg=False,\n"
      "                       fast_acos=False, ra_refine_factor=2,\n"
      "                       dec_refine_factor=2, max_cells_per_dim=100, \n"
+     "                       copy_particles=True, enable_min_sep_opt=True, \n"
      "                       c_api_timer=False, isa='fastest')\n"
      "\n"
      "Calculate the angular pair-counts, required for "OMEGA_CHAR"("THETA_CHAR"), auto/cross-correlation function given two\n"
@@ -426,126 +447,136 @@ static PyMethodDef module_methods[] = {
      "\n"
      "Parameters\n"
      "-----------\n"
-     "Every parameter can be passed as a keyword of the corresponding name.\n"
-     "\n"
+     "Every parameter can be passed as a keyword of the corresponding name.\n\n"
+
      "autocorr: boolean\n"
      "    Flag for auto/cross-correlation. If autocorr is not 0, the RA2/DEC2 arrays\n"
-     "    are not used (but must still be passed as valid arrays).\n"
+     "    are not used (but must still be passed as valid arrays).\n\n"
+
      "nthreads: integer\n"
      "    The number of OpenMP threads to use. Has no effect if OpenMP was not used\n"
-     "    during library compilation. \n"
+     "    during library compilation. \n\n"
+
      "binfile: filename\n"
      "    Filename containing the radial bins for the correlation function. The file\n"
      "    is expected to contain white-space separated ``thetamin  thetamax`` with the bin\n"
      "    edges.  Units must be degrees (see the ``angular_bins`` file in the tests directory\n"
      "    for a sample). For usual logarithmic bins, ``logbins``in the root directory\n"
-     "    of this package will create a compatible ``binfile``.\n"
+     "    of this package will create a compatible ``binfile``.\n\n"
+
      "RA1: float/double (default double)\n"
      "    The right-ascension of the galaxy, in the range [0, 360]. If there are\n"
      "    negative RA's in the supplied array (input RA in the range [-180, 180]),\n"
      "    then the code will shift the entire array by 180 to put RA's in the\n"
-     "    [0, 360] range.\n"
+     "    [0, 360] range.\n\n"
+
      "DEC1: float/double (default double)\n"
      "    The declination of the galaxy, in the range [-90, 90]. If there are\n"
      "    declinations > 90 in the supplied array (input dec in the range [0, 180]),\n"
      "    then the code will shift the entire array by -90 to put declinations in\n"
      "    the [-90, 90] range. If the code finds declinations more than 180, then\n"
-     "    it assumes RA and DEC have been swapped and aborts with that message.\n"
+     "    it assumes RA and DEC have been swapped and aborts with that message.\n\n"
 
      "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
-     "   Weights for computing a weighted pair count.\n\n"
+     "    Weights for computing a weighted pair count.\n\n"
 
      "weight_type : str, optional\n"
-     "   The type of pair weighting to apply.\n"
-     "   Options: \"pair_product\", None\n"
-     "   Default: None.\n\n"
+     "    The type of pair weighting to apply.\n"
+     "    Options: \"pair_product\", None\n"
+     "    Default: None.\n\n"
 
      "RA2/DEC2: float/double (default double)\n"
-     "    Same as for RA1/DEC1\n"
+     "    Same as for RA1/DEC1\n\n"
 
      "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
-     "   Weights for computing a weighted pair count."
+     "    Weights for computing a weighted pair count.\n\n"
 
      "verbose : boolean (default false)\n"
-     "   Boolean flag to control output of informational messages\n"
-     "\n"
-     "output_thetaavg : boolean (default false)\n"
-     "  Boolean flag to output the average ``\theta`` for each bin. Code will\n"
-     "  run slower if you set this flag. Also, note, if you are calculating\n"
-     "  in single-precision, ``thetaavg`` will suffer from numerical loss of\n"
-     "  precision and can not be trusted. If you need accurate ``thetaavg``\n"
-     "  values, then pass in double precision arrays for ``RA/DEC``.\n"
-     "\n"
-     "  **NOTE** Code will run significantly slower if you enable this option.\n"
-     "  Use ``fast_acos`` if you can tolerate some loss of precision.\n"
-     "fast_acos: boolean (default false)\n"
-     "   Flag to use numerical approximation for the ``arccos`` - gives better\n"
-     "   performance at the expense of some precision. Relevant only if\n"
-     "   ``output_thetaavg==True``.\n"
-     "\n"
-     "   Developers: Two versions already coded up in ``utils/fast_acos.h``,\n"
-     "   so you can choose the version you want. There are also notes on how\n"
-     "   to implement faster (and less accurate) functions, particularly relevant\n"
-     "   if you know your ``theta`` range is limited. If you implement a new\n"
-     "   version, then you will have to reinstall the entire Corrfunc package.\n"
-     "   \n"
-     "   Note that tests will fail if you run the tests with``fast_acos=True``.\n"
-     "\n"
-     "(radec)_refine_factor: integer (default (2,2) typical values in [1-3]) \n"
-     "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
-     "   on runtime. Note, only two refine factors are to be specified and these \n"
-     "   correspond to ``ra`` and ``dec`` (rather, than the usual three of \n"
-     "   ``(xyz)bin_refine_factor`` for all other correlation functions).\n"
-     "\n"
-     "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
-     "   Controls the maximum number of cells per dimension. Total number of cells \n"
-     "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
-     "   relative to the boxsize (and increasing helps the runtime). \n"
-     "\n"
-     "c_api_timer : boolean (default false)\n"
-     "   Boolean flag to measure actual time spent in the C libraries. Here\n"
-     "   to allow for benchmarking and scaling studies.\n"
-     "\n"
-     "isa : integer (default -1)\n"
-     "  Controls the runtime dispatch for the instruction set to use. Possible\n"
-     "  options are: [-1, AVX512F, AVX, SSE42, FALLBACK]\n\n"
-     "  Setting isa to -1 will pick the fastest available instruction\n"
-     "  set on the current computer. However, if you set ``isa`` to, say,\n"
-     "  ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
-     "  revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n\n"
+     "    Boolean flag to control output of informational messages\n\n"
 
-     "  Unless you are benchmarking the different instruction sets, you should\n"
-     "  always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
-     "  then the integer values correspond to the ``enum`` for the instruction set\n"
-     "  defined in ``utils/defs.h``.\n"
+     "output_thetaavg : boolean (default false)\n"
+     "    Boolean flag to output the average ``\theta`` for each bin. Code will\n"
+     "    run slower if you set this flag. Also, note, if you are calculating\n"
+     "    in single-precision, ``thetaavg`` will suffer from numerical loss of\n"
+     "    precision and can not be trusted. If you need accurate ``thetaavg``\n"
+     "    values, then pass in double precision arrays for ``RA/DEC``.\n"
+     "    **Note** Code will run significantly slower if you enable this option.\n"
+     "    Use ``fast_acos`` if you can tolerate some loss of precision.\n\n"
+
+     "fast_acos: boolean (default false)\n"
+     "    Flag to use numerical approximation for the ``arccos`` - gives better\n"
+     "    performance at the expense of some precision. Relevant only if\n"
+     "    ``output_thetaavg==True``.\n"
+     "    Developers: Two versions already coded up in ``utils/fast_acos.h``,\n"
+     "    so you can choose the version you want. There are also notes on how\n"
+     "    to implement faster (and less accurate) functions, particularly relevant\n"
+     "    if you know your ``theta`` range is limited. If you implement a new\n"
+     "    version, then you will have to reinstall the entire Corrfunc package.\n\n"
+     "    **Note** that tests will fail if you run the tests with``fast_acos=True``.\n\n"
+
+     "(radec)_refine_factor: integer (default (2,2) typical values in [1-3]) \n"
+     "    Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
+     "    on runtime. Note, only two refine factors are to be specified and these \n"
+     "    correspond to ``ra`` and ``dec`` (rather, than the usual three of \n"
+     "    ``(xyz)bin_refine_factor`` for all other correlation functions).\n\n"
+
+     "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
+     "    Controls the maximum number of cells per dimension. Total number of cells \n"
+     "    can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
+     "    relative to the boxsize (and increasing helps the runtime).\n\n"
+
+     "copy_particles: boolean (default True)\n"
+     "    Boolean flag to make a copy of the particle positions\n"
+     "    If set to False, the particles will be re-ordered in-place\n\n"
+
+     "enable_min_sep_opt: boolean (default true)\n"
+     "    Boolean flag to allow optimizations based on min. separation between pairs \n"
+     "    of cells. Here to allow for comparison studies.\n\n"
+
+     "c_api_timer : boolean (default false)\n"
+     "    Boolean flag to measure actual time spent in the C libraries. Here\n"
+     "    to allow for benchmarking and scaling studies.\n\n"
+
+     "isa : integer (default -1)\n"
+     "    Controls the runtime dispatch for the instruction set to use. Possible\n"
+     "    options are: [-1, AVX512F, AVX, SSE42, FALLBACK]\n\n"
+     "    Setting isa to -1 will pick the fastest available instruction\n"
+     "    set on the current computer. However, if you set ``isa`` to, say,\n"
+     "    ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
+     "    revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n"
      "\n"
+     "    Unless you are benchmarking the different instruction sets, you should\n"
+     "    always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
+     "    then the integer values correspond to the ``enum`` for the instruction set\n"
+     "    defined in ``utils/defs.h``.\n\n"
+
      "Returns\n"
      "--------\n"
-     "A tuple (results, time) \n"
-     "\n"
+     "A tuple (results, time) \n\n"
+
      "results : Python list \n"
-     "   Contains [thetamin, thetamax, thetaavg, npairs, weightavg] for each angular bin \n"
-     "   specified in the ``binfile``. If ``output_thetaavg`` is not set, then\n"
-     "   ``thetaravg`` will be set to 0.0 for all bins; similarly for ``weightavg``. ``npairs`` contains the number of\n"
-     "   pairs in that bin and can be used to compute the actual "OMEGA_CHAR"("THETA_CHAR")\n"
-     "   by combining  DD, (DR) and RR counts. See ``~Corrfunc.utils.convert_3d_counts_to_cf``\n"
-     "\n"
+     "    Contains [thetamin, thetamax, thetaavg, npairs, weightavg] for each angular bin \n"
+     "    specified in the ``binfile``. If ``output_thetaavg`` is not set, then\n"
+     "    ``thetaravg`` will be set to 0.0 for all bins; similarly for ``weightavg``. ``npairs`` contains the number of\n"
+     "    pairs in that bin and can be used to compute the actual "OMEGA_CHAR"("THETA_CHAR")\n"
+     "    by combining  DD, (DR) and RR counts. See ``~Corrfunc.utils.convert_3d_counts_to_cf``\n\n"
+
      "time : double\n"
-     "   if ``c_api_timer`` is set, then the return value contains the time spent\n"
-     "   in the API; otherwise time is set to 0.0\n"
-     "\n"
+     "    if ``c_api_timer`` is set, then the return value contains the time spent\n"
+     "    in the API; otherwise time is set to 0.0\n\n"
+
      "Example\n"
-     "-------\n"
-     "\n"
+     "-------\n\n"
+
      ">>> import numpy as np\n"
      ">>> from Corrfunc._countpairs_mocks import countpairs_theta_mocks\n"
-     ">>> ra,dec,cz = np.genfromtxt('../mocks/tests/data/Mr19_mock_northonly.rdcz.dat',dtype=np.float,unpack=True)\n"
+     ">>> ra, dec, _ = np.genfromtxt('../mocks/tests/data/Mr19_mock_northonly.rdcz.dat',dtype=np.float,unpack=True)\n"
      ">>> cosmology=1\n"
      ">>> autocorr=1\n"
      ">>> nthreads=4\n"
      ">>> binfile='../mocks/tests/angular_bins'\n"
      ">>> DD=countpairs_theta_mocks(autocorr, cosmology, nthreads, binfile, \n"
-     "                              ra,dec, ra,dec,\n"
+     "                              ra,dec,ra,dec,\n"
      "                              verbose=True)\n"
      "\n"
     },
@@ -557,7 +588,7 @@ static PyMethodDef module_methods[] = {
      "                       verbose=False, is_comoving_dist=False,\n"
      "                       xbin_refine_factor=2, ybin_refine_factor=2, \n"
      "                       zbin_refine_factor=1, max_cells_per_dim=100, \n"
-     "                       c_api_timer=False, isa=-1)\n"
+     "                       copy_particles=1, c_api_timer=False, isa=-1)\n"
      "\n"
      "Calculates the fraction of random spheres that contain exactly *N* points, pN(r).\n"
      "Returns a numpy structured array containing the probability of a sphere of radius\n"
@@ -566,171 +597,173 @@ static PyMethodDef module_methods[] = {
      "\n"
      "Parameters\n"
      "------------\n"
-     "Every parameter can be passed as a keyword of the corresponding name.\n"
-     "\n"
+     "Every parameter can be passed as a keyword of the corresponding name.\n\n"
+
      "rmax : double\n"
-     "   Maximum radius of the sphere to place on the particles\n"
-     "\n"
+     "    Maximum radius of the sphere to place on the particles\n\n"
+
      "nbins : integer\n"
-     "   Number of bins in the counts-in-cells. Radius of first shell\n"
-     "   is rmax/nbins\n"
-     "\n"
+     "    Number of bins in the counts-in-cells. Radius of first shell\n"
+     "    is rmax/nbins\n\n"
+
      "nspheres: integer (>= 0)\n"
-     "   Number of random spheres to place within the particle distribution.\n"
-     "   For a small number of spheres, the error is larger in the measured\n"
-     "   pN's.\n"
-     "\n"
+     "    Number of random spheres to place within the particle distribution.\n"
+     "    For a small number of spheres, the error is larger in the measured\n"
+     "    pN's.\n\n"
+
      "numpN: integer (>= 1)\n"
-     "   Governs how many unique pN's are to returned. If ``numpN`` is set to 1,\n"
-     "   then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are\n"
-     "   returned.\n"
-     "\n"
-     "   More explicitly, the columns in the results look like the following:\n"
-     "     numpN = 1 -> p0\n"
-     "     numpN = 2 -> p0 p1\n"
-     "     numpN = 3 -> p0 p1 p2\n"
-     "     and so on...(note that p0 is the vpf).\n"
-     "\n"
+     "    Governs how many unique pN's are to returned. If ``numpN`` is set to 1,\n"
+     "    then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are\n"
+     "    returned.\n\n"
+
+     "    More explicitly, the columns in the results look like the following:\n"
+     "      numpN = 1 -> p0\n"
+     "      numpN = 2 -> p0 p1\n"
+     "      numpN = 3 -> p0 p1 p2\n"
+     "      and so on...(note that p0 is the vpf).\n\n"
+
      "threshold_ngb: integer\n"
-     "   Minimum number of random points needed in a ``rmax`` sphere such that it\n"
-     "   is considered to be entirely within the mock footprint. The\n"
-     "   command-line version, ``mocks/vpf/vpf_mocks.c``, assumes that the\n"
-     "   minimum number of randoms can be at most a 1-sigma deviation from\n"
-     "   the expected random number density.\n"
-     "\n"
+     "    Minimum number of random points needed in a ``rmax`` sphere such that it\n"
+     "    is considered to be entirely within the mock footprint. The\n"
+     "    command-line version, ``mocks/vpf/vpf_mocks.c``, assumes that the\n"
+     "    minimum number of randoms can be at most a 1-sigma deviation from\n"
+     "    the expected random number density.\n\n"
+
      "centers_file: string, filename\n"
-     "   A file containing random sphere centers. If the file does not exist,\n"
-     "   then a list of random centers will be written out. In that case, the\n"
-     "   randoms arrays, ``RAND_RA``, ``RAND_DEC`` and ``RAND_CZ`` are used to\n"
-     "   check that the sphere is entirely within the footprint. If the file does\n"
-     "   exist but either ``rmax`` is too small or there are not enough centers\n"
-     "   then the file will be overwritten.\n"
-     "\n"
-     "   Note: If the centers file has to be written, the code will take\n"
-     "   significantly longer to finish. However, subsequent runs can re-use\n"
-     "   that centers file and will be faster.\n"
-     "\n"
+     "    A file containing random sphere centers. If the file does not exist,\n"
+     "    then a list of random centers will be written out. In that case, the\n"
+     "    randoms arrays, ``RAND_RA``, ``RAND_DEC`` and ``RAND_CZ`` are used to\n"
+     "    check that the sphere is entirely within the footprint. If the file does\n"
+     "    exist but either ``rmax`` is too small or there are not enough centers\n"
+     "    then the file will be overwritten.\n\n"
+     "    **Note** If the centers file has to be written, the code will take\n"
+     "    significantly longer to finish. However, subsequent runs can re-use\n"
+     "    that centers file and will be faster.\n\n"
+
      "cosmology: integer, required\n"
-     "   Integer choice for setting cosmology. Valid values are 1->LasDamas\n"
-     "   cosmology and 2->Planck cosmology. If you need arbitrary cosmology,\n"
-     "   easiest way is to convert the ``CZ`` values into co-moving distance,\n"
-     "   based on your preferred cosmology. Set ``is_comoving_dist=True``, to\n"
-     "   indicate that the co-moving distance conversion has already been done.\n"
+     "    Integer choice for setting cosmology. Valid values are 1->LasDamas\n"
+     "    cosmology and 2->Planck cosmology. If you need arbitrary cosmology,\n"
+     "    easiest way is to convert the ``CZ`` values into co-moving distance,\n"
+     "    based on your preferred cosmology. Set ``is_comoving_dist=True``, to\n"
+     "    indicate that the co-moving distance conversion has already been done.\n"
      "\n"
-     "   Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75\n"
-     "            2 -> Planck   cosmology. Om=0.302, Ol=0.698\n"
-     " \n"
-     "   To setup a new cosmology, add an entry to the function,\n"
-     "   ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install\n"
-     "   the entire package.\n"
+     "    Choices: 1 -> LasDamas cosmology. Om=0.25,  Ol=0.75\n"
+     "             2 -> Planck   cosmology. Om=0.302, Ol=0.698\n"
      "\n"
+     "    To setup a new cosmology, add an entry to the function,\n"
+     "    ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install\n"
+     "    the entire package.\n\n"
+
      "RA: array-like, real (float/double)\n"
-     "   The array of Right Ascensions for the first set of points. RA's\n"
-     "   are expected to be in [0.0, 360.0], but the code will try to fix cases\n"
-     "   where the RA's are in [-180, 180.0]. For peace of mind, always supply\n"
-     "   RA's in [0.0, 360.0].\n"
+     "    The array of Right Ascensions for the first set of points. RA's\n"
+     "    are expected to be in [0.0, 360.0], but the code will try to fix cases\n"
+     "    where the RA's are in [-180, 180.0]. For peace of mind, always supply\n"
+     "    RA's in [0.0, 360.0].\n"
      "\n"
-     "   Calculations are done in the precision of the supplied arrays.\n"
-     "\n"
+     "    Calculations are done in the precision of the supplied arrays.\n\n"
+
      "DEC: array-like, real (float/double)\n"
-     "   Array of Declinations for the first set of points. DEC's are expected\n"
-     "   to be in the [-90.0, 90.0], but the code will try to fix cases where\n"
-     "   the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply\n"
-     "   DEC's in [-90.0, 90.0].\n"
+     "    Array of Declinations for the first set of points. DEC's are expected\n"
+     "    to be in the [-90.0, 90.0], but the code will try to fix cases where\n"
+     "    the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply\n"
+     "    DEC's in [-90.0, 90.0].\n"
      "\n"
-     "   Must be of same precision type as RA.\n"
-     "\n"
+     "    Must be of same precision type as RA.\n\n"
+
      "CZ: array-like, real (float/double)\n"
-     "   Array of (Speed Of Light * Redshift) values for the first set of\n"
-     "   points. Code will try to detect cases where ``redshifts`` have been\n"
-     "   passed and multiply the entire array with the ``speed of light``.\n"
+     "    Array of (Speed Of Light * Redshift) values for the first set of\n"
+     "    points. Code will try to detect cases where ``redshifts`` have been\n"
+     "    passed and multiply the entire array with the ``speed of light``.\n"
      "\n"
-     "   If ``is_comoving_dist`` is set, then ``CZ`` is interpreted as the\n"
-     "   co-moving distance, rather than (Speed Of Light * Redshift).\n"
-     "\n"
+     "    If ``is_comoving_dist`` is set, then ``CZ`` is interpreted as the\n"
+     "    co-moving distance, rather than (Speed Of Light * Redshift).\n\n"
+
      "RAND_RA: array-like, real (float/double)\n"
-     "   The array of Right Ascensions for the randoms. RA's are expected to be\n"
-     "   in [0.0, 360.0], but the code will try to fix cases where the RA's are\n"
-     "   in [-180, 180.0]. For peace of mind, always supply RA's in\n"
-     "   [0.0, 360.0].\n"
+     "    The array of Right Ascensions for the randoms. RA's are expected to be\n"
+     "    in [0.0, 360.0], but the code will try to fix cases where the RA's are\n"
+     "    in [-180, 180.0]. For peace of mind, always supply RA's in\n"
+     "    [0.0, 360.0].\n"
      "\n"
-     "   Must be of same precision type as RA/DEC/CZ.\n"
-     "\n"
+     "    Must be of same precision type as RA/DEC/CZ.\n\n"
+
      "RAND_DEC: array-like, real (float/double)\n"
-     "   Array of Declinations for the randoms. DEC's are expected to be in the\n"
-     "   [-90.0, 90.0], but the code will try to fix cases where the DEC's are\n"
-     "   in [0.0, 180.0]. Again, for peace of mind, always supply DEC's in\n"
-     "   [-90.0, 90.0].\n"
+     "    Array of Declinations for the randoms. DEC's are expected to be in the\n"
+     "    [-90.0, 90.0], but the code will try to fix cases where the DEC's are\n"
+     "    in [0.0, 180.0]. Again, for peace of mind, always supply DEC's in\n"
+     "    [-90.0, 90.0].\n"
      "\n"
-     "   Must be of same precision type as RA/DEC/CZ.\n"
-     "\n"
+     "    Must be of same precision type as RA/DEC/CZ.\n\n"
+
      "RAND_CZ: array-like, real (float/double)\n"
-     "   Array of (Speed Of Light * Redshift) values for the randoms. Code\n"
-     "   will try to detect cases where ``redshifts`` have been\n"
-     "   passed and multiply the entire array with the ``speed of light``.\n"
+     "    Array of (Speed Of Light * Redshift) values for the randoms. Code\n"
+     "    will try to detect cases where ``redshifts`` have been\n"
+     "    passed and multiply the entire array with the ``speed of light``.\n"
      "\n"
-     "   If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the\n"
-     "   co-moving distance, rather than ``(Speed Of Light * Redshift)``.\n"
+     "    If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the\n"
+     "    co-moving distance, rather than ``(Speed Of Light * Redshift)``.\n"
      "\n"
-     "   *NOTE*: RAND_RA, RAND_DEC and RAND_CZ are only used when the\n"
+     "    **Note** RAND_RA, RAND_DEC and RAND_CZ are only used when the\n"
      "      ``centers_file``  needs to be written out. In that case, the\n"
-     "      RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.\n"
-     "\n"
+     "      RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.\n\n"
+
      "is_comoving_dist: boolean (default false)\n"
-     "   Boolean flag to indicate that ``cz`` values have already been\n"
-     "   converted into co-moving distances. This flag allows arbitrary\n"
-     "   cosmologies to be used in ``Corrfunc``.\n"
-     "\n"
+     "    Boolean flag to indicate that ``cz`` values have already been\n"
+     "    converted into co-moving distances. This flag allows arbitrary\n"
+     "    cosmologies to be used in ``Corrfunc``.\n\n"
+
      "verbose : boolean (default false)\n"
-     "   Boolean flag to control output of informational messages\n"
-     "\n"
+     "    Boolean flag to control output of informational messages\n\n"
+
      "(xyz)bin_refine_factor: integer (default (1,1,1) typical values in [1-3]) \n"
-     "   Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
-     "   on runtime. Note that the default values are different from the \n"
-     "   correlation function routines. \n"
-     "\n"
+     "    Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
+     "    on runtime. Note that the default values are different from the \n"
+     "    correlation function routines.\n\n"
+
      "max_cells_per_dim: integer (default 100, typical values in [50-300]) \n"
-     "   Controls the maximum number of cells per dimension. Total number of cells \n"
-     "   can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
-     "   relative to the boxsize (and increasing helps the runtime). \n"
-     "\n"
+     "    Controls the maximum number of cells per dimension. Total number of cells \n"
+     "    can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is too small \n"
+     "    relative to the boxsize (and increasing helps the runtime).\n\n"
+
+     "copy_particles: boolean (default True)\n"
+     "    Boolean flag to make a copy of the particle positions\n"
+     "    If set to False, the particles will be re-ordered in-place\n\n"
+
      "c_api_timer : boolean (default false)\n"
-     "   Boolean flag to measure actual time spent in the C libraries. Here\n"
-     "   to allow for benchmarking and scaling studies.\n"
-     "\n"
+     "    Boolean flag to measure actual time spent in the C libraries. Here\n"
+     "    to allow for benchmarking and scaling studies.\n\n"
+
      "isa : integer (default -1)\n"
-     "  Controls the runtime dispatch for the instruction set to use. Possible\n"
-     "  options are: [-1, AVX, SSE42, FALLBACK]\n\n"
-     "  Setting isa to -1 will pick the fastest available instruction\n"
-     "  set on the current computer. However, if you set ``isa`` to, say,\n"
-     "  ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
-     "  revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n"
+     "    Controls the runtime dispatch for the instruction set to use. Possible\n"
+     "    options are: [-1, AVX512F, AVX, SSE42, FALLBACK]\n\n"
+     "    Setting isa to -1 will pick the fastest available instruction\n"
+     "    set on the current computer. However, if you set ``isa`` to, say,\n"
+     "    ``AVX`` and ``AVX`` is not available on the computer, then the code will\n"
+     "    revert to using ``FALLBACK`` (even though ``SSE42`` might be available).\n"
      "\n"
-     "  Unless you are benchmarking the different instruction sets, you should\n"
-     "  always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
-     "  then the integer values correspond to the ``enum`` for the instruction set\n"
-     "  defined in ``utils/defs.h``.\n"
-     "\n"
+     "    Unless you are benchmarking the different instruction sets, you should\n"
+     "    always leave ``isa`` to the default value. And if you *are* benchmarking,\n"
+     "    then the integer values correspond to the ``enum`` for the instruction set\n"
+     "    defined in ``utils/defs.h``.\n\n"
+
      "Returns\n"
      "--------\n"
-     "A tuple (results, time) \n"
-     "\n"
-     "results : Python list of lists\n"
-     "\n"
-     "   Contains [rmax, pN[numpN]] with ``nbins`` elements. Each row contains\n"
-     "   the maximum radius of the sphere and the ``numpN`` elements in the \n"
-     "   ``pN`` array. Each element of this array contains the probability that\n"
-     "   a sphere of radius ``rmax`` contains *exactly* ``N`` galaxies. For \n"
-     "   example, pN[0] (p0, the void probibility function) is the probability\n"
-     "   that a sphere of radius ``rmax`` contains 0 galaxies.\n"
-     "\n"
-    "time : double\n"
-    "   if ``c_api_timer`` is set, then the return value contains the time spent\n"
-    "   in the API; otherwise time is set to 0.0\n"
-    "\n"
+     "A tuple (results, time) \n\n"
+
+     "results : Python list of lists\n\n"
+     "    Contains [rmax, pN[numpN]] with ``nbins`` elements. Each row contains\n"
+     "    the maximum radius of the sphere and the ``numpN`` elements in the \n"
+     "    ``pN`` array. Each element of this array contains the probability that\n"
+     "    a sphere of radius ``rmax`` contains *exactly* ``N`` galaxies. For \n"
+     "    example, pN[0] (p0, the void probibility function) is the probability\n"
+     "    that a sphere of radius ``rmax`` contains 0 galaxies.\n\n"
+
+     "time : double\n"
+     "    if ``c_api_timer`` is set, then the return value contains the time spent\n"
+     "    in the API; otherwise time is set to 0.0\n\n"
+
     "Example\n"
-    "--------\n"
-    "\n"
+    "--------\n\n"
+
     ">>> import Corrfunc\n"
     ">>> import math\n"
     ">>> from os.path import dirname, abspath, join as pjoin\n"
@@ -1076,7 +1109,8 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     options.fast_divide_and_NR_steps=0;
     options.c_api_timer = 0;
     options.enable_min_sep_opt = 1;
-    
+    options.copy_particles = 1;
+
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
         zbin_ref=options.bin_refine_factors[2];
@@ -1109,6 +1143,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
+        "copy_particles",
         "enable_min_sep_opt",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK (enum) */
@@ -1116,7 +1151,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!O!O!bbbbbbbhbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!O!O!bbbbbbbhbbbis", kwlist,
                                        &autocorr,&cosmology,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1132,6 +1167,7 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                        &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
+                                       &(options.copy_particles),
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
@@ -1405,6 +1441,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
     options.periodic = 0;
     options.fast_divide_and_NR_steps=0;
     options.enable_min_sep_opt = 1;
+    options.copy_particles = 1;
     options.c_api_timer = 0;
     int8_t xbin_ref=options.bin_refine_factors[0],
         ybin_ref=options.bin_refine_factors[1],
@@ -1421,7 +1458,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         "autocorr",
         "cosmology",
         "nthreads",
-        "mu_max",        
+        "mu_max",
         "nmu_bins",
         "binfile",
         "RA1",
@@ -1440,6 +1477,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
+        "copy_particles",
         "enable_min_sep_opt",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK (enum) */
@@ -1447,7 +1485,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidisO!O!O!|O!O!O!O!O!bbbbbbbhbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidisO!O!O!|O!O!O!O!O!bbbbbbbhbbbis", kwlist,
                                        &autocorr,&cosmology,&nthreads,&mu_max,&nmu_bins,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1463,6 +1501,7 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
                                        &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
+                                       &(options.copy_particles),
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
@@ -1734,6 +1773,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     options.link_in_ra=1;
     options.fast_acos=0;
     options.c_api_timer=0;
+    options.enable_min_sep_opt = 1;
+    options.copy_particles = 1;
     int8_t ra_bin_ref=options.bin_refine_factors[0],
         dec_bin_ref=options.bin_refine_factors[1];
     static char *kwlist[] = {
@@ -1754,6 +1795,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         "ra_refine_factor",
         "dec_refine_factor",
         "max_cells_per_dim",
+        "copy_particles",
+        "enable_min_sep_opt",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
         "weight_type",
@@ -1761,7 +1804,7 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!O!O!bbbbbbbhbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!O!O!bbbbbbbhbbbis", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1776,6 +1819,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                        &(options.fast_acos),
                                        &ra_bin_ref, &dec_bin_ref,
                                        &(options.max_cells_per_dim),
+                                       &(options.copy_particles),
+                                       &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
                                        &weighting_method_str)
@@ -2029,6 +2074,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     options.is_comoving_dist = 0;
     options.verbose=0;
     options.instruction_set=-1;
+    options.copy_particles=1;
     options.c_api_timer=0;
 
     /* Reset the bin refine factors default (since the VPF is symmetric in XYZ, conceptually the binning should be identical in all three directions)*/
@@ -2059,13 +2105,14 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
         "ybin_refine_factor",
         "zbin_refine_factor",
         "max_cells_per_dim",
+        "copy_particles",
         "c_api_timer",
-        "isa",/* instruction set to use of type enum isa; valid values are AVX, SSE, FALLBACK */
+        "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
         NULL
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|bbbbbhbi", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "diiiisiO!O!O!O!O!O!|bbbbbhbbi", kwlist,
                                        &rmax,&nbin,&num_spheres,&num_pN,&threshold_neighbors,&centers_file,&cosmology,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -2077,6 +2124,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
                                        &(options.verbose),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
+                                       &(options.copy_particles),
                                        &(options.c_api_timer),
                                        &(options.instruction_set))
 

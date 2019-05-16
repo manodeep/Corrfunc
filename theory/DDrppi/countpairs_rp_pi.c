@@ -19,10 +19,14 @@ void free_results_rp_pi(results_countpairs_rp_pi *results)
     if(results==NULL)
         return;
 
-    free(results->npairs);
-    free(results->rupp);
-    free(results->rpavg);
-    free(results->weightavg);
+    free(results->rupp);results->rupp = NULL;
+    free(results->npairs);results->npairs = NULL;
+    free(results->rpavg);results->rpavg = NULL;
+    free(results->weightavg);results->weightavg = NULL;
+
+    results->nbin = 0;
+    results->npibin = 0;
+    results->pimax = 0.0;
 }
 
 
@@ -46,7 +50,7 @@ int countpairs_rp_pi(const int64_t ND1, void *X1, void *Y1, void *Z1,
         fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;
     }
-    
+
     if(options->float_type == sizeof(float)) {
       return countpairs_rp_pi_float(ND1, (float *) X1, (float *) Y1, (float *) Z1,
                                     ND2, (float *) X2, (float *) Y2, (float *) Z2,

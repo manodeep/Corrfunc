@@ -8,10 +8,10 @@
 ### less effort to do so here.
 ### *NOTE* Does not honour environment variable CC, since that
 ### is typically set to really outdated fail-safe compiler, /usr/bin/cc
-CC := 
+CC :=
 
 #### Add any compiler specific flags you want
-CFLAGS ?= 
+CFLAGS ?=
 
 #### Add any compiler specific link flags you want
 CLINK ?=
@@ -54,6 +54,14 @@ ifneq ($(filter $(CLEAN_CMDS),$(MAKECMDGOALS)),)
   DO_CHECKS := 0
 endif
 
+export RUNNING_TESTS ?= 0
+ifeq ($(RUNNING_TESTS), 0)
+  ifneq ($(filter tests,$(MAKECMDGOALS)),)
+    export RUNNING_TESTS := 1
+    $(info Setting RUNNING_TESTS to 1)
+  endif
+endif
+
 
 ## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
@@ -67,7 +75,7 @@ ifeq ($(DO_CHECKS), 1)
   endif
   ifeq ($(TRAVIS_OS_NAME), linux)
     ECHO_COMMAND := echo
-  endif 
+  endif
 
   ifneq ($(UNAME), Darwin)
     CLINK += -lrt # need real time library for the nano-second timers. Not required on OSX
@@ -100,7 +108,7 @@ ifeq ($(DO_CHECKS), 1)
     endif
     $(error $(ccred)Project requires make >= 3.80 to compile.$(ccreset))
   endif
-  #end of checks for make. 
+  #end of checks for make.
 
 
   ## Set the C compiler if not set
@@ -121,10 +129,10 @@ ifeq ($(DO_CHECKS), 1)
     endif
   else
     export CMDLINE_CC_INFO_PRINTED ?= 0
-    ifeq ($(CMDLINE_CC_INFO_PRINTED), 0)    
+    ifeq ($(CMDLINE_CC_INFO_PRINTED), 0)
       $(info If you want to permanently set the default compiler to $(ccmagenta)$(CC)$(ccreset) for all future compilations, please update the $(ccblue)"CC"$(ccreset) variable in $(ccmagenta)"common.mk"$(ccreset))
       export CMDLINE_CC_INFO_PRINTED := 1
-    endif  
+    endif
   endif
 
   ifeq ($(CC),)
@@ -157,7 +165,7 @@ ifeq ($(DO_CHECKS), 1)
   #   $(warning $(ccmagenta) CPU does not seem support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
   #   OPT:=$(filter-out -DUSE_AVX,$(OPT))
   # endif
-  # # end of checking if CPU supports AVX      
+  # # end of checking if CPU supports AVX
   ## This entire AVX section is now commented out because the code has runtime-dispatch based on the CPU capabilities and picks the latest instruction set by default
 
   # Now check if gcc is set to be the compiler but if clang is really under the hood.
@@ -248,7 +256,7 @@ ifeq ($(DO_CHECKS), 1)
   ## done with check for conflicting options
 
   ifeq (icc,$(findstring icc,$(CC)))
-    CFLAGS += -xhost -axCORE-AVX512 
+    CFLAGS += -xhost -axCORE-AVX512
 	  ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
       CFLAGS += -qopenmp
       CLINK  += -qopenmp
@@ -256,7 +264,7 @@ ifeq ($(DO_CHECKS), 1)
   else ## not icc -> gcc or clang follow
 
     ## Warning that w(theta) with OUTPUT_THETAAVG is very slow without icc
-    ## Someday I am going to fix that by linking with MKL 
+    ## Someday I am going to fix that by linking with MKL
     # ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
     #   ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
     #     $(warning WARNING: $(ccblue)"OUTPUT_THETAAVG"$(ccreset) with AVX capabilties is slow with gcc/clang (disables AVX essentially) with gcc/clang. Try to use $(ccblue)"icc"$(ccreset) if available)
@@ -300,7 +308,7 @@ ifeq ($(DO_CHECKS), 1)
           ifeq (Apple, $(findstring Apple, $(CC_VERSION)))
             CLANG_OMP_AVAIL:= false
             export CLANG_OMP_WARNING_PRINTED ?= 0
-            ifeq ($(CLANG_OMP_WARNING_PRINTED), 0) 
+            ifeq ($(CLANG_OMP_WARNING_PRINTED), 0)
               $(warning $(ccmagenta)Compiler is Apple clang and does not support OpenMP$(ccreset))
               $(info $(ccmagenta)If you want OpenMP support, please install clang with OpenMP support$(ccreset))
               $(info $(ccmagenta)For homebrew, use $(ccgreen)"brew update && (brew outdated xctool || brew upgrade xctool) && brew tap homebrew/versions && brew install clang-omp"$(ccreset))
@@ -339,10 +347,10 @@ ifeq ($(DO_CHECKS), 1)
                 export CLANG_LD_WARNING_PRINTED := 1
               endif #clang warning printed
             endif #Darwin
-          endif #Apple clang. If at some point Apple clang supports OpenMP, then there will need to be an else above this endif. 
+          endif #Apple clang. If at some point Apple clang supports OpenMP, then there will need to be an else above this endif.
         else
           # I dislike being warned multiple times but the compiler warning will not
-          # be visible if the entire codebase is being compiled. 
+          # be visible if the entire codebase is being compiled.
           export WARNING_PRINTED ?= 0
           ifeq ($(WARNING_PRINTED), 0)
             $(warning $(ccmagenta) $$CC = ${CC} does not support OpenMP - please use gcc/icc for compiling with openmp. Removing $(ccblue)"USE_OMP"$(ccmagenta) from compile options. $(ccreset))
@@ -363,7 +371,18 @@ ifeq ($(DO_CHECKS), 1)
     CFLAGS += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
     CFLAGS +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
     CFLAGS += -Wno-unused-local-typedefs ## to suppress the unused typedef warning for the compile time assert for sizeof(struct config_options)
-    CLINK += -lm 
+
+    # if TESTS are being run then add the -fsanitize options
+    # Commented out for now -> need to overhaul testing infrastructure and
+    # toolchain. Otherwise, travis has compile failure due to unknown compiler options
+    # ifeq ($(RUNNING_TESTS), 1)
+    #   ifeq ($(ON_CI), true)
+    #     CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+    #     CLINK +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+    #   endif
+    # endif
+
+    CLINK += -lm
   endif #not icc
 
 
@@ -437,7 +456,7 @@ ifeq ($(DO_CHECKS), 1)
           endif
           $(warning $(ccblue)"PYTHON"$(ccreset) is set to $(ccblue)$(PYTHON)$(ccreset); using $(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset) as $(ccblue)python-config$(ccreset). If this is not correct, please also set $(ccblue)"PYTHON_CONFIG_EXE"$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset))
         endif
-      
+
         PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
         # if PYTHON_CONFIG_INCL is still undef, then we failed to find any python-config
         ifndef PYTHON_CONFIG_INCL
@@ -469,7 +488,7 @@ ifeq ($(DO_CHECKS), 1)
         # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
         # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
         SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))" 2>/dev/null)
-        export PYTHON_SOABI := 
+        export PYTHON_SOABI :=
         ifdef SOABI
           ifneq ($(SOABI), None)
             PYTHON_SOABI = .$(SOABI)
@@ -511,6 +530,14 @@ ifeq ($(DO_CHECKS), 1)
   endif ## PYTHON_CHECKED
   ### Done with python checks
 
+  ifeq (INTEGRATION_TESTS, $(findstring INTEGRATION_TESTS, $(CFLAGS)))
+    CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+    CLINK +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+    ifeq ($(COMPILE_PYTHON_EXT), 1)
+      $(info $(ccmagenta)Disabling python extensions while running integration tests$(ccreset))
+      export COMPILE_PYTHON_EXT := 0
+    endif
+  endif
 
   ### The following sections are currently not relevant for the Corrfunc package
   ### but I do not want to have to figure this out again!
@@ -557,7 +584,7 @@ ifeq ($(DO_CHECKS), 1)
     $(info )
     $(info $(ccmagenta)$(boldfont)-------COMPILE SETTINGS------------$(ccreset))
     $(foreach var, $(MAKEFILE_VARS), $(info $(tabvar) $(boldfont)$(var)$(ccreset)$(tabvar)$(tabvar) = ["$(ccblue)$(boldfont)${${var}}$(ccreset)"]))
-    # this line is identical to the previous except for one less tab character. 
+    # this line is identical to the previous except for one less tab character.
     $(foreach var, $(BIG_MAKEFILE_VARS), $(info $(tabvar) $(boldfont)$(var)$(ccreset)$(tabvar) = ["$(ccblue)$(boldfont)${${var}}$(ccreset)"]))
     $(info $(ccmagenta)$(boldfont)-------END OF COMPILE SETTINGS------------$(ccreset))
     $(info )

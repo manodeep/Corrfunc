@@ -31,10 +31,10 @@ int test_DDsmu_mocks(const char *correct_outputfile);
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
 
 //Global variables
-int ND1;
+int64_t ND1;
 double *RA1=NULL,*DEC1=NULL,*CZ1=NULL,*weights1=NULL;
 
-int ND2;
+int64_t ND2;
 double *RA2=NULL,*DEC2=NULL,*CZ2=NULL,*weights2=NULL;
 
 const int cosmology_flag=1;
@@ -92,7 +92,7 @@ int test_DDrppi_mocks(const char *correct_outputfile)
                 }
                 int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
                 int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-                
+
                 //Check for exact equality of npairs and float "equality" for rpavg
                 if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                     ret = EXIT_SUCCESS;
@@ -107,10 +107,10 @@ int test_DDrppi_mocks(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-        
+    END_INTEGRATION_TEST_SECTION(free_results_mocks(&results));
+
     /* If the test failed, then write the output into a temporary file */
-    if(ret != EXIT_SUCCESS) {
+    if(ret != EXIT_SUCCESS && results.nbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
             free_results_mocks(&results);
@@ -136,7 +136,7 @@ int test_DDsmu_mocks(const char *correct_outputfile)
 {
     results_countpairs_mocks_s_mu results;
     int ret = EXIT_FAILURE;
-    
+
     assert(RA1 != NULL && DEC1 != NULL && CZ1 != NULL && "ERROR: In test suite for DDsmu ra/dec/cz can not be NULL pointers");
     int autocorr = (RA1==RA2) ? 1:0;
 
@@ -184,7 +184,7 @@ int test_DDsmu_mocks(const char *correct_outputfile)
                 }
                 int floats_equal = AlmostEqualRelativeAndAbs_double(savg, results.savg[index], maxdiff, maxreldiff);
                 int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-                
+
                 //Check for exact equality of npairs and float "equality" for savg
                 if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                     ret = EXIT_SUCCESS;
@@ -199,10 +199,10 @@ int test_DDsmu_mocks(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-   
+    END_INTEGRATION_TEST_SECTION(free_results_mocks_s_mu(&results));
+
     /* If the test failed, then write the output into a temporary file */
-    if(ret != EXIT_SUCCESS) {
+    if(ret != EXIT_SUCCESS && results.nsbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
             free_results_mocks_s_mu(&results);
@@ -235,7 +235,7 @@ int test_DDtheta_mocks(const char *correct_outputfile)
     struct extra_options extra = get_extra_options(weight_method);
     extra.weights0.weights[0] = weights1;
     extra.weights1.weights[0] = weights2;
-    
+
     BEGIN_DDTHETA_INTEGRATION_TEST_SECTION;
         int status = countpairs_theta_mocks(ND1,RA1,DEC1,
                                             ND2,RA2,DEC2,
@@ -245,11 +245,11 @@ int test_DDtheta_mocks(const char *correct_outputfile)
                                             &results,
                                             &options,
                                             &extra);
-        
+
         if(status != EXIT_SUCCESS) {
             return status;
         }
-        
+
         /*---Output-Pairs-------------------------------------*/
         FILE *fp=my_fopen(correct_outputfile,"r");
         if(fp == NULL) {
@@ -267,7 +267,7 @@ int test_DDtheta_mocks(const char *correct_outputfile)
             }
             int floats_equal = AlmostEqualRelativeAndAbs_double(theta_avg, results.theta_avg[i], maxdiff, maxreldiff);
             int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
-            
+
             //Check for exact equality of npairs and float "equality" for theta_avg
             if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
@@ -287,9 +287,9 @@ int test_DDtheta_mocks(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_DDTHETA_INTEGRATION_TEST_SECTION;
-        
-    if(ret != EXIT_SUCCESS) {
+        END_DDTHETA_INTEGRATION_TEST_SECTION(free_results_countpairs_theta(&results));
+
+    if(ret != EXIT_SUCCESS && results.nbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         double theta_low = results.theta_upp[0];
         for(int i=1;i<results.nbin;i++) {
@@ -352,12 +352,12 @@ int test_vpf_mocks(const char *correct_outputfile)
                 if(nitems != 1) {
                     return EXIT_FAILURE;
                 }
-                
+
                 /* Not quite sure how this is working. The correct output columns only have 4 digits printed,
                    but I am comparing here with ~1e-9 in abs. diff. The only way the comparison should work is
                    if the conversion to 4 digits during printf, round-trips during scanf. But surely there must
                    be a lot more doubles that can be fit within those missing digits of precision.
-                   
+
                    I would have thought the comparison would require maxdiff ~ 1e-4. -- MS
                 */
                 int floats_equal = AlmostEqualRelativeAndAbs_double(pN, (results.pN)[ibin][i], maxdiff, maxreldiff);
@@ -370,9 +370,10 @@ int test_vpf_mocks(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-        
-    if(ret != EXIT_SUCCESS) {
+    END_INTEGRATION_TEST_SECTION(free_results_countspheres_mocks(&results));
+
+    /* If the test failed, then write the output into a temporary file */
+    if(ret != EXIT_SUCCESS && results.nbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         const double rstep = rmax/(double)nbin ;
         for(int ibin=0;ibin<results.nbin;ibin++) {
@@ -460,6 +461,9 @@ int main(int argc, char **argv)
     options.float_type=sizeof(double);
     options.fast_divide_and_NR_steps=0;
     options.fast_acos=0;
+    options.link_in_ra = 1;
+    options.link_in_dec = 1;
+    options.copy_particles = 1;
 
     int status = init_cosmology(cosmology_flag);
     if(status != EXIT_SUCCESS) {

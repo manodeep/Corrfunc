@@ -6,9 +6,7 @@ OPT = -DPERIODIC
 
 OPT += -DENABLE_MIN_SEP_OPT ## Enable optimizations relating to min. separations between cell-pairs (introduced in v2.3)
 
+OPT += -DCOPY_PARTICLES ## Make a copy of particles positions and weights (doubles the memory required, introduced in v2.3)
+
 #### Code specs for both theory and data Correlation Functions
 #OPT += -DDOUBLE_PREC
-
-
-
-
