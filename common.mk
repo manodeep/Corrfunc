@@ -11,10 +11,10 @@
 CC :=
 
 #### Add any compiler specific flags you want
-CFLAGS ?= 
+CFLAGS ?=
 
 #### Add any compiler specific link flags you want
-CLINK ?= 
+CLINK ?=
 
 ## Set the python command (supply the full path to python you want to
 ## use, if different from directly calling `python` on the shell,
@@ -531,6 +531,8 @@ ifeq ($(DO_CHECKS), 1)
   ### Done with python checks
 
   ifeq (INTEGRATION_TESTS, $(findstring INTEGRATION_TESTS, $(CFLAGS)))
+    CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
+    CLINK +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
     ifeq ($(COMPILE_PYTHON_EXT), 1)
       $(info $(ccmagenta)Disabling python extensions while running integration tests$(ccreset))
       export COMPILE_PYTHON_EXT := 0
