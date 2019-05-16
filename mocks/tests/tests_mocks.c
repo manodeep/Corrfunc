@@ -463,7 +463,7 @@ int main(int argc, char **argv)
     options.fast_acos=0;
     options.link_in_ra = 1;
     options.link_in_dec = 1;
-    options.copy_particles = 0;
+    options.copy_particles = 1;
 
     int status = init_cosmology(cosmology_flag);
     if(status != EXIT_SUCCESS) {

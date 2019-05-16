@@ -570,10 +570,9 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     const DOUBLE costhetamin=costheta_upp[0];
     const DOUBLE costhetamax=costheta_upp[nthetabin-1];
 
-    DOUBLE *X1,*Y1,*Z1;
-    X1 = my_malloc(sizeof(*X1),ND1);
-    Y1 = my_malloc(sizeof(*Y1),ND1);
-    Z1 = my_malloc(sizeof(*Z1),ND1);
+    DOUBLE *X1 = my_malloc(sizeof(*X1),ND1);
+    DOUBLE *Y1 = my_malloc(sizeof(*Y1),ND1);
+    DOUBLE *Z1 = my_malloc(sizeof(*Z1),ND1);
 
     if(X1 == NULL || Y1 == NULL || Z1 == NULL) {
         fprintf(stderr,"Error: Could not allocate memory for %"PRId64" particles in dataset #1. Required memory = %"PRIu64" bytes\n",
