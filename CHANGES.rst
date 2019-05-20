@@ -18,10 +18,7 @@ New features
 
 New features
 ------------
-- AVX512F kernels for all pair-counters [#167, #170, #173]
-- Faster code from new optimizations using the minimum separation between pairs of cells [#170, #173]
-- Option to use the input particle arrays directly and not make a copy of the particle positions [#173]
-- Internal code changes to (hopefully) achieve better OpenMP scaling [#173]
+- AVX512F kernels for all pair-counters [#167, #170, #173], faster code from new optimizations using the minimum separation between pairs of cells [#170, #173], option to use the input particle arrays directly and not make a copy of the particle positions [#173], internal code changes to (hopefully) achieve better OpenMP scaling [#173]
 
 Bug fixes
 ---------
