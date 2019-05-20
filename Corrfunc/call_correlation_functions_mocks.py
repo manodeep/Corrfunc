@@ -29,6 +29,7 @@ def main():
 
     t0 = time.time()
     ra, dec, cz = read_catalog(filename)
+    w = np.ones((1,len(ra)), dtype=ra.dtype)
     t1 = time.time()
     print("RA min  = {0} max = {1}".format(np.min(ra), np.max(ra)))
     print("DEC min = {0} max = {1}".format(np.min(dec), np.max(dec)))
@@ -49,7 +50,7 @@ def main():
     results_DDrppi, _ = rp_pi_mocks_extn(autocorr, cosmology, nthreads,
                                          pimax, binfile,
                                          ra, dec, cz,
-                                         weights1=np.ones_like(ra), weight_type='pair_product',
+                                         weights1=w, weight_type='pair_product',
                                          output_rpavg=True, verbose=True)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
           .format(numbins_to_print))
@@ -68,7 +69,7 @@ def main():
     print("\nRunning 2-D correlation function xi(s,mu)")
     results_DDsmu, _ = s_mu_mocks_extn(autocorr, cosmology, nthreads,
                                        mu_max, nmu_bins, binfile,
-                                       ra, dec, cz, weights1=np.ones_like(ra),
+                                       ra, dec, cz, weights1=w,
                                        output_savg=True, verbose=True,
                                        weight_type='pair_product')
     print("\n#            ****** DD(s,mu): first {0} bins  *******      "
@@ -87,8 +88,8 @@ def main():
     print("\nRunning angular correlation function DD(theta)")
     results_wtheta, _ = theta_mocks_extn(autocorr, nthreads, binfile,
                                          ra, dec, RA2=ra, DEC2=dec,
-                                         weights1=np.ones_like(ra),
-                                         weights2=np.ones_like(ra),
+                                         weights1=w,
+                                         weights2=w,
                                          weight_type='pair_product',
                                          output_thetaavg=True, fast_acos=True,
                                          verbose=1)

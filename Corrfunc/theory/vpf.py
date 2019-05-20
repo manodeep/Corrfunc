@@ -187,10 +187,9 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         raise ImportError(msg)
 
     import numpy as np
-    from warnings import warn
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
-        convert_to_native_endian, is_native_endian, sys_pipes
+        convert_to_native_endian, is_native_endian, sys_pipes, process_weights
     from math import pi
 
     if numpN <= 0:
@@ -213,11 +212,12 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
               .format(nspheres, rmax, nspheres * volume_sphere, volume)
         raise ValueError(msg)
 
-    # Warn about non-native endian arrays
-    if not all(is_native_endian(arr) for arr in [X, Y, Z]):
-        warn("One or more input array has non-native endianness!  A copy will"\
-             " be made with the correct endianness.")
-    X, Y, Z = [convert_to_native_endian(arr) for arr in [X, Y, Z]]
+    _locals = locals()
+
+    # Ensure all input arrays are native endian
+    for arrname in ('X', 'Y', 'Z'):
+        arr = _locals[arrname]
+        _locals[arrname] = convert_to_native_endian(arr, warn=True)
 
     integer_isa = translate_isa_string_to_enum(isa)
     with sys_pipes():

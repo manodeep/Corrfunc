@@ -248,14 +248,8 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 
     import numpy as np
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
-        return_file_with_rbins, sys_pipes
+        return_file_with_rbins, sys_pipes, process_weights, convert_to_native_endian
     from future.utils import bytes_to_native_str
-
-    # Broadcast scalar weights to arrays
-    if weights1 is not None:
-        weights1 = np.atleast_1d(weights1)
-    if weights2 is not None:
-        weights2 = np.atleast_1d(weights2)
 
     # Check if mu_max is scalar
     if not np.isscalar(mu_max):
@@ -275,17 +269,20 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
             msg = "Must pass valid arrays for RA2/DEC2/CZ2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
-
-        # If only one set of points has weights, set the other to uniform weights
-        if weights1 is None and weights2 is not None:
-            weights1 = np.ones_like(weights2)
-        if weights2 is None and weights1 is not None:
-            weights2 = np.ones_like(weights1)
-
     else:
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
         CZ2 = np.empty(1)
+
+    weights1, weights2 = process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
+
+    _locals = locals()
+
+    # Ensure all input arrays are native endian
+    for arrname in ('RA1', 'DEC1', 'CZ1', 'weights1', 'RA2', 'DEC2', 'CZ2', 'weights2'):
+        arr = _locals[arrname]
+        _locals[arrname] = convert_to_native_endian(arr, warn=True)
+
 
     fix_ra_dec(RA1, DEC1)
     if autocorr == 0:
@@ -294,7 +291,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2', 'CZ2']:
-        v = locals()[k]
+        v = _locals[k]
         if v is not None:
             kwargs[k] = v
 

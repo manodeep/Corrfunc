@@ -143,7 +143,7 @@ static PyMethodDef module_methods[] = {
      "    max z is less than that threshold. If you really want to change the speed\n"
      "    of light, then edit the macro in `ROOT/utils/set_cosmo_dist.h`.\n\n"
 
-     "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
+     "weights1 : array-like, real (float/double), shape (n_weights_per_particle,n_particles), optional\n"
      "    Weights for computing a weighted pair count.\n\n"
 
      "weight_type : str, optional\n"
@@ -154,7 +154,7 @@ static PyMethodDef module_methods[] = {
      "RA2/DEC2/CZ2: float/double (default double)\n"
      "    Same as for RA1/DEC1/CZ1\n\n"
 
-     "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
+     "weights2\n : array-like, real (float/double), shape (n_weights_per_particle,n_particles), optional\n"
      "    Weights for computing a weighted pair count.\n\n"
 
      "is_comoving_dist: boolean (default false)\n"
@@ -320,7 +320,7 @@ static PyMethodDef module_methods[] = {
      "    max z is less than that threshold. If you really want to change the speed\n"
      "    of light, then edit the macro in `ROOT/utils/set_cosmo_dist.h`.\n\n"
 
-     "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
+     "weights1 : array-like, real (float/double), shape (n_weights_per_particle,n_particles), optional\n"
      "    Weights for computing a weighted pair count.\n\n"
 
      "weight_type : str, optional\n"
@@ -331,7 +331,7 @@ static PyMethodDef module_methods[] = {
      "RA2/DEC2/CZ2: float/double (default double)\n"
      "    Same as for RA1/DEC1/CZ1\n\n"
 
-     "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
+     "weights2\n : array-like, real (float/double), shape (n_weights_per_particle,n_particles), optional\n"
      "    Weights for computing a weighted pair count.\n\n"
 
      "is_comoving_dist: boolean (default false)\n"
@@ -477,7 +477,7 @@ static PyMethodDef module_methods[] = {
      "    the [-90, 90] range. If the code finds declinations more than 180, then\n"
      "    it assumes RA and DEC have been swapped and aborts with that message.\n\n"
 
-     "weights1 : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
+     "weights1 : array-like, real (float/double), shape (n_weights_per_particle,n_particles), optional\n"
      "    Weights for computing a weighted pair count.\n\n"
 
      "weight_type : str, optional\n"
@@ -488,7 +488,7 @@ static PyMethodDef module_methods[] = {
      "RA2/DEC2: float/double (default double)\n"
      "    Same as for RA1/DEC1\n\n"
 
-     "weights2\n : array-like, real (float/double), shape (n_particles,) or (n_weights_per_particle,n_particles), optional\n"
+     "weights2\n : array-like, real (float/double), shape (n_weights_per_particle,n_particles), optional\n"
      "    Weights for computing a weighted pair count.\n\n"
 
      "verbose : boolean (default false)\n"
@@ -917,10 +917,10 @@ static int64_t check_dims_and_datatype(PyObject *module, PyArrayObject *x1_obj, 
     }
 
     /* The weights array can be 1-D or 2-D of shape (n_weights, n_particles) */
-    const int n_weight_dims = check_weights ? PyArray_NDIM(weights1_obj) : 1;
+    const int n_weight_dims = check_weights ? PyArray_NDIM(weights1_obj) : 2;
 
-    if(n_weight_dims != 1 && n_weight_dims != 2) {
-        snprintf(msg, 1024, "ERROR: Expected 1-D or 2-D weight array.\nFound n_weight_dims = %d instead", n_weight_dims);
+    if(n_weight_dims != 2) {
+        snprintf(msg, 1024, "ERROR: Expected 2-D weight array of shpae (n_weights_per_particle,n_particles).\nFound n_weight_dims = %d instead", n_weight_dims);
         countpairs_mocks_error_out(module, msg);
         return -1;
     }
@@ -1206,7 +1206,20 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
 
-
+    /* Validate the user's choice of weighting method */
+    weight_method_t weighting_method;
+    int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
+    if(wstatus != EXIT_SUCCESS){
+        char msg[1024];
+        snprintf(msg, 1024, "ValueError: In %s: unknown weight_type \"%s\"!", __FUNCTION__, weighting_method_str);
+        countpairs_mocks_error_out(module, msg);
+        Py_RETURN_NONE;
+    }
+    if(weighting_method == NONE){
+        // Do not attempt to validate the weights array if it will not be used!
+        weights1_obj = NULL;
+        weights2_obj = NULL;
+    }
 
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */
@@ -1217,23 +1230,6 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         Py_RETURN_NONE;
     }
 
-    /* Ensure the weights are of the right shape (n_weights, n_particles) */
-    if(weights1_obj != NULL){
-        // A numpy dimension of length -1 will be expanded to n_weights
-        npy_intp dims[2] = {-1, ND1};
-        PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
-        weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
-    }
-
-    /* Validate the user's choice of weighting method */
-    weight_method_t weighting_method;
-    int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
-    if(wstatus != EXIT_SUCCESS){
-        char msg[1024];
-        snprintf(msg, 1024, "ValueError: In %s: unknown weight_type %s!", __FUNCTION__, weighting_method_str);
-        countpairs_mocks_error_out(module, msg);
-        Py_RETURN_NONE;
-    }
     int found_weights = weights1_obj == NULL ? 0 : PyArray_SHAPE(weights1_obj)[0];
     struct extra_options extra = get_extra_options(weighting_method);
     if(extra.weights0.num_weights > 0 && extra.weights0.num_weights != found_weights){
@@ -1273,12 +1269,6 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         if(ND2 == -1) {
             //Error has already been set -> simply return
             Py_RETURN_NONE;
-        }
-        /* Ensure the weights are of the right shape (n_weights, n_particles) */
-        if(weights2_obj != NULL){
-            npy_intp dims[2] = {-1, ND2};
-            PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
-            weights2_obj = (PyArrayObject *) PyArray_Newshape(weights2_obj, &pdims, NPY_CORDER);
         }
 
         if(element_size != element_size2) {
@@ -1539,6 +1529,22 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         options.bin_refine_factors[2] = zbin_ref;
         set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
+
+    /* Validate the user's choice of weighting method */
+    weight_method_t weighting_method;
+    int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
+    if(wstatus != EXIT_SUCCESS){
+        char msg[1024];
+        snprintf(msg, 1024, "ValueError: In %s: unknown weight_type \"%s\"!", __FUNCTION__, weighting_method_str);
+        countpairs_mocks_error_out(module, msg);
+        Py_RETURN_NONE;
+    }
+    if(weighting_method == NONE){
+        // Do not attempt to validate the weights array if it will not be used!
+        weights1_obj = NULL;
+        weights2_obj = NULL;
+    }
+
     /* We have numpy arrays and all the required inputs*/
     /* How many data points are there? And are they all of floating point type */
     size_t element_size;
@@ -1548,23 +1554,6 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         Py_RETURN_NONE;
     }
 
-    /* Ensure the weights are of the right shape (n_weights, n_particles) */
-    if(weights1_obj != NULL){
-        // A numpy dimension of length -1 will be expanded to n_weights
-        npy_intp dims[2] = {-1, ND1};
-        PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
-        weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
-    }
-
-    /* Validate the user's choice of weighting method */
-    weight_method_t weighting_method;
-    int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
-    if(wstatus != EXIT_SUCCESS){
-        char msg[1024];
-        snprintf(msg, 1024, "ValueError: In %s: unknown weight_type %s!", __FUNCTION__, weighting_method_str);
-        countpairs_mocks_error_out(module, msg);
-        Py_RETURN_NONE;
-    }
     int found_weights = weights1_obj == NULL ? 0 : PyArray_SHAPE(weights1_obj)[0];
     struct extra_options extra = get_extra_options(weighting_method);
     if(extra.weights0.num_weights > 0 && extra.weights0.num_weights != found_weights){
@@ -1604,12 +1593,6 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         if(ND2 == -1) {
             //Error has already been set -> simply return
             Py_RETURN_NONE;
-        }
-        /* Ensure the weights are of the right shape (n_weights, n_particles) */
-        if(weights2_obj != NULL){
-            npy_intp dims[2] = {-1, ND2};
-            PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
-            weights2_obj = (PyArrayObject *) PyArray_Newshape(weights2_obj, &pdims, NPY_CORDER);
         }
 
         if(element_size != element_size2) {
@@ -1855,6 +1838,20 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         set_bin_refine_scheme(&options, BINNING_CUST);//custom binning -> code will honor requested binning scheme
     }
 
+    /* Validate the user's choice of weighting method */
+    weight_method_t weighting_method;
+    int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
+    if(wstatus != EXIT_SUCCESS){
+        char msg[1024];
+        snprintf(msg, 1024, "ValueError: In %s: unknown weight_type \"%s\"!", __FUNCTION__, weighting_method_str);
+        countpairs_mocks_error_out(module, msg);
+        Py_RETURN_NONE;
+    }
+    if(weighting_method == NONE){
+        // Do not attempt to validate the weights array if it will not be used!
+        weights1_obj = NULL;
+        weights2_obj = NULL;
+    }
 
     size_t element_size;
     /* We have numpy arrays and all the required inputs*/
@@ -1865,23 +1862,6 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         Py_RETURN_NONE;
     }
 
-    /* Ensure the weights are of the right shape (n_weights, n_particles) */
-    if(weights1_obj != NULL){
-        // A numpy dimension of length -1 will be expanded to n_weights
-        npy_intp dims[2] = {-1, ND1};
-        PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
-        weights1_obj = (PyArrayObject *) PyArray_Newshape(weights1_obj, &pdims, NPY_CORDER);
-    }
-
-    /* Validate the user's choice of weighting method */
-    weight_method_t weighting_method;
-    int wstatus = get_weight_method_by_name(weighting_method_str, &weighting_method);
-    if(wstatus != EXIT_SUCCESS){
-        char msg[1024];
-        snprintf(msg, 1024, "ValueError: In %s: unknown weight_type %s!", __FUNCTION__, weighting_method_str);
-        countpairs_mocks_error_out(module, msg);
-        Py_RETURN_NONE;
-    }
     int found_weights = weights1_obj == NULL ? 0 : PyArray_SHAPE(weights1_obj)[0];
     struct extra_options extra = get_extra_options(weighting_method);
     if(extra.weights0.num_weights > 0 && extra.weights0.num_weights != found_weights){
@@ -1921,12 +1901,6 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         if(ND2 == -1) {
             //Error has already been set -> simply return
             Py_RETURN_NONE;
-        }
-        /* Ensure the weights are of the right shape (n_weights, n_particles) */
-        if(weights2_obj != NULL){
-            npy_intp dims[2] = {-1, ND2};
-            PyArray_Dims pdims = {.ptr = &(dims[0]), .len = 2};
-            weights2_obj = (PyArrayObject *) PyArray_Newshape(weights2_obj, &pdims, NPY_CORDER);
         }
 
         if(element_size != element_size2) {

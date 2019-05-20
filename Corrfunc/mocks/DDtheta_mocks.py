@@ -275,37 +275,28 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
         raise ImportError(msg)
 
     import numpy as np
-    from warnings import warn
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian, sys_pipes
+        is_native_endian, sys_pipes, process_weights
     from future.utils import bytes_to_native_str
-
-    # Broadcast scalar weights to arrays
-    if weights1 is not None:
-        weights1 = np.atleast_1d(weights1)
-    if weights2 is not None:
-        weights2 = np.atleast_1d(weights2)
 
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
             msg = "Must pass valid arrays for RA2/DEC2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
-
-        # If only one set of points has weights, set the other to uniform weights
-        if weights1 is None and weights2 is not None:
-            weights1 = np.ones_like(weights2)
-        if weights2 is None and weights1 is not None:
-            weights2 = np.ones_like(weights1)
     else:
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
 
-    # Warn about non-native endian arrays
-    if not all(is_native_endian(arr) for arr in [RA1, DEC1, weights1, RA2, DEC2, weights2]):
-        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
-    RA1, DEC1, weights1, RA2, DEC2, weights2 = [convert_to_native_endian(arr) for arr in [RA1, DEC1, weights1, RA2, DEC2, weights2]]
+    weights1, weights2 = process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
+
+    _locals = locals()
+
+    # Ensure all input arrays are native endian
+    for arrname in ('RA1', 'DEC1', 'weights1', 'RA2', 'DEC2', 'weights2'):
+        arr = _locals[arrname]
+        _locals[arrname] = convert_to_native_endian(arr, warn=True)
 
     fix_ra_dec(RA1, DEC1)
     if autocorr == 0:
@@ -318,7 +309,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2']:
-        v = locals()[k]
+        v = _locals[k]
         if v is not None:
             kwargs[k] = v
 

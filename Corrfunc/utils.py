@@ -679,64 +679,64 @@ def gridlink_sphere(thetamax,
     >>> import numpy as np
     >>> np.set_printoptions(precision=8)
     >>> thetamax=30
-    >>> grid = gridlink_sphere(thetamax) # doctest: +NORMALIZE_WHITESPACE
-    >>> print(grid)
-    [([-1.57079633, -1.04719755], [ 0.        ,  3.14159265])
-     ([-1.57079633, -1.04719755], [ 3.14159265,  6.28318531])
-     ([-1.04719755, -0.52359878], [ 0.        ,  3.14159265])
-     ([-1.04719755, -0.52359878], [ 3.14159265,  6.28318531])
-     ([-0.52359878,  0.        ], [ 0.        ,  1.25663706])
-     ([-0.52359878,  0.        ], [ 1.25663706,  2.51327412])
-     ([-0.52359878,  0.        ], [ 2.51327412,  3.76991118])
-     ([-0.52359878,  0.        ], [ 3.76991118,  5.02654825])
-     ([-0.52359878,  0.        ], [ 5.02654825,  6.28318531])
-     ([ 0.        ,  0.52359878], [ 0.        ,  1.25663706])
-     ([ 0.        ,  0.52359878], [ 1.25663706,  2.51327412])
-     ([ 0.        ,  0.52359878], [ 2.51327412,  3.76991118])
-     ([ 0.        ,  0.52359878], [ 3.76991118,  5.02654825])
-     ([ 0.        ,  0.52359878], [ 5.02654825,  6.28318531])
-     ([ 0.52359878,  1.04719755], [ 0.        ,  3.14159265])
-     ([ 0.52359878,  1.04719755], [ 3.14159265,  6.28318531])
-     ([ 1.04719755,  1.57079633], [ 0.        ,  3.14159265])
-     ([ 1.04719755,  1.57079633], [ 3.14159265,  6.28318531])]
-    >>> grid = gridlink_sphere(60, dec_refine_factor=3, ra_refine_factor=2) # doctest: +NORMALIZE_WHITESPACE
-    >>> print(grid)
-    [([-1.57079633, -1.22173048], [ 0.        ,  1.57079633])
-     ([-1.57079633, -1.22173048], [ 1.57079633,  3.14159265])
-     ([-1.57079633, -1.22173048], [ 3.14159265,  4.71238898])
-     ([-1.57079633, -1.22173048], [ 4.71238898,  6.28318531])
-     ([-1.22173048, -0.87266463], [ 0.        ,  1.57079633])
-     ([-1.22173048, -0.87266463], [ 1.57079633,  3.14159265])
-     ([-1.22173048, -0.87266463], [ 3.14159265,  4.71238898])
-     ([-1.22173048, -0.87266463], [ 4.71238898,  6.28318531])
-     ([-0.87266463, -0.52359878], [ 0.        ,  1.57079633])
-     ([-0.87266463, -0.52359878], [ 1.57079633,  3.14159265])
-     ([-0.87266463, -0.52359878], [ 3.14159265,  4.71238898])
-     ([-0.87266463, -0.52359878], [ 4.71238898,  6.28318531])
-     ([-0.52359878, -0.17453293], [ 0.        ,  1.57079633])
-     ([-0.52359878, -0.17453293], [ 1.57079633,  3.14159265])
-     ([-0.52359878, -0.17453293], [ 3.14159265,  4.71238898])
-     ([-0.52359878, -0.17453293], [ 4.71238898,  6.28318531])
-     ([-0.17453293,  0.17453293], [ 0.        ,  1.57079633])
-     ([-0.17453293,  0.17453293], [ 1.57079633,  3.14159265])
-     ([-0.17453293,  0.17453293], [ 3.14159265,  4.71238898])
-     ([-0.17453293,  0.17453293], [ 4.71238898,  6.28318531])
-     ([ 0.17453293,  0.52359878], [ 0.        ,  1.57079633])
-     ([ 0.17453293,  0.52359878], [ 1.57079633,  3.14159265])
-     ([ 0.17453293,  0.52359878], [ 3.14159265,  4.71238898])
-     ([ 0.17453293,  0.52359878], [ 4.71238898,  6.28318531])
-     ([ 0.52359878,  0.87266463], [ 0.        ,  1.57079633])
-     ([ 0.52359878,  0.87266463], [ 1.57079633,  3.14159265])
-     ([ 0.52359878,  0.87266463], [ 3.14159265,  4.71238898])
-     ([ 0.52359878,  0.87266463], [ 4.71238898,  6.28318531])
-     ([ 0.87266463,  1.22173048], [ 0.        ,  1.57079633])
-     ([ 0.87266463,  1.22173048], [ 1.57079633,  3.14159265])
-     ([ 0.87266463,  1.22173048], [ 3.14159265,  4.71238898])
-     ([ 0.87266463,  1.22173048], [ 4.71238898,  6.28318531])
-     ([ 1.22173048,  1.57079633], [ 0.        ,  1.57079633])
-     ([ 1.22173048,  1.57079633], [ 1.57079633,  3.14159265])
-     ([ 1.22173048,  1.57079633], [ 3.14159265,  4.71238898])
-     ([ 1.22173048,  1.57079633], [ 4.71238898,  6.28318531])]
+    >>> grid = gridlink_sphere(thetamax)
+    >>> print(grid)  # doctest: +NORMALIZE_WHITESPACE
+    [([-1.57079633, -1.04719755], [0.        ,  3.14159265])
+     ([-1.57079633, -1.04719755], [3.14159265,  6.28318531])
+     ([-1.04719755, -0.52359878], [0.        ,  3.14159265])
+     ([-1.04719755, -0.52359878], [3.14159265,  6.28318531])
+     ([-0.52359878,  0.        ], [0.        ,  1.25663706])
+     ([-0.52359878,  0.        ], [1.25663706,  2.51327412])
+     ([-0.52359878,  0.        ], [2.51327412,  3.76991118])
+     ([-0.52359878,  0.        ], [3.76991118,  5.02654825])
+     ([-0.52359878,  0.        ], [5.02654825,  6.28318531])
+     ([ 0.        ,  0.52359878], [0.        ,  1.25663706])
+     ([ 0.        ,  0.52359878], [1.25663706,  2.51327412])
+     ([ 0.        ,  0.52359878], [2.51327412,  3.76991118])
+     ([ 0.        ,  0.52359878], [3.76991118,  5.02654825])
+     ([ 0.        ,  0.52359878], [5.02654825,  6.28318531])
+     ([ 0.52359878,  1.04719755], [0.        ,  3.14159265])
+     ([ 0.52359878,  1.04719755], [3.14159265,  6.28318531])
+     ([ 1.04719755,  1.57079633], [0.        ,  3.14159265])
+     ([ 1.04719755,  1.57079633], [3.14159265,  6.28318531])]
+    >>> grid = gridlink_sphere(60, dec_refine_factor=3, ra_refine_factor=2)
+    >>> print(grid)  # doctest: +NORMALIZE_WHITESPACE
+    [([-1.57079633, -1.22173048], [0.        ,  1.57079633])
+     ([-1.57079633, -1.22173048], [1.57079633,  3.14159265])
+     ([-1.57079633, -1.22173048], [3.14159265,  4.71238898])
+     ([-1.57079633, -1.22173048], [4.71238898,  6.28318531])
+     ([-1.22173048, -0.87266463], [0.        ,  1.57079633])
+     ([-1.22173048, -0.87266463], [1.57079633,  3.14159265])
+     ([-1.22173048, -0.87266463], [3.14159265,  4.71238898])
+     ([-1.22173048, -0.87266463], [4.71238898,  6.28318531])
+     ([-0.87266463, -0.52359878], [0.        ,  1.57079633])
+     ([-0.87266463, -0.52359878], [1.57079633,  3.14159265])
+     ([-0.87266463, -0.52359878], [3.14159265,  4.71238898])
+     ([-0.87266463, -0.52359878], [4.71238898,  6.28318531])
+     ([-0.52359878, -0.17453293], [0.        ,  1.57079633])
+     ([-0.52359878, -0.17453293], [1.57079633,  3.14159265])
+     ([-0.52359878, -0.17453293], [3.14159265,  4.71238898])
+     ([-0.52359878, -0.17453293], [4.71238898,  6.28318531])
+     ([-0.17453293,  0.17453293], [0.        ,  1.57079633])
+     ([-0.17453293,  0.17453293], [1.57079633,  3.14159265])
+     ([-0.17453293,  0.17453293], [3.14159265,  4.71238898])
+     ([-0.17453293,  0.17453293], [4.71238898,  6.28318531])
+     ([ 0.17453293,  0.52359878], [0.        ,  1.57079633])
+     ([ 0.17453293,  0.52359878], [1.57079633,  3.14159265])
+     ([ 0.17453293,  0.52359878], [3.14159265,  4.71238898])
+     ([ 0.17453293,  0.52359878], [4.71238898,  6.28318531])
+     ([ 0.52359878,  0.87266463], [0.        ,  1.57079633])
+     ([ 0.52359878,  0.87266463], [1.57079633,  3.14159265])
+     ([ 0.52359878,  0.87266463], [3.14159265,  4.71238898])
+     ([ 0.52359878,  0.87266463], [4.71238898,  6.28318531])
+     ([ 0.87266463,  1.22173048], [0.        ,  1.57079633])
+     ([ 0.87266463,  1.22173048], [1.57079633,  3.14159265])
+     ([ 0.87266463,  1.22173048], [3.14159265,  4.71238898])
+     ([ 0.87266463,  1.22173048], [4.71238898,  6.28318531])
+     ([ 1.22173048,  1.57079633], [0.        ,  1.57079633])
+     ([ 1.22173048,  1.57079633], [1.57079633,  3.14159265])
+     ([ 1.22173048,  1.57079633], [3.14159265,  4.71238898])
+     ([ 1.22173048,  1.57079633], [4.71238898,  6.28318531])]
 
     """
 
@@ -858,7 +858,7 @@ def gridlink_sphere(thetamax,
         return sphere_grid
 
 
-def convert_to_native_endian(array):
+def convert_to_native_endian(array, warn=False):
     '''
     Returns the supplied array in native endian byte-order.
     If the array already has native endianness, then the
@@ -868,6 +868,9 @@ def convert_to_native_endian(array):
     ----------
     array: np.ndarray
         The array to convert
+    warn: bool, optional
+        Print a warning if `array` is not already native endian.
+        Default: False.
 
     Returns
     -------
@@ -895,6 +898,8 @@ def convert_to_native_endian(array):
     True
     '''
 
+    import warnings
+
     if array is None:
         return array
    
@@ -904,6 +909,9 @@ def convert_to_native_endian(array):
     system_is_little_endian = (sys.byteorder == 'little')   
     array_is_little_endian = (array.dtype.byteorder == '<')
     if (array_is_little_endian != system_is_little_endian) and not (array.dtype.byteorder == '='):
+      if warn:
+        warnings.warn("One or more input array has non-native endianness!  A copy will"\
+                      " be made with the correct endianness.")
         return array.byteswap().newbyteorder()
     else:
         return array
@@ -949,6 +957,66 @@ def is_native_endian(array):
     system_is_little_endian = (sys.byteorder == 'little')
     array_is_little_endian = (array.dtype.byteorder == '<')
     return (array_is_little_endian == system_is_little_endian) or (array.dtype.byteorder == '=')
+
+
+def process_weights(weights1, weights2, X1, X2, weight_type, autocorr):
+  '''
+  Process the user-passed weights in a manner that can be handled by
+  the C code.  `X1` and `X2` are the corresponding pos arrays; they
+  allow us to get the appropriate dtype and length when weight arrays
+  are not explicitly given.
+
+  1) Scalar weights are promoted to arrays
+  2) If only one set of weights is given, the other is generated with
+      weights = 1, but only for weight_type = 'pair_product'.  Otherwise
+      a ValueError will be raised.
+  3) Weight arrays are reshaped to 2D (shape n_weights_per_particle, n_particles)
+  '''
+  import numpy as np
+
+  if weight_type is None:
+    # Weights will not be used; do nothing
+    return weights1, weights2
+
+  # Takes a scalar, 1d, or 2d weights array
+  # and returns a 2d array of shape (nweights,npart)
+  def prep(w,x):
+    if w is None:
+      return w
+
+    # not None, so probably float or numpy array
+    if type(w) is float:
+      # Use the particle dtype if a Python float was given
+      w = np.array(w, dtype=x.dtype)
+
+    w = np.atleast_1d(w)  # could have been numpy scalar
+
+    # If only one particle's weight(s) were given,
+    # assume it applies to all particles
+    if w.shape[-1] == 1:
+      w = np.tile(w, len(x))
+
+    # now of shape (nweights,nparticles)
+    w = np.atleast_2d(w)
+
+    return w
+
+  weights1 = prep(weights1, X1)
+
+  if not autocorr:
+    weights2 = prep(weights2, X2)
+
+    if (weights1 is None) != (weights2 is None):
+      if weight_type != 'pair_product':
+        raise ValueError("If using a weight_type other than 'pair_product', you must provide both weight arrays.")
+
+    if weights1 is None and weights2 is not None:
+      weights1 = np.ones((len(weights2),len(X1)), dtype=X1.dtype)
+
+    if weights2 is None and weights1 is not None:
+      weights2 = np.ones((len(weights1),len(X2)), dtype=X2.dtype)
+
+  return weights1, weights2
 
 
 @contextmanager

@@ -30,6 +30,7 @@ def main():
     tstart = time.time()
     t0 = tstart
     x, y, z = read_catalog()
+    w = np.ones((1,len(x)), dtype=x.dtype)
     boxsize = 420.0
     t1 = time.time()
     print("Done reading the data - time taken = {0:10.1f} seconds"
@@ -47,7 +48,7 @@ def main():
 
     print("Running 3-D correlation function DD(r)")
     results_DD, _ = DD_extn(autocorr, nthreads, binfile, x, y, z,
-                            weights1=np.ones_like(x), weight_type='pair_product',
+                            weights1=w, weight_type='pair_product',
                             verbose=True, periodic=periodic, boxsize=boxsize)
     print("\n#      **** DD(r): first {0} bins  *******       "
           .format(numbins_to_print))
@@ -62,7 +63,7 @@ def main():
     print("\nRunning 2-D correlation function DD(rp,pi)")
     results_DDrppi, _ = DDrppi_extn(autocorr, nthreads, pimax,
                                     binfile, x, y, z,
-                                    weights1=np.ones_like(x), weight_type='pair_product',
+                                    weights1=w, weight_type='pair_product',
                                     verbose=True, periodic=periodic,
                                     boxsize=boxsize)
     print("\n#            ****** DD(rp,pi): first {0} bins  *******      "
@@ -82,7 +83,7 @@ def main():
     results_DDsmu, _ = DDsmu_extn(autocorr, nthreads, binfile,
                                     mu_max, nmu_bins,
                                     x, y, z,
-                                    weights1=np.ones_like(x), weight_type='pair_product',
+                                    weights1=w, weight_type='pair_product',
                                     verbose=True, periodic=periodic,
                                     boxsize=boxsize, output_savg=True)
     print("\n#            ****** DD(s,mu): first {0} bins  *******      "
@@ -98,7 +99,7 @@ def main():
     print("\nRunning 2-D projected correlation function wp(rp)")
     results_wp, _, _ = wp_extn(boxsize, pimax, nthreads,
                             binfile, x, y, z,
-                            weights=np.ones_like(x), weight_type='pair_product',
+                            weights=w, weight_type='pair_product',
                             verbose=True)
     print("\n#            ******    wp: first {0} bins  *******         "
           .format(numbins_to_print))
@@ -113,7 +114,7 @@ def main():
     print("\nRunning 3-D auto-correlation function xi(r)")
     results_xi, _ = xi_extn(boxsize, nthreads, binfile,
                             x, y, z,
-                            weights=np.ones_like(x), weight_type='pair_product',
+                            weights=w, weight_type='pair_product',
                             verbose=True)
 
     print("\n#            ******    xi: first {0} bins  *******         "
