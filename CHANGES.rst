@@ -26,6 +26,8 @@ New features
 Bug fixes
 ---------
 - Fix segmentation fault in vpf_mocks [#168]
+- Fix automatic uniform weights array when only one set of weights (or a scalar) is passed [#180]
+- Fix memory leak due to Python reference leak when using weights [#181]
 
 
 2.2.0
