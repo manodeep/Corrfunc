@@ -10,8 +10,8 @@ New features
 - conda installable package
 - GPU version
 
-2.3.0
-=======
+2.3.0 (upcoming)
+================
 
 **Breaking Changes**
 --------------------
@@ -27,8 +27,8 @@ Bug fixes
 - Fix memory leak due to Python reference leak when using weights [#181]
 
 
-2.2.0
-=======
+2.2.0 (2018-08-18)
+==================
 
 **Breaking Changes**
 --------------------
@@ -45,8 +45,8 @@ Bug fixes
   instead of the unhelpful "TypeError: 'NoneType' object is not iterable". [#158]
 
 
-2.1.0
-=======
+2.1.0 (2018-08-17)
+==================
 
 New features
 ------------
@@ -62,8 +62,8 @@ Enhancements
   and `DD(s, mu)` for both theory and mocks
 
 
-2.0.0
-=======
+2.0.0 (2017-04-06)
+==================
 
 New features
 ------------
@@ -110,50 +110,50 @@ Outstanding issues
 - Parameter parsing in python extensions can be flaky (`#79 <https://github.com/manodeep/Corrfunc/issues/79>`_)
 
 
-1.1.0 (June 8, 2016)
-=====================
+1.1.0 (2016-06-08)
+===================
 
 - SSE kernels for all statistics
 - Incorrect normalization in ``xi``. **ALL** previous
   ``xi`` calculations were wrong.
 
 
-1.0.0 (Apr 14, 2016)
-====================
+1.0.0 (2016-04-14)
+==================
 
 - Improved installation process  
 - Detecting ``AVX`` capable CPU at compile time
 - Double-counting bug fixes in ``wp`` and ``xi``
   
 
-0.2.3 (Mar 30, 2016)
-=====================
+0.2.3 (2016-03-30)
+==================
 
 - Streamlined compilation on MACs
 - PyPI version is not verbose by default
 
 
-0.2.2 (Feb 9, 2016)
-====================
+0.2.2 (2016-02-09)
+==================
 
 - First version on `PyPI <https://pypi.python.org/pypi/Corrfunc>`_
 
 
-0.2.1 (Feb 6, 2016)
-====================
+0.2.1 (2016-02-06)
+==================
 
 - ``AVX`` enabled by default
 
 
-0.2.0 (Feb 5, 2016)
-====================
+0.2.0 (2016-02-05)
+==================
 
 - Python 2/3 compatible
  
 
 
-0.0.1 (Nov 11, 2015)
-====================
+0.0.1 (2015-11-11)
+==================
 
 - Initial release
 
