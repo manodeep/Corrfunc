@@ -58,8 +58,8 @@ Enhancements
 ------------
 - GSL version now specified and tested by Travis [#164]
 - Now possible to specify the number of Newton-Raphson steps to
-improve accuracy of approximate reciprocals. Available in `DD(rp, pi)` for mocks,
-and `DD(s, mu)` for both theory and mocks
+  improve accuracy of approximate reciprocals. Available in `DD(rp, pi)` for mocks,
+  and `DD(s, mu)` for both theory and mocks
 
 
 2.0.0
@@ -88,8 +88,9 @@ Enhancements
 
 - Ctrl-C now aborts even within python extensions (cleans up memory too!, `#12 <https://github.com/manodeep/Corrfunc/issues/12>`_)
 - Significantly improved installation for python
-  - compiler can now be specified within ``python setup.py install
-    CC=yourcompiler`` `#31<https://github.com/manodeep/Corrfunc/issues/31>`_
+
+  - compiler can now be specified within ``python setup.py install CC=yourcompiler``
+    `#31<https://github.com/manodeep/Corrfunc/issues/31>`_
   - python via an alias is now solved `#52 <https://github.com/manodeep/Corrfunc/issues/52>`_
 
 
