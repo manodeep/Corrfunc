@@ -146,3 +146,6 @@ script:
   - make -C docs html
   - if [[ "${DOCTEST}" == "TRUE" ]]; then make -C docs doctest ; fi
 
+branches:
+  only: 
+    - master
