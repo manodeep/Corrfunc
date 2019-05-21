@@ -343,6 +343,24 @@ If you use the code, please cite using the `ascl entry <http://ascl.net/1703.003
          adsnote = {Provided by the SAO/NASA Astrophysics Data System}
       }
 
+If you are using ``Corrfunc v2.3.0`` or later, please additionally cite this paper:
+
+::
+
+      @InProceedings{10.1007/978-981-13-7729-7_1,
+          author="Sinha, Manodeep and Garrison, Lehman",
+          editor="Majumdar, Amit and Arora, Ritu",
+          title="CORRFUNC: Blazing Fast Correlation Functions with AVX512F SIMD Intrinsics",
+          booktitle="Software Challenges to Exascale Computing",
+          year="2019",
+          publisher="Springer Singapore",
+          address="Singapore",
+          pages="3--20",
+          isbn="978-981-13-7729-7",
+          url={https://doi.org/10.1007/978-981-13-7729-7_1}
+      }
+
+
 
 Mailing list
 ============
