@@ -19,10 +19,14 @@ void free_results_mocks(results_countpairs_mocks *results)
     if(results==NULL)
         return;
 
-    free(results->npairs);
-    free(results->rupp);
-    free(results->rpavg);
-    free(results->weightavg);
+    free(results->npairs);results->npairs = NULL;
+    free(results->rupp);results->rupp = NULL;
+    free(results->rpavg);results->rpavg = NULL;
+    free(results->weightavg);results->weightavg = NULL;
+
+    results->nbin = 0;
+    results->npibin = 0;
+    results->pimax = 0.0;
 }
 
 
@@ -46,7 +50,7 @@ int countpairs_mocks(const int64_t ND1, void *phi1, void *theta1, void *czD1,
         fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;
     }
-    
+
     if(options->float_type == sizeof(float)) {
         return countpairs_mocks_float(ND1, (float *) phi1, (float *) theta1, (float *) czD1,
                                       ND2, (float *) phi2, (float *) theta2, (float *) czD2,

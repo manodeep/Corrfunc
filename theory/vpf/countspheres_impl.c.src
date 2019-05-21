@@ -16,14 +16,16 @@
 #include <gsl/gsl_rng.h>
 
 #include "countspheres_impl_DOUBLE.h" //function proto-type
+#include "vpf_kernels_DOUBLE.c" // the kernels
 
+#include "defs.h"
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
 #include "cellarray_DOUBLE.h" //definition of struct cellarray*
-#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
 #include "cpu_features.h"
 
-#include "vpf_kernels_DOUBLE.c"
+#include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
+#include "gridlink_utils_DOUBLE.h" //for associated helper routines
 
 int interrupt_status_vpf_DOUBLE=EXIT_SUCCESS;
 
@@ -31,41 +33,50 @@ void interrupt_handler_vpf_DOUBLE(int signo)
 {
     fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
     interrupt_status_vpf_DOUBLE = EXIT_FAILURE;
-}    
+}
 
-vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options) 
+vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options)
 {
-  
+
     static vpf_func_ptr_DOUBLE function = NULL;
-    static isa old_isa=-1;
+    static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
     }
 
     //Seriously this is the declaration for the function pointers...here be dragons.
     vpf_func_ptr_DOUBLE allfunctions[] = {
-#ifdef __AVX__
-      vpf_avx_intrinsics_DOUBLE,
-#endif			 
-#ifdef __SSE4_2__
-      vpf_sse_intrinsics_DOUBLE,
+#ifdef __AVX512F__
+        vpf_avx512_intrinsics_DOUBLE,
 #endif
-      vpf_fallback_DOUBLE
+#ifdef __AVX__
+        vpf_avx_intrinsics_DOUBLE,
+#endif
+#ifdef __SSE4_2__
+        vpf_sse_intrinsics_DOUBLE,
+#endif
+        vpf_fallback_DOUBLE
     };
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
-#if defined(__AVX__) || defined __SSE4_2__    
+#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = instrset_detect();
-#endif    
+#endif
     int curr_offset = 0;
-    
+    /* Check for AVX512F support */
+    int avx512_offset = fallback_offset;
+#ifdef __AVX512F__
+    avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
 #ifdef __AVX__
     avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
     curr_offset++;
-#endif        
-    
+#endif
+
     /* Is the SSE function supported at runtime and enabled at compile-time?*/
     int sse_offset = fallback_offset;
 #ifdef __SSE4_2__
@@ -76,13 +87,13 @@ vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options)
       fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
               curr_offset, fallback_offset);
       return NULL;
-    } 
-    
+    }
+
     int function_dispatch=0;
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):
+        case(AVX512F):function_dispatch=avx512_offset;break;
         case(AVX2):
         case(AVX):function_dispatch=avx_offset;break;
         case(SSE42):function_dispatch=sse_offset;break;
@@ -112,21 +123,30 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                         struct config_options *options,
                         struct extra_options *extra)
 {
-    
+
     if(options->float_type != sizeof(DOUBLE)) {
         fprintf(stderr,"ERROR: In %s> Can only handle arrays of size=%zu. Got an array of size = %zu\n",
                 __FUNCTION__, sizeof(DOUBLE), options->float_type);
         return EXIT_FAILURE;
     }
-    (void) extra;
-    
+
+    // If no extra options were passed, create dummy options
+    // This allows us to pass arguments like "extra->weights0" below;
+    // they'll just be NULLs, which is the correct behavior
+    struct extra_options dummy_extra;
+    if(extra == NULL){
+        weight_method_t dummy_method = NONE;
+        dummy_extra = get_extra_options(dummy_method);
+        extra = &dummy_extra;
+    }
+
     //Input validation
     if( ! (rmax > 0.0 && nbin > 0 && nc > 0 && num_pN > 0)) {
         fprintf(stderr,"Error: Invalid input parameters. Expected rmax > 0, number of bins > 0, number of random spheres > 0, number of pN's to calculate > 0.\n"
                 "Found rmax = %lf, nbin = %d nspheres = %d num_pN = %d\n", rmax, nbin, nc, num_pN);
         return EXIT_FAILURE;
     }
-    
+
     struct timeval t0;
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);
@@ -144,7 +164,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         }
     }
 
-    /* setup interrupt handler -> mostly useful during the python execution. 
+    /* setup interrupt handler -> mostly useful during the python execution.
        Let's Ctrl-C abort the extension  */
     SETUP_INTERRUPT_HANDLERS(interrupt_handler_vpf_DOUBLE);
 
@@ -157,23 +177,26 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         gsl_rng_free(rng);
         return EXIT_FAILURE;
     }
+
     //Find the min/max of the data
     DOUBLE xmin,xmax,ymin,ymax,zmin,zmax;
-    xmin=1e10;ymin=1e10;zmin=1e10;
-    xmax=-1e10;ymax=-1e10;zmax=-1e10;
+    xmin = ymin = zmin = MAX_POSITIVE_FLOAT;
+    xmax = ymax = zmax = -MAX_POSITIVE_FLOAT;
     get_max_min_DOUBLE(np, X, Y, Z, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
 
-    //First create the 3-d linklist
+    //First create the 3-d cellstruct
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_DOUBLE *lattice = gridlink_DOUBLE(np, X, Y, Z,
+    cellarray_DOUBLE *lattice = gridlink_DOUBLE(np, X, Y, Z, &(extra->weights0),
                                                 xmin, xmax, ymin, ymax, zmin, zmax,
                                                 rmax, rmax, rmax,
-                                                options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                options->bin_refine_factors[0],
+                                                options->bin_refine_factors[1],
+                                                options->bin_refine_factors[2],
                                                 &nmesh_x, &nmesh_y, &nmesh_z, options);
     if(lattice == NULL) {
         return EXIT_FAILURE;
     }
-    
+
     int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
     const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
@@ -195,19 +218,19 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         free_cellarray_DOUBLE(lattice, totncells);
         return EXIT_FAILURE;
     }
-    
+
     int interrupted=0;
     if(options->verbose) {
         init_my_progressbar(nc,&interrupted);
     }
-    
+
     /* loop through centers, placing each randomly */
     int ic=0;
     while(ic < nc && interrupt_status_vpf_DOUBLE == EXIT_SUCCESS) {
         if(options->verbose) {
             my_progressbar(ic,&interrupted);
         }
-        
+
         const DOUBLE xc = xdiff*gsl_rng_uniform (rng) + xmin;
         const DOUBLE yc = ydiff*gsl_rng_uniform (rng) + ymin;
         const DOUBLE zc = zdiff*gsl_rng_uniform (rng) + zmin;
@@ -248,7 +271,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
         for(int ibin=0;ibin<nbin;ibin++) {
             counts_pN[ibin]=0;
         }
-        
+
         /* gettimeofday(&t0,NULL); */
         for(int8_t iix=-options->bin_refine_factors[0];iix<=options->bin_refine_factors[0];iix++) {
             int iiix;
@@ -312,7 +335,7 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                     /* fprintf(stderr,"calling vpf on index = %lld\n", index); */
                     int status = vpf_function_DOUBLE(first->nelements, x2, y2, z2,
                                                      newxpos, newypos, newzpos,
-                                                     rmax, nbin, 
+                                                     rmax, nbin,
                                                      counts_pN);
                     if(status != EXIT_SUCCESS) {
                         matrix_free((void **) pN, nbin);
@@ -328,9 +351,9 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
             counts_pN[ibin]+=counts_pN[ibin-1];
         }
 
-        /* Probably better of sorting counts. 
+        /* Probably better of sorting counts.
            Then the next double for-loop will be much more coherent (branch-predictions + early exit) */
-        
+
         /* compute pN's */
         for(int ibin=0;ibin<nbin;ibin++) {
             for(int i=0;i<num_pN;i++) {
@@ -339,17 +362,26 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                 }
             }
         }
-        
+
         /* gettimeofday(&t1,NULL); */
     }//loop over number of spheres
-    
+
     gsl_rng_free (rng);
+
+    if(options->copy_particles == 0) {
+        int64_t *original_index = lattice[0].original_index;
+        int status = reorder_particles_back_into_original_order_DOUBLE(np, original_index, X, Y, Z, &(extra->weights0));
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
+
     free_cellarray_DOUBLE(lattice, totncells);
     if(interrupt_status_vpf_DOUBLE != EXIT_SUCCESS) {
         matrix_free((void **) pN, nbin);
         return interrupt_status_vpf_DOUBLE;
     }
-    
+
     if(options->verbose) {
         finish_myprogressbar(&interrupted);
     }

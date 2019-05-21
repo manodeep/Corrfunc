@@ -22,8 +22,8 @@
 #include "progressbar.h" //for the progressbar
 #include "cpu_features.h" //prototype instrset_detect required for runtime dispatch
 
-#include "cellarray_DOUBLE.h" //definition of struct cellarray*
 #include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
+#include "gridlink_utils_DOUBLE.h" //for associated helper routines
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -35,21 +35,24 @@ void interrupt_handler_countpairs_xi_DOUBLE(int signo)
 {
     fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
     interrupt_status_xi_DOUBLE = EXIT_FAILURE;
-}    
+}
 
 xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
 {
     static xi_func_ptr_DOUBLE function = NULL;
-    static isa old_isa=-1;
+    static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
     }
-    
+
     //Seriously this is the declaration for the function pointers...here be dragons.
     xi_func_ptr_DOUBLE allfunctions[] = {
+#ifdef __AVX512F__
+      xi_avx512_intrinsics_DOUBLE,
+#endif
 #ifdef __AVX__
       xi_avx_intrinsics_DOUBLE,
-#endif			 
+#endif
 #ifdef __SSE4_2__
       xi_sse_intrinsics_DOUBLE,
 #endif
@@ -57,18 +60,24 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     };
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
-#if defined(__AVX__) || defined __SSE4_2__    
+#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = instrset_detect();
-#endif    
+#endif
     int curr_offset = 0;
-    
+    /* Check for AVX512F support */
+    int avx512_offset = fallback_offset;
+#ifdef __AVX512F__
+    avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
 #ifdef __AVX__
     avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
     curr_offset++;
-#endif        
-    
+#endif
+
     /* Is the SSE function supported at runtime and enabled at compile-time?*/
     int sse_offset = fallback_offset;
 #ifdef __SSE4_2__
@@ -79,13 +88,13 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
       fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
               curr_offset, fallback_offset);
       return NULL;
-    } 
-    
+    }
+
     int function_dispatch=0;
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):
+        case(AVX512F):function_dispatch=avx512_offset;break;
         case(AVX2):
         case(AVX): function_dispatch=avx_offset;break;
         case(SSE42):function_dispatch=sse_offset;break;
@@ -100,17 +109,20 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     }
     function = allfunctions[function_dispatch];
     old_isa = options->instruction_set;
-    
+
     if(options->verbose){
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
             fprintf(stderr,"Using fallback kernel\n");
+        } else if(function_dispatch == avx512_offset){
+            fprintf(stderr,"Using AVX512 kernel\n");
         } else if(function_dispatch == avx_offset){
             fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
             fprintf(stderr,"Using SSE kernel\n");
         } else {
-            printf("Unknown kernel!\n");
+            fprintf(stderr, "Unknown kernel!\n");
+            return NULL;
         }
     }
 
@@ -136,7 +148,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);
     }
-    
+
     // If no extra options were passed, create dummy options
     // This allows us to pass arguments like "extra->weights0" below;
     // they'll just be NULLs, which is the correct behavior
@@ -148,14 +160,14 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     }
 
     int need_weightavg = extra->weight_method != NONE;
-    
+
     if(need_weightavg && extra->weight_method != PAIR_PRODUCT){
         fprintf(stderr, "Warning: a weight_method ( = %d ) other than pair_product was provided to countpairs_xi.  The computed results.xi will not be a weighted xi, since we only know how to compute the weighted RR term for pair_product.\n", extra->weight_method);
     }
-    
+
 #if defined(_OPENMP)
     omp_set_num_threads(numthreads);
-#else    
+#else
     (void) numthreads;
 #endif
 
@@ -178,8 +190,8 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
             break;/* all factors have been reset -> no point continuing with the loop */
         }
     }
-    
-    /* setup interrupt handler -> mostly useful during the python execution. 
+
+    /* setup interrupt handler -> mostly useful during the python execution.
        Let's Ctrl-C abort the extension  */
     SETUP_INTERRUPT_HANDLERS(interrupt_handler_countpairs_xi_DOUBLE);
 
@@ -208,12 +220,12 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     const DOUBLE xmin = 0.0, xmax=boxsize;
     const DOUBLE ymin = 0.0, ymax=boxsize;
     const DOUBLE zmin = 0.0, zmax=boxsize;
-    
-    cellarray_index_particles_DOUBLE *lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, &(extra->weights0),
-                                                                                xmin, xmax, ymin, ymax, zmin, zmax,
-                                                                                rmax, rmax, rmax,
-                                                                                options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
-                                                                                &nmesh_x, &nmesh_y, &nmesh_z, options);
+
+    cellarray_DOUBLE *lattice = gridlink_DOUBLE(ND, X, Y, Z, &(extra->weights0),
+                                                xmin, xmax, ymin, ymax, zmin, zmax,
+                                                rmax, rmax, rmax,
+                                                options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                                &nmesh_x, &nmesh_y, &nmesh_z, options);
     if(lattice == NULL) {
         return EXIT_FAILURE;
     }
@@ -223,51 +235,66 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
       const int max_nmesh = fmax(nmesh_x, fmax(nmesh_y, nmesh_z));
       if((max_nmesh <= BOOST_CELL_THRESH || avg_np >= BOOST_NUMPART_THRESH)
             && max_nmesh < options->max_cells_per_dim) {
-          fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
+          if(options->verbose) {
+              fprintf(stderr,"%s> gridlink seems inefficient. nmesh = (%d, %d, %d); avg_np = %.3g. ", __FUNCTION__, nmesh_x, nmesh_y, nmesh_z, avg_np);
+          }
           if(get_bin_refine_scheme(options) == BINNING_DFL) {
-            fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
-            fprintf(stderr,"xmin = %lf xmax=%lf rmax = %lf\n", xmin, xmax, rmax);
-            free_cellarray_index_particles_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
+              if(options->verbose) {
+                  fprintf(stderr,"Boosting bin refine factor - should lead to better performance\n");
+                  fprintf(stderr,"xmin = %lf xmax=%lf rmax = %lf\n", xmin, xmax, rmax);
+              }
+            free_cellarray_DOUBLE(lattice, nmesh_x * (int64_t) nmesh_y * nmesh_z);
             // Only boost the first two dimensions.  Prevents excessive refinement.
             for(int i=0;i<2;i++) {
                 options->bin_refine_factors[i] += BOOST_BIN_REF;
             }
-            lattice = gridlink_index_particles_DOUBLE(ND, X, Y, Z, &(extra->weights0),
-                                                       xmin, xmax, ymin, ymax, zmin, zmax,
-                                                       rmax, rmax, rmax,
-                                                       options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
-                                                       &nmesh_x, &nmesh_y, &nmesh_z, options);
+            lattice = gridlink_DOUBLE(ND, X, Y, Z, &(extra->weights0),
+                                      xmin, xmax, ymin, ymax, zmin, zmax,
+                                      rmax, rmax, rmax,
+                                      options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
+                                      &nmesh_x, &nmesh_y, &nmesh_z, options);
             if(lattice == NULL) {
                 return EXIT_FAILURE;
             }
-          
+
         } else {
-          fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
-                  "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
-                  options->bin_refine_factors[1], options->bin_refine_factors[2]);
-        }
+              if(options->verbose) {
+                  fprintf(stderr,"Boosting bin refine factor could have helped. However, since custom bin refine factors "
+                          "= (%d, %d, %d) are being used - continuing with inefficient mesh\n", options->bin_refine_factors[0],
+                          options->bin_refine_factors[1], options->bin_refine_factors[2]);
+              }
+          }
     }
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
-    {
-        int status = assign_ngb_cells_index_particles_DOUBLE(lattice, lattice, totncells,
-                                                             options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
-                                                             nmesh_x, nmesh_y, nmesh_z, boxsize, boxsize, boxsize, options->autocorr, options->periodic);
-        if(status != EXIT_SUCCESS) {
-            free_cellarray_index_particles_DOUBLE(lattice, totncells);
-            free(rupp);
-            return status;
-        }
-    }
-    /* runtime dispatch - get the function pointer */
-    xi_func_ptr_DOUBLE xi_function_DOUBLE = xi_driver_DOUBLE(options);
-    if(xi_function_DOUBLE == NULL) {
-        free_cellarray_index_particles_DOUBLE(lattice, totncells);
+    int64_t num_cell_pairs = 0;
+    struct cell_pair_DOUBLE *all_cell_pairs = generate_cell_pairs_DOUBLE(lattice, lattice, totncells,
+                                                                         &num_cell_pairs,
+                                                                         options->bin_refine_factors[0],
+                                                                         options->bin_refine_factors[1],
+                                                                         options->bin_refine_factors[2],
+                                                                         nmesh_x, nmesh_y, nmesh_z,
+                                                                         boxsize, boxsize, boxsize,
+                                                                         rmax, -1.0, -1.0, /*max_3D_sep, max_2D_sep, max_1D_sep*/
+                                                                         options->enable_min_sep_opt,
+                                                                         options->autocorr,
+                                                                         options->periodic);
+    if(all_cell_pairs == NULL) {
+        free_cellarray_DOUBLE(lattice, totncells);
         free(rupp);
         return EXIT_FAILURE;
     }
 
-    
+
+    /* runtime dispatch - get the function pointer */
+    xi_func_ptr_DOUBLE xi_function_DOUBLE = xi_driver_DOUBLE(options);
+    if(xi_function_DOUBLE == NULL) {
+        free_cellarray_DOUBLE(lattice, totncells);
+        free(rupp);
+        return EXIT_FAILURE;
+    }
+
+
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nbins);
     DOUBLE **all_ravg = NULL;
@@ -279,10 +306,10 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
       all_weightavg = (DOUBLE **) matrix_calloc(sizeof(DOUBLE),numthreads,nbins);
     }
 
-    
+
     if(all_npairs == NULL || (options->need_avg_sep && all_ravg == NULL) ||
        (need_weightavg && all_weightavg == NULL)) {
-        free_cellarray_index_particles_DOUBLE(lattice, totncells);
+        free_cellarray_DOUBLE(lattice, totncells);
         matrix_free((void **) all_npairs, numthreads);
         if(options->need_avg_sep) {
             matrix_free((void **) all_ravg, numthreads);
@@ -321,7 +348,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     int interrupted=0, abort_status = EXIT_SUCCESS;
     int64_t numdone=0;
     if(options->verbose) {
-        init_my_progressbar(totncells,&interrupted);
+        init_my_progressbar(num_cell_pairs, &interrupted);
     }
 
     /*---Loop-over-Data1-particles--------------------*/
@@ -341,87 +368,52 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                 weightavg[i] = ZERO;
             }
         }
-        
-#pragma omp for schedule(dynamic) nowait 
-#endif
-        for(int64_t index1=0;index1<totncells;index1++) {
 
-#if defined(_OPENMP)            
+#pragma omp for schedule(dynamic) nowait
+#endif
+        for(int64_t icellpair=0;icellpair<num_cell_pairs;icellpair++) {
+
+#if defined(_OPENMP)
 #pragma omp flush (abort_status, interrupt_status_xi_DOUBLE)
 #endif
             if(abort_status == EXIT_SUCCESS && interrupt_status_xi_DOUBLE == EXIT_SUCCESS) {
-                
+
                 if(options->verbose) {
 #if defined(_OPENMP)
                     if (omp_get_thread_num() == 0)
 #endif
                         my_progressbar(numdone,&interrupted);
-                    
-                    
+
+
 #if defined(_OPENMP)
 #pragma omp atomic
 #endif
                     numdone++;
                 } //verbose
 
-                /* First do the same-cell calculations */
-                const cellarray_index_particles_DOUBLE *first  = &(lattice[index1]);
-                if(first->nelements == 0) {
-                    continue;
-                }
-                
-                DOUBLE *x1 = first->x;
-                DOUBLE *y1 = first->y;
-                DOUBLE *z1 = first->z;
-                const weight_struct_DOUBLE *weights1 = &(first->weights);
-                const int64_t N1 = first->nelements;
-                int same_cell = 1;
-                DOUBLE *this_ravg = NULL;
-                DOUBLE *this_weightavg = NULL;
-                if(options->need_avg_sep) {
-                    this_ravg = ravg;
-                }
-                if(need_weightavg) {
-                    this_weightavg = weightavg;
-                }
-                int status = xi_function_DOUBLE(x1, y1, z1, weights1, N1,
-                                                x1, y1, z1, weights1, N1, same_cell, 
-                                                sqr_rmax, sqr_rmin, nbins, rupp_sqr, rmax,
-                                                ZERO, ZERO, ZERO,
-                                                this_ravg, npairs,
-                                                this_weightavg, extra->weight_method);
-                /* This actually causes a race condition under OpenMP - but mostly 
-                   I care that an error occurred - rather than the exact value of 
+                struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[icellpair];
+                DOUBLE *this_rpavg = options->need_avg_sep ? ravg:NULL;
+                DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+
+                const int status = xi_function_DOUBLE(this_cell_pair->x1, this_cell_pair->y1, this_cell_pair->z1,
+                                                      this_cell_pair->weights1, this_cell_pair->N1,
+                                                      this_cell_pair->x2, this_cell_pair->y2, this_cell_pair->z2,
+                                                      this_cell_pair->weights2, this_cell_pair->N2,
+                                                      this_cell_pair->same_cell,
+                                                      sqr_rmax, sqr_rmin, nbins, rupp_sqr,
+                                                      this_cell_pair->xwrap, this_cell_pair->ywrap, this_cell_pair->zwrap,
+                                                      this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
+                                                      this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
+                                                      this_rpavg, npairs,
+                                                      this_weightavg, extra->weight_method);
+
+                /* This actually causes a race condition under OpenMP - but mostly
+                   I care that an error occurred - rather than the exact value of
                    the error status */
                 abort_status |= status;
-                
-                for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
-                    const cellarray_index_particles_DOUBLE *second = first->ngb_cells[ngb];
-                    if(second->nelements == 0) {
-                        continue;
-                    }
-                    DOUBLE *x2 = second->x;
-                    DOUBLE *y2 = second->y;
-                    DOUBLE *z2 = second->z;
-                    const weight_struct_DOUBLE *weights2 = &(second->weights);
-                    const int64_t N2 = second->nelements;
-                    const DOUBLE off_xwrap = first->xwrap[ngb];
-                    const DOUBLE off_ywrap = first->ywrap[ngb];
-                    const DOUBLE off_zwrap = first->zwrap[ngb];
-                    same_cell = 0;
-                    status = xi_function_DOUBLE(x1, y1, z1, weights1, N1,
-                                                x2, y2, z2, weights2, N2, same_cell, 
-                                                sqr_rmax, sqr_rmin, nbins, rupp_sqr, rmax,
-                                                off_xwrap, off_ywrap, off_zwrap,
-                                                this_ravg, npairs,
-                                                this_weightavg, extra->weight_method);
-                    /* This actually causes a race condition under OpenMP - but mostly 
-                       I care that an error occurred - rather than the exact value of 
-                       the error status */
-                    abort_status |= status;
-                }//ngb loop
+
             }//error occurred somewhere in the called functions: abort_status is set
-        }//index1 loop
+        }//loop over cell-pairs
 
 #if defined(_OPENMP)
         for(int j=0;j<nbins;j++) {
@@ -436,11 +428,20 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     }//close the omp parallel region
 #endif//openmp parallel
 
-    free_cellarray_index_particles_DOUBLE(lattice, totncells);
+    free(all_cell_pairs);
+    if(options->copy_particles == 0) {
+        int64_t *original_index = lattice[0].original_index;
+        int status = reorder_particles_back_into_original_order_DOUBLE(ND, original_index, X, Y, Z, &(extra->weights0));
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+    }
+
+    free_cellarray_DOUBLE(lattice, totncells);
     if(abort_status != EXIT_SUCCESS || interrupt_status_xi_DOUBLE != EXIT_SUCCESS) {
         /* Cleanup memory here if aborting */
         free(rupp);
-#if defined(_OPENMP)      
+#if defined(_OPENMP)
         matrix_free((void **) all_npairs,numthreads);
         if(options->need_avg_sep) {
             matrix_free((void **) all_ravg, numthreads);
@@ -462,7 +463,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     uint64_t npairs[nbins];
     DOUBLE ravg[nbins];
     DOUBLE weightavg[nbins];
-    
+
     for(int i=0;i<nbins;i++) {
         npairs[i] = 0;
         if(options->need_avg_sep) {
@@ -494,14 +495,14 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
 #endif//OpenMP
 
 
-    /* I am only doubling the pair-counts to account for the rmin=0.0 
+    /* I am only doubling the pair-counts to account for the rmin=0.0
        case. Ideally, I would simply add ND/2 pairs but for odd ND, this
        would result in incorrect output. Easier to simply double all the
-       pairs, and add ND to the first valid rp bin. 
+       pairs, and add ND to the first valid rp bin.
      */
     const uint64_t int_fac = 2;
     const DOUBLE dbl_fac = (DOUBLE) 2.0;
-    
+
     for(int i=0;i<nbins;i++) {
         npairs[i] *= int_fac;
         if(options->need_avg_sep) {
@@ -516,11 +517,11 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     /* The comparison is '<=' rather than '==' only to silence
        the compiler  */
     if(rupp[0] <= 0.0) {
-        /* Then, add all the self-pairs. This ensures that 
-           a cross-correlation with two identical datasets 
+        /* Then, add all the self-pairs. This ensures that
+           a cross-correlation with two identical datasets
            produces the same result as the auto-correlation  */
         npairs[1] += ND; //npairs[1] contains the first valid bin.
-        
+
       // Increasing npairs affects rpavg and weightavg.
       // We don't need to add anything to rpavg; all the self-pairs have 0 separation!
       // The self-pairs have non-zero weight, though.  So, fix that here.
@@ -530,7 +531,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         pair_struct_DOUBLE pair = {.num_weights = extra->weights0.num_weights,
                                    .dx.d=0., .dy.d=0., .dz.d=0.,  // always 0 separation
                                    .parx.d=0., .pary.d=0., .parz.d=0.};
-        for(int j = 0; j < ND; j++){
+        for(int64_t j = 0; j < ND; j++){
             for(int w = 0; w < pair.num_weights; w++){
                 pair.weights0[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
                 pair.weights1[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
@@ -540,7 +541,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
       }
     }
 
-    
+
     //So the npairs array contains the number of pairs
     //and the ravg array contain the *SUM* of separations
     //Let's divide out ravg by npairs to actually get
@@ -571,7 +572,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     }
 
     DOUBLE weightsum = (DOUBLE) ND, weight_sqr_sum = (DOUBLE) ND;
-    
+
     // If weights were provided and weight_method is pair_product,
     // return the weighted xi
     if(need_weightavg && extra->weight_method == PAIR_PRODUCT) {
@@ -582,7 +583,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
             weight_sqr_sum += weights[j]*weights[j];
         }
     }
-    
+
     // The RR term is the expected pair counts for a random particle set, all with the mean weight
     // The negative term is needed for autocorrelations
     const DOUBLE prefac_density=weightsum*(weightsum - weightsum/ND)/(boxsize*boxsize*boxsize);
@@ -596,7 +597,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         results->weightavg[i] = ZERO;
         if(options->need_avg_sep) {
             results->ravg[i] = ravg[i];
-        } 
+        }
         if(need_weightavg) {
             results->weightavg[i] = weightavg[i];
         }
@@ -618,13 +619,13 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
         }
         rlow=results->rupp[i];
     }
-    
+
     free(rupp);
 
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
     reset_bin_refine_factors(options);
-    
+
     if(options->c_api_timer) {
         struct timeval t1;
         gettimeofday(&t1, NULL);

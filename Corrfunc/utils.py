@@ -7,6 +7,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import sys
 from os.path import exists as file_exists
+import wurlitzer
+from contextlib import contextmanager
 
 __all__ = ['convert_3d_counts_to_cf', 'convert_rp_pi_counts_to_wp',
            'translate_isa_string_to_enum', 'return_file_with_rbins',
@@ -459,14 +461,14 @@ def translate_isa_string_to_enum(isa):
     """
     Helper function to convert an user-supplied string to the
     underlying enum in the C-API. The extensions only have specific
-    implementations for AVX, SSE42 and FALLBACK. Any other value
-    will raise a ValueError.
+    implementations for AVX512F, AVX, SSE42 and FALLBACK. Any other
+    value will raise a ValueError.
 
     Parameters
     ------------
     isa: string
        A string containing the desired instruction set. Valid values are
-       ['AVX', 'SSE42', 'FALLBACK', 'FASTEST']
+       ['AVX512F', 'AVX', 'SSE42', 'FALLBACK', 'FASTEST']
 
     Returns
     --------
@@ -485,7 +487,7 @@ def translate_isa_string_to_enum(isa):
     except NameError:
         if not isinstance(isa, str):
             raise TypeError(msg)
-    valid_isa = ['FALLBACK', 'AVX', 'SSE42', 'FASTEST']
+    valid_isa = ['FALLBACK', 'AVX512F', 'AVX2', 'AVX', 'SSE42', 'FASTEST']
     isa_upper = isa.upper()
     if isa_upper not in valid_isa:
         msg = "Desired instruction set = {0} is not in the list of valid "\
@@ -675,10 +677,13 @@ def gridlink_sphere(thetamax,
 
     >>> from Corrfunc.utils import gridlink_sphere
     >>> import numpy as np
-    >>> np.set_printoptions(precision=8)
+    >>> try:  # Backwards compatibility with old Numpy print formatting
+    ...     np.set_printoptions(legacy='1.13')
+    ... except TypeError:
+    ...     pass
     >>> thetamax=30
-    >>> grid = gridlink_sphere(thetamax) # doctest: +NORMALIZE_WHITESPACE
-    >>> print(grid)
+    >>> grid = gridlink_sphere(thetamax)
+    >>> print(grid)  # doctest: +NORMALIZE_WHITESPACE
     [([-1.57079633, -1.04719755], [ 0.        ,  3.14159265])
      ([-1.57079633, -1.04719755], [ 3.14159265,  6.28318531])
      ([-1.04719755, -0.52359878], [ 0.        ,  3.14159265])
@@ -697,8 +702,8 @@ def gridlink_sphere(thetamax,
      ([ 0.52359878,  1.04719755], [ 3.14159265,  6.28318531])
      ([ 1.04719755,  1.57079633], [ 0.        ,  3.14159265])
      ([ 1.04719755,  1.57079633], [ 3.14159265,  6.28318531])]
-    >>> grid = gridlink_sphere(60, dec_refine_factor=3, ra_refine_factor=2) # doctest: +NORMALIZE_WHITESPACE
-    >>> print(grid)
+    >>> grid = gridlink_sphere(60, dec_refine_factor=3, ra_refine_factor=2)
+    >>> print(grid)  # doctest: +NORMALIZE_WHITESPACE
     [([-1.57079633, -1.22173048], [ 0.        ,  1.57079633])
      ([-1.57079633, -1.22173048], [ 1.57079633,  3.14159265])
      ([-1.57079633, -1.22173048], [ 3.14159265,  4.71238898])
@@ -856,7 +861,7 @@ def gridlink_sphere(thetamax,
         return sphere_grid
 
 
-def convert_to_native_endian(array):
+def convert_to_native_endian(array, warn=False):
     '''
     Returns the supplied array in native endian byte-order.
     If the array already has native endianness, then the
@@ -866,6 +871,9 @@ def convert_to_native_endian(array):
     ----------
     array: np.ndarray
         The array to convert
+    warn: bool, optional
+        Print a warning if `array` is not already native endian.
+        Default: False.
 
     Returns
     -------
@@ -893,6 +901,8 @@ def convert_to_native_endian(array):
     True
     '''
 
+    import warnings
+
     if array is None:
         return array
    
@@ -902,6 +912,9 @@ def convert_to_native_endian(array):
     system_is_little_endian = (sys.byteorder == 'little')   
     array_is_little_endian = (array.dtype.byteorder == '<')
     if (array_is_little_endian != system_is_little_endian) and not (array.dtype.byteorder == '='):
+        if warn:
+            warnings.warn("One or more input array has non-native endianness!  A copy will"\
+                      " be made with the correct endianness.")
         return array.byteswap().newbyteorder()
     else:
         return array
@@ -949,8 +962,67 @@ def is_native_endian(array):
     return (array_is_little_endian == system_is_little_endian) or (array.dtype.byteorder == '=')
 
 
-import wurlitzer
+def process_weights(weights1, weights2, X1, X2, weight_type, autocorr):
+    '''
+    Process the user-passed weights in a manner that can be handled by
+    the C code.  `X1` and `X2` are the corresponding pos arrays; they
+    allow us to get the appropriate dtype and length when weight arrays
+    are not explicitly given.
 
+    1) Scalar weights are promoted to arrays
+    2) If only one set of weights is given, the other is generated with
+        weights = 1, but only for weight_type = 'pair_product'.  Otherwise
+        a ValueError will be raised.
+    3) Weight arrays are reshaped to 2D (shape n_weights_per_particle, n_particles)
+    '''
+    import numpy as np
+
+    if weight_type is None:
+        # Weights will not be used; do nothing
+        return weights1, weights2
+
+    # Takes a scalar, 1d, or 2d weights array
+    # and returns a 2d array of shape (nweights,npart)
+    def prep(w,x):
+        if w is None:
+            return w
+
+        # not None, so probably float or numpy array
+        if type(w) is float:
+            # Use the particle dtype if a Python float was given
+            w = np.array(w, dtype=x.dtype)
+
+        w = np.atleast_1d(w)  # could have been numpy scalar
+
+        # If only one particle's weight(s) were given,
+        # assume it applies to all particles
+        if w.shape[-1] == 1:
+            w = np.tile(w, len(x))
+
+        # now of shape (nweights,nparticles)
+        w = np.atleast_2d(w)
+
+        return w
+
+    weights1 = prep(weights1, X1)
+
+    if not autocorr:
+        weights2 = prep(weights2, X2)
+
+        if (weights1 is None) != (weights2 is None):
+            if weight_type != 'pair_product':
+                raise ValueError("If using a weight_type other than 'pair_product', you must provide both weight arrays.")
+
+        if weights1 is None and weights2 is not None:
+            weights1 = np.ones((len(weights2),len(X1)), dtype=X1.dtype)
+
+        if weights2 is None and weights1 is not None:
+            weights2 = np.ones((len(weights1),len(X2)), dtype=X2.dtype)
+
+    return weights1, weights2
+
+
+@contextmanager
 def sys_pipes():
     '''
     We can use the Wurlitzer package to redirect stdout and stderr
@@ -962,8 +1034,8 @@ def sys_pipes():
 
     Basic usage is:
 
-    >>> with sys_pipes():
-    >>>    call_some_c_function()
+    >>> with sys_pipes():  # doctest: +SKIP
+    ...    call_some_c_function()
 
     See the Wurlitzer package for usage of `wurlitzer.pipes()`;
     see also https://github.com/manodeep/Corrfunc/issues/157.
@@ -971,7 +1043,16 @@ def sys_pipes():
 
     kwargs = {'stdout':None if sys.stdout.isatty() else sys.stdout,
               'stderr':None if sys.stderr.isatty() else sys.stderr }
-    return wurlitzer.pipes(**kwargs)
+
+    # Redirection might break for any number of reasons, like
+    # stdout/err already being closed/redirected.  We probably
+    # prefer not to crash in that case and instead continue
+    # without any redirection.
+    try:
+        with wurlitzer.pipes(**kwargs):
+            yield
+    except:
+        yield
     
 if __name__ == '__main__':
     import doctest

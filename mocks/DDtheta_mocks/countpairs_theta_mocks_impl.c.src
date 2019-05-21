@@ -12,11 +12,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "countpairs_theta_mocks_impl_DOUBLE.h"
-#include "countpairs_theta_mocks_kernels_DOUBLE.c"
-#include "cellarray_mocks_DOUBLE.h"
-#include "gridlink_mocks_impl_DOUBLE.h"
-
 #include "defs.h"
 #include "utils.h"
 #include "cpu_features.h"
@@ -26,13 +21,21 @@
 #include <omp.h>
 #endif
 
+#include "gridlink_utils_DOUBLE.h"
+#include "gridlink_mocks_impl_DOUBLE.h"
+
+#include "countpairs_theta_mocks_impl_DOUBLE.h"
+#include "countpairs_theta_mocks_kernels_DOUBLE.c"
+
+
+
 int interrupt_status_wtheta_mocks_DOUBLE=EXIT_SUCCESS;
 
 void interrupt_handler_wtheta_mocks_DOUBLE(int signo)
 {
     fprintf(stderr,"Received signal = `%s' (signo = %d). Aborting \n",strsignal(signo), signo);
     interrupt_status_wtheta_mocks_DOUBLE = EXIT_FAILURE;
-}    
+}
 
 
 
@@ -83,40 +86,50 @@ int check_ra_dec_DOUBLE(const int64_t N, DOUBLE *ra, DOUBLE *theta)
 countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(const struct config_options *options)
 {
     static countpairs_theta_mocks_func_ptr_DOUBLE function = NULL;
-    static isa old_isa=-1;
+    static isa old_isa = (isa) -1;
     if(old_isa == options->instruction_set) {
         return function;
-    } 
-  
+    }
+
 
     /* Array of function pointers */
     countpairs_theta_mocks_func_ptr_DOUBLE allfunctions[] = {
-#ifdef __AVX__
-          countpairs_theta_mocks_avx_instrinsics_DOUBLE,
-#endif			 
-#ifdef __SSE4_2__
-          countpairs_theta_mocks_sse_instrinsics_DOUBLE,
+#ifdef __AVX512F__
+        countpairs_theta_mocks_avx512_instrinsics_DOUBLE,
 #endif
-          countpairs_theta_mocks_fallback_DOUBLE
+#ifdef __AVX__
+        countpairs_theta_mocks_avx_instrinsics_DOUBLE,
+#endif
+#ifdef __SSE4_2__
+        countpairs_theta_mocks_sse_instrinsics_DOUBLE,
+#endif
+        countpairs_theta_mocks_fallback_DOUBLE
     };
 
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
-#if defined(__AVX__) || defined __SSE4_2__
+#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     /* Since highest_isa is only used in cases where SSE4.2 or AVX is defined,
        without this protection, there will be an unnecessary function call
        and an unused variable compiler warning. */
     const int highest_isa = instrset_detect();
-#endif    
+#endif
     int curr_offset = 0;
-    
+
+    /* Check for AVX512F support */
+    int avx512_offset = fallback_offset;
+#ifdef __AVX512F__
+    avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
+    curr_offset++;
+#endif
+
     /* Now check if AVX is supported by the CPU */
     int avx_offset = fallback_offset;
 #ifdef __AVX__
     avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
     curr_offset++;
-#endif        
-    
+#endif
+
     /* Is the SSE function supported at runtime and enabled at compile-time?*/
     int sse_offset = fallback_offset;
 #ifdef __SSE4_2__
@@ -127,13 +140,13 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
       fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
               curr_offset, fallback_offset);
       return NULL;
-    } 
-    
+    }
+
     int function_dispatch=0;
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):
+        case(AVX512F):function_dispatch=avx512_offset;break;
         case(AVX2):
         case(AVX):function_dispatch=avx_offset;break;
         case(SSE42):function_dispatch=sse_offset;break;
@@ -147,38 +160,44 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
     }
     function = allfunctions[function_dispatch];
     old_isa = options->instruction_set;
-    
+
     if(options->verbose){
         // This must be first (AVX/SSE may be aliased to fallback)
         if(function_dispatch == fallback_offset){
             fprintf(stderr,"Using fallback kernel\n");
+        } else if(function_dispatch == avx512_offset){
+            fprintf(stderr,"Using AVX512 kernel\n");
         } else if(function_dispatch == avx_offset){
             fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == sse_offset){
             fprintf(stderr,"Using SSE kernel\n");
         } else {
             fprintf(stderr,"Unknown kernel!\n");
+            return NULL;
         }
     }
-        
+
     return function;
 }
 
-static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
+
+#include "sglib.h"
+static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
                                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
                                                             const int numthreads,
                                                             const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
                                                             const DOUBLE *theta_upp,
-                                                            const DOUBLE *costheta_upp, 
+                                                            const DOUBLE *costheta_upp,
                                                             results_countpairs_theta *results,
                                                             struct config_options *options,
                                                             struct extra_options *extra)
-                                                            
+
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
-    
+
+
     // If no extra options were passed, create dummy options
     // This allows us to pass arguments like "extra->weights0" below;
     // they'll just be NULLs, which is the correct behavior
@@ -188,17 +207,47 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
       dummy_extra = get_extra_options(dummy_method);
       extra = &dummy_extra;
     }
-    
+
     int need_weightavg = extra->weight_method != NONE;
-    
+
     /* Always print a message saying "brute-force" is running*/
     fprintf(stderr,"Running brute force algorithm\n");
-#if defined(_OPENMP)    
+#if defined(_OPENMP)
     omp_set_num_threads(numthreads);
 #else
     (void) numthreads;
 #endif
-    
+
+
+#define MULTIPLE_ARRAY_EXCHANGER(type, a, i, j)  { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, x0, i, j); \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, y0, i, j);               \
+        SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, z0, i, j);               \
+        for(int w = 0; w < extra->weights0.num_weights; w++) {          \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, (DOUBLE *) extra->weights0.weights[w], i, j); \
+        }                                                               \
+    }
+
+    //Sorting on z -> equivalent to sorting on declination
+    //(since z := sin(dec) is a monotonic mapping in -90 <= dec <= 90, the domain for dec)
+    SGLIB_ARRAY_QUICK_SORT(DOUBLE, z0, N0, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+#undef MULTIPLE_ARRAY_EXCHANGER
+
+    if(x0 != x1) {
+#define MULTIPLE_ARRAY_EXCHANGER(type, a, i, j)  { SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, x1, i, j); \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, y1, i, j);           \
+            SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, z1, i, j);           \
+            for(int w = 0; w < extra->weights1.num_weights; w++){       \
+                SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, (DOUBLE *) extra->weights1.weights[w], i, j); \
+            }                                                           \
+        }
+
+        //Sorting on z -> equivalent to sorting on declination
+        //(since z := sin(dec) is a monotonic mapping in -90 <= dec <= 90, the domain for dec)
+        SGLIB_ARRAY_QUICK_SORT(DOUBLE, z1, N1, SGLIB_NUMERIC_COMPARATOR , MULTIPLE_ARRAY_EXCHANGER);
+#undef MULTIPLE_ARRAY_EXCHANGER
+    }
+
+
     struct timeval t0;
     if(options->c_api_timer) {
         gettimeofday(&t0, NULL);
@@ -227,7 +276,7 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
         for(int i=0;i<nthetabin;i++) weightavg[i] = ZERO;
     }
 #endif
-    
+
     /* runtime dispatch - get the function pointer */
     countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_function_DOUBLE = countpairs_theta_mocks_driver_DOUBLE(options);
     if(countpairs_theta_mocks_function_DOUBLE == NULL) {
@@ -237,7 +286,7 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     const int block_size = 128;
     int64_t numdone=0;
     int interrupted=0,same_cell=0,abort_status=EXIT_SUCCESS;
-    
+
     if(options->verbose) {
         init_my_progressbar(N0, &interrupted);
     }
@@ -260,33 +309,33 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
 #pragma omp for  schedule(dynamic)
 #endif
         for(int64_t i=0;i<N0;i+=block_size) {
-            
+
 #if defined(_OPENMP)
 #pragma omp flush (abort_status)
 #endif
             if(abort_status == EXIT_SUCCESS && interrupt_status_wtheta_mocks_DOUBLE == EXIT_SUCCESS) {
                 //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
-                
+
                 /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
                 if(options->verbose) {
 #if defined(_OPENMP)
                     if (omp_get_thread_num() == 0)
 #endif
                         my_progressbar(numdone,&interrupted);
-                    
-                    
+
+
 #if defined(_OPENMP)
 #pragma omp atomic
 #endif
                     numdone+=block_size;
                 }
-                
+
                 const int64_t block_size1 = (N0-i) > block_size ? block_size:(N0-i);
                 for(int64_t j=0;j<N1;j+=block_size) {
                     const int64_t block_size2 = (N1-j) > block_size ? block_size:(N1-j);
                     DOUBLE *this_thetaavg = need_thetaavg ? thetaavg:NULL;
                     DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    
+
                     // Make thread-local copies of the weights structs so we can
                     // advance the pointers
                     weight_struct_DOUBLE this_weights0 = {.num_weights = extra->weights0.num_weights};
@@ -295,20 +344,22 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
                         this_weights0.weights[w] = (DOUBLE *) extra->weights0.weights[w] + i;
                         this_weights1.weights[w] = (DOUBLE *) extra->weights1.weights[w] + j;
                     }
-                    
+
                     int status = countpairs_theta_mocks_function_DOUBLE(block_size1, &x0[i], &y0[i], &z0[i], &this_weights0,
                                                                         block_size2, &x1[j], &y1[j], &z1[j], &this_weights1,
                                                                         same_cell,
                                                                         options->fast_acos,
                                                                         costhetamax, costhetamin, nthetabin,
                                                                         costheta_upp,
-                                                                        this_thetaavg,
-                                                                        npairs, this_weightavg, extra->weight_method);
+                                                                        ZERO, ZERO, ZERO, /* min xyz diff */
+                                                                        ZERO, ZERO, ZERO, /* closest xyz positions */
+                                                                        this_thetaavg, npairs,
+                                                                        this_weightavg, extra->weight_method);
                     abort_status |= status;
                 } //N1 loop
             } //abort_status condition
         }//N0 loop
-        
+
 #if defined(_OPENMP)
         for(int j=0;j<nthetabin;j++) {
             all_npairs[tid][j] = npairs[j];
@@ -355,6 +406,9 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     }
 #endif//USE_OMP
 
+
+    /* Do not add in the corrections for rmin == 0.0 and AUTOCORR
+       The brute-force ALWAYS computes a cross-correlation   */
     for(int i=1;i<nthetabin;i++) {
         if(npairs[i] > 0) {
             if(options->need_avg_sep) {
@@ -366,7 +420,6 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
         }
     }
 
-
     //prepare results
     //Pack in the results
     results->nbin = nthetabin;
@@ -374,6 +427,11 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
     results->theta_upp = my_malloc(sizeof(*(results->theta_upp))  , nthetabin);
     results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
     results->weightavg = my_malloc(sizeof(*(results->weightavg))  , nthetabin);
+    if(results->npairs == NULL || results->theta_upp == NULL || results->theta_avg == NULL || results->weightavg == NULL) {
+        fprintf(stderr,"Error: Could not allocate memory for %d nbins to hold the results of the pair-counting\n", nthetabin);
+        free_results_countpairs_theta(results);
+        return EXIT_FAILURE;
+    }
 
     for(int i=0;i<nthetabin;i++) {
         results->npairs[i] = npairs[i];
@@ -392,7 +450,7 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
         gettimeofday(&t1, NULL);
         options->c_api_time = ADD_DIFF_TIME(t0, t1);
     }
-    
+
     return EXIT_SUCCESS;
 }
 
@@ -426,7 +484,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         return EXIT_FAILURE;
     }
 
-    
+
     // If no extra options were passed, create dummy options
     // This allows us to pass arguments like "extra->weights0" below;
     // they'll just be NULLs, which is the correct behavior
@@ -436,7 +494,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
       dummy_extra = get_extra_options(dummy_method);
       extra = &dummy_extra;
     }
-    
+
     int need_weightavg = extra->weight_method != NONE;
 
     struct timeval t0;
@@ -462,13 +520,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
     }
 
-#if defined(_OPENMP)    
+#if defined(_OPENMP)
     omp_set_num_threads(numthreads);
 #else
     (void) numthreads;
 #endif
 
-    /* setup interrupt handler -> mostly useful during the python execution. 
+    /* setup interrupt handler -> mostly useful during the python execution.
        Let's Ctrl-C abort the extension  */
     SETUP_INTERRUPT_HANDLERS(interrupt_handler_wtheta_mocks_DOUBLE);
 
@@ -476,7 +534,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     int nthetabin;
     DOUBLE thetamin,thetamax;
     setup_bins_DOUBLE(binfile,&thetamin,&thetamax,&nthetabin,&theta_upp);
-    if( ! (thetamin > 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax <= 180.0 && nthetabin >= 1) ) {
+    if( ! (thetamin >= 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax <= 180.0 && nthetabin >= 1) ) {
         fprintf(stderr,"Error: Could not setup with theta bins correctly. (thetamin = %lf, thetamax = %lf, with nbins = %d). Expected non-zero rmin/rmax with thetamax > "
                 "thetamin and nbins >=1 \n",thetamin, thetamax, nthetabin);
         return EXIT_FAILURE;
@@ -498,12 +556,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             break;/* all factors have been reset -> no point continuing with the loop */
         }
     }
-    
+
     if(options->max_cells_per_dim == 0) {
         fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
         options->max_cells_per_dim = NLATMAX;
     }
-    
+
 
     DOUBLE costheta_upp[nthetabin];
     for(int i=0;i<nthetabin;i++) {
@@ -512,18 +570,17 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     const DOUBLE costhetamin=costheta_upp[0];
     const DOUBLE costhetamax=costheta_upp[nthetabin-1];
 
-    DOUBLE *X1,*Y1,*Z1;
-    X1 = my_malloc(sizeof(*X1),ND1);
-    Y1 = my_malloc(sizeof(*Y1),ND1);
-    Z1 = my_malloc(sizeof(*Z1),ND1);
+    DOUBLE *X1 = my_malloc(sizeof(*X1),ND1);
+    DOUBLE *Y1 = my_malloc(sizeof(*Y1),ND1);
+    DOUBLE *Z1 = my_malloc(sizeof(*Z1),ND1);
 
     if(X1 == NULL || Y1 == NULL || Z1 == NULL) {
         fprintf(stderr,"Error: Could not allocate memory for %"PRId64" particles in dataset #1. Required memory = %"PRIu64" bytes\n",
                 ND1, sizeof(DOUBLE)*ND1);
         return EXIT_FAILURE;
     }
-    
-    for(int i=0;i<ND1;i++) {
+
+    for(int64_t i=0;i<ND1;i++) {
         X1[i] = COSD(dec1[i])*COSD(ra1[i]) ;
         Y1[i] = COSD(dec1[i])*SIND(ra1[i]) ;
         Z1[i] = SIND(dec1[i]);
@@ -539,53 +596,94 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                     ND2, sizeof(DOUBLE)*ND2);
             return EXIT_FAILURE;
         }
-        
+
         for(int64_t i=0;i<ND2;i++) {
             X2[i] = COSD(dec2[i])*COSD(ra2[i]) ;
             Y2[i] = COSD(dec2[i])*SIND(ra2[i]) ;
             Z2[i] = SIND(dec2[i]);
         }
-    } else {
-        // We might call the brute-force pair couter, which knows nothing about autocorrelations
-        // so set up the weight pointers for the second set of particles
-        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
-            extra->weights1.weights[w] = extra->weights0.weights[w];
-        }
     }
 
     if(options->link_in_dec==0 && options->link_in_ra==0) {
+        // The positions and weights are going to be rearranged inside brute force!
+        // The pos are temporary so we don't care.
+        // Create and pass a temporary copy of the weights too; otherwise they will get de-synced from the original pos.
+        // TODO: Long term, the "right" way to do this while avoiding a memcpy is to somehow sort the original RA/DEC
+        // But if we're using the brute-force counter then we probably don't care about performance anyway...
+
+        weight_struct weights0_backup = extra->weights0;
+        weight_struct weights1_backup = extra->weights1;
+
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            extra->weights0.weights[w] = my_calloc(sizeof(DOUBLE), ND1);
+            if(extra->weights0.weights[w] == NULL) {
+                fprintf(stderr,"Error: Could not allocate memory for %"PRId64" particles in dataset #1. Required memory = %"PRIu64" bytes\n",
+                        ND1, sizeof(DOUBLE)*ND1);
+                return EXIT_FAILURE;
+            }
+            memcpy(extra->weights0.weights[w], weights0_backup.weights[w], sizeof(DOUBLE)*ND1);
+        }
+
+        if(autocorr){
+            // The brute-force pair counter knows nothing about autocorrelations
+            // So make the weight pointers for the second set just point to the first set
+            extra->weights1 = extra->weights0;
+        } else {
+            for(int64_t w = 0; w < extra->weights1.num_weights; w++){
+                extra->weights1.weights[w] = my_malloc(sizeof(DOUBLE), ND2);
+                if(extra->weights0.weights[w] == NULL) {
+                    fprintf(stderr,"Error: Could not allocate memory for %"PRId64" particles in dataset #2. Required memory = %"PRIu64" bytes\n",
+                            ND2, sizeof(DOUBLE)*ND2);
+                    return EXIT_FAILURE;
+                }
+                memcpy(extra->weights1.weights[w], weights1_backup.weights[w], sizeof(DOUBLE)*ND2);
+            }
+        }
+
         //this is equivalent to brute force calculating on the entire dataset
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
                                                                numthreads,
                                                                costhetamax, costhetamin, nthetabin,
                                                                theta_upp,
-                                                               costheta_upp, 
+                                                               costheta_upp,
                                                                results,
                                                                options,
                                                                extra);
         free(X1);free(Y1);free(Z1);
         if(autocorr == 0) {
             free(X2);free(Y2);free(Z2);
+            for(int64_t w = 0; w < extra->weights1.num_weights; w++){
+                free(extra->weights1.weights[w]);
+            }
         }
         free(theta_upp);
+
+        // Free the temporary weights copy and restore the original pointers
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            free(extra->weights0.weights[w]);
+        }
+        extra->weights0 = weights0_backup;
+        extra->weights1 = weights1_backup;
+
         return status;
     }
 
 
     //Create the lattices
-    DOUBLE ra_min=1e10,dec_min=1e10;
-    DOUBLE ra_max=-1e10,dec_max=-1e10;
+    DOUBLE ra_min = MAX_POSITIVE_FLOAT, dec_min = MAX_POSITIVE_FLOAT;
+    DOUBLE ra_max = -MAX_POSITIVE_FLOAT,dec_max = -MAX_POSITIVE_FLOAT;
     get_max_min_ra_dec_DOUBLE(ND1, ra1, dec1, &ra_min, &dec_min, &ra_max, &dec_max);
-
     if(autocorr==0) {
         get_max_min_ra_dec_DOUBLE(ND2, ra2, dec2, &ra_min, &dec_min, &ra_max, &dec_max);
     }
 
     /*---Create 3-D lattice--------------------------------------*/
-    cellarray_mocks_index_wtheta_DOUBLE *lattice1=NULL,*lattice2=NULL;
+    cellarray_mocks_DOUBLE *lattice1=NULL,*lattice2=NULL;
     int nmesh_dec=0, max_nmesh_ra=0;
     int64_t totncells;
+    int64_t num_cell_pairs = 0;
+    struct cell_pair_DOUBLE *all_cell_pairs = NULL;
     if(options->link_in_ra) {
         int *nmesh_grid_ra=NULL;
         lattice1 = gridlink_mocks_theta_ra_dec_DOUBLE(ND1, ra1, dec1, X1, Y1, Z1, &(extra->weights0),
@@ -620,7 +718,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                               &max_nmesh_ra2,
                                                               &nmesh_grid_ra2,
                                                               options);
-                
+
                 if(lattice2 == NULL) {
                     status = EXIT_FAILURE;
                 } else {
@@ -650,28 +748,37 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
             free(nmesh_grid_ra);
         }
 
+
+
         /* lattice1 and lattice2 should have been assigned. Might be NULL though */
         if(status == EXIT_SUCCESS) {
-            const DOUBLE ra_diff = ra_max - ra_min;
-            /* NGB cells should be assigned here so I can free the arrays allocated to store the RA bins */
-            status = assign_ngb_cells_index_ra_dec_wtheta_DOUBLE(lattice1, lattice2, totncells, 
-                                                                 options->bin_refine_factors[0], options->bin_refine_factors[1],
-                                                                 nmesh_dec, max_nmesh_ra,
-                                                                 ra_min, ra_diff,
-                                                                 nmesh_grid_ra,
-                                                                 autocorr);
-            if(status == EXIT_SUCCESS) {
+
+            all_cell_pairs = generate_cell_pairs_mocks_theta_ra_dec_DOUBLE(lattice1,
+                                                                           lattice2,
+                                                                           totncells,
+                                                                           &num_cell_pairs,
+                                                                           thetamax,
+                                                                           options->bin_refine_factors[0],
+                                                                           options->bin_refine_factors[1],
+                                                                           nmesh_dec, max_nmesh_ra,
+                                                                           ra_min, ra_max,
+                                                                           nmesh_grid_ra,
+                                                                           options->enable_min_sep_opt,
+                                                                           autocorr);
+            if(all_cell_pairs != NULL) {
                 free(nmesh_grid_ra);//don't need this anymore either
+            } else {
+                status = EXIT_FAILURE;
             }
         }
-        
+
         if(status != EXIT_SUCCESS) {
             /* Cleanup memory here if switching to brute force */
             if(lattice1 != NULL) {
-                free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+                free_cellarray_mocks_DOUBLE(lattice1,totncells);
             }
             if(autocorr == 0 && lattice2 != NULL) {
-                free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
+                free_cellarray_mocks_DOUBLE(lattice2,totncells);
             }
             lattice1 = NULL; lattice2 = NULL;
         }
@@ -699,54 +806,100 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                            options);
                 if(lattice2 != NULL) {
                     if( totncells != totncells_2) {
-                        fprintf(stderr,"ERROR: In %s> The two sets of 3-D lattices do not have identical bins. First has dims (%"PRId64") while second has (%"PRId64")\n",
+                        fprintf(stderr,"ERROR: In %s> The two sets of 3-D lattices do not have identical bins. "
+                                "First has dims (%"PRId64") while second has (%"PRId64")\n",
                                 __FUNCTION__,totncells, totncells_2);
                         status = EXIT_FAILURE;
-                    } 
+                    }
                 } else {
                     //lattice2 is NULL
                     status = EXIT_FAILURE;
                 }
             }//autocorr == 0
         }//lattice1 != NULL
-        
+
         if(status == EXIT_SUCCESS) {
             //The lattice structures are identical -> try to assign ngb cells
-            status = assign_ngb_cells_index_wtheta_dec_DOUBLE(lattice1, lattice2, totncells, options->bin_refine_factors[1], autocorr);
+            all_cell_pairs = generate_cell_pairs_mocks_theta_dec_DOUBLE(lattice1,
+                                                                        lattice2,
+                                                                        totncells,
+                                                                        &num_cell_pairs,
+                                                                        thetamax,
+                                                                        options->bin_refine_factors[1],
+                                                                        options->enable_min_sep_opt,
+                                                                        autocorr);
+            if(all_cell_pairs == NULL) {
+                status = EXIT_FAILURE;
+            }
         }
-            
+
         if(status != EXIT_SUCCESS) {
             /* Cleanup memory here if aborting */
             if(lattice1 != NULL) {
-                free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+                free_cellarray_mocks_DOUBLE(lattice1,totncells);
             }
             if(autocorr == 0 && lattice2 != NULL) {
-                free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
+                free_cellarray_mocks_DOUBLE(lattice2,totncells);
             }
             lattice1 = NULL; lattice2 = NULL;
         }//cleaning up on failure
     }//end of linking only in dec
 
 
-    /* Check if the lattices could not be constructed. 
+    /* Check if the lattices could not be constructed.
        Probably out of memory -> Run a brute force */
     if(lattice1 == NULL || lattice2 == NULL) {
         fprintf(stderr,"In %s> Could not construct the 3-D lattice structure. Defaulting to brute-force\n",__FUNCTION__);
+
+        // Pass temporary weights
+        // TODO: this code is duplicated from above.
+        // But putting it inside the kernel would enforce the de-syncing behavior, which we would hope to remove long-term
+
+        weight_struct weights0_backup = extra->weights0;
+        weight_struct weights1_backup = extra->weights1;
+
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            extra->weights0.weights[w] = my_malloc(sizeof(DOUBLE), ND1);
+            memcpy(extra->weights0.weights[w], weights0_backup.weights[w], sizeof(DOUBLE)*ND1);
+        }
+
+        if(autocorr){
+            // The brute-force pair counter knows nothing about autocorrelations
+            // So make the weight pointers for the second set just point to the first set
+            extra->weights1 = extra->weights0;
+        } else {
+            for(int64_t w = 0; w < extra->weights1.num_weights; w++){
+                extra->weights1.weights[w] = my_malloc(sizeof(DOUBLE), ND2);
+                memcpy(extra->weights1.weights[w], weights1_backup.weights[w], sizeof(DOUBLE)*ND2);
+            }
+        }
+
         //this is equivalent to brute force calculating on the entire dataset
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
                                                                numthreads,
                                                                costhetamax, costhetamin, nthetabin,
                                                                theta_upp,
-                                                               costheta_upp, 
+                                                               costheta_upp,
                                                                results,
                                                                options,
                                                                extra);
         free(X1);free(Y1);free(Z1);
         if(autocorr == 0) {
             free(X2);free(Y2);free(Z2);
+            for(int64_t w = 0; w < extra->weights1.num_weights; w++){
+                free(extra->weights1.weights[w]);
+            }
         }
         free(theta_upp);
+
+        // Free the temporary weights copy and restore the original pointers
+        for(int64_t w = 0; w < extra->weights0.num_weights; w++){
+            free(extra->weights0.weights[w]);
+        }
+        extra->weights0 = weights0_backup;
+        extra->weights1 = weights1_backup;
+
         return status;
     }
 
@@ -756,12 +909,14 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 __FUNCTION__,lattice1, lattice2);
         return EXIT_FAILURE;
     }
-    
-    //the lattices have already been made and contain the
-    //XYZ arrays. 
-    free(X1);free(Y1);free(Z1);
-    if(autocorr == 0) {
-        free(X2);free(Y2);free(Z2);
+
+    if(options->copy_particles) {
+        //the lattices have already been made and contain the
+        //XYZ arrays.
+        free(X1);free(Y1);free(Z1);
+        if(autocorr == 0) {
+            free(X2);free(Y2);free(Z2);
+        }
     }
 
 
@@ -769,14 +924,14 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_function_DOUBLE = countpairs_theta_mocks_driver_DOUBLE(options);
     if(countpairs_theta_mocks_function_DOUBLE == NULL) {
         free(theta_upp);
-        free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+        free_cellarray_mocks_DOUBLE(lattice1,totncells);
         if(autocorr==0) {
-            free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
+            free_cellarray_mocks_DOUBLE(lattice2,totncells);
         }
         return EXIT_FAILURE;
     }
 
-    
+
 #if defined(_OPENMP)
     uint64_t **all_npairs = (uint64_t **) matrix_calloc(sizeof(uint64_t), numthreads, nthetabin);
     DOUBLE **all_thetaavg = NULL;
@@ -803,10 +958,10 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
     int interrupted=0, numdone=0,abort_status=EXIT_SUCCESS;
     if(options->verbose) {
-        init_my_progressbar(totncells,&interrupted);
+        init_my_progressbar(num_cell_pairs, &interrupted);
     }
 
-    
+
 #if defined(_OPENMP)
 #pragma omp parallel shared(numdone, abort_status, interrupt_status_wtheta_mocks_DOUBLE)
     {
@@ -825,93 +980,53 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
 
 #pragma omp for  schedule(dynamic)
 #endif
-
-        /*---Loop-over-Data1-particles--------------------*/    
-        for(int index1=0;index1<totncells;index1++) {
+        /*---Loop-over-all-cell-pairs--------------------*/
+        for(int64_t icellpair=0;icellpair<num_cell_pairs;icellpair++) {
 
 #if defined(_OPENMP)
 #pragma omp flush (abort_status)
 #endif
             if(abort_status == EXIT_SUCCESS && interrupt_status_wtheta_mocks_DOUBLE == EXIT_SUCCESS) {
                 //omp cancel was introduced in omp 4.0 - so this is my way of checking if loop needs to be cancelled
-                
+
                 /* If the verbose option is not enabled, avoid outputting anything unnecessary*/
                 if(options->verbose) {
 #if defined(_OPENMP)
                     if (omp_get_thread_num() == 0)
 #endif
                         my_progressbar(numdone,&interrupted);
-                    
-                    
+
+
 #if defined(_OPENMP)
 #pragma omp atomic
 #endif
                     numdone++;
                 }
-                
-                const cellarray_mocks_index_wtheta_DOUBLE *first  = &(lattice1[index1]);
-                const int64_t N1 = first->nelements;
-                if(N1 == 0) {
-                    continue;
-                }
-                DOUBLE *x1 = first->x;
-                DOUBLE *y1 = first->y;
-                DOUBLE *z1 = first->z;
-                const weight_struct_DOUBLE *weights1 = &(first->weights);
-                
-                if(autocorr == 1) {
-                    int same_cell = 1;
-                    DOUBLE *this_thetaavg = NULL;
-                    if(options->need_avg_sep) {
-                        this_thetaavg = thetaavg;
-                    }
-                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
-                                                                              N1, x1, y1, z1, weights1,
-                                                                              same_cell,
-                                                                              options->fast_acos,
-                                                                              costhetamax, costhetamin, nthetabin,
-                                                                              costheta_upp,
-                                                                              this_thetaavg, npairs, 
-                                                                              this_weightavg, extra->weight_method);
 
-                    /* This actually causes a race condition under OpenMP - but mostly
-                       I care that an error occurred - rather than the exact value of
-                       the error status */
-                    abort_status |= status;
-                }
-                
-                for(int64_t ngb=0;ngb<first->num_ngb;ngb++){
-                    const cellarray_mocks_index_wtheta_DOUBLE *second = first->ngb_cells[ngb];
-                    const int64_t N2 = second->nelements;
-                    if(N2 == 0) {
-                        continue;
-                    }
-                    DOUBLE *x2 = second->x;
-                    DOUBLE *y2 = second->y;
-                    DOUBLE *z2 = second->z;
-                    const weight_struct_DOUBLE *weights2 = &(second->weights);
-                    int same_cell=0;
-                    DOUBLE *this_thetaavg = NULL;
-                    if(options->need_avg_sep) {
-                        this_thetaavg = thetaavg;
-                    }
-                    DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
-                    const int status = countpairs_theta_mocks_function_DOUBLE(N1, x1, y1, z1, weights1,
-                                                                              N2, x2, y2, z2, weights2,
-                                                                              same_cell,
-                                                                              options->fast_acos,
-                                                                              costhetamax, costhetamin, nthetabin,
-                                                                              costheta_upp,
-                                                                              this_thetaavg, npairs,
-                                                                              this_weightavg, extra->weight_method);
-                    /* This actually causes a race condition under OpenMP - but mostly
-                       I care that an error occurred - rather than the exact value of
-                       the error status */
-                    abort_status |= status;
-                }//loop over ngb cells
-            }//checking for abort status
-        }//loop over index1
+                struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[icellpair];
+                DOUBLE *this_thetaavg = options->need_avg_sep ? thetaavg:NULL;
+                DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
+
+                const int status = countpairs_theta_mocks_function_DOUBLE(this_cell_pair->N1, this_cell_pair->x1,
+                                                                          this_cell_pair->y1, this_cell_pair->z1, this_cell_pair->weights1,
+                                                                          this_cell_pair->N2, this_cell_pair->x2,
+                                                                          this_cell_pair->y2, this_cell_pair->z2, this_cell_pair->weights2,
+                                                                          this_cell_pair->same_cell,
+                                                                          options->fast_acos,
+                                                                          costhetamax, costhetamin, nthetabin,
+                                                                          costheta_upp,
+                                                                          this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
+                                                                          this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
+                                                                          this_thetaavg, npairs,
+                                                                          this_weightavg, extra->weight_method);
+
+                /* This actually causes a race condition under OpenMP - but mostly
+                   I care that an error occurred - rather than the exact value of
+                   the error status */
+                abort_status |= status;
+
+            }//abort-status
+        }//icellpair loop over num_cell_pairs
 
 #if defined(_OPENMP)
         for(int j=0;j<nthetabin;j++) {
@@ -925,10 +1040,28 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
     }//close the omp parallel region
 #endif
+    free(all_cell_pairs);
 
-    free_cellarray_mocks_index_wtheta_DOUBLE(lattice1,totncells);
+    if(options->copy_particles == 0) {
+        free(X1);free(Y1);free(Z1);
+        int64_t *original_index = lattice1[0].original_index;
+        int status = reorder_particles_mocks_back_into_original_order_DOUBLE(ND1, original_index, &(extra->weights0));
+        if(status != EXIT_SUCCESS) {
+            return status;
+        }
+        if(autocorr == 0) {
+            free(X2);free(Y2);free(Z2);
+            original_index = lattice2[0].original_index;
+            status = reorder_particles_mocks_back_into_original_order_DOUBLE(ND2, original_index, &(extra->weights1));
+            if(status != EXIT_SUCCESS) {
+                return status;
+            }
+        }
+    }
+
+    free_cellarray_mocks_DOUBLE(lattice1,totncells);
     if(autocorr == 0) {
-        free_cellarray_mocks_index_wtheta_DOUBLE(lattice2,totncells);
+        free_cellarray_mocks_DOUBLE(lattice2,totncells);
     }
 
     if(abort_status != EXIT_SUCCESS || interrupt_status_wtheta_mocks_DOUBLE != EXIT_SUCCESS) {
@@ -997,6 +1130,34 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                 weightavg[i] *= dbl_fac;
             }
         }
+
+        /* Is the min. requested separation 0.0 ?*/
+        /* The comparison is '<=' rather than '==' only to silence
+           the compiler  */
+        if(theta_upp[0] <= 0.0) {
+            /* Then, add all the self-pairs. This ensures that
+               a cross-correlation with two identical datasets
+               produces the same result as the auto-correlation  */
+            npairs[1] += ND1; //npairs[1] contains the first valid bin.
+
+            // Increasing npairs affects rpavg and weightavg.
+            // We don't need to add anything to rpavg; all the self-pairs have 0 separation!
+            // The self-pairs have non-zero weight, though.  So, fix that here.
+            if(need_weightavg){
+                // Keep in mind this is an autocorrelation (i.e. only one particle set to consider)
+                weight_func_t_DOUBLE weight_func = get_weight_func_by_method_DOUBLE(extra->weight_method);
+                pair_struct_DOUBLE pair = {.num_weights = extra->weights0.num_weights,
+                                           .dx.d=0., .dy.d=0., .dz.d=0.,  // always 0 separation
+                                           .parx.d=0., .pary.d=0., .parz.d=0.};
+                for(int64_t j = 0; j < ND1; j++){
+                    for(int w = 0; w < pair.num_weights; w++){
+                        pair.weights0[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
+                        pair.weights1[w].d = ((DOUBLE *) extra->weights0.weights[w])[j];
+                    }
+                    weightavg[1] += weight_func(&pair);
+                }
+            }
+        }
     }
 
     for(int i=1;i<nthetabin;i++) {
@@ -1018,11 +1179,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     results->theta_avg = my_malloc(sizeof(*(results->theta_avg))  , nthetabin);
     results->weightavg  = my_calloc(sizeof(*(results->weightavg))  , nthetabin);
     if(results->npairs == NULL || results->theta_upp == NULL || results->theta_avg == NULL || results->weightavg == NULL) {
+        fprintf(stderr,"Error: Could not allocate memory for %d nbins to hold the results of the pair-counting\n", nthetabin);
         free_results_countpairs_theta(results);
         free(theta_upp);
         return EXIT_FAILURE;
     }
-    
+
     for(int i=0;i<nthetabin;i++) {
         results->npairs[i] = npairs[i];
         results->theta_upp[i] = theta_upp[i];
@@ -1040,12 +1202,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     /* reset interrupt handlers to default */
     RESET_INTERRUPT_HANDLERS();
     reset_bin_refine_factors(options);
-    
+
     if(options->c_api_timer) {
         struct timeval t1;
         gettimeofday(&t1, NULL);
         options->c_api_time = ADD_DIFF_TIME(t0, t1);
     }
-    
+
     return EXIT_SUCCESS;
 }

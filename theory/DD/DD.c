@@ -4,7 +4,7 @@
   Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
-  
+
 --- DD file1 format1 file2 format2 binfile numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
 --- Measure the cross-correlation function DD(r) for two different
    data files (or autocorrelation if file1=file2).
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     char *fileformat1=NULL,*fileformat2=NULL,*weights_fileformat1=NULL,*weights_fileformat2=NULL;
     char *binfile=NULL;
     char *weight_method_str=NULL;
-    
+
     weight_method_t weight_method = NONE;
     int num_weights = 0;
 
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     const char argnames[][30]={"file1","format1","file2","format2","binfile","Nthreads"};
 #endif
     const char optargnames[][30]={"weight_method", "weights_file1","weights_format1","weights_file2","weights_format2"};
-    
+
     int nargs=sizeof(argnames)/(sizeof(char)*30);
     int noptargs=sizeof(optargnames)/(sizeof(char)*30);
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
             fprintf(stderr,"\t\t %s = `?'\n",argnames[i-1]);
         return EXIT_FAILURE;
     }
-  
+
     /* Validate optional arguments */
     int noptargs_given = argc - (nargs + 1);
     if(noptargs_given != 0 && noptargs_given != 3 && noptargs_given != 5){
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 #endif
-  
+
     if(noptargs_given >= 3){
        weight_method_str = argv[nargs + 1];
        int wstatus = get_weight_method_by_name(weight_method_str, &weight_method);
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
          return EXIT_FAILURE;
        }
        num_weights = get_num_weights_by_method(weight_method);
-      
+
        weights_file1 = argv[nargs + 2];
        weights_fileformat1 = argv[nargs + 3];
     }
@@ -164,14 +164,14 @@ int main(int argc, char *argv[])
     if( strcmp(file1,file2)==0) {
         autocorr=1;
     }
-  
+
     /* Read weights file 1 */
     if(weights_file1 != NULL){
         gettimeofday(&t0,NULL);
         int64_t wND1 = read_columns_into_array(weights_file1,weights_fileformat1, sizeof(DOUBLE), num_weights, (void **) weights1);
         gettimeofday(&t1,NULL);
         read_time += ADD_DIFF_TIME(t0,t1);
-      
+
         if(wND1 != ND1){
           fprintf(stderr, "Error: read %"PRId64" lines from %s, but read %"PRId64" from %s\n", wND1, weights_file1, ND1, file1);
           return EXIT_FAILURE;
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
         ND2=read_positions(file2,fileformat2, sizeof(DOUBLE), 3, &x2, &y2, &z2);
         gettimeofday(&t1,NULL);
         read_time += ADD_DIFF_TIME(t0,t1);
-      
+
         /* Read weights file 2 */
         if(weights_file2 != NULL){
             gettimeofday(&t0,NULL);
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
                             &options,
                             &extra);/* This is for ABI compatibility */
 
-    
+
     free(x1);free(y1);free(z1);
     for(int w = 0; w < num_weights; w++){
         free(weights1[w]);
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
     if(status != EXIT_SUCCESS) {
       return status;
     }
-    
+
     gettimeofday(&t1,NULL);
     double pair_time = ADD_DIFF_TIME(t0,t1);
 

@@ -30,10 +30,10 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
 
 
 //Global variables
-int ND1;
+int64_t ND1;
 double *X1=NULL,*Y1=NULL,*Z1=NULL,*weights1=NULL;
 
-int ND2;
+int64_t ND2;
 double *X2=NULL,*Y2=NULL,*Z2=NULL,*weights2=NULL;
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
@@ -46,7 +46,7 @@ int test_periodic_DD(const char *correct_outputfile)
     int autocorr = (X1==X2) ? 1:0;
     results_countpairs results;
     int ret = EXIT_FAILURE;
-    
+
     // Set up the weights pointers
     weight_method_t weight_method = PAIR_PRODUCT;
     struct extra_options extra = get_extra_options(weight_method);
@@ -54,7 +54,7 @@ int test_periodic_DD(const char *correct_outputfile)
     extra.weights1.weights[0] = weights2;
 
     BEGIN_INTEGRATION_TEST_SECTION
-        
+
         //Do the straight-up DD counts
         int status = countpairs(ND1,X1,Y1,Z1,
                                 ND2,X2,Y2,Z2,
@@ -67,7 +67,7 @@ int test_periodic_DD(const char *correct_outputfile)
         if(status != EXIT_SUCCESS) {
             return status;
         }
-    
+
         FILE *fp = my_fopen(correct_outputfile,"r");
         for(int i=1;i<results.nbin;i++) {
             uint64_t npairs;
@@ -80,7 +80,7 @@ int test_periodic_DD(const char *correct_outputfile)
             }
             int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
             int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
-            
+
             //Check for exact equality of npairs and float "equality" for rpavg
             if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
@@ -91,13 +91,13 @@ int test_periodic_DD(const char *correct_outputfile)
                 fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[i], weights_equal);
                 break;
             }
-            
+
         }
         fclose(fp);
 
-    END_INTEGRATION_TEST_SECTION;
-        
-    if(ret != EXIT_SUCCESS) {
+    END_INTEGRATION_TEST_SECTION(free_results(&results));
+
+    if(ret != EXIT_SUCCESS && results.nbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
             free_results(&results);
@@ -158,7 +158,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
                 }
                 int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
                 int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-                
+
                 //Check for exact equality of npairs and float "equality" for rpavg
                 if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                     ret = EXIT_SUCCESS;
@@ -166,7 +166,7 @@ int test_periodic_DDrppi(const char *correct_outputfile)
                     fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
                     fprintf(stderr,"True rpavg  = %20.12e Computed rpavg = %20.12e. floats_equal = %d\n", rpavg, results.rpavg[index], floats_equal);
                     fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
-                    
+
                     ret = EXIT_FAILURE;//not required but showing intent
                     i = results.nbin;
                     break;
@@ -174,9 +174,9 @@ int test_periodic_DDrppi(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-        
-    if(ret != EXIT_SUCCESS) {
+    END_INTEGRATION_TEST_SECTION(free_results_rp_pi(&results));
+
+    if(ret != EXIT_SUCCESS && results.nbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
             free_results_rp_pi(&results);
@@ -211,7 +211,7 @@ int test_periodic_DDsmu(const char *correct_outputfile)
     struct extra_options extra = get_extra_options(weight_method);
     extra.weights0.weights[0] = weights1;
     extra.weights1.weights[0] = weights2;
-    
+
     BEGIN_INTEGRATION_TEST_SECTION
         int status = countpairs_s_mu(ND1,X1,Y1,Z1,
                                      ND2,X2,Y2,Z2,
@@ -226,7 +226,7 @@ int test_periodic_DDsmu(const char *correct_outputfile)
         if(status != EXIT_SUCCESS) {
             return status;
         }
-        
+
         ret = EXIT_FAILURE;
         const int nmubin = results.nmu_bins;
         FILE *fp = my_fopen(correct_outputfile, "r");
@@ -244,7 +244,7 @@ int test_periodic_DDsmu(const char *correct_outputfile)
                 }
                 int floats_equal = AlmostEqualRelativeAndAbs_double(savg, results.savg[index], maxdiff, maxreldiff);
                 int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-                
+
                 //Check for exact equality of npairs and float "equality" for savg
                 if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                     ret = EXIT_SUCCESS;
@@ -252,7 +252,7 @@ int test_periodic_DDsmu(const char *correct_outputfile)
                     fprintf(stderr,"True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", npairs, results.npairs[index]);
                     fprintf(stderr,"True savg  = %20.12e Computed savg = %20.12e. floats_equal = %d\n", savg, results.savg[index], floats_equal);
                     fprintf(stderr,"True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", weightavg, results.weightavg[index], weights_equal);
-                    
+
                     ret = EXIT_FAILURE;//not required but showing intent
                     i = results.nsbin;
                     break;
@@ -260,9 +260,9 @@ int test_periodic_DDsmu(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-                        
-    if(ret != EXIT_SUCCESS) {
+    END_INTEGRATION_TEST_SECTION(free_results_s_mu(&results));
+
+    if(ret != EXIT_SUCCESS && results.nsbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
             free_results_s_mu(&results);
@@ -295,8 +295,8 @@ int test_wp(const char *correct_outputfile)
     weight_method_t weight_method = PAIR_PRODUCT;
     struct extra_options extra = get_extra_options(weight_method);
     extra.weights0.weights[0] = weights1;
-    
-    BEGIN_INTEGRATION_TEST_SECTION    
+
+    BEGIN_INTEGRATION_TEST_SECTION
         int status = countpairs_wp(ND1,X1,Y1,Z1,
                                    boxsize,
                                    nthreads,
@@ -322,7 +322,7 @@ int test_wp(const char *correct_outputfile)
             int rpavg_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
             int weightavg_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
             int wp_equal = AlmostEqualRelativeAndAbs_double(wp, results.wp[i], maxdiff, maxreldiff);
-            
+
             //Check for exact equality of npairs and float "equality" for rpavg + wp
             if(npairs == results.npairs[i] && rpavg_equal == EXIT_SUCCESS && wp_equal == EXIT_SUCCESS && weightavg_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
@@ -339,10 +339,10 @@ int test_wp(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-        
+    END_INTEGRATION_TEST_SECTION(free_results_wp(&results));
+
     /* Test failed. Output the results into a temporary file */
-    if(ret != EXIT_SUCCESS) {
+    if(ret != EXIT_SUCCESS && results.nbin > 0 ) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
             free_results_wp(&results);
@@ -378,7 +378,7 @@ int test_vpf(const char *correct_outputfile)
                                   seed,
                                   &results,
                                   &options, NULL);
-    
+
         if(status != EXIT_SUCCESS) {
             return status;
         }
@@ -402,7 +402,7 @@ int test_vpf(const char *correct_outputfile)
                 if(nitems != 1) {
                     return EXIT_FAILURE;
                 }
-                
+
                 /* Not quite sure how this is working. The correct output columns only have 4 digits printed,
                    but I am comparing here with ~1e-9 in abs. diff. The only way the comparison should work is
                    if the conversion to 4 digits during printf, round-trips during scanf. But surely there must
@@ -420,9 +420,9 @@ int test_vpf(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-    
-    if(ret != EXIT_SUCCESS) {
+    END_INTEGRATION_TEST_SECTION(free_results_countspheres(&results));
+
+    if(ret != EXIT_SUCCESS && results.nbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         const double rstep = rmax/(double)nbin ;
         for(int ibin=0;ibin<results.nbin;ibin++) {
@@ -445,7 +445,7 @@ int test_xi(const char *correct_outputfile)
 {
     results_countpairs_xi results;
     int ret = EXIT_FAILURE;
-    
+
     // Set up the weights pointers
     weight_method_t weight_method = PAIR_PRODUCT;
     struct extra_options extra = get_extra_options(weight_method);
@@ -462,7 +462,7 @@ int test_xi(const char *correct_outputfile)
         if(status != EXIT_SUCCESS) {
             return status;
         }
-        
+
         FILE *fp=my_fopen(correct_outputfile,"r");
         for(int i=1;i<results.nbin;i++) {
             uint64_t npairs;
@@ -476,7 +476,7 @@ int test_xi(const char *correct_outputfile)
             int ravg_equal = AlmostEqualRelativeAndAbs_double(ravg, results.ravg[i], maxdiff, maxreldiff);
             int weightavg_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
             int xi_equal = AlmostEqualRelativeAndAbs_double(xi, results.xi[i], maxdiff, maxreldiff);
-            
+
             //Check for exact equality of npairs and float "equality" for ravg + xi
             if(npairs == results.npairs[i] && ravg_equal == EXIT_SUCCESS && xi_equal == EXIT_SUCCESS && weightavg_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
@@ -493,9 +493,9 @@ int test_xi(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
+    END_INTEGRATION_TEST_SECTION(free_results_xi(&results));
 
-    if(ret != EXIT_SUCCESS){
+    if(ret != EXIT_SUCCESS && results.nbin > 0){
         FILE *fp=my_fopen(tmpoutputfile,"w");
         if(fp == NULL) {
             free_results_xi(&results);
@@ -577,6 +577,7 @@ int main(int argc, char **argv)
     options.verbose=0;
     options.periodic=1;
     options.fast_divide_and_NR_steps=0;
+    options.copy_particles=1;
     options.float_type=sizeof(double);
 
     char file[]="../tests/data/gals_Mr19.ff";
@@ -604,7 +605,7 @@ int main(int argc, char **argv)
                                            "Mr19 DD (periodic)",
                                            "Mr19 wp (periodic)",
                                            "Mr19 vpf (periodic)",
-                                           "Mr19 xi periodic)",
+                                           "Mr19 xi (periodic)",
                                            "Mr19 DDsmu (periodic)",
                                            "CMASS DDrppi DD (periodic)",
                                            "CMASS DDrppi DR (periodic)",

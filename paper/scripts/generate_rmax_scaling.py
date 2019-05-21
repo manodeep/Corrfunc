@@ -3,8 +3,10 @@ from __future__ import print_function
 import numpy as np
 
 import Corrfunc
-
 from Corrfunc.io import read_catalog
+
+from utils import convert_numpy_bytes_to_unicode
+
 import os.path as path
 from os.path import join as pjoin, abspath, dirname
 import time
@@ -95,7 +97,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     from Corrfunc.theory import DD, DDrppi, wp, xi
     allkeys = [#'DDrppi', 'DD',
                'wp', 'xi']
-    allisa = ['avx', 'sse42', 'fallback']
+    allisa = ['avx512f', 'avx', 'sse42', 'fallback']
     if keys is None:
         keys = allkeys
     else:
@@ -122,10 +124,11 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     autocorr = 1
     boxsize = 420.0
     nthreads = max_threads
+    enable_min_sep_opt = False
     
     dtype = np.dtype([('repeat', np.int),
-                      ('name', 'S16'),
-                      ('isa', 'S16'),
+                      ('name', 'U16'),
+                      ('isa', 'U16'),
                       ('rmax', np.float),
                       ('nthreads', np.int),
                       ('runtime', np.float),
@@ -152,7 +155,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                         t0 = time.time()
                         _, api_time = DD(autocorr, nthreads, bins, x, y, z,
                                          verbose=True, c_api_timer=True,
-                                         isa=run_isa)
+                                         isa=run_isa, enable_min_sep_opt=enable_min_sep_opt)
                         t1 = time.time()
                         runtimes['name'][index] = 'DD'
                         runtimes['isa'][index] = run_isa
@@ -173,7 +176,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                         _, api_time = DDrppi(autocorr, nthreads, pimax,
                                              bins, x, y, z,
                                              verbose=True, c_api_timer=True,
-                                             isa=run_isa)
+                                             isa=run_isa, enable_min_sep_opt=enable_min_sep_opt)
                         t1 = time.time()
                         runtimes['name'][index] = 'DDrppi'
                         runtimes['isa'][index] = run_isa
@@ -194,7 +197,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                         _, api_time = wp(boxsize, pimax, nthreads,
                                          bins, x, y, z,
                                          verbose=True, c_api_timer=True,
-                                         isa=run_isa)
+                                         isa=run_isa, enable_min_sep_opt=enable_min_sep_opt)
                         t1 = time.time()
                         runtimes['name'][index] = 'wp'
                         runtimes['isa'][index] = run_isa
@@ -214,7 +217,7 @@ def benchmark_theory_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                         t0 = time.time()
                         _, api_time = xi(boxsize, nthreads, bins, x, y, z,
                                          verbose=True, c_api_timer=True,
-                                         isa=run_isa)
+                                         isa=run_isa, enable_min_sep_opt=enable_min_sep_opt)
                         t1 = time.time()
                         runtimes['name'][index] = 'xi'
                         runtimes['isa'][index] = run_isa
@@ -244,7 +247,7 @@ def benchmark_mocks_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
                #'DDtheta (DD)',
                'DDrppi (DR)',
                'DDtheta (DR)']
-    allisa = ['avx', 'sse42', 'fallback']
+    allisa = ['avx512f', 'avx', 'sse42', 'fallback']
     if keys is None:
         keys = allkeys
     else:
@@ -279,8 +282,8 @@ def benchmark_mocks_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     nthreads = max_threads
     
     dtype = np.dtype([('repeat', np.int),
-                      ('name', 'S16'),
-                      ('isa', 'S16'),
+                      ('name', 'U16'),
+                      ('isa', 'U16'),
                       ('rmax', np.float),
                       ('nthreads', np.int),
                       ('runtime', np.float),
@@ -412,17 +415,17 @@ def benchmark_mocks_threads_all(rmax_array=[10.0, 20.0, 40.0, 80.0, 100.0],
     return keys, isa, runtimes
 
 if len(sys.argv) == 1:
-    #print("Running theory benchmarks")
-    #keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=3)
-    #np.savez('theory_scaling_rmax.npz', keys=keys, isa=isa,
-    #         runtimes=runtimes)
-    #print("Theory: runtimes = {0}".format(runtimes))
-
-    print("Running mocks benchmarks")
-    keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=3)
-    np.savez('mocks_scaling_rmax.npz', keys=keys, isa=isa,
+    print("Running theory benchmarks")
+    keys, isa, runtimes = benchmark_theory_threads_all(nrepeats=3)
+    np.savez('theory_scaling_rmax.npz', keys=keys, isa=isa,
              runtimes=runtimes)
-    print("Mocks: runtimes = {0}".format(runtimes))
+    print("Theory: runtimes = {0}".format(runtimes))
+
+    #print("Running mocks benchmarks")
+    #keys, isa, runtimes = benchmark_mocks_threads_all(nrepeats=3)
+    #np.savez('mocks_scaling_rmax.npz', keys=keys, isa=isa,
+    #         runtimes=runtimes)
+    #print("Mocks: runtimes = {0}".format(runtimes))
     
 else:
     timings_file = sys.argv[1]
@@ -433,6 +436,8 @@ else:
         keys = xx['keys']
         isa = xx['isa']
         runtimes = xx['runtimes']
+        runtimes = convert_numpy_bytes_to_unicode(runtimes)
+
     except KeyError:
         print("Error: Invalid timings file = `{0}' passed in the "
               "command-line ".format(timings_file))
@@ -444,12 +449,13 @@ else:
     else:
         all_rmax = np.array(sorted(list(set(runtimes['rmax']))))
     min_rmax = min(all_rmax)
-    if 'theory' in timings_file:
+    plt_speedup = True
+    if not mock:
         output_file = pjoin(dirname(__file__), '../tables/',
-                            'timings_Mr19_rmax_theory.tex')
+                            'timings_Mr19_rmax_theory{}.tex'.format('_simd_speedup' if plt_speedup else ''))
     else:
         output_file = pjoin(dirname(__file__), '../tables/',
-                            'timings_Mr19_rmax_mocks.tex')
+                            'timings_Mr19_rmax_mocks{}.tex'.format('_simd_speedup' if plt_speedup else ''))
 
     with open(output_file, 'w') as f:
 
@@ -473,8 +479,8 @@ else:
         print("\\\\", file=f)
 
         for rmax in all_rmax:
-            print(" {0:5f} ".format(rmax), end='')
-            print(" {0:5f} ".format(rmax), end='', file=f)
+            print(" {0:5.1f} ".format(rmax), end='')
+            print(" {0:5.1f} ".format(rmax), end='', file=f)
             for mod in keys:
                 for run_isa in isa:
                     ind = (runtimes['rmax'] == rmax) & \
@@ -491,21 +497,32 @@ else:
                     serial_avg = np.mean(runtimes['pair_time'][s_ind])
                     para_avg = np.mean(runtimes['pair_time'][ind])
 
-                    # If you want the Amdahl's law limited max. effiency,
-                    # uncomment the following lines.
-                    # serial_avg = np.mean(runtimes['runtime'][s_ind])
-                    # para_avg = np.mean(runtimes['runtime'][ind])
-                    # serial_para_runs = np.mean(runtimes['serial_time'][ind])
-                    # serial_serial_runs = np.mean(runtimes['serial_time'][s_ind])
-                    # theoretical_best_time = serial_runtime_in_parallel_runs + \
-                    #                         (serial_avg-serial_runtime_in_serial_runs)/it
-                    # print("{0:9.1f}({1:3.1f})".format((serial_avg/it)/para_avg*100,
-                    #                               (serial_avg/it)/theoretical_best_time*100.0),
-                    #       end='')
-                    print("{0:12.1f}".format(para_avg),
-                          end='')
-                    print("& {0:12.1f} ".format(para_avg),
-                          end='', file=f)
+                    if plt_speedup:
+                        # If you want the Amdahl's law limited max. effiency,
+                        # uncomment the following lines.
+                        # serial_avg = np.mean(runtimes['runtime'][s_ind])
+                        # para_avg = np.mean(runtimes['runtime'][ind])
+                        # serial_para_runs = np.mean(runtimes['serial_time'][ind])
+                        # serial_serial_runs = np.mean(runtimes['serial_time'][s_ind])
+                        # theoretical_best_time = serial_runtime_in_parallel_runs + \
+                            #                         (serial_avg-serial_runtime_in_serial_runs)/it
+                        # print("{0:9.1f}({1:3.1f})".format((serial_avg/it)/para_avg*100,
+                        #                               (serial_avg/it)/theoretical_best_time*100.0),
+                        #       end='')
+                        fallback_ind = (runtimes['rmax'] == rmax) & \
+                                       (runtimes['name'] == mod) & \
+                                       (runtimes['isa'] == 'fallback')
+                        
+                        fallback_avg = (runtimes['pair_time'][fallback_ind]).mean()
+                        print("{0:12.1f}x ".format(fallback_avg/para_avg),
+                              end='')
+                        print("& {0:12.1f}$\\times$ ".format(fallback_avg/para_avg),
+                              end='', file=f)
+                    else:
+                        print("{0:12.3f}".format(para_avg),
+                              end='')
+                        print("& {0:12.3f} ".format(para_avg),
+                              end='', file=f)
 
                 print("    |", end='')
 
@@ -513,7 +530,9 @@ else:
             print("\\\\", file=f)
     
     # Begin plotting
-    plt_scaling = False  # do we ever want to plot scalings for rmax?
+    plt_speedup=False
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     import seaborn
     seaborn.set_style('ticks')
@@ -528,7 +547,7 @@ else:
     if mock:
         axes[0][1].set_xlabel(r'$\theta_\mathrm{max}$')
     for ax in axes:
-        ax[0].set_ylabel(r'Scaling efficiency' if plt_scaling else 'Runtime [sec]')
+        ax[0].set_ylabel(r'SIMD Speedup' if plt_speedup else 'Runtime [sec]')
     fig.subplots_adjust(hspace=0, wspace=0)
     axes = axes.reshape(-1)
     plt_mod = {'DDrppi':r'$\mathrm{DD}(r_p,\pi)$', 'DD':r'$\mathrm{DD}(r)$', 'wp':r'$w_p(r_p)$', 'xi':r'$\xi(r)$',
@@ -539,55 +558,67 @@ else:
         boxes = [420., 1.]
         axes[0].set_xlim(1e-2,3e-1)
         axes[1].set_xlim(1e0,3e1)
-        axes[0].set_ylim(3e-1,5e2)
+        if plt_speedup:
+            axes[0].set_ylim(0.5,5.0)
+        else:
+            axes[0].set_ylim(3e-1,5e2)
     else:
         maxes = [all_rmax, all_rmax]
         boxes = [420., 420.]
-        axes[0].set_xlim(1e-2,3e-1)
-        axes[1].set_xlim(1e-2,3e-1)
-        axes[0].set_ylim(2e-1,1e2)
+        axes[0].set_xlim(2e-2,3e-1)
+        axes[1].set_xlim(2e-2,3e-1)
+        if plt_speedup:
+            axes[0].set_ylim(0.5,5.0)
+        else:
+            axes[0].set_ylim(1e-1,4e1)
     for mod,ax,box,maxes in zip(keys,axes,boxes,maxes):
         ax.set_title(plt_mod[mod], position=(0.1,0.8), loc='left')
-        plt_isa = {'avx':'AVX', 'sse42':'SSE 4.2', 'fallback':'Fallback'}
+        plt_isa = {'avx512f':'AVX-512', 'avx':'AVX', 'sse42':'SSE 4.2', 'fallback':'Fallback'}
         for run_isa in isa:
             rt = []
-            s_ind = (runtimes['rmax'] == min_rmax) & \
-                    (runtimes['name'] == mod) & \
-                    (runtimes['isa'] == run_isa)
-            serial_avg = (runtimes['pair_time'][s_ind]).mean()
-            
             for rmax in maxes:
+                fallback_ind = (runtimes['rmax'] == rmax) & \
+                               (runtimes['name'] == mod) & \
+                               (runtimes['isa'] == 'fallback')
+                fallback_avg = (runtimes['pair_time'][fallback_ind]).mean()
                 ind = (runtimes['rmax'] == rmax) & \
                       (runtimes['name'] == mod) & \
                       (runtimes['isa'] == run_isa)
-                para_avg = (runtimes['runtime'][ind]).mean()
-                rt += [serial_avg/it/para_avg if plt_scaling else para_avg]
+                para_avg = (runtimes['pair_time'][ind]).mean()
+                rt += [fallback_avg/para_avg if plt_speedup else para_avg]
+
+            if plt_speedup:
+                ax.semilogx(maxes/box, rt, label=plt_isa[run_isa])
+            else:
+                ax.loglog(maxes/box, rt, label=plt_isa[run_isa])
+
+
+    if not plt_speedup:
+        if mock:
+            # BigO scaling lines
+            pltx = np.concatenate([all_rmax, [all_rmax[-1]*10]])
+            plty = 4e1*(pltx/pltx[-2])**3.
+            axes[0].loglog(pltx/420., plty, ':', c='k')
+            axes[0].annotate(r'$\propto r_\mathrm{max}^3$', xy=(.6, .1), xycoords='axes fraction')
             
-            ax.loglog(maxes/box, rt, label=plt_isa[run_isa])
-    
-    if mock:
-        # BigO scaling lines
-        pltx = np.concatenate([all_rmax, [all_rmax[-1]*10]])
-        plty = 4e1*(pltx/pltx[-2])**3.
-        axes[0].loglog(pltx/420., plty, ':', c='k')
-        axes[0].annotate(r'$\propto r_\mathrm{max}^3$', xy=(.6, .1), xycoords='axes fraction')
-        
-        pltx = np.concatenate([all_thetamax, [all_thetamax[-1]*10]])
-        plty = 3e0*(pltx/pltx[-2])**2.
-        axes[1].loglog(pltx, plty, ':', c='k')
-        axes[1].annotate(r'$\propto \theta_\mathrm{max}^2$', xy=(.7, .05), xycoords='axes fraction')
-        axes[1].legend(loc='upper right')
-    else:
-        # BigO scaling lines
-        pltx = np.concatenate([all_rmax, [all_rmax[-1]*10]])
-        plty = 1e1*(pltx/pltx[-2])**3.
-        axes[0].loglog(pltx/420., plty, ':', c='k')
-        axes[0].annotate(r'$\propto r_\mathrm{max}^3$', xy=(.65, .05), xycoords='axes fraction')
-        
-        pltx = np.concatenate([all_rmax, [all_rmax[-1]*10]])
-        plty = 1e1*(pltx/pltx[-2])**3.
-        axes[1].loglog(pltx/420., plty, ':', c='k')
-    
-    fig_fn = '{}.pdf'.format('.'.join(path.basename(timings_file).split('.')[:-1]))
+            pltx = np.concatenate([all_thetamax, [all_thetamax[-1]*10]])
+            plty = 3e0*(pltx/pltx[-2])**2.
+            axes[1].loglog(pltx, plty, ':', c='k')
+            axes[1].annotate(r'$\propto \theta_\mathrm{max}^2$', xy=(.7, .05), xycoords='axes fraction')
+        else:
+            # BigO scaling lines
+            pltx = np.concatenate([all_rmax, [all_rmax[-1]*10]])
+            plty = 1e1*(pltx/pltx[-2])**3.
+            axes[0].loglog(pltx/420., plty, ':', c='k')
+            axes[0].annotate(r'$\propto r_\mathrm{max}^3$', xy=(.45, .1), xycoords='axes fraction')
+            
+            pltx = np.concatenate([all_rmax, [all_rmax[-1]*10]])
+            plty = 1e1*(pltx/pltx[-2])**3.
+            axes[1].loglog(pltx/420., plty, ':', c='k')
+            
+    axes[1].legend(loc='upper center', labelspacing=0.02)
+
+    fig_fn = '{}{}.pdf'\
+        .format('.'.join(path.basename(timings_file).split('.')[:-1]), '_simd_speedup' if plt_speedup else '')
     fig.tight_layout()
     fig.savefig(fig_fn)

@@ -165,10 +165,10 @@ int main(int argc, char *argv[])
     read_time += ADD_DIFF_TIME(t0,t1);
 
     //check that the positions are within limits
-    for(int i=0;i<ND1;i++) {
-        assert(x1[i] >= 0.0 && x1[i] <= boxsize && "xpos is within limits [0, boxsize]");
-        assert(y1[i] >= 0.0 && y1[i] <= boxsize && "ypos is within limits [0, boxsize]");
-        assert(z1[i] >= 0.0 && z1[i] <= boxsize && "zpos is within limits [0, boxsize]");
+    for(int64_t i=0;i<ND1;i++) {
+      assert(x1[i] >= 0.0 && x1[i] <= boxsize && "xpos is within limits [0, boxsize]");
+      assert(y1[i] >= 0.0 && y1[i] <= boxsize && "ypos is within limits [0, boxsize]");
+      assert(z1[i] >= 0.0 && z1[i] <= boxsize && "zpos is within limits [0, boxsize]");
     }
 
     /* Read weights file */
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
     struct config_options options = get_config_options();
-    options.verbose=0;
+    options.verbose=1;
 
     /* Pack weights into extra options */
     struct extra_options extra = get_extra_options(weight_method);

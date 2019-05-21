@@ -25,6 +25,11 @@ void free_results_countspheres(results_countspheres *results)
         return;
 
     matrix_free((void **) results->pN, results->nbin);
+    results->pN = NULL;
+    results->rmax = 0.0;
+    results->nbin = 0;
+    results->nc = 0;
+    results->num_pN = 0;
 }
 
 
@@ -42,14 +47,14 @@ int countspheres(const int64_t np, void * restrict X, void * restrict Y, void * 
                 __FUNCTION__, options->float_type);
         return EXIT_FAILURE;
     }
-    
+
     if( strncmp(options->version, STR(VERSION), sizeof(options->version)/sizeof(char)-1) != 0) {
         fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;
     }
 
     if(options->float_type == sizeof(float)) {
-        return countspheres_float(np,  (float * restrict) X,  (float * restrict) Y, (float * restrict) Z,
+        return countspheres_float(np,  (float *) X,  (float *) Y, (float *) Z,
                                   rmax, nbin, nc,
                                   num_pN,
                                   seed,
@@ -57,7 +62,7 @@ int countspheres(const int64_t np, void * restrict X, void * restrict Y, void * 
                                   options,
                                   extra);
     } else {
-        return countspheres_double(np,  (double * restrict) X, (double * restrict) Y, (double * restrict) Z,
+        return countspheres_double(np,  (double *) X, (double *) Y, (double *) Z,
                                    rmax, nbin, nc,
                                    num_pN,
                                    seed,

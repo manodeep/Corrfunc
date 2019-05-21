@@ -22,6 +22,11 @@ void free_results_countspheres_mocks(results_countspheres_mocks *results)
         return;
 
     matrix_free((void **) results->pN, results->nbin);
+    results->pN = NULL;
+    results->rmax = 0.0;
+    results->nbin = 0;
+    results->nc = 0;
+    results->num_pN = 0;
 }
 
 
@@ -48,10 +53,10 @@ int countspheres_mocks(const int64_t Ngal, void *xgal, void *ygal, void *zgal,
         fprintf(stderr,"Error: Do not know this API version = `%s'. Expected version = `%s'\n", options->version, STR(VERSION));
         return EXIT_FAILURE;
     }
-    
+
     if(options->float_type == sizeof(float)) {
         return countspheres_mocks_float(Ngal, (float *) xgal, (float *)ygal, (float *)zgal,
-                                        Nran, (float * restrict) xran, (float * restrict) yran, (float * restrict) zran,
+                                        Nran, (float *) xran, (float *) yran, (float *) zran,
                                         threshold_neighbors,
                                         rmax, nbin, nc,
                                         num_pN,
@@ -62,7 +67,7 @@ int countspheres_mocks(const int64_t Ngal, void *xgal, void *ygal, void *zgal,
                                         extra);
     } else {
         return countspheres_mocks_double(Ngal, (double *) xgal, (double *)ygal, (double *)zgal,
-                                         Nran, (double * restrict) xran, (double * restrict) yran, (double * restrict) zran,
+                                         Nran, (double *) xran, (double *) yran, (double *) zran,
                                          threshold_neighbors,
                                          rmax, nbin, nc,
                                          num_pN,

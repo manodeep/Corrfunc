@@ -19,10 +19,15 @@ void free_results_mocks_s_mu(results_countpairs_mocks_s_mu *results)
     if(results==NULL)
         return;
 
-    free(results->npairs);
-    free(results->supp);
-    free(results->savg);
-    free(results->weightavg);
+    free(results->npairs);results->npairs = NULL;
+    free(results->supp);results->supp = NULL;
+    free(results->savg);results->savg = NULL;
+    free(results->weightavg);results->weightavg = NULL;
+
+    results->mu_max = 0.0;
+    results->mu_min = 0.0;
+    results->nsbin = 0;
+    results->nmu_bins = 0;
 }
 
 

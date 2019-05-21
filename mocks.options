@@ -2,6 +2,10 @@
 OPT += -DOUTPUT_RPAVG  ### Enabling this DOES NOT cause too much of a runtime-hit for DDrppi (<= 10% performance hit)
 #OPT += -DFAST_DIVIDE=2 ##replaces a divide with approximate reciprocals, followed by 'FAST_DIVIDE' number of Newton-Raphson steps. Trade-off between speed and accuracy; may be slower on newer computers
 
+OPT += -DENABLE_MIN_SEP_OPT ## Enable optimizations relating to min. separations between cell-pairs (introduced in v2.3)
+
+OPT += -DCOPY_PARTICLES ## Make a copy of particles positions and weights (doubles the memory required, introduced in v2.3)
+
 ### Specific options for wtheta (DDtheta_mocks.c)
 #OPT += -DOUTPUT_THETAAVG
 OPT += -DLINK_IN_DEC
@@ -11,9 +15,5 @@ OPT += -DLINK_IN_RA #link_in_dec must be enabled before link_in_ra
 #### Floating point precision to use
 OPT += -DDOUBLE_PREC
 
-#### If input distances are already in co-moving (relevant for DDrppi_mocks and vpf)
+#### If input distances are already in co-moving (relevant for DDrppi_mocks, DDsmu_mocks and vpf)
 #OPT += -DCOMOVING_DIST
-
-
-
-

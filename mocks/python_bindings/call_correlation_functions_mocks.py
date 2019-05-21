@@ -66,6 +66,8 @@ def main():
         ra, dec, cz, weights = np.genfromtxt(filename, dtype=dtype,
                                              unpack=True)
 
+    weights = weights.reshape(1,-1)
+
     t1 = time.time()
     print("RA min  = {0} max = {1}".format(np.min(ra), np.max(ra)))
     print("DEC min = {0} max = {1}".format(np.min(dec), np.max(dec)))

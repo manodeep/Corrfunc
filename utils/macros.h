@@ -2,9 +2,13 @@
 
 #define NLATMAX           100
 
-#define BOOST_CELL_THRESH   10
+#define BOOST_CELL_THRESH    10
 #define BOOST_NUMPART_THRESH 250
-#define BOOST_BIN_REF       1
+#define BOOST_BIN_REF        1
+
+//what fraction of particles have to be sorted
+//to switch from quicksort to heapsort
+#define FRACTION_SORTED_REQD_TO_HEAP_SORT   0.6
 
 #define ADD_DIFF_TIME(t0,t1)            ((t1.tv_sec - t0.tv_sec) + 1e-6*(t1.tv_usec - t0.tv_usec))
 #define REALTIME_ELAPSED_NS(t0, t1)     ((t1.tv_sec - t0.tv_sec)*1000000000.0 + (t1.tv_nsec - t0.tv_nsec))
@@ -13,6 +17,10 @@
 
 #define STRINGIFY(x)   #x
 #define STR(x) STRINGIFY(x)
+
+
+#define MIN(X, Y)                        (( (X) < (Y)) ? (X):(Y))
+#define MAX(X, Y)                        (( (X) > (Y)) ? (X):(Y))
 
 
 #define ASSIGN_CELL_TIMINGS(thread_timings, nx1, nx2, timediff, tid, first_cellid, second_cellid) \

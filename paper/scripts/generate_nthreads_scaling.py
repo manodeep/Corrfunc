@@ -4,8 +4,10 @@ from __future__ import print_function
 import numpy as np
 
 import Corrfunc
-
 from Corrfunc.io import read_catalog
+
+from utils import convert_numpy_bytes_to_unicode
+
 import os.path as path
 from os.path import join as pjoin, abspath, dirname
 import time
@@ -108,8 +110,8 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
     pimax = rmax  # Set to rmax for comparisons between wp and xi
     boxsize = 420.0
     dtype = np.dtype([('repeat', np.int),
-                      ('name', 'S16'),
-                      ('isa', 'S16'),
+                      ('name', 'U16'),
+                      ('isa', 'U16'),
                       ('nthreads', np.int),
                       ('runtime', np.float),
                       ('serial_time', np.float),
@@ -258,8 +260,8 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
     pimax = rmax
     angbins = np.logspace(np.log10(rmin), np.log10(angmax), nbins)
     dtype = np.dtype([('repeat', np.int),
-                      ('name', 'S16'),
-                      ('isa', 'S16'),
+                      ('name', 'U16'),
+                      ('isa', 'U16'),
                       ('nthreads', np.int),
                       ('runtime', np.float),
                       ('serial_time', np.float),
@@ -404,6 +406,8 @@ else:
         except KeyError:
             # Previous versions of this script used 'all_runtimes'
             runtimes = xx['all_runtimes']
+
+        runtimes = convert_numpy_bytes_to_unicode(runtimes)
             
     except KeyError:
         print("Error: Invalid timings file = `{0}' passed in the "
@@ -488,8 +492,9 @@ else:
     
     # Begin plotting
     plt_scaling = False  # plot scalings or raw times
-    import matplotlib.pyplot as plt
     import matplotlib as mpl
+    mpl.use('Agg')
+    import matplotlib.pyplot as plt
     import seaborn
     seaborn.set_style('ticks')
     seaborn.set_style({"xtick.direction": "in","ytick.direction": "in", 'xtick.top':True, 'ytick.right':True})

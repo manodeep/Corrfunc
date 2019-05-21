@@ -21,7 +21,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
               verbose=False, is_comoving_dist=False,
               xbin_refine_factor=1, ybin_refine_factor=1,
               zbin_refine_factor=1, max_cells_per_dim=100,
-              c_api_timer=False, isa=r'fastest'):
+              copy_particles=True, c_api_timer=False, isa=r'fastest'):
     """
     Function to compute the counts-in-cells on points on the sky. Suitable
     for mock catalogs and observed galaxies.
@@ -33,55 +33,55 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
     ----------
 
     rmax : double
-       Maximum radius of the sphere to place on the particles
+        Maximum radius of the sphere to place on the particles
 
     nbins : integer
-       Number of bins in the counts-in-cells. Radius of first shell
-       is rmax/nbins
+        Number of bins in the counts-in-cells. Radius of first shell
+        is rmax/nbins
 
     nspheres : integer (>= 0)
-       Number of random spheres to place within the particle distribution.
-       For a small number of spheres, the error is larger in the measured
-       pN's.
+        Number of random spheres to place within the particle distribution.
+        For a small number of spheres, the error is larger in the measured
+        pN's.
 
     numpN : integer (>= 1)
-       Governs how many unique pN's are to returned. If ``numpN`` is set to 1,
-       then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
-       returned.
+        Governs how many unique pN's are to returned. If ``numpN`` is set to 1,
+        then only the vpf (p0) is returned. For ``numpN=2``, p0 and p1 are
+        returned.
 
-       More explicitly, the columns in the results look like the following:
+        More explicitly, the columns in the results look like the following:
 
-         ======   ==========================
-         numpN    Columns in output
-         ======   ==========================
-            1      p0
-            2      p0      p1
-            3      p0      p1     p2
-            4      p0      p1     p2     p3
-         ======   ==========================
+          ======   ==========================
+          numpN    Columns in output
+          ======   ==========================
+             1      p0
+             2      p0      p1
+             3      p0      p1     p2
+             4      p0      p1     p2     p3
+          ======   ==========================
 
-       and so on...
+        and so on...
 
-       Note: ``p0`` is the vpf
+        Note: ``p0`` is the vpf
 
     threshold_ngb : integer
-       Minimum number of random points needed in a ``rmax`` sphere such that it
-       is considered to be entirely within the mock footprint. The
-       command-line version, ``mocks/vpf/vpf_mocks.c``, assumes that the
-       minimum number of randoms can be at most a 1-sigma deviation from
-       the expected random number density.
+        Minimum number of random points needed in a ``rmax`` sphere such that
+        it is considered to be entirely within the mock footprint. The
+        command-line version, ``mocks/vpf/vpf_mocks.c``, assumes that the
+        minimum number of randoms can be at most a 1-sigma deviation from
+        the expected random number density.
 
     centers_file : string, filename
-       A file containing random sphere centers. If the file does not exist,
-       then a list of random centers will be written out. In that case, the
-       randoms arrays, ``RAND_RA``, ``RAND_DEC`` and ``RAND_CZ`` are used to
-       check that the sphere is entirely within the footprint. If the file does
-       exist but either ``rmax`` is too small or there are not enough centers
-       then the file will be overwritten.
+        A file containing random sphere centers. If the file does not exist,
+        then a list of random centers will be written out. In that case, the
+        randoms arrays, ``RAND_RA``, ``RAND_DEC`` and ``RAND_CZ`` are used to
+        check that the sphere is entirely within the footprint. If the file
+        does exist but either ``rmax`` is too small or there are not enough
+        centers then the file will be overwritten.
 
-       Note: If the centers file has to be written, the code will take
-       significantly longer to finish. However, subsequent runs can re-use
-       that centers file and will be faster.
+        Note: If the centers file has to be written, the code will take
+        significantly longer to finish. However, subsequent runs can re-use
+        that centers file and will be faster.
 
     cosmology : integer, required
         Integer choice for setting cosmology. Valid values are 1->LasDamas
@@ -99,112 +99,118 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
         the entire package.
 
     RA : array-like, real (float/double)
-       The array of Right Ascensions for the first set of points. RA's
-       are expected to be in [0.0, 360.0], but the code will try to fix cases
-       where the RA's are in [-180, 180.0]. For peace of mind, always supply
-       RA's in [0.0, 360.0].
+        The array of Right Ascensions for the first set of points. RA's
+        are expected to be in [0.0, 360.0], but the code will try to fix cases
+        where the RA's are in [-180, 180.0]. For peace of mind, always supply
+        RA's in [0.0, 360.0].
 
-       Calculations are done in the precision of the supplied arrays.
+        Calculations are done in the precision of the supplied arrays.
 
     DEC : array-like, real (float/double)
-       Array of Declinations for the first set of points. DEC's are expected
-       to be in the [-90.0, 90.0], but the code will try to fix cases where
-       the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
-       DEC's in [-90.0, 90.0].
+        Array of Declinations for the first set of points. DEC's are expected
+        to be in the [-90.0, 90.0], but the code will try to fix cases where
+        the DEC's are in [0.0, 180.0]. Again, for peace of mind, always supply
+        DEC's in [-90.0, 90.0].
 
-       Must be of same precision type as RA.
+        Must be of same precision type as RA.
 
     CZ : array-like, real (float/double)
-       Array of (Speed Of Light * Redshift) values for the first set of
-       points. Code will try to detect cases where ``redshifts`` have been
-       passed and multiply the entire array with the ``speed of light``.
+        Array of (Speed Of Light * Redshift) values for the first set of
+        points. Code will try to detect cases where ``redshifts`` have been
+        passed and multiply the entire array with the ``speed of light``.
 
-       If ``is_comoving_dist`` is set, then ``CZ`` is interpreted as the
-       co-moving distance, rather than (Speed Of Light * Redshift).
+        If ``is_comoving_dist`` is set, then ``CZ`` is interpreted as the
+        co-moving distance, rather than (Speed Of Light * Redshift).
 
     RAND_RA : array-like, real (float/double)
-       The array of Right Ascensions for the randoms. RA's are expected to be
-       in [0.0, 360.0], but the code will try to fix cases where the RA's are
-       in [-180, 180.0]. For peace of mind, always supply RA's in
-       [0.0, 360.0].
+        The array of Right Ascensions for the randoms. RA's are expected to be
+        in [0.0, 360.0], but the code will try to fix cases where the RA's are
+        in [-180, 180.0]. For peace of mind, always supply RA's in
+        [0.0, 360.0].
 
-       Must be of same precision type as RA/DEC/CZ.
+        Must be of same precision type as RA/DEC/CZ.
 
     RAND_DEC : array-like, real (float/double)
-       Array of Declinations for the randoms. DEC's are expected to be in the
-       [-90.0, 90.0], but the code will try to fix cases where the DEC's are
-       in [0.0, 180.0]. Again, for peace of mind, always supply DEC's in
-       [-90.0, 90.0].
+        Array of Declinations for the randoms. DEC's are expected to be in the
+        [-90.0, 90.0], but the code will try to fix cases where the DEC's are
+        in [0.0, 180.0]. Again, for peace of mind, always supply DEC's in
+        [-90.0, 90.0].
 
-       Must be of same precision type as RA/DEC/CZ.
+        Must be of same precision type as RA/DEC/CZ.
 
     RAND_CZ : array-like, real (float/double)
-       Array of (Speed Of Light * Redshift) values for the randoms. Code
-       will try to detect cases where ``redshifts`` have been
-       passed and multiply the entire array with the ``speed of light``.
+        Array of (Speed Of Light * Redshift) values for the randoms. Code
+        will try to detect cases where ``redshifts`` have been
+        passed and multiply the entire array with the ``speed of light``.
 
-       If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the
-       co-moving distance, rather than ``(Speed Of Light * Redshift)``.
+        If ``is_comoving_dist`` is set, then ``CZ2`` is interpreted as the
+        co-moving distance, rather than ``(Speed Of Light * Redshift)``.
 
-       Note: RAND_RA, RAND_DEC and RAND_CZ are only used when the
-          ``centers_file``  needs to be written out. In that case, the
-          RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.
+        Note: RAND_RA, RAND_DEC and RAND_CZ are only used when the
+           ``centers_file``  needs to be written out. In that case, the
+           RAND_RA, RAND_DEC, and RAND_CZ are used as random centers.
 
     verbose : boolean (default false)
-       Boolean flag to control output of informational messages
+        Boolean flag to control output of informational messages
 
     is_comoving_dist : boolean (default false)
-       Boolean flag to indicate that ``cz`` values have already been
-       converted into co-moving distances. This flag allows arbitrary
-       cosmologies to be used in ``Corrfunc``.
+        Boolean flag to indicate that ``cz`` values have already been
+        converted into co-moving distances. This flag allows arbitrary
+        cosmologies to be used in ``Corrfunc``.
 
-    (xyz)bin_refine_factor : integer, default is (1,1,1); typically within [1-3]
-       Controls the refinement on the cell sizes. Can have up to a 20% impact
-       on runtime. 
+    (xyz)bin_refine_factor : integer, default is (1, 1, 1); typically in [1-2]
+        Controls the refinement on the cell sizes. Higher numbers might have
+        a negative impact on runtime.
 
-       Note: Since the counts in spheres calculation is symmetric
-       in all 3 dimensions, the defaults are different from the clustering
-       routines.
+        Note: Since the counts in spheres calculation is symmetric
+        in all 3 dimensions, the defaults are different from the clustering
+        routines.
 
     max_cells_per_dim : integer, default is 100, typical values in [50-300]
-       Controls the maximum number of cells per dimension. Total number of
-       cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
-       too small relative to the boxsize (and increasing helps the runtime).
+        Controls the maximum number of cells per dimension. Total number of
+        cells can be up to (max_cells_per_dim)^3. Only increase if ``rmax`` is
+        too small relative to the boxsize (and increasing helps the runtime).
+
+    copy_particles: boolean (default True)
+        Boolean flag to make a copy of the particle positions
+        If set to False, the particles will be re-ordered in-place
+
+        .. versionadded:: 2.3.0
 
     c_api_timer : boolean (default false)
-       Boolean flag to measure actual time spent in the C libraries. Here
-       to allow for benchmarking and scaling studies.
+        Boolean flag to measure actual time spent in the C libraries. Here
+        to allow for benchmarking and scaling studies.
 
-    isa : string (default ``fastest``)
-       Controls the runtime dispatch for the instruction set to use. Possible
-       options are: [``fastest``, ``avx``, ``sse42``, ``fallback``]
+    isa: string, case-insensitive (default ``fastest``)
+        Controls the runtime dispatch for the instruction set to use. Options
+        are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
 
-       Setting isa to ``fastest`` will pick the fastest available instruction
-       set on the current computer. However, if you set ``isa`` to, say,
-       ``avx`` and ``avx`` is not available on the computer, then the code will
-       revert to using ``fallback`` (even though ``sse42`` might be available).
+        Setting isa to ``fastest`` will pick the fastest available instruction
+        set on the current computer. However, if you set ``isa`` to, say,
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).
 
-       Unless you are benchmarking the different instruction sets, you should
-       always leave ``isa`` to the default value. And if you *are*
-       benchmarking, then the string supplied here gets translated into an
-       ``enum`` for the instruction set defined in ``utils/defs.h``.
-
+        Unless you are benchmarking the different instruction sets, you should
+        always leave ``isa`` to the default value. And if you *are*
+        benchmarking, then the string supplied here gets translated into an
+        ``enum`` for the instruction set defined in ``utils/defs.h``.
 
     Returns
     --------
 
     results : Numpy structured array
-       A numpy structured array containing [rmax, pN[numpN]] with ``nbins``
-       elements. Each row contains the maximum radius of the sphere and the
-       ``numpN`` elements in the ``pN`` array. Each element of this array
-       contains the probability that a sphere of radius ``rmax`` contains
-       *exactly* ``N`` galaxies. For example, pN[0] (p0, the void probibility
-       function) is the probability that a sphere of radius ``rmax`` contains 0
-       galaxies.
+        A numpy structured array containing [rmax, pN[numpN]] with ``nbins``
+        elements. Each row contains the maximum radius of the sphere and the
+        ``numpN`` elements in the ``pN`` array. Each element of this array
+        contains the probability that a sphere of radius ``rmax`` contains
+        *exactly* ``N`` galaxies. For example, pN[0] (p0, the void probibility
+        function) is the probability that a sphere of radius ``rmax`` contains
+        0 galaxies.
 
     api_time : float, optional
-       Only returned if ``c_api_timer`` is set.  ``api_time`` measures only the time
-       spent within the C library and ignores all python overhead.
+        Only returned if ``c_api_timer`` is set.  ``api_time`` measures only
+        the time spent within the C library and ignores all python overhead.
 
 
     Example
@@ -274,17 +280,17 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
         raise ImportError(msg)
 
     import numpy as np
-    from warnings import warn
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian, sys_pipes
-        
-    # Warn about non-native endian arrays
-    if not all(is_native_endian(arr) for arr in [RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ]):
-        warn('One or more input array has non-native endianness!  A copy will be made with the correct endianness.')
-    RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ = [convert_to_native_endian(arr) for arr in [RA, DEC, CZ, RAND_RA, RAND_DEC, RAND_CZ]]
+        is_native_endian, sys_pipes, process_weights
 
+    _locals = locals()
+
+    # Ensure all input arrays are native endian
+    for arrname in ('RA', 'DEC', 'CZ', 'RAND_RA', 'RAND_DEC', 'RAND_CZ'):
+        arr = _locals[arrname]
+        _locals[arrname] = convert_to_native_endian(arr, warn=True)
 
     integer_isa = translate_isa_string_to_enum(isa)
     with sys_pipes():
@@ -299,6 +305,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
                               ybin_refine_factor=ybin_refine_factor,
                               zbin_refine_factor=zbin_refine_factor,
                               max_cells_per_dim=max_cells_per_dim,
+                              copy_particles=copy_particles,
                               c_api_timer=c_api_timer,
                               isa=integer_isa)
     if extn_results is None:

@@ -21,10 +21,10 @@ int test_nonperiodic_DDsmu(const char *correct_outputfile);
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat,const char *secondfilename,const char *secondformat);
 
 //Global variables
-int ND1;
+int64_t ND1;
 double *X1=NULL,*Y1=NULL,*Z1=NULL,*weights1=NULL;
 
-int ND2;
+int64_t ND2;
 double *X2=NULL,*Y2=NULL,*Z2=NULL,*weights2=NULL;
 
 char current_file1[MAXLEN],current_file2[MAXLEN];
@@ -36,7 +36,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     int autocorr = (X1==X2) ? 1:0;
     results_countpairs results;
     int ret = EXIT_FAILURE;
-    
+
     // Set up the weights pointers
     weight_method_t weight_method = PAIR_PRODUCT;
     struct extra_options extra = get_extra_options(weight_method);
@@ -44,7 +44,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
     extra.weights1.weights[0] = weights2;
 
     BEGIN_INTEGRATION_TEST_SECTION
-    
+
         //Do the straight-up DD counts
         int status = countpairs(ND1,X1,Y1,Z1,
                                 ND2,X2,Y2,Z2,
@@ -57,7 +57,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
         if(status != EXIT_SUCCESS) {
             return status;
         }
-        
+
         FILE *fp=my_fopen(correct_outputfile,"r");
         if(fp == NULL) {
             free_results(&results);
@@ -73,7 +73,7 @@ int test_nonperiodic_DD(const char *correct_outputfile)
             }
             int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
             int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
-            
+
             //Check for exact equality of npairs and float "equality" for rpavg
             if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
@@ -86,10 +86,10 @@ int test_nonperiodic_DD(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-        
+    END_INTEGRATION_TEST_SECTION(free_results(&results));
+
     /* If the test failed, then write to temporary file, so a comparison can be made */
-    if(ret != EXIT_SUCCESS) {
+    if(ret != EXIT_SUCCESS && results.nbin > 0) {
         FILE *fp=my_fopen(tmpoutputfile,"w");
         double rlow = results.rupp[0];
         for(int i=1;i<results.nbin;i++) {
@@ -107,14 +107,14 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
 {
     results_countpairs_rp_pi results;
     int ret = EXIT_FAILURE;
-    
+
     int autocorr = (X1==X2) ? 1:0;
     // Set up the weights pointers
     weight_method_t weight_method = PAIR_PRODUCT;
     struct extra_options extra = get_extra_options(weight_method);
     extra.weights0.weights[0] = weights1;
     extra.weights1.weights[0] = weights2;
-    
+
     BEGIN_INTEGRATION_TEST_SECTION
         int status = countpairs_rp_pi(ND1,X1,Y1,Z1,
                                       ND2,X2,Y2,Z2,
@@ -135,7 +135,7 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
             free_results_rp_pi(&results);
             return EXIT_FAILURE;
         }
-        
+
         for(int i=1;i<results.nbin;i++) {
             for(int j=0;j<npibin;j++) {
                 int index = i*(npibin+1) + j;
@@ -150,7 +150,7 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
                 }
                 int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[index], maxdiff, maxreldiff);
                 int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-                
+
                 //Check for exact equality of npairs and float "equality" for rpavg
                 if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                     ret = EXIT_SUCCESS;
@@ -165,9 +165,9 @@ int test_nonperiodic_DDrppi(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-    
-    if(ret != EXIT_SUCCESS) {
+    END_INTEGRATION_TEST_SECTION(free_results_rp_pi(&results));
+
+    if(ret != EXIT_SUCCESS && results.nbin > 0) {
         FILE *fp = my_fopen(tmpoutputfile,"w");
         const int npibin = results.npibin;
         const double dpi = pimax/(double)results.npibin ;
@@ -190,7 +190,7 @@ int test_nonperiodic_DDsmu(const char *correct_outputfile)
 {
     results_countpairs_s_mu results;
     int ret = EXIT_FAILURE;
-    
+
     int autocorr = (X1==X2) ? 1:0;
     // Set up the weights pointers
     weight_method_t weight_method = PAIR_PRODUCT;
@@ -219,7 +219,7 @@ int test_nonperiodic_DDsmu(const char *correct_outputfile)
             free_results_s_mu(&results);
             return EXIT_FAILURE;
         }
-        
+
         for(int i=1;i<results.nsbin;i++) {
             for(int j=0;j<nmubin;j++) {
                 int index = i*(nmubin+1) + j;
@@ -234,7 +234,7 @@ int test_nonperiodic_DDsmu(const char *correct_outputfile)
                 }
                 int floats_equal = AlmostEqualRelativeAndAbs_double(savg, results.savg[index], maxdiff, maxreldiff);
                 int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[index], maxdiff, maxreldiff);
-                
+
                 //Check for exact equality of npairs and float "equality" for rpavg
                 if(npairs == results.npairs[index] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                     ret = EXIT_SUCCESS;
@@ -249,9 +249,9 @@ int test_nonperiodic_DDsmu(const char *correct_outputfile)
             }
         }
         fclose(fp);
-    END_INTEGRATION_TEST_SECTION;
-        
-    if(ret != EXIT_SUCCESS) {
+    END_INTEGRATION_TEST_SECTION(free_results_s_mu(&results));
+
+    if(ret != EXIT_SUCCESS && results.nsbin > 0) {
         FILE *fp = my_fopen(tmpoutputfile,"w");
         const int nmubin = results.nmu_bins;
         const double dmu = theory_mu_max/(double)results.nmu_bins ;
@@ -335,9 +335,10 @@ int main(int argc, char **argv)
     options.need_avg_sep=1;
     options.verbose=0;
     options.periodic=0;
+    options.copy_particles=1;
     options.fast_divide_and_NR_steps=0;
     options.float_type=sizeof(double);
-    
+
     gettimeofday(&tstart,NULL);
 
     //set the globals

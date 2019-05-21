@@ -9,10 +9,7 @@
 
 #pragma once
 
-#include <stdio.h>
 #include <stdint.h>
-
-#include "macros.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,34 +17,34 @@ extern "C" {
 
 #include "weight_defs_DOUBLE.h"
 
+typedef struct cellarray_mocks_DOUBLE cellarray_mocks_DOUBLE;
+struct cellarray_mocks_DOUBLE{
+    int64_t nelements;
+    DOUBLE *x;
+    DOUBLE *y;
+    DOUBLE *z;
+    weight_struct_DOUBLE weights;
+    DOUBLE xbounds[2];
+    DOUBLE ybounds[2];
+    DOUBLE zbounds[2];
 
-    /* Used for DDrppi_mocks */
-    typedef struct cellarray_mocks_index_particles_DOUBLE cellarray_mocks_index_particles_DOUBLE;
-    struct cellarray_mocks_index_particles_DOUBLE{
-        int64_t nelements;
-        int64_t num_ngb;
-        DOUBLE *x;
-        DOUBLE *y;
-        DOUBLE *z;
-        DOUBLE *cz;//co-moving distance
-        weight_struct_DOUBLE weights;
-        cellarray_mocks_index_particles_DOUBLE **ngb_cells;
-    };
+    //these two fields are only relevant for angular calculations
+    DOUBLE dec_bounds[2];
+    DOUBLE ra_bounds[2];
 
-    /* Used for wtheta */
-    typedef struct cellarray_mocks_index_wtheta_DOUBLE cellarray_mocks_index_wtheta_DOUBLE;
-    struct cellarray_mocks_index_wtheta_DOUBLE{
-        int64_t nelements;
-        DOUBLE *x;
-        DOUBLE *y;
-        DOUBLE *z;
-        weight_struct_DOUBLE weights;
-        DOUBLE ra_min;
-        DOUBLE ra_max;
-        int num_ngb;
-        int ngb_allocated;
-        cellarray_mocks_index_wtheta_DOUBLE **ngb_cells;
-    };
+    int64_t *original_index;//the input order for particles
+    uint8_t owns_memory;// boolean flag if the x/y/z pointers were separately malloc'ed -> need to be freed once calculations are done
+
+    /*
+      boolean flag (only relevant when external particle positions
+      are used) to re-order particles back into original order
+      after calculations are done. Only relevant if external
+      pointers are being used for x/y/z
+    */
+
+    uint8_t unused[7];//to maintain alignment explicitly (the compiler would insert this anyway)
+};
+
 
 #ifdef __cplusplus
 }

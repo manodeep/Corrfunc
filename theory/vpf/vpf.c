@@ -95,8 +95,6 @@ int main(int argc, char *argv[])
     }
     fprintf(stderr,"\t\t -------------------------------------\n");
 
-
-
     /*---Read-particle-file-----------------------------------------------------*/
     gettimeofday(&t0,NULL);
     np = read_positions(file,fileformat, sizeof(DOUBLE), 3, &x, &y, &z);
@@ -104,9 +102,11 @@ int main(int argc, char *argv[])
 
     results_countspheres results;
     struct config_options options = get_config_options();
+
     /* If you want to change the bin refine factors */
     /* const int bf[] = {2, 2, 1}; */
     /* set_bin_refine_factors(&options, bf); */
+
     int status = countspheres(np, x, y, z,
                               rmax, nbin, nc,
                               num_pN,
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
         }
         fprintf(stdout,"\n");
     }
-    
+
     free_results_countspheres(&results);
     gettimeofday(&t1,NULL);
     fprintf(stderr,"vpf> Done. Ngal = %"PRId64". Time taken = %0.2lf seconds \n",np,ADD_DIFF_TIME(tstart,t1));
