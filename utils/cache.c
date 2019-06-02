@@ -36,10 +36,9 @@ size_t cache_line_size(void)
 #include <stdio.h>
 size_t cache_line_size(void)
 {
-    FILE *fp = 0;
-    fp = fopen("/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size", "r");
-    size_t lineSize = 0;
-    if (fp) {
+    FILE *fp = fopen("/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size", "r");
+    size_t lineSize = DEFAULT_CACHE_LINE_SIZE;
+    if (fp != NULL) {
         int nitems = fscanf(fp, "%zu", &lineSize);
         if(nitems !=1)  {
             linesize=0;
