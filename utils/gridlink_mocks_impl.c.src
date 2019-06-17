@@ -438,7 +438,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_DOUBLE(struct cellarray_mock
     XRETURN(all_cell_pairs != NULL, NULL,
             "Error: Could not allocate memory for storing all the cell pairs. "
             "Reducing bin refine factors might help. Requested for %"PRId64" elements "
-            "with each element of size %zu bytes\n", max_num_cell_pairs, sizeof(all_cell_pairs));
+            "with each element of size %zu bytes\n", max_num_cell_pairs, sizeof(*all_cell_pairs));
 
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_mocks_DOUBLE *first = &(lattice1[icell]);
@@ -928,7 +928,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_dec_DOUBLE(cellarray_m
     XRETURN(all_cell_pairs != NULL, NULL,
             "Error: Could not allocate memory for storing all the cell pairs. "
             "Reducing bin refine factors might help. Requested for %"PRId64" elements "
-            "with each element of size %zu bytes\n", max_num_cell_pairs, sizeof(all_cell_pairs));
+            "with each element of size %zu bytes\n", max_num_cell_pairs, sizeof(*all_cell_pairs));
 
     /* This ngb is a trivial function. Loop over +- idec from every cell. And that's a neighbour cell */
     for(int64_t icell=0;icell<totncells;icell++) {
@@ -1522,7 +1522,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_ra_dec_DOUBLE(cellarra
     XRETURN(all_cell_pairs != NULL, NULL,
             "Error: Could not allocate memory for storing all the cell pairs. "
             "Reducing bin refine factors might help. Requested for %"PRId64" elements "
-            "with each element of size %zu bytes\n", max_num_cell_pairs, sizeof(all_cell_pairs));
+            "with each element of size %zu bytes\n", max_num_cell_pairs, sizeof(*all_cell_pairs));
 
     const DOUBLE ra_diff = ra_max - ra_min;
     const DOUBLE inv_ra_diff = 1.0/ra_diff;
