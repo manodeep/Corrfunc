@@ -427,10 +427,13 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                     current_utc_time(&tcell_start);
                 }
 
-                const int status = wp_function_DOUBLE(this_cell_pair->x1, this_cell_pair->y1, this_cell_pair->z1,
-                                                      this_cell_pair->weights1, this_cell_pair->N1,
-                                                      this_cell_pair->x2, this_cell_pair->y2, this_cell_pair->z2,
-                                                      this_cell_pair->weights2, this_cell_pair->N2,
+                const int64_t icell = this_cell_pair->cellindex1;
+                const int64_t icell2 = this_cell_pair->cellindex2;
+                const cellarray_DOUBLE *first = &lattice[icell];
+                const cellarray_DOUBLE *second = &lattice[icell2];
+
+                const int status = wp_function_DOUBLE(first->x, first->y, first->z, &(first->weights), first->nelements, 
+                                                      second->x, second->y, second->z, &(second->weights), second->nelements, 
                                                       this_cell_pair->same_cell,
                                                       sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
                                                       this_cell_pair->xwrap, this_cell_pair->ywrap, this_cell_pair->zwrap,
@@ -448,7 +451,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                     current_utc_time(&tcell_end);
                     double time_in_ns = REALTIME_ELAPSED_NS(tcell_start, tcell_end);
                     struct api_cell_timings *base_cell = &(options->cell_timings[icellpair]);
-                    ASSIGN_CELL_TIMINGS(base_cell, this_cell_pair->N1, this_cell_pair->N2, time_in_ns,
+                    ASSIGN_CELL_TIMINGS(base_cell, first->nelements, second->nelements, time_in_ns,
                                         tid, this_cell_pair->cellindex1, this_cell_pair->cellindex2);
                 }
             }//abort-status

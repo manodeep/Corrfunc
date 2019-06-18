@@ -430,6 +430,11 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb - 1; // -1 for self
 
+
+    if( ! (autocorr == 0 || autocorr == 1) ) {
+        fprintf(stderr,"Error: Strange value of autocorr = %d. Expected to receive either 1 (auto-correlations) or 0 (cross-correlations)\n", autocorr);
+        return NULL;
+    }
     const int64_t num_self_pairs = totncells;
     const int64_t num_nonself_pairs = totncells * max_ngb_cells / (1 + autocorr);
 
@@ -545,20 +550,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                     //If we have reached here, then this cell *MIGHT* have a pair. We
                     //need to add a cell-pair to the array of all cell-pairs
                     struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[num_cell_pairs];
-                    this_cell_pair->N1 = first->nelements;
-                    this_cell_pair->x1 = first->x;
-                    this_cell_pair->y1 = first->y;
-                    this_cell_pair->z1 = first->z;
-                    this_cell_pair->orig_index1 = first->original_index;
-                    this_cell_pair->weights1 = &first->weights;
                     this_cell_pair->cellindex1 = icell;
-
-                    this_cell_pair->N2 = second->nelements;
-                    this_cell_pair->x2 = second->x;
-                    this_cell_pair->y2 = second->y;
-                    this_cell_pair->z2 = second->z;
-                    this_cell_pair->orig_index2 = second->original_index;
-                    this_cell_pair->weights2 = &second->weights;
                     this_cell_pair->cellindex2 = icell2;
 
                     this_cell_pair->xwrap = off_xwrap;
@@ -572,10 +564,6 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                     this_cell_pair->closest_x1 = closest_x1;
                     this_cell_pair->closest_y1 = closest_y1;
                     this_cell_pair->closest_z1 = closest_z1;
-
-                    this_cell_pair->xbin_offset = iix;
-                    this_cell_pair->ybin_offset = iiy;
-                    this_cell_pair->zbin_offset = iiz;
 
                     this_cell_pair->same_cell = (autocorr == 1 && icell2 == icell) ? 1:0;
 
