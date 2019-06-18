@@ -15,7 +15,7 @@ New features
 
 Enhancements
 ------------
-- Reduce gridlink memory footprint [#186]
+- Reduce memory footprint of the cell pairs [#186]
 
 
 2.3.0 (2019-05-20)
