@@ -10,7 +10,7 @@ from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 import os
 
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 __author__ = "Manodeep Sinha <manodeep@gmail.com>"
 
 
