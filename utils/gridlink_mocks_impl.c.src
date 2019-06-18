@@ -430,9 +430,12 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_DOUBLE(struct cellarray_mock
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
     const int64_t ny_ngb = 2*ybin_refine_factor + 1;
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
-    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
+    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb - 1; // -1 for self
 
-    const int64_t max_num_cell_pairs = totncells * max_ngb_cells;
+    const int64_t num_self_pairs = totncells;
+    const int64_t num_nonself_pairs = totncells * max_ngb_cells / (autocorr + 1);
+
+    const int64_t max_num_cell_pairs = num_self_pairs + num_nonself_pairs;
     int64_t num_cell_pairs = 0;
     struct cell_pair_DOUBLE *all_cell_pairs = my_malloc(sizeof(*all_cell_pairs), max_num_cell_pairs);
     XRETURN(all_cell_pairs != NULL, NULL,
@@ -921,8 +924,13 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_dec_DOUBLE(cellarray_m
      */
     const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - COSD(thetamax));
 
-    const int64_t max_ngb_cells = 2*dec_refine_factor + 1;
-    const int64_t max_num_cell_pairs = totncells * max_ngb_cells;
+    const int64_t max_ngb_cells = 2*dec_refine_factor;  // -1 for self
+
+    const int64_t num_self_pairs = totncells;
+    const int64_t num_nonself_pairs = totncells * max_ngb_cells / (autocorr + 1);
+
+    const int64_t max_num_cell_pairs = num_self_pairs + num_nonself_pairs;
+
     int64_t num_cell_pairs = 0;
     struct cell_pair_DOUBLE *all_cell_pairs = my_malloc(sizeof(*all_cell_pairs), max_num_cell_pairs);
     XRETURN(all_cell_pairs != NULL, NULL,

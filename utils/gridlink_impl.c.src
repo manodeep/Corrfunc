@@ -428,9 +428,12 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
     const int64_t ny_ngb = 2*ybin_refine_factor + 1;
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
-    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
+    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb - 1; // -1 for self
 
-    const int64_t max_num_cell_pairs = totncells * max_ngb_cells;
+    const int64_t num_self_pairs = totncells;
+    const int64_t num_nonself_pairs = totncells * max_ngb_cells / (1 + autocorr);
+
+    const int64_t max_num_cell_pairs = num_self_pairs + num_nonself_pairs;
     int64_t num_cell_pairs = 0;
     struct cell_pair_DOUBLE *all_cell_pairs = my_malloc(sizeof(*all_cell_pairs), max_num_cell_pairs);
     XRETURN(all_cell_pairs != NULL, NULL,
