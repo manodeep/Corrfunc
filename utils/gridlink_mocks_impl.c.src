@@ -430,9 +430,16 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_DOUBLE(struct cellarray_mock
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
     const int64_t ny_ngb = 2*ybin_refine_factor + 1;
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
-    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb;
+    const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb - 1; // -1 for self
 
-    const int64_t max_num_cell_pairs = totncells * max_ngb_cells;
+    if( ! (autocorr == 0 || autocorr == 1) ) {
+        fprintf(stderr,"Error: Strange value of autocorr = %d. Expected to receive either 1 (auto-correlations) or 0 (cross-correlations)\n", autocorr);
+        return NULL;
+    }
+    const int64_t num_self_pairs = totncells;
+    const int64_t num_nonself_pairs = totncells * max_ngb_cells / (autocorr + 1);
+
+    const int64_t max_num_cell_pairs = num_self_pairs + num_nonself_pairs;
     int64_t num_cell_pairs = 0;
     struct cell_pair_DOUBLE *all_cell_pairs = my_malloc(sizeof(*all_cell_pairs), max_num_cell_pairs);
     XRETURN(all_cell_pairs != NULL, NULL,
@@ -515,20 +522,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_DOUBLE(struct cellarray_mock
                             "Expected that the total number of cell pairs can be at most %"PRId64" but "
                             "currently have number of cell pairs = %"PRId64"\n", max_num_cell_pairs, num_cell_pairs);
                     struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[num_cell_pairs];
-                    this_cell_pair->N1 = first->nelements;
-                    this_cell_pair->x1 = first->x;
-                    this_cell_pair->y1 = first->y;
-                    this_cell_pair->z1 = first->z;
-                    this_cell_pair->orig_index1 = first->original_index;
-                    this_cell_pair->weights1 = &first->weights;
                     this_cell_pair->cellindex1 = icell;
-
-                    this_cell_pair->N2 = second->nelements;
-                    this_cell_pair->x2 = second->x;
-                    this_cell_pair->y2 = second->y;
-                    this_cell_pair->z2 = second->z;
-                    this_cell_pair->orig_index2 = second->original_index;
-                    this_cell_pair->weights2 = &second->weights;
                     this_cell_pair->cellindex2 = icell2;
 
                     this_cell_pair->min_dx = min_dx;
@@ -921,8 +915,17 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_dec_DOUBLE(cellarray_m
      */
     const DOUBLE sqr_max_chord_sep = 2.0 * (1.0 - COSD(thetamax));
 
-    const int64_t max_ngb_cells = 2*dec_refine_factor + 1;
-    const int64_t max_num_cell_pairs = totncells * max_ngb_cells;
+    const int64_t max_ngb_cells = 2*dec_refine_factor;  // -1 for self
+
+    if( ! (autocorr == 0 || autocorr == 1) ) {
+        fprintf(stderr,"Error: Strange value of autocorr = %d. Expected to receive either 1 (auto-correlations) or 0 (cross-correlations)\n", autocorr);
+        return NULL;
+    }
+    const int64_t num_self_pairs = totncells;
+    const int64_t num_nonself_pairs = totncells * max_ngb_cells / (autocorr + 1);
+
+    const int64_t max_num_cell_pairs = num_self_pairs + num_nonself_pairs;
+
     int64_t num_cell_pairs = 0;
     struct cell_pair_DOUBLE *all_cell_pairs = my_malloc(sizeof(*all_cell_pairs), max_num_cell_pairs);
     XRETURN(all_cell_pairs != NULL, NULL,
@@ -976,20 +979,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_dec_DOUBLE(cellarray_m
             //If we have reached here, then this cell *MIGHT* have a pair. We
             //need to add a cell-pair to the array of all cell-pairs
             struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[num_cell_pairs];
-            this_cell_pair->N1 = first->nelements;
-            this_cell_pair->x1 = first->x;
-            this_cell_pair->y1 = first->y;
-            this_cell_pair->z1 = first->z;
-            this_cell_pair->orig_index1 = first->original_index;
-            this_cell_pair->weights1 = &first->weights;
             this_cell_pair->cellindex1 = icell;
-
-            this_cell_pair->N2 = second->nelements;
-            this_cell_pair->x2 = second->x;
-            this_cell_pair->y2 = second->y;
-            this_cell_pair->z2 = second->z;
-            this_cell_pair->orig_index2 = second->original_index;
-            this_cell_pair->weights2 = &second->weights;
             this_cell_pair->cellindex2 = icell2;
 
             this_cell_pair->min_dx = min_dx;
@@ -999,9 +989,6 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_dec_DOUBLE(cellarray_m
             this_cell_pair->closest_x1 = closest_x1;
             this_cell_pair->closest_y1 = closest_y1;
             this_cell_pair->closest_z1 = closest_z1;
-
-            this_cell_pair->ra_bin_offset = 0;
-            this_cell_pair->dec_bin_offset = idec;
 
             this_cell_pair->same_cell = (autocorr == 1 && icell2 == icell) ? 1:0;
 
@@ -1651,20 +1638,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_ra_dec_DOUBLE(cellarra
                     //If we have reached here, then this cell *MIGHT* have a pair. We
                     //need to add a cell-pair to the array of all cell-pairs
                     struct cell_pair_DOUBLE *this_cell_pair = &all_cell_pairs[num_cell_pairs];
-                    this_cell_pair->N1 = first->nelements;
-                    this_cell_pair->x1 = first->x;
-                    this_cell_pair->y1 = first->y;
-                    this_cell_pair->z1 = first->z;
-                    this_cell_pair->orig_index1 = first->original_index;
-                    this_cell_pair->weights1 = &first->weights;
                     this_cell_pair->cellindex1 = icell;
-
-                    this_cell_pair->N2 = second->nelements;
-                    this_cell_pair->x2 = second->x;
-                    this_cell_pair->y2 = second->y;
-                    this_cell_pair->z2 = second->z;
-                    this_cell_pair->orig_index2 = second->original_index;
-                    this_cell_pair->weights2 = &second->weights;
                     this_cell_pair->cellindex2 = icell2;
 
                     this_cell_pair->min_dx = min_dx;
@@ -1674,9 +1648,6 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_ra_dec_DOUBLE(cellarra
                     this_cell_pair->closest_x1 = closest_x1;
                     this_cell_pair->closest_y1 = closest_y1;
                     this_cell_pair->closest_z1 = closest_z1;
-
-                    this_cell_pair->ra_bin_offset = iira;
-                    this_cell_pair->dec_bin_offset = dec_refine;
 
                     this_cell_pair->same_cell = (autocorr == 1 && icell2 == icell) ? 1:0;
 

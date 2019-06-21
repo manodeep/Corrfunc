@@ -10,8 +10,16 @@ New features
 - conda installable package
 - GPU version
 
-2.3.0 (upcoming)
+2.3.1 (upcoming)
 ================
+
+Enhancements
+------------
+- Reduce memory footprint of the cell pairs [#186]
+
+
+2.3.0 (2019-05-20)
+==================
 
 **Breaking Changes**
 --------------------

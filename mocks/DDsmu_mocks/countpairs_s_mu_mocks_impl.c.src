@@ -631,10 +631,13 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                 DOUBLE *this_savg = options->need_avg_sep ? &(savg[0]):NULL;
                 DOUBLE *this_weightavg = need_weightavg ? weightavg:NULL;
 
-                const int status = countpairs_s_mu_mocks_function_DOUBLE(this_cell_pair->N1, this_cell_pair->x1,
-                                                                         this_cell_pair->y1, this_cell_pair->z1, this_cell_pair->weights1,
-                                                                         this_cell_pair->N2, this_cell_pair->x2,
-                                                                         this_cell_pair->y2, this_cell_pair->z2, this_cell_pair->weights2,
+                const int64_t icell = this_cell_pair->cellindex1;
+                const int64_t icell2 = this_cell_pair->cellindex2;
+                const cellarray_mocks_DOUBLE *first = &lattice1[icell];
+                const cellarray_mocks_DOUBLE *second = &lattice2[icell2];
+
+                const int status = countpairs_s_mu_mocks_function_DOUBLE(first->nelements, first->x, first->y, first->z, &(first->weights),
+                                                                         second->nelements, second->x, second->y, second->z, &(second->weights),
                                                                          this_cell_pair->same_cell,
                                                                          options->fast_divide_and_NR_steps,
                                                                          sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max,
