@@ -201,7 +201,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     import numpy as np
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian, sys_pipes, process_weights
+        sys_pipes, process_weights
     from future.utils import bytes_to_native_str
 
     if not autocorr:

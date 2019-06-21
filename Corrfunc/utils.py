@@ -280,7 +280,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
      11.208365
 
     """
-    
+
     import numpy as np
     if dpi <= 0.0:
         msg = 'Binsize along the line of sight (dpi) = {0}'\
@@ -310,7 +310,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
               'npibins = {1} and dpi = {2}. Check your binning scheme.'\
               .format(pimax, npibins, dpi)
         raise ValueError(msg)
-    
+
     for i in range(nrpbins):
         wp[i] = 2.0 * dpi * np.sum(xirppi[i * npibins:(i + 1) * npibins])
 
@@ -520,7 +520,7 @@ def compute_nbins(max_diff, binsize,
     """
     Helper utility to find the number of bins for
     that satisfies the constraints of (binsize, refine_factor, and max_nbins).
-      
+
     Parameters
     ------------
 
@@ -529,28 +529,28 @@ def compute_nbins(max_diff, binsize,
        (i.e., range of allowed domain values)
 
     binsize : double
-       Min. allowed binsize (spatial or angular) 
+       Min. allowed binsize (spatial or angular)
 
     refine_factor : integer, default 1
        How many times to refine the bins. The refinements occurs
        after ``nbins`` has already been determined (with ``refine_factor-1``).
-       Thus, the number of bins will be **exactly** higher by 
+       Thus, the number of bins will be **exactly** higher by
        ``refine_factor`` compared to the base case of ``refine_factor=1``
 
     max_nbins : integer, default None
        Max number of allowed cells
 
-    Returns 
+    Returns
     ---------
 
     nbins: integer, >= 1
-       Number of bins that satisfies the constraints of 
-       bin size >= ``binsize``, the refinement factor 
+       Number of bins that satisfies the constraints of
+       bin size >= ``binsize``, the refinement factor
        and nbins <= ``max_nbins``.
 
     Example
     ---------
-    
+
     >>> from Corrfunc.utils import compute_nbins
     >>> max_diff = 180
     >>> binsize = 10
@@ -558,7 +558,7 @@ def compute_nbins(max_diff, binsize,
     18
     >>> refine_factor=2
     >>> max_nbins = 20
-    >>> compute_nbins(max_diff, binsize, refine_factor=refine_factor, 
+    >>> compute_nbins(max_diff, binsize, refine_factor=refine_factor,
     ...              max_nbins=max_nbins)
     20
 
@@ -589,9 +589,9 @@ def compute_nbins(max_diff, binsize,
     if max_nbins:
         ngrid = min(int(max_nbins), ngrid)
 
-    return ngrid             
-                     
-    
+    return ngrid
+
+
 def gridlink_sphere(thetamax,
                     ra_limits=None,
                     dec_limits=None,
@@ -601,24 +601,24 @@ def gridlink_sphere(thetamax,
                     return_num_ra_cells=False,
                     input_in_degrees=True):
     """
-    A method to optimally partition spherical regions such that pairs of 
+    A method to optimally partition spherical regions such that pairs of
     points within a certain angular separation, ``thetamax``, can be quickly
-    computed. 
+    computed.
 
-    Generates the  binning scheme used in :py:mod:`Corrfunc.mocks.DDtheta_mocks` 
-    for a spherical region in Right Ascension (RA), Declination (DEC) 
-    and a maximum angular separation. 
+    Generates the  binning scheme used in :py:mod:`Corrfunc.mocks.DDtheta_mocks`
+    for a spherical region in Right Ascension (RA), Declination (DEC)
+    and a maximum angular separation.
 
     For a given ``thetamax``, regions on the sphere are divided into bands
-    in DEC bands, with the width in DEC equal to ``thetamax``. If 
-    ``link_in_ra`` is set, then these DEC bands are further sub-divided 
-    into RA cells. 
+    in DEC bands, with the width in DEC equal to ``thetamax``. If
+    ``link_in_ra`` is set, then these DEC bands are further sub-divided
+    into RA cells.
 
     Parameters
     ----------
 
     thetamax : double
-       Max. angular separation of pairs. Expected to be in degrees 
+       Max. angular separation of pairs. Expected to be in degrees
        unless ``input_in_degrees`` is set to ``False``.
 
     ra_limits : array of 2 doubles. Default [0.0, 2*pi]
@@ -631,12 +631,12 @@ def gridlink_sphere(thetamax,
        Whether linking in RA is done (in addition to linking in DEC)
 
     ra_refine_factor : integer, >= 1. Default 1
-       Controls the sub-division of the RA cells. For a large number of 
+       Controls the sub-division of the RA cells. For a large number of
        particles, higher `ra_refine_factor` typically results in a faster
        runtime
 
     dec_refine_factor : integer, >= 1. Default 1
-       Controls the sub-division of the DEC cells. For a large number of 
+       Controls the sub-division of the DEC cells. For a large number of
        particles, higher `dec_refine_factor` typically results in a faster
        runtime
 
@@ -644,29 +644,29 @@ def gridlink_sphere(thetamax,
        The max. number of RA cells **per DEC band**.
 
     max_dec_cells : integer >= 1. Default 200
-       The max. number of total DEC bands 
+       The max. number of total DEC bands
 
     return_num_ra_cells: bool, default False
        Flag to return the number of RA cells per DEC band
 
     input_in_degrees : Boolean. Default True
-       Flag to show if the input quantities are in degrees. If set to 
+       Flag to show if the input quantities are in degrees. If set to
        False, all angle inputs will be taken to be in radians.
 
     Returns
     ---------
 
-    sphere_grid : A numpy compound array, shape (ncells, 2) 
-       A numpy compound array with fields ``dec_limit`` and ``ra_limit`` of 
-       size 2 each. These arrays contain the beginning and end of DEC 
-       and RA regions for the cell. 
+    sphere_grid : A numpy compound array, shape (ncells, 2)
+       A numpy compound array with fields ``dec_limit`` and ``ra_limit`` of
+       size 2 each. These arrays contain the beginning and end of DEC
+       and RA regions for the cell.
 
     num_ra_cells: numpy array, returned if ``return_num_ra_cells`` is set
        A numpy array containing the number of RA cells per declination band
 
 
     .. note:: If ``link_in_ra=False``, then there is effectively one RA bin
-       per DEC band. The  'ra_limit' field will show the range of allowed 
+       per DEC band. The  'ra_limit' field will show the range of allowed
        RA values.
 
 
@@ -745,7 +745,7 @@ def gridlink_sphere(thetamax,
 
     from math import radians, pi
     import numpy as np
-    
+
 
     if input_in_degrees:
         thetamax = radians(thetamax)
@@ -753,10 +753,10 @@ def gridlink_sphere(thetamax,
             ra_limits = [radians(x) for x in ra_limits]
         if dec_limits:
             dec_limits = [radians(x) for x in dec_limits]
-            
+
     if not ra_limits:
         ra_limits = [0.0, 2.0*pi]
-        
+
     if not dec_limits:
         dec_limits = [-0.5*pi, 0.5*pi]
 
@@ -777,18 +777,18 @@ def gridlink_sphere(thetamax,
               'However, dec_limits = [{0}, {1}] does not fall within that '\
               'range'.format(dec_limits[0], dec_limits[1])
         raise ValueError(msg)
-    
+
     if ra_limits[0] < 0.0 or ra_limits[1] > 2.0*pi:
         msg = 'Valid range of values for declination are [0.0, 2*pi] deg. '\
               'However, ra_limits = [{0}, {1}] does not fall within that '\
               'range'.format(ra_limits[0], ra_limits[1])
         raise ValueError(msg)
-    
+
     dec_diff = abs(dec_limits[1] - dec_limits[0])
     ngrid_dec = compute_nbins(dec_diff, thetamax,
                              refine_factor=dec_refine_factor,
                              max_nbins=max_dec_cells)
-    
+
     dec_binsize = dec_diff/ngrid_dec
 
     # Upper and lower limits of the declination bands
@@ -810,8 +810,6 @@ def gridlink_sphere(thetamax,
     # RA linking is requested
     ra_diff = ra_limits[1] - ra_limits[0]
     sin_half_thetamax = np.sin(thetamax)
-    costhetamax = np.cos(thetamax)
-    max_nmesh_ra = 1
 
     totncells = 0
     num_ra_cells = np.zeros(ngrid_dec, dtype=np.int64)
@@ -838,7 +836,7 @@ def gridlink_sphere(thetamax,
             num_ra_cells[idec] = compute_nbins(ra_diff, ra_binsize,
                                               refine_factor=ra_refine_factor,
                                               max_nbins=max_ra_cells)
-            
+
     totncells = num_ra_cells.sum()
     sphere_grid = np.zeros(totncells, dtype=grid_dtype)
     ra_binsizes = ra_diff/num_ra_cells
@@ -852,7 +850,7 @@ def gridlink_sphere(thetamax,
             r['dec_limit'][1] = dec_limits[0] + dec_binsize*(idec + 1)
             r['ra_limit'][0] = ra_limits[0] + ra_binsizes[idec] * ira
             r['ra_limit'][1] = ra_limits[0] + ra_binsizes[idec] * (ira + 1)
-            
+
         start += num_ra_cells[idec]
 
     if return_num_ra_cells:
@@ -905,11 +903,11 @@ def convert_to_native_endian(array, warn=False):
 
     if array is None:
         return array
-   
+
     import numpy as np
     array = np.asanyarray(array)
 
-    system_is_little_endian = (sys.byteorder == 'little')   
+    system_is_little_endian = (sys.byteorder == 'little')
     array_is_little_endian = (array.dtype.byteorder == '<')
     if (array_is_little_endian != system_is_little_endian) and not (array.dtype.byteorder == '='):
         if warn:
@@ -918,12 +916,12 @@ def convert_to_native_endian(array, warn=False):
         return array.byteswap().newbyteorder()
     else:
         return array
-    
+
 def is_native_endian(array):
     '''
     Checks whether the given array is native-endian.
     None evaluates to True.
-    
+
     Parameters
     ----------
     array: np.ndarray
@@ -1053,7 +1051,7 @@ def sys_pipes():
             yield
     except:
         yield
-    
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
