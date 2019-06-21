@@ -10,7 +10,7 @@ New features
 - conda installable package
 - GPU version
 
-2.3.1 (upcoming)
+2.3.1 (2019-06-21)
 ================
 
 Enhancements
