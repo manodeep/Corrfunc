@@ -1009,7 +1009,9 @@ def process_weights(weights1, weights2, X1, X2, weight_type, autocorr):
 
         if (weights1 is None) != (weights2 is None):
             if weight_type != 'pair_product':
-                raise ValueError("If using a weight_type other than 'pair_product', you must provide both weight arrays.")
+                raise ValueError("If using a weight_type other than "\
+                                 "'pair_product', you must provide "\
+                                 "both weight arrays.")
 
         if weights1 is None and weights2 is not None:
             weights1 = np.ones((len(weights2),len(X1)), dtype=X1.dtype)

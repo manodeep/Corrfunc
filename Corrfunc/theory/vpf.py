@@ -189,7 +189,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     import numpy as np
     from future.utils import bytes_to_native_str
     from Corrfunc.utils import translate_isa_string_to_enum,\
-        convert_to_native_endian, sys_pipes, process_weights
+        convert_to_native_endian, sys_pipes
     from math import pi
 
     if numpN <= 0:
