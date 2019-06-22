@@ -1,6 +1,6 @@
 include ../mocks.options ../common.mk
 
-TARGETS:= dirs DDrppi_mocks DDtheta_mocks DDsmu_mocks vpf_mocks examples
+TARGETS:= DDrppi_mocks DDtheta_mocks DDsmu_mocks vpf_mocks examples
 ifneq ($(COMPILE_PYTHON_EXT), 0)
   TARGETS += python_bindings
 else
@@ -16,7 +16,7 @@ dirs: | ../lib ../bin ../include
 
 .PHONY: clean celna clena celan $(TARGETS) tests distclean realclean distclena realclena dirs test  python_bindings libs all
 
-DDrppi_mocks DDtheta_mocks vpf_mocks DDsmu_mocks:
+DDrppi_mocks DDtheta_mocks vpf_mocks DDsmu_mocks: | dirs
 	$(MAKE) -C $@
 
 examples: libs
@@ -31,20 +31,16 @@ realclena:realclean
 
 realclean:
 	$(MAKE) clean
-	$(MAKE) -C DDrppi_mocks distclean
-	$(MAKE) -C DDsmu_mocks distclean
-	$(MAKE) -C DDtheta_mocks distclean
-	$(MAKE) -C vpf_mocks distclean
-	$(MAKE) -C python_bindings distclean
+	for dir in $(TARGETS); do \
+		$(MAKE) -C $$dir distclean; \
+	done
 	$(MAKE) -C ../utils clean
 	$(MAKE) -C ../io clean
 
 clean:
-	$(MAKE) -C DDrppi_mocks clean
-	$(MAKE) -C DDsmu_mocks clean
-	$(MAKE) -C DDtheta_mocks clean
-	$(MAKE) -C vpf_mocks clean
-	$(MAKE) -C examples clean
+	for dir in $(TARGETS); do \
+		$(MAKE) -C $$dir clean; \
+	done
 	$(MAKE) -C tests clean
 	$(MAKE) -C python_bindings clean
 
@@ -53,17 +49,17 @@ celan: clean
 celna: clean
 
 install: examples | dirs
-	$(MAKE) -C DDrppi_mocks install
-	$(MAKE) -C DDsmu_mocks install
-	$(MAKE) -C DDtheta_mocks install
-	$(MAKE) -C vpf_mocks install
+	for dir in $(TARGETS); do \
+		$(MAKE) -C $$dir install; \
+	done
+ifneq ($(COMPILE_PYTHON_EXT), 0)
 	$(MAKE) -C python_bindings install
+endif
 
 libs:  | dirs
-	$(MAKE) -C DDrppi_mocks lib
-	$(MAKE) -C DDsmu_mocks lib
-	$(MAKE) -C DDtheta_mocks lib
-	$(MAKE) -C vpf_mocks lib
+	for dir in $(TARGETS); do \
+		$(MAKE) -C $$dir lib; \
+	done
 
 test: tests
 tests:
