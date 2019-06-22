@@ -24,7 +24,6 @@ struct timeval tstart;
 
 void init_my_progressbar(const int64_t N,int *interrupted)
 {
-    int index=0;
     if(N <= 0) {
         fprintf(stderr,"WARNING: N=%"PRId64" is not positive. Progress bar will not be printed\n",N);
         SMALLPRINTSTEP = 0.0;
@@ -34,7 +33,7 @@ void init_my_progressbar(const int64_t N,int *interrupted)
 
         //pre-fill the progress bar string
         //first the 0%
-        index=0;
+        int index=0;
         my_snprintf(&(PROGRESSBARSTRING[index]),MAXLEN-index,"%s","0%");
         index+=2;
         END_INDEX_FOR_PERCENT_DONE[0] = index;
@@ -62,21 +61,20 @@ void init_my_progressbar(const int64_t N,int *interrupted)
 
 void my_progressbar(const int64_t curr_index,int *interrupted)
 {
-    int integer_percent=0;
     if(SMALLPRINTSTEP > 0.0 )   {
       if(*interrupted == 1) {
         fprintf(stderr,"\n");
         *interrupted = 0;
         beg_of_string_index = 0;
       }
-      
+
       percent = (curr_index+1)/SMALLPRINTSTEP;//division is in double -> C has 0-based indexing -- the +1 accounts for that.
-      integer_percent = (int) percent;
-      
+      int integer_percent = (int) percent;
+
       if (integer_percent >= 0 && integer_percent <= 100)  {
         /*        for(int i=beg_of_string_index;i<END_INDEX_FOR_PERCENT_DONE[integer_percent];i++) */
         /*            fprintf(stderr,"%c",PROGRESSBARSTRING[i]); */
-        
+
         fprintf(stderr,"%.*s",END_INDEX_FOR_PERCENT_DONE[integer_percent]-beg_of_string_index,&(PROGRESSBARSTRING[beg_of_string_index]));
         beg_of_string_index = END_INDEX_FOR_PERCENT_DONE[integer_percent];
       }
@@ -104,7 +102,7 @@ void finish_myprogressbar(int *interrupted)
   }
   fprintf(stderr," Time taken = %s\n", time_string);
   free(time_string);
-  
+
   beg_of_string_index = 0;
   my_snprintf(PROGRESSBARSTRING,MAXLEN,"%s"," ");
 }

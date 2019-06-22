@@ -986,7 +986,7 @@ def process_weights(weights1, weights2, X1, X2, weight_type, autocorr):
             return w
 
         # not None, so probably float or numpy array
-        if type(w) is float:
+        if isinstance(w, float):
             # Use the particle dtype if a Python float was given
             w = np.array(w, dtype=x.dtype)
 

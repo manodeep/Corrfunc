@@ -1395,10 +1395,9 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     for(int i=1;i<results.nbin;i++) {
         for(int j=0;j<results.npibin;j++) {
             const int bin_index = i*(results.npibin + 1) + j;
-            PyObject *item = NULL;
             const double rpavg = results.rpavg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index], weight_avg);
+            PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
@@ -1720,10 +1719,9 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
     for(int i=1;i<results.nsbin;i++) {
         for(int j=0;j<results.nmu_bins;j++) {
             const int bin_index = i*(results.nmu_bins + 1) + j;
-            PyObject *item = NULL;
             const double savg = results.savg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", rlow,results.supp[i],savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
+            PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.supp[i],savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
@@ -2011,10 +2009,9 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     PyObject *ret = PyList_New(0);
     double rlow=results.theta_upp[0];
     for(int i=1;i<results.nbin;i++) {
-        PyObject *item = NULL;
         const double theta_avg = results.theta_avg[i];
         const double weight_avg = results.weightavg[i];
-        item = Py_BuildValue("(dddkd)", rlow,results.theta_upp[i],theta_avg,results.npairs[i], weight_avg);
+        PyObject *item = Py_BuildValue("(dddkd)", rlow,results.theta_upp[i],theta_avg,results.npairs[i], weight_avg);
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.theta_upp[i];

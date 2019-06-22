@@ -1415,10 +1415,9 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     PyObject *ret = PyList_New(0);
     double rlow=results.rupp[0];
     for(int i=1;i<results.nbin;i++) {
-        PyObject *item = NULL;
         const double rpavg = results.rpavg[i];
         const double weight_avg = results.weightavg[i];
-        item = Py_BuildValue("(dddkd)", rlow,results.rupp[i],rpavg,results.npairs[i],weight_avg);
+        PyObject *item = Py_BuildValue("(dddkd)", rlow,results.rupp[i],rpavg,results.npairs[i],weight_avg);
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.rupp[i];
@@ -1713,10 +1712,9 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     for(int i=1;i<results.nbin;i++) {
         for(int j=0;j<results.npibin;j++) {
             const int bin_index = i*(results.npibin + 1) + j;
-            PyObject *item = NULL;
             const double rpavg = results.rpavg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index], weight_avg);
+            PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
@@ -1945,10 +1943,9 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     PyObject *ret = PyList_New(0);
     double rlow=results.rupp[0];
     for(int i=1;i<results.nbin;i++) {
-        PyObject *item = NULL;
         const double rpavg = results.rpavg[i];
         const double weight_avg = results.weightavg[i];
-        item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,results.wp[i],results.npairs[i], weight_avg);
+        PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,results.wp[i],results.npairs[i], weight_avg);
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.rupp[i];
@@ -2179,10 +2176,9 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     PyObject *ret = PyList_New(0);
     double rlow=results.rupp[0];
     for(int i=1;i<results.nbin;i++) {
-        PyObject *item = NULL;
         const double ravg = results.ravg[i];
         const double weight_avg = results.weightavg[i];
-        item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],ravg,results.xi[i],results.npairs[i], weight_avg);
+        PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],ravg,results.xi[i],results.npairs[i], weight_avg);
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.rupp[i];
@@ -2330,7 +2326,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
-    
+
     int found_weights = weights1_obj == NULL ? 0 : PyArray_SHAPE(weights1_obj)[0];
     struct extra_options extra = get_extra_options(weighting_method);
     if(extra.weights0.num_weights > 0 && extra.weights0.num_weights != found_weights){
@@ -2483,10 +2479,9 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         const double smax=results.supp[i];
         for(int j=0;j<results.nmu_bins;j++) {
             const int bin_index = i*(results.nmu_bins + 1) + j;
-            PyObject *item = NULL;
             const double savg = results.savg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", smin, smax,savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
+            PyObject *item = Py_BuildValue("(ddddkd)", smin, smax,savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
