@@ -63,16 +63,16 @@ int main(int argc, char **argv)
     struct timeval t0,t1;
     DOUBLE pimax;
     int cosmology=1;
-    int nthreads=1;
+    int nthreads;
     int nmu_bins;
     DOUBLE mu_max;
-        
+
     struct config_options options = get_config_options();
     options.verbose=1;
     options.periodic=0;
     options.need_avg_sep=1;
     options.float_type = sizeof(*ra1);
-    
+
 #if defined(_OPENMP)
     nthreads=4;//default to 4 threads
     const char argnames[][30]={"file","format","binfile","pimax","cosmology","mu_max", "nmu_bins", "Nthreads"};
@@ -98,6 +98,8 @@ int main(int argc, char **argv)
             nmu_bins=atoi(argv[7]);
 #if defined(_OPENMP)
             nthreads = atoi(argv[8]);
+#else
+            nthreads=1;
 #endif
         }
     } else {
@@ -233,7 +235,7 @@ int main(int argc, char **argv)
         //free the result structure
         free_results_mocks_s_mu(&results);
     }
-    
+
 
     //Do the DD(theta) counts
     {

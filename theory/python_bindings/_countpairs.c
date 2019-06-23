@@ -1319,10 +1319,10 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
        The input objects can be converted into the required DOUBLE array.
     */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
@@ -1358,10 +1358,10 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
 
 
     /* Get pointers to the data */
-    void *X1 = NULL, *Y1=NULL, *Z1=NULL, *weights1=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array);
-    Y1 = PyArray_DATA((PyArrayObject *) y1_array);
-    Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *X1 = PyArray_DATA((PyArrayObject *) x1_array);
+    void *Y1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *weights1=NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
@@ -1612,15 +1612,15 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
 
+    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -1650,15 +1650,15 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
 
 
     /* Get pointers to the data as C-types. */
-    void *X1 = NULL, *Y1 = NULL, *Z1 = NULL, *weights1=NULL;
-    void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array);
-    Y1 = PyArray_DATA((PyArrayObject *) y1_array);
-    Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *X1 = PyArray_DATA((PyArrayObject *) x1_array);
+    void *Y1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *weights1=NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
 
+    void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
     if(autocorr == 0) {
         X2 = PyArray_DATA((PyArrayObject *) x2_array);
         Y2 = PyArray_DATA((PyArrayObject *) y2_array);
@@ -1868,10 +1868,10 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
@@ -2105,10 +2105,10 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
@@ -2378,15 +2378,15 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
 
+    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -2416,15 +2416,15 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
 
 
     /* Get pointers to the data as C-types. */
-    void *X1 = NULL, *Y1 = NULL, *Z1 = NULL, *weights1=NULL;
-    void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array);
-    Y1 = PyArray_DATA((PyArrayObject *) y1_array);
-    Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *X1 = PyArray_DATA((PyArrayObject *) x1_array);
+    void *Y1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *weights1=NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
 
+    void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
     if(autocorr == 0) {
         X2 = PyArray_DATA((PyArrayObject *) x2_array);
         Y2 = PyArray_DATA((PyArrayObject *) y2_array);
@@ -2601,10 +2601,9 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
 
     if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
         Py_XDECREF(x1_array);

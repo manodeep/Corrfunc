@@ -154,7 +154,6 @@ int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float *
     //the form of the data file should be <rlow  rhigh ....>
     const int MAXBUFSIZE=1000;
     char buf[MAXBUFSIZE];
-    FILE *fp=NULL;
     float low,hi;
     const char comment='#';
     const int nitems=2;
@@ -162,7 +161,7 @@ int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float *
     *nbin = ((int) getnumlines(fname,comment))+1;
     *rupp = my_calloc(sizeof(float),*nbin+1);
 
-    fp = my_fopen(fname,"r");
+    FILE *fp = my_fopen(fname,"r");
     if(fp == NULL) {
         free(*rupp);
         return EXIT_FAILURE;
@@ -425,10 +424,10 @@ char * get_time_string(struct timeval t0,struct timeval t1)
       size_t curr_index = 0;
       int which = 0;
       while (which < 4) {
-          char units[4][10]  = {"days", "hrs" , "mins", "secs"};
           double time_to_print = floor(timeleft/ratios[which]);
           if (time_to_print > 1) {
               timeleft -= (time_to_print*ratios[which]);
+              char units[4][10]  = {"days", "hrs" , "mins", "secs"};
               char tmp[MAXLINESIZE];
               my_snprintf(tmp, MAXLINESIZE, "%5d %s",(int)time_to_print,units[which]);
               const size_t len = strlen(tmp);
@@ -450,18 +449,16 @@ void print_time(struct timeval t0,struct timeval t1,const char *s)
 {
     double timediff = t1.tv_sec - t0.tv_sec;
     double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
-
     fprintf(stderr,"Time taken to execute '%s'  = ",s);
-
     if(timediff < ratios[2]) {
         fprintf(stderr,"%6.3lf secs",1e-6*(t1.tv_usec-t0.tv_usec) + timediff);
     }  else {
         double timeleft = timediff;
         int which = 0;
-        char units[4][10]  = {"days", "hrs" , "mins", "secs"};
         while (which < 4) {
             double time_to_print = floor(timeleft/ratios[which]);
             if (time_to_print > 1) {
+                char units[4][10]  = {"days", "hrs" , "mins", "secs"};
                 timeleft -= (time_to_print*ratios[which]);
                 fprintf(stderr,"%5d %s",(int)time_to_print,units[which]);
             }
