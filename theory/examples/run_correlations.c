@@ -82,10 +82,10 @@ int main(int argc, char **argv)
     options.float_type = sizeof(DOUBLE);
 
 #if defined(_OPENMP)
+    nthreads = 4;
     const char argnames[][30]={"file","format","binfile","boxsize","pimax","mu_max","nmu_bins","Nthreads"};
 #else
     const char argnames[][30]={"file","format","binfile","boxsize","pimax","mu_max","nmu_bins"};
-    nthreads = 4;
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
 

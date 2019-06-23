@@ -109,7 +109,6 @@ int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,doub
     //the form of the data file should be <rlow  rhigh ....>
     const int MAXBUFSIZE=1000;
     char buf[MAXBUFSIZE];
-    FILE *fp=NULL;
     double low,hi;
     const char comment='#';
     const int nitems=2;
@@ -117,7 +116,7 @@ int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,doub
     *nbin = ((int) getnumlines(fname,comment))+1;
     *rupp = my_calloc(sizeof(double),*nbin+1);
 
-    fp = my_fopen(fname,"r");
+    FILE *fp = my_fopen(fname,"r");
     if(fp == NULL) {
         free(*rupp);
         return EXIT_FAILURE;
