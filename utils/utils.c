@@ -417,7 +417,6 @@ char * get_time_string(struct timeval t0,struct timeval t1)
   char *time_string = my_malloc(sizeof(char), MAXLINESIZE);
   double timediff = t1.tv_sec - t0.tv_sec;
   double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
-  char units[4][10]  = {"days", "hrs" , "mins", "secs"};
 
   if(timediff < ratios[2]) {
       my_snprintf(time_string, MAXLINESIZE,"%6.3lf secs",1e-6*(t1.tv_usec-t0.tv_usec) + timediff);
@@ -426,6 +425,7 @@ char * get_time_string(struct timeval t0,struct timeval t1)
       size_t curr_index = 0;
       int which = 0;
       while (which < 4) {
+          char units[4][10]  = {"days", "hrs" , "mins", "secs"};
           double time_to_print = floor(timeleft/ratios[which]);
           if (time_to_print > 1) {
               timeleft -= (time_to_print*ratios[which]);
@@ -450,18 +450,17 @@ void print_time(struct timeval t0,struct timeval t1,const char *s)
 {
     double timediff = t1.tv_sec - t0.tv_sec;
     double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
-    char units[4][10]  = {"days", "hrs" , "mins", "secs"};
 
-    double timeleft = timediff;
-    double time_to_print;
     fprintf(stderr,"Time taken to execute '%s'  = ",s);
 
     if(timediff < ratios[2]) {
         fprintf(stderr,"%6.3lf secs",1e-6*(t1.tv_usec-t0.tv_usec) + timediff);
     }  else {
+        double timeleft = timediff;
         int which = 0;
+        char units[4][10]  = {"days", "hrs" , "mins", "secs"};
         while (which < 4) {
-            time_to_print = floor(timeleft/ratios[which]);
+            double time_to_print = floor(timeleft/ratios[which]);
             if (time_to_print > 1) {
                 timeleft -= (time_to_print*ratios[which]);
                 fprintf(stderr,"%5d %s",(int)time_to_print,units[which]);
