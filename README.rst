@@ -84,6 +84,14 @@ Alternate Install Method
 
 The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Installing via ``pip`` is **not** recommended, please open an install issue on this repo first; doing so helps improve the code-base and saves future users from running into similar install issues.
 
+OpenMP on OSX
+--------------
+
+Automatically detecting OpenMP support from the compiler and the runtime is a
+bit tricky. If you run into any issues compiling (or running) with OpenMP,
+please refer to the `FAQ <FAQ>`__ for potential solutions.
+
+
 Installation notes
 ------------------
 
@@ -166,9 +174,6 @@ Theory (in `theory.options <theory.options>`__)
    bin. Can be a massive performance hit (~ 2.2x in case of wp).
    Disabled by default.
 
-3. ``DOUBLE_PREC`` -- switches on calculations in double precision. Disabled
-   by default (i.e., calculations are performed in single precision by default).
-
 Mocks (in `mocks.options <mocks.options>`__)
 ----------------------------------------------
 
@@ -179,30 +184,20 @@ Mocks (in `mocks.options <mocks.options>`__)
    be extremely slow (~5x) depending on compiler, and CPU capabilities.
    Disabled by default.
 
-3. ``DOUBLE_PREC`` -- switches on calculations in double precision. Disabled
-   by default (i.e., calculations are performed in single precision by default).
-
-4. ``LINK_IN_DEC`` -- creates binning in declination for ``DDtheta``. Please
+3. ``LINK_IN_DEC`` -- creates binning in declination for ``DDtheta_mocks``. Please
    check that for your desired limits ``\theta``, this binning does not
    produce incorrect results (due to numerical precision). Generally speaking,
    if your ``\thetamax`` (the max. ``\theta`` to consider pairs within) is too
    small (probaly less than 1 degree), then you should check with and without
    this option. Errors are typically sub-percent level.
 
-5. ``LINK_IN_RA`` -- creates binning in RA once binning in DEC has been
-   enabled. Same numerical issues as ``LINK_IN_DEC``
+4. ``LINK_IN_RA`` -- creates binning in RA once binning in DEC has been
+   enabled for ``DDtheta_mocks``. Same numerical issues as ``LINK_IN_DEC``
 
-6. ``FAST_DIVIDE`` -- Disabled by default. Divisions are slow but required
-   ``DD(r_p,\pi)``. Enabling this option, replaces
-   the divisions with a reciprocal followed by a Newton-Raphson. The code
-   will run ~20% faster at the expense of some numerical precision.
-   Please check that the loss of precision is not important for your
-   use-case.
-
-7. ``FAST_ACOS`` -- Relevant only when ``OUTPUT_THETAAVG`` is enabled. Disabled
-   by default. An ``arccos`` is required to calculate ``<\theta>``. In absence of vectorized
-   ``arccos`` (intel compiler, ``icc`` provides one via intel Short Vector Math
-   Library), this calculation is extremely slow. However, we can approximate
+5. ``FAST_ACOS`` -- Relevant only when ``OUTPUT_THETAAVG`` is enabled for
+   ``DDtheta_mocks``. Disabled by default. An ``arccos`` is required to
+   calculate ``<\theta>``. In absence of vectorized ``arccos`` (intel compiler,
+   ``icc`` provides one via intel Short Vector Math Library), this calculation is extremely slow. However, we can approximate
    ``arccos`` using polynomials (with `Remez Algorithm <https://en.wikipedia.org/wiki/Remez_algorithm>`_).
    The approximations are taken from implementations released by `Geometric Tools <http://geometrictools.com/>`_.
    Depending on the level of accuracy desired, this implementation of ``fast acos``
@@ -210,12 +205,56 @@ Mocks (in `mocks.options <mocks.options>`__)
    accurate implementation is already present in that file. Please check that the loss of
    precision is not important for your use-case.
 
-8. ``COMOVING_DIST`` -- Currently there is no support in ``Corrfunc`` for different cosmologies. However, for the
+6. ``COMOVING_DIST`` -- Currently there is no support in ``Corrfunc`` for different cosmologies. However, for the
    mocks routines like, ``DDrppi_mocks`` and ``vpf_mocks``, cosmology parameters are required to convert between
    redshift and co-moving distance. Both ``DDrppi_mocks`` and ``vpf_mocks`` expects to receive a ``redshift`` array
    as input; however, with this option enabled, the ``redshift`` array will be assumed to contain already converted
    co-moving distances. So, if you have redshifts and want to use an arbitrary cosmology, then convert the redshifts
    into co-moving distances, enable this option, and pass the co-moving distance array into the routines.
+
+Common Code options for both Mocks and Theory
+==============================================
+
+1. ``DOUBLE_PREC`` -- switches on calculations in double
+   precision. Calculations are performed in double precision when enabled. This
+   option is disabled by default in theory and enabled by default in the mocks
+   routines.
+
+2. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD
+   (close to perfect scaling up to 12 threads in our tests) and okay (runtime
+   becomes constant ~6-8 threads in our tests) for ``DDrppi`` and ``wp``.
+   Enabled by default. The ``Makefile`` will compare the `CC` variable with
+   known OpenMP enabled compilers and set compile options accordingly.
+   Set in `common.mk <common.mk>`__ by default.
+
+3. ``ENABLE_MIN_SEP_OPT`` -- uses some further optimisations based on the
+   minimum separation between pairs of cells. Enabled by default.
+
+4. ``COPY_PARTICLES`` -- whether or not to create a copy of the particle
+   positions (and weights, if supplied). Enabled by default (copies of the
+   particle arrays **are** created)
+
+5. ``FAST_DIVIDE`` -- Disabled by default. Divisions are slow but required
+   ``DDrppi_mocks(r_p,\pi)``, ``DDsmu_mocks(s, \mu)`` and ``DD(s, \mu)``.
+   Enabling this option, replaces the divisions with a reciprocal
+   followed by a Newton-Raphson. The code will run ~20% faster at the expense
+   of some numerical precision. Please check that the loss of precision is not
+   important for your use-case.
+
+*Optimization for your architecture*
+
+1. The values of ``bin_refine_factor`` and/or ``zbin_refine_factor`` in
+   the ``countpairs\_\*.c`` files control the cache-misses, and
+   consequently, the runtime. In my trial-and-error methods, I have seen
+   any values larger than 3 are generally slower for theory routines but
+   can be faster for mocks. But some different
+   combination of 1/2 for ``(z)bin_refine_factor`` might be faster on
+   your platform.
+
+2. If you are using the angular correlation function and need ``thetaavg``,
+   you might benefit from using the INTEL MKL library. The vectorized
+   trigonometric functions provided by MKL can provide significant speedup.
+
 
 Running the codes
 =================
@@ -292,38 +331,6 @@ use the C extensions directly. Here are a few examples:
     print("##       rmin           rmax            rpavg             wp            npairs")
     print("#############################################################################")
     print(wp_results)
-
-
-Common Code options for both Mocks and Cosmological Boxes
-=========================================================
-
-1. ``USE_OMP`` -- uses OpenMP parallelization. Scaling is great for DD
-   (close to perfect scaling up to 12 threads in our tests) and okay (runtime
-   becomes constant ~6-8 threads in our tests) for ``DDrppi`` and ``wp``.
-   Enabled by default. The ``Makefile`` will compare the `CC` variable with
-   known OpenMP enabled compilers and set compile options accordingly.
-   Set in `common.mk <common.mk>`__ by default.
-
-2. ``ENABLE_MIN_SEP_OPT`` -- uses some further optimisations based on the
-   minimum separation between pairs of cells. Enabled by default.
-
-3. ``COPY_PARTICLES`` -- whether or not to create a copy of the particle
-   positions (and weights, if supplied). Enabled by default (copies of the
-   particle arrays **are** created)
-
-*Optimization for your architecture*
-
-1. The values of ``bin_refine_factor`` and/or ``zbin_refine_factor`` in
-   the ``countpairs\_\*.c`` files control the cache-misses, and
-   consequently, the runtime. In my trial-and-error methods, I have seen
-   any values larger than 3 are generally slower for theory routines but
-   can be faster for mocks. But some different
-   combination of 1/2 for ``(z)bin_refine_factor`` might be faster on
-   your platform.
-
-2. If you are using the angular correlation function and need ``thetaavg``,
-   you might benefit from using the INTEL MKL library. The vectorized
-   trigonometric functions provided by MKL can provide significant speedup.
 
 
 Author & Maintainers
