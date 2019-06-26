@@ -98,8 +98,6 @@ int main(int argc, char **argv)
             nmu_bins=atoi(argv[7]);
 #if defined(_OPENMP)
             nthreads = atoi(argv[8]);
-#else
-            nthreads=1;
 #endif
         }
     } else {
@@ -110,6 +108,7 @@ int main(int argc, char **argv)
         cosmology=1;
         mu_max=1.0;
         nmu_bins=10;
+        nthreads=1;
     }
 
     fprintf(stderr,ANSI_COLOR_BLUE  "Running `%s' with the parameters \n",argv[0]);
