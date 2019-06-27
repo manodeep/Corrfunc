@@ -256,8 +256,8 @@ ifeq ($(DO_CHECKS), 1)
   ## done with check for conflicting options
 
   ifeq (icc,$(findstring icc,$(CC)))
-    CFLAGS += -xhost -axCORE-AVX512
-	  ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
+    CFLAGS += -xhost -xCORE-AVX512
+    ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
       CFLAGS += -qopenmp
       CLINK  += -qopenmp
     endif ##openmp with icc
