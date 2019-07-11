@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     DOUBLE pimax;
     DOUBLE mu_max=1.0;
     int nmu_bins=10;
-    int nthreads;//default to single thread
+    int nthreads=4;//default to 4 threads
 
     struct config_options options = get_config_options();
     options.verbose = 1;
@@ -82,7 +82,6 @@ int main(int argc, char **argv)
     options.float_type = sizeof(DOUBLE);
 
 #if defined(_OPENMP)
-    nthreads = 4;
     const char argnames[][30]={"file","format","binfile","boxsize","pimax","mu_max","nmu_bins","Nthreads"};
 #else
     const char argnames[][30]={"file","format","binfile","boxsize","pimax","mu_max","nmu_bins"};
@@ -116,7 +115,6 @@ int main(int argc, char **argv)
         pimax=40.0;
         mu_max=1.0;
         nmu_bins=10;
-        nthreads=1;
     }
 
     fprintf(stderr,ANSI_COLOR_BLUE  "Running `%s' with the parameters \n",argv[0]);
