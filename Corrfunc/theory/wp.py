@@ -487,17 +487,16 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     weights, _ = process_weights(weights, None, X, None, weight_type, autocorr=True)
 
-    _locals = locals()
-
     # Ensure all input arrays are native endian
-    for arrname in ('X', 'Y', 'Z', 'weights'):
-        arr = _locals[arrname]
-        _locals[arrname] = convert_to_native_endian(arr, warn=True)
+    X, Y, Z, weights = [
+            convert_to_native_endian(arr, warn=True) for arr in
+            [X, Y, Z, weights]
+    ]
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights', 'weight_type']:
-        v = _locals[k]
+        v = locals()[k]
         if v is not None:
             kwargs[k] = v
 

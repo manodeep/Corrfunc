@@ -279,17 +279,16 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 
-    _locals = locals()
-
     # Ensure all input arrays are native endian
-    for arrname in ('X1', 'Y1', 'Z1', 'weights1', 'X2', 'Y2', 'Z2', 'weights2'):
-        arr = _locals[arrname]
-        _locals[arrname] = convert_to_native_endian(arr, warn=True)
+    X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [
+            convert_to_native_endian(arr, warn=True) for arr in
+            [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]
+    ]
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights1', 'weights2', 'weight_type', 'X2', 'Y2', 'Z2']:
-        v = _locals[k]
+        v = locals()[k]
         if v is not None:
             kwargs[k] = v
 

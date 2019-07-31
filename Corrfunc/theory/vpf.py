@@ -212,12 +212,11 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
               .format(nspheres, rmax, nspheres * volume_sphere, volume)
         raise ValueError(msg)
 
-    _locals = locals()
-
     # Ensure all input arrays are native endian
-    for arrname in ('X', 'Y', 'Z'):
-        arr = _locals[arrname]
-        _locals[arrname] = convert_to_native_endian(arr, warn=True)
+    X, Y, Z = [
+            convert_to_native_endian(arr, warn=True) for arr in
+            [X, Y, Z]
+    ]
 
     integer_isa = translate_isa_string_to_enum(isa)
     with sys_pipes():
