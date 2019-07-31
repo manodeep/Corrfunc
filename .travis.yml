@@ -93,7 +93,7 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=3.7
+      env: COMPILER=gcc PYTHON_VERSION=3.7 NUMPY_VERSION=1.16
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
