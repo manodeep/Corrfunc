@@ -276,12 +276,10 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 
     weights1, weights2 = process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
 
-    _locals = locals()
-
     # Ensure all input arrays are native endian
-    for arrname in ('RA1', 'DEC1', 'CZ1', 'weights1', 'RA2', 'DEC2', 'CZ2', 'weights2'):
-        arr = _locals[arrname]
-        _locals[arrname] = convert_to_native_endian(arr, warn=True)
+    RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2 = [
+            convert_to_native_endian(arr, warn=True) for arr in
+            [RA1, DEC1, CZ1, weights1, RA2, DEC2, CZ2, weights2]]
 
 
     fix_ra_dec(RA1, DEC1)
@@ -291,7 +289,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
     for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2', 'CZ2']:
-        v = _locals[k]
+        v = locals()[k]
         if v is not None:
             kwargs[k] = v
 
