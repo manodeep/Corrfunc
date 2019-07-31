@@ -294,8 +294,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     # Ensure all input arrays are native endian
     RA1, DEC1, weights1, RA2, DEC2, weights2 = [
             convert_to_native_endian(arr, warn=True) for arr in
-            [RA1, DEC1, weights1, RA2, DEC2, weights2]
-    ]
+            [RA1, DEC1, weights1, RA2, DEC2, weights2]]
 
     fix_ra_dec(RA1, DEC1)
     if autocorr == 0:

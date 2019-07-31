@@ -266,8 +266,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     # Ensure all input arrays are native endian
     X1, Y1, Z1, weights1, X2, Y2, Z2, weights2 = [
             convert_to_native_endian(arr, warn=True) for arr in
-            [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]
-    ]
+            [X1, Y1, Z1, weights1, X2, Y2, Z2, weights2]]
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
