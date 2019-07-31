@@ -200,7 +200,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
 
     # Ensure all input arrays are native endian
     X, Y, Z, weights = [convert_to_native_endian(arr, warn=True)
-            for arr in [X, Y, Z, weights]]
+                        for arr in [X, Y, Z, weights]]
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}

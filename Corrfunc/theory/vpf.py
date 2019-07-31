@@ -214,7 +214,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
 
     # Ensure all input arrays are native endian
     X, Y, Z = [convert_to_native_endian(arr, warn=True)
-            for arr in [X, Y, Z]]
+               for arr in [X, Y, Z]]
 
     integer_isa = translate_isa_string_to_enum(isa)
     with sys_pipes():
