@@ -10,6 +10,24 @@ New features
 - conda installable package
 - GPU version
 
+
+2.3.2 (Upcoming)
+================
+This is a release for bug-fixes and general code quality improvements. Travis
+now also tests for ``python3.7``.
+
+
+Enhancements
+------------
+- Improved code quality and adherence to PEP8 [#189]
+
+
+Bug fixes
+----------
+- Incorrect calculations for non-native endian data [#191]
+
+
+
 2.3.1 (2019-06-21)
 ================
 
@@ -83,13 +101,13 @@ New features
 - Both the API and ABI should be future proof
 - Extensive docs (first version with docs)
 - Arbitrary cosmology can be accounted for in the mocks routines  `#71 <https://github.com/manodeep/Corrfunc/issues/71>`_
-  
+
 **Breaking Changes**
 ---------------------
 
 - API has changed from previous version. Two additional inputs are
   now required for every statistic (`#73 <https://github.com/manodeep/Corrfunc/issues/73>`_)
-  
+
 
 Enhancements
 ------------
@@ -107,7 +125,7 @@ Bug fixes
 
 - Fixed bug in ``DDrppi_mocks`` where the minimum number of grid cells had to
   be 1 `#70 <https://github.com/manodeep/Corrfunc/issues/70>`_
-  
+
 
 
 Outstanding issues
@@ -129,10 +147,10 @@ Outstanding issues
 1.0.0 (2016-04-14)
 ==================
 
-- Improved installation process  
+- Improved installation process
 - Detecting ``AVX`` capable CPU at compile time
 - Double-counting bug fixes in ``wp`` and ``xi``
-  
+
 
 0.2.3 (2016-03-30)
 ==================
@@ -157,11 +175,10 @@ Outstanding issues
 ==================
 
 - Python 2/3 compatible
- 
+
 
 
 0.0.1 (2015-11-11)
 ==================
 
 - Initial release
-
