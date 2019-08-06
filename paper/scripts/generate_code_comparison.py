@@ -330,6 +330,7 @@ def plot_results(timings_fn):
     del _func_runtimes
     
     #mpl.rcParams.update({'font.size': 14})
+    mpl.rcParams.update({'axes.labelsize': 12, 'xtick.labelsize': 12, 'ytick.labelsize': 12})
     s = .85
     fig, ax = plt.subplots(1,1, figsize=(s*6.4,s*4.8), dpi=144)
     
@@ -351,16 +352,16 @@ def plot_results(timings_fn):
     ax.axhline(1., linestyle=':', c='k')
     if parallel:
         ax.legend(loc='upper left')
-        ax.annotate('Corrfunc faster', xy=(4e6, 1.1), horizontalalignment='right', verticalalignment='bottom')
-        ax.annotate('Corrfunc slower', xy=(4e6, 0.9), horizontalalignment='right', verticalalignment='top')
+        ax.annotate('Corrfunc faster', xy=(4e6, 1.1), ha='right', va='bottom')
+        ax.annotate('Corrfunc slower', xy=(4e6, 0.9), ha='right', va='top')
     else:
 
         ax.legend(loc='best', framealpha=1.)
         #legend = ax.legend(loc=(.7,.03), ncol=1, framealpha=1.)
-        ax.set_ylim(top=1e1)
+        ax.set_ylim(top=1e1,bottom=.6)
 
-        ax.annotate('Corrfunc faster', xy=(8e4, 1.05), horizontalalignment='left', verticalalignment='bottom')
-        ax.annotate('Corrfunc slower', xy=(8e4, 0.95), horizontalalignment='left', verticalalignment='top')
+        ax.annotate('Corrfunc faster', xy=(1e5, 1.05), ha='left', va='bottom')
+        ax.annotate('Corrfunc slower', xy=(1e5, 0.95), ha='left', va='top')
     
     fig_fn = '{}.pdf'.format('.'.join(path.basename(timings_fn).split('.')[:-1]))
     fig.tight_layout()
