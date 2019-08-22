@@ -23,7 +23,7 @@ max_threads = multiprocessing.cpu_count()
 def stderr_redirected(to=os.devnull):
     """
     import os
-    
+
     with stderr_redirected(to=filename):
         print("from Python")
         os.system("echo non-Python applications are also supported")
@@ -32,7 +32,7 @@ def stderr_redirected(to=os.devnull):
 
     # assert that Python and C stdio write using the same file descriptor
     # assert libc.fileno(ctypes.c_void_p.in_dll(libc, "stderr")) == fd == 1
-    
+
     def _redirect_stderr(to):
         sys.stderr.close()  # + implicit flush()
         os.dup2(to.fileno(), fd)  # fd writes to 'to' file
@@ -48,7 +48,7 @@ def stderr_redirected(to=os.devnull):
             # buffering and flags such as
             # CLOEXEC may be different
 
-            
+
 def _get_times(filename='stderr.txt'):
     serial_time = 0.0
     pair_time = 0.0
@@ -205,7 +205,7 @@ def benchmark_theory_threads_all(min_threads=1, max_threads=max_threads,
 
             print("{0}".format(runtimes[start_thread_index:index]))
             sys.stdout.flush()
-            
+
     print("index = {0} totN = {1}".format(index, totN))
     return keys, isa, runtimes
 
@@ -265,7 +265,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                       ('serial_time', np.float),
                       ('pair_time', np.float),
                       ('api_time', np.float)])
-    
+
     totN = (max_threads - min_threads + 1) * len(keys) * len(isa) * nrepeats
     runtimes = np.empty(totN, dtype=dtype)
     index = 0
@@ -322,7 +322,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
                         runtimes['pair_time'][index] = pair_time
                         runtimes['api_time'][index] = api_time
                         index += 1
-                        
+
             if 'DDrppi (DD)' in keys:
                 for repeat in range(nrepeats):
                     runtimes['repeat'][index] = repeat
@@ -374,7 +374,7 @@ def benchmark_mocks_threads_all(min_threads=1, max_threads=max_threads,
 
             print("{0}".format(runtimes[start_thread_index:index]))
             sys.stdout.flush()
-            
+
     print("index = {0} totN = {1}".format(index, totN))
     return keys, isa, runtimes
 
@@ -390,7 +390,7 @@ if len(sys.argv) == 1:
     np.savez('mocks_scaling_nthreads.npz', keys=keys, isa=isa,
              runtimes=runtimes)
     print("Mocks: runtimes = {0}".format(runtimes))
-    
+
 else:
     timings_file = sys.argv[1]
     mock = 'mock' in timings_file
@@ -404,12 +404,12 @@ else:
         except KeyError:
             # Previous versions of this script used 'all_runtimes'
             runtimes = xx['all_runtimes']
-            
+
     except KeyError:
         print("Error: Invalid timings file = `{0}' passed in the "
               "command-line ".format(timings_file))
         raise
-    
+
     nthreads = list(set(nthreads for nthreads in runtimes['nthreads']))
     #nthreads = filter(lambda x: x <= 20, nthreads)
     nthreads = np.array(nthreads)
@@ -485,7 +485,7 @@ else:
 
             print("")
             print("\\\\", file=f)
-    
+
     # Begin plotting
     plt_scaling = False  # plot scalings or raw times
     import matplotlib.pyplot as plt
@@ -495,7 +495,7 @@ else:
     seaborn.set_style({"xtick.direction": "in","ytick.direction": "in", 'xtick.top':True, 'ytick.right':True})
     seaborn.set_context('paper')
     seaborn.set_palette('Dark2')
-    
+
     assert len(keys) == 2
     fig, axes = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, squeeze=False, figsize=(5,2.5))
     for ax in axes.T:
@@ -508,12 +508,12 @@ else:
     plt_mod = {'DDrppi':r'$\mathrm{DD}(r_p,\pi)$', 'DD':r'$\mathrm{DD}(r)$', 'wp':r'$w_p(r_p)$', 'xi':r'$\xi(r)$',
                'DDrppi (DD)':r'$\mathrm{DD}(r_p,\pi)$', 'DDtheta (DD)':r'$\mathrm{DD}(\theta)$',
                'DDrppi (DR)':r'$\mathrm{DR}(r_p,\pi)$', 'DDtheta (DR)':r'$\mathrm{DR}(\theta)$'}
-               
+
     if mock:
         axes[0].set_ylim(1e0,4e2)
     else:
         axes[0].set_ylim(3e-1,2e2)
-    
+
     for mod,ax in zip(keys,axes):
         ax.set_title(plt_mod[mod], position=(0.9,0.8), loc='right')
         ax.set_xlim(1,max(nthreads))
@@ -524,21 +524,21 @@ else:
                     (runtimes['name'] == mod) & \
                     (runtimes['isa'] == run_isa)
             serial_avg = np.mean(runtimes['pair_time'][s_ind])
-            
+
             for it in nthreads:
                 ind = (runtimes['nthreads'] == it) & \
                       (runtimes['name'] == mod) & \
                       (runtimes['isa'] == run_isa)
                 para_avg = np.mean(runtimes['runtime'][ind])
                 rt += [serial_avg/it/para_avg if plt_scaling else para_avg]
-            
+
             ax.plot(nthreads, rt, label=plt_isa[run_isa])
-            
+
             if 'avx' in run_isa:
                 pltx = nthreads.astype(float)
                 plty = .4*rt[-1]*(pltx/pltx[-1])**-1.
                 ax.loglog(pltx, plty, ':', c='k')
-    
+
     if mock:
         axes[0].annotate(r'$\propto N_\mathrm{threads}^{-1}$', xy=(.45, .3), xycoords='axes fraction')
     else:
@@ -546,9 +546,8 @@ else:
         axes[0].annotate(r'$\propto N_\mathrm{threads}^{-1}$', xy=(.45, .15), xycoords='axes fraction')
     axes[0].get_xaxis().set_major_locator(plt.FixedLocator([1,10,20,24]))
     axes[0].get_xaxis().set_major_formatter(mpl.ticker.FixedFormatter(['1','10','','24']))
-    
-    
+
+
     fig_fn = '{}.pdf'.format('.'.join(path.basename(timings_file).split('.')[:-1]))
     fig.tight_layout()
     fig.savefig(fig_fn)
-    
