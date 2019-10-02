@@ -66,33 +66,25 @@ endif
 ## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
   UNAME := $(shell uname)
-  ## Colored text output
-  ## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
-  ## Except, you have to use "echo -e" on linux and "echo" on Mac
-  ECHO_COMMAND := echo -e
-  ifeq ($(UNAME), Darwin)
-    ECHO_COMMAND := echo
-  endif
-  ifeq ($(TRAVIS_OS_NAME), linux)
-    ECHO_COMMAND := echo
-  endif
 
   ifneq ($(UNAME), Darwin)
     CLINK += -lrt # need real time library for the nano-second timers. Not required on OSX
   endif
 
+  ## Colored text output
+  ## https://stackoverflow.com/questions/4332478/read-the-current-text-color-in-a-xterm/4332530#4332530
   ## Broadly speaking, here's the color convention (not strictly adhered to yet):
   ## green - shell commands
   ## red - error messages
   ## magenta - general highlight
   ## blue - related to code/compile option
   ## bold - only used with printing out compilation options
-  ccred:=$(shell $(ECHO_COMMAND) "\033[0;31m")
-  ccmagenta:=$(shell $(ECHO_COMMAND) "\033[0;35m")
-  ccgreen:=$(shell $(ECHO_COMMAND) "\033[0;32m")
-  ccblue:=$(shell $(ECHO_COMMAND) "\033[0;34m")
-  ccreset:=$(shell $(ECHO_COMMAND) "\033[0;0m")
-  boldfont:=$(shell $(ECHO_COMMAND) "\033[1m")
+  ccred:=$(shell tput setaf 1)
+  ccmagenta:=$(shell tput setaf 5)
+  ccgreen:=$(shell tput setaf 2)
+  ccblue:=$(shell tput setaf 4)
+  ccreset:=$(shell tput sgr0)
+  boldfont:=$(shell tput bold)
   ## end of colored text output
 
   ## First check make version. Versions of make older than 3.80 will crash
@@ -614,7 +606,7 @@ ifeq ($(DO_CHECKS), 1)
     ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
       MAKEFILE_VARS += BLAS_INCLUDE BLAS_LINK
     endif
-    tabvar:= $(shell $(ECHO_COMMAND) "\t")
+    tabvar:= $(shell printf "\t")
     $(info )
     $(info $(ccmagenta)$(boldfont)-------COMPILE SETTINGS------------$(ccreset))
     $(foreach var, $(MAKEFILE_VARS), $(info $(tabvar) $(boldfont)$(var)$(ccreset)$(tabvar)$(tabvar) = ["$(ccblue)$(boldfont)${${var}}$(ccreset)"]))
