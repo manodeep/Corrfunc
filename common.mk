@@ -247,14 +247,14 @@ ifeq ($(DO_CHECKS), 1)
   endif
   ## done with check for conflicting options
 
-  # The GNU Assembler (GAS) has an AVX-512 bug in versions 2.30 and 2.31
+  # The GNU Assembler (GAS) has an AVX-512 bug in versions 2.30 to 2.31.1
   # So we turn off AVX-512 if one of the bugged GAS versions is present.
   # Note that both gcc and icc might use GAS!  Clang has its own assembler.
   # If we are using the clang assembler,  we will detect this below and re-enable AVX-512
   # See: https://github.com/manodeep/Corrfunc/issues/193
-  GAS_VERSION := $(shell as --version | head -n1 |\grep -oP '\d+\.\d+$$')
+  GAS_VERSION := $(shell as --version | head -n1 | \grep -P 'GNU assembler' |\grep -oP '\d+\.\d+$$')
   GAS_BUG_DISABLE_AVX512 := 0
-  ifeq ($(GAS_VERSION),$(filter $(GAS_VERSION),2.30 2.31))
+  ifneq (,$(filter $(GAS_VERSION),2.30 2.31 2.31.1))
     GAS_BUG_DISABLE_AVX512 := 1
   endif
 
@@ -262,7 +262,7 @@ ifeq ($(DO_CHECKS), 1)
     # Normally, one would use -xHost with icc instead of -march=native
     # But -xHost does not allow you to later turn off just AVX-512,
     # which we may decide is necessary if the GAS bug is present
-    CFLAGS := -march=native
+    CFLAGS += -march=native
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
       CFLAGS += -qopenmp
       CLINK  += -qopenmp
@@ -406,7 +406,7 @@ ifeq ($(DO_CHECKS), 1)
       CFLAGS += -mno-avx512f
 
       ifneq ($(GAS_BUG_WARNING_PRINTED),1)
-        $(warning $(ccmagenta)DISABLING AVX-512 SUPPORT DUE TO GNU ASSEMBLER BUG$(ccreset))
+        $(warning $(ccmagenta)DISABLING AVX-512 SUPPORT DUE TO GNU ASSEMBLER BUG.  UPGRADE TO BINUTILS >=2.32 TO FIX THIS.$(ccreset))
       endif
       export GAS_BUG_WARNING_PRINTED := 1
     endif
