@@ -247,17 +247,6 @@ ifeq ($(DO_CHECKS), 1)
   endif
   ## done with check for conflicting options
 
-  # The GNU Assembler (GAS) has an AVX-512 bug in versions 2.30 to 2.31.1
-  # So we turn off AVX-512 if one of the bugged GAS versions is present.
-  # Note that both gcc and icc might use GAS!  Clang has its own assembler.
-  # If we are using the clang assembler,  we will detect this below and re-enable AVX-512
-  # See: https://github.com/manodeep/Corrfunc/issues/193
-  GAS_VERSION := $(shell as --version | head -n1 | \grep -P 'GNU assembler' |\grep -oP '\d+\.\d+$$')
-  GAS_BUG_DISABLE_AVX512 := 0
-  ifneq (,$(filter $(GAS_VERSION),2.30 2.31 2.31.1))
-    GAS_BUG_DISABLE_AVX512 := 1
-  endif
-
   ifeq (icc,$(findstring icc,$(CC)))
     # Normally, one would use -xHost with icc instead of -march=native
     # But -xHost does not allow you to later turn off just AVX-512,
@@ -293,9 +282,6 @@ ifeq ($(DO_CHECKS), 1)
             $(warning $(ccmagenta) Either install clang ($(ccgreen)for Macports use, "sudo port install clang-3.8"$(ccmagenta)) or add option $(ccgreen)"-mno-avx"$(ccreset) to "CFLAGS" in $(ccmagenta)"common.mk"$(ccreset))
             export CLANG_ASM_WARNING_PRINTED := 1
           endif # warning printed
-
-          # Using clang as, not GAS
-          GAS_BUG_DISABLE_AVX512 := 0
         endif
 
         ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
@@ -305,10 +291,6 @@ ifeq ($(DO_CHECKS), 1)
       endif #gcc findstring
     else ##CC is clang
       ### compiler specific flags for clang
-
-      # Using clang as, not gas
-      GAS_BUG_DISABLE_AVX512 := 0
-
       CLANG_OMP_AVAIL := false
       export APPLE_CLANG := 0
       ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
@@ -398,7 +380,13 @@ ifeq ($(DO_CHECKS), 1)
     CLINK += -lm
   endif #not icc
 
-  # Do we need to turn off AVX-512?
+  # The GNU Assembler (GAS) has an AVX-512 bug in versions 2.30 to 2.31.1
+  # So we turn off AVX-512 if the compiler reports it is using one of these versions.
+  # This works for gcc and icc.
+  # clang typically uses its own assembler, but if it is using the system assembler, this will also detect that.
+  # See: https://github.com/manodeep/Corrfunc/issues/193
+  GAS_BUG_DISABLE_AVX512 := $(shell $(CC) $(CFLAGS) -xc -Wa,-v -c /dev/null -o /dev/null 2>&1 | \grep -Pcm1 'GNU assembler version (2\.30|2\.31|2\.31\.1)(\s|$$)')
+
   ifeq ($(GAS_BUG_DISABLE_AVX512),1)
     # Did the compiler support AVX-512 in the first place? Otherwise -mno-avx512f is not a valid option!
     CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Pcm1 __AVX512F__)
