@@ -385,11 +385,11 @@ ifeq ($(DO_CHECKS), 1)
   # This works for gcc and icc.
   # clang typically uses its own assembler, but if it is using the system assembler, this will also detect that.
   # See: https://github.com/manodeep/Corrfunc/issues/193
-  GAS_BUG_DISABLE_AVX512 := $(shell $(CC) $(CFLAGS) -xc -Wa,-v -c /dev/null -o /dev/null 2>&1 | \grep -Pcm1 'GNU assembler version (2\.30|2\.31|2\.31\.1)(\s|$$)')
+  GAS_BUG_DISABLE_AVX512 := $(shell $(CC) $(CFLAGS) -xc -Wa,-v -c /dev/null -o /dev/null 2>&1 | \grep -Ecm1 'GNU assembler version (2\.30|2\.31|2\.31\.1)(\s|$$)')
 
   ifeq ($(GAS_BUG_DISABLE_AVX512),1)
     # Did the compiler support AVX-512 in the first place? Otherwise -mno-avx512f is not a valid option!
-    CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Pcm1 __AVX512F__)
+    CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Ecm1 __AVX512F__)
     ifeq ($(CC_SUPPORTS_AVX512),1)
       CFLAGS += -mno-avx512f
 
