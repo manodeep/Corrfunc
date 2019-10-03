@@ -25,6 +25,7 @@ Enhancements
 Bug fixes
 ----------
 - Incorrect calculations for non-native endian data [#191]
+- Workaround for GNU Assembler bug causing incorrect calculations [#196]
 
 
 
