@@ -394,9 +394,10 @@ ifeq ($(DO_CHECKS), 1)
     CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Ecm1 __AVX512F__)
     ifeq ($(CC_SUPPORTS_AVX512),1)
       ifeq ($(shell test 0$(ICC_MAJOR_VER) -ge 019; echo $$?),0)
-        CFLAGS += -xCORE-AVX2
-      else
+      	# If gcc, clang, or new icc, we can use this
         CFLAGS += -mno-avx512f
+      else
+        CFLAGS += -xCORE-AVX2
       endif
 
       ifneq ($(GAS_BUG_WARNING_PRINTED),1)
