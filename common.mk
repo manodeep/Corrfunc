@@ -256,6 +256,8 @@ ifeq ($(DO_CHECKS), 1)
       CFLAGS += -qopenmp
       CLINK  += -qopenmp
     endif ##openmp with icc
+
+    ICC_MAJOR_VER = $(shell icc -V 2>&1 | \grep -oP '(?<=Version )\d+')
   else ## not icc -> gcc or clang follow
 
     ## Warning that w(theta) with OUTPUT_THETAAVG is very slow without icc
@@ -385,13 +387,17 @@ ifeq ($(DO_CHECKS), 1)
   # This works for gcc and icc.
   # clang typically uses its own assembler, but if it is using the system assembler, this will also detect that.
   # See: https://github.com/manodeep/Corrfunc/issues/193
-  GAS_BUG_DISABLE_AVX512 := $(shell $(CC) $(CFLAGS) -xc -Wa,-v -c /dev/null -o /dev/null 2>&1 | \grep -Ecm1 'GNU assembler version (2\.30|2\.31|2\.31\.1)(\s|$$)')
+  GAS_BUG_DISABLE_AVX512 := $(shell $(CC) $(CFLAGS) -xc -Wa,-v -c /dev/null -o /dev/null 2>&1 | \grep -Ecm1 'GNU assembler version (2\.30|2\.31|2\.31\.1)')
 
   ifeq ($(GAS_BUG_DISABLE_AVX512),1)
-    # Did the compiler support AVX-512 in the first place? Otherwise -mno-avx512f is not a valid option!
+    # Did the compiler support AVX-512 in the first place? Otherwise no need to disable it!
     CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Ecm1 __AVX512F__)
     ifeq ($(CC_SUPPORTS_AVX512),1)
-      CFLAGS += -mno-avx512f
+      ifeq ($(shell test 0$(ICC_MAJOR_VER) -ge 019; echo $$?),0)
+        CFLAGS += -xCORE-AVX2
+      else
+        CFLAGS += -mno-avx512f
+      endif
 
       ifneq ($(GAS_BUG_WARNING_PRINTED),1)
         $(warning $(ccred)DISABLING AVX-512 SUPPORT DUE TO GNU ASSEMBLER BUG.  UPGRADE TO BINUTILS >=2.32 TO FIX THIS.$(ccreset))
