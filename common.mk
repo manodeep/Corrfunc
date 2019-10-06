@@ -394,7 +394,7 @@ ifeq ($(DO_CHECKS), 1)
       CFLAGS += -mno-avx512f
 
       ifneq ($(GAS_BUG_WARNING_PRINTED),1)
-        $(warning $(ccmagenta)DISABLING AVX-512 SUPPORT DUE TO GNU ASSEMBLER BUG.  UPGRADE TO BINUTILS >=2.32 TO FIX THIS.$(ccreset))
+        $(warning $(ccred)DISABLING AVX-512 SUPPORT DUE TO GNU ASSEMBLER BUG.  UPGRADE TO BINUTILS >=2.32 TO FIX THIS.$(ccreset))
       endif
       export GAS_BUG_WARNING_PRINTED := 1
     endif
