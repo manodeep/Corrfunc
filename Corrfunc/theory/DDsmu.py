@@ -16,7 +16,7 @@ __all__ = ('DDsmu', )
 def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
           X1, Y1, Z1, weights1=None,
           periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
-          verbose=False, boxsize=0.0, output_savg=False,
+          verbose=False, boxsize=None, output_savg=False,
           fast_divide_and_NR_steps=0,
           xbin_refine_factor=2, ybin_refine_factor=2,
           zbin_refine_factor=1, max_cells_per_dim=100,
@@ -104,6 +104,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
+        Required if ``periodic=True``.
 
     output_savg : boolean (default false)
         Boolean flag to output the average ``s`` for each bin. Code will
@@ -276,6 +277,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                 "computing cross-correlation"
             raise ValueError(msg)
+
+    if periodic and boxsize is None:
+        raise ValueError("Must specify a boxsize if periodic=True")
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 

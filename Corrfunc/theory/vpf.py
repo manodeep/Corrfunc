@@ -16,7 +16,7 @@ __all__ = ('vpf', )
 
 def vpf(rmax, nbins, nspheres, numpN, seed,
         X, Y, Z,
-        verbose=False, periodic=True, boxsize=0.0,
+        verbose=False, periodic=True, boxsize=None,
         xbin_refine_factor=1, ybin_refine_factor=1,
         zbin_refine_factor=1, max_cells_per_dim=100,
         copy_particles=True, c_api_timer=False, isa=r'fastest'):
@@ -86,6 +86,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
+        Required if ``periodic=True``.
 
     (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
         Controls the refinement on the cell sizes. Can have up to a 20% impact
@@ -195,6 +196,9 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     if numpN <= 0:
         msg = "Number of counts-in-cells wanted must be at least 1"
         raise ValueError(msg)
+
+    if periodic and boxsize is None:
+        raise ValueError("Must specify a boxsize if periodic=True")
 
     if boxsize > 0.0:
         volume = boxsize * boxsize * boxsize

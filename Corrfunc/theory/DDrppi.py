@@ -15,7 +15,7 @@ __all__ = ('DDrppi', )
 
 def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
            periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
-           verbose=False, boxsize=0.0, output_rpavg=False,
+           verbose=False, boxsize=None, output_rpavg=False,
            xbin_refine_factor=2, ybin_refine_factor=2,
            zbin_refine_factor=1, max_cells_per_dim=100,
            copy_particles=True, enable_min_sep_opt=True,
@@ -101,6 +101,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is not supplied, then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
+        Required if ``periodic=True``.
 
     output_rpavg: boolean (default false)
         Boolean flag to output the average ``rp`` for each bin. Code will
@@ -260,6 +261,9 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         X2 = np.empty(1)
         Y2 = np.empty(1)
         Z2 = np.empty(1)
+
+    if periodic and boxsize is None:
+        raise ValueError("Must specify a boxsize if periodic=True")
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 
