@@ -66,33 +66,25 @@ endif
 ## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
   UNAME := $(shell uname)
-  ## Colored text output
-  ## Taken from: http://stackoverflow.com/questions/24144440/color-highlighting-of-makefile-warnings-and-errors
-  ## Except, you have to use "echo -e" on linux and "echo" on Mac
-  ECHO_COMMAND := echo -e
-  ifeq ($(UNAME), Darwin)
-    ECHO_COMMAND := echo
-  endif
-  ifeq ($(TRAVIS_OS_NAME), linux)
-    ECHO_COMMAND := echo
-  endif
 
   ifneq ($(UNAME), Darwin)
     CLINK += -lrt # need real time library for the nano-second timers. Not required on OSX
   endif
 
+  ## Colored text output
+  ## https://stackoverflow.com/questions/4332478/read-the-current-text-color-in-a-xterm/4332530#4332530
   ## Broadly speaking, here's the color convention (not strictly adhered to yet):
   ## green - shell commands
   ## red - error messages
   ## magenta - general highlight
   ## blue - related to code/compile option
   ## bold - only used with printing out compilation options
-  ccred:=$(shell $(ECHO_COMMAND) "\033[0;31m")
-  ccmagenta:=$(shell $(ECHO_COMMAND) "\033[0;35m")
-  ccgreen:=$(shell $(ECHO_COMMAND) "\033[0;32m")
-  ccblue:=$(shell $(ECHO_COMMAND) "\033[0;34m")
-  ccreset:=$(shell $(ECHO_COMMAND) "\033[0;0m")
-  boldfont:=$(shell $(ECHO_COMMAND) "\033[1m")
+  ccred:=$(shell tput setaf 1)
+  ccmagenta:=$(shell tput setaf 5)
+  ccgreen:=$(shell tput setaf 2)
+  ccblue:=$(shell tput setaf 4)
+  ccreset:=$(shell tput sgr0)
+  boldfont:=$(shell tput bold)
   ## end of colored text output
 
   ## First check make version. Versions of make older than 3.80 will crash
@@ -256,11 +248,16 @@ ifeq ($(DO_CHECKS), 1)
   ## done with check for conflicting options
 
   ifeq (icc,$(findstring icc,$(CC)))
-    CFLAGS += -xhost -xCORE-AVX512
+    # Normally, one would use -xHost with icc instead of -march=native
+    # But -xHost does not allow you to later turn off just AVX-512,
+    # which we may decide is necessary if the GAS bug is present
+    CFLAGS += -march=native
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
       CFLAGS += -qopenmp
       CLINK  += -qopenmp
     endif ##openmp with icc
+
+    ICC_MAJOR_VER = $(shell icc -V 2>&1 | \grep -oP '(?<=Version )\d+')
   else ## not icc -> gcc or clang follow
 
     ## Warning that w(theta) with OUTPUT_THETAAVG is very slow without icc
@@ -385,6 +382,30 @@ ifeq ($(DO_CHECKS), 1)
     CLINK += -lm
   endif #not icc
 
+  # The GNU Assembler (GAS) has an AVX-512 bug in versions 2.30 to 2.31.1
+  # So we turn off AVX-512 if the compiler reports it is using one of these versions.
+  # This works for gcc and icc.
+  # clang typically uses its own assembler, but if it is using the system assembler, this will also detect that.
+  # See: https://github.com/manodeep/Corrfunc/issues/193
+  GAS_BUG_DISABLE_AVX512 := $(shell $(CC) $(CFLAGS) -xc -Wa,-v -c /dev/null -o /dev/null 2>&1 | \grep -Ecm1 'GNU assembler version (2\.30|2\.31|2\.31\.1)')
+
+  ifeq ($(GAS_BUG_DISABLE_AVX512),1)
+    # Did the compiler support AVX-512 in the first place? Otherwise no need to disable it!
+    CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Ecm1 __AVX512F__)
+    ifeq ($(CC_SUPPORTS_AVX512),1)
+      ifeq ($(shell test 0$(ICC_MAJOR_VER) -ge 019; echo $$?),0)
+      	# If gcc, clang, or new icc, we can use this
+        CFLAGS += -mno-avx512f
+      else
+        CFLAGS += -xCORE-AVX2
+      endif
+
+      ifneq ($(GAS_BUG_WARNING_PRINTED),1)
+        $(warning $(ccred)DISABLING AVX-512 SUPPORT DUE TO GNU ASSEMBLER BUG.  UPGRADE TO BINUTILS >=2.32 TO FIX THIS.$(ccreset))
+      endif
+      export GAS_BUG_WARNING_PRINTED := 1
+    endif
+  endif
 
   # All of the python/numpy checks follow
   export PYTHON_CHECKED ?= 0
@@ -580,7 +601,7 @@ ifeq ($(DO_CHECKS), 1)
     ifeq (USE_MKL,$(findstring USE_MKL,$(OPT)))
       MAKEFILE_VARS += BLAS_INCLUDE BLAS_LINK
     endif
-    tabvar:= $(shell $(ECHO_COMMAND) "\t")
+    tabvar:= $(shell printf "\t")
     $(info )
     $(info $(ccmagenta)$(boldfont)-------COMPILE SETTINGS------------$(ccreset))
     $(foreach var, $(MAKEFILE_VARS), $(info $(tabvar) $(boldfont)$(var)$(ccreset)$(tabvar)$(tabvar) = ["$(ccblue)$(boldfont)${${var}}$(ccreset)"]))
