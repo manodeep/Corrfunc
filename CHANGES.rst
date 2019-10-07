@@ -26,6 +26,7 @@ Bug fixes
 ----------
 - Incorrect calculations for non-native endian data [#191]
 - Workaround for GNU Assembler bug causing incorrect calculations [#196]
+- Only report runtime isa support if we also have compiler support [#200]
 
 
 
