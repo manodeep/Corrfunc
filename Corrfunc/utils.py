@@ -99,7 +99,8 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
     ...                X, Y, Z,
     ...                X2=rand_X, Y2=rand_Y, Z2=rand_Z, boxsize=boxsize)
     >>> autocorr = 1
-    >>> RR_counts = DD(autocorr, nthreads, bins, rand_X, rand_Y, rand_Z, boxsize=boxsize)
+    >>> RR_counts = DD(autocorr, nthreads, bins, rand_X, rand_Y, rand_Z,
+    ...                boxsize=boxsize)
     >>> cf = convert_3d_counts_to_cf(N, N, rand_N, rand_N,
     ...                              DD_counts, DR_counts,
     ...                              DR_counts, RR_counts)

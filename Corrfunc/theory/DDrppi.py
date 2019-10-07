@@ -190,7 +190,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> weights = np.ones_like(X)
     >>> results = DDrppi(autocorr, nthreads, pimax, binfile,
-    ...                  X, Y, Z, weights1=weights, weight_type='pair_product', output_rpavg=True, boxsize=boxsize)
+    ...                  X, Y, Z, weights1=weights, weight_type='pair_product',
+    ...                  output_rpavg=True, boxsize=boxsize)
     >>> for r in results[519:]: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.1f}"
     ...                               " {4:10d} {5:10.6f}".format(r['rmin'], r['rmax'],
     ...                               r['rpavg'], r['pimax'], r['npairs'], r['weightavg']))

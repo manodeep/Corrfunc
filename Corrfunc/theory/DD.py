@@ -172,7 +172,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> weights = np.ones_like(X)
-    >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, weights1=weights, weight_type='pair_product', output_ravg=True, boxsize=boxsize)
+    >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, weights1=weights,
+    ...              weight_type='pair_product', output_ravg=True, boxsize=boxsize)
     >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['rmin'], r['rmax'], r['ravg'],
     ...                         r['npairs'], r['weightavg'])) # doctest: +NORMALIZE_WHITESPACE

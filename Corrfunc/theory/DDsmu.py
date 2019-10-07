@@ -199,7 +199,8 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> weights = np.ones_like(X)
     >>> results = DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
-    ...                  X, Y, Z, weights1=weights, weight_type='pair_product', output_savg=True, boxsize=boxsize)
+    ...                  X, Y, Z, weights1=weights, weight_type='pair_product',
+    ...                  output_savg=True, boxsize=boxsize)
     >>> for r in results[100:]: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.1f}"
     ...                               " {4:10d} {5:10.6f}".format(r['smin'], r['smax'],
     ...                               r['savg'], r['mu_max'], r['npairs'], r['weightavg']))

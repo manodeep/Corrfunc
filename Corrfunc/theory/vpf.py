@@ -159,7 +159,8 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-    >>> results = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z, boxsize=boxsize)
+    >>> results = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z,
+    ...               boxsize=boxsize)
     >>> for r in results:
     ...     print("{0:10.1f} ".format(r[0]), end="")
     ...     # doctest: +NORMALIZE_WHITESPACE
