@@ -159,7 +159,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     >>> X = np.random.uniform(0, boxsize, N)
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
-    >>> results = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z)
+    >>> results = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z, boxsize=boxsize)
     >>> for r in results:
     ...     print("{0:10.1f} ".format(r[0]), end="")
     ...     # doctest: +NORMALIZE_WHITESPACE
@@ -167,16 +167,16 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     ...         print("{0:10.3f} ".format(pn), end="")
     ...         # doctest: +NORMALIZE_WHITESPACE
     ...     print("") # doctest: +NORMALIZE_WHITESPACE
-    1.0      0.995      0.005      0.000      0.000      0.000
-    2.0      0.956      0.044      0.001      0.000      0.000
-    3.0      0.858      0.130      0.012      0.001      0.000
-    4.0      0.695      0.252      0.047      0.005      0.001
-    5.0      0.493      0.347      0.127      0.028      0.005
-    6.0      0.295      0.362      0.219      0.091      0.026
-    7.0      0.141      0.285      0.265      0.179      0.085
-    8.0      0.056      0.159      0.228      0.229      0.161
-    9.0      0.019      0.066      0.135      0.192      0.192
-    10.0      0.003      0.019      0.054      0.106      0.150
+           1.0      0.995      0.005      0.000      0.000      0.000
+           2.0      0.955      0.044      0.001      0.000      0.000
+           3.0      0.858      0.129      0.012      0.001      0.000
+           4.0      0.696      0.252      0.047      0.005      0.001
+           5.0      0.493      0.347      0.127      0.028      0.005
+           6.0      0.295      0.363      0.219      0.091      0.026
+           7.0      0.141      0.285      0.265      0.178      0.085
+           8.0      0.056      0.159      0.227      0.229      0.161
+           9.0      0.019      0.066      0.135      0.191      0.193
+          10.0      0.003      0.019      0.054      0.105      0.150
 
     """
 

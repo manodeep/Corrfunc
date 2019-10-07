@@ -173,7 +173,7 @@ bin is ``0.0`` for an autocorrelation, then the self-pairs *will* be counted.
 .. testcode:: theory
 
           from Corrfunc.theory.DD import DD
-          results_DD = DD(autocorr, nthreads, rbins, X, Y, Z)
+          results_DD = DD(autocorr, nthreads, rbins, X, Y, Z, boxsize=boxsize)
           
 
 Calculating 2-D pair-counts (``Corrfunc.theory.DDrppi``)
@@ -243,7 +243,7 @@ sphere of a certain size contains zero galaxies.
           # Random number seed (used for choosing sphere centres)
           seed = 42
 
-          results_vpf = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z)
+          results_vpf = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z, boxsize=boxsize)
 
 
 Calculating clustering statistics in mock catalogs
