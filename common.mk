@@ -393,7 +393,7 @@ ifeq ($(DO_CHECKS), 1)
     # Did the compiler support AVX-512 in the first place? Otherwise no need to disable it!
     CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Ecm1 __AVX512F__)
     ifeq ($(CC_SUPPORTS_AVX512),1)
-      ifeq ($(shell test 0$(ICC_MAJOR_VER) -ge 019; echo $$?),0)
+      ifeq ($(shell test 0$(ICC_MAJOR_VER) -ge 019 -o -z "$(ICC_MAJOR_VER)"; echo $$?),0)
       	# If gcc, clang, or new icc, we can use this
         CFLAGS += -mno-avx512f
       else
