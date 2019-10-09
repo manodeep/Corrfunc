@@ -14,7 +14,7 @@ import numpy as np
 import os
 import os.path as path
 import Corrfunc
-import subprocess32
+import subprocess
 import re
 
 import multiprocessing
@@ -35,9 +35,10 @@ def register_code(name, serial=True, multithreaded=False):
 
 # Begin function definitions
 
-import scipy.spatial
 @register_code('SciPy cKDTree')
 def test_scipy_ckdtree(points, bins):
+    import scipy.spatial
+
     t = time.time()
     tree = scipy.spatial.cKDTree(points, leafsize=16, compact_nodes=True, balanced_tree=True)
     results = tree.count_neighbors(tree, bins)
@@ -58,9 +59,10 @@ def test_scipy_ckdtree(points, bins):
     return cf_t, t
 
 
-import sklearn.neighbors
 @register_code('scikit-learn KDTree')
 def test_sklearn_kdtree(points, bins):
+    import sklearn.neighbors
+
     t = time.time()
     tree = sklearn.neighbors.KDTree(points, leaf_size=40)
     results = tree.two_point_correlation(points, bins, dualtree=True)  # dualtree is faster in our tests
@@ -80,10 +82,11 @@ def test_sklearn_kdtree(points, bins):
     return cf_t, t
     
 
-import kdcount.correlate
-import kdcount.models
 @register_code('kdcount', multithreaded=True)
 def test_kdcount(points, bins, nthreads=1):
+    import kdcount.correlate
+    import kdcount.models
+
     kdpoints = kdcount.models.points(points)
     kdbins = kdcount.correlate.RBinning(bins)
     t = time.time()
@@ -102,9 +105,11 @@ def test_kdcount(points, bins, nthreads=1):
     
     return cf_t, t
     
-import halotools.mock_observables
+
 @register_code('halotools', multithreaded=True)
 def test_halotools(points, bins, nthreads=1):
+    import halotools.mock_observables
+
     # even though we have to pass randoms, RR_precomputed should avoid evaluating this
     RR_pre = np.ones_like(bins[:-1])
     t = time.time()
@@ -125,9 +130,10 @@ def test_halotools(points, bins, nthreads=1):
     return cf_t, t
     
 
-import treecorr
 @register_code('Treecorr', multithreaded=True)
 def test_treecorr(points, bins, nthreads=1):
+    import treecorr
+
     cat = treecorr.Catalog(x=points[:,0], y=points[:,1], z=points[:,2])
     config = {'nbins':len(bins)-1, 'min_sep':bins[0], 'max_sep':bins[-1], 'num_threads':nthreads, 'bin_slop':0.}
     nn = treecorr.NNCorrelation(config=config)
@@ -298,23 +304,22 @@ def test_from_registry(reg, rmin=1, rmax=90., nbin=19, nthreads=max_threads, nre
     return func_runtimes
 
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-import seaborn
 from cycler import cycler
 from collections import OrderedDict
 
 def plot_results(timings_fn):
     parallel = 'parallel' in timings_fn
-    seaborn.set_style('ticks')
-    seaborn.set_style({"xtick.direction": "in","ytick.direction": "in", 'xtick.top':True, 'ytick.right':True})
-    seaborn.set_context('paper')
+    #seaborn.set_style({"xtick.direction": "in","ytick.direction": "in", 'xtick.top':True, 'ytick.right':True})
 
     _func_runtimes = dict(np.load(timings_fn))
     all_np = _func_runtimes.pop('all_np')
     
     # Assign a persistent line style to each func
     order = ['halotools', 'kdcount', 'Treecorr', 'CUTE_box', 'scikit-learn KDTree', 'SciPy cKDTree', 'mlpack RangeSearch', 'swot']
-    prop_cycle =  cycler(linestyle=['-','--']) * cycler(color=seaborn.color_palette('colorblind',4))
+    #prop_cycle =  cycler(linestyle=['-','--']) * cycler(color=seaborn.color_palette('colorblind',4))
+    prop_cycle =  cycler(linestyle=['-','--']) * cycler(color=plt.cm.tab10.colors[:4])
     prop_cycle = prop_cycle()  # make infinite
     func_props = [next(prop_cycle) for func in order]
     func_runtimes = OrderedDict()
@@ -324,14 +329,22 @@ def plot_results(timings_fn):
     assert len(_func_runtimes) == 0
     del _func_runtimes
     
-    fig, ax = plt.subplots(1,1, figsize=(5,4))
+    #mpl.rcParams.update({'font.size': 14})
+    mpl.rcParams.update({'axes.labelsize': 12, 'xtick.labelsize': 12, 'ytick.labelsize': 12})
+    s = .85
+    fig, ax = plt.subplots(1,1, figsize=(s*6.4,s*4.8), dpi=144)
+    
+    ax.tick_params(axis='both', which='both', direction='in', top=True, right=True, width=1.2)
+    for axis in ['top','bottom','left','right']:
+            ax.spines[axis].set_linewidth(1.2)
+
     ax.set_xlabel(r'$N_\mathrm{particles}$')
     ax.set_ylabel(r'Corrfunc speed-up: $t_\mathrm{other}/t_\mathrm{Corrfunc}$')
     #ax.set_ylabel(r'Corrfunc time [sec]')
     ax.set_xscale('log')
     ax.set_yscale('log')
     
-    for func,(runtimes,props) in func_runtimes.iteritems():
+    for func,(runtimes,props) in func_runtimes.items():
         means = runtimes.mean(axis=-2)
         ax.plot(all_np, means[:,1]/means[:,0], marker='', label=func, **props)
         #ax.plot(all_np, means[:,0],label=func, marker='o', **next(prop_cycle))
@@ -339,17 +352,21 @@ def plot_results(timings_fn):
     ax.axhline(1., linestyle=':', c='k')
     if parallel:
         ax.legend(loc='upper left')
-        ax.annotate('Corrfunc faster', xy=(4e6, 1.1), horizontalalignment='right', verticalalignment='bottom')
-        ax.annotate('Corrfunc slower', xy=(4e6, 0.9), horizontalalignment='right', verticalalignment='top')
+        ax.annotate('Corrfunc faster', xy=(4e6, 1.1), ha='right', va='bottom')
+        ax.annotate('Corrfunc slower', xy=(4e6, 0.9), ha='right', va='top')
     else:
-        ax.legend(loc=(.6,.13))
-        ax.set_ylim(top=1e1)
-        ax.annotate('Corrfunc faster', xy=(1e5, 1.05), horizontalalignment='left', verticalalignment='bottom')
-        ax.annotate('Corrfunc slower', xy=(1e5, 0.95), horizontalalignment='left', verticalalignment='top')
+
+        ax.legend(loc='best', framealpha=1.)
+        #legend = ax.legend(loc=(.7,.03), ncol=1, framealpha=1.)
+        ax.set_ylim(top=1e1,bottom=.6)
+
+        ax.annotate('Corrfunc faster', xy=(1e5, 1.05), ha='left', va='bottom')
+        ax.annotate('Corrfunc slower', xy=(1e5, 0.95), ha='left', va='top')
     
     fig_fn = '{}.pdf'.format('.'.join(path.basename(timings_fn).split('.')[:-1]))
     fig.tight_layout()
-    fig.savefig(fig_fn)
+    fig.savefig(fig_fn, bbox_inches='tight', dpi=144)
+    print(f'Saved figure to {fig_fn}')
 
 
 # Begin test driver

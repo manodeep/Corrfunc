@@ -11,13 +11,21 @@ New features
 - GPU version
 
 
-2.3.2 (upcoming)
+2.3.2 (Upcoming)
 ================
+This is a release for bug-fixes and general code quality improvements. Travis
+now also tests for ``python3.7``.
+
 
 Enhancements
 ------------
-- Code quality fixes for errors reported by codacy [#189]
+- Improved code quality and adherence to PEP8 [#189]
 
+
+Bug fixes
+----------
+- Incorrect calculations for non-native endian data [#191]
+- Workaround for GNU Assembler bug causing incorrect calculations [#196]
 
 
 2.3.1 (2019-06-21)
