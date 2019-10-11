@@ -8,7 +8,7 @@
 
 /* PROGRAM DDsmu
 
---- DDsmu file1 format1 file2 format2 binfile mu_max nmu_bins numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
+--- DDsmu file1 format1 file2 format2 binfile mu_max nmu_bins boxsize numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
 --- Measure the cross-correlation function xi(s, mu) for two different
    data files (or autocorrelation if file1=file1).
  * file1         = name of first data file
@@ -18,6 +18,7 @@
  * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
  * mu_max        = maximum of the cosine of the angle to the line-of-sight (LOS is taken to be along the z-direction)
  * nmu_bins      = number of bins for mu
+ * boxsize       = if periodic, the boxsize to use for the periodic wrap (0 means detect the particle extent)
  * numthreads    = number of threads to use
 --- OPTIONAL ARGS:
  * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
@@ -58,6 +59,8 @@ int main(int argc, char *argv[])
     weight_method_t weight_method = NONE;
     int num_weights = 0;
 
+    double boxsize = -1.;
+
     /*---Data-variables--------------------*/
     int64_t ND1=0,ND2=0;
 
@@ -67,9 +70,9 @@ int main(int argc, char *argv[])
     int nthreads=1;
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
-    const char argnames[][30]={"file1","format1","file2","format2","sbinfile","mu_max", "nmu_bins"};
+    const char argnames[][30]={"file1","format1","file2","format2","sbinfile","mu_max", "nmu_bins","boxsize"};
 #else
-    const char argnames[][30]={"file1","format1","file2","format2","sbinfile","mu_max", "nmu_bins","Nthreads"};
+    const char argnames[][30]={"file1","format1","file2","format2","sbinfile","mu_max", "nmu_bins","boxsize","Nthreads"};
 #endif
     const char optargnames[][30]={"weight_method", "weights_file1","weights_format1","weights_file2","weights_format2"};
 
@@ -122,8 +125,10 @@ int main(int argc, char *argv[])
     sscanf(argv[6],"%lf",&mu_max) ;
     nmu_bins=atoi(argv[7]);
 
+    boxsize=atof(argv[8]);
+
 #if defined(_OPENMP)
-    nthreads=atoi(argv[8]);
+    nthreads=atoi(argv[9]);
     if(nthreads < 1 ) {
         fprintf(stderr, "Nthreads = %d must be at least 1. Exiting...\n", nthreads);
         return EXIT_FAILURE;
@@ -218,6 +223,7 @@ int main(int argc, char *argv[])
     gettimeofday(&t0,NULL);
     results_countpairs_s_mu results;
     struct config_options options = get_config_options();
+    options.boxsize = boxsize;
 
     /* Pack weights into extra options */
     struct extra_options extra = get_extra_options(weight_method);
@@ -282,9 +288,9 @@ void Printhelp(void)
 {
     fprintf(stderr,"=========================================================================\n") ;
 #if defined(USE_OMP) && defined(_OPENMP)
-    fprintf(stderr,"   --- DDsmu file1 format1 file2 format2 sbinfile mu_max nmu_bins numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
+    fprintf(stderr,"   --- DDsmu file1 format1 file2 format2 sbinfile mu_max nmu_bins boxsize numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
 #else
-    fprintf(stderr,"   --- DDsmu file1 format1 file2 format2 sbinfile mu_max nmu_bins [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
+    fprintf(stderr,"   --- DDsmu file1 format1 file2 format2 sbinfile mu_max nmu_bins boxsize [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
 #endif
 
     fprintf(stderr,"   --- Measure the cross-correlation function xi(s, mu) for two different\n") ;
@@ -296,6 +302,7 @@ void Printhelp(void)
     fprintf(stderr,"     * sbinfile      = name of ascii file containing the s-bins (smin smax for each bin)\n") ;
     fprintf(stderr,"     * mu_max        = maximum of the cosine of the angle to the line-of-sight (LOS is taken to be along the z-direction). Valid values are in: (0.0, 1.0]\n");
     fprintf(stderr,"     * nmu_bins      = number of bins for mu (must be >= 1)\n");
+    fprintf(stderr,"     * boxsize       = if periodic, the boxsize to use for the periodic wrap (0 means detect the particle extent)\n");
 #if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"     * numthreads    = number of threads to use (must be >= 1)\n");
 #endif

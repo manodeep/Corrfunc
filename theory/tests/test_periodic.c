@@ -579,6 +579,7 @@ int main(int argc, char **argv)
     options.fast_divide_and_NR_steps=0;
     options.copy_particles=1;
     options.float_type=sizeof(double);
+    options.boxsize = boxsize;
 
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
@@ -643,6 +644,7 @@ int main(int argc, char **argv)
                                            "../tests/data/random_Zspace.ff"};
     const char secondfiletype[][MAXLEN] = {"f","f","f","f","f","f","f","f","f"};
     const double allpimax[]             = {40.0,40.0,40.0,40.0,40.0,40.0,80.0,80.0,80.0};
+    const double allboxsize[]             = {boxsize,boxsize,boxsize,boxsize,boxsize,boxsize,0.,0.,0.};
 
     int (*allfunctions[]) (const char *) = {test_periodic_DD,
                                             test_periodic_DDrppi,
@@ -668,6 +670,7 @@ int main(int argc, char **argv)
             }
             read_data_and_set_globals(firstfilename[i],firstfiletype[i],secondfilename[i],secondfiletype[i]);
             pimax=allpimax[i];
+            options.boxsize = allboxsize[i];
             gettimeofday(&t0,NULL);
             status = (*allfunctions[function_index])(correct_outputfiles[i]);
             gettimeofday(&t1,NULL);
@@ -704,6 +707,7 @@ int main(int argc, char **argv)
                 total_tests++;
                 read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
                 pimax=allpimax[this_test_num];
+                options.boxsize = allboxsize[i];
                 gettimeofday(&t0,NULL);
                 status = (*allfunctions[function_index])(correct_outputfiles[this_test_num]);
                 gettimeofday(&t1,NULL);

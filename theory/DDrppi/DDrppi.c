@@ -8,7 +8,7 @@
 
 /* PROGRAM DDrppi
 
---- DDrppi file1 format1 file2 format2 binfile pimax numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
+--- DDrppi file1 format1 file2 format2 binfile pimax boxsize numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
 --- Measure the cross-correlation function xi(rp,pi) for two different
    data files (or autocorrelation if file1=file1).
  * file1         = name of first data file
@@ -17,6 +17,7 @@
  * format2       = format of second data file (a=ascii, c=csv, f=fast-food)
  * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
  * pimax         = maximum line-of-sight-separation
+ * boxsize       = if periodic, the boxsize to use for the periodic wrap (0 means detect the particle extent)
  * numthreads    = number of threads to use
 --- OPTIONAL ARGS:
  * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
@@ -56,6 +57,8 @@ int main(int argc, char *argv[])
     weight_method_t weight_method = NONE;
     int num_weights = 0;
 
+    double boxsize = -1.;
+
     /*---Data-variables--------------------*/
     int64_t ND1=0,ND2=0;
 
@@ -65,9 +68,9 @@ int main(int argc, char *argv[])
     int nthreads=1;
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
-    const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax"};
+    const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","boxsize"};
 #else
-    const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","Nthreads"};
+    const char argnames[][30]={"file1","format1","file2","format2","binfile","pimax","boxsize","Nthreads"};
 #endif
     const char optargnames[][30]={"weight_method", "weights_file1","weights_format1","weights_file2","weights_format2"};
     
@@ -125,9 +128,10 @@ int main(int argc, char *argv[])
     sscanf(argv[6],"%f",&pimax) ;
 #endif
 
+    boxsize=atof(argv[7]);
 
 #if defined(_OPENMP)
-    nthreads=atoi(argv[7]);
+    nthreads=atoi(argv[8]);
     if(nthreads < 1 ) {
         fprintf(stderr, "Nthreads = %d must be at least 1. Exiting...\n", nthreads);
         return EXIT_FAILURE;
@@ -222,6 +226,7 @@ int main(int argc, char *argv[])
     gettimeofday(&t0,NULL);
     results_countpairs_rp_pi results;
     struct config_options options = get_config_options();
+    options.boxsize = boxsize;
     
     /* Pack weights into extra options */
     struct extra_options extra = get_extra_options(weight_method);
@@ -285,9 +290,9 @@ void Printhelp(void)
 {
     fprintf(stderr,"=========================================================================\n") ;
 #if defined(USE_OMP) && defined(_OPENMP)
-    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
+    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax boxsize numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
 #else
-    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
+    fprintf(stderr,"   --- DDrppi file1 format1 file2 format2 binfile pimax boxsize [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
 #endif
 
     fprintf(stderr,"   --- Measure the cross-correlation function xi(rp,pi) for two different\n") ;
@@ -298,6 +303,7 @@ void Printhelp(void)
     fprintf(stderr,"     * format2       = format of second data file (a=ascii, c=csv, f=fast-food)\n") ;
     fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
     fprintf(stderr,"     * pimax         = maximum line-of-sight-separation\n") ;
+    fprintf(stderr,"     * boxsize       = if periodic, the boxsize to use for the periodic wrap (0 means detect the particle extent)\n");
 #if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif

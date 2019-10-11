@@ -11,14 +11,22 @@ New features
 - GPU version
 
 
+2.4.0 (Upcoming)
+================
+This release adds the boxsize parameter to the command line interfaces and
+requires the user to specify boxsize in the Python interfaces to the periodic
+theory functions.
+
+**Breaking Changes**
+--------------------
+- Require user to specify `boxsize` rather than automatically detect particle
+  extent in periodic theory boxes. Applies to Python, command line, and C API. [#199]
+
+
 2.3.2 (Upcoming)
 ================
 This is a release for bug-fixes and general code quality improvements. Travis
 now also tests for ``python3.7``.
-
-**Breaking Changes**
---------------------
-- Require user to specify `boxsize` rather than automatically detect particle extent if `periodic=True` [#199]
 
 Enhancements
 ------------
