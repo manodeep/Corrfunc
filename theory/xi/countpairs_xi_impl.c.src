@@ -20,7 +20,7 @@
 #include "defs.h"
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
-#include "cpu_features.h" //prototype instrset_detect required for runtime dispatch
+#include "cpu_features.h" //prototype get_max_usable_isa required for runtime dispatch
 
 #include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
 #include "gridlink_utils_DOUBLE.h" //for associated helper routines
@@ -61,7 +61,7 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
 #if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
-    const int highest_isa = instrset_detect();
+    const int highest_isa = get_max_usable_isa();
 #endif
     int curr_offset = 0;
     /* Check for AVX512F support */

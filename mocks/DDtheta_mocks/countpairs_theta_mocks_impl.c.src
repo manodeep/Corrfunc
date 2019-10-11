@@ -112,7 +112,7 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
     /* Since highest_isa is only used in cases where SSE4.2 or AVX is defined,
        without this protection, there will be an unnecessary function call
        and an unused variable compiler warning. */
-    const int highest_isa = instrset_detect();
+    const int highest_isa = get_max_usable_isa();
 #endif
     int curr_offset = 0;
 

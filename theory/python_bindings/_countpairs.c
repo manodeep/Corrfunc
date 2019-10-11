@@ -987,7 +987,7 @@ PyMODINIT_FUNC init_countpairs(void)
     /* Load `numpy` functionality. */
     import_array();
 
-    highest_isa = instrset_detect();
+    highest_isa = get_max_usable_isa();
 
 #if PY_MAJOR_VERSION >= 3
     return module;

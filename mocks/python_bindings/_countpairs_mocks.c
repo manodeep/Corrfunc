@@ -868,7 +868,7 @@ PyObject *PyInit__countpairs_mocks(void)
     /* Load `numpy` functionality. */
     import_array();
 
-    highest_isa_mocks = instrset_detect();
+    highest_isa_mocks = get_max_usable_isa();
 
 #if PY_MAJOR_VERSION >= 3
     return module;

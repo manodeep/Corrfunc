@@ -67,7 +67,8 @@ static inline int64_t xgetbv (int ctr) {
 #endif
 }
 
-extern int instrset_detect(void);
+extern int runtime_instrset_detect(void);
+extern int get_max_usable_isa(void);
 
 #ifdef __cplusplus
 }

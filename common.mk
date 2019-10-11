@@ -400,6 +400,8 @@ ifeq ($(DO_CHECKS), 1)
         CFLAGS += -xCORE-AVX2
       endif
 
+      CFLAGS += -DGAS_BUG_DISABLE_AVX512
+
       ifneq ($(GAS_BUG_WARNING_PRINTED),1)
         $(warning $(ccred)DISABLING AVX-512 SUPPORT DUE TO GNU ASSEMBLER BUG.  UPGRADE TO BINUTILS >=2.32 TO FIX THIS.$(ccreset))
       endif

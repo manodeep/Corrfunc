@@ -129,7 +129,7 @@ countpairs_mocks_func_ptr_DOUBLE countpairs_rp_pi_mocks_driver_DOUBLE(const stru
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_offset = num_functions - 1;
 #if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
-    const int highest_isa = instrset_detect();
+    const int highest_isa = get_max_usable_isa();
 #endif
     int curr_offset = 0;
 
