@@ -60,7 +60,7 @@ struct api_cell_timings
 };
 
 
-#define MAX_FAST_DIVIDE_NR_STEPS  6
+#define MAX_FAST_DIVIDE_NR_STEPS  3
 #define OPTIONS_HEADER_SIZE     1024
 
 struct config_options
@@ -292,9 +292,13 @@ static inline struct config_options get_config_options(void)
 #endif
 
     /* Options specific to mocks */
-    /* Options for DDrppi_mocks */
+    /* Options for DDrppi_mocks (FAST_DIVIDE is also applicable for both DDsmu, and DDsmu_mocks) */
 #if defined(FAST_DIVIDE)
-    options.fast_divide_and_NR_steps=FAST_DIVIDE;
+#if FAST_DIVIDE > MAX_FAST_DIVIDE_NR_STEPS
+    options.fast_divide_and_NR_steps = MAX_FAST_DIVIDE_NR_STEPS;
+#else
+    options.fast_divide_and_NR_steps = FAST_DIVIDE;
+#endif
 #endif
 
     /* Options for wtheta*/

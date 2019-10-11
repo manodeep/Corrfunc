@@ -1,4 +1,4 @@
-3.0.0 (upcoming)
+3.0.0 (future)
 =================
 
 **Breaking Changes**

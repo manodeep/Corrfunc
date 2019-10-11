@@ -74,18 +74,17 @@ int main(int argc, char **argv)
     DOUBLE pimax;
     DOUBLE mu_max=1.0;
     int nmu_bins=10;
-    int nthreads=1;//default to single thread
+    int nthreads=4;//default to 4 threads
 
     struct config_options options = get_config_options();
     options.verbose = 1;
     options.periodic = 1;
     options.float_type = sizeof(DOUBLE);
-    
+
 #if defined(_OPENMP)
     const char argnames[][30]={"file","format","binfile","boxsize","pimax","mu_max","nmu_bins","Nthreads"};
 #else
     const char argnames[][30]={"file","format","binfile","boxsize","pimax","mu_max","nmu_bins"};
-    nthreads = 4;
 #endif
     int nargs=sizeof(argnames)/(sizeof(char)*30);
 
@@ -151,7 +150,7 @@ int main(int argc, char **argv)
         fprintf(stderr,ANSI_COLOR_MAGENTA "Command-line for running equivalent DD(r) calculation would be:\n `%s %s %s %s %s %s'" ANSI_COLOR_RESET "\n",
                 "../DD/DD",file,fileformat,file,fileformat,binfile);
 #endif
-        
+
         results_countpairs results;
         int status = countpairs(ND1,x1,y1,z1,
                                 ND2,x2,y2,z2,
@@ -204,7 +203,7 @@ int main(int argc, char **argv)
         if(status != EXIT_SUCCESS) {
             return status;
         }
-        
+
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
@@ -250,7 +249,7 @@ int main(int argc, char **argv)
         if(status != EXIT_SUCCESS) {
             return status;
         }
-        
+
         gettimeofday(&t1,NULL);
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
@@ -271,8 +270,8 @@ int main(int argc, char **argv)
         free_results_s_mu(&results);
     }
 
-    
-    
+
+
     //Do the wp counts
     {
         gettimeofday(&t0,NULL);
@@ -298,7 +297,7 @@ int main(int argc, char **argv)
         if(status != EXIT_SUCCESS) {
             return status;
         }
-        
+
         double pair_time = ADD_DIFF_TIME(t0,t1);
 #if 0
         double rlow=results.rupp[0];
@@ -374,7 +373,7 @@ int main(int argc, char **argv)
         if(status != EXIT_SUCCESS) {
             return status;
         }
-        
+
         gettimeofday(&t1,NULL);
         double sphere_time = ADD_DIFF_TIME(t0,t1);
 

@@ -3,92 +3,92 @@ A. Problems with the python interface on MAC:
 1. You are getting the error message "Fatal Python error: PyThreadState_Get: no current thread"
 when you do "python call_correlation_functions.py"
 
-This is usually caused by a python library mis-match between linking time and run-time, i.e., 
+This is usually caused by a python library mis-match between linking time and run-time, i.e.,
 the python shared extension (_countpairs.so in the python_bindings/ subdir) was built with a
-python lib version that is not the first one in your search path. The way I resolved it on 
-my MAC was by adding the path: "python-config --prefix"/lib to the dynamic library 
-path environment variable. 
+python lib version that is not the first one in your search path. The way I resolved it on
+my MAC was by adding the path: "python-config --prefix"/lib to the dynamic library
+path environment variable.
 
-Typically, this happens when the output of "otool -L _countpairs.so" does not show 
-a full path to libpythonX.X.dylib. 
+Typically, this happens when the output of "otool -L _countpairs.so" does not show
+a full path to libpythonX.X.dylib.
 
-In my case, I use the anaconda distribution for python at link-time but I pick 
+In my case, I use the anaconda distribution for python at link-time but I pick
 up the macports install at run-time. The exact command to fix the situation is:
 
 Option 1.
 ----------
-Change the rpath in the shared C extension library: 
+Change the rpath in the shared C extension library:
 
 "install_name_tool -change libpythonX.X.dylib `python-config --prefix`/lib/libpythonX.X.dylib _countpairs.so"
 
-"otool -L _countpairs.so" should show the full path to the libpythonX.X.dylib file. 
+"otool -L _countpairs.so" should show the full path to the libpythonX.X.dylib file.
 
-Option 2. 
+Option 2.
 ----------
-Add to the environment variable - but this is not fool-proof. 
+Add to the environment variable - but this is not fool-proof.
 "export DYLD_FALLBACK_LIBRARY_PATH=`python-config --prefix`/lib:$DYLD_FALLBACK_LIBRARY_PATH"
 
 Option 3.
 ----------
 If that does not work, try creating a symbolic link in the python_bindings directory:
 
-"ln -s `python-config --prefix`/lib/libpythonX.X.dylib" 
+"ln -s `python-config --prefix`/lib/libpythonX.X.dylib"
 
-(where I have omitted the sym-link name, defaults to the actual filename.) 
+(where I have omitted the sym-link name, defaults to the actual filename.)
 
 However, if you go this sym-link route, then the sym-link *has* to be in the directory
-where the python code is situated - I do not know of any work-arounds (short of 
-creating the sym-link in a directory that's in the dynamic library path). 
+where the python code is situated - I do not know of any work-arounds (short of
+creating the sym-link in a directory that's in the dynamic library path).
 
 
 B. Problems compiling with gcc on a MAC:
 
 If you see errors like : "no such instruction: `vmovsd 48(%rsp), %xmm0'"
 
-this is because the gcc assembler does not support AVX yet. clang does -- 
-one way of getting around this problem is to use the clang assembler 
-instead of the gcc assembler. 
+this is because the gcc assembler does not support AVX yet. clang does --
+one way of getting around this problem is to use the clang assembler
+instead of the gcc assembler.
 
-Make a backup of the gcc assembler (/opt/local/bin/as) and then create 
-a new file with this content (taken from here: (http://stackoverflow.com/questions/9840207/how-to-use-avx-pclmulqdq-on-mac-os-x-lion) 
+Make a backup of the gcc assembler (/opt/local/bin/as) and then create
+a new file with this content (taken from here: (http://stackoverflow.com/questions/9840207/how-to-use-avx-pclmulqdq-on-mac-os-x-lion)
 and here (https://gist.github.com/xianyi/2957847 as modified here: https://gist.github.com/ancapdev/8059572):
 
 ----------------------
-#!/bin/sh 
-HAS_INPUT_FILE=0 
-ARGS=$@ 
-while [ $# -ne 0 ]; do 
-        ARG=$1 
-        # Skip options 
-        if [ $ARG == "-arch" ] || [ $ARG == "-o" ]; then 
-                # Skip next token 
-                shift 
-                shift 
-                continue 
-        fi 
+#!/bin/sh
+HAS_INPUT_FILE=0
+ARGS=$@
+while [ $# -ne 0 ]; do
+        ARG=$1
+        # Skip options
+        if [ $ARG == "-arch" ] || [ $ARG == "-o" ]; then
+                # Skip next token
+                shift
+                shift
+                continue
+        fi
 
-        if [ `echo $ARG | head -c1` == "-" ]; then 
-                shift 
-                continue 
-        fi 
+        if [ `echo $ARG | head -c1` == "-" ]; then
+                shift
+                continue
+        fi
 
-        HAS_INPUT_FILE=1 
-        break 
-done 
+        HAS_INPUT_FILE=1
+        break
+done
 
-if [ $HAS_INPUT_FILE -eq 1 ]; then 
-        clang -Qunused-arguments -c -x assembler $ARGS 
-else 
-        clang -Qunused-arguments -c -x assembler $ARGS - 
-fi 
+if [ $HAS_INPUT_FILE -eq 1 ]; then
+        clang -Qunused-arguments -c -x assembler $ARGS
+else
+        clang -Qunused-arguments -c -x assembler $ARGS -
+fi
 ----------------------
 
-Using the clang assembler is now default when compiling with gcc on a MAC. 
-This is achieved in [common.mk](common.mk) by adding the compiler flag -Wa,-q. 
+Using the clang assembler is now default when compiling with gcc on a MAC.
+This is achieved in [common.mk](common.mk) by adding the compiler flag -Wa,-q.
 However, if this causes errors and you are confident your gcc version supports
-AVX instructions, then you can remove that -Wa,-q flag from common.mk. 
+AVX instructions, then you can remove that -Wa,-q flag from common.mk.
 Note, that a normal install of XCode command line tools will have clang masquerading
-as gcc. You can tell if gcc --version mentions clang. 
+as gcc. You can tell if gcc --version mentions clang.
 
 C. Problems running tests with conda gcc on a MAC:
 
@@ -103,3 +103,32 @@ then, the fix is, as above, to use `install_name_tool -change @rpath/./libgomp.1
 and then rerun "make tests".
 
 
+D. OpenMP on MAC OSX
+----------------------
+
+There are a wide variety of possible compiler options on OSX. The default `clang` compiler supplied by
+Apple (residing in `/usr/bin/clang`) is quite old and does not support OpenMP. Somewhat frustratingly,
+Apple also has aliased `gcc` to point to `clang` by default; which means we need to access a more recent
+compiler to build the `Corrfunc` libraries with OpenMP support. There are a multitude of options for the compiler (`clang/gcc/icc`),
+an associated OpenMP runtime library (`libomp/libgomp/libiomp`), and installation sources (`homebrew/macports/conda/OS supplied/binary distro`).
+Typically, the choice of the compiler sets the choice of the OpenMP library; however, all possible combinations between the source and
+the compiler can be expected. Such a vast array of options makes reliable (automatic) detection and installation of OpenMP
+enabled `Corrfunc`. Here we will outline some of the steps to get an OpenMP install of `Corrfunc`, depending on the preferred
+package management scheme:
+
+  * Homebrew -- Discussion was here: https://github.com/manodeep/Corrfunc/issues/172
+    - `brew install clang`
+    - `brew install libomp`
+    - Add `CFLAGS ?= -Xpreprocessor -fopenmp` in `common.mk`
+    - Add `CLINK ?= -lomp` in `common.mk`
+    - If kernel crashes,  add `os.environ['KMP_DUPLICATE_LIB_OK']='True'`
+
+  * Macports -- All you need is a compatible version of `clang` (any version of `clang >= 3.8` will suffice)
+    - `sudo port install clang`
+
+  * OS supplied -- If you are unable to upgrade the compiler and are stuck with the OSX supplied `clang`, then chances
+    might be slim to get an OpenMP build of `Corrfunc`. If you do solve the issue, then please update this line and
+    send in a pull request on GitHub. Such a pull request will be genuinely appreciated.
+
+  * Binary distro -- You will need to add appropriate flags to `CFLAGS` and `CLINK` at the top of `common.mk`. You might
+    find it helpful to follow the steps for homebrew
