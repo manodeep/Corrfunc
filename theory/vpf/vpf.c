@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
     unsigned long seed=-1;
     char *file=NULL,*fileformat=NULL;
 
+    double boxsize = -1.;
+
     /*---VPF-variables----------------*/
     const char argnames[][30]={"rmax","nbins","ncentres","num_pN","file","format","seed","boxsize"};
     int nargs=sizeof(argnames)/(sizeof(char)*30);
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
     file =  argv[5];
     fileformat = argv[6];
     seed = atol(argv[7]);
-    boxsize = atof(argv[8])
+    boxsize = atof(argv[8]);
 
     assert(nbin >=1 && "Number of bins has to be at least 1");
     assert(nc >=1   && "Number of spheres has to be at least 1");

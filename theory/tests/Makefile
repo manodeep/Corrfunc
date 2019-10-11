@@ -113,5 +113,5 @@ xi: test_periodic
 
 celna clena celan: clean
 clean:
-	$(RM) $(targets) $(OBJS1) $(OBJS2)
+	$(RM) $(TARGETS) $(OBJS1) $(OBJS2)
 	$(RM) -R *.dSYM
