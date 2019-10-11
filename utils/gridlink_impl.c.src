@@ -446,6 +446,20 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
             "Reducing bin refine factors might help. Requested for %"PRId64" elements "
             "with each element of size %zu bytes\n", max_num_cell_pairs, sizeof(*all_cell_pairs));
 
+
+    /* Under periodic boundary conditions + small nmesh_x/y/z, the periodic wrapping would cause
+       the same cell to be included as an neighbour cell from both the left and the right side (i.e.,
+       when including cells with -bin_refine_factor, and when including cells up to +bin_refine_factor)
+
+       Previously this would throw an error, but we can simply not add the duplicate cells.
+
+       Raised in issue# 192 (https://github.com/manodeep/Corrfunc/issues/192)
+
+       MS: 23/8/2019
+     */
+    const int check_for_duplicate_ngb_cells = (periodic == 1 && (nmesh_x < (2*xbin_refine_factor + 1) ||
+                                                                 nmesh_y < (2*ybin_refine_factor + 1) ||
+                                                                 nmesh_z < (2*zbin_refine_factor + 1))) ? 1:0;
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_DOUBLE *first = &(lattice1[icell]);
         if(first->nelements == 0) continue;
@@ -456,6 +470,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
             ANSI_COLOR_RED"BUG: Index reconstruction is wrong. icell = %"PRId64" reconstructed index = %"PRId64 ANSI_COLOR_RESET"\n",
                 icell, (ix * nmesh_y * nmesh_z + iy * nmesh_z + (int64_t) iz));
 
+        int64_t num_ngb_this_cell = 0;
         for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
             const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;
             const int non_periodic_ix = ix + iix;
@@ -484,6 +499,12 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                     //set here. Also, if the second cell has no particles, then just skip it
                     if((autocorr == 1 && icell2 > icell) || lattice2[icell2].nelements == 0) {
                         continue;
+                    }
+
+                    //Check if the ngb-cell has already been added - can happen under periodic boundary
+                    //conditions, with small value of nmesh_x/y/z (ie large Rmax relative to BoxSize)
+                    if(check_for_duplicate_ngb_cells) {
+                        CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
                     }
 
                     struct cellarray_DOUBLE *second = &(lattice2[icell2]);
@@ -568,6 +589,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                     this_cell_pair->same_cell = (autocorr == 1 && icell2 == icell) ? 1:0;
 
                     num_cell_pairs++;
+                    num_ngb_this_cell++;
                 } //looping over neighbours in Z
             } //looping over neighbours along Y
         }//looping over neighbours along X

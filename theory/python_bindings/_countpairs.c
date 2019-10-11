@@ -1319,10 +1319,10 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
        The input objects can be converted into the required DOUBLE array.
     */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
@@ -1358,10 +1358,10 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
 
 
     /* Get pointers to the data */
-    void *X1 = NULL, *Y1=NULL, *Z1=NULL, *weights1=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array);
-    Y1 = PyArray_DATA((PyArrayObject *) y1_array);
-    Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *X1 = PyArray_DATA((PyArrayObject *) x1_array);
+    void *Y1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *weights1=NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
@@ -1415,10 +1415,9 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     PyObject *ret = PyList_New(0);
     double rlow=results.rupp[0];
     for(int i=1;i<results.nbin;i++) {
-        PyObject *item = NULL;
         const double rpavg = results.rpavg[i];
         const double weight_avg = results.weightavg[i];
-        item = Py_BuildValue("(dddkd)", rlow,results.rupp[i],rpavg,results.npairs[i],weight_avg);
+        PyObject *item = Py_BuildValue("(dddkd)", rlow,results.rupp[i],rpavg,results.npairs[i],weight_avg);
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.rupp[i];
@@ -1613,15 +1612,15 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
 
+    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -1651,15 +1650,15 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
 
 
     /* Get pointers to the data as C-types. */
-    void *X1 = NULL, *Y1 = NULL, *Z1 = NULL, *weights1=NULL;
-    void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array);
-    Y1 = PyArray_DATA((PyArrayObject *) y1_array);
-    Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *X1 = PyArray_DATA((PyArrayObject *) x1_array);
+    void *Y1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *weights1=NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
 
+    void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
     if(autocorr == 0) {
         X2 = PyArray_DATA((PyArrayObject *) x2_array);
         Y2 = PyArray_DATA((PyArrayObject *) y2_array);
@@ -1713,10 +1712,9 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     for(int i=1;i<results.nbin;i++) {
         for(int j=0;j<results.npibin;j++) {
             const int bin_index = i*(results.npibin + 1) + j;
-            PyObject *item = NULL;
             const double rpavg = results.rpavg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index], weight_avg);
+            PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
@@ -1870,10 +1868,10 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
@@ -1945,10 +1943,9 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
     PyObject *ret = PyList_New(0);
     double rlow=results.rupp[0];
     for(int i=1;i<results.nbin;i++) {
-        PyObject *item = NULL;
         const double rpavg = results.rpavg[i];
         const double weight_avg = results.weightavg[i];
-        item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,results.wp[i],results.npairs[i], weight_avg);
+        PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,results.wp[i],results.npairs[i], weight_avg);
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.rupp[i];
@@ -2108,10 +2105,10 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
@@ -2179,10 +2176,9 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     PyObject *ret = PyList_New(0);
     double rlow=results.rupp[0];
     for(int i=1;i<results.nbin;i++) {
-        PyObject *item = NULL;
         const double ravg = results.ravg[i];
         const double weight_avg = results.weightavg[i];
-        item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],ravg,results.xi[i],results.npairs[i], weight_avg);
+        PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],ravg,results.xi[i],results.npairs[i], weight_avg);
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.rupp[i];
@@ -2330,7 +2326,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         //Error has already been set -> simply return
         Py_RETURN_NONE;
     }
-    
+
     int found_weights = weights1_obj == NULL ? 0 : PyArray_SHAPE(weights1_obj)[0];
     struct extra_options extra = get_extra_options(weighting_method);
     if(extra.weights0.num_weights > 0 && extra.weights0.num_weights != found_weights){
@@ -2382,15 +2378,15 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
 
+    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -2420,15 +2416,15 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
 
 
     /* Get pointers to the data as C-types. */
-    void *X1 = NULL, *Y1 = NULL, *Z1 = NULL, *weights1=NULL;
-    void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
-    X1 = PyArray_DATA((PyArrayObject *) x1_array);
-    Y1 = PyArray_DATA((PyArrayObject *) y1_array);
-    Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *X1 = PyArray_DATA((PyArrayObject *) x1_array);
+    void *Y1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *Z1 = PyArray_DATA((PyArrayObject *) z1_array);
+    void *weights1=NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
 
+    void *X2 = NULL, *Y2 = NULL, *Z2 = NULL, *weights2=NULL;
     if(autocorr == 0) {
         X2 = PyArray_DATA((PyArrayObject *) x2_array);
         Y2 = PyArray_DATA((PyArrayObject *) y2_array);
@@ -2483,10 +2479,9 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         const double smax=results.supp[i];
         for(int j=0;j<results.nmu_bins;j++) {
             const int bin_index = i*(results.nmu_bins + 1) + j;
-            PyObject *item = NULL;
             const double savg = results.savg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", smin, smax,savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
+            PyObject *item = Py_BuildValue("(ddddkd)", smin, smax,savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
@@ -2606,10 +2601,9 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
 
     if (x1_array == NULL || y1_array == NULL || z1_array == NULL) {
         Py_XDECREF(x1_array);

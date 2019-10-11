@@ -1,4 +1,4 @@
-3.0.0 (upcoming)
+3.0.0 (future)
 =================
 
 **Breaking Changes**
@@ -26,7 +26,6 @@ Bug fixes
 ----------
 - Incorrect calculations for non-native endian data [#191]
 - Workaround for GNU Assembler bug causing incorrect calculations [#196]
-
 
 
 2.3.1 (2019-06-21)

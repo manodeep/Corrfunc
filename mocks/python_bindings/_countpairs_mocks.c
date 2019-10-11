@@ -1281,15 +1281,15 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
 
+    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -1318,16 +1318,15 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     }
 
     /* Get pointers to the data as C-types. */
-    void *phiD1=NULL, *thetaD1=NULL, *czD1=NULL, *weights1=NULL;
-    void *phiD2=NULL, *thetaD2=NULL, *czD2=NULL, *weights2=NULL;
-
-    phiD1   = PyArray_DATA((PyArrayObject *)x1_array);
-    thetaD1 = PyArray_DATA((PyArrayObject *)y1_array);
-    czD1    = PyArray_DATA((PyArrayObject *)z1_array);
+    void *phiD1   = PyArray_DATA((PyArrayObject *)x1_array);
+    void *thetaD1 = PyArray_DATA((PyArrayObject *)y1_array);
+    void *czD1    = PyArray_DATA((PyArrayObject *)z1_array);
+    void *weights1=NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
 
+    void *phiD2=NULL, *thetaD2=NULL, *czD2=NULL, *weights2=NULL;
     if(autocorr == 0) {
         phiD2   = PyArray_DATA((PyArrayObject *) x2_array);
         thetaD2 = PyArray_DATA((PyArrayObject *) y2_array);
@@ -1395,10 +1394,9 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
     for(int i=1;i<results.nbin;i++) {
         for(int j=0;j<results.npibin;j++) {
             const int bin_index = i*(results.npibin + 1) + j;
-            PyObject *item = NULL;
             const double rpavg = results.rpavg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index], weight_avg);
+            PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.rupp[i],rpavg,(j+1)*dpi,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
@@ -1605,15 +1603,15 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL, *weights1_array = NULL;
-    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
 
+    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL, *weights2_array = NULL;
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -1642,16 +1640,15 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
     }
 
     /* Get pointers to the data as C-types. */
-    void *phiD1=NULL, *thetaD1=NULL, *czD1=NULL, *weights1=NULL;
-    void *phiD2=NULL, *thetaD2=NULL, *czD2=NULL, *weights2=NULL;
-
-    phiD1   = PyArray_DATA((PyArrayObject *)x1_array);
-    thetaD1 = PyArray_DATA((PyArrayObject *)y1_array);
-    czD1    = PyArray_DATA((PyArrayObject *)z1_array);
+    void *phiD1   = PyArray_DATA((PyArrayObject *)x1_array);
+    void *thetaD1 = PyArray_DATA((PyArrayObject *)y1_array);
+    void *czD1    = PyArray_DATA((PyArrayObject *)z1_array);
+    void *weights1=NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
 
+    void *phiD2=NULL, *thetaD2=NULL, *czD2=NULL, *weights2=NULL;
     if(autocorr == 0) {
         phiD2   = PyArray_DATA((PyArrayObject *) x2_array);
         thetaD2 = PyArray_DATA((PyArrayObject *) y2_array);
@@ -1720,10 +1717,9 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
     for(int i=1;i<results.nsbin;i++) {
         for(int j=0;j<results.nmu_bins;j++) {
             const int bin_index = i*(results.nmu_bins + 1) + j;
-            PyObject *item = NULL;
             const double savg = results.savg[bin_index];
             const double weight_avg = results.weightavg[bin_index];
-            item = Py_BuildValue("(ddddkd)", rlow,results.supp[i],savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
+            PyObject *item = Py_BuildValue("(ddddkd)", rlow,results.supp[i],savg,(j+1)*dmu,results.npairs[bin_index], weight_avg);
             PyList_Append(ret, item);
             Py_XDECREF(item);
         }
@@ -1913,14 +1909,14 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *weights1_array = NULL;
-    PyObject *x2_array = NULL, *y2_array = NULL, *weights2_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *weights1_array = NULL;
     if(weights1_obj != NULL){
         weights1_array = PyArray_FromArray(weights1_obj, NOTYPE_DESCR, requirements);
     }
 
+    PyObject *x2_array = NULL, *y2_array = NULL, *weights2_array = NULL;
     if(autocorr == 0) {
         x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
         y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
@@ -1946,14 +1942,14 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     }
 
     /* Get pointers to the data as C-types. */
-    void *phiD1 = NULL, *thetaD1 = NULL, *weights1=NULL;
-    void *phiD2 = NULL, *thetaD2 = NULL, *weights2=NULL;
-    phiD1   = PyArray_DATA((PyArrayObject *) x1_array);
-    thetaD1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *phiD1   = PyArray_DATA((PyArrayObject *) x1_array);
+    void *thetaD1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *weights1 = NULL;
     if(weights1_array != NULL){
         weights1 = PyArray_DATA((PyArrayObject *) weights1_array);
     }
 
+    void *phiD2=NULL, *thetaD2=NULL, *weights2=NULL;
     if(autocorr == 0) {
         phiD2   = PyArray_DATA((PyArrayObject *) x2_array);
         thetaD2 = PyArray_DATA((PyArrayObject *) y2_array);
@@ -2011,10 +2007,9 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
     PyObject *ret = PyList_New(0);
     double rlow=results.theta_upp[0];
     for(int i=1;i<results.nbin;i++) {
-        PyObject *item = NULL;
         const double theta_avg = results.theta_avg[i];
         const double weight_avg = results.weightavg[i];
-        item = Py_BuildValue("(dddkd)", rlow,results.theta_upp[i],theta_avg,results.npairs[i], weight_avg);
+        PyObject *item = Py_BuildValue("(dddkd)", rlow,results.theta_upp[i],theta_avg,results.npairs[i], weight_avg);
         PyList_Append(ret, item);
         Py_XDECREF(item);
         rlow=results.theta_upp[i];
@@ -2161,15 +2156,12 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
 
     /* Interpret the input objects as numpy arrays. */
     const int requirements = NPY_ARRAY_IN_ARRAY;
-    PyObject *x1_array = NULL, *y1_array = NULL, *z1_array = NULL;
-    PyObject *x2_array = NULL, *y2_array = NULL, *z2_array = NULL;
-    x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
-    y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
-    z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
-    x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
-    y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
-    z2_array = PyArray_FromArray(z2_obj, NOTYPE_DESCR, requirements);
-
+    PyObject *x1_array = PyArray_FromArray(x1_obj, NOTYPE_DESCR, requirements);
+    PyObject *y1_array = PyArray_FromArray(y1_obj, NOTYPE_DESCR, requirements);
+    PyObject *z1_array = PyArray_FromArray(z1_obj, NOTYPE_DESCR, requirements);
+    PyObject *x2_array = PyArray_FromArray(x2_obj, NOTYPE_DESCR, requirements);
+    PyObject *y2_array = PyArray_FromArray(y2_obj, NOTYPE_DESCR, requirements);
+    PyObject *z2_array = PyArray_FromArray(z2_obj, NOTYPE_DESCR, requirements);
 
     if (x1_array == NULL || y1_array == NULL || z1_array == NULL ||
         x2_array == NULL || y2_array == NULL || z2_array == NULL) {
@@ -2188,16 +2180,13 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     }
 
     /* Get pointers to the data as C-types. */
-    void *phiD1=NULL, *thetaD1=NULL,*czD1=NULL;
-    void *phiD2=NULL, *thetaD2=NULL,*czD2=NULL;
+    void *phiD1   = PyArray_DATA((PyArrayObject *) x1_array);
+    void *thetaD1 = PyArray_DATA((PyArrayObject *) y1_array);
+    void *czD1    = PyArray_DATA((PyArrayObject *) z1_array);
 
-    phiD1   = PyArray_DATA((PyArrayObject *) x1_array);
-    thetaD1 = PyArray_DATA((PyArrayObject *) y1_array);
-    czD1    = PyArray_DATA((PyArrayObject *) z1_array);
-
-    phiD2   = PyArray_DATA((PyArrayObject *) x2_array);
-    thetaD2 = PyArray_DATA((PyArrayObject *) y2_array);
-    czD2    = PyArray_DATA((PyArrayObject *) z2_array);
+    void *phiD2   = PyArray_DATA((PyArrayObject *) x2_array);
+    void *thetaD2 = PyArray_DATA((PyArrayObject *) y2_array);
+    void *czD2    = PyArray_DATA((PyArrayObject *) z2_array);
 
     NPY_BEGIN_THREADS_DEF;
     NPY_BEGIN_THREADS;

@@ -277,7 +277,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     import numpy as np
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian, sys_pipes, process_weights
+        sys_pipes, process_weights
     from future.utils import bytes_to_native_str
 
     if autocorr == 0:

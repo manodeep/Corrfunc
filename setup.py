@@ -41,7 +41,7 @@ except ImportError:
 
     def find_packages(path='.'):
         ret = []
-        for root, dirs, files in os.walk(path):
+        for root, _, files in os.walk(path):
             if '__init__.py' in files:
                 ret.append(re.sub('^[^A-z0-9_]+', '', root.replace('/', '.')))
                 return ret
@@ -84,7 +84,7 @@ def get_dict_from_buffer(buf, keys=['DISTNAME', 'MAJOR',
     Returns: Python dictionary with all the keys (all keys in buffer
              if None is passed for keys) with the values being a list
              corresponding to each key.
-    
+
     Note: Return dict will contain all keys supplied (if not None).
           If any key was not found in the buffer, then the value for
           that key will be [] such that dict[key] does not produce
@@ -409,8 +409,10 @@ def generate_extensions(python_dirs):
 # defining the function that works on all reasonable pythons
 # http://stackoverflow.com/questions/2186525/use-a-glob-to-
 # find-files-recursively-in-python
-def recursive_glob(rootdir='.', patterns=['*']):
+def recursive_glob(rootdir='.', patterns=None):
     import fnmatch
+    if not patterns:
+        patterns = ['*']
     return [pjoin(looproot, filename)
             for looproot, _, filenames in os.walk(rootdir)
             for filename in filenames for p in patterns
@@ -463,7 +465,7 @@ def setup_packages():
                   "However, python expects the extension to be `{0}`"\
                   .format(get_config_var('SHLIB_EXT'))
             raise ValueError(msg)
-        
+
         # global variable compiler is set if passed in
         # command-line
         extra_string = ''
@@ -472,7 +474,7 @@ def setup_packages():
 
         command = "make libs {0}".format(extra_string)
         run_command(command)
-        
+
     else:
         # not installing. Check if creating source distribution
         # in that case run distclean to delete auto-generated C
@@ -480,7 +482,7 @@ def setup_packages():
         if 'sdist' in sys.argv:
             command = "make distclean"
             run_command(command)
-            
+
 
     # find all the data-files required.
     # Now the lib + associated header files have been generated

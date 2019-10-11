@@ -254,7 +254,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
     import numpy as np
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian, sys_pipes, process_weights
+        sys_pipes, process_weights
 
     from future.utils import bytes_to_native_str
 
@@ -267,7 +267,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     # Check that mu_max is within (0.0, 1.0]
     if mu_max <= 0.0 or mu_max > 1.0:
-        msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "
+        msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "\
         "angle and should be within (0.0, 1.0]".format(mu_max)
         raise ValueError(msg)
 

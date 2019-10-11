@@ -109,7 +109,6 @@ int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,doub
     //the form of the data file should be <rlow  rhigh ....>
     const int MAXBUFSIZE=1000;
     char buf[MAXBUFSIZE];
-    FILE *fp=NULL;
     double low,hi;
     const char comment='#';
     const int nitems=2;
@@ -117,7 +116,7 @@ int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,doub
     *nbin = ((int) getnumlines(fname,comment))+1;
     *rupp = my_calloc(sizeof(double),*nbin+1);
 
-    fp = my_fopen(fname,"r");
+    FILE *fp = my_fopen(fname,"r");
     if(fp == NULL) {
         free(*rupp);
         return EXIT_FAILURE;
@@ -154,7 +153,6 @@ int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float *
     //the form of the data file should be <rlow  rhigh ....>
     const int MAXBUFSIZE=1000;
     char buf[MAXBUFSIZE];
-    FILE *fp=NULL;
     float low,hi;
     const char comment='#';
     const int nitems=2;
@@ -162,7 +160,7 @@ int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float *
     *nbin = ((int) getnumlines(fname,comment))+1;
     *rupp = my_calloc(sizeof(float),*nbin+1);
 
-    fp = my_fopen(fname,"r");
+    FILE *fp = my_fopen(fname,"r");
     if(fp == NULL) {
         free(*rupp);
         return EXIT_FAILURE;
@@ -335,7 +333,7 @@ void byte_swap(char * const in, const size_t size, char *out)
         in_char--;
     }
 
-}    
+}
 
 
 
@@ -369,7 +367,7 @@ void current_utc_time(struct timespec *ts)
 
     ts->tv_sec = 0;//(start * sTimebaseInfo.numer/sTimebaseInfo.denom) * tv_nsec;
     ts->tv_nsec = start * sTimebaseInfo.numer / sTimebaseInfo.denom;
-    
+
 #if 0
     //Much slower implementation for clock
     //Slows down the code by up to 4x
@@ -380,12 +378,12 @@ void current_utc_time(struct timespec *ts)
     mach_port_deallocate(mach_task_self(), cclock);
     ts->tv_sec = mts.tv_sec;
     ts->tv_nsec = mts.tv_nsec;
-#endif    
-    
+#endif
+
 #else
     clock_gettime(CLOCK_REALTIME, ts);
 #endif
-}    
+}
 
 
 
@@ -417,32 +415,30 @@ char * get_time_string(struct timeval t0,struct timeval t1)
   char *time_string = my_malloc(sizeof(char), MAXLINESIZE);
   double timediff = t1.tv_sec - t0.tv_sec;
   double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
-  char units[4][10]  = {"days", "hrs" , "mins", "secs"};
-  int which = 0;
 
-  double timeleft = timediff;
-  double time_to_print;
-  
   if(timediff < ratios[2]) {
-    my_snprintf(time_string, MAXLINESIZE,"%6.3lf secs",1e-6*(t1.tv_usec-t0.tv_usec) + timediff);
+      my_snprintf(time_string, MAXLINESIZE,"%6.3lf secs",1e-6*(t1.tv_usec-t0.tv_usec) + timediff);
   }  else {
-    size_t curr_index = 0;
-    while (which < 4) {
-      time_to_print = floor(timeleft/ratios[which]);
-      if (time_to_print > 1) {
-        timeleft -= (time_to_print*ratios[which]);
-        char tmp[MAXLINESIZE];
-        my_snprintf(tmp, MAXLINESIZE, "%5d %s",(int)time_to_print,units[which]);
-        const size_t len = strlen(tmp);
-        const size_t required_len = curr_index + len + 1;
-        XRETURN(MAXLINESIZE >= required_len, NULL,
-                "buffer overflow will occur: string has space for %zu bytes while concatenating requires at least %zu bytes\n",
-                MAXLINESIZE, required_len);
-        strcpy(time_string + curr_index, tmp);
-        curr_index += len;
+      double timeleft = timediff;
+      size_t curr_index = 0;
+      int which = 0;
+      while (which < 4) {
+          double time_to_print = floor(timeleft/ratios[which]);
+          if (time_to_print > 1) {
+              timeleft -= (time_to_print*ratios[which]);
+              char units[4][10]  = {"days", "hrs" , "mins", "secs"};
+              char tmp[MAXLINESIZE];
+              my_snprintf(tmp, MAXLINESIZE, "%5d %s",(int)time_to_print,units[which]);
+              const size_t len = strlen(tmp);
+              const size_t required_len = curr_index + len + 1;
+              XRETURN(MAXLINESIZE >= required_len, NULL,
+                      "buffer overflow will occur: string has space for %zu bytes while concatenating requires at least %zu bytes\n",
+                      MAXLINESIZE, required_len);
+              strcpy(time_string + curr_index, tmp);
+              curr_index += len;
+          }
+          which++;
       }
-      which++;
-    }
   }
 
   return time_string;
@@ -452,19 +448,16 @@ void print_time(struct timeval t0,struct timeval t1,const char *s)
 {
     double timediff = t1.tv_sec - t0.tv_sec;
     double ratios[] = {24*3600.0,  3600.0,  60.0,  1};
-    char units[4][10]  = {"days", "hrs" , "mins", "secs"};
-    int which = 0;
-
-    double timeleft = timediff;
-    double time_to_print;
     fprintf(stderr,"Time taken to execute '%s'  = ",s);
-
     if(timediff < ratios[2]) {
         fprintf(stderr,"%6.3lf secs",1e-6*(t1.tv_usec-t0.tv_usec) + timediff);
     }  else {
+        double timeleft = timediff;
+        int which = 0;
         while (which < 4) {
-            time_to_print = floor(timeleft/ratios[which]);
+            double time_to_print = floor(timeleft/ratios[which]);
             if (time_to_print > 1) {
+                char units[4][10]  = {"days", "hrs" , "mins", "secs"};
                 timeleft -= (time_to_print*ratios[which]);
                 fprintf(stderr,"%5d %s",(int)time_to_print,units[which]);
             }
@@ -493,13 +486,12 @@ void* my_realloc(void *x,size_t size,int64_t N,const char *varname)
 
 void* my_malloc(size_t size,int64_t N)
 {
-    void *x = NULL;
-    x = malloc(N*size);
+    void *x = malloc(N*size);
     if (x==NULL){
         fprintf(stderr,"malloc for %"PRId64" elements with %zu bytes failed...\n",N,size);
         perror(NULL);
     }
-        
+
     return x;
 }
 
@@ -507,8 +499,7 @@ void* my_malloc(size_t size,int64_t N)
 
 void* my_calloc(size_t size,int64_t N)
 {
-    void *x = NULL;
-    x = calloc((size_t) N, size);
+    void *x = calloc((size_t) N, size);
     if (x==NULL)    {
         fprintf(stderr,"malloc for %"PRId64" elements with %zu size failed...\n",N,size);
         perror(NULL);
@@ -595,7 +586,7 @@ int matrix_realloc(void **matrix, size_t size, int64_t nrow, int64_t ncol){
         }
         matrix[i] = tmp;
     }
-    
+
     return EXIT_SUCCESS;
 }
 
@@ -604,7 +595,7 @@ void matrix_free(void **m,int64_t nrow)
 {
     if(m == NULL)
         return;
-    
+
     for(int i=0;i<nrow;i++)
         free(m[i]);
 
@@ -632,7 +623,7 @@ void *** volume_malloc(size_t size,int64_t nrow,int64_t ncol,int64_t nframe)
             free(v);
             return NULL;
         }
-        
+
         for(int j=0;j<ncol;j++) {
             v[i][j] = my_malloc(size,nframe);
             if(v[i][j] == NULL) {
@@ -719,12 +710,11 @@ void volume_free(void ***v,int64_t nrow,int64_t ncol)
 
 int64_t getnumlines(const char *fname,const char comment)
 {
-    FILE *fp= NULL;
     const int MAXLINESIZE = 10000;
     int64_t nlines=0;
     char str_line[MAXLINESIZE];
 
-    fp = my_fopen(fname,"rt");
+    FILE *fp = my_fopen(fname,"rt");
     if(fp == NULL) {
         return -1;
     }
@@ -793,21 +783,21 @@ int test_all_files_present(const int nfiles, ...)
 /*         return EXIT_FAILURE; */
 /*     } */
 /*     int aInt = *(int*)&A; */
-    
+
 /*     /\* Make aInt lexicographically ordered as a twos-complement int*\/ */
 /*     if (aInt < 0) */
 /*         aInt = 0x80000000 - aInt; */
-    
+
 /*     /\* Make bInt lexicographically ordered as a twos-complement int*\/ */
-    
+
 /*     int bInt = *(int*)&B; */
 /*     if (bInt < 0) */
 /*         bInt = 0x80000000 - bInt; */
-    
+
 /*     int intDiff = abs(aInt - bInt); */
 /*     if (intDiff <= maxUlps) */
 /*         return 1; */
-    
+
 /*     return 0; */
 /* } */
 
@@ -829,7 +819,7 @@ int AlmostEqualRelativeAndAbs_float(float A, float B,
 
     if (diff <= largest * maxRelDiff)
         return EXIT_SUCCESS;
-    
+
     return EXIT_FAILURE;
 }
 

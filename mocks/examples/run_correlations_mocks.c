@@ -39,7 +39,7 @@ void Printhelp(void);
 void Printhelp(void)
 {
     fprintf(stderr,ANSI_COLOR_RED "=========================================================================\n") ;
-    fprintf(stderr,"   --- run_correlations_mocks file format binfile boxsize [Nthreads] \n") ;
+    fprintf(stderr,"   --- run_correlations_mocks file format binfile boxsize Nthreads \n") ;
     fprintf(stderr,"   --- Measure the auto-correlation functions DD(r), DD(rp, pi) and wp(rp) for a single file\n");
     fprintf(stderr,"     * file         = name of data file\n") ;
     fprintf(stderr,"     * format       = format of data file  (a=ascii, f=fast-food)\n") ;
@@ -63,18 +63,17 @@ int main(int argc, char **argv)
     struct timeval t0,t1;
     DOUBLE pimax;
     int cosmology=1;
-    int nthreads=1;
+    int nthreads=4;
     int nmu_bins;
     DOUBLE mu_max;
-        
+
     struct config_options options = get_config_options();
     options.verbose=1;
     options.periodic=0;
     options.need_avg_sep=1;
     options.float_type = sizeof(*ra1);
-    
+
 #if defined(_OPENMP)
-    nthreads=4;//default to 4 threads
     const char argnames[][30]={"file","format","binfile","pimax","cosmology","mu_max", "nmu_bins", "Nthreads"};
 #else
     const char argnames[][30]={"file","format","binfile","pimax","cosmology", "mu_max", "nmu_bins"};
@@ -233,7 +232,7 @@ int main(int argc, char **argv)
         //free the result structure
         free_results_mocks_s_mu(&results);
     }
-    
+
 
     //Do the DD(theta) counts
     {

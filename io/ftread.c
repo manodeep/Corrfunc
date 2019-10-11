@@ -53,12 +53,12 @@ int ftread(void *ptr,size_t size,size_t nitems,FILE *stream)
     }
     if ( nbyte1 != nbyte2 ) {
         errno = errno - 1 ;
-        fprintf(stderr,"read warning, byte # do not match, nbyte1 = %d, nbyte2 = %d \n",
+        fprintf(stderr,"read warning, byte # do not match, nbyte1 = %u, nbyte2 = %u \n",
                 nbyte1,nbyte2) ;
     }
     if ( nbyte1 != size*nitems) {
         errno = errno - 2 ;
-        fprintf(stderr, "read warning, byte # does not match item #, nbyte1 = %d, nitems = %zu \n",
+        fprintf(stderr, "read warning, byte # does not match item #, nbyte1 = %u, nitems = %zu \n",
                 nbyte1,nitems) ;
     }
 

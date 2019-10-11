@@ -171,7 +171,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> weights = np.ones_like(X)
-    >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, weights1=weights, weight_type='pair_product', output_ravg=True)
+    >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, weights1=weights,
+    ...              weight_type='pair_product', output_ravg=True)
     >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['rmin'], r['rmax'], r['ravg'],
     ...                         r['npairs'], r['weightavg'])) # doctest: +NORMALIZE_WHITESPACE
@@ -201,7 +202,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     import numpy as np
     from Corrfunc.utils import translate_isa_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
-        is_native_endian, sys_pipes, process_weights
+        sys_pipes, process_weights
     from future.utils import bytes_to_native_str
 
     if not autocorr:
