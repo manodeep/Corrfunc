@@ -23,9 +23,10 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
 
-    If ``weights`` are provided, the resulting pair counts are weighted.  The
-    weighting scheme depends on ``weight_type``.
-
+    If ``weights`` are provided, the mean pair weight is stored in the
+    ``"weightavg"`` field of the results array.  The raw pair counts in the
+    ``"npairs"`` field are not weighted.  The weighting scheme depends on
+    ``weight_type``.
 
     .. note:: This module only returns pair counts and not the actual
         correlation function :math:`\\xi(r)`. See
