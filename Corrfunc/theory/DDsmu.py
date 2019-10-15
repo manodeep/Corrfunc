@@ -28,9 +28,10 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
     by less than the ``s`` bins (specified in ``binfile``) in 3-D, and
     less than ``s*mu_max`` in the Z-dimension are counted.
 
-    If ``weights`` are provided, the resulting pair counts are weighted.  The
-    weighting scheme depends on ``weight_type``.
-
+    If ``weights`` are provided, the mean pair weight is stored in the
+    ``"weightavg"`` field of the results array.  The raw pair counts in the
+    ``"npairs"`` field are not weighted.  The weighting scheme depends on
+    ``weight_type``.
 
     .. note:: This module only returns pair counts and not the actual
         correlation function :math:`\\xi(s, \mu)`. See the
