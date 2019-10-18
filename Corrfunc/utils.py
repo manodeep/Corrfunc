@@ -61,6 +61,9 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
         The kind of estimator to use for computing the correlation
         function. Currently, only supports Landy-Szalay
 
+    autocorr: bool, default=False
+        Whether the counts are from an autocorrelation
+
     Returns
     ---------
 
@@ -171,7 +174,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                D1D2, D1R2, D2R1, R1R2,
                                nrpbins, pimax, dpi=1.0,
-                               estimator='LS'):
+                               estimator='LS', autocorr=False):
     """
     Converts raw pair counts to a correlation function.
 
@@ -217,6 +220,10 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     estimator: string, default='LS' (Landy-Szalay)
         The kind of estimator to use for computing the correlation
         function. Currently, only supports Landy-Szalay
+
+    autocorr: bool, default=False
+        Whether the counts are from an autocorrelation
+
 
     Returns
     ---------
@@ -297,7 +304,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
 
     xirppi = convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
                                      D1D2, D1R2, D2R1, R1R2,
-                                     estimator=estimator)
+                                     estimator=estimator, autocorr=autocorr)
     wp = np.empty(nrpbins)
     npibins = len(xirppi) // nrpbins
     if ((npibins * nrpbins) != len(xirppi)):
