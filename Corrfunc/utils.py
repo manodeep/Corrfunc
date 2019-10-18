@@ -149,14 +149,16 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
             fN3 = (np.float(NR1) - 1) / np.float(ND1)
             cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
                            2 * fN3 * pair_counts['D1R2'][nonzero] +
-                           pair_counts['R1R2'][nonzero]) / pair_counts['R1R2'][nonzero]
+                           pair_counts['R1R2'][nonzero]
+                           ) / pair_counts['R1R2'][nonzero]
         else:
             fN1 = np.float(NR1) / np.float(ND1)
             fN2 = np.float(NR2) / np.float(ND2)
             cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
                            fN1 * pair_counts['D1R2'][nonzero] -
                            fN2 * pair_counts['D2R1'][nonzero] +
-                           pair_counts['R1R2'][nonzero]) / pair_counts['R1R2'][nonzero]
+                           pair_counts['R1R2'][nonzero]
+                           ) / pair_counts['R1R2'][nonzero]
         if len(cf) != nbins:
             msg = 'Bug in code. Calculated correlation function does not '\
                   'have the same number of bins as input arrays. Input bins '\
