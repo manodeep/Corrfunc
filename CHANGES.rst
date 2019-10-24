@@ -25,6 +25,7 @@ Enhancements
 Bug fixes
 ----------
 - Incorrect calculations for non-native endian data [#191]
+- Large Rmax to Lbox ratio now supported for periodic boundaries [#192]
 - Workaround for GNU Assembler bug causing incorrect calculations [#196]
 
 
