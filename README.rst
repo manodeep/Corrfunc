@@ -1,6 +1,7 @@
 |logo|
 
 |Release| |PyPI| |MIT licensed| |ASCL| |Travis Build| |Issues| |RTD| |Codacy|
+|Paper I| |Paper II|
 
 Description
 ===========
@@ -17,7 +18,7 @@ Why Should You Use it
 3. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python.
 4. **Weights** All correlation functions now support *arbitrary, user-specified* weights for individual points
 5. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics.
-6. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features.
+6. **Future-proof** As we get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features.
 
 *If you use the codes for your analysis, please star this repo -- that helps us keep track of the number of users.*
 
@@ -424,3 +425,11 @@ Project URL
 .. |Codacy| image:: https://api.codacy.com/project/badge/Grade/95717e4798b04ee5ad42d5cab3c15429
    :target: https://app.codacy.com/project/manodeep/Corrfunc/dashboard
    :alt: Code Quality
+
+.. |Paper I| image:: https://img.shields.io/badge/astro--ph.CO-arXiv%3A1911.03545-%23B31B1B
+   :target: https://arxiv.org/abs/1911.03545
+   :alt: Corrfunc Paper I
+
+.. |Paper II| image:: https://img.shields.io/badge/astro--ph.IM-arXiv%3A1911.08275-%23B31B1B
+   :target: https://arxiv.org/abs/1911.08275
+   :alt: Corrfunc Paper II 
