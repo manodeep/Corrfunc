@@ -426,10 +426,10 @@ Project URL
    :target: https://app.codacy.com/project/manodeep/Corrfunc/dashboard
    :alt: Code Quality
 
-.. |Paper I| image:: https://img.shields.io/badge/astro--ph.CO-arXiv%3A1911.03545-%23B31B1B
+.. |Paper I| image:: https://img.shields.io/badge/arXiv-1911.03545-%23B31B1B
    :target: https://arxiv.org/abs/1911.03545
    :alt: Corrfunc Paper I
 
-.. |Paper II| image:: https://img.shields.io/badge/astro--ph.IM-arXiv%3A1911.08275-%23B31B1B
+.. |Paper II| image:: https://img.shields.io/badge/arXiv-1911.08275-%23B31B1B
    :target: https://arxiv.org/abs/1911.08275
    :alt: Corrfunc Paper II 
