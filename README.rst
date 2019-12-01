@@ -1,7 +1,8 @@
 |logo|
 
-|Release| |PyPI| |MIT licensed| |ASCL| |Travis Build| |Issues| |RTD| |Codacy|
-|Paper I| |Paper II|
+|Release| |PyPI| |MIT licensed| |Travis Build| |Issues| |RTD| |Codacy|
+
+|ASCL| |Paper I| |Paper II|
 
 Description
 ===========
