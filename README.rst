@@ -1,6 +1,6 @@
 |logo|
 
-|Release| |PyPI| |MIT licensed| |Travis Build| |Issues| |RTD| |Codacy|
+|Release| |PyPI| |MIT licensed| |Travis Build| |RTD| |Codacy| |Issues|
 
 |ASCL| |Paper I| |Paper II|
 
