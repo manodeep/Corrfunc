@@ -246,7 +246,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 #if defined(__SSE4_2__)
 #include "sse_calls.h"
 
-static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
+static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
                                                                 DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                                 const int64_t N1, DOUBLE *x1, DOUBLE *y1,
                                                                 DOUBLE *z1, const weight_struct_DOUBLE *weights1,
@@ -586,7 +586,7 @@ static inline int countpairs_theta_mocks_sse_instrinsics_DOUBLE(const int64_t N0
 #if defined(__AVX__)
 #include "avx_calls.h"
 
-static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
+static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
                                                                 DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                                 const int64_t N1, DOUBLE *x1, DOUBLE *y1,
                                                                 DOUBLE *z1, const weight_struct_DOUBLE *weights1,
@@ -917,7 +917,7 @@ static inline int countpairs_theta_mocks_avx_instrinsics_DOUBLE(const int64_t N0
 #if defined(__AVX512F__)
 #include "avx512_calls.h"
 
-static inline int countpairs_theta_mocks_avx512_instrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
+static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0,
                                                                    DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                                    const int64_t N1, DOUBLE *x1, DOUBLE *y1,
                                                                    DOUBLE *z1, const weight_struct_DOUBLE *weights1,

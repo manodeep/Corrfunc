@@ -44,63 +44,68 @@ vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options)
         return function;
     }
 
-    //Seriously this is the declaration for the function pointers...here be dragons.
+/* Array of function pointers */
     vpf_func_ptr_DOUBLE allfunctions[] = {
-#ifdef __AVX512F__
-        vpf_avx512_intrinsics_DOUBLE,
+        vpf_fallback_DOUBLE,
+#ifdef __SSE4_2__
+        vpf_sse_intrinsics_DOUBLE,
 #endif
 #ifdef __AVX__
         vpf_avx_intrinsics_DOUBLE,
 #endif
-#ifdef __SSE4_2__
-        vpf_sse_intrinsics_DOUBLE,
+#ifdef __AVX512F__
+        vpf_avx512_intrinsics_DOUBLE,
 #endif
-        vpf_fallback_DOUBLE
     };
+
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
-    const int fallback_offset = num_functions - 1;
+    const int fallback_index = 0;
 #if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = get_max_usable_isa();
 #endif
-    int curr_offset = 0;
-    /* Check for AVX512F support */
-    int avx512_offset = fallback_offset;
-#ifdef __AVX512F__
-    avx512_offset = highest_isa >= 9 ? curr_offset:fallback_offset;
-    curr_offset++;
+    int curr_index = 0;
+
+    /* Is the SSE function supported at runtime and enabled at compile-time?*/
+    int sse_index = curr_index;
+#ifdef __SSE4_2__
+    curr_index++;
+    if(highest_isa >= SSE42)
+        sse_index = curr_index;
 #endif
 
     /* Now check if AVX is supported by the CPU */
-    int avx_offset = fallback_offset;
+    int avx_index = curr_index;
 #ifdef __AVX__
-    avx_offset = highest_isa >= 7 ? curr_offset:fallback_offset;
-    curr_offset++;
+    curr_index++;
+    if(highest_isa >= AVX)
+        avx_index = curr_index;
 #endif
 
-    /* Is the SSE function supported at runtime and enabled at compile-time?*/
-    int sse_offset = fallback_offset;
-#ifdef __SSE4_2__
-    sse_offset = highest_isa >= 6 ? curr_offset:fallback_offset;
-    curr_offset++;
+    /* Check for AVX512F support */
+    int avx512_index = curr_index;
+#ifdef __AVX512F__
+    curr_index++;
+    if(highest_isa >= AVX512F)
+        avx512_index = curr_index;
 #endif
-    if( curr_offset != fallback_offset) {
-      fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* fallback function offset = %d)\n",
-              curr_offset, fallback_offset);
+
+    if( curr_index != num_functions-1) {
+      fprintf(stderr,"ERROR: Bug in code (current index = %d *should equal* num_functions-1 = %d-1)\n",
+              curr_index, num_functions);
       return NULL;
     }
 
-    int function_dispatch=0;
+    int function_dispatch=0;//Set default to fastest available
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):function_dispatch=avx512_offset;break;
+        case(AVX512F):function_dispatch=avx512_index;break;
         case(AVX2):
-        case(AVX):function_dispatch=avx_offset;break;
-        case(SSE42):function_dispatch=sse_offset;break;
-        default:function_dispatch=fallback_offset;break;
+        case(AVX):function_dispatch=avx_index;break;
+        case(SSE42):function_dispatch=sse_index;break;
+        default:function_dispatch=fallback_index;break;
         }
     }
-
     if(function_dispatch >= num_functions) {
       fprintf(stderr,"In %s> ERROR: Could not resolve the correct function.\n Function index = %d must lie between [0, %d)\n",
               __FUNCTION__, function_dispatch, num_functions);
@@ -108,6 +113,22 @@ vpf_func_ptr_DOUBLE vpf_driver_DOUBLE(const struct config_options *options)
     }
     function = allfunctions[function_dispatch];
     old_isa = options->instruction_set;
+
+    if(options->verbose){
+        // Must be ordered low to high, since higher ISA may be aliased to lower ones
+        if(function_dispatch == fallback_index){
+            fprintf(stderr,"Using fallback kernel\n");
+        } else if(function_dispatch == sse_index){
+            fprintf(stderr,"Using SSE kernel\n");
+        } else if(function_dispatch == avx_index){
+            fprintf(stderr,"Using AVX kernel\n");
+        } else if(function_dispatch == avx512_index){
+            fprintf(stderr,"Using AVX512 kernel\n");
+        } else {
+            fprintf(stderr,"Unknown kernel!\n");
+            return NULL;
+        }
+    }
 
     return function;
 }

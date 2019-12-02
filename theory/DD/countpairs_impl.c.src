@@ -61,39 +61,39 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
     };
 
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
-    const int fallback_offset = 0;
+    const int fallback_index = 0;
 #if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = get_max_usable_isa();
 #endif
-    int curr_offset = 0;
+    int curr_index = 0;
 
     /* Is the SSE function supported at runtime and enabled at compile-time?*/
-    int sse_offset = curr_offset;
+    int sse_index = curr_index;
 #ifdef __SSE4_2__
-    curr_offset++;
-    if(highest_isa >= 6)
-        sse_offset = curr_offset;
+    curr_index++;
+    if(highest_isa >= SSE42)
+        sse_index = curr_index;
 #endif
 
     /* Now check if AVX is supported by the CPU */
-    int avx_offset = curr_offset;
+    int avx_index = curr_index;
 #ifdef __AVX__
-    curr_offset++;
-    if(highest_isa >= 7)
-        avx_offset = curr_offset;
+    curr_index++;
+    if(highest_isa >= AVX)
+        avx_index = curr_index;
 #endif
 
     /* Check for AVX512F support */
-    int avx512_offset = curr_offset;
+    int avx512_index = curr_index;
 #ifdef __AVX512F__
-    curr_offset++;
-    if(highest_isa >= 9)
-        avx512_offset = curr_offset;
+    curr_index++;
+    if(highest_isa >= AVX512F)
+        avx512_index = curr_index;
 #endif
 
-    if( curr_offset != num_functions-1) {
-      fprintf(stderr,"ERROR: Bug in code (current offset = %d *should equal* num_functions-1 = %d-1)\n",
-              curr_offset, num_functions);
+    if( curr_index != num_functions-1) {
+      fprintf(stderr,"ERROR: Bug in code (current index = %d *should equal* num_functions-1 = %d-1)\n",
+              curr_index, num_functions);
       return NULL;
     }
 
@@ -101,11 +101,11 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
-        case(AVX512F):function_dispatch=avx512_offset;break;
+        case(AVX512F):function_dispatch=avx512_index;break;
         case(AVX2):
-        case(AVX):function_dispatch=avx_offset;break;
-        case(SSE42):function_dispatch=sse_offset;break;
-        default:function_dispatch=fallback_offset;break;
+        case(AVX):function_dispatch=avx_index;break;
+        case(SSE42):function_dispatch=sse_index;break;
+        default:function_dispatch=fallback_index;break;
         }
     }
     if(function_dispatch >= num_functions) {
@@ -118,13 +118,13 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
 
     if(options->verbose){
         // Must be ordered low to high, since higher ISA may be aliased to lower ones
-        if(function_dispatch == fallback_offset){
+        if(function_dispatch == fallback_index){
             fprintf(stderr,"Using fallback kernel\n");
-        } else if(function_dispatch == sse_offset){
+        } else if(function_dispatch == sse_index){
             fprintf(stderr,"Using SSE kernel\n");
-        } else if(function_dispatch == avx_offset){
+        } else if(function_dispatch == avx_index){
             fprintf(stderr,"Using AVX kernel\n");
-        } else if(function_dispatch == avx512_offset){
+        } else if(function_dispatch == avx512_index){
             fprintf(stderr,"Using AVX512 kernel\n");
         } else {
             fprintf(stderr,"Unknown kernel!\n");
