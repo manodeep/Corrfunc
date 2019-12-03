@@ -70,24 +70,21 @@ xi_func_ptr_DOUBLE xi_driver_DOUBLE(const struct config_options *options)
     int sse_index = curr_index;
 #ifdef __SSE4_2__
     curr_index++;
-    if(highest_isa >= SSE42)
-        sse_index = curr_index;
+    if(highest_isa >= SSE42) sse_index = curr_index;
 #endif
 
     /* Now check if AVX is supported by the CPU */
     int avx_index = curr_index;
 #ifdef __AVX__
     curr_index++;
-    if(highest_isa >= AVX)
-        avx_index = curr_index;
+    if(highest_isa >= AVX) avx_index = curr_index;
 #endif
 
     /* Check for AVX512F support */
     int avx512_index = curr_index;
 #ifdef __AVX512F__
     curr_index++;
-    if(highest_isa >= AVX512F)
-        avx512_index = curr_index;
+    if(highest_isa >= AVX512F) avx512_index = curr_index;
 #endif
 
     if( curr_index != num_functions-1) {
