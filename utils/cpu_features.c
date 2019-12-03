@@ -80,9 +80,9 @@ int get_max_usable_isa(void)
             iset = AVX512F;
             break;
 #elif defined(GAS_BUG_DISABLE_AVX512)
-            fprintf(stderr, "[Warning] AVX512 is disabled due to a GNU Assembler bug.  Upgrade to binutils >= 2.32 to fix this.\n");
+            fprintf(stderr, "[Warning] AVX512F is disabled due to a GNU Assembler bug.  Upgrade to binutils >= 2.32 to fix this.\n");
 #else
-            fprintf(stderr, "[Warning] The CPU supports AVX512 but the compiler does not.  Can you try another compiler?\n");
+            fprintf(stderr, "[Warning] The CPU supports AVX512F but the compiler does not.  Can you try another compiler?\n");
 #endif
         case AVX2:
 #ifdef __AVX2__
