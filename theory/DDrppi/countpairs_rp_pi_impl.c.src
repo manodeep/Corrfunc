@@ -93,7 +93,7 @@ countpairs_rp_pi_func_ptr_DOUBLE countpairs_rp_pi_driver_DOUBLE(const struct con
       return NULL;
     }
 
-    int function_dispatch=0;//Set default to fastest available
+    int function_dispatch = num_functions-1;  //Set default to fastest available
     /* Check that cpu supports feature */
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
