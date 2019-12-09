@@ -8,9 +8,9 @@
   Adapted from Agner Fog's vectorclass: http://agner.org/
 */
 
-#include "cpu_features.h"
-#include "defs.h"
 #include <stdio.h>
+
+#include "cpu_features.h"
 
 // Use CPUID to detect what instruction sets the CPU supports
 // The compiler may not support all these features though!
