@@ -27,6 +27,7 @@ Bug fixes
 - Incorrect calculations for non-native endian data [#191]
 - Large Rmax to Lbox ratio now supported for periodic boundaries [#192]
 - Workaround for GNU Assembler bug causing incorrect calculations [#196]
+- Only report runtime isa support if we also have compiler support [#200]
 
 
 2.3.1 (2019-06-21)
