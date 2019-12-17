@@ -20,6 +20,8 @@ now also tests for ``python3.7``.
 Enhancements
 ------------
 - Improved code quality and adherence to PEP8 [#189]
+- Documentation no longer shows duplicate entries [#205]
+
 
 
 Bug fixes
@@ -28,7 +30,7 @@ Bug fixes
 - Large Rmax to Lbox ratio now supported for periodic boundaries [#192]
 - Workaround for GNU Assembler bug causing incorrect calculations [#196]
 - Only report runtime isa support if we also have compiler support [#200]
-
+- Example code to illustrate how to code custom weights with AVX512F [#205]
 
 2.3.1 (2019-06-21)
 ================
