@@ -11,9 +11,8 @@ Citing Corrfunc
 
 
 Corrfunc v2.0.0 release is accompanied with a code-release paper,
-`ArXiv <http://arxiv.org/>`_. If you use
-Corrfunc (v2.0.0 or earlier) modules in your analysis, please cite this code-release paper. While
-the paper is being written, you can cite Corrfunc with the ASCL entry::
+`arXiv:1911.03545 <https://arxiv.org/abs/1911.03545>`_. If you use
+Corrfunc (v2.0.0 or earlier) modules in your analysis, you can cite Corrfunc with the ASCL entry::
 
    @misc{2017ascl.soft03003S,
    author = {{Sinha}, M. and {Garrison}, L.},
@@ -31,17 +30,22 @@ the paper is being written, you can cite Corrfunc with the ASCL entry::
 If you use Corrfunc v2.3.0 or later, please cite both the v2.0.0 and the CCIS
 proceedings::
 
-  @misc{TBD,
-   author = {{Sinha}, M. and {Garrison}, L.},
-   title = "{Corrfunc: Blazing fast correlation functions with AVX512F SIMD Intrinsics}",
-   keywords = {Software},
-   howpublished = {Springer},
-   journal = {Communications in Computer and Information Science},
-   year = 2019,
+  @InProceedings{10.1007/978-981-13-7729-7_1,
+  author="Sinha, Manodeep and Garrison, Lehman",
+  editor="Majumdar, Amit and Arora, Ritu",
+  title="CORRFUNC: Blazing Fast Correlation Functions with AVX512F SIMD
+  Intrinsics",
+  booktitle="Software Challenges to Exascale Computing",
+  year="2019",
+  publisher="Springer Singapore",
+  address="Singapore",
+  pages="3--20",
+  isbn="978-981-13-7729-7",
+  url={https://doi.org/10.1007/978-981-13-7729-7_1}
   }
 
-  
-  
+
+
 Corrfunc License
 ---------------------
 
@@ -66,4 +70,3 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
-		
