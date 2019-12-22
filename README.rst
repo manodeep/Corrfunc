@@ -344,24 +344,30 @@ Corrfunc was designed by Manodeep Sinha and is currently maintained by
 Citing
 ======
 
-If you use the code, please cite using the `ascl entry <http://ascl.net/1703.003>`_ as indexed by `ADS <http://adsabs.harvard.edu/abs/2017ascl.soft03003S>`_. The BibTex entry for the code is
+If you use ``Corrfunc`` for research, please cite using the MNRAS code paper with the following
+bibtex entry:
 
 ::
 
-      @misc{2017ascl.soft03003S,
-         author = {{Sinha}, M. and {Garrison}, L.},
-         title = "{Corrfunc: Blazing fast correlation functions on the CPU}",
-         keywords = {Software},
-         howpublished = {Astrophysics Source Code Library},
-         year = 2017,
-         month = mar,
-         archivePrefix = "ascl",
-         eprint = {1703.003},
-         adsurl = {http://adsabs.harvard.edu/abs/2017ascl.soft03003S},
-         adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-      }
+   @article{10.1093/mnras/stz3157,
+      author = {Sinha, Manodeep and Garrison, Lehman H},
+      title = "{corrfunc – a suite of blazing fast correlation functions on the
+      CPU}",
+      journal = {Monthly Notices of the Royal Astronomical Society},
+      volume = {491},
+      number = {2},
+      pages = {3022-3041},
+      year = {2019},
+      month = {11},
+      issn = {0035-8711},
+      doi = {10.1093/mnras/stz3157},
+      url = {https://doi.org/10.1093/mnras/stz3157},
+      eprint =
+      {http://oup.prod.sis.lan/mnras/article-pdf/491/2/3022/31564877/stz3157.pdf},
+}
 
-If you are using ``Corrfunc v2.3.0`` or later, please additionally cite this paper:
+If you are using ``Corrfunc v2.3.0`` or later, **and** you benefit from the
+enhanced vectorised kernels, then please additionally cite this paper:
 
 ::
 
@@ -433,4 +439,4 @@ Project URL
 
 .. |Paper II| image:: https://img.shields.io/badge/arXiv-1911.08275-%23B31B1B
    :target: https://arxiv.org/abs/1911.08275
-   :alt: Corrfunc Paper II 
+   :alt: Corrfunc Paper II

@@ -10,39 +10,47 @@ Citing Corrfunc
 ------------------
 
 
-Corrfunc v2.0.0 release is accompanied with a code-release paper,
-`arXiv:1911.03545 <https://arxiv.org/abs/1911.03545>`_. If you use
-Corrfunc (v2.0.0 or earlier) modules in your analysis, you can cite Corrfunc with the ASCL entry::
+If you use ``Corrfunc`` for research, please cite using the MNRAS code paper with the following
+bibtex entry:
 
-   @misc{2017ascl.soft03003S,
-   author = {{Sinha}, M. and {Garrison}, L.},
-   title = "{Corrfunc: Blazing fast correlation functions on the CPU}",
-   keywords = {Software},
-   howpublished = {Astrophysics Source Code Library},
-   year = 2017,
-   month = mar,
-   archivePrefix = "ascl",
-   eprint = {1703.003},
-   adsurl = {http://adsabs.harvard.edu/abs/2017ascl.soft03003S},
-   adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-   }
+::
 
-If you use Corrfunc v2.3.0 or later, please cite both the v2.0.0 and the CCIS
-proceedings::
+   @article{10.1093/mnras/stz3157,
+      author = {Sinha, Manodeep and Garrison, Lehman H},
+      title = "{corrfunc – a suite of blazing fast correlation functions on the
+      CPU}",
+      journal = {Monthly Notices of the Royal Astronomical Society},
+      volume = {491},
+      number = {2},
+      pages = {3022-3041},
+      year = {2019},
+      month = {11},
+      issn = {0035-8711},
+      doi = {10.1093/mnras/stz3157},
+      url = {https://doi.org/10.1093/mnras/stz3157},
+      eprint =
+      {http://oup.prod.sis.lan/mnras/article-pdf/491/2/3022/31564877/stz3157.pdf},
+}
 
-  @InProceedings{10.1007/978-981-13-7729-7_1,
-  author="Sinha, Manodeep and Garrison, Lehman",
-  editor="Majumdar, Amit and Arora, Ritu",
-  title="CORRFUNC: Blazing Fast Correlation Functions with AVX512F SIMD
-  Intrinsics",
-  booktitle="Software Challenges to Exascale Computing",
-  year="2019",
-  publisher="Springer Singapore",
-  address="Singapore",
-  pages="3--20",
-  isbn="978-981-13-7729-7",
-  url={https://doi.org/10.1007/978-981-13-7729-7_1}
-  }
+The MNRAS paper (also on `arXiv:1911.03545
+<https://arxiv.org/abs/1911.03545>`_) targets ``Corrfunc v2.0.0``. If you are
+using ``Corrfunc v2.3.0`` or later, **and** you benefit from the
+enhanced vectorised kernels, then please additionally cite this paper:
+
+::
+
+      @InProceedings{10.1007/978-981-13-7729-7_1,
+          author="Sinha, Manodeep and Garrison, Lehman",
+          editor="Majumdar, Amit and Arora, Ritu",
+          title="CORRFUNC: Blazing Fast Correlation Functions with AVX512F SIMD Intrinsics",
+          booktitle="Software Challenges to Exascale Computing",
+          year="2019",
+          publisher="Springer Singapore",
+          address="Singapore",
+          pages="3--20",
+          isbn="978-981-13-7729-7",
+          url={https://doi.org/10.1007/978-981-13-7729-7_1}
+      }
 
 
 
