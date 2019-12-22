@@ -7,9 +7,10 @@
 Description
 ===========
 
-This repo contains a set of codes to calculate correlation functions and
-other clustering statistics in a cosmological box (co-moving XYZ)
-or on a mock (RA, DEC, CZ). Read the documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
+This repo contains a suite of codes to calculate correlation functions and
+other clustering statistics for **simulated** galaxies in a cosmological box (co-moving XYZ)
+and on **observed** galaxies with on-sky positions (RA, DEC, CZ). Read the
+documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
 
 Why Should You Use it
 ======================
@@ -109,8 +110,22 @@ pre-requisites, please see the `FAQ <FAQ>`__ or `email
 the Corrfunc mailing list <mailto:corrfunc@googlegroups.com>`__. Also, feel free to create a new issue
 with the ``Installation`` label.
 
-Clustering Measures on a Cosmological box
------------------------------------------
+Clustering Measures on simulated galaxies
+------------------------------------------
+
+Input data
++++++++++++
+
+The input galaxies (or any discrete distribution of points) are derived from a
+simulation. For instance, the galaxies could be a result of an Halo Occupation
+Distribution (HOD) model, a Subhalo Abundance matching (SHAM) model, a
+Semi-Empirical model (SEM), or a Semi-Analytic model (SAM) etc. The input set of
+points can also be the dark matter halos, or the dark matter particles from
+a cosmological simulation. The input set of points are expected to have
+positions specified in Cartesian XYZ.
+
+Types of available clustering statistics
++++++++++++++++++++++++++++++++++++++++++
 
 All codes that work on cosmological boxes with co-moving positions are
 located in the ``theory`` directory. The various clustering measures
@@ -133,8 +148,27 @@ are:
 
 6. ``vpf`` -- Measures the void probability function + counts-in-cells.
 
-Clustering measures on a Mock
------------------------------
+Clustering measures on observed galaxies
+----------------------------------------
+
+Input data
++++++++++++
+
+The input galaxies are typically observed galaxies coming from a large-scale
+galaxy survey. In addition, simulated galaxies that have been projected onto the sky
+(i.e., where observational systematics have been incorporated and on-sky
+positions have been generated) can also be used. We generically refer to both
+these kinds of galaxies as "mocks".
+
+
+The input galaxies are expected to have positions specified in spherical
+co-ordinates with at least right ascension (RA) and declination (DEC).
+For spatial correlation functions, an approximate "co-moving" distance
+(speed of light multiplied by redshift, CZ) is also required.
+
+
+Types of available clustering statistics
++++++++++++++++++++++++++++++++++++++++++
 
 All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 ``mocks`` directory. The various clustering measures are:
