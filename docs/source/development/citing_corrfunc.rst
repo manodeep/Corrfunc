@@ -16,21 +16,22 @@ bibtex entry:
 ::
 
    @article{10.1093/mnras/stz3157,
-      author = {Sinha, Manodeep and Garrison, Lehman H},
-      title = "{corrfunc – a suite of blazing fast correlation functions on the
-      CPU}",
-      journal = {Monthly Notices of the Royal Astronomical Society},
-      volume = {491},
-      number = {2},
-      pages = {3022-3041},
-      year = {2019},
-      month = {11},
-      issn = {0035-8711},
-      doi = {10.1093/mnras/stz3157},
-      url = {https://doi.org/10.1093/mnras/stz3157},
-      eprint =
-      {http://oup.prod.sis.lan/mnras/article-pdf/491/2/3022/31564877/stz3157.pdf},
-}
+       author = {Sinha, Manodeep and Garrison, Lehman H},
+       title = "{corrfunc – a suite of blazing fast correlation functions on the
+       CPU}",
+       journal = {Monthly Notices of the Royal Astronomical Society},
+       volume = {491},
+       number = {2},
+       pages = {3022-3041},
+       year = {2019},
+       month = {11},
+       issn = {0035-8711},
+       doi = {10.1093/mnras/stz3157},
+       url = {https://doi.org/10.1093/mnras/stz3157},
+       eprint =
+       {http://oup.prod.sis.lan/mnras/article-pdf/491/2/3022/31564877/stz3157.pdf},
+   }
+
 
 The MNRAS paper (also on `arXiv:1911.03545
 <https://arxiv.org/abs/1911.03545>`_) targets ``Corrfunc v2.0.0``. If you are
