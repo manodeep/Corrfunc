@@ -383,22 +383,26 @@ bibtex entry:
 
 ::
 
-   @article{10.1093/mnras/stz3157,
-      author = {Sinha, Manodeep and Garrison, Lehman H},
-      title = "{corrfunc – a suite of blazing fast correlation functions on the
-      CPU}",
-      journal = {Monthly Notices of the Royal Astronomical Society},
-      volume = {491},
-      number = {2},
-      pages = {3022-3041},
-      year = {2019},
-      month = {11},
-      issn = {0035-8711},
-      doi = {10.1093/mnras/stz3157},
-      url = {https://doi.org/10.1093/mnras/stz3157},
-      eprint =
-      {http://oup.prod.sis.lan/mnras/article-pdf/491/2/3022/31564877/stz3157.pdf},
-}
+   @ARTICLE{2020MNRAS.491.3022S,
+       author = {{Sinha}, Manodeep and {Garrison}, Lehman H.},
+       title = "{CORRFUNC - a suite of blazing fast correlation functions on
+       the CPU}",
+       journal = {\mnras},
+       keywords = {methods: numerical, galaxies: general, galaxies:
+       haloes, dark matter, large-scale structure of Universe, cosmology:
+       theory},
+       year = "2020",
+       month = "Jan",
+       volume = {491},
+       number = {2},
+       pages = {3022-3041},
+       doi = {10.1093/mnras/stz3157},
+       adsurl =
+       {https://ui.adsabs.harvard.edu/abs/2020MNRAS.491.3022S},
+       adsnote = {Provided by the SAO/NASA
+       Astrophysics Data System}
+   }
+
 
 If you are using ``Corrfunc v2.3.0`` or later, **and** you benefit from the
 enhanced vectorised kernels, then please additionally cite this paper:
