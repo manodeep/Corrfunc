@@ -7,9 +7,10 @@
 Description
 ===========
 
-This repo contains a set of codes to calculate correlation functions and
-other clustering statistics in a cosmological box (co-moving XYZ)
-or on a mock (RA, DEC, CZ). Read the documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
+This repo contains a suite of codes to calculate correlation functions and
+other clustering statistics for **simulated** galaxies in a cosmological box (co-moving XYZ)
+and on **observed** galaxies with on-sky positions (RA, DEC, CZ). Read the
+documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
 
 Why Should You Use it
 ======================
@@ -109,8 +110,22 @@ pre-requisites, please see the `FAQ <FAQ>`__ or `email
 the Corrfunc mailing list <mailto:corrfunc@googlegroups.com>`__. Also, feel free to create a new issue
 with the ``Installation`` label.
 
-Clustering Measures on a Cosmological box
------------------------------------------
+Clustering Measures on simulated galaxies
+------------------------------------------
+
+Input data
++++++++++++
+
+The input galaxies (or any discrete distribution of points) are derived from a
+simulation. For instance, the galaxies could be a result of an Halo Occupation
+Distribution (HOD) model, a Subhalo Abundance matching (SHAM) model, a
+Semi-Empirical model (SEM), or a Semi-Analytic model (SAM) etc. The input set of
+points can also be the dark matter halos, or the dark matter particles from
+a cosmological simulation. The input set of points are expected to have
+positions specified in Cartesian XYZ.
+
+Types of available clustering statistics
++++++++++++++++++++++++++++++++++++++++++
 
 All codes that work on cosmological boxes with co-moving positions are
 located in the ``theory`` directory. The various clustering measures
@@ -133,8 +148,27 @@ are:
 
 6. ``vpf`` -- Measures the void probability function + counts-in-cells.
 
-Clustering measures on a Mock
------------------------------
+Clustering measures on observed galaxies
+----------------------------------------
+
+Input data
++++++++++++
+
+The input galaxies are typically observed galaxies coming from a large-scale
+galaxy survey. In addition, simulated galaxies that have been projected onto the sky
+(i.e., where observational systematics have been incorporated and on-sky
+positions have been generated) can also be used. We generically refer to both
+these kinds of galaxies as "mocks".
+
+
+The input galaxies are expected to have positions specified in spherical
+co-ordinates with at least right ascension (RA) and declination (DEC).
+For spatial correlation functions, an approximate "co-moving" distance
+(speed of light multiplied by redshift, CZ) is also required.
+
+
+Types of available clustering statistics
++++++++++++++++++++++++++++++++++++++++++
 
 All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 ``mocks`` directory. The various clustering measures are:
@@ -344,24 +378,34 @@ Corrfunc was designed by Manodeep Sinha and is currently maintained by
 Citing
 ======
 
-If you use the code, please cite using the `ascl entry <http://ascl.net/1703.003>`_ as indexed by `ADS <http://adsabs.harvard.edu/abs/2017ascl.soft03003S>`_. The BibTex entry for the code is
+If you use ``Corrfunc`` for research, please cite using the MNRAS code paper with the following
+bibtex entry:
 
 ::
 
-      @misc{2017ascl.soft03003S,
-         author = {{Sinha}, M. and {Garrison}, L.},
-         title = "{Corrfunc: Blazing fast correlation functions on the CPU}",
-         keywords = {Software},
-         howpublished = {Astrophysics Source Code Library},
-         year = 2017,
-         month = mar,
-         archivePrefix = "ascl",
-         eprint = {1703.003},
-         adsurl = {http://adsabs.harvard.edu/abs/2017ascl.soft03003S},
-         adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-      }
+   @ARTICLE{2020MNRAS.491.3022S,
+       author = {{Sinha}, Manodeep and {Garrison}, Lehman H.},
+       title = "{CORRFUNC - a suite of blazing fast correlation functions on
+       the CPU}",
+       journal = {\mnras},
+       keywords = {methods: numerical, galaxies: general, galaxies:
+       haloes, dark matter, large-scale structure of Universe, cosmology:
+       theory},
+       year = "2020",
+       month = "Jan",
+       volume = {491},
+       number = {2},
+       pages = {3022-3041},
+       doi = {10.1093/mnras/stz3157},
+       adsurl =
+       {https://ui.adsabs.harvard.edu/abs/2020MNRAS.491.3022S},
+       adsnote = {Provided by the SAO/NASA
+       Astrophysics Data System}
+   }
 
-If you are using ``Corrfunc v2.3.0`` or later, please additionally cite this paper:
+
+If you are using ``Corrfunc v2.3.0`` or later, **and** you benefit from the
+enhanced vectorised kernels, then please additionally cite this paper:
 
 ::
 
@@ -433,4 +477,4 @@ Project URL
 
 .. |Paper II| image:: https://img.shields.io/badge/arXiv-1911.08275-%23B31B1B
    :target: https://arxiv.org/abs/1911.08275
-   :alt: Corrfunc Paper II 
+   :alt: Corrfunc Paper II
