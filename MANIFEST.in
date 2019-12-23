@@ -1,4 +1,4 @@
-include README.rst Makefile .travis.yml common.mk rules.mk theory.options mocks.options FAQ INSTALL LICENSE
+include README.rst CHANGES.rst Makefile .travis.yml common.mk rules.mk theory.options mocks.options FAQ INSTALL LICENSE
 include theory/python_bindings/call_correlation_functions.py mocks/python_bindings/call_correlation_functions_mocks.py
 
 include           docs               Makefile
@@ -10,11 +10,9 @@ recursive-include io                 *.c *.h Makefile
 recursive-include utils              *.c *.h *.c.src *.h.src Makefile
 
 recursive-include theory/tests       Mr19_* cmass* bins
-recursive-include theory/tests/data  *.ff 
+recursive-include theory/tests/data  *.ff
 recursive-include mocks/tests        bins angular_bins Mr19*
-recursive-include mocks/tests/data   *.txt *.dat 
+recursive-include mocks/tests/data   *.txt *.dat
 
 exclude theory/tests/data/random_Zspace.ff
 exclude mocks/tests/data/Mr19_randoms_northonly.rdcz.ff
-
-
