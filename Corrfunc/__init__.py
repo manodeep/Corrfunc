@@ -10,7 +10,7 @@ from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 import os
 
-__version__ = "2.3.1"
+__version__ = "2.3.2"
 __author__ = "Manodeep Sinha <manodeep@gmail.com>"
 
 
@@ -20,7 +20,7 @@ except NameError:
     __CORRFUNC_SETUP__ = False
 
 if not __CORRFUNC_SETUP__:
-    from . import io 
+    from . import io
     from . import utils
     from . import theory
     from . import mocks
