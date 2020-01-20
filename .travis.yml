@@ -13,6 +13,7 @@ env:
     - NUMPY_VERSION=1.12
     - DOCTEST=TRUE
     - INSTALL_LIBGFORTRAN=FALSE
+    - CORRFUNC_CI=TRUE
 
 addons:
   apt:

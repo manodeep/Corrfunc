@@ -63,6 +63,10 @@ ifeq ($(RUNNING_TESTS), 0)
 endif
 
 
+# Is this running on TRAVIS or some other CI provider?
+CORRFUNC_CI ?= FALSE
+$(info Whether Corrfunc is being tested on a continuous integration service: [${CORRFUNC_CI}])
+
 ## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
   UNAME := $(shell uname)
@@ -207,19 +211,8 @@ ifeq ($(DO_CHECKS), 1)
   CFLAGS += -DVERSION=\"${VERSION}\" -DUSE_UNICODE
   CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE=200809L -D_GNU_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
 
-  # Is this running on TRAVIS or some other CI provider?
-  # TRAVIS sets both the CI and TRAVIS variables
-  ON_CI := false
-  ifeq ($(CI), true)
-    ON_CI := true
-  endif
-
-  ifeq ($(TRAVIS), true)
-    ON_CI := true
-  endif
-
   # Add the -Werror flag if running on some continuous integration provider
-  ifeq ($(ON_CI), true)
+  ifeq ($(CORRFUNC_CI), TRUE)
     CFLAGS += -Werror -Wno-unknown-warning-option
   endif
 
@@ -384,7 +377,7 @@ ifeq ($(DO_CHECKS), 1)
     # Commented out for now -> need to overhaul testing infrastructure and
     # toolchain. Otherwise, travis has compile failure due to unknown compiler options
     # ifeq ($(RUNNING_TESTS), 1)
-    #   ifeq ($(ON_CI), true)
+    #   ifeq ($(CORRFUNC_CI), TRUE)
     #     CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
     #     CLINK +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
     #   endif
