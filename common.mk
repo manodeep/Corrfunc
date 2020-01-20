@@ -59,7 +59,6 @@ endif
 
 # Is this running on TRAVIS or some other CI provider?
 CORRFUNC_CI ?= FALSE
-$(info Whether Corrfunc is being tested on a continuous integration service: [${CORRFUNC_CI}])
 
 ## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
