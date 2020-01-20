@@ -79,12 +79,23 @@ ifeq ($(DO_CHECKS), 1)
   ## magenta - general highlight
   ## blue - related to code/compile option
   ## bold - only used with printing out compilation options
-  ccred:=$(shell tput setaf 1)
-  ccmagenta:=$(shell tput setaf 5)
-  ccgreen:=$(shell tput setaf 2)
-  ccblue:=$(shell tput setaf 4)
-  ccreset:=$(shell tput sgr0)
-  boldfont:=$(shell tput bold)
+  HAVE_TPUT_COLORS := $(shell tput colors &>/dev/null && echo TRUE)
+  ifeq ($(HAVE_TPUT_COLORS), TRUE)
+    ccred:=$(shell tput setaf 1)
+    ccmagenta:=$(shell tput setaf 5)
+    ccgreen:=$(shell tput setaf 2)
+    ccblue:=$(shell tput setaf 4)
+    ccreset:=$(shell tput sgr0)
+    boldfont:=$(shell tput bold)
+  else
+    # No color support; make all color commands no-ops
+    ccred:=
+    ccmagenta:=
+    ccgreen:=
+    ccblue:=
+    ccreset:=
+    boldfont:=
+  endif
   ## end of colored text output
 
   ## First check make version. Versions of make older than 3.80 will crash
