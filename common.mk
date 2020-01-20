@@ -21,12 +21,6 @@ CLINK ?=
 ## as can be the case if python is set via an alias)
 PYTHON:=python
 
-## If you leave this empty, it will be filled out
-## as /path/to/PYTHON/python-config
-## or /path/to/PYTHON/python3-config (python3, if python-config isn't found)
-## where PYTHON is defined in the previous line.
-PYTHON_CONFIG_EXE:=
-
 ## Important note -> if you directly call /some/path/to/python
 ## then the previous two variables will be updated to point
 ## to the sys.executable as defined within the python session
@@ -449,47 +443,28 @@ ifeq ($(DO_CHECKS), 1)
       MIN_NUMPY_MAJOR  := 1
       MIN_NUMPY_MINOR  := 7
 
-      PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
-      NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
+      PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo TRUE)
+      NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo TRUE)
 
-      ifeq ($(PYTHON_AVAIL),true)
-        ifeq ($(NUMPY_AVAIL),true)
+      ifeq ($(PYTHON_AVAIL),TRUE)
+        ifeq ($(NUMPY_AVAIL),TRUE)
           export COMPILE_PYTHON_EXT := 1
         endif
       endif
 
-      ifneq ($(PYTHON_AVAIL),true)
+      ifneq ($(PYTHON_AVAIL),TRUE)
         $(warning $(ccmagenta) Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR) $(ccreset))
         export COMPILE_PYTHON_EXT := 0
       endif
 
-      ifneq ($(NUMPY_AVAIL),true)
+      ifneq ($(NUMPY_AVAIL),TRUE)
         $(warning $(ccmagenta) Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR) $(ccreset))
         export COMPILE_PYTHON_EXT := 0
       endif
 
       ifneq ($(COMPILE_PYTHON_EXT), 0)
-        ifndef PYTHON_CONFIG_EXE
-          PYTHON_SCRIPTS:=$(shell $(PYTHON) -c "import sysconfig;print(sysconfig.get_path('scripts'));")
-          # try python3-config first for Python 3
-          ifeq ($(PYTHON_VERSION_MAJOR), 3)
-            PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python3-config"
-            PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
-          endif
-
-          ifndef PYTHON_CONFIG_INCL
-            # python3-config failed; let's try python-config (for Python 2 or 3)
-            PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python-config"
-          endif
-          $(warning $(ccblue)"PYTHON"$(ccreset) is set to $(ccblue)$(PYTHON)$(ccreset); using $(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset) as $(ccblue)python-config$(ccreset). If this is not correct, please also set $(ccblue)"PYTHON_CONFIG_EXE"$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset))
-        endif
-
-        PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
-        # if PYTHON_CONFIG_INCL is still undef, then we failed to find any python-config
-        ifndef PYTHON_CONFIG_INCL
-          $(error $(ccred)python-config$(ccreset) ($(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset)) not found. Please set $(ccgreen)PYTHON_CONFIG_EXE$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset) before installing $(DISTNAME).$(VERSION). Installing $(ccblue)python-devel$(ccreset) might fix this issue $(ccreset))
-        endif
-        PYTHON_CONFIG_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_CONFIG_INCL))
+	PYTHON_INCL := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; flags = set(['-I' + sysconfig.get_path('include'),'-I' + sysconfig.get_path('platinclude')]); print(' '.join(flags));")
+        PYTHON_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_INCL))
 
         # NUMPY is available -> next step should not fail
         # That's why we are not checking if the NUMPY_INCL_FLAG is defined.
@@ -508,9 +483,9 @@ ifeq ($(DO_CHECKS), 1)
           export NUMPY_CHECKED:=1
         endif
 
-        export PYTHON_CFLAGS := $(PYTHON_CONFIG_INCL) $(NUMPY_INCL_FLAG)
-        export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
-        export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
+        export PYTHON_CFLAGS := $(PYTHON_INCL) $(NUMPY_INCL_FLAG)
+        export PYTHON_LIBDIR := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig;print(sysconfig.get_config_var('prefix'));")/lib
+        export PYTHON_LIBS   := $(shell $(PYTHON) -c "from __future__ import print_function; import sys; import sysconfig; pyver = sysconfig.get_config_var('VERSION'); getvar = sysconfig.get_config_var;libs = ['-lpython' + pyver + sys.abiflags]; libs += getvar('LIBS').split(); libs += getvar('SYSLIBS').split(); print(' '.join(libs));")
         export PYTHON_LINK :=
         # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
         # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
