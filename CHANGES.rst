@@ -11,8 +11,25 @@ New features
 - GPU version
 
 
-2.3.2 (Upcoming)
-================
+2.3.3 (Upcoming)
+=================
+This is a bug-fix release and contains general code quality improvements.
+
+
+Enhancements
+------------
+
+
+
+Bug fixes
+----------
+- Installation does not require python(3)-config anymore [fixed in #209]
+- Better handling of terminal colours for unknown terminals [#209]
+
+
+
+2.3.2 (2019-12-24)
+===================
 This is a release for bug-fixes and general code quality improvements. Travis
 now also tests for ``python3.7``.
 

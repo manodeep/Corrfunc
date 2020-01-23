@@ -21,12 +21,6 @@ CLINK ?=
 ## as can be the case if python is set via an alias)
 PYTHON:=python
 
-## If you leave this empty, it will be filled out
-## as /path/to/PYTHON/python-config
-## or /path/to/PYTHON/python3-config (python3, if python-config isn't found)
-## where PYTHON is defined in the previous line.
-PYTHON_CONFIG_EXE:=
-
 ## Important note -> if you directly call /some/path/to/python
 ## then the previous two variables will be updated to point
 ## to the sys.executable as defined within the python session
@@ -63,6 +57,9 @@ ifeq ($(RUNNING_TESTS), 0)
 endif
 
 
+# Is this running on TRAVIS or some other CI provider?
+CORRFUNC_CI ?= FALSE
+
 ## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
   UNAME := $(shell uname)
@@ -79,12 +76,23 @@ ifeq ($(DO_CHECKS), 1)
   ## magenta - general highlight
   ## blue - related to code/compile option
   ## bold - only used with printing out compilation options
-  ccred:=$(shell tput setaf 1)
-  ccmagenta:=$(shell tput setaf 5)
-  ccgreen:=$(shell tput setaf 2)
-  ccblue:=$(shell tput setaf 4)
-  ccreset:=$(shell tput sgr0)
-  boldfont:=$(shell tput bold)
+  HAVE_TPUT_COLORS := $(shell tput colors &>/dev/null && echo TRUE)
+  ifeq ($(HAVE_TPUT_COLORS), TRUE)
+    ccred:=$(shell tput setaf 1)
+    ccmagenta:=$(shell tput setaf 5)
+    ccgreen:=$(shell tput setaf 2)
+    ccblue:=$(shell tput setaf 4)
+    ccreset:=$(shell tput sgr0)
+    boldfont:=$(shell tput bold)
+  else
+    # No color support; make all color commands no-ops
+    ccred:=
+    ccmagenta:=
+    ccgreen:=
+    ccblue:=
+    ccreset:=
+    boldfont:=
+  endif
   ## end of colored text output
 
   ## First check make version. Versions of make older than 3.80 will crash
@@ -131,35 +139,6 @@ ifeq ($(DO_CHECKS), 1)
     $(error $(ccred)Error:$(ccreset) Could not set compiler. Please either set $(ccblue)"CC"$(ccreset) in $(ccmagenta)"common.mk"$(ccreset) or via the command-line, $(ccgreen)"make CC=yourcompiler"$(ccreset))
   endif
 
-
-  # # Check if CPU supports AVX -> this trumps everything. For instance, compiler might
-  # # support AVX but the cpu might not. Then compilation will work fine but there will
-  # # be a runtime crash with "Illegal Instruction"
-  # ifeq ($(UNAME), Darwin)
-  #   # On a MAC, best to use sysctl
-  #   AVX_AVAIL := $(shell sysctl -n machdep.cpu.features 2>/dev/null | grep -o -i AVX | tr '[:lower:]' '[:upper:]')
-  # else
-  #   # On Linux/Unix, just grep on /proc/cpuinfo
-  #   # There might be multiple cores, so just take the first line
-  #   # (Is it possible that someone has one core that has AVX and another that doesnt?)
-  #   AVX_AVAIL := $(shell grep -o -i AVX /proc/cpuinfo 2>/dev/null | head -n 1 | tr '[:lower:]' '[:upper:]' )
-  # endif
-  # REMOVE_AVX :=0
-  # ifdef AVX_AVAIL
-  #   ifneq ($(AVX_AVAIL) , AVX)
-  #     REMOVE_AVX := 1
-  #   endif
-  # else
-  #   REMOVE_AVX :=1
-  # endif
-
-  # ifeq ($(REMOVE_AVX), 1)
-  #   $(warning $(ccmagenta) CPU does not seem support AVX instructions. Removing USE_AVX from compile options. $(ccreset))
-  #   OPT:=$(filter-out -DUSE_AVX,$(OPT))
-  # endif
-  # # end of checking if CPU supports AVX
-  ## This entire AVX section is now commented out because the code has runtime-dispatch based on the CPU capabilities and picks the latest instruction set by default
-
   # Now check if gcc is set to be the compiler but if clang is really under the hood.
   export CC_IS_CLANG ?= -1
   ifeq ($(CC_IS_CLANG), -1)
@@ -176,7 +155,7 @@ ifeq ($(DO_CHECKS), 1)
       export CC_IS_CLANG := 0
     endif
     export CC_VERSION
-	endif
+  endif
   # Done with checking if clang is underneath gcc
 
   # CC is set at this point. In case the compiler on Mac is *not* clang under the hood
@@ -196,19 +175,8 @@ ifeq ($(DO_CHECKS), 1)
   CFLAGS += -DVERSION=\"${VERSION}\" -DUSE_UNICODE
   CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE=200809L -D_GNU_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
 
-  # Is this running on TRAVIS or some other CI provider?
-  # TRAVIS sets both the CI and TRAVIS variables
-  ON_CI := false
-  ifeq ($(CI), true)
-    ON_CI := true
-  endif
-
-  ifeq ($(TRAVIS), true)
-    ON_CI := true
-  endif
-
   # Add the -Werror flag if running on some continuous integration provider
-  ifeq ($(ON_CI), true)
+  ifeq ($(CORRFUNC_CI), TRUE)
     CFLAGS += -Werror -Wno-unknown-warning-option
   endif
 
@@ -260,14 +228,6 @@ ifeq ($(DO_CHECKS), 1)
     ICC_MAJOR_VER = $(shell icc -V 2>&1 | \grep -oP '(?<=Version )\d+')
   else ## not icc -> gcc or clang follow
 
-    ## Warning that w(theta) with OUTPUT_THETAAVG is very slow without icc
-    ## Someday I am going to fix that by linking with MKL
-    # ifeq (USE_AVX,$(findstring USE_AVX,$(OPT)))
-    #   ifeq (OUTPUT_THETAAVG,$(findstring OUTPUT_THETAAVG,$(OPT)))
-    #     $(warning WARNING: $(ccblue)"OUTPUT_THETAAVG"$(ccreset) with AVX capabilties is slow with gcc/clang (disables AVX essentially) with gcc/clang. Try to use $(ccblue)"icc"$(ccreset) if available)
-    #   endif
-    # endif
-
     ### GCC is slightly more complicated. CC might be called gcc but it might be clang underneath
     ### compiler specific flags for gcc
     ifneq ($(CC_IS_CLANG), 1)
@@ -293,17 +253,17 @@ ifeq ($(DO_CHECKS), 1)
       endif #gcc findstring
     else ##CC is clang
       ### compiler specific flags for clang
-      CLANG_OMP_AVAIL := false
+      CLANG_OMP_AVAIL := FALSE
       export APPLE_CLANG := 0
       ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
         ifeq (clang-omp,$(findstring clang-omp,$(CC)))
-          CLANG_OMP_AVAIL:=true
+          CLANG_OMP_AVAIL:=TRUE
           CFLAGS += -fopenmp
           CLINK  += -liomp5
         else
           # Apple clang/gcc does not support OpenMP
           ifeq (Apple, $(findstring Apple, $(CC_VERSION)))
-            CLANG_OMP_AVAIL:= false
+            CLANG_OMP_AVAIL:= FALSE
             export CLANG_OMP_WARNING_PRINTED ?= 0
             ifeq ($(CLANG_OMP_WARNING_PRINTED), 0)
               $(warning $(ccmagenta)Compiler is Apple clang and does not support OpenMP$(ccreset))
@@ -322,21 +282,21 @@ ifeq ($(DO_CHECKS), 1)
             CLANG_VERSION_MINOR := $(word 2,${CLANG_VERSION_FULL})
             CLANG_MAJOR_MIN_OPENMP := 3
             CLANG_MINOR_MIN_OPENMP := 7
-            CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo true)
-            CLANG_IS_38 := $(shell [ $(CLANG_VERSION_MAJOR) -eq 3 -a $(CLANG_VERSION_MINOR) -eq 8  ] && echo true)
+            CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo TRUE)
+            CLANG_IS_38 := $(shell [ $(CLANG_VERSION_MAJOR) -eq 3 -a $(CLANG_VERSION_MINOR) -eq 8  ] && echo TRUE)
             CFLAGS += -fopenmp=libomp
             CLINK  += -fopenmp=libomp
           endif #Apple check
         endif  #clang-omp check
 
-        ifeq ($(CLANG_OMP_AVAIL),true)
+        ifeq ($(CLANG_OMP_AVAIL),TRUE)
           ifeq ($(APPLE_CLANG),0)
             ifeq ($(UNAME), Darwin)
               export CLANG_LD_WARNING_PRINTED ?= 0
               ifeq ($(CLANG_LD_WARNING_PRINTED), 0)
                 $(info $(ccmagenta)Enabling OpenMP with clang.$(ccreset))
                 CLANG_LD_ERROR := "dyld: Library not loaded: @rpath/libLLVM.dylib\nReferenced from: /opt/local/libexec/llvm-3.8/lib/libLTO.dylib\nReason: image not found\n"
-                ifeq ($(CLANG_IS_38), true)
+                ifeq ($(CLANG_IS_38), TRUE)
                   $(warning With $(ccblue)"clang-3.8"$(ccreset), You might see this $(ccred)$(CLANG_LD_ERROR)$(ccreset) error with the final linking step.)
                   $(info Use this command to fix the issue $(ccmagenta) "sudo install_name_tool -change @executable_path/../lib/libLTO.dylib @rpath/../lib/libLTO.dylib /opt/local/libexec/ld64/ld-latest"$(ccreset))
                   $(info You can see the bug report here $(ccmagenta)"https://trac.macports.org/ticket/50853"$(ccreset))
@@ -373,7 +333,7 @@ ifeq ($(DO_CHECKS), 1)
     # Commented out for now -> need to overhaul testing infrastructure and
     # toolchain. Otherwise, travis has compile failure due to unknown compiler options
     # ifeq ($(RUNNING_TESTS), 1)
-    #   ifeq ($(ON_CI), true)
+    #   ifeq ($(CORRFUNC_CI), TRUE)
     #     CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
     #     CLINK +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
     #   endif
@@ -394,7 +354,7 @@ ifeq ($(DO_CHECKS), 1)
     CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Ecm1 __AVX512F__)
     ifeq ($(CC_SUPPORTS_AVX512),1)
       ifeq ($(shell test 0$(ICC_MAJOR_VER) -ge 019 -o -z "$(ICC_MAJOR_VER)"; echo $$?),0)
-      	# If gcc, clang, or new icc, we can use this
+        # If gcc, clang, or new icc, we can use this
         CFLAGS += -mno-avx512f
       else
         CFLAGS += -xCORE-AVX2
@@ -445,47 +405,28 @@ ifeq ($(DO_CHECKS), 1)
       MIN_NUMPY_MAJOR  := 1
       MIN_NUMPY_MINOR  := 7
 
-      PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
-      NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
+      PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo TRUE)
+      NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo TRUE)
 
-      ifeq ($(PYTHON_AVAIL),true)
-        ifeq ($(NUMPY_AVAIL),true)
+      ifeq ($(PYTHON_AVAIL),TRUE)
+        ifeq ($(NUMPY_AVAIL),TRUE)
           export COMPILE_PYTHON_EXT := 1
         endif
       endif
 
-      ifneq ($(PYTHON_AVAIL),true)
+      ifneq ($(PYTHON_AVAIL),TRUE)
         $(warning $(ccmagenta) Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR) $(ccreset))
         export COMPILE_PYTHON_EXT := 0
       endif
 
-      ifneq ($(NUMPY_AVAIL),true)
+      ifneq ($(NUMPY_AVAIL),TRUE)
         $(warning $(ccmagenta) Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR) $(ccreset))
         export COMPILE_PYTHON_EXT := 0
       endif
 
       ifneq ($(COMPILE_PYTHON_EXT), 0)
-        ifndef PYTHON_CONFIG_EXE
-          PYTHON_SCRIPTS:=$(shell $(PYTHON) -c "import sysconfig;print(sysconfig.get_path('scripts'));")
-          # try python3-config first for Python 3
-          ifeq ($(PYTHON_VERSION_MAJOR), 3)
-            PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python3-config"
-            PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
-          endif
-
-          ifndef PYTHON_CONFIG_INCL
-            # python3-config failed; let's try python-config (for Python 2 or 3)
-            PYTHON_CONFIG_EXE:="$(PYTHON_SCRIPTS)/python-config"
-          endif
-          $(warning $(ccblue)"PYTHON"$(ccreset) is set to $(ccblue)$(PYTHON)$(ccreset); using $(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset) as $(ccblue)python-config$(ccreset). If this is not correct, please also set $(ccblue)"PYTHON_CONFIG_EXE"$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset))
-        endif
-
-        PYTHON_CONFIG_INCL := $(shell $(PYTHON_CONFIG_EXE) --includes 2>/dev/null)
-        # if PYTHON_CONFIG_INCL is still undef, then we failed to find any python-config
-        ifndef PYTHON_CONFIG_INCL
-          $(error $(ccred)python-config$(ccreset) ($(ccblue)$(PYTHON_CONFIG_EXE)$(ccreset)) not found. Please set $(ccgreen)PYTHON_CONFIG_EXE$(ccreset) in $(ccgreen)"common.mk"$(ccreset) to appropriate $(ccblue)python-config$(ccreset) before installing $(DISTNAME).$(VERSION). Installing $(ccblue)python-devel$(ccreset) might fix this issue $(ccreset))
-        endif
-        PYTHON_CONFIG_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_CONFIG_INCL))
+	PYTHON_INCL := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; flags = set(['-I' + sysconfig.get_path('include'),'-I' + sysconfig.get_path('platinclude')]); print(' '.join(flags));")
+        PYTHON_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_INCL))
 
         # NUMPY is available -> next step should not fail
         # That's why we are not checking if the NUMPY_INCL_FLAG is defined.
@@ -504,12 +445,10 @@ ifeq ($(DO_CHECKS), 1)
           export NUMPY_CHECKED:=1
         endif
 
-        export PYTHON_CFLAGS := $(PYTHON_CONFIG_INCL) $(NUMPY_INCL_FLAG)
-        export PYTHON_LIBDIR := $(shell $(PYTHON_CONFIG_EXE) --prefix)/lib
-        export PYTHON_LIBS   := $(shell $(PYTHON_CONFIG_EXE) --libs)
+        export PYTHON_CFLAGS := $(PYTHON_INCL) $(NUMPY_INCL_FLAG)
+        export PYTHON_LIBDIR := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig;print(sysconfig.get_config_var('prefix'));")/lib
+        export PYTHON_LIBS   := $(shell $(PYTHON) -c "from __future__ import print_function; import sys; import sysconfig; pyver = sysconfig.get_config_var('VERSION'); getvar = sysconfig.get_config_var;libs = ['-lpython' + pyver + sys.abiflags]; libs += getvar('LIBS').split(); libs += getvar('SYSLIBS').split(); print(' '.join(libs));")
         export PYTHON_LINK :=
-        # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
-        # export PYTHON_LINK   := -L$(PYTHON_LIBDIR) $(PYTHON_LIBS) -Xlinker -rpath -Xlinker $(PYTHON_LIBDIR)
         SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))" 2>/dev/null)
         export PYTHON_SOABI :=
         ifdef SOABI
