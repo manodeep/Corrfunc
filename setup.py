@@ -215,7 +215,6 @@ def requirements_check():
         while C version claims {1}".format(Corrfunc.__version__, version)
         raise AssertionError(msg)
 
-
     # Okay common.mk has been updated to use current python
     # for building the extensions as required. Now check for
     # min. python version
