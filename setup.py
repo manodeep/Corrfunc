@@ -183,10 +183,10 @@ def requirements_check():
     this_python = sys.executable
     key = "PYTHON"
     replacement = '\n{0}:={1}'.format(key, this_python)
+    common = read_text_file(common_mk_file)
     common = replace_first_key_in_makefile(common, key, replacement,
                                            common_mk_file)
 
-    common = read_text_file(common_mk_file)
     common_dict = get_dict_from_buffer(common)
     name = common_dict['DISTNAME'][0]
     major = common_dict['MAJOR'][0]
