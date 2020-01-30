@@ -177,6 +177,15 @@ def replace_first_key_in_makefile(buf, key, replacement, outfile=None):
 def requirements_check():
     common_mk_file = pjoin(dirname(abspath(__file__)),
                            "common.mk")
+    # Since arbitrary python can be used even within the Makefile
+    # make sure that the current python executable is the same as the
+    # one specified in common.mk. Easiest way is to replace
+    this_python = sys.executable
+    key = "PYTHON"
+    replacement = '\n{0}:={1}'.format(key, this_python)
+    common = replace_first_key_in_makefile(common, key, replacement,
+                                           common_mk_file)
+
     common = read_text_file(common_mk_file)
     common_dict = get_dict_from_buffer(common)
     name = common_dict['DISTNAME'][0]
@@ -206,43 +215,10 @@ def requirements_check():
         while C version claims {1}".format(Corrfunc.__version__, version)
         raise AssertionError(msg)
 
-    # Since arbitrary python can be used even within the Makefile
-    # make sure that the current python executable is the same as the
-    # one specified in common.mk. Easiest way is to replace
-    make_python = common_dict['PYTHON'][0]
-    if make_python is None:
-        msg = "PYTHON is not defined in 'common.mk'. Please "\
-            "edit 'common.mk' and define PYTHON (typically "\
-            "just python) "
-        raise AssertionError(msg)
 
-    this_python = sys.executable
-    python_script = "'from __future__ import print_function; "\
-                    "import sys; print(sys.executable)'"
-    get_full_python, full_python_errors = run_command(
-        make_python + " -c " + python_script,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if get_full_python is None:
-        msg = "Could not determine which python is resolved in the Makefile "\
-              "Parsed PYTHON=[${0}] in Makefile which could not be resolved "\
-              "through the shell. Please report your python setup and file "\
-              "an installation issue at {1}.".format(make_python, base_url)
-        raise RuntimeError(msg)
-
-    get_full_python = strip_line(get_full_python, os.linesep)
-    if get_full_python != this_python:
-        msg = "Looks like python specified in Makefile = {0} is different "\
-              "from the invoked python instance = {1}.\nReplacing PYTHON "\
-              "in 'common.mk' and recompiling *all* files".format(
-                  get_full_python, this_python)
-        print(msg)
-        key = "PYTHON"
-        replacement = '\n{0}:={1}'.format(key, this_python)
-        common = replace_first_key_in_makefile(common, key, replacement,
-                                               common_mk_file)
-
-    # Okay common.mk has now been updated to use current python
-    # for building the extensions as required
+    # Okay common.mk has been updated to use current python
+    # for building the extensions as required. Now check for
+    # min. python version
     min_py_major = int(common_dict['MIN_PYTHON_MAJOR'][0])
     min_py_minor = int(common_dict['MIN_PYTHON_MINOR'][0])
 
