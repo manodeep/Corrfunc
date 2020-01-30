@@ -177,15 +177,7 @@ def replace_first_key_in_makefile(buf, key, replacement, outfile=None):
 def requirements_check():
     common_mk_file = pjoin(dirname(abspath(__file__)),
                            "common.mk")
-    # Since arbitrary python can be used even within the Makefile
-    # make sure that the current python executable is the same as the
-    # one specified in common.mk. Easiest way is to replace
-    this_python = sys.executable
-    key = "PYTHON"
-    replacement = '\n{0}:={1}'.format(key, this_python)
     common = read_text_file(common_mk_file)
-    common = replace_first_key_in_makefile(common, key, replacement,
-                                           common_mk_file)
 
     common_dict = get_dict_from_buffer(common)
     name = common_dict['DISTNAME'][0]
@@ -230,6 +222,15 @@ def requirements_check():
                                                  min_py_major,
                                                  min_py_minor)
         raise AssertionError(msg)
+
+    # Since arbitrary python can be used even within the Makefile
+    # make sure that the current python executable is the same as the
+    # one specified in common.mk. Easiest way is to replace
+    this_python = sys.executable
+    key = "PYTHON"
+    replacement = '\n{0}:={1}'.format(key, this_python)
+    common = replace_first_key_in_makefile(common, key, replacement,
+                                           common_mk_file)
 
     # Check if CC is in argv:
     CC = "CC"
