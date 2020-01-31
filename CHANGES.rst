@@ -23,7 +23,7 @@ Enhancements
 
 Bug fixes
 ----------
-- Installation does not require python(3)-config anymore [fixed in #209]
+- Installation does not require python(3)-config anymore [#209, #211]
 - Better handling of terminal colours for unknown terminals [#209]
 
 
