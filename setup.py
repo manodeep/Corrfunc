@@ -225,12 +225,14 @@ def requirements_check():
 
     # Since arbitrary python can be used even within the Makefile
     # make sure that the current python executable is the same as the
-    # one specified in common.mk. Easiest way is to replace
-    this_python = sys.executable
-    key = "PYTHON"
-    replacement = '\n{0}:={1}'.format(key, this_python)
-    common = replace_first_key_in_makefile(common, key, replacement,
-                                           common_mk_file)
+    # one specified in common.mk. Easiest way is to replace,
+    # but no need to do so if creating a source distribution
+    if 'sdist' not in sys.argv:
+        this_python = sys.executable
+        key = "PYTHON"
+        replacement = '\n{0}:={1}'.format(key, this_python)
+        common = replace_first_key_in_makefile(common, key, replacement,
+                                                   common_mk_file)
 
     # Check if CC is in argv:
     CC = "CC"
