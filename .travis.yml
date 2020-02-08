@@ -103,8 +103,9 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda create -q --yes -n test python=$PYTHON_VERSION
   - source activate test
-  - conda install -q --yes numpy=$NUMPY_VERSION sphinx || conda install -q --yes -c conda-forge numpy=$NUMPY_VERSION sphinx
+  - conda install -q --yes numpy=$NUMPY_VERSION || conda install -q --yes -c conda-forge numpy=$NUMPY_VERSION
   - conda install -q --yes -c conda-forge gsl
+  - pip install sphinx>=1.8
   - if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
