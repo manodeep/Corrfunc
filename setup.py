@@ -285,7 +285,7 @@ def requirements_check():
                 msg = "Found compiler = '{0}' on the command-line but '{0}' "\
                       "can not be resolved from the shell.\n"\
                       "Please specify CC=/path/to/compiler in the "\
-                      "python setup.py call.".format(value)
+                      "python -m pip setup.py call.".format(value)
                 raise ValueError(msg)
 
             replacement = '\n{0}:={1}'.format(CC, value)

@@ -95,7 +95,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
     try:
         from future.utils import bytes_to_native_str
     except ImportError:
-        print("\n\tPlease run python setup.py install before using "
+        print("\n\tPlease run python -m pip install Corrfunc before using "
               "the 'Corrfunc' package\n")
         raise
 
