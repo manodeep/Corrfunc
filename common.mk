@@ -447,7 +447,7 @@ ifeq ($(DO_CHECKS), 1)
 
         export PYTHON_CFLAGS := $(PYTHON_INCL) $(NUMPY_INCL_FLAG)
         export PYTHON_LIBDIR := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig;print(sysconfig.get_config_var('prefix'));")/lib
-        export PYTHON_LIBS   := $(shell $(PYTHON) -c "from __future__ import print_function; import sys; import sysconfig; pyver = sysconfig.get_config_var('VERSION'); getvar = sysconfig.get_config_var;libs = ['-lpython' + pyver + sys.abiflags]; libs += getvar('LIBS').split(); libs += getvar('SYSLIBS').split(); print(' '.join(libs));")
+        export PYTHON_LIBS   := $(shell $(PYTHON) -c "from __future__ import print_function; import sys; import sysconfig; pyver = sysconfig.get_config_var('VERSION'); getvar = sysconfig.get_config_var; abi = sys.abiflags if sys.version_info.major >= 3 else ''; libs = ['-lpython' + pyver + abi]; libs += getvar('LIBS').split(); libs += getvar('SYSLIBS').split(); print(' '.join(libs));")
         export PYTHON_LINK :=
         SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))" 2>/dev/null)
         export PYTHON_SOABI :=
