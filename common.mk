@@ -460,7 +460,7 @@ ifeq ($(DO_CHECKS), 1)
         # export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
 
         ### Check if conda is being used on OSX - then we need to fix python link libraries
-        export FIX_PYTHON_LINK := 0
+        # export FIX_PYTHON_LINK := 0
         # ifeq ($(CONDA_BUILD), 0)
         #   ## Check if conda build is under progress -> do nothing in that case. Let conda handle it
         #   ifeq ($(UNAME), Darwin)

@@ -38,7 +38,7 @@ INCL := $(DD_DIR)/$(DD_LIB).h $(DDrppi_DIR)/$(DDrppi_LIB).h $(WP_DIR)/$(WP_LIB).
 LIB_INCLUDE:=-I$(DD_DIR) -I$(DDrppi_DIR) -I$(WP_DIR) -I$(XI_DIR) -I$(DDSMU_DIR) -I$(VPF_DIR)
 
 
-all: sharedlib $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+all: sharedlib $(SOURCES) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 
 
 $(PROJECT).so: $(PYTHON_EXTN)
@@ -48,7 +48,7 @@ $(PROJECT).so: $(PYTHON_EXTN)
 $(PROJECT).o: $(PROJECT).c $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile $(C_LIBRARIES) $(INCL)
 	$(CC) $(CFLAGS) $(LIB_INCLUDE) $(PYTHON_CFLAGS) $(INCLUDE) $< -c -o $@
 
-$(PYTHON_EXTN): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile 
+$(PYTHON_EXTN): $(OBJECTS) $(C_LIBRARIES) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OBJECTS) $(C_LIBRARIES) $(LINKER_FLAGS) $(CLINK) $(GSL_LINK) $(PYTHON_LINK) -shared -o $@
 
 $(DD_DIR)/lib$(DD_LIB).a: $(DD_DIR)/*.c $(DD_DIR)/*.c.src $(DD_DIR)/*.h.src $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
@@ -70,18 +70,18 @@ $(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/*.c $(VPF_DIR)/*.c.src $(VPF_DIR)/*.h.src
 	$(MAKE) -C $(VPF_DIR) libs
 
 
-install: sharedlib $(INSTALL_LIB_DIR)/$(PYTHON_EXTN) 
+install: sharedlib $(INSTALL_LIB_DIR)/$(PYTHON_EXTN)
 sharedlib: $(PROJECT).so
-ifeq ($(FIX_PYTHON_LINK), 1)
-	@{ \
-		CURRENT_PYTHON_LIB=`otool -L $(PYTHON_EXTN) | grep -i python | cut -d " " -f1 | grep -v $(PROJECT) | xargs` ; \
-		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
-		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
-		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
-		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(PYTHON_EXTN); \
-		fi ;\
-	}
-endif
+# ifeq ($(FIX_PYTHON_LINK), 1)
+# 	@{ \
+# 		CURRENT_PYTHON_LIB=`otool -L $(PYTHON_EXTN) | grep -i python | cut -d " " -f1 | grep -v $(PROJECT) | xargs` ; \
+# 		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
+# 		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
+# 		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
+# 		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(PYTHON_EXTN); \
+# 		fi ;\
+# 	}
+# endif
 
 
 $(INSTALL_LIB_DIR)/$(PYTHON_EXTN): $(PYTHON_EXTN) | $(INSTALL_LIB_DIR)
@@ -103,4 +103,3 @@ distclean:clean
 	cd ../../Corrfunc && $(RM) $(PROJECT).so
 
 include $(ROOT_DIR)/rules.mk
-
