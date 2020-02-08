@@ -106,6 +106,7 @@ install:
   - conda install -q --yes numpy=$NUMPY_VERSION || conda install -q --yes -c conda-forge numpy=$NUMPY_VERSION
   - conda install -q --yes -c conda-forge gsl
   - pip install --upgrade pip
+  - pip install --ignore-installed certifi --upgrade
   - pip install sphinx>=1.8
   - if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi
   - make -r CC=$COMPILER
