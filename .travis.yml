@@ -111,7 +111,7 @@ install:
   - if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
-  - python -m pip install .
+  - python -m pip install -e .
 
 script:
   - echo $CFLAGS
