@@ -459,17 +459,6 @@ ifeq ($(DO_CHECKS), 1)
         export PYTHON_SOABI
         # export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
 
-        ### Check if conda is being used on OSX - then we need to fix python link libraries
-        # export FIX_PYTHON_LINK := 0
-        # ifeq ($(CONDA_BUILD), 0)
-        #   ## Check if conda build is under progress -> do nothing in that case. Let conda handle it
-        #   ifeq ($(UNAME), Darwin)
-        #     PATH_TO_PYTHON := $(shell which python)
-        #     ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
-        # 	    FIX_PYTHON_LINK := 1
-        #     endif
-        #   endif
-        # endif
         ifeq ($(UNAME), Darwin)
           # PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
           # PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))

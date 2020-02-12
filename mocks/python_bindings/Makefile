@@ -62,19 +62,8 @@ $(DDtheta_mocks_DIR)/lib$(DDtheta_mocks_LIB).a: $(DDtheta_mocks_DIR)/*.c $(DDthe
 $(VPF_mocks_DIR)/lib$(VPF_mocks_LIB).a: $(VPF_mocks_DIR)/*.c $(VPF_mocks_DIR)/*.c.src $(VPF_mocks_DIR)/*.h.src $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 	$(MAKE) -C $(VPF_mocks_DIR) libs
 
-sharedlib: $(PROJECT).so
-# ifeq ($(FIX_PYTHON_LINK), 1)
-# 	@{ \
-# 		CURRENT_PYTHON_LIB=`otool -L $(PYTHON_EXTN) | grep -i python | cut -d " " -f1 | grep -v $(PROJECT) | xargs` ; \
-# 		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
-# 		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
-# 		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
-# 		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(PYTHON_EXTN); \
-# 		fi ;\
-# 	}
-# endif
-
 install: sharedlib $(LIB_DIR)/$(PYTHON_EXTN)
+sharedlib: $(PROJECT).so
 
 .PHONY: sharedlib
 

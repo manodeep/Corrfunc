@@ -72,16 +72,6 @@ $(VPF_DIR)/lib$(VPF_LIB).a: $(VPF_DIR)/*.c $(VPF_DIR)/*.c.src $(VPF_DIR)/*.h.src
 
 install: sharedlib $(INSTALL_LIB_DIR)/$(PYTHON_EXTN)
 sharedlib: $(PROJECT).so
-# ifeq ($(FIX_PYTHON_LINK), 1)
-# 	@{ \
-# 		CURRENT_PYTHON_LIB=`otool -L $(PYTHON_EXTN) | grep -i python | cut -d " " -f1 | grep -v $(PROJECT) | xargs` ; \
-# 		PYTHON_LIB_NAME=$(PYTHON_LIB_BASE).dylib ; \
-# 		LINK_PYTHON_LIB=$(PYTHON_LIBDIR)/$$PYTHON_LIB_NAME ;\
-# 		if [[ "$$CURRENT_PYTHON_LIB" != "$$LINK_PYTHON_LIB" ]] ; then \
-# 		install_name_tool -change $$CURRENT_PYTHON_LIB $$LINK_PYTHON_LIB $(PYTHON_EXTN); \
-# 		fi ;\
-# 	}
-# endif
 
 
 $(INSTALL_LIB_DIR)/$(PYTHON_EXTN): $(PYTHON_EXTN) | $(INSTALL_LIB_DIR)
