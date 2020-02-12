@@ -10,9 +10,23 @@ New features
 - conda installable package
 - GPU version
 
-
-2.3.3 (Upcoming)
+2.3.4 (Upcoming)
 =================
+This is a bug-fix release and contains general code quality improvements.
+
+
+Enhancements
+------------
+
+
+
+Bug fixes
+----------
+- Fixing docs build failure on Travis [#215]
+
+
+2.3.3 (2019-02-03)
+==================
 This is a bug-fix release and contains general code quality improvements.
 
 
@@ -25,7 +39,8 @@ Bug fixes
 ----------
 - Installation does not require python(3)-config anymore [#209, #211]
 - Better handling of terminal colours for unknown terminals [#209]
-
+- Prevent incorrect calculations with periodic boundaries for large ratios of
+(zmax, Rmax) to Lbox [#210]
 
 
 2.3.2 (2019-12-24)

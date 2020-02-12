@@ -25,9 +25,7 @@ examples: libs
 python_bindings: libs
 	$(MAKE) -C $@
 
-distclean:realclean
-distclena:realclean
-realclena:realclean
+distclena realclena distclean:realclean
 
 realclean:
 	$(MAKE) clean
@@ -37,6 +35,8 @@ realclean:
 	$(MAKE) -C ../utils clean
 	$(MAKE) -C ../io clean
 
+clena celan celna: clean
+
 clean:
 	for dir in $(TARGETS); do \
 		$(MAKE) -C $$dir clean; \
@@ -44,9 +44,6 @@ clean:
 	$(MAKE) -C tests clean
 	$(MAKE) -C python_bindings clean
 
-clena: clean
-celan: clean
-celna: clean
 
 install: examples | dirs
 	for dir in $(TARGETS); do \
