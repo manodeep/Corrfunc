@@ -11,8 +11,8 @@ Python wrapper around the C extension for the angular correlation function
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
-__author__ = ('Manodeep Sinha')
-__all__ = ('DDtheta_mocks',)
+__author__ = ('Manodeep Sinha', 'Kris Akira Stern')
+__all__ = ('DDtheta_mocks', 'find_fastest_DDtheta_mocks_bin_refs')
 
 
 def DDtheta_mocks(autocorr, nthreads, binfile,
@@ -211,7 +211,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
         the time spent within the C library and ignores all python overhead.
 
     Example
-    --------
+    -------
 
     >>> from __future__ import print_function
     >>> import numpy as np
@@ -239,7 +239,8 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     ...                         weights1=weights, weight_type='pair_product',
     ...                         link_in_dec=link_in_dec, link_in_ra=link_in_ra,
     ...                         isa=isa, verbose=True)
-    >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
+    >>> for r in results:
+    ...    print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['thetamin'], r['thetamax'],
     ...                         r['thetaavg'], r['npairs'], r['weightavg']))
     ...                         # doctest: +NORMALIZE_WHITESPACE
@@ -267,34 +268,35 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     """
 
     try:
-        from Corrfunc._countpairs_mocks import countpairs_theta_mocks as\
+        from Corrfunc._countpairs_mocks import countpairs_theta_mocks as \
             DDtheta_mocks_extn
     except ImportError:
-        msg = "Could not import the C extension for the angular "\
+        msg = "Could not import the C extension for the angular " \
               "correlation function for mocks."
         raise ImportError(msg)
 
     import numpy as np
-    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
-        return_file_with_rbins, convert_to_native_endian,\
+    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec, \
+        return_file_with_rbins, convert_to_native_endian, \
         sys_pipes, process_weights
     from future.utils import bytes_to_native_str
 
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
-            msg = "Must pass valid arrays for RA2/DEC2 for "\
+            msg = "Must pass valid arrays for RA2/DEC2 for " \
                   "computing cross-correlation"
             raise ValueError(msg)
     else:
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
 
-    weights1, weights2 = process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
+    weights1, weights2 = \
+        process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
 
     # Ensure all input arrays are native endian
     RA1, DEC1, weights1, RA2, DEC2, weights2 = [
-            convert_to_native_endian(arr, warn=True) for arr in
-            [RA1, DEC1, weights1, RA2, DEC2, weights2]]
+        convert_to_native_endian(arr, warn=True) for arr in
+        [RA1, DEC1, weights1, RA2, DEC2, weights2]]
 
     fix_ra_dec(RA1, DEC1)
     if autocorr == 0:
@@ -302,7 +304,6 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     if link_in_ra is True:
         link_in_dec = True
-
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
@@ -314,20 +315,21 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     with sys_pipes():
-      extn_results = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
-                                        RA1, DEC1,
-                                        verbose=verbose,
-                                        link_in_dec=link_in_dec,
-                                        link_in_ra=link_in_ra,
-                                        output_thetaavg=output_thetaavg,
-                                        fast_acos=fast_acos,
-                                        ra_refine_factor=ra_refine_factor,
-                                        dec_refine_factor=dec_refine_factor,
-                                        max_cells_per_dim=max_cells_per_dim,
-                                        copy_particles=copy_particles,
-                                        enable_min_sep_opt=enable_min_sep_opt,
-                                        c_api_timer=c_api_timer,
-                                        isa=integer_isa, **kwargs)
+        extn_results = DDtheta_mocks_extn(
+            autocorr, nthreads, rbinfile,
+            RA1, DEC1,
+            verbose=verbose,
+            link_in_dec=link_in_dec,
+            link_in_ra=link_in_ra,
+            output_thetaavg=output_thetaavg,
+            fast_acos=fast_acos,
+            ra_refine_factor=ra_refine_factor,
+            dec_refine_factor=dec_refine_factor,
+            max_cells_per_dim=max_cells_per_dim,
+            copy_particles=copy_particles,
+            enable_min_sep_opt=enable_min_sep_opt,
+            c_api_timer=c_api_timer,
+            isa=integer_isa, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -351,6 +353,299 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
         return results, api_time
 
 
+def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
+                                        RA1, DEC1, RA2=None, DEC2=None,
+                                        link_in_dec=True, link_in_ra=True,
+                                        verbose=False, output_thetaavg=False,
+                                        max_cells_per_dim=100,
+                                        isa=r'fastest',
+                                        maxbinref=3, nrepeats=3,
+                                        return_runtimes=False):
+    """
+
+    Parameters
+    ----------
+    autocorr : boolean, required
+        Boolean flag for auto/cross-correlation. If autocorr is set to 1,
+        then the second set of particle positions are not required.
+
+    nthreads : integer
+        Number of threads to use.
+
+    binfile: string or an list/array of floats. Units: degrees.
+        For string input: filename specifying the ``theta`` bins for
+        ``DDtheta_mocks``. The file should contain white-space separated values
+        of (thetamin, thetamax)  for each ``theta`` wanted. The bins need to be
+        contiguous and sorted in increasing order (smallest bins come first).
+
+        For array-like input: A sequence of ``theta`` values that provides the
+        bin-edges. For example,
+        ``np.logspace(np.log10(0.1), np.log10(10.0), 15)`` is a valid
+        input specifying **14** (logarithmic) bins between 0.1 and 10.0
+        degrees. This array does not need to be sorted.
+
+    RA1 : array-like, real (float/double)
+        The array of Right Ascensions for the first set of points. RA1's
+        are expected to be in [0.0, 360.0], but the code will try to fix cases
+        where the RA1's are in [-180, 180.0]. For peace of mind, always supply
+        RA1's in [0.0, 360.0].
+
+        Calculations are done in the precision of the supplied arrays.
+
+    DEC1 : array-like, real (float/double)
+        Array of Declinations for the first set of points. DEC1's are expected
+        to be in the [-90.0, 90.0], but the code will try to fix cases where
+        the DEC1's are in [0.0, 180.0]. Again, for peace of mind, always supply
+        DEC1's in [-90.0, 90.0].
+        Must be of same precision type as RA1.
+
+    RA2 : array-like, real (float/double)
+        The array of Right Ascensions for the second set of points. RA2's
+        are expected to be in [0.0, 360.0], but the code will try to fix cases
+        where the RA2's are in [-180, 180.0]. For peace of mind, always supply
+        RA2's in [0.0, 360.0].
+        Must be of same precision type as RA1/DEC1.
+
+    DEC2 : array-like, real (float/double)
+        Array of Declinations for the second set of points. DEC2's are expected
+        to be in the [-90.0, 90.0], but the code will try to fix cases where
+        the DEC2's are in [0.0, 180.0]. Again, for peace of mind, always supply
+        DEC2's in [-90.0, 90.0].
+        Must be of same precision type as RA1/DEC1.
+
+    verbose : boolean (default false)
+        Boolean flag to control output of informational messages
+
+    output_thetaavg : boolean (default false)
+        Boolean flag to output the average ``\theta`` for each bin. Code will
+        run slower if you set this flag.
+
+        If you are calculating in single-precision, ``thetaavg`` will
+        suffer from numerical loss of precision and can not be trusted. If you
+        need accurate ``thetaavg`` values, then pass in double precision arrays
+        for ``RA/DEC``.
+
+    isa: string, case-insensitive (default ``fastest``)
+        Controls the runtime dispatch for the instruction set to use. Options
+        are: [``fastest``, ``avx512f``, ``avx``, ``sse42``, ``fallback``]
+
+        Setting isa to ``fastest`` will pick the fastest available instruction
+        set on the current computer. However, if you set ``isa`` to, say,
+        ``avx`` and ``avx`` is not available on the computer, then the code
+        will revert to using ``fallback`` (even though ``sse42`` might be
+        available).
+
+        Unless you are benchmarking the different instruction sets, you should
+        always leave ``isa`` to the default value. And if you *are*
+        benchmarking, then the string supplied here gets translated into an
+        ``enum`` for the instruction set defined in ``utils/defs.h``.
+
+    max_cells_per_dim: integer, default is 100, typical values in [50-300]
+        Controls the maximum number of cells per dimension. Total number of
+        cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
+        too small relative to the boxsize (and increasing helps the runtime).
+
+    maxbinref: integer (default 3)
+        The maximum ``bin refine factor`` to use along each dimension. From
+        experience, values larger than 3 do not improve ``wp`` runtime.
+
+        Runtime of module scales as ``maxbinref^3``, so change the value of
+        ``maxbinref`` with caution.
+
+    nrepeats: integer (default 3)
+        Number of times to repeat the timing for an individual run. Accounts
+        for the dispersion in runtimes on computers with multiple user
+        processes.
+
+    return_runtimes: boolean (default ``false``)
+        If set, also returns the array of runtimes.
+
+    Returns
+    -------
+    (nRA, nDEC) : tuple of integers
+        The combination of ``bin refine factors`` along each dimension that
+        produces the fastest code.
+
+    runtimes : numpy structured array
+
+        Only returned if ``return_runtimes`` is set, then the return value
+        is a tuple containing ((nRA, nDEC), runtimes). ``runtimes`` is a
+        ``numpy`` structured array containing the fields, [``nRA``, ``nDEC``,
+        ``avg_runtime``, ``sigma_time``]. Here, ``avg_runtime`` is the
+        average time, measured over ``nrepeats`` invocations, spent in
+        the python extension. ``sigma_time`` is the dispersion of the
+        run times across those ``nrepeats`` invocations.
+
+    Example
+    -------
+    >>> from __future__ import print_function
+    >>> import numpy as np
+    >>> import time
+    >>> from math import pi
+    >>> from os.path import dirname, abspath, join as pjoin
+    >>> import Corrfunc
+    >>> from Corrfunc.mocks.DDtheta_mocks \
+        import find_fastest_DDtheta_mocks_bin_refs
+    >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
+    ...                 "../mocks/tests/", "angular_bins")
+    >>> N = 100000
+    >>> nthreads = 4
+    >>> seed = 42
+    >>> np.random.seed(seed)
+    >>> RA1 = np.random.uniform(0.0, 2.0*pi, N)*180.0/pi
+    >>> cos_theta = np.random.uniform(-1.0, 1.0, N)
+    >>> DEC1 = 90.0 - np.arccos(cos_theta)*180.0/pi
+    >>> autocorr = 1
+    >>> best, _ = find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, \
+    ...                                               binfile, RA1, DEC1, \
+    ...                                               return_runtimes=True)
+    >>> print(best) # doctest:+SKIP
+    (2, 1)
+
+    .. note:: Since the result might change depending on the computer,
+    doctest is skipped for this function.
+    """
+
+    import logging
+
+    weights1 = None
+    weights2 = None
+    weight_type = None
+
+    try:
+        from Corrfunc._countpairs_mocks import countpairs_theta_mocks as \
+            DDtheta_mocks_extn
+    except ImportError:
+        msg0 = "Could not import the C extension for the angular " \
+              "correlation function for mocks."
+        raise ImportError(msg0)
+
+    import numpy as np
+    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec, \
+        return_file_with_rbins, convert_to_native_endian, process_weights
+    from future.utils import bytes_to_native_str
+    import itertools
+    import time
+
+    if autocorr == 0:
+        if RA2 is None or DEC2 is None:
+            msg1 = "Must pass valid arrays for RA2/DEC2 for " \
+                  "computing cross-correlation."
+            raise ValueError(msg1)
+    else:
+        RA2 = np.empty(1)
+        DEC2 = np.empty(1)
+
+    if link_in_ra is True:
+        link_in_dec = True
+
+    if link_in_dec is False & link_in_ra is False:
+        msg2 = "Warning: Brute-force calculation without any gridding " \
+               "is forced,as link_in_dec and link_in_ra are both set " \
+               "to False. Please be sure to turn on at least link_in_dec," \
+               "or both link_in_dec and link_in_ra on."
+        raise ValueError(msg2)
+
+    if link_in_dec is True:
+        if link_in_ra is False:
+            msg3 = "Info: Gridding in the declination only, as link_in_dec " \
+                   "is set to True while link_in_ra is set to False." \
+                   "Thus looping is only needed over the range of " \
+                   "(min, max) bin, with refinements in the declination."
+            print(msg3)
+
+    weights1, weights2 = \
+        process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
+
+    # Ensure all input arrays are native endian
+    RA1, DEC1, weights1, RA2, DEC2, weights2 = [
+        convert_to_native_endian(arr, warn=True) for arr in
+        [RA1, DEC1, weights1, RA2, DEC2, weights2]]
+
+    fix_ra_dec(RA1, DEC1)
+    if autocorr == 0:
+        fix_ra_dec(RA2, DEC2)
+
+    # Passing None parameters breaks the parsing code, so avoid this
+    kwargs = {}
+    for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2']:
+        v = locals()[k]
+        if v is not None:
+            kwargs[k] = v
+
+    integer_isa = translate_isa_string_to_enum(isa)
+    rbinfile, delete_after_use = return_file_with_rbins(binfile)
+    bin_refs = np.arange(1, maxbinref + 1)
+    bin_ref_perms = itertools.product(bin_refs, bin_refs)
+    dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
+                      (bytes_to_native_str(b'nDEC'), np.int),
+                      (bytes_to_native_str(b'avg_time'), np.float),
+                      (bytes_to_native_str(b'sigma_time'), np.float)])
+    all_runtimes = np.zeros(maxbinref ** 3, dtype=dtype)
+    all_runtimes[:] = np.inf
+
+    for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
+        total_runtime = 0.0
+        total_sqr_runtime = 0.0
+
+        for _ in range(nrepeats):
+            t0 = time.time()
+            extn_results = DDtheta_mocks_extn(
+                autocorr, nthreads, rbinfile,
+                RA1, DEC1, RA2, DEC2,
+                link_in_dec=link_in_dec,
+                link_in_ra=link_in_ra,
+                verbose=verbose,
+                output_thetaavg=output_thetaavg,
+                ra_refine_factor=nRA,
+                dec_refine_factor=nDEC,
+                max_cells_per_dim=max_cells_per_dim,
+                isa=integer_isa)
+            t1 = time.time()
+
+            if extn_results is None:
+                msg4 = "RuntimeError occurred with perms = ({0}, {1})". \
+                    format(nRA, nDEC)
+                print(msg4)
+                print("Continuing...")
+                continue
+
+            dt = (t1 - t0)
+            total_runtime += dt
+            total_sqr_runtime += dt * dt
+
+        avg_runtime = total_runtime / nrepeats
+
+        # variance = E(X^2) - E^2(X)
+        # disp = sqrt(variance)
+        runtime_disp = np.sqrt(total_sqr_runtime / nrepeats -
+                               avg_runtime * avg_runtime)
+
+        all_runtimes[ii]['nRA'] = nRA
+        all_runtimes[ii]['nDEC'] = nDEC
+        all_runtimes[ii]['avg_time'] = avg_runtime
+        all_runtimes[ii]['sigma_time'] = runtime_disp
+
+    if delete_after_use:
+        import os
+        os.remove(rbinfile)
+
+    all_runtimes.sort(order=('avg_time', 'sigma_time'))
+    results = (all_runtimes[0]['nRA'],
+               all_runtimes[0]['nDEC'])
+
+    optional_returns = return_runtimes
+    if not optional_returns:
+        ret = results
+    else:
+        ret = (results,)
+        if return_runtimes:
+            ret += (all_runtimes,)
+
+    return ret
+
+
 if __name__ == '__main__':
     import doctest
+
     doctest.testmod()
