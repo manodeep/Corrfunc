@@ -539,7 +539,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     if link_in_ra is True:
         link_in_dec = True
 
-    if link_in_dec is False & link_in_ra is False:
+    if link_in_dec is False and link_in_ra is False:
         msg2 = "Warning: Brute-force calculation without any gridding " \
                "is forced,as link_in_dec and link_in_ra are both set " \
                "to False. Please be sure to turn on at least link_in_dec," \
