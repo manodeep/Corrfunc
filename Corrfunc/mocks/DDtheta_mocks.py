@@ -506,8 +506,6 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     doctest is skipped for this function.
     """
 
-    import logging
-
     weights1 = None
     weights2 = None
     weight_type = None
