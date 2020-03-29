@@ -158,7 +158,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     max_cells_per_dim : integer, default is 100, typical values in [50-300]
         Controls the maximum number of cells per dimension. Total number of
-        cells can be up to (max_cells_per_dim)^3. Only increase if ``thetamax``
+        cells can be up to (thetamax)^3. Only increase if ``thetamax``
         is too small relative to the boxsize (and increasing helps the
         runtime).
 
@@ -441,15 +441,17 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
         Controls the maximum number of cells per dimension. Total number of
-        cells can be up to (max_cells_per_dim)^3. Only increase if ``rpmax`` is
+        cells can be up to (thetamax)^3. Only increase if ``rpmax`` is
         too small relative to the boxsize (and increasing helps the runtime).
 
     maxbinref: integer (default 3)
-        The maximum ``bin refine factor`` to use along each dimension. From
-        experience, values larger than 3 do not improve ``wp`` runtime.
+        The maximum ``bin refine factor`` to use along each dimension.
 
         Runtime of module scales as ``maxbinref^3``, so change the value of
         ``maxbinref`` with caution.
+
+        Note that ``max_cells_per_dim`` might need to be increased
+        to accommodate really large ``maxbinref``.
 
     nrepeats: integer (default 3)
         Number of times to repeat the timing for an individual run. Accounts
@@ -524,6 +526,36 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     import itertools
     import time
 
+    weights1, weights2 = process_weights(weights1, weights2, RA1, RA2,
+                                         weight_type, autocorr)
+
+    # Ensure all input arrays are native endian
+    RA1, DEC1, weights1, RA2, DEC2, weights2 = [
+        convert_to_native_endian(arr, warn=True) for arr in
+        [RA1, DEC1, weights1, RA2, DEC2, weights2]]
+
+    fix_ra_dec(RA1, DEC1)
+    if autocorr == 0:
+        fix_ra_dec(RA2, DEC2)
+
+    # Passing None parameters breaks the parsing code, so avoid this
+    kwargs = {}
+    for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2']:
+        v = locals()[k]
+        if v is not None:
+            kwargs[k] = v
+
+    integer_isa = translate_isa_string_to_enum(isa)
+    rbinfile, delete_after_use = return_file_with_rbins(binfile)
+    bin_refs = np.arange(1, maxbinref + 1)
+    bin_ref_perms = itertools.product(bin_refs, bin_refs)
+    dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
+                      (bytes_to_native_str(b'nDEC'), np.int),
+                      (bytes_to_native_str(b'avg_time'), np.float),
+                      (bytes_to_native_str(b'sigma_time'), np.float)])
+    all_runtimes = np.zeros(maxbinref ** 3, dtype=dtype)
+    all_runtimes[:] = np.inf
+
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
             msg1 = "Must pass valid arrays for RA2/DEC2 for "\
@@ -543,137 +575,73 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
                "or both link_in_dec and link_in_ra on."
         raise ValueError(msg2)
 
-    if link_in_dec is True:
-        if link_in_ra is True:
+    if link_in_ra is True:
+        for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
+            total_runtime = 0.0
+            total_sqr_runtime = 0.0
+            for _ in range(nrepeats):
+                t0 = time.time()
+                extn_results = DDtheta_mocks_extn(
+                    autocorr, nthreads, rbinfile,
+                    RA1, DEC1, RA2, DEC2,
+                    link_in_dec=link_in_dec,
+                    link_in_ra=link_in_ra,
+                    verbose=verbose,
+                    output_thetaavg=output_thetaavg,
+                    ra_refine_factor=nRA,
+                    dec_refine_factor=nDEC,
+                    max_cells_per_dim=max_cells_per_dim,
+                    isa=integer_isa)
+                t1 = time.time()
 
-            weights1, weights2 = process_weights(weights1, weights2, RA1, RA2,
-                                                 weight_type, autocorr)
+                if extn_results is None:
+                    msg4 = "RuntimeError occurred with perms = ({0}, {1})".\
+                        format(nRA, nDEC)
+                    print(msg4)
+                    print("Continuing...")
+                    continue
 
-            # Ensure all input arrays are native endian
-            RA1, DEC1, weights1, RA2, DEC2, weights2 = [
-                convert_to_native_endian(arr, warn=True) for arr in
-                [RA1, DEC1, weights1, RA2, DEC2, weights2]]
+                dt = (t1 - t0)
+                total_runtime += dt
+                total_sqr_runtime += dt * dt
 
-            fix_ra_dec(RA1, DEC1)
-            if autocorr == 0:
-                fix_ra_dec(RA2, DEC2)
+            avg_runtime = total_runtime / nrepeats
 
-            # Passing None parameters breaks the parsing code, so avoid this
-            kwargs = {}
-            for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2']:
-                v = locals()[k]
-                if v is not None:
-                    kwargs[k] = v
+            # variance = E(X^2) - E^2(X)
+            # disp = sqrt(variance)
+            runtime_disp = np.sqrt(total_sqr_runtime / nrepeats -
+                                   avg_runtime * avg_runtime)
 
-            integer_isa = translate_isa_string_to_enum(isa)
-            rbinfile, delete_after_use = return_file_with_rbins(binfile)
-            bin_refs = np.arange(1, maxbinref + 1)
-            bin_ref_perms = itertools.product(bin_refs, bin_refs)
-            dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
-                              (bytes_to_native_str(b'nDEC'), np.int),
-                              (bytes_to_native_str(b'avg_time'), np.float),
-                              (bytes_to_native_str(b'sigma_time'), np.float)])
-            all_runtimes = np.zeros(maxbinref ** 3, dtype=dtype)
-            all_runtimes[:] = np.inf
+            all_runtimes[ii]['nRA'] = nRA
+            all_runtimes[ii]['nDEC'] = nDEC
+            all_runtimes[ii]['avg_time'] = avg_runtime
+            all_runtimes[ii]['sigma_time'] = runtime_disp
 
-            for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
-                total_runtime = 0.0
-                total_sqr_runtime = 0.0
+        if delete_after_use:
+            import os
+            os.remove(rbinfile)
 
-                for _ in range(nrepeats):
-                    t0 = time.time()
-                    extn_results = DDtheta_mocks_extn(
-                        autocorr, nthreads, rbinfile,
-                        RA1, DEC1, RA2, DEC2,
-                        link_in_dec=link_in_dec,
-                        link_in_ra=link_in_ra,
-                        verbose=verbose,
-                        output_thetaavg=output_thetaavg,
-                        ra_refine_factor=nRA,
-                        dec_refine_factor=nDEC,
-                        max_cells_per_dim=max_cells_per_dim,
-                        isa=integer_isa)
-                    t1 = time.time()
+        all_runtimes.sort(order=('avg_time', 'sigma_time'))
+        results = (all_runtimes[0]['nRA'],
+                   all_runtimes[0]['nDEC'])
 
-                    if extn_results is None:
-                        msg4 = "RuntimeError occurred with perms = ({0}, {1})".\
-                            format(nRA, nDEC)
-                        print(msg4)
-                        print("Continuing...")
-                        continue
+        optional_returns = return_runtimes
+        if not optional_returns:
+            ret = results
+        else:
+            ret = (results,)
+            if return_runtimes:
+                ret += (all_runtimes,)
 
-                    dt = (t1 - t0)
-                    total_runtime += dt
-                    total_sqr_runtime += dt * dt
-
-                avg_runtime = total_runtime / nrepeats
-
-                # variance = E(X^2) - E^2(X)
-                # disp = sqrt(variance)
-                runtime_disp = np.sqrt(total_sqr_runtime / nrepeats -
-                                       avg_runtime * avg_runtime)
-
-                all_runtimes[ii]['nRA'] = nRA
-                all_runtimes[ii]['nDEC'] = nDEC
-                all_runtimes[ii]['avg_time'] = avg_runtime
-                all_runtimes[ii]['sigma_time'] = runtime_disp
-
-            if delete_after_use:
-                import os
-                os.remove(rbinfile)
-
-            all_runtimes.sort(order=('avg_time', 'sigma_time'))
-            results = (all_runtimes[0]['nRA'],
-                       all_runtimes[0]['nDEC'])
-
-            optional_returns = return_runtimes
-            if not optional_returns:
-                ret = results
-            else:
-                ret = (results,)
-                if return_runtimes:
-                    ret += (all_runtimes,)
-
-            return ret
+        return ret
 
     if link_in_dec is True:
         if link_in_ra is False:
-
             msg3 = "Info: Gridding in the declination only, as link_in_dec "\
                    "is set to True while link_in_ra is set to False. "\
                    "Thus looping is only needed over the range of "\
                    "(min, max) bin, with refinements in the declination."
             print(msg3)
-
-            weights1, weights2 = process_weights(weights1, weights2, RA1, RA2,
-                                                 weight_type, autocorr)
-
-            # Ensure all input arrays are native endian
-            RA1, DEC1, weights1, RA2, DEC2, weights2 = [
-                convert_to_native_endian(arr, warn=True) for arr in
-                [RA1, DEC1, weights1, RA2, DEC2, weights2]]
-
-            fix_ra_dec(RA1, DEC1)
-            if autocorr == 0:
-                fix_ra_dec(RA2, DEC2)
-
-            # Passing None parameters breaks the parsing code, so avoid this
-            kwargs = {}
-            for k in ['weights1', 'weights2', 'weight_type', 'RA2', 'DEC2']:
-                v = locals()[k]
-                if v is not None:
-                    kwargs[k] = v
-
-            integer_isa = translate_isa_string_to_enum(isa)
-            rbinfile, delete_after_use = return_file_with_rbins(binfile)
-            bin_refs = np.arange(1, maxbinref + 1)
-            bin_ref_perms = itertools.product(bin_refs, bin_refs)
-            dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
-                              (bytes_to_native_str(b'nDEC'), np.int),
-                              (bytes_to_native_str(b'avg_time'), np.float),
-                              (bytes_to_native_str(b'sigma_time'), np.float)])
-            all_runtimes = np.zeros(maxbinref ** 3, dtype=dtype)
-            all_runtimes[:] = np.inf
 
             for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
                 total_runtime = 0.0
