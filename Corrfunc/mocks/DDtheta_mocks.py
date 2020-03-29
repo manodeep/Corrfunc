@@ -266,32 +266,31 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
       7.079458  10.000000   8.622400   37842502   1.000000
 
     """
-
     try:
-        from Corrfunc._countpairs_mocks import countpairs_theta_mocks as \
+        from Corrfunc._countpairs_mocks import countpairs_theta_mocks as\
             DDtheta_mocks_extn
     except ImportError:
-        msg = "Could not import the C extension for the angular " \
+        msg = "Could not import the C extension for the angular "\
               "correlation function for mocks."
         raise ImportError(msg)
 
     import numpy as np
-    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec, \
-        return_file_with_rbins, convert_to_native_endian, \
+    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
+        return_file_with_rbins, convert_to_native_endian,\
         sys_pipes, process_weights
     from future.utils import bytes_to_native_str
 
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
-            msg = "Must pass valid arrays for RA2/DEC2 for " \
+            msg = "Must pass valid arrays for RA2/DEC2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
     else:
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
 
-    weights1, weights2 = \
-        process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
+    weights1, weights2 = process_weights(weights1, weights2,
+                                         RA1, RA2, weight_type, autocorr)
 
     # Ensure all input arrays are native endian
     RA1, DEC1, weights1, RA2, DEC2, weights2 = [
@@ -484,7 +483,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     >>> from math import pi
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
-    >>> from Corrfunc.mocks.DDtheta_mocks \
+    >>> from Corrfunc.mocks.DDtheta_mocks\
         import find_fastest_DDtheta_mocks_bin_refs
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
     ...                 "../mocks/tests/", "angular_bins")
@@ -496,8 +495,8 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     >>> cos_theta = np.random.uniform(-1.0, 1.0, N)
     >>> DEC1 = 90.0 - np.arccos(cos_theta)*180.0/pi
     >>> autocorr = 1
-    >>> best, _ = find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, \
-    ...                                               binfile, RA1, DEC1, \
+    >>> best, _ = find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads,\
+    ...                                               binfile, RA1, DEC1,\
     ...                                               return_runtimes=True)
     >>> print(best) # doctest:+SKIP
     (2, 1)
@@ -511,15 +510,15 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     weight_type = None
 
     try:
-        from Corrfunc._countpairs_mocks import countpairs_theta_mocks as \
+        from Corrfunc._countpairs_mocks import countpairs_theta_mocks as\
             DDtheta_mocks_extn
     except ImportError:
-        msg0 = "Could not import the C extension for the angular " \
+        msg0 = "Could not import the C extension for the angular "\
               "correlation function for mocks."
         raise ImportError(msg0)
 
     import numpy as np
-    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec, \
+    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
         return_file_with_rbins, convert_to_native_endian, process_weights
     from future.utils import bytes_to_native_str
     import itertools
@@ -527,7 +526,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
 
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
-            msg1 = "Must pass valid arrays for RA2/DEC2 for " \
+            msg1 = "Must pass valid arrays for RA2/DEC2 for "\
                   "computing cross-correlation."
             raise ValueError(msg1)
     else:
@@ -538,17 +537,17 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
         link_in_dec = True
 
     if link_in_dec is False and link_in_ra is False:
-        msg2 = "Warning: Brute-force calculation without any gridding " \
-               "is forced, as link_in_dec and link_in_ra are both set " \
-               "to False. Please be sure to turn on at least link_in_dec, " \
+        msg2 = "Warning: Brute-force calculation without any gridding "\
+               "is forced, as link_in_dec and link_in_ra are both set "\
+               "to False. Please be sure to turn on at least link_in_dec, "\
                "or both link_in_dec and link_in_ra on."
         raise ValueError(msg2)
 
     if link_in_dec is True:
         if link_in_ra is True:
 
-            weights1, weights2 = \
-                process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
+            weights1, weights2 = process_weights(weights1, weights2, RA1, RA2,
+                                                 weight_type, autocorr)
 
             # Ensure all input arrays are native endian
             RA1, DEC1, weights1, RA2, DEC2, weights2 = [
@@ -597,7 +596,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
                     t1 = time.time()
 
                     if extn_results is None:
-                        msg4 = "RuntimeError occurred with perms = ({0}, {1})". \
+                        msg4 = "RuntimeError occurred with perms = ({0}, {1})".\
                             format(nRA, nDEC)
                         print(msg4)
                         print("Continuing...")
@@ -640,14 +639,14 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     if link_in_dec is True:
         if link_in_ra is False:
 
-            msg3 = "Info: Gridding in the declination only, as link_in_dec " \
-                   "is set to True while link_in_ra is set to False. " \
-                   "Thus looping is only needed over the range of " \
+            msg3 = "Info: Gridding in the declination only, as link_in_dec "\
+                   "is set to True while link_in_ra is set to False. "\
+                   "Thus looping is only needed over the range of "\
                    "(min, max) bin, with refinements in the declination."
             print(msg3)
 
-            weights1, weights2 = \
-                process_weights(weights1, weights2, RA1, RA2, weight_type, autocorr)
+            weights1, weights2 = process_weights(weights1, weights2, RA1, RA2,
+                                                 weight_type, autocorr)
 
             # Ensure all input arrays are native endian
             RA1, DEC1, weights1, RA2, DEC2, weights2 = [
@@ -696,7 +695,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
                     t1 = time.time()
 
                     if extn_results is None:
-                        msg4 = "RuntimeError occurred with perms = ({0}, {1})". \
+                        msg4 = "RuntimeError occurred with perms = ({0}, {1})".\
                             format(nRA, nDEC)
                         print(msg4)
                         print("Continuing...")
