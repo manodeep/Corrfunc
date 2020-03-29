@@ -484,7 +484,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     >>> from math import pi
     >>> from os.path import dirname, abspath, join as pjoin
     >>> import Corrfunc
-    >>> from Corrfunc.mocks.DDtheta_mocks\
+    >>> from Corrfunc.mocks.DDtheta_mocks \
         import find_fastest_DDtheta_mocks_bin_refs
     >>> binfile = pjoin(dirname(abspath(Corrfunc.__file__)),
     ...                 "../mocks/tests/", "angular_bins")
@@ -574,7 +574,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
                "or both link_in_dec and link_in_ra on."
         raise ValueError(msg2)
 
-    if link_in_ra is True:
+    if link_in_ra:
         for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
             total_runtime = 0.0
             total_sqr_runtime = 0.0
@@ -640,6 +640,8 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
                    "Thus looping is only needed over the range of "\
                    "(min, max) bin, with refinements in the declination."
             print(msg3)
+
+            # bin_ref_perms = [(None, x) for x in bin_ref_perms]
 
             for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
                 total_runtime = 0.0
