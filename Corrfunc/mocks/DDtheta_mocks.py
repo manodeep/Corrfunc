@@ -547,7 +547,10 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     integer_isa = translate_isa_string_to_enum(isa)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     bin_refs = np.arange(1, maxbinref + 1)
-    bin_ref_perms = itertools.product(bin_refs, bin_refs)
+    if link_in_ra:
+        bin_ref_perms = itertools.product(bin_refs, bin_refs)
+    else:
+        bin_ref_perms = [(1, binref) for binref in bin_refs]
     dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
                       (bytes_to_native_str(b'nDEC'), np.int),
                       (bytes_to_native_str(b'avg_time'), np.float),
@@ -575,63 +578,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
         raise ValueError(msg2)
 
     if link_in_ra:
-        for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
-            total_runtime = 0.0
-            total_sqr_runtime = 0.0
-            for _ in range(nrepeats):
-                t0 = time.time()
-                extn_results = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
-                                                  RA1, DEC1, RA2, DEC2,
-                                                  link_in_dec=link_in_dec,
-                                                  link_in_ra=link_in_ra,
-                                                  verbose=verbose,
-                                                  output_thetaavg=output_thetaavg,
-                                                  ra_refine_factor=nRA,
-                                                  dec_refine_factor=nDEC,
-                                                  max_cells_per_dim=max_cells_per_dim,
-                                                  isa=integer_isa)
-                t1 = time.time()
-
-                if extn_results is None:
-                    msg4 = "RuntimeError occurred with perms = ({0}, {1})".\
-                        format(nRA, nDEC)
-                    print(msg4)
-                    print("Continuing...")
-                    continue
-
-                dt = (t1 - t0)
-                total_runtime += dt
-                total_sqr_runtime += dt * dt
-
-            avg_runtime = total_runtime / nrepeats
-
-            # variance = E(X^2) - E^2(X)
-            # disp = sqrt(variance)
-            runtime_disp = np.sqrt(total_sqr_runtime / nrepeats -
-                                   avg_runtime * avg_runtime)
-
-            all_runtimes[ii]['nRA'] = nRA
-            all_runtimes[ii]['nDEC'] = nDEC
-            all_runtimes[ii]['avg_time'] = avg_runtime
-            all_runtimes[ii]['sigma_time'] = runtime_disp
-
-        if delete_after_use:
-            import os
-            os.remove(rbinfile)
-
-        all_runtimes.sort(order=('avg_time', 'sigma_time'))
-        results = (all_runtimes[0]['nRA'],
-                   all_runtimes[0]['nDEC'])
-
-        optional_returns = return_runtimes
-        if not optional_returns:
-            ret = results
-        else:
-            ret = (results,)
-            if return_runtimes:
-                ret += (all_runtimes,)
-
-        return ret
+        pass
 
     if link_in_dec is True:
         if link_in_ra is False:
@@ -641,67 +588,64 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
                    "(min, max) bin, with refinements in the declination."
             print(msg3)
 
-            # bin_ref_perms = [(None, x) for x in bin_ref_perms]
+    for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
+        total_runtime = 0.0
+        total_sqr_runtime = 0.0
 
-            for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
-                total_runtime = 0.0
-                total_sqr_runtime = 0.0
+        for _ in range(nrepeats):
+            t0 = time.time()
+            extn_results = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
+                                              RA1, DEC1, RA2, DEC2,
+                                              link_in_dec=link_in_dec,
+                                              link_in_ra=link_in_ra,
+                                              verbose=verbose,
+                                              output_thetaavg=output_thetaavg,
+                                              ra_refine_factor=nRA,
+                                              dec_refine_factor=nDEC,
+                                              max_cells_per_dim=max_cells_per_dim,
+                                              isa=integer_isa)
+            t1 = time.time()
 
-                for _ in range(nrepeats):
-                    t0 = time.time()
-                    extn_results = DDtheta_mocks_extn(
-                        autocorr, nthreads, rbinfile,
-                        RA1, DEC1, RA2, DEC2,
-                        link_in_dec=link_in_dec,
-                        link_in_ra=link_in_ra,
-                        verbose=verbose,
-                        output_thetaavg=output_thetaavg,
-                        ra_refine_factor=1,
-                        dec_refine_factor=nDEC,
-                        max_cells_per_dim=max_cells_per_dim,
-                        isa=integer_isa)
-                    t1 = time.time()
+            if extn_results is None:
+                msg4 = "RuntimeError occurred with perms = ({0}, {1})".\
+                    format(nRA, nDEC)
+                print(msg4)
+                print("Continuing...")
+                continue
 
-                    if extn_results is None:
-                        msg4 = "RuntimeError occurred with perms = ({0}, {1})".\
-                            format(nRA, nDEC)
-                        print(msg4)
-                        print("Continuing...")
-                        continue
+            dt = (t1 - t0)
+            total_runtime += dt
+            total_sqr_runtime += dt * dt
 
-                    dt = (t1 - t0)
-                    total_runtime += dt
-                    total_sqr_runtime += dt * dt
+        avg_runtime = total_runtime / nrepeats
 
-                avg_runtime = total_runtime / nrepeats
+        # variance = E(X^2) - E^2(X)
+        # disp = sqrt(variance)
+        runtime_disp = np.sqrt(total_sqr_runtime / nrepeats -
+                               avg_runtime * avg_runtime)
 
-                # variance = E(X^2) - E^2(X)
-                # disp = sqrt(variance)
-                runtime_disp = np.sqrt(total_sqr_runtime / nrepeats -
-                                       avg_runtime * avg_runtime)
+        all_runtimes[ii]['nRA'] = nRA
+        all_runtimes[ii]['nDEC'] = nDEC
+        all_runtimes[ii]['avg_time'] = avg_runtime
+        all_runtimes[ii]['sigma_time'] = runtime_disp
 
-                all_runtimes[ii]['nRA'] = nRA
-                all_runtimes[ii]['nDEC'] = nDEC
-                all_runtimes[ii]['avg_time'] = avg_runtime
-                all_runtimes[ii]['sigma_time'] = runtime_disp
+    if delete_after_use:
+        import os
+        os.remove(rbinfile)
 
-            if delete_after_use:
-                import os
-                os.remove(rbinfile)
+    all_runtimes.sort(order=('avg_time', 'sigma_time'))
+    results = (all_runtimes[0]['nRA'],
+               all_runtimes[0]['nDEC'])
 
-            all_runtimes.sort(order=('avg_time', 'sigma_time'))
-            results = (all_runtimes[0]['nRA'],
-                       all_runtimes[0]['nDEC'])
+    optional_returns = return_runtimes
+    if not optional_returns:
+        ret = results
+    else:
+        ret = (results,)
+        if return_runtimes:
+            ret += (all_runtimes,)
 
-            optional_returns = return_runtimes
-            if not optional_returns:
-                ret = results
-            else:
-                ret = (results,)
-                if return_runtimes:
-                    ret += (all_runtimes,)
-
-            return ret
+    return ret
 
 
 if __name__ == '__main__':
