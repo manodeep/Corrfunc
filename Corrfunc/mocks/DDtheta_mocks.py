@@ -158,7 +158,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     max_cells_per_dim : integer, default is 100, typical values in [50-300]
         Controls the maximum number of cells per dimension. Total number of
-        cells can be up to (thetamax)^3. Only increase if ``thetamax``
+        cells can be up to (max_cells_per_dim)^2. Only increase if ``thetamax``
         is too small relative to the boxsize (and increasing helps the
         runtime).
 
@@ -440,7 +440,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
 
     max_cells_per_dim: integer, default is 100, typical values in [50-300]
         Controls the maximum number of cells per dimension. Total number of
-        cells can be up to (thetamax)^3. Only increase if ``rpmax`` is
+        cells can be up to (max_cells_per_dim)^2. Only increase if ``rpmax`` is
         too small relative to the boxsize (and increasing helps the runtime).
 
     maxbinref: integer (default 3)
@@ -514,9 +514,9 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
         from Corrfunc._countpairs_mocks import countpairs_theta_mocks as\
             DDtheta_mocks_extn
     except ImportError:
-        msg0 = "Could not import the C extension for the angular "\
+        msg = "Could not import the C extension for the angular "\
               "correlation function for mocks."
-        raise ImportError(msg0)
+        raise ImportError(msg)
 
     import numpy as np
     from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
@@ -551,6 +551,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
         bin_ref_perms = itertools.product(bin_refs, bin_refs)
     else:
         bin_ref_perms = [(1, binref) for binref in bin_refs]
+
     dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
                       (bytes_to_native_str(b'nDEC'), np.int),
                       (bytes_to_native_str(b'avg_time'), np.float),
@@ -560,9 +561,9 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
 
     if autocorr == 0:
         if RA2 is None or DEC2 is None:
-            msg1 = "Must pass valid arrays for RA2/DEC2 for "\
+            msg = "Must pass valid arrays for RA2/DEC2 for "\
                   "computing cross-correlation."
-            raise ValueError(msg1)
+            raise ValueError(msg)
     else:
         RA2 = np.empty(1)
         DEC2 = np.empty(1)
@@ -571,22 +572,18 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
         link_in_dec = True
 
     if link_in_dec is False and link_in_ra is False:
-        msg2 = "Warning: Brute-force calculation without any gridding "\
-               "is forced, as link_in_dec and link_in_ra are both set "\
-               "to False. Please be sure to turn on at least link_in_dec, "\
-               "or both link_in_dec and link_in_ra on."
-        raise ValueError(msg2)
+        msg = "Error: Brute-force calculation without any gridding " \
+              "is forced, as link_in_dec and link_in_ra are both set " \
+              "to False. Please set at least one of link_in_dec, link_in_ra=True " \
+              "to enable gridding along DEC or along both RA and DEC."
+        raise ValueError(msg)
 
-    if link_in_ra:
-        pass
-
-    if link_in_dec is True:
-        if link_in_ra is False:
-            msg3 = "Info: Gridding in the declination only, as link_in_dec "\
-                   "is set to True while link_in_ra is set to False. "\
-                   "Thus looping is only needed over the range of "\
-                   "(min, max) bin, with refinements in the declination."
-            print(msg3)
+    if not link_in_ra:
+        if verbose:
+            msg = "INFO: Since ``link_in_ra`` is not set, only gridding in declination " \
+                  "Checking with refinements in declination ranging from [1, {}] and a " \
+                  "maximum of {} bins".format(maxbinref, max_cells_per_dim)
+            print(msg)
 
     for ii, (nRA, nDEC) in enumerate(bin_ref_perms):
         total_runtime = 0.0
@@ -607,11 +604,9 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
             t1 = time.time()
 
             if extn_results is None:
-                msg4 = "RuntimeError occurred with perms = ({0}, {1})".\
+                msg = "RuntimeError occurred with perms = ({0}, {1})".\
                     format(nRA, nDEC)
-                print(msg4)
-                print("Continuing...")
-                continue
+                raise ValueError(msg)
 
             dt = (t1 - t0)
             total_runtime += dt
