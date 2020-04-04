@@ -17,7 +17,7 @@ This is a bug-fix release and contains general code quality improvements.
 
 Enhancements
 ------------
-
+- Add find_fastest_DDtheta_mocks_bin_refs() function to Corrfunc/mocks/DDtheta_mocks [#216]
 
 
 Bug fixes
