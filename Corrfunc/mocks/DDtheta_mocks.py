@@ -446,7 +446,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     maxbinref: integer (default 3)
         The maximum ``bin refine factor`` to use along each dimension.
 
-        Runtime of module scales as ``maxbinref^3``, so change the value of
+        Runtime of module scales as ``maxbinref^2``, so change the value of
         ``maxbinref`` with caution.
 
         Note that ``max_cells_per_dim`` might need to be increased
@@ -549,14 +549,20 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     bin_refs = np.arange(1, maxbinref + 1)
     if link_in_ra:
         bin_ref_perms = itertools.product(bin_refs, bin_refs)
+
+        dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
+                          (bytes_to_native_str(b'nDEC'), np.int),
+                          (bytes_to_native_str(b'avg_time'), np.float),
+                          (bytes_to_native_str(b'sigma_time'), np.float)])
+        all_runtimes = np.zeros(maxbinref ** 2, dtype=dtype)
     else:
         bin_ref_perms = [(1, binref) for binref in bin_refs]
 
-    dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
-                      (bytes_to_native_str(b'nDEC'), np.int),
-                      (bytes_to_native_str(b'avg_time'), np.float),
-                      (bytes_to_native_str(b'sigma_time'), np.float)])
-    all_runtimes = np.zeros(maxbinref ** 3, dtype=dtype)
+        dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
+                          (bytes_to_native_str(b'nDEC'), np.int),
+                          (bytes_to_native_str(b'avg_time'), np.float),
+                          (bytes_to_native_str(b'sigma_time'), np.float)])
+        all_runtimes = np.zeros(maxbinref ** 1, dtype=dtype)
     all_runtimes[:] = np.inf
 
     if autocorr == 0:
@@ -590,7 +596,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
         total_sqr_runtime = 0.0
 
         for _ in range(nrepeats):
-            t0 = time.time()
+            t0 = time.perf_counter()
             extn_results = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
                                               RA1, DEC1, RA2, DEC2,
                                               link_in_dec=link_in_dec,
@@ -601,7 +607,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
                                               dec_refine_factor=nDEC,
                                               max_cells_per_dim=max_cells_per_dim,
                                               isa=integer_isa)
-            t1 = time.time()
+            t1 = time.perf_counter()
 
             if extn_results is None:
                 msg = "RuntimeError occurred with perms = ({0}, {1})".\
