@@ -549,20 +549,17 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
     bin_refs = np.arange(1, maxbinref + 1)
     if link_in_ra:
         bin_ref_perms = itertools.product(bin_refs, bin_refs)
+        nperms = maxbinref ** 2
 
-        dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
-                          (bytes_to_native_str(b'nDEC'), np.int),
-                          (bytes_to_native_str(b'avg_time'), np.float),
-                          (bytes_to_native_str(b'sigma_time'), np.float)])
-        all_runtimes = np.zeros(maxbinref ** 2, dtype=dtype)
     else:
         bin_ref_perms = [(1, binref) for binref in bin_refs]
+        nperms = maxbinref ** 1
 
-        dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
-                          (bytes_to_native_str(b'nDEC'), np.int),
-                          (bytes_to_native_str(b'avg_time'), np.float),
-                          (bytes_to_native_str(b'sigma_time'), np.float)])
-        all_runtimes = np.zeros(maxbinref ** 1, dtype=dtype)
+    dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
+                      (bytes_to_native_str(b'nDEC'), np.int),
+                      (bytes_to_native_str(b'avg_time'), np.float),
+                      (bytes_to_native_str(b'sigma_time'), np.float)])
+    all_runtimes = np.zeros(nperms, dtype=dtype)
     all_runtimes[:] = np.inf
 
     if autocorr == 0:
