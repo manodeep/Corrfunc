@@ -43,10 +43,11 @@ jobs:
 #          ${{ runner.os }}-      
 
       - name: Install dependencies
-        run: |
+        run: conda install -q --yes -c conda-forge numpy=${{ matrix.numpy-version }} gsl
 #         conda create -q --yes -n test python={{ matrix.python-version }}
 #         source activate test
-          conda install -q --yes numpy=${{ matrix.numpy-version }} || conda install -q --yes -c conda-forge numpy=${{ matrix.numpy-version }} gsl
+#          conda install -q --yes numpy=${{ matrix.numpy-version }} 
+#              
 #         python -m pip install --upgrade pip
 #         python -m pip install --ignore-installed certifi --upgrade
 #         python -m pip install sphinx>=1.8
