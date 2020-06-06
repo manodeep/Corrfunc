@@ -20,17 +20,7 @@ jobs:
           activate-environment: test
           python-version: ${{ matrix.python-version }}
           channels: conda-forge
-          
-      - name: Conda info
-        shell: bash -l {0}
-        run: conda info
-      - name: Conda list
-        shell: pwsh
-        run: conda list
-
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
-      
+            
 #    - name: Cache pip
 #      uses: actions/cache@v2
 #      with:
@@ -52,6 +42,17 @@ jobs:
 #         python -m pip install --ignore-installed certifi --upgrade
 #         python -m pip install sphinx>=1.8
 #         if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi        
+
+      - name: Conda info
+        shell: bash -l {0}
+        run: conda info
+      - name: Conda list
+        shell: pwsh
+        run: conda list
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Show compiler version
+        run: ${{ matrix.compiler }} --version
 
       - uses: actions/checkout@v2
       - name: build
