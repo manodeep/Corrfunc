@@ -28,8 +28,8 @@ jobs:
         shell: pwsh
         run: conda list
 
-    - name: Display Python version
-      run: python -c "import sys; print(sys.version)"
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
       
 #    - name: Cache pip
 #      uses: actions/cache@v2
@@ -42,24 +42,24 @@ jobs:
 #          ${{ runner.os }}-pip-
 #          ${{ runner.os }}-      
 
-    - name: Install dependencies
-      run: |
-#        conda create -q --yes -n test python={{ matrix.python-version }}
-#        source activate test
-        conda install -q --yes numpy=${{ matrix.numpy-version }} || conda install -q --yes -c conda-forge numpy=${{ matrix.numpy-version }} gsl
-#        python -m pip install --upgrade pip
-#        python -m pip install --ignore-installed certifi --upgrade
-#        python -m pip install sphinx>=1.8
-#        if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi        
+      - name: Install dependencies
+        run: |
+#         conda create -q --yes -n test python={{ matrix.python-version }}
+#         source activate test
+          conda install -q --yes numpy=${{ matrix.numpy-version }} || conda install -q --yes -c conda-forge numpy=${{ matrix.numpy-version }} gsl
+#         python -m pip install --upgrade pip
+#         python -m pip install --ignore-installed certifi --upgrade
+#         python -m pip install sphinx>=1.8
+#         if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi        
 
-    - name: build
-      run: make -r CC=${{ matrix.compiler }}
-    
-    - name: install
-      run: make install CC=${{ matrix.compiler }} 
-    
-    - name: tests
-      run: make tests CC=${{ matrix.compiler }} 
-    
-    - name: python extensions
-      run: python -m pip install -e . CC=${{ matrix.compiler }} 
+      - name: build
+        run: make -r CC=${{ matrix.compiler }}
+
+      - name: install
+        run: make install CC=${{ matrix.compiler }} 
+
+      - name: tests
+        run: make tests CC=${{ matrix.compiler }} 
+
+      - name: python extensions
+        run: python -m pip install -e . CC=${{ matrix.compiler }} 
