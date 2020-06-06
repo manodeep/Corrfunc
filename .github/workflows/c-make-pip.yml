@@ -53,6 +53,7 @@ jobs:
 #         python -m pip install sphinx>=1.8
 #         if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi        
 
+      - uses: actions/checkout@v2
       - name: build
         run: make -r CC=${{ matrix.compiler }}
 
