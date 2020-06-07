@@ -40,6 +40,7 @@ jobs:
 #          ${{ runner.os }}-      
 
       - name: Install dependencies
+        shell: bash -l {0}
         run: conda install -q --yes numpy=${{ matrix.numpy-version }} gsl
   #         conda create -q --yes -n test python={{ matrix.python-version }}
   #         source activate test
@@ -59,9 +60,19 @@ jobs:
         run: conda list
 
       - name: Display Python version
+        shell: pwsh
+        run: python -c "import sys; print(sys.version)"
+
+      - name: Display Python version
+        shell: bash
+        run: python -c "import sys; print(sys.version)"
+
+      - name: Display Python version
+        shell: bash -l {0}
         run: python -c "import sys; print(sys.version)"
 
       - name: Display PATH, compiler
+        shell: bash -l {0}
         run: |
           echo $PATH
           echo which ${{ matrix.compiler }}
