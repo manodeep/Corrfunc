@@ -54,15 +54,23 @@ jobs:
       - name: Conda info
         shell: bash -l {0}
         run: conda info
+        
       - name: Conda list
         shell: pwsh
         run: conda list
+
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
+
       - name: Display PATH, compiler
         run: |
           echo $PATH
           echo which ${{ matrix.compiler }}
+          echo which gsl-config
+          source activate test
+          echo $PATH
+          echo which ${{ matrix.compiler }}
+          echo which gsl-config
 
       - name: Show compiler version
         run: ${{ matrix.compiler }} --version
