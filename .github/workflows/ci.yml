@@ -79,6 +79,5 @@ jobs:
 
       - name: doctests
         shell: bash -l {0}
-        if: matrix.os == 'ubuntu-18.04' && matrix.compiler == 'gcc-7' &&
-        matrix.python-version == "3.6" && matrix.numpy-version == '1.14'
+        if: matrix.os == 'ubuntu-18.04' && matrix.compiler == 'gcc-7' && matrix.python-version == '3.6' && matrix.numpy-version == '1.14'
         run: make -C docs doctest
