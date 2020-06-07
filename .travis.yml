@@ -11,8 +11,8 @@ notifications:
 env:
   global:
     - NUMPY_VERSION=1.12
-    - DOCTEST=TRUE
-    - CORRFUNC_CI=TRUE
+    - DOCTEST=true
+    - CORRFUNC_CI=true
 
 addons:
   apt:
@@ -46,7 +46,7 @@ matrix:
     - os: osx
       osx_image: xcode9
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.6 DOCTEST=FALSE
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.6 DOCTEST=false
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 
@@ -54,14 +54,14 @@ matrix:
     - os: osx
       osx_image: xcode8
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=false
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 
     - os: osx
       osx_image: xcode8
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=2.7 DOCTEST=FALSE
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=2.7 DOCTEST=false
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh
 
@@ -115,7 +115,7 @@ script:
   - echo $CFLAGS
   - make tests CC=$COMPILER
   - make -C docs html
-  - if [[ "${DOCTEST}" == "TRUE" ]]; then make -C docs doctest ; fi
+  - if [[ "${DOCTEST}" == "true" ]]; then make -C docs doctest ; fi
 
 branches:
   only:
