@@ -116,16 +116,21 @@ jobs:
         shell: bash -l {0}
         run: ${{ matrix.compiler }} --version
 
-      - name: compile
+      - name: compile 
+        shell: bash -l {0}       
         run: make -r CC=${{ matrix.compiler }}
 
       - name: install
+        shell: bash -l {0}        
         run: make install CC=${{ matrix.compiler }} 
 
-      - name: python extensions
+      - name: compile and install python extensions
+        shell: bash -l {0}       
         run: python -m pip install -e . CC=${{ matrix.compiler }} 
 
       - name: tests
+        shell: bash -l {0}        
         run: make tests CC=${{ matrix.compiler }} 
+
     env:
       CC: ${{ matrix.compiler }}
