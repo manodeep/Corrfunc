@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
-    matrix:
+      matrix:
         os: ["ubuntu-latest", "macos-latest"]
         compilers: [gcc-4.8, gcc-6, gcc-7, gcc-8, gcc-9, clang-3.8, clang-3.9, clang-4.0, clang-7, clang-8, clang-9]
 #        compiler-version: ["4.8", "6", "7", "8", "9", "3.8", "3.9", "4.0", "7", "8", "9"]       
