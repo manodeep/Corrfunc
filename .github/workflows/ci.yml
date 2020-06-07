@@ -18,6 +18,8 @@ jobs:
         exclude:
           - python-version: "3.5"
             numpy-version: "1.16"
+    env:
+      CC: ${{ matrix.compiler }}
 
     steps:
       - name: Checkout
@@ -88,5 +90,3 @@ jobs:
         shell: bash -l {0}        
         run: make tests CC=${{ matrix.compiler }} 
 
-#    env:
-#      CC: ${{ matrix.compiler }}
