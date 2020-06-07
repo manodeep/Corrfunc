@@ -20,6 +20,8 @@ jobs:
             numpy-version: "1.16"
           - os: "macos-latest"
             compiler: gcc-7
+          - os: "ubuntu-latest"
+            compiler: clang
 
     env:
       CC: ${{ matrix.compiler }}
