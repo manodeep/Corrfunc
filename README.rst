@@ -59,16 +59,16 @@ Preferred Install Method
     $ git clone https://github.com/manodeep/Corrfunc/
     $ make
     $ make install
-    $ python setup.py install (--user)
+    $ python -m pip install . (--user)
     $ make tests
 
 Assuming you have ``gcc`` in your ``PATH``, ``make`` and
 ``make install`` should compile and install the C libraries + python
 extensions within the source directory. If you would like to install the
 python C extensions in your environment, then
-``python setup.py install (--user)`` should be sufficient. If you are primarily
+``python -m pip install . (--user)`` should be sufficient. If you are primarily
 interested in the ``python`` interface, you can condense all of the steps
-by using ``python setup.py install CC=yourcompiler (--user)`` after ``git clone``.
+by using ``python -m pip install . CC=yourcompiler (--user)`` after ``git clone``.
 
 Compilation Notes
 ------------------
@@ -79,7 +79,7 @@ Compilation Notes
 
 - Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``,  ``make install CC=yourcompiler``, ``make tests CC=yourcompiler`` etc. If you want to permanently change the default compiler, then please edit the `common.mk <common.mk>`__ file in the base directory.
 
-- If you are directly using ``python setup.py install CC=yourcompiler (--user)``, please run a ``make distclean`` beforehand (especially if switching compilers)
+- If you are directly using ``python -m pip install . CC=yourcompiler (--user)``, please run a ``make distclean`` beforehand (especially if switching compilers)
 
 
 Alternate Install Method

@@ -545,14 +545,19 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         options->bin_refine_factors[1]=numthreads;
     }
 #endif
-    /* Only check the ra and dec bin refine factors (not all 3 bin refs)*/
-    for(int i=0;i<2;i++) {
-        if(options->bin_refine_factors[i] < 1) {
-            fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
-                    i, options->bin_refine_factors[i]);
-            reset_bin_refine_factors(options);
-            break;/* all factors have been reset -> no point continuing with the loop */
-        }
+
+    /* Only check the ra and dec bin refine factors (not all 3 bin refs) */
+    /* As evidenced by the PR #216, the error-message and resetting is not quite right! */
+    if(options->link_in_ra && options->bin_refine_factors[0] < 1) {
+        fprintf(stderr,"Warning: Linking in RA is requested, so the RA-bin refine factor *must* be >=1. Instead found bin refine factor =%d...resetting\n",
+                options->bin_refine_factors[0]);
+        reset_bin_refine_factors(options);
+    }
+
+    if(options->link_in_dec && options->bin_refine_factors[1] < 1) {
+        fprintf(stderr,"Warning: Linking in DEC is requested, so the DEC-bin refine factor *must* be >=1. Instead found bin refine factor =%d...resetting\n",
+                options->bin_refine_factors[1]);
+        reset_bin_refine_factors(options);
     }
 
     if(options->max_cells_per_dim == 0) {

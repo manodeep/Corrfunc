@@ -29,12 +29,12 @@ Before installation, be sure you have installed the package dependencies
 described in the :ref:`corrfunc_dependencies` section.
 The first step is to clone the Corrfunc repository
 
-.. code:: 
-          
+.. code::
+
 	  git clone https://github.com/manodeep/Corrfunc.git
 	  cd Corrfunc
           make install
-          python setup.py install
+          python -m pip install . (--user)
 
 
 .. _corrfunc_dependencies:
@@ -66,20 +66,15 @@ After installing Corrfunc, you should run the integrated test suite to make
 sure that the package was installed correctly. If you installed from source,
 then type the following in the root package directory,
 
-.. code:: 
+.. code::
 
 	  make tests
 
 If you installed using pip/conda, then use the following to run the tests
 
 .. code:: python
-          
+
           from Corrfunc.tests import tests
           tests()
 
 Once you have installed the package, see :ref:`quickstart` for instructions on how to get up and running.
-
-
-
-
-

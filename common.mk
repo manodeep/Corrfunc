@@ -35,7 +35,7 @@ OPT += -DUSE_OMP
 DISTNAME:=Corrfunc
 MAJOR:=2
 MINOR:=3
-PATCHLEVEL:=2
+PATCHLEVEL:=3
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 ABI_COMPAT_VERSION:=$(MAJOR).0
 # Whenever conda needs to be checked again
@@ -447,7 +447,7 @@ ifeq ($(DO_CHECKS), 1)
 
         export PYTHON_CFLAGS := $(PYTHON_INCL) $(NUMPY_INCL_FLAG)
         export PYTHON_LIBDIR := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig;print(sysconfig.get_config_var('prefix'));")/lib
-        export PYTHON_LIBS   := $(shell $(PYTHON) -c "from __future__ import print_function; import sys; import sysconfig; pyver = sysconfig.get_config_var('VERSION'); getvar = sysconfig.get_config_var;libs = ['-lpython' + pyver + sys.abiflags]; libs += getvar('LIBS').split(); libs += getvar('SYSLIBS').split(); print(' '.join(libs));")
+        export PYTHON_LIBS   := $(shell $(PYTHON) -c "from __future__ import print_function; import sys; import sysconfig; pyver = sysconfig.get_config_var('VERSION'); getvar = sysconfig.get_config_var; abi = sys.abiflags if sys.version_info.major >= 3 else ''; libs = ['-lpython' + pyver + abi]; libs += getvar('LIBS').split(); libs += getvar('SYSLIBS').split(); print(' '.join(libs));")
         export PYTHON_LINK :=
         SOABI := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; print(sysconfig.get_config_var('SOABI'))" 2>/dev/null)
         export PYTHON_SOABI :=
@@ -459,17 +459,6 @@ ifeq ($(DO_CHECKS), 1)
         export PYTHON_SOABI
         # export PYTHON_LIB_BASE := $(strip $(subst -l,lib, $(filter -lpython%,$(PYTHON_LIBS))))
 
-        ### Check if conda is being used on OSX - then we need to fix python link libraries
-        export FIX_PYTHON_LINK := 0
-        # ifeq ($(CONDA_BUILD), 0)
-        #   ## Check if conda build is under progress -> do nothing in that case. Let conda handle it
-        #   ifeq ($(UNAME), Darwin)
-        #     PATH_TO_PYTHON := $(shell which python)
-        #     ifeq (conda, $(findstring conda, $(PATH_TO_PYTHON)))
-        # 	    FIX_PYTHON_LINK := 1
-        #     endif
-        #   endif
-        # endif
         ifeq ($(UNAME), Darwin)
           # PYTHON_LINK := $(filter-out -framework, $(PYTHON_LINK))
           # PYTHON_LINK := $(filter-out -ldl, $(PYTHON_LINK))
