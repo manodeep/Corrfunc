@@ -8,18 +8,19 @@ on:
     branches:
     - '*'
 
-strategy:
-  fail-fast: true
-  matrix:
-    os: ["ubuntu-latest", "macos-latest"] #, "windows-latest"]
-    compiler: [gcc, clang]        
-    python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
-    numpy-version: ["1.14", "1.15", "1.16"]
 
 jobs:
   build:
     name: Install miniconda (${{ matrix.os }}, (${{ matrix.python-version }}, ${{ matrix.numpy-version }})
     runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ["ubuntu-latest", "macos-latest"] #, "windows-latest"]
+        compiler: [gcc, clang]        
+        python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
+        numpy-version: ["1.14", "1.15", "1.16"]
+
     steps:
       - uses: goanpeca/setup-miniconda@v1
         with:
