@@ -12,7 +12,6 @@ env:
   global:
     - NUMPY_VERSION=1.12
     - DOCTEST=TRUE
-    - INSTALL_LIBGFORTRAN=FALSE
     - CORRFUNC_CI=TRUE
 
 addons:
@@ -108,7 +107,6 @@ install:
   - python -m pip install --upgrade pip
   - python -m pip install --ignore-installed certifi --upgrade
   - python -m pip install sphinx>=1.8
-  - if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
   - python -m pip install -e .
