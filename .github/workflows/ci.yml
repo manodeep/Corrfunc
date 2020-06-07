@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          conda create -q --yes -n test python={{ matrix.python-version }} numpy=${{ matrix.numpy-version }}
+          conda create -q --yes -n test python=${{ matrix.python-version }} numpy=${{ matrix.numpy-version }}
           conda activate test
           conda install -q --yes -c conda-forge gsl
   #         source activate test
