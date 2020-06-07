@@ -34,7 +34,7 @@ jobs:
       - name: Setup Miniconda
         uses: goanpeca/setup-miniconda@v1
         with:
-          auto-update-conda: false
+          auto-update-conda: true
           auto-activate-base: false
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
@@ -45,7 +45,7 @@ jobs:
         run: |
           conda create -q --yes -n test python=${{ matrix.python-version }} numpy=${{ matrix.numpy-version }}
           conda activate test
-          conda install -q --yes -c conda-forge gsl
+          conda install -q --yes -c conda-forge gsl binutils 
 
       - name: Conda info
         shell: bash -l {0}
