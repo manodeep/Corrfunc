@@ -14,12 +14,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
-      matrix:
+    matrix:
         os: ["ubuntu-latest", "macos-latest"]
-        compilers: [gcc-4.8, gcc-4.9, gcc-5, gcc-6, gcc-7, gcc-8, gcc-9, clang-3.8, clang-4.0, clang-7, clang-8, clang-9]
-        compiler-version: ["4.8", "4.9", "5", "6", "7", "8", "9", "3.8", "3.9", "4.0", "7", "8", "9"]
+        compilers: [gcc-4.8, gcc-6, gcc-7, gcc-8, gcc-9, clang-3.8, clang-3.9, clang-4.0, clang-7, clang-8, clang-9]
+#        compiler-version: ["4.8", "6", "7", "8", "9", "3.8", "3.9", "4.0", "7", "8", "9"]       
         python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
-        numpy-version: ["1.14", "1.15", "1.16"]
+        numpy-version: ["1.10", "1.15", "1.16"]
 
     steps:
       - name: Checkout
