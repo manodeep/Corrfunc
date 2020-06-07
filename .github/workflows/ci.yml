@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Testing on ${{ matrix.os }} with tools (${{ matrix.python-version }}, ${{ matrix.numpy-version }})
+    name: Testing on ${{ matrix.os }} with (${{ matrix.compiler }}, ${{ matrix.python-version }}, ${{ matrix.numpy-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
