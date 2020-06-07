@@ -1,12 +1,6 @@
 name: GitHub CI
 
-on:
-  pull_request:
-    branches:
-    - 'master'
-  push:
-
-
+on: [push, pull_request]
 
 jobs:
   build:
@@ -16,20 +10,21 @@ jobs:
       fail-fast: true
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
-        compilers: [gcc-4.8, gcc-6, gcc-7, gcc-8, gcc-9, clang-3.8, clang-4.0, clang-7, clang-8, clang-9]
+#        compilers: [gcc-7, gcc-8, gcc-9, clang-6, clang-8, clang-9]
 #        compiler-version: ["4.8", "6", "7", "8", "9", "3.8", "3.9", "4.0", "7", "8", "9"]       
-        python-version: ["2.7", "3.5", "3.6", "3.7"]
-        numpy-version: ["1.10", "1.15", "1.16"]
+        compilers: [gcc-8, gcc-9, clang]
+        python-version: ["3.5", "3.6", "3.7", "3.8"]
+        numpy-version: ["1.14", "1.16"]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Cache conda
-        uses: actions/cache@v1
-        with:
-          path: ~/conda_pkgs_dir
-          key: conda-${{ matrix.os }}-python-${{ matrix.python-version }} }}
+#      - name: Cache conda
+#        uses: actions/cache@v1
+#        with:
+#          path: ~/conda_pkgs_dir
+#          key: conda-${{ matrix.os }}-python-${{ matrix.python-version }} }}
 
       - name: Setup Miniconda
         uses: goanpeca/setup-miniconda@v1
@@ -38,42 +33,7 @@ jobs:
           auto-activate-base: false
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
-          use-only-tar-bz2: true
-
-#      - name: Checkout
-#        uses: actions/checkout@v2
-
-#      - name: Cache conda
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/conda_pkgs_dir
-#          key: conda-${{ matrix.os }}-python-${{ matrix.python-version }}-${{ hashFiles('environment-ci.yml') }}
-
-#      - name: Setup Miniconda
-#        uses: goanpeca/setup-miniconda@v1
-#        with:
-#          auto-update-conda: true
-#          auto-activate-base: false
-#          python-version: ${{ matrix.python-version }}
-#          environment-file: environment.yml
-#          activate-environment: jupytext-dev
-
- #   steps:
- #     - uses: goanpeca/setup-miniconda@v1
- #       with:
- #         auto-update-conda: true
- #         python-version: ${{ matrix.python-version }}
-            
-#    - name: Cache pip
-#      uses: actions/cache@v2
-#      with:
-        # This path is specific to Ubuntu
-#        path: ~/.cache/pip
-        # Look to see if there is a cache hit for the corresponding requirements file
-#        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-#        restore-keys: |
-#          ${{ runner.os }}-pip-
-#          ${{ runner.os }}-      
+#          use-only-tar-bz2: true
 
       - name: Install dependencies
         shell: bash -l {0}
@@ -81,13 +41,6 @@ jobs:
           conda create -q --yes -n test python=${{ matrix.python-version }} numpy=${{ matrix.numpy-version }}
           conda activate test
           conda install -q --yes -c conda-forge gsl
-  #         source activate test
-  #          conda install -q --yes numpy=${{ matrix.numpy-version }} 
-  #              
-  #         python -m pip install --upgrade pip
-  #         python -m pip install --ignore-installed certifi --upgrade
-  #         python -m pip install sphinx>=1.8
-  #         if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi        
 
       - name: Conda info
         shell: bash -l {0}
@@ -132,5 +85,5 @@ jobs:
         shell: bash -l {0}        
         run: make tests CC=${{ matrix.compiler }} 
 
-    env:
-      CC: ${{ matrix.compiler }}
+#    env:
+#      CC: ${{ matrix.compiler }}
