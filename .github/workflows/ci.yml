@@ -84,9 +84,11 @@ jobs:
 
       - name: compile and install python extensions
         shell: bash -l {0}       
-        run: python -m pip install -e . CC=${{ matrix.compiler }} 
-
+        run: |
+          echo "CC = " $CC
+          export CC=${{ matrix.compiler }} 
+          python -m pip install -e .
+          
       - name: tests
         shell: bash -l {0}        
         run: make tests CC=${{ matrix.compiler }} 
-
