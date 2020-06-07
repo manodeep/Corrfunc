@@ -1,30 +1,68 @@
-name: C/C++ CI
+name: GitHub CI
 
 on:
   pull_request:
     branches:
     - 'master'
   push:
-    branches:
-    - '*'
+
+
 
 jobs:
   build:
-    name: Install miniconda (${{ matrix.os }}, (${{ matrix.python-version }}, ${{ matrix.numpy-version }})
+    name: Testing on ${{ matrix.os }} with tools (${{ matrix.python-version }}, ${{ matrix.numpy-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-        os: ["ubuntu-latest", "macos-latest"] #, "windows-latest"]
-        compiler: [gcc, clang]        
+        os: ["ubuntu-latest", "macos-latest"]
+        compilers: [gcc-4.8, gcc-4.9, gcc-5, gcc-6, gcc-7, gcc-8, gcc-9, clang-3.8, clang-4.0, clang-7, clang-8, clang-9]
+        compiler-version: ["4.8", "4.9", "5", "6", "7", "8", "9", "3.8", "3.9", "4.0", "7", "8", "9"]
         python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
         numpy-version: ["1.14", "1.15", "1.16"]
 
     steps:
-      - uses: goanpeca/setup-miniconda@v1
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache conda
+        uses: actions/cache@v1
         with:
-          auto-update-conda: true
+          path: ~/conda_pkgs_dir
+          key: conda-${{ matrix.os }}-python-${{ matrix.python-version }} }}
+
+      - name: Setup Miniconda
+        uses: goanpeca/setup-miniconda@v1
+        with:
+          auto-update-conda: false
+          auto-activate-base: false
+          miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
+          use-only-tar-bz2: true
+
+#      - name: Checkout
+#        uses: actions/checkout@v2
+
+#      - name: Cache conda
+#        uses: actions/cache@v1
+#        with:
+#          path: ~/conda_pkgs_dir
+#          key: conda-${{ matrix.os }}-python-${{ matrix.python-version }}-${{ hashFiles('environment-ci.yml') }}
+
+#      - name: Setup Miniconda
+#        uses: goanpeca/setup-miniconda@v1
+#        with:
+#          auto-update-conda: true
+#          auto-activate-base: false
+#          python-version: ${{ matrix.python-version }}
+#          environment-file: environment.yml
+#          activate-environment: jupytext-dev
+
+ #   steps:
+ #     - uses: goanpeca/setup-miniconda@v1
+ #       with:
+ #         auto-update-conda: true
+ #         python-version: ${{ matrix.python-version }}
             
 #    - name: Cache pip
 #      uses: actions/cache@v2
@@ -55,23 +93,15 @@ jobs:
         shell: bash -l {0}
         run: conda info
         
-      - name: Conda list
-        shell: pwsh
-        run: conda list
-
-      - name: Display Python version
-        shell: pwsh
-        run: python -c "import sys; print(sys.version)"
-
-      - name: Display Python version
+      - name: Display Python version (bash)
         shell: bash
         run: python -c "import sys; print(sys.version)"
 
-      - name: Display Python version
+      - name: Display Python version (bash -l)
         shell: bash -l {0}
         run: python -c "import sys; print(sys.version)"
 
-      - name: Display PATH, compiler
+      - name: Display PATH, compiler (bash -l)
         shell: bash -l {0}
         run: |
           echo $PATH
@@ -83,9 +113,9 @@ jobs:
           echo which gsl-config
 
       - name: Show compiler version
+        shell: bash -l {0}
         run: ${{ matrix.compiler }} --version
 
-      - uses: actions/checkout@v2
       - name: compile
         run: make -r CC=${{ matrix.compiler }}
 
@@ -97,3 +127,5 @@ jobs:
 
       - name: tests
         run: make tests CC=${{ matrix.compiler }} 
+    env:
+      CC: ${{ matrix.compiler }}
