@@ -38,7 +38,7 @@ int64_t ND2;
 double *RA2=NULL,*DEC2=NULL,*CZ2=NULL,*weights2=NULL;
 
 const int cosmology_flag=1;
-char current_file1[MAXLEN],current_file2[MAXLEN];
+char current_file1[MAXLEN+1],current_file2[MAXLEN+1];
 
 struct config_options options;
 //end of global variables

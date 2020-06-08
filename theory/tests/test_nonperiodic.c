@@ -27,7 +27,7 @@ double *X1=NULL,*Y1=NULL,*Z1=NULL,*weights1=NULL;
 int64_t ND2;
 double *X2=NULL,*Y2=NULL,*Z2=NULL,*weights2=NULL;
 
-char current_file1[MAXLEN],current_file2[MAXLEN];
+char current_file1[MAXLEN+1],current_file2[MAXLEN+1];
 struct config_options options;
 //end of global variables
 
