@@ -41,7 +41,7 @@ jobs:
 
       - name: Install binutils on linux
         shell: bash -l {0}
-        if: matrix.os == 'ubuntu-18.04'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get install binutils
 
