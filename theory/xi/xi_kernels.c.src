@@ -533,7 +533,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 pair.dz.d = dz;
             }
 
-            DOUBLE r, pairweight;//intentionally not initialized to 0.0 -> accidental addition will trigger test failures
+            DOUBLE r = ZERO, pairweight = ZERO;
             if(need_ravg) {
                 r = SQRT(r2);
             }
@@ -810,7 +810,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 pair.dz.d = dz;
             }
 
-            DOUBLE r, pairweight;//intentionally not initialized to 0.0 -> accidental addition will trigger test failures
+            DOUBLE r = ZERO, pairweight = ZERO;
             if(need_ravg) {
                 r = SQRT(r2);
             }

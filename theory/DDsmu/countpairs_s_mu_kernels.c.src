@@ -622,7 +622,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 
             const DOUBLE mu = SQRT(sqr_dz/s2);
 
-            DOUBLE s, pairweight;
+            DOUBLE s = ZERO, pairweight = ZERO;
             if(need_savg) {
                 s = SQRT(s2);
             }
@@ -970,7 +970,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             if(sqr_dz >= s2 * sqr_mumax) continue;
             const DOUBLE mu = SQRT(sqr_dz/s2);
 
-            DOUBLE s, pairweight;
+            DOUBLE s = ZERO, pairweight = ZERO;
             if(need_weightavg){
                 pair.dx.d = dx;
                 pair.dy.d = dy;

@@ -553,7 +553,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
                 pair.dz.d = dz;
             }
 
-            DOUBLE r, pairweight;
+            DOUBLE r = ZERO, pairweight = ZERO;
             if(need_rpavg) {
                 r = SQRT(r2);
             }
@@ -836,7 +836,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
               pair.dz.d = dz;
           }
 
-          DOUBLE r, pairweight;
+          DOUBLE r = ZERO, pairweight = ZERO;
           if(need_rpavg) {
               r = SQRT(r2);
           }

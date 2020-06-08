@@ -697,7 +697,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const int pibin  = (sqr_Dpar >= sqr_pimax) ? npibin:(int) (SQRT(sqr_Dpar)*inv_dpi);
             const DOUBLE sqr_Dperp  = sqr_s - sqr_Dpar;
             if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
-            DOUBLE rp, pairweight;
+            DOUBLE rp = ZERO, pairweight = ZERO;
             if(need_rpavg) {
                 rp = SQRT(sqr_Dperp);
             }
@@ -1074,7 +1074,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             const int pibin  = (sqr_Dpar >= sqr_pimax) ? npibin:(int) (SQRT(sqr_Dpar)*inv_dpi);
             const DOUBLE sqr_Dperp  = sqr_s - sqr_Dpar;
             if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
-            DOUBLE rp, pairweight;
+            DOUBLE rp = ZERO, pairweight = ZERO;
             if(need_rpavg) {
                 rp = SQRT(sqr_Dperp);
             }

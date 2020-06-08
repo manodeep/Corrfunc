@@ -578,7 +578,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 continue;
             }
 
-            DOUBLE r, pairweight;
+            DOUBLE r = ZERO, pairweight = ZERO;
             if(need_rpavg) {
                 r = SQRT(r2);
             }
@@ -920,7 +920,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
             const DOUBLE r2 = dx*dx + dy*dy;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
 
-            DOUBLE r, pairweight;
+            DOUBLE r = ZERO, pairweight = ZERO;
             if(need_rpavg) {
                 r = SQRT(r2);
             }
