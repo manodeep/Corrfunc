@@ -84,6 +84,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports AVX512F but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case AVX2:
 #ifdef __AVX2__
             iset = AVX2;
@@ -91,6 +92,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports AVX2 but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case AVX:
 #ifdef __AVX__
             iset = AVX;
@@ -98,6 +100,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports AVX but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case SSE42:
 #ifdef __SSE4_2__
             iset = SSE42;
@@ -105,6 +108,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports SSE4.2 but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case SSE4:
 #ifdef __SSE4_1__
             iset = SSE4;
@@ -112,6 +116,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports SSE4.1 but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case SSSE3:
 #ifdef __SSSE3__
             iset = SSSE3;
@@ -119,6 +124,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports SSSE3 but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case SSE3:
 #ifdef __SSE3__
             iset = SSE3;
@@ -126,6 +132,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports SSE3 but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case SSE2:
 #ifdef __SSE2__
             iset = SSE2;
@@ -133,6 +140,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports SSE2 but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case SSE:
 #ifdef __SSE__
             iset = SSE;
@@ -140,6 +148,7 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports SSE but the compiler does not.  Can you try another compiler?\n");
 #endif
+            // fall through
         case FALLBACK:
         default:
             iset = FALLBACK;
