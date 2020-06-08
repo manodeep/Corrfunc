@@ -30,7 +30,6 @@ PYTHON:=python
 ## Set OpenMP for both theory and mocks
 OPT += -DUSE_OMP
 
-
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=2
@@ -76,14 +75,15 @@ ifeq ($(DO_CHECKS), 1)
   ## magenta - general highlight
   ## blue - related to code/compile option
   ## bold - only used with printing out compilation options
-  HAVE_TPUT_COLORS := $(shell tput colors &>/dev/null && echo true)
+  TERM ?= xterm
+  HAVE_TPUT_COLORS := $(shell tput -T ${TERM} colors &>/dev/null && echo true)
   ifeq ($(HAVE_TPUT_COLORS), true)
-    ccred:=$(shell tput setaf 1)
-    ccmagenta:=$(shell tput setaf 5)
-    ccgreen:=$(shell tput setaf 2)
-    ccblue:=$(shell tput setaf 4)
-    ccreset:=$(shell tput sgr0)
-    boldfont:=$(shell tput bold)
+    ccred:=$(shell tput -T ${TERM} setaf 1)
+    ccmagenta:=$(shell tput -T ${TERM} setaf 5)
+    ccgreen:=$(shell tput -T ${TERM} setaf 2)
+    ccblue:=$(shell tput -T ${TERM} setaf 4)
+    ccreset:=$(shell tput -T ${TERM} sgr0)
+    boldfont:=$(shell tput -T ${TERM} bold)
   else
     # No color support; make all color commands no-ops
     ccred:=
