@@ -18,7 +18,7 @@ This is a bug-fix release and contains general code quality improvements.
 Enhancements
 ------------
 - A new helper routine to find the combination of (RA, DEC) refinements that produces fastest runtime in ``DDtheta_mocks`` [#216]
-
+- Further testing via GitHub Actions [#220]
 
 Bug fixes
 ----------
