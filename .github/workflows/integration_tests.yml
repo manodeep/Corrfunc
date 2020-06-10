@@ -4,13 +4,14 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Integration tests with ${{ matrix.os }} with (${{ matrix.compiler }}, python-${{ matrix.python-version }}, numpy-${{ matrix.numpy-version }})
+    name: Integration tests on ${{ matrix.os }} with ${{ matrix.compiler }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: ["ubuntu-20.04"]
         compiler: [gcc-8]
+        python-version: [3.6]
     env:
       CC: ${{ matrix.compiler }}
       CORRFUNC_CI: true
