@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Testing on ${{ matrix.os }} with (${{ matrix.compiler }}, python-${{ matrix.python-version }}, numpy-${{ matrix.numpy-version }})
+    name: On ${{ matrix.os }} with (${{ matrix.compiler }}, python-${{ matrix.python-version }}, numpy-${{ matrix.numpy-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -81,7 +81,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install binutils
- 
+
       - name: Install dependencies
         shell: bash -l {0}
         run: |
@@ -98,9 +98,9 @@ jobs:
           echo "COMPILER VERSION = " `${{ matrix.compiler }} --version`
           echo "PYTHON = " `which python`
           echo "(PYTHON, NUMPY) version = " `python -c "import sys; import numpy as np; print(sys.version); print(np.__version__);"`
-          
+
 #      - name: Add linker flag to OSX + gcc
-#        shell: bash -l {0} 
+#        shell: bash -l {0}
 #        if: matrix.os == 'osx-latest' && startswith(matrix.compiler, 'gcc')
 #        run: export CLINK = '-lgomp'
 
