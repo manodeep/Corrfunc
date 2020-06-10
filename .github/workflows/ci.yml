@@ -14,6 +14,8 @@ jobs:
         python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
         numpy-version: ["1.14", "1.16", "1.18"]
         exclude:
+
+          # Only run with 'clang' on OSX
           - os: "macos-latest"
             compiler: gcc-7
           - os: "macos-latest"
@@ -21,23 +23,27 @@ jobs:
           - os: "macos-latest"
             compiler: gcc-9
 
+          # Don't use 'clang' on linux
           - os: "ubuntu-18.04"
             compiler: clang
-
           - os: "ubuntu-20.04"
             compiler: clang
+          - os: "ubuntu-16.04"
+            compiler: clang
+
+          # only gcc-9 on 20.04
           - os: "ubuntu-20.04"
             compiler: gcc-7
           - os: "ubuntu-20.04"
             compiler: gcc-8
 
+          # only gcc-7 on 16.04
           - os: "ubuntu-16.04"
             compiler: gcc-8
           - os: "ubuntu-16.04"
             compiler: gcc-9
-          - os: "ubuntu-16.04"
-            compiler: clang
 
+          # python3.8 only on 20.04
           - os: "ubuntu-16.04"
             python-version: "3.8"
           - os: "ubuntu-18.04"
@@ -45,8 +51,12 @@ jobs:
           - os: "macos-latest"
             python-version: "3.8"
 
+          # No numpy1.16 for python3.5
           - python-version: "3.5"
             numpy-version: "1.16"
+
+          # numpy1.18 only on python3.8 
+          # (which, in turn, is only on '20.04')
           - python-version: "2.7"
             numpy-version: "1.18"
           - python-version: "3.5"
@@ -55,9 +65,6 @@ jobs:
             numpy-version: "1.18"
           - python-version: "3.7"
             numpy-version: "1.18"
-
-
-
 
     env:
       CC: ${{ matrix.compiler }}
@@ -77,7 +84,7 @@ jobs:
 
       - name: Install binutils on linux
         shell: bash -l {0}
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04'
         run: |
           sudo apt-get update
           sudo apt-get install binutils
@@ -125,7 +132,7 @@ jobs:
 
       - name: doctests
         shell: bash -l {0}
-        if: matrix.os == 'ubuntu-18.04' && matrix.compiler == 'gcc-7' && matrix.python-version == '3.6' && matrix.numpy-version == '1.14'
+        if: matrix.os == 'ubuntu-18.04' && matrix.python-version == '3.6' && matrix.numpy-version == '1.14'
         run: |
           python -m pip install sphinx>=1.8
           make -C docs doctest
