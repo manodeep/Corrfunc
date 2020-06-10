@@ -39,11 +39,11 @@ jobs:
             compiler: clang
 
           - os: "ubuntu-16.04"
-            python: "3.8"
+            python-version: "3.8"
           - os: "ubuntu-18.04"
-            python: "3.8"
+            python-version: "3.8"
           - os: "macos-latest"
-            python: "3.8"
+            python-version: "3.8"
 
           - python-version: "3.5"
             numpy-version: "1.16"
