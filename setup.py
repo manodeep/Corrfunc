@@ -236,9 +236,7 @@ def requirements_check():
 
     # check if the environ is set
     if os.environ['CC']:
-        from_args = False
         value = os.environ['CC']
-        print("Getting environment value for CC = {}".format(value))
 
     # Check if CC is in argv:
     CC = "CC"
