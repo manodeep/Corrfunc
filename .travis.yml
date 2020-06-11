@@ -123,6 +123,9 @@ install:
   - python -m pip install --upgrade pip
   - python -m pip install --ignore-installed certifi --upgrade
   - python -m pip install sphinx>=1.8
+  - export CC=$COMPILER
+  - which $COMPILER
+  - $COMPILER --version
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
   - python -m pip install -e .
