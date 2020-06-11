@@ -19,6 +19,7 @@ Enhancements
 ------------
 - A new helper routine to find the combination of (RA, DEC) refinements that produces fastest runtime in ``DDtheta_mocks`` [#216]
 - Further testing via GitHub Actions [#220]
+- Added Ubuntu-Xenial on Travis [#222]
 
 Bug fixes
 ----------

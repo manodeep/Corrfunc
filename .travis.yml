@@ -19,8 +19,8 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - gcc-4.8
-      - libgsl0-dev
+      - gcc-7
+
 
 matrix:
   fast_finish: true
@@ -50,7 +50,6 @@ matrix:
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 
-
     - os: osx
       osx_image: xcode8
       compiler: clang
@@ -69,7 +68,7 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=2.7
+      env: COMPILER=gcc PYTHON_VERSION=2.7 DOCTEST=false
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
 
@@ -82,18 +81,34 @@ matrix:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=3.6
+      env: COMPILER=gcc-7 PYTHON_VERSION=2.7
+      before_install:
+        - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+
+    - os: linux
+      dist: xenial
+      sudo: required
+      compiler: gcc
+      env: COMPILER=gcc-7 PYTHON_VERSION=3.5
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=3.7 NUMPY_VERSION=1.16
+      env: COMPILER=gcc-7 PYTHON_VERSION=3.6
+      before_install:
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+
+    - os: linux
+      dist: xenial
+      sudo: required
+      compiler: gcc
+      env: COMPILER=gcc-7 PYTHON_VERSION=3.7 NUMPY_VERSION=1.16
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
@@ -107,6 +122,9 @@ install:
   - python -m pip install --upgrade pip
   - python -m pip install --ignore-installed certifi --upgrade
   - python -m pip install sphinx>=1.8
+  - export CC=$COMPILER
+  - which $COMPILER
+  - $COMPILER --version
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
   - python -m pip install -e .
@@ -116,7 +134,3 @@ script:
   - make tests CC=$COMPILER
   - make -C docs html
   - if [[ "${DOCTEST}" == "true" ]]; then make -C docs doctest ; fi
-
-branches:
-  only:
-    - master
