@@ -1,6 +1,6 @@
 |logo|
 
-|Release| |PyPI| |MIT licensed| |Travis Build| |RTD| |Codacy| |Issues|
+|Release| |PyPI| |MIT licensed| |Travis Build| |GitHub CI| |RTD| |Codacy| |Issues|
 
 |ASCL| |Paper I| |Paper II|
 
@@ -460,6 +460,10 @@ Project URL
 .. |Travis Build| image:: https://travis-ci.org/manodeep/Corrfunc.svg?branch=master
    :target: https://travis-ci.org/manodeep/Corrfunc
    :alt: Build Status
+.. |GitHub CI| image:: https://github.com/manodeep/Corrfunc/workflows/GitHub%20CI/badge.svg
+   :target: https://github.com/manodeep/Corrfunc/actions
+   :alt: GitHub Actions Status
+   
 .. |Issues| image:: https://img.shields.io/github/issues/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/issues
    :alt: Open Issues

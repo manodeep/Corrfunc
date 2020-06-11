@@ -69,7 +69,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
 static PyObject *countpairs_mocks_error_out(PyObject *module, const char *msg);
 
 static PyMethodDef module_methods[] = {
-    {"countpairs_rp_pi_mocks"       ,(PyCFunction) countpairs_countpairs_rp_pi_mocks ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_rp_pi_mocks"       ,(PyCFunction)(void(*)(void)) countpairs_countpairs_rp_pi_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_rp_pi_mocks(autocorr, cosmology, nthreads, pimax, binfile,\n"
      "                       RA1, DEC1, CZ1, weights1=None, weight_type=None,\n"
      "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
@@ -249,7 +249,7 @@ static PyMethodDef module_methods[] = {
      "                                            verbose=True)\n"
      "\n"
     },
-    {"countpairs_s_mu_mocks"       ,(PyCFunction) countpairs_countpairs_s_mu_mocks ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_s_mu_mocks"       ,(PyCFunction)(void(*)(void)) countpairs_countpairs_s_mu_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_s_mu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,\n"
      "                       RA1, DEC1, CZ1, weights1=None, weight_type=None,\n"
      "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
@@ -423,7 +423,7 @@ static PyMethodDef module_methods[] = {
      "                                            verbose=True)\n"
      "\n"
     },
-    {"countpairs_theta_mocks"       ,(PyCFunction) countpairs_countpairs_theta_mocks ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_theta_mocks"       ,(PyCFunction)(void(*)(void)) countpairs_countpairs_theta_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_theta_mocks(autocorr, nthreads, binfile,\n"
      "                       RA1, DEC1, weights1=None, weight_type=None,\n"
      "                       RA2=None, DEC2=None, weights2=None,\n"
@@ -580,7 +580,7 @@ static PyMethodDef module_methods[] = {
      "                              verbose=True)\n"
      "\n"
     },
-    {"countspheres_vpf_mocks"       ,(PyCFunction) countpairs_countspheres_vpf_mocks ,METH_VARARGS | METH_KEYWORDS,
+    {"countspheres_vpf_mocks"       ,(PyCFunction)(void(*)(void)) countpairs_countspheres_vpf_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countspheres_vpf_mocks(rmax, nbins, nspheres, numpN,\n"
      "                       threshold_ngb, centers_file, cosmology,\n"
      "                       RA, DEC, CZ,\n"

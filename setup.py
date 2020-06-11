@@ -234,67 +234,74 @@ def requirements_check():
         common = replace_first_key_in_makefile(common, key, replacement,
                                                    common_mk_file)
 
+    # check if the environ is set
+    if os.environ['CC']:
+        value = os.environ['CC']
+
     # Check if CC is in argv:
     CC = "CC"
     for iarg, arg in enumerate(sys.argv):
-        if CC in arg:
-            if '=' in arg:
-                key, value = arg.strip().split('=')
-            else:
-                # Space-separated or no spaces and equal
-                key = arg.strip()
-                check_arg = iarg+1
+        if CC not in arg:
+            continue
 
-                if key != CC:
-                    msg = "Something strange has happened. Expected to find "\
-                          "a custom compiler from the command-line but \n"\
-                          "found command-line argument '{0}' (that matches "\
-                          "pattern ['CC=/path/to/compiler']). Parsing "\
-                          "produced CC={1}".format(arg, key)
-                    raise ValueError(msg)
+        if '=' in arg:
+            key, value = arg.strip().split('=')
+        else:
+            # Space-separated or no spaces and equal
+            key = arg.strip()
+            check_arg = iarg+1
 
-                # Is there an "=" sign or did the user
-                # simply pass `CC /path/to/compiler`
-                if check_arg < len(sys.argv):
-                    if sys.argv[check_arg] == '=':
-                        # skip '=' sign
-                        del sys.argv[check_arg]
-
-                # should be parsing the compiler value now
-                if not check_arg < len(sys.argv):
-                    msg = "Found compiler key = CC but could not locate "\
-                          "compiler value (either as `CC=/path/to/CC` "\
-                          "or as `CC /path/to/CC`"
-                    raise ValueError(msg)
-
-                value = sys.argv[check_arg].strip()
-                del sys.argv[check_arg]
-
-            if key != CC or value == '':
-                msg = "Something strange has happened. Expected to find a "\
-                      "custom compiler from the command-line but found \n"\
-                      "command-line argument '{0}' (that matches pattern "\
-                      "['CC=/path/to/compiler']). Parsing produced CC={1} "\
-                      "and $CC={2}".format(arg, key, value)
-
+            if key != CC:
+                msg = "Something strange has happened. Expected to find "\
+                      "a custom compiler from the command-line but \n"\
+                      "found command-line argument '{0}' (that matches "\
+                      "pattern ['CC=/path/to/compiler']). Parsing "\
+                      "produced CC={1}".format(arg, key)
                 raise ValueError(msg)
 
-            # check if value is a valid compiler
-            full_compiler = which(value)
-            if full_compiler is None:
-                msg = "Found compiler = '{0}' on the command-line but '{0}' "\
-                      "can not be resolved from the shell.\n"\
-                      "Please specify CC=/path/to/compiler in the "\
-                      "python -m pip setup.py call.".format(value)
+            # Is there an "=" sign or did the user
+            # simply pass `CC /path/to/compiler`
+            if check_arg < len(sys.argv):
+                if sys.argv[check_arg] == '=':
+                    # skip '=' sign
+                    del sys.argv[check_arg]
+
+            # should be parsing the compiler value now
+            if not check_arg < len(sys.argv):
+                msg = "Found compiler key = CC but could not locate "\
+                      "compiler value (either as `CC=/path/to/CC` "\
+                      "or as `CC /path/to/CC`"
                 raise ValueError(msg)
 
-            replacement = '\n{0}:={1}'.format(CC, value)
-            replace_first_key_in_makefile(common, CC,
-                                          replacement, common_mk_file)
-            del sys.argv[iarg]
-            global compiler
-            compiler = value
-            break
+            value = sys.argv[check_arg].strip()
+            del sys.argv[check_arg]
+
+        if key != CC or value == '':
+            msg = "Something strange has happened. Expected to find a "\
+                  "custom compiler from the command-line but found \n"\
+                  "command-line argument '{0}' (that matches pattern "\
+                  "['CC=/path/to/compiler']). Parsing produced CC={1} "\
+                  "and $CC={2}".format(arg, key, value)
+
+            raise ValueError(msg)
+
+        # check if value is a valid compiler
+        full_compiler = which(value)
+        if full_compiler is None:
+            msg = "Found compiler = '{0}' on the command-line but '{0}' "\
+                    "can not be resolved from the shell.\n"\
+                    "Please specify CC=/path/to/compiler in the "\
+                    "python -m pip setup.py call.".format(value)
+            raise ValueError(msg)
+        del sys.argv[iarg]
+        break
+
+    replacement = '\n{0}:={1}'.format(CC, value)
+    replace_first_key_in_makefile(common, CC,
+                                  replacement, common_mk_file)
+
+    global compiler
+    compiler = value
 
     return common_dict
 

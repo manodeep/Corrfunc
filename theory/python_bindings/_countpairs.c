@@ -83,7 +83,7 @@ static PyObject *countpairs_error_out(PyObject *module, const char *msg);
 /* Inline documentation for the methods so that help(function) has something reasonably useful*/
 static PyMethodDef module_methods[] = {
     /* {"countpairs_error_out"  ,(PyCFunction) countpairs_error_out        ,METH_VARARGS, error_out_docstring}, */
-    {"countpairs"            ,(PyCFunction) countpairs_countpairs       ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs"            ,(PyCFunction)(void(*)(void)) countpairs_countpairs       ,METH_VARARGS | METH_KEYWORDS,
      "countpairs(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, weight_type=None, periodic=True,\n"
      "           X2=None, Y2=None, Z2=None, weights2=None, verbose=False, boxsize=0.0,\n"
      "           output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
@@ -217,7 +217,7 @@ static PyMethodDef module_methods[] = {
      "                            X2=x, Y2=y, Z2=z,verbose=True)\n"
      "\n"
     },
-    {"countpairs_rp_pi"      ,(PyCFunction) countpairs_countpairs_rp_pi ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_rp_pi"      ,(PyCFunction)(void(*)(void)) countpairs_countpairs_rp_pi ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_rp_pi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None, weight_type=None,\n"
      "                 periodic=True, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,\n"
      "                 boxsize=0.0, output_rpavg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
@@ -368,7 +368,7 @@ static PyMethodDef module_methods[] = {
      "                                      verbose=True, output_rpavg=True)\n\n"
 
     },
-    {"countpairs_wp"         ,(PyCFunction) countpairs_countpairs_wp    ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_wp"         ,(PyCFunction)(void(*)(void)) countpairs_countpairs_wp    ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_wp(boxsize, pimax, nthreads, binfile, X, Y, Z, weights=None, weight_type=None, verbose=False,\n"
      "              output_rpavg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
      "              zbin_refine_factor=1, max_cells_per_dim=100, copy_particles=True,\n"
@@ -516,7 +516,7 @@ static PyMethodDef module_methods[] = {
      ">>> (wp, time) = countpairs_wp(boxsize, nthreads, pimax, '../tests/bins',\n"
      "                               x, y, z, verbose=True, output_rpavg=True)\n\n"
     },
-    {"countpairs_xi"         ,(PyCFunction) countpairs_countpairs_xi    ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_xi"         ,(PyCFunction)(void(*)(void)) countpairs_countpairs_xi    ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_xi(boxsize, nthreads, binfile, X, Y, Z, weights=None, weight_type=None, verbose=False,\n"
      "              output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,\n"
      "              zbin_refine_factor=1, max_cells_per_dim=100, copy_particles=True,\n"
@@ -641,7 +641,7 @@ static PyMethodDef module_methods[] = {
      "                               x, y, z, verbose=True, output_ravg=True)\n"
      "\n"
     },
-    {"countpairs_s_mu"      ,(PyCFunction) countpairs_countpairs_s_mu ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_s_mu"      ,(PyCFunction)(void(*)(void)) countpairs_countpairs_s_mu ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_s_mu(autocorr, nthreads, binfile, mu_max, nmu_bins, X1, Y1, Z1, weights1=None, weight_type=None,\n"
      "                periodic=True, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,\n"
      "                boxsize=0.0, output_savg=False, fast_divide_and_NR_steps=0,\n"
@@ -795,7 +795,7 @@ static PyMethodDef module_methods[] = {
      "                                    x, y, z, X2=x, Y2=y, Z2=z,\n"
      "                                    verbose=True, output_savg=True)\n\n"
     },
-    {"countspheres_vpf"      ,(PyCFunction) countpairs_countspheres_vpf ,METH_VARARGS | METH_KEYWORDS,
+    {"countspheres_vpf"      ,(PyCFunction)(void(*)(void)) countpairs_countspheres_vpf ,METH_VARARGS | METH_KEYWORDS,
      "countspheres_vpf(rmax, nbins, nspheres, numpN, seed,\n"
      "                 X, Y, Z, verbose=False, periodic=True,\n"
      "                 boxsize=0.0, xbin_refine_factor=1, ybin_refine_factor=1,\n"

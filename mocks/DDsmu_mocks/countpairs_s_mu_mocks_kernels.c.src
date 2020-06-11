@@ -655,7 +655,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
             const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);
-            DOUBLE s, pairweight;
+            DOUBLE s = ZERO, pairweight = ZERO;
             if(need_savg) {
                 s = SQRT(sqr_s);
             }
@@ -1014,7 +1014,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
             const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);
-            DOUBLE s, pairweight;
+            DOUBLE s = ZERO, pairweight = ZERO;
             if(need_savg) {
                 s = SQRT(sqr_s);
             }
@@ -1218,7 +1218,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
             const DOUBLE sqr_s_dot_l = s_dot_l * s_dot_l;
             const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);
-            DOUBLE s, pairweight;
+            DOUBLE s = ZERO, pairweight = ZERO;
             if(need_savg) {
                 s = SQRT(sqr_s);
             }

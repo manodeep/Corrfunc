@@ -30,7 +30,6 @@ PYTHON:=python
 ## Set OpenMP for both theory and mocks
 OPT += -DUSE_OMP
 
-
 ### You should NOT edit below this line
 DISTNAME:=Corrfunc
 MAJOR:=2
@@ -58,7 +57,7 @@ endif
 
 
 # Is this running on TRAVIS or some other CI provider?
-CORRFUNC_CI ?= FALSE
+CORRFUNC_CI ?= false
 
 ## Only set everything if the command is not "make clean" (or related to "make clean")
 ifeq ($(DO_CHECKS), 1)
@@ -76,14 +75,15 @@ ifeq ($(DO_CHECKS), 1)
   ## magenta - general highlight
   ## blue - related to code/compile option
   ## bold - only used with printing out compilation options
-  HAVE_TPUT_COLORS := $(shell tput colors &>/dev/null && echo TRUE)
-  ifeq ($(HAVE_TPUT_COLORS), TRUE)
-    ccred:=$(shell tput setaf 1)
-    ccmagenta:=$(shell tput setaf 5)
-    ccgreen:=$(shell tput setaf 2)
-    ccblue:=$(shell tput setaf 4)
-    ccreset:=$(shell tput sgr0)
-    boldfont:=$(shell tput bold)
+  TERM ?= xterm
+  HAVE_TPUT_COLORS := $(shell tput -T ${TERM} colors &>/dev/null && echo true)
+  ifeq ($(HAVE_TPUT_COLORS), true)
+    ccred:=$(shell tput -T ${TERM} setaf 1)
+    ccmagenta:=$(shell tput -T ${TERM} setaf 5)
+    ccgreen:=$(shell tput -T ${TERM} setaf 2)
+    ccblue:=$(shell tput -T ${TERM} setaf 4)
+    ccreset:=$(shell tput -T ${TERM} sgr0)
+    boldfont:=$(shell tput -T ${TERM} bold)
   else
     # No color support; make all color commands no-ops
     ccred:=
@@ -176,8 +176,8 @@ ifeq ($(DO_CHECKS), 1)
   CFLAGS += -std=c99 -m64 -g -Wsign-compare -Wall -Wextra -Wshadow -Wunused -fPIC -D_POSIX_SOURCE=200809L -D_GNU_SOURCE -D_DARWIN_C_SOURCE -O3 #-Ofast
 
   # Add the -Werror flag if running on some continuous integration provider
-  ifeq ($(CORRFUNC_CI), TRUE)
-    CFLAGS += -Werror -Wno-unknown-warning-option
+  ifeq ($(CORRFUNC_CI), true)
+    CFLAGS += -Werror -Wno-unknown-warning-option -Wimplicit-fallthrough=1
   endif
 
   GSL_FOUND := $(shell gsl-config --version 2>/dev/null)
@@ -253,17 +253,17 @@ ifeq ($(DO_CHECKS), 1)
       endif #gcc findstring
     else ##CC is clang
       ### compiler specific flags for clang
-      CLANG_OMP_AVAIL := FALSE
+      CLANG_OMP_AVAIL := false
       export APPLE_CLANG := 0
       ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
         ifeq (clang-omp,$(findstring clang-omp,$(CC)))
-          CLANG_OMP_AVAIL:=TRUE
+          CLANG_OMP_AVAIL:=true
           CFLAGS += -fopenmp
           CLINK  += -liomp5
         else
           # Apple clang/gcc does not support OpenMP
           ifeq (Apple, $(findstring Apple, $(CC_VERSION)))
-            CLANG_OMP_AVAIL:= FALSE
+            CLANG_OMP_AVAIL:= false
             export CLANG_OMP_WARNING_PRINTED ?= 0
             ifeq ($(CLANG_OMP_WARNING_PRINTED), 0)
               $(warning $(ccmagenta)Compiler is Apple clang and does not support OpenMP$(ccreset))
@@ -282,21 +282,21 @@ ifeq ($(DO_CHECKS), 1)
             CLANG_VERSION_MINOR := $(word 2,${CLANG_VERSION_FULL})
             CLANG_MAJOR_MIN_OPENMP := 3
             CLANG_MINOR_MIN_OPENMP := 7
-            CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo TRUE)
-            CLANG_IS_38 := $(shell [ $(CLANG_VERSION_MAJOR) -eq 3 -a $(CLANG_VERSION_MINOR) -eq 8  ] && echo TRUE)
+            CLANG_OMP_AVAIL := $(shell [ $(CLANG_VERSION_MAJOR) -gt $(CLANG_MAJOR_MIN_OPENMP) -o \( $(CLANG_VERSION_MAJOR) -eq $(CLANG_MAJOR_MIN_OPENMP) -a $(CLANG_VERSION_MINOR) -ge $(CLANG_MINOR_MIN_OPENMP) \) ] && echo true)
+            CLANG_IS_38 := $(shell [ $(CLANG_VERSION_MAJOR) -eq 3 -a $(CLANG_VERSION_MINOR) -eq 8  ] && echo true)
             CFLAGS += -fopenmp=libomp
             CLINK  += -fopenmp=libomp
           endif #Apple check
         endif  #clang-omp check
 
-        ifeq ($(CLANG_OMP_AVAIL),TRUE)
+        ifeq ($(CLANG_OMP_AVAIL),true)
           ifeq ($(APPLE_CLANG),0)
             ifeq ($(UNAME), Darwin)
               export CLANG_LD_WARNING_PRINTED ?= 0
               ifeq ($(CLANG_LD_WARNING_PRINTED), 0)
                 $(info $(ccmagenta)Enabling OpenMP with clang.$(ccreset))
                 CLANG_LD_ERROR := "dyld: Library not loaded: @rpath/libLLVM.dylib\nReferenced from: /opt/local/libexec/llvm-3.8/lib/libLTO.dylib\nReason: image not found\n"
-                ifeq ($(CLANG_IS_38), TRUE)
+                ifeq ($(CLANG_IS_38), true)
                   $(warning With $(ccblue)"clang-3.8"$(ccreset), You might see this $(ccred)$(CLANG_LD_ERROR)$(ccreset) error with the final linking step.)
                   $(info Use this command to fix the issue $(ccmagenta) "sudo install_name_tool -change @executable_path/../lib/libLTO.dylib @rpath/../lib/libLTO.dylib /opt/local/libexec/ld64/ld-latest"$(ccreset))
                   $(info You can see the bug report here $(ccmagenta)"https://trac.macports.org/ticket/50853"$(ccreset))
@@ -333,7 +333,7 @@ ifeq ($(DO_CHECKS), 1)
     # Commented out for now -> need to overhaul testing infrastructure and
     # toolchain. Otherwise, travis has compile failure due to unknown compiler options
     # ifeq ($(RUNNING_TESTS), 1)
-    #   ifeq ($(CORRFUNC_CI), TRUE)
+    #   ifeq ($(CORRFUNC_CI), true)
     #     CFLAGS +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
     #     CLINK +=-fsanitize=leak -fsanitize=undefined -fsanitize=bounds -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error -fstack-protector-all
     #   endif
@@ -405,21 +405,21 @@ ifeq ($(DO_CHECKS), 1)
       MIN_NUMPY_MAJOR  := 1
       MIN_NUMPY_MINOR  := 7
 
-      PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo TRUE)
-      NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo TRUE)
+      PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
+      NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
 
-      ifeq ($(PYTHON_AVAIL),TRUE)
-        ifeq ($(NUMPY_AVAIL),TRUE)
+      ifeq ($(PYTHON_AVAIL),true)
+        ifeq ($(NUMPY_AVAIL),true)
           export COMPILE_PYTHON_EXT := 1
         endif
       endif
 
-      ifneq ($(PYTHON_AVAIL),TRUE)
+      ifneq ($(PYTHON_AVAIL),true)
         $(warning $(ccmagenta) Found python version $(PYTHON_VERSION_MAJOR).$(PYTHON_VERSION_MINOR).$(PYTHON_VERSION_PATCH) but minimum required python is $(MIN_PYTHON_MAJOR).$(MIN_PYTHON_MINOR) $(ccreset))
         export COMPILE_PYTHON_EXT := 0
       endif
 
-      ifneq ($(NUMPY_AVAIL),TRUE)
+      ifneq ($(NUMPY_AVAIL),true)
         $(warning $(ccmagenta) Found NUMPY version $(NUMPY_VERSION_MAJOR).$(NUMPY_VERSION_MINOR).$(NUMPY_VERSION_PATCH) but minimum required numpy is $(MIN_NUMPY_MAJOR).$(MIN_NUMPY_MINOR) $(ccreset))
         export COMPILE_PYTHON_EXT := 0
       endif
