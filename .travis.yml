@@ -113,7 +113,7 @@ matrix:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
 install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then eval "CC=gcc-7"        ; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export COMPILER=gcc-7 ; fi
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda create -q --yes -n test python=$PYTHON_VERSION
