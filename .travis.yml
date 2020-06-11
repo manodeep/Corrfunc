@@ -132,7 +132,3 @@ script:
   - make tests CC=$COMPILER
   - make -C docs html
   - if [[ "${DOCTEST}" == "true" ]]; then make -C docs doctest ; fi
-
-branches:
-  only:
-    - master
