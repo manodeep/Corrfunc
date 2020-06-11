@@ -177,7 +177,12 @@ ifeq ($(DO_CHECKS), 1)
 
   # Add the -Werror flag if running on some continuous integration provider
   ifeq ($(CORRFUNC_CI), true)
-    CFLAGS += -Werror -Wimplicit-fallthrough=1 -Wno-unknown-warning-option
+    CFLAGS += -Werror -Wno-unknown-warning-option
+  endif
+
+  # Add the implicit-fallthrough option *if not on* TRAVIS
+  ifneq ($(TRAVIS), true)
+   -CFLAGS += -Wimplicit-fallthrough=1
   endif
 
   GSL_FOUND := $(shell gsl-config --version 2>/dev/null)
