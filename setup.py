@@ -234,11 +234,10 @@ def requirements_check():
         common = replace_first_key_in_makefile(common, key, replacement,
                                                    common_mk_file)
 
-    # check if the environ is set
-    if os.environ['CC']:
-        value = os.environ['CC']
+    # check if 'CC' is set in the environ
+    value = os.environ.get('CC', None)
 
-    # Check if CC is in argv:
+    # Check if CC is in argv (will over-ride environment 'CC'):
     CC = "CC"
     for iarg, arg in enumerate(sys.argv):
         if CC not in arg:
@@ -296,12 +295,13 @@ def requirements_check():
         del sys.argv[iarg]
         break
 
-    replacement = '\n{0}:={1}'.format(CC, value)
-    replace_first_key_in_makefile(common, CC,
-                                  replacement, common_mk_file)
+    if value:
+        replacement = '\n{0}:={1}'.format(CC, value)
+        replace_first_key_in_makefile(common, CC,
+                                      replacement, common_mk_file)
 
-    global compiler
-    compiler = value
+        global compiler
+        compiler = value
 
     return common_dict
 
