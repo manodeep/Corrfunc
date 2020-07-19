@@ -234,9 +234,6 @@ def requirements_check():
         common = replace_first_key_in_makefile(common, key, replacement,
                                                    common_mk_file)
 
-    # check if 'CC' is set in the environ
-    value = os.environ.get('CC', None)
-
     # Check if CC is in argv (will over-ride environment 'CC'):
     CC = "CC"
     for iarg, arg in enumerate(sys.argv):
@@ -244,12 +241,14 @@ def requirements_check():
             continue
 
         if '=' in arg:
+            # user passed `CC=/path/to/compiler`
+            # therefore, split on '=' to get the
+            # compiler (i.e, 'CC') and the value
+            # (i.e, the name/path of compiler)
             key, value = arg.strip().split('=')
         else:
-            # Space-separated or no spaces and equal
+            # Space-separated or spaces and an '=' sign
             key = arg.strip()
-            check_arg = iarg+1
-
             if key != CC:
                 msg = "Something strange has happened. Expected to find "\
                       "a custom compiler from the command-line but \n"\
@@ -258,21 +257,40 @@ def requirements_check():
                       "produced CC={1}".format(arg, key)
                 raise ValueError(msg)
 
-            # Is there an "=" sign or did the user
-            # simply pass `CC /path/to/compiler`
-            if check_arg < len(sys.argv):
-                if sys.argv[check_arg] == '=':
-                    # skip '=' sign
-                    del sys.argv[check_arg]
-
-            # should be parsing the compiler value now
-            if not check_arg < len(sys.argv):
-                msg = "Found compiler key = CC but could not locate "\
-                      "compiler value (either as `CC=/path/to/CC` "\
-                      "or as `CC /path/to/CC`"
+            check_arg = iarg+1
+            # Is there an "=" sign (i.e., `CC = /path/to/compiler`)
+            # or did the user simply pass `CC /path/to/compiler`
+            if check_arg >= len(sys.argv):
+                msg = "Found compiler key = {} but could not locate "\
+                      "compiler value - no further command-line "\
+                      "parameters were passed.\nPlease pass the "\
+                      "custom compiler name either `CC=compiler`"\
+                      "or as `CC=/path/to/compiler`".format(key)
                 raise ValueError(msg)
 
-            value = sys.argv[check_arg].strip()
+
+            # The user could have specified `CC =compiler` or
+            # `CC = compiler`. The following 'if' condition checks
+            # for the first case, the 'else' checks for the second
+            # case (`CC = compiler`)
+            if '=' in sys.argv[check_arg] and \
+               sys.argv[check_arg].strip() != '=':
+               _, value = sys.argv[check_arg].strip().split('=')
+            else:
+                # Otherwise, there was white-space separated '='
+                # we can delete that command-line argument containing
+                # just the '=' sign.
+                del sys.argv[check_arg]
+                # should be parsing the compiler value now
+                if check_arg >= len(sys.argv):
+                    msg = "Found compiler key = CC but could not locate "\
+                          "compiler value (either as `CC=/path/to/CC` "\
+                          "or as `CC /path/to/CC`"
+                    raise ValueError(msg)
+
+                value = sys.argv[check_arg].strip()
+
+            # this deletes the argument containing the compiler name
             del sys.argv[check_arg]
 
         if key != CC or value == '':
@@ -292,16 +310,18 @@ def requirements_check():
                     "Please specify CC=/path/to/compiler in the "\
                     "python -m pip setup.py call.".format(value)
             raise ValueError(msg)
-        del sys.argv[iarg]
-        break
 
-    if value:
         replacement = '\n{0}:={1}'.format(CC, value)
         replace_first_key_in_makefile(common, CC,
                                       replacement, common_mk_file)
 
         global compiler
         compiler = value
+
+        # Delete the 'CC' key, the compiler name and the '='
+        # have already been deleted
+        del sys.argv[iarg]
+        break
 
     return common_dict
 
