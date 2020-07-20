@@ -234,7 +234,7 @@ def requirements_check():
         common = replace_first_key_in_makefile(common, key, replacement,
                                                    common_mk_file)
 
-    # Check if CC is in argv (will over-ride environment 'CC'):
+    # Check if CC is in argv:
     CC = "CC"
     for iarg, arg in enumerate(sys.argv):
         if CC not in arg:
