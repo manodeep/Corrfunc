@@ -274,7 +274,7 @@ def requirements_check():
             # case (`CC = compiler`)
             if '=' in sys.argv[check_arg] and \
                sys.argv[check_arg].strip() != '=':
-                _ , value = sys.argv[check_arg].strip().split('=')
+                _, value = sys.argv[check_arg].strip().split('=')
             else:
                 # Otherwise, there was white-space separated '='
                 # we can delete that command-line argument containing
