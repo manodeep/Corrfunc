@@ -268,14 +268,13 @@ def requirements_check():
                       "or as `CC=/path/to/compiler`".format(key)
                 raise ValueError(msg)
 
-
             # The user could have specified `CC =compiler` or
             # `CC = compiler`. The following 'if' condition checks
             # for the first case, the 'else' checks for the second
             # case (`CC = compiler`)
             if '=' in sys.argv[check_arg] and \
                sys.argv[check_arg].strip() != '=':
-               _, value = sys.argv[check_arg].strip().split('=')
+                _ , value = sys.argv[check_arg].strip().split('=')
             else:
                 # Otherwise, there was white-space separated '='
                 # we can delete that command-line argument containing
@@ -306,9 +305,9 @@ def requirements_check():
         full_compiler = which(value)
         if full_compiler is None:
             msg = "Found compiler = '{0}' on the command-line but '{0}' "\
-                    "can not be resolved from the shell.\n"\
-                    "Please specify CC=/path/to/compiler in the "\
-                    "python -m pip setup.py call.".format(value)
+                  "can not be resolved from the shell.\n"\
+                  "Please specify CC=/path/to/compiler in the "\
+                  "python -m pip setup.py call.".format(value)
             raise ValueError(msg)
 
         replacement = '\n{0}:={1}'.format(CC, value)
