@@ -34,7 +34,7 @@ OPT += -DUSE_OMP
 DISTNAME:=Corrfunc
 MAJOR:=2
 MINOR:=3
-PATCHLEVEL:=3
+PATCHLEVEL:=4
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 ABI_COMPAT_VERSION:=$(MAJOR).0
 # Whenever conda needs to be checked again

@@ -442,7 +442,7 @@ Project URLs
 -  Documentation (http://corrfunc.rtfd.io/)
 -  Source Repository (https://github.com/manodeep/Corrfunc)
 -  Entry in the Astrophysical Source Code Library (ASCL) |ASCL|
--  Zenodo Releases |Zenodo| 
+-  Zenodo Releases |Zenodo|
 
 .. |logo| image:: https://github.com/manodeep/Corrfunc/blob/master/corrfunc_logo.png
     :target: https://github.com/manodeep/Corrfunc
@@ -456,9 +456,6 @@ Project URLs
 .. |MIT licensed| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE
    :alt: MIT License
-.. |ASCL| image:: https://img.shields.io/badge/ascl-1703.003-blue.svg?colorB=262255
-   :target: http://ascl.net/1703.003
-   :alt: ascl:1703.003
 .. |Travis Build| image:: https://travis-ci.org/manodeep/Corrfunc.svg?branch=master
    :target: https://travis-ci.org/manodeep/Corrfunc
    :alt: Build Status
@@ -485,6 +482,6 @@ Project URLs
 
 .. |ASCL| image:: https://img.shields.io/badge/ascl-1703.003-blue.svg?colorB=262255
    :target: http://ascl.net/1703.003
-   :alt: ascl:1703.003  
+   :alt: ascl:1703.003
 .. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3634195.svg
    :target: https://doi.org/10.5281/zenodo.3634195
