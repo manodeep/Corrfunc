@@ -24,6 +24,7 @@ Enhancements
 Bug fixes
 ----------
 - Fixing docs build failure on Travis [#215]
+- Fixing compile failure on missing 'CC' in environment [#226]
 
 
 2.3.3 (2019-02-03)
