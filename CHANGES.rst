@@ -10,8 +10,8 @@ New features
 - conda installable package
 - GPU version
 
-2.3.4 (Upcoming)
-=================
+2.3.4 (2019-07-21)
+==================
 This is a bug-fix release and contains general code quality improvements.
 
 
@@ -41,8 +41,7 @@ Bug fixes
 ----------
 - Installation does not require python(3)-config anymore [#209, #211]
 - Better handling of terminal colours for unknown terminals [#209]
-- Prevent incorrect calculations with periodic boundaries for large ratios of
-(zmax, Rmax) to Lbox [#210]
+- Prevent incorrect calculations with periodic boundaries for large ratios of (zmax, Rmax) to Lbox [#210]
 
 
 2.3.2 (2019-12-24)
@@ -150,11 +149,11 @@ New features
 Enhancements
 ------------
 
-- Ctrl-C now aborts even within python extensions (cleans up memory too!, `#12 <https://github.com/manodeep/Corrfunc/issues/12>`_)
+- Ctrl-C now aborts even within python extensions (cleans up memory too!, `see issue #12 <https://github.com/manodeep/Corrfunc/issues/12>`_)
 - Significantly improved installation for python
 
   - compiler can now be specified within ``python setup.py install CC=yourcompiler``
-    `#31<https://github.com/manodeep/Corrfunc/issues/31>`_
+    `(see issue #31) <https://github.com/manodeep/Corrfunc/issues/31>`_
   - python via an alias is now solved `#52 <https://github.com/manodeep/Corrfunc/issues/52>`_
 
 
