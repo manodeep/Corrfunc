@@ -1722,7 +1722,9 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
     }
     free_results_rp_pi(&results);
 
-    return Py_BuildValue("(Od)", ret, c_api_time);
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObject *kwargs)
