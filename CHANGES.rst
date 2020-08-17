@@ -15,7 +15,7 @@ New features
 
 Bug fixes
 ---------
-- Fix Python reference leak to results struct [#227]
+- Fix Python reference leak to results struct [#229]
 
 
 2.3.4 (2019-07-21)
