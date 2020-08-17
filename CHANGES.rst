@@ -10,6 +10,14 @@ New features
 - conda installable package
 - GPU version
 
+2.3.5 (upcoming)
+==================
+
+Bug fixes
+---------
+- Fix Python reference leak to results struct [#227]
+
+
 2.3.4 (2019-07-21)
 ==================
 This is a bug-fix release and contains general code quality improvements.
