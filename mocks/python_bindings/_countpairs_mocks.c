@@ -1403,7 +1403,10 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         rlow=results.rupp[i];
     }
     free_results_mocks(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -1726,7 +1729,10 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         rlow=results.supp[i];
     }
     free_results_mocks_s_mu(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -2015,7 +2021,10 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         rlow=results.theta_upp[i];
     }
     free_results_countpairs_theta(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 
@@ -2248,5 +2257,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     }
     free_results_countspheres_mocks(&results);
 
-    return Py_BuildValue("(Od)", ret, c_api_time);
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }

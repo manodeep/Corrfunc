@@ -1424,7 +1424,10 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     }
 
     free_results(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 
@@ -1965,7 +1968,10 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         }
         free_cell_timings(&options);
     }
-    return Py_BuildValue("(OdO)", ret, c_api_time, c_cell_time);
+    PyObject *rettuple = Py_BuildValue("(OdO)", ret, c_api_time, c_cell_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    Py_DECREF(c_cell_time);
+    return rettuple;
 }
 
 
@@ -2187,7 +2193,9 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
     }
     free_results_xi(&results);
 
-    return Py_BuildValue("(Od)", ret, c_api_time);
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 
@@ -2491,7 +2499,9 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
     }
     free_results_s_mu(&results);
 
-    return Py_BuildValue("(Od)", ret, c_api_time);
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 
@@ -2663,5 +2673,8 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     }
 
     free_results_countspheres(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
