@@ -456,8 +456,8 @@ Project URLs
 .. |MIT licensed| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE
    :alt: MIT License
-.. |Travis Build| image:: https://travis-ci.org/manodeep/Corrfunc.svg?branch=master
-   :target: https://travis-ci.org/manodeep/Corrfunc
+.. |Travis Build| image:: https://travis-ci.com/manodeep/Corrfunc.svg?branch=master
+   :target: https://travis-ci.com/manodeep/Corrfunc
    :alt: Build Status
 .. |GitHub CI| image:: https://github.com/manodeep/Corrfunc/workflows/GitHub%20CI/badge.svg
    :target: https://github.com/manodeep/Corrfunc/actions
