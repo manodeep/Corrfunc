@@ -23,23 +23,6 @@ extern "C" {
 
 #define API_VERSION          STR("2.4.0")
 
-typedef enum {
-  DEFAULT=-42,/* present simply to make the enum a signed int*/
-  FALLBACK=0, /* No special options */
-  SSE=1,  /* 64 bit vectors */
-  SSE2=2, /* 128 bit vectors */
-  SSE3=3, /* 128 bit vectors */
-  SSSE3=4, /* 128 bit vectors */
-  SSE4=5,/* 128bit vectors */
-  SSE42=6, /* 128bit vectors with blend operations */
-  AVX=7, /* 256bit vector width */
-  AVX2=8,  /* AVX2 (integer operations)*/
-  AVX512F=9,/* AVX 512 Foundation */
-  NUM_ISA  /*NUM_ISA will be the next integer after
-            the last declared enum. AVX512F:=9 (so, NUM_ISA==10)*/
-} isa;//name for instruction sets -> corresponds to the return from instrset_detect in cpu_features.c
-
-
 /* Macros as mask for the binning_flags */
 /* These consititute the 32 bytes for
 the ``uint32_t binning_flags`` */
