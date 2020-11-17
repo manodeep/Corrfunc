@@ -69,7 +69,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
 static PyObject *countpairs_mocks_error_out(PyObject *module, const char *msg);
 
 static PyMethodDef module_methods[] = {
-    {"countpairs_rp_pi_mocks"       ,(PyCFunction) countpairs_countpairs_rp_pi_mocks ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_rp_pi_mocks"       ,(PyCFunction)(void(*)(void)) countpairs_countpairs_rp_pi_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_rp_pi_mocks(autocorr, cosmology, nthreads, pimax, binfile,\n"
      "                       RA1, DEC1, CZ1, weights1=None, weight_type=None,\n"
      "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
@@ -249,7 +249,7 @@ static PyMethodDef module_methods[] = {
      "                                            verbose=True)\n"
      "\n"
     },
-    {"countpairs_s_mu_mocks"       ,(PyCFunction) countpairs_countpairs_s_mu_mocks ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_s_mu_mocks"       ,(PyCFunction)(void(*)(void)) countpairs_countpairs_s_mu_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_s_mu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,\n"
      "                       RA1, DEC1, CZ1, weights1=None, weight_type=None,\n"
      "                       RA2=None, DEC2=None, CZ2=None, weights2=None,\n"
@@ -423,7 +423,7 @@ static PyMethodDef module_methods[] = {
      "                                            verbose=True)\n"
      "\n"
     },
-    {"countpairs_theta_mocks"       ,(PyCFunction) countpairs_countpairs_theta_mocks ,METH_VARARGS | METH_KEYWORDS,
+    {"countpairs_theta_mocks"       ,(PyCFunction)(void(*)(void)) countpairs_countpairs_theta_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countpairs_theta_mocks(autocorr, nthreads, binfile,\n"
      "                       RA1, DEC1, weights1=None, weight_type=None,\n"
      "                       RA2=None, DEC2=None, weights2=None,\n"
@@ -580,7 +580,7 @@ static PyMethodDef module_methods[] = {
      "                              verbose=True)\n"
      "\n"
     },
-    {"countspheres_vpf_mocks"       ,(PyCFunction) countpairs_countspheres_vpf_mocks ,METH_VARARGS | METH_KEYWORDS,
+    {"countspheres_vpf_mocks"       ,(PyCFunction)(void(*)(void)) countpairs_countspheres_vpf_mocks ,METH_VARARGS | METH_KEYWORDS,
      "countspheres_vpf_mocks(rmax, nbins, nspheres, numpN,\n"
      "                       threshold_ngb, centers_file, cosmology,\n"
      "                       RA, DEC, CZ,\n"
@@ -868,7 +868,7 @@ PyObject *PyInit__countpairs_mocks(void)
     /* Load `numpy` functionality. */
     import_array();
 
-    highest_isa_mocks = instrset_detect();
+    highest_isa_mocks = get_max_usable_isa();
 
 #if PY_MAJOR_VERSION >= 3
     return module;
@@ -1403,7 +1403,10 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         rlow=results.rupp[i];
     }
     free_results_mocks(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -1726,7 +1729,10 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         rlow=results.supp[i];
     }
     free_results_mocks_s_mu(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -2015,7 +2021,10 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         rlow=results.theta_upp[i];
     }
     free_results_countpairs_theta(&results);
-    return Py_BuildValue("(Od)", ret, c_api_time);
+
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }
 
 
@@ -2248,5 +2257,7 @@ static PyObject *countpairs_countspheres_vpf_mocks(PyObject *self, PyObject *arg
     }
     free_results_countspheres_mocks(&results);
 
-    return Py_BuildValue("(Od)", ret, c_api_time);
+    PyObject *rettuple = Py_BuildValue("(Od)", ret, c_api_time);
+    Py_DECREF(ret);  // transfer reference ownership to the tuple
+    return rettuple;
 }

@@ -21,22 +21,64 @@ theory functions.
 --------------------
 - Require user to specify `boxsize` rather than automatically detect particle
   extent in periodic theory boxes. Applies to Python, command line, and C API. [#199]
+  
+Bug fixes
+---------
+- Fix Python reference leak to results struct [#229]
 
 
-2.3.2 (Upcoming)
-================
+2.3.4 (2019-07-21)
+==================
+This is a bug-fix release and contains general code quality improvements.
+
+
+Enhancements
+------------
+- A new helper routine to find the combination of (RA, DEC) refinements that produces fastest runtime in ``DDtheta_mocks`` [#216]
+- Further testing via GitHub Actions [#220]
+- Added Ubuntu-Xenial on Travis [#222]
+
+Bug fixes
+----------
+- Fixing docs build failure on Travis [#215]
+- Fixing compile failure on missing 'CC' in environment [#226]
+
+
+2.3.3 (2019-02-03)
+==================
+This is a bug-fix release and contains general code quality improvements.
+
+
+Enhancements
+------------
+
+
+
+Bug fixes
+----------
+- Installation does not require python(3)-config anymore [#209, #211]
+- Better handling of terminal colours for unknown terminals [#209]
+- Prevent incorrect calculations with periodic boundaries for large ratios of (zmax, Rmax) to Lbox [#210]
+
+
+2.3.2 (2019-12-24)
+===================
 This is a release for bug-fixes and general code quality improvements. Travis
 now also tests for ``python3.7``.
 
 Enhancements
 ------------
 - Improved code quality and adherence to PEP8 [#189]
+- Documentation no longer shows duplicate entries [#205]
+
 
 Bug fixes
 ----------
 - Incorrect calculations for non-native endian data [#191]
+- Large Rmax to Lbox ratio now supported for periodic boundaries [#192]
 - Workaround for GNU Assembler bug causing incorrect calculations [#196]
-
+- Only report runtime isa support if we also have compiler support [#200]
+- Example code to illustrate how to code custom weights with AVX512F [#205]
 
 2.3.1 (2019-06-21)
 ================
@@ -122,11 +164,11 @@ New features
 Enhancements
 ------------
 
-- Ctrl-C now aborts even within python extensions (cleans up memory too!, `#12 <https://github.com/manodeep/Corrfunc/issues/12>`_)
+- Ctrl-C now aborts even within python extensions (cleans up memory too!, `see issue #12 <https://github.com/manodeep/Corrfunc/issues/12>`_)
 - Significantly improved installation for python
 
   - compiler can now be specified within ``python setup.py install CC=yourcompiler``
-    `#31<https://github.com/manodeep/Corrfunc/issues/31>`_
+    `(see issue #31) <https://github.com/manodeep/Corrfunc/issues/31>`_
   - python via an alias is now solved `#52 <https://github.com/manodeep/Corrfunc/issues/52>`_
 
 

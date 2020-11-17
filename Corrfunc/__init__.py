@@ -20,7 +20,7 @@ except NameError:
     __CORRFUNC_SETUP__ = False
 
 if not __CORRFUNC_SETUP__:
-    from . import io 
+    from . import io
     from . import utils
     from . import theory
     from . import mocks

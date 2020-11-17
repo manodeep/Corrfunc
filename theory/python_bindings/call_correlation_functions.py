@@ -12,7 +12,7 @@ from __future__ import (absolute_import, division, print_function,
 try:
     from future.utils import bytes_to_native_str
 except ImportError:
-    print("\n\tPlease run python setup.py install before using "
+    print("\n\tPlease run python -m pip install Corrfunc before using "
           "the 'Corrfunc' package\n")
     raise
 

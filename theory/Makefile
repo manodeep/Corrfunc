@@ -31,9 +31,7 @@ examples: examples/run_correlations
 examples/run_correlations: libs
 	$(MAKE) -C examples
 
-distclean:realclean
-distclena:realclean
-realclena:realclean
+distclena distclean realclena:realclean
 
 realclean:
 	$(RM) $(ROOT_DIR)/bin/logbins
@@ -43,6 +41,8 @@ realclean:
 	done
 	$(MAKE) -C python_bindings distclean
 	$(MAKE) -C tests clean
+
+celan clena celna: clean
 
 clean:
 	$(RM) logbins

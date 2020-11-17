@@ -116,7 +116,7 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     runtimes : numpy structured array
 
-        if ``return_runtimes`` is set, then the return value is a tuple
+        Only returned if ``return_runtimes`` is set, then the return value is a tuple
         containing ((nx, ny, nz), runtimes). ``runtimes`` is a ``numpy``
         structured array containing the fields, [``nx``, ``ny``, ``nz``,
         ``avg_runtime``, ``sigma_time``]. Here, ``avg_runtime`` is the

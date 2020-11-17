@@ -17,7 +17,7 @@ The steps are:
 
 #. Add an ``if`` statement that maps a string name (like "my_weight_scheme") to the ``weight_method_t`` (which you created above) in ``get_weight_method_by_name()`` in ``utils/defs.h``.
 
-#. Write a function in ``utils/weight_functions.h.src`` that returns the weight for a particle pair, given the weights for the two particles.  The weights for each particle are packed in a ``const pair_struct_DOUBLE`` struct, which also contains the pair separation.  You must write one function for every instruction set you wish to support.  This can be quite easy for simple weight schemes; the three functions for ``pair_product`` are:
+#. Write a function in ``utils/weight_functions.h.src`` that returns the weight for a particle pair, given the weights for the two particles.  The weights for each particle are packed in a ``const pair_struct_DOUBLE`` struct, which also contains the pair separation.  You must write one function for every instruction set you wish to support.  This can be quite easy for simple weight schemes; the four functions for ``pair_product`` are:
 
 .. code-block:: c
 
@@ -27,6 +27,12 @@ The steps are:
     static inline DOUBLE pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
         return pair->weights0[0].d*pair->weights1[0].d;
     }
+
+    #ifdef __AVX512F__
+    static inline AVX512_FLOATS avx512_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+        return AVX512_MULTIPLY_FLOATS(pair->weights0[0].a512, pair->weights1[0].a512);
+    }
+    #endif
 
     #ifdef __AVX__
     static inline AVX_FLOATS avx_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
@@ -39,10 +45,17 @@ The steps are:
         return SSE_MULTIPLY_FLOATS(pair->weights0[0].s, pair->weights1[0].s);
     }
     #endif
-    
-See ``utils/avx_calls.h`` and ``utils/sse_calls.h`` for the lists of available vector instructions.
 
-5. For each function you wrote in the last step, add a case to the switch-case block in the appropriate dispatch function in ``utils/weight_functions.h.src``.  If you wrote a weighting function for all three instruction sets, then you'll need to add the corresponding function to ``get_weight_func_by_method_DOUBLE()``, ``get_avx_weight_func_by_method_DOUBLE()``, and  ``get_sse_weight_func_by_method_DOUBLE()``.
+See ``utils/avx512_calls.h``, ``utils/avx_calls.h`` and ``utils/sse_calls.h`` for the lists of available vector instructions.
+
+5. For each function you wrote in the last step, add a case to the switch-case
+   block in the appropriate dispatch function in
+   ``utils/weight_functions.h.src``.  If you wrote a weighting function for all
+   four instruction sets, then you'll need to add the corresponding function to
+   ``get_weight_func_by_method_DOUBLE()``,
+   ``get_avx512_weight_func_by_method_DOUBLE``,
+   ``get_avx_weight_func_by_method_DOUBLE()``,
+   and  ``get_sse_weight_func_by_method_DOUBLE()``.
 
 #. Done!  Your weight scheme should now be accessible through the Python and C interfaces via the name ("my_weight_scheme") that you specified above.  The output will be accessible in the ``weightavg`` field of the ``results`` array.
 

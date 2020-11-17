@@ -27,9 +27,10 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted.
 
-    If ``weights`` are provided, the resulting pair counts are weighted.  The
-    weighting scheme depends on ``weight_type``.
-
+    If ``weights`` are provided, the mean pair weight is stored in the
+    ``"weightavg"`` field of the results array.  The raw pair counts in the
+    ``"npairs"`` field are not weighted.  The weighting scheme depends on
+    ``weight_type``.
 
     .. note:: that this module only returns pair counts and not the actual
         correlation function :math:`\\xi(r_p, \pi)` or :math:`wp(r_p)`. See the

@@ -178,6 +178,7 @@ def requirements_check():
     common_mk_file = pjoin(dirname(abspath(__file__)),
                            "common.mk")
     common = read_text_file(common_mk_file)
+
     common_dict = get_dict_from_buffer(common)
     name = common_dict['DISTNAME'][0]
     major = common_dict['MAJOR'][0]
@@ -206,43 +207,9 @@ def requirements_check():
         while C version claims {1}".format(Corrfunc.__version__, version)
         raise AssertionError(msg)
 
-    # Since arbitrary python can be used even within the Makefile
-    # make sure that the current python executable is the same as the
-    # one specified in common.mk. Easiest way is to replace
-    make_python = common_dict['PYTHON'][0]
-    if make_python is None:
-        msg = "PYTHON is not defined in 'common.mk'. Please "\
-            "edit 'common.mk' and define PYTHON (typically "\
-            "just python) "
-        raise AssertionError(msg)
-
-    this_python = sys.executable
-    python_script = "'from __future__ import print_function; "\
-                    "import sys; print(sys.executable)'"
-    get_full_python, full_python_errors = run_command(
-        make_python + " -c " + python_script,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if get_full_python is None:
-        msg = "Could not determine which python is resolved in the Makefile "\
-              "Parsed PYTHON=[${0}] in Makefile which could not be resolved "\
-              "through the shell. Please report your python setup and file "\
-              "an installation issue at {1}.".format(make_python, base_url)
-        raise RuntimeError(msg)
-
-    get_full_python = strip_line(get_full_python, os.linesep)
-    if get_full_python != this_python:
-        msg = "Looks like python specified in Makefile = {0} is different "\
-              "from the invoked python instance = {1}.\nReplacing PYTHON "\
-              "in 'common.mk' and recompiling *all* files".format(
-                  get_full_python, this_python)
-        print(msg)
-        key = "PYTHON"
-        replacement = '\n{0}:={1}'.format(key, this_python)
-        common = replace_first_key_in_makefile(common, key, replacement,
-                                               common_mk_file)
-
-    # Okay common.mk has now been updated to use current python
-    # for building the extensions as required
+    # Okay common.mk has been updated to use current python
+    # for building the extensions as required. Now check for
+    # min. python version
     min_py_major = int(common_dict['MIN_PYTHON_MAJOR'][0])
     min_py_minor = int(common_dict['MIN_PYTHON_MINOR'][0])
 
@@ -256,67 +223,104 @@ def requirements_check():
                                                  min_py_minor)
         raise AssertionError(msg)
 
+    # Since arbitrary python can be used even within the Makefile
+    # make sure that the current python executable is the same as the
+    # one specified in common.mk. Easiest way is to replace,
+    # but no need to do so if creating a source distribution
+    if 'sdist' not in sys.argv:
+        this_python = sys.executable
+        key = "PYTHON"
+        replacement = '\n{0}:={1}'.format(key, this_python)
+        common = replace_first_key_in_makefile(common, key, replacement,
+                                                   common_mk_file)
+
     # Check if CC is in argv:
     CC = "CC"
     for iarg, arg in enumerate(sys.argv):
-        if CC in arg:
-            if '=' in arg:
-                key, value = arg.strip().split('=')
+        if CC not in arg:
+            continue
+
+        if '=' in arg:
+            # user passed `CC=/path/to/compiler`
+            # therefore, split on '=' to get the
+            # compiler (i.e, 'CC') and the value
+            # (i.e, the name/path of compiler)
+            key, value = arg.strip().split('=')
+        else:
+            # Space-separated or spaces and an '=' sign
+            key = arg.strip()
+            if key != CC:
+                msg = "Something strange has happened. Expected to find "\
+                      "a custom compiler from the command-line but \n"\
+                      "found command-line argument '{0}' (that matches "\
+                      "pattern ['CC=/path/to/compiler']). Parsing "\
+                      "produced CC={1}".format(arg, key)
+                raise ValueError(msg)
+
+            check_arg = iarg+1
+            # Is there an "=" sign (i.e., `CC = /path/to/compiler`)
+            # or did the user simply pass `CC /path/to/compiler`
+            if check_arg >= len(sys.argv):
+                msg = "Found compiler key = {} but could not locate "\
+                      "compiler value - no further command-line "\
+                      "parameters were passed.\nPlease pass the "\
+                      "custom compiler name either `CC=compiler`"\
+                      "or as `CC=/path/to/compiler`".format(key)
+                raise ValueError(msg)
+
+            # The user could have specified `CC =compiler` or
+            # `CC = compiler`. The following 'if' condition checks
+            # for the first case, the 'else' checks for the second
+            # case (`CC = compiler`)
+            if '=' in sys.argv[check_arg] and \
+               sys.argv[check_arg].strip() != '=':
+                _, value = sys.argv[check_arg].strip().split('=')
             else:
-                # Space-separated or no spaces and equal
-                key = arg.strip()
-                check_arg = iarg+1
-
-                if key != CC:
-                    msg = "Something strange has happened. Expected to find "\
-                          "a custom compiler from the command-line but \n"\
-                          "found command-line argument '{0}' (that matches "\
-                          "pattern ['CC=/path/to/compiler']). Parsing "\
-                          "produced CC={1}".format(arg, key)
-                    raise ValueError(msg)
-
-                # Is there an "=" sign or did the user
-                # simply pass `CC /path/to/compiler`
-                if check_arg < len(sys.argv):
-                    if sys.argv[check_arg] == '=':
-                        # skip '=' sign
-                        del sys.argv[check_arg]
-
+                # Otherwise, there was white-space separated '='
+                # we can delete that command-line argument containing
+                # just the '=' sign.
+                del sys.argv[check_arg]
                 # should be parsing the compiler value now
-                if not check_arg < len(sys.argv):
+                if check_arg >= len(sys.argv):
                     msg = "Found compiler key = CC but could not locate "\
                           "compiler value (either as `CC=/path/to/CC` "\
                           "or as `CC /path/to/CC`"
                     raise ValueError(msg)
 
                 value = sys.argv[check_arg].strip()
-                del sys.argv[check_arg]
 
-            if key != CC or value == '':
-                msg = "Something strange has happened. Expected to find a "\
-                      "custom compiler from the command-line but found \n"\
-                      "command-line argument '{0}' (that matches pattern "\
-                      "['CC=/path/to/compiler']). Parsing produced CC={1} "\
-                      "and $CC={2}".format(arg, key, value)
+            # this deletes the argument containing the compiler name
+            del sys.argv[check_arg]
 
-                raise ValueError(msg)
+        if key != CC or value == '':
+            msg = "Something strange has happened. Expected to find a "\
+                  "custom compiler from the command-line but found \n"\
+                  "command-line argument '{0}' (that matches pattern "\
+                  "['CC=/path/to/compiler']). Parsing produced CC={1} "\
+                  "and $CC={2}".format(arg, key, value)
 
-            # check if value is a valid compiler
-            full_compiler = which(value)
-            if full_compiler is None:
-                msg = "Found compiler = '{0}' on the command-line but '{0}' "\
-                      "can not be resolved from the shell.\n"\
-                      "Please specify CC=/path/to/compiler in the "\
-                      "python setup.py call.".format(value)
-                raise ValueError(msg)
+            raise ValueError(msg)
 
-            replacement = '\n{0}:={1}'.format(CC, value)
-            replace_first_key_in_makefile(common, CC,
-                                          replacement, common_mk_file)
-            del sys.argv[iarg]
-            global compiler
-            compiler = value
-            break
+        # check if value is a valid compiler
+        full_compiler = which(value)
+        if full_compiler is None:
+            msg = "Found compiler = '{0}' on the command-line but '{0}' "\
+                  "can not be resolved from the shell.\n"\
+                  "Please specify CC=/path/to/compiler in the "\
+                  "python -m pip setup.py call.".format(value)
+            raise ValueError(msg)
+
+        replacement = '\n{0}:={1}'.format(CC, value)
+        replace_first_key_in_makefile(common, CC,
+                                      replacement, common_mk_file)
+
+        global compiler
+        compiler = value
+
+        # Delete the 'CC' key, the compiler name and the '='
+        # have already been deleted
+        del sys.argv[iarg]
+        break
 
     return common_dict
 

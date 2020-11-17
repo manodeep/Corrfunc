@@ -11,16 +11,16 @@ notifications:
 env:
   global:
     - NUMPY_VERSION=1.12
-    - DOCTEST=TRUE
-    - INSTALL_LIBGFORTRAN=FALSE
+    - DOCTEST=true
+    - CORRFUNC_CI=true
 
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - gcc-4.8
-      - libgsl0-dev
+      - gcc-7
+
 
 matrix:
   fast_finish: true
@@ -46,22 +46,21 @@ matrix:
     - os: osx
       osx_image: xcode9
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.6 DOCTEST=FALSE
-      before_install:
-        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-
-
-    - os: osx
-      osx_image: xcode8
-      compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=FALSE
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.6 DOCTEST=false
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
 
     - os: osx
       osx_image: xcode8
       compiler: clang
-      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=2.7 DOCTEST=FALSE
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=false
+      before_install:
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+
+    - os: osx
+      osx_image: xcode8
+      compiler: clang
+      env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=2.7 DOCTEST=false
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh
 
@@ -69,7 +68,7 @@ matrix:
       dist: trusty
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=2.7
+      env: COMPILER=gcc PYTHON_VERSION=2.7 DOCTEST=false
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
 
@@ -82,18 +81,34 @@ matrix:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=3.6
+      env: COMPILER=gcc-7 PYTHON_VERSION=2.7
+      before_install:
+        - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+
+    - os: linux
+      dist: xenial
+      sudo: required
+      compiler: gcc
+      env: COMPILER=gcc-7 PYTHON_VERSION=3.5
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       compiler: gcc
-      env: COMPILER=gcc PYTHON_VERSION=3.7 NUMPY_VERSION=1.16
+      env: COMPILER=gcc-7 PYTHON_VERSION=3.6
+      before_install:
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+
+    - os: linux
+      dist: xenial
+      sudo: required
+      compiler: gcc
+      env: COMPILER=gcc-7 PYTHON_VERSION=3.7 NUMPY_VERSION=1.16
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 
@@ -102,19 +117,20 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda create -q --yes -n test python=$PYTHON_VERSION
   - source activate test
-  - conda install -q --yes numpy=$NUMPY_VERSION sphinx || conda install -q --yes -c conda-forge numpy=$NUMPY_VERSION sphinx
+  - conda install -q --yes numpy=$NUMPY_VERSION || conda install -q --yes -c conda-forge numpy=$NUMPY_VERSION
   - conda install -q --yes -c conda-forge gsl
-  - if [[ "${INSTALL_LIBGFORTRAN}" == "TRUE" ]]; then conda install -q --yes libgfortran ; fi
+  - python -m pip install --upgrade pip
+  - python -m pip install --ignore-installed certifi --upgrade
+  - python -m pip install sphinx>=1.8
+  - export CC=$COMPILER
+  - which $COMPILER
+  - $COMPILER --version
   - make -r CC=$COMPILER
   - make install CC=$COMPILER
-  - python setup.py install
+  - python -m pip install -e .
 
 script:
   - echo $CFLAGS
   - make tests CC=$COMPILER
   - make -C docs html
-  - if [[ "${DOCTEST}" == "TRUE" ]]; then make -C docs doctest ; fi
-
-branches:
-  only:
-    - master
+  - if [[ "${DOCTEST}" == "true" ]]; then make -C docs doctest ; fi

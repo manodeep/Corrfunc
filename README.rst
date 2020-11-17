@@ -1,13 +1,16 @@
 |logo|
 
-|Release| |PyPI| |MIT licensed| |ASCL| |Travis Build| |Issues| |RTD| |Codacy|
+|Release| |PyPI| |MIT licensed| |Travis Build| |GitHub CI| |RTD| |Codacy| |Issues|
+
+|Paper I| |Paper II|
 
 Description
 ===========
 
-This repo contains a set of codes to calculate correlation functions and
-other clustering statistics in a cosmological box (co-moving XYZ)
-or on a mock (RA, DEC, CZ). Read the documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
+This repo contains a suite of codes to calculate correlation functions and
+other clustering statistics for **simulated** galaxies in a cosmological box (co-moving XYZ)
+and on **observed** galaxies with on-sky positions (RA, DEC, CZ). Read the
+documentation on `corrfunc.rtfd.io <http://corrfunc.rtfd.io/>`_.
 
 Why Should You Use it
 ======================
@@ -17,7 +20,7 @@ Why Should You Use it
 3. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python.
 4. **Weights** All correlation functions now support *arbitrary, user-specified* weights for individual points
 5. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics.
-6. **Future-proof** As I get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features.
+6. **Future-proof** As we get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features.
 
 *If you use the codes for your analysis, please star this repo -- that helps us keep track of the number of users.*
 
@@ -56,16 +59,16 @@ Preferred Install Method
     $ git clone https://github.com/manodeep/Corrfunc/
     $ make
     $ make install
-    $ python setup.py install (--user)
+    $ python -m pip install . (--user)
     $ make tests
 
 Assuming you have ``gcc`` in your ``PATH``, ``make`` and
 ``make install`` should compile and install the C libraries + python
 extensions within the source directory. If you would like to install the
 python C extensions in your environment, then
-``python setup.py install (--user)`` should be sufficient. If you are primarily
+``python -m pip install . (--user)`` should be sufficient. If you are primarily
 interested in the ``python`` interface, you can condense all of the steps
-by using ``python setup.py install CC=yourcompiler (--user)`` after ``git clone``.
+by using ``python -m pip install . CC=yourcompiler (--user)`` after ``git clone``.
 
 Compilation Notes
 ------------------
@@ -76,7 +79,7 @@ Compilation Notes
 
 - Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``,  ``make install CC=yourcompiler``, ``make tests CC=yourcompiler`` etc. If you want to permanently change the default compiler, then please edit the `common.mk <common.mk>`__ file in the base directory.
 
-- If you are directly using ``python setup.py install CC=yourcompiler (--user)``, please run a ``make distclean`` beforehand (especially if switching compilers)
+- If you are directly using ``python -m pip install . CC=yourcompiler (--user)``, please run a ``make distclean`` beforehand (especially if switching compilers)
 
 
 Alternate Install Method
@@ -107,8 +110,22 @@ pre-requisites, please see the `FAQ <FAQ>`__ or `email
 the Corrfunc mailing list <mailto:corrfunc@googlegroups.com>`__. Also, feel free to create a new issue
 with the ``Installation`` label.
 
-Clustering Measures on a Cosmological box
------------------------------------------
+Clustering Measures on simulated galaxies
+------------------------------------------
+
+Input data
++++++++++++
+
+The input galaxies (or any discrete distribution of points) are derived from a
+simulation. For instance, the galaxies could be a result of an Halo Occupation
+Distribution (HOD) model, a Subhalo Abundance matching (SHAM) model, a
+Semi-Empirical model (SEM), or a Semi-Analytic model (SAM) etc. The input set of
+points can also be the dark matter halos, or the dark matter particles from
+a cosmological simulation. The input set of points are expected to have
+positions specified in Cartesian XYZ.
+
+Types of available clustering statistics
++++++++++++++++++++++++++++++++++++++++++
 
 All codes that work on cosmological boxes with co-moving positions are
 located in the ``theory`` directory. The various clustering measures
@@ -131,8 +148,27 @@ are:
 
 6. ``vpf`` -- Measures the void probability function + counts-in-cells.
 
-Clustering measures on a Mock
------------------------------
+Clustering measures on observed galaxies
+----------------------------------------
+
+Input data
++++++++++++
+
+The input galaxies are typically observed galaxies coming from a large-scale
+galaxy survey. In addition, simulated galaxies that have been projected onto the sky
+(i.e., where observational systematics have been incorporated and on-sky
+positions have been generated) can also be used. We generically refer to both
+these kinds of galaxies as "mocks".
+
+
+The input galaxies are expected to have positions specified in spherical
+co-ordinates with at least right ascension (RA) and declination (DEC).
+For spatial correlation functions, an approximate "co-moving" distance
+(speed of light multiplied by redshift, CZ) is also required.
+
+
+Types of available clustering statistics
++++++++++++++++++++++++++++++++++++++++++
 
 All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 ``mocks`` directory. The various clustering measures are:
@@ -342,24 +378,34 @@ Corrfunc was designed by Manodeep Sinha and is currently maintained by
 Citing
 ======
 
-If you use the code, please cite using the `ascl entry <http://ascl.net/1703.003>`_ as indexed by `ADS <http://adsabs.harvard.edu/abs/2017ascl.soft03003S>`_. The BibTex entry for the code is
+If you use ``Corrfunc`` for research, please cite using the MNRAS code paper with the following
+bibtex entry:
 
 ::
 
-      @misc{2017ascl.soft03003S,
-         author = {{Sinha}, M. and {Garrison}, L.},
-         title = "{Corrfunc: Blazing fast correlation functions on the CPU}",
-         keywords = {Software},
-         howpublished = {Astrophysics Source Code Library},
-         year = 2017,
-         month = mar,
-         archivePrefix = "ascl",
-         eprint = {1703.003},
-         adsurl = {http://adsabs.harvard.edu/abs/2017ascl.soft03003S},
-         adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-      }
+   @ARTICLE{2020MNRAS.491.3022S,
+       author = {{Sinha}, Manodeep and {Garrison}, Lehman H.},
+       title = "{CORRFUNC - a suite of blazing fast correlation functions on
+       the CPU}",
+       journal = {\mnras},
+       keywords = {methods: numerical, galaxies: general, galaxies:
+       haloes, dark matter, large-scale structure of Universe, cosmology:
+       theory},
+       year = "2020",
+       month = "Jan",
+       volume = {491},
+       number = {2},
+       pages = {3022-3041},
+       doi = {10.1093/mnras/stz3157},
+       adsurl =
+       {https://ui.adsabs.harvard.edu/abs/2020MNRAS.491.3022S},
+       adsnote = {Provided by the SAO/NASA
+       Astrophysics Data System}
+   }
 
-If you are using ``Corrfunc v2.3.0`` or later, please additionally cite this paper:
+
+If you are using ``Corrfunc v2.3.0`` or later, **and** you benefit from the
+enhanced vectorised kernels, then please additionally cite this paper:
 
 ::
 
@@ -390,11 +436,13 @@ LICENSE
 Corrfunc is released under the MIT license. Basically, do what you want
 with the code, including using it in commercial application.
 
-Project URL
-===========
+Project URLs
+============
 
--  documentation (http://corrfunc.rtfd.io/)
--  version control (https://github.com/manodeep/Corrfunc)
+-  Documentation (http://corrfunc.rtfd.io/)
+-  Source Repository (https://github.com/manodeep/Corrfunc)
+-  Entry in the Astrophysical Source Code Library (ASCL) |ASCL|
+-  Zenodo Releases |Zenodo|
 
 .. |logo| image:: https://github.com/manodeep/Corrfunc/blob/master/corrfunc_logo.png
     :target: https://github.com/manodeep/Corrfunc
@@ -408,12 +456,12 @@ Project URL
 .. |MIT licensed| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://raw.githubusercontent.com/manodeep/Corrfunc/master/LICENSE
    :alt: MIT License
-.. |ASCL| image:: https://img.shields.io/badge/ascl-1703.003-blue.svg?colorB=262255
-   :target: http://ascl.net/1703.003
-   :alt: ascl:1703.003
-.. |Travis Build| image:: https://travis-ci.org/manodeep/Corrfunc.svg?branch=master
-   :target: https://travis-ci.org/manodeep/Corrfunc
+.. |Travis Build| image:: https://travis-ci.com/manodeep/Corrfunc.svg?branch=master
+   :target: https://travis-ci.com/manodeep/Corrfunc
    :alt: Build Status
+.. |GitHub CI| image:: https://github.com/manodeep/Corrfunc/workflows/GitHub%20CI/badge.svg
+   :target: https://github.com/manodeep/Corrfunc/actions
+   :alt: GitHub Actions Status
 .. |Issues| image:: https://img.shields.io/github/issues/manodeep/Corrfunc.svg
    :target: https://github.com/manodeep/Corrfunc/issues
    :alt: Open Issues
@@ -424,3 +472,16 @@ Project URL
 .. |Codacy| image:: https://api.codacy.com/project/badge/Grade/95717e4798b04ee5ad42d5cab3c15429
    :target: https://app.codacy.com/project/manodeep/Corrfunc/dashboard
    :alt: Code Quality
+
+.. |Paper I| image:: https://img.shields.io/badge/arXiv-1911.03545-%23B31B1B
+   :target: https://arxiv.org/abs/1911.03545
+   :alt: Corrfunc Paper I
+.. |Paper II| image:: https://img.shields.io/badge/arXiv-1911.08275-%23B31B1B
+   :target: https://arxiv.org/abs/1911.08275
+   :alt: Corrfunc Paper II
+
+.. |ASCL| image:: https://img.shields.io/badge/ascl-1703.003-blue.svg?colorB=262255
+   :target: http://ascl.net/1703.003
+   :alt: ascl:1703.003
+.. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3634195.svg
+   :target: https://doi.org/10.5281/zenodo.3634195

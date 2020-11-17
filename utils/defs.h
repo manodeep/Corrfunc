@@ -8,12 +8,14 @@
 
 #pragma once
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <inttypes.h>
 
 #include "macros.h"
+#include "cpu_features.h"
 
 #ifdef __cplusplus
 extern "C" {
