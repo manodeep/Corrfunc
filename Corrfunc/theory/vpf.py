@@ -203,15 +203,6 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
                  (max(Y) - min(Y)) * \
                  (max(Z) - min(Z))
 
-    volume_sphere = 4. / 3. * pi * rmax * rmax * rmax
-    if nspheres * volume_sphere > volume:
-        msg = "There are not as many independent volumes in the "\
-              "requested particle distribution. Num. spheres = {0} "\
-              "rmax = {1} => effective volume = {2}.\nVolume of particles ="\
-              "{3}. Reduce rmax or Nspheres"\
-              .format(nspheres, rmax, nspheres * volume_sphere, volume)
-        raise ValueError(msg)
-
     # Ensure all input arrays are native endian
     X, Y, Z = [convert_to_native_endian(arr, warn=True)
                for arr in [X, Y, Z]]
