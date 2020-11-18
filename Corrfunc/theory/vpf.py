@@ -196,13 +196,6 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         msg = "Number of counts-in-cells wanted must be at least 1"
         raise ValueError(msg)
 
-    if boxsize > 0.0:
-        volume = boxsize * boxsize * boxsize
-    else:
-        volume = (max(X) - min(X)) * \
-                 (max(Y) - min(Y)) * \
-                 (max(Z) - min(Z))
-
     # Ensure all input arrays are native endian
     X, Y, Z = [convert_to_native_endian(arr, warn=True)
                for arr in [X, Y, Z]]
