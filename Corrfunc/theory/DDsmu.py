@@ -105,7 +105,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is 0., then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
-        Required if ``periodic=True``.
+        
+        .. versionchanged:: 2.4.0
+           Required if ``periodic=True``.
 
     output_savg : boolean (default false)
         Boolean flag to output the average ``s`` for each bin. Code will

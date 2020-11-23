@@ -86,7 +86,9 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is 0., then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
-        Required if ``periodic=True``.
+        
+        .. versionchanged:: 2.4.0
+           Required if ``periodic=True``.
 
     (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
         Controls the refinement on the cell sizes. Can have up to a 20% impact
