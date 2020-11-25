@@ -15,7 +15,7 @@ New features
 
 Enhancements
 ------------
-- Removed the unnecessary check in ``theory.vpf`` that required the volume inhabited by the dropped spheres be less than the volume of the sample [#238]
+- In the theoretical VPF calculation (``theory.vpf``), the total volume of the random spheres can now exceed the volume of the sample  [#238]
 
 Bug fixes
 ---------
