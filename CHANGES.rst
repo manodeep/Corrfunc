@@ -15,7 +15,7 @@ New features
 
 Enhancements
 ------------
-- Removed the unnecessary check in ``theory.vpf`` that required the volume inhabited by the dropped spheres be less than the volume of the sample [#239]
+- Removed the unnecessary check in ``theory.vpf`` that required the volume inhabited by the dropped spheres be less than the volume of the sample [#238]
 
 Bug fixes
 ---------
