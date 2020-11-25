@@ -13,6 +13,10 @@ New features
 2.4.0 (upcoming)
 ==================
 
+Enhancements
+------------
+- Removed the unnecessary check in ``theory.vpf`` that required the volume inhabited by the dropped spheres be less than the volume of the sample [#239]
+
 Bug fixes
 ---------
 - Fix Python reference leak to results struct [#229]
