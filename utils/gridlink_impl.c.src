@@ -131,6 +131,10 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     const DOUBLE zinv=1.0/zbinsize;
 
     // First pass over the particles: compute cell indices
+    int64_t out_of_bounds = 0;
+#if defined(_OPENMP)
+    #pragma omp parallel for schedule(static) reduction(+:out_of_bounds)
+#endif
     for (int64_t i=0;i<NPART;i++)  {
         int ix=(int)((X[i]-xmin)*xinv) ;
         int iy=(int)((Y[i]-ymin)*yinv) ;
@@ -139,57 +143,60 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         if (ix>nmesh_x-1)  ix--;    /* this shouldn't happen, but . . . */
         if (iy>nmesh_y-1)  iy--;
         if (iz>nmesh_z-1)  iz--;
-        
-        XRETURN(X[i] >= xmin && X[i] <= xmax, NULL,
-               "x[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-                i, X[i], xmin, xmax);
-        XRETURN(Y[i] >= ymin && Y[i] <= ymax, NULL,
-               "y[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-               i, Y[i], ymin, ymax);
-        XRETURN(Z[i] >= zmin && Z[i] <= zmax, NULL,
-               "z[%"PRId64"] = %"REAL_FORMAT" must be within [%"REAL_FORMAT",%"REAL_FORMAT"]\n",
-               i, Z[i], zmin, zmax);
-
-        XRETURN(ix >= 0 && ix < nmesh_x, NULL, "ix=%d must be within [0,%d)\n", ix, nmesh_x);
-        XRETURN(iy >= 0 && iy < nmesh_y, NULL, "iy=%d must be within [0,%d)\n", iy, nmesh_y);
-        XRETURN(iz >= 0 && iz < nmesh_z, NULL, "iz=%d must be within [0,%d)\n", iz, nmesh_z);
+    
+        out_of_bounds += ix < 0 || ix >= nmesh_x || iy < 0 || iy >= nmesh_y || iz < 0 || iz >= nmesh_z;
 
         const int64_t icell = CONVERT_3D_INDEX_TO_LINEAR(ix, iy, iz, nmesh_x, nmesh_y, nmesh_z);
-        assert(icell < totncells);
         all_cell_indices[i] = icell;
         if(!options->copy_particles){
             original_indices[i] = i;
         }
     }
     
+    XRETURN(out_of_bounds == 0, NULL, "%"PRId64" particles are out of bounds. Check periodic wrapping?\n", out_of_bounds);
+    
     // Now determine the number of particles per cell so each cell knows its global starting index
     // This information is used for both the copy and in-place versions
+#if defined(_OPENMP)
     int Nthread = omp_get_max_threads();
+#else
+    int Nthread = 1;
+#endif
     int64_t *cell_occupation[Nthread];
-    //#pragma omp parallel for schedule(static)
+
+#if defined(_OPENMP)
+    #pragma omp parallel for schedule(static)
+#endif
     for(int t = 0; t < Nthread; t++){
         cell_occupation[t] = my_calloc(totncells, sizeof(int64_t));
     }
-    //#pragma omp parallel for schedule(static)
+#if defined(_OPENMP)
+    #pragma omp parallel for schedule(static)
+#endif
     for(int64_t i = 0; i < NPART; i++){
-        cell_occupation[omp_get_thread_num()][all_cell_indices[i]]++;
+        #if defined(_OPENMP)
+        int tid = omp_get_thread_num();
+        #else
+        int tid = 0;
+        #endif
+        cell_occupation[tid][all_cell_indices[i]]++;
     }
-    //#pragma omp parallel for schedule(static)
+#if defined(_OPENMP)
+    #pragma omp parallel for schedule(static)
+#endif
     for(int64_t c = 0; c < totncells; c++){
         for(int t = 1; t < Nthread; t++){
-            assert(cell_occupation[t][c] == 0);
             cell_occupation[0][c] += cell_occupation[t][c];
         }
     }
 
-    // Cumulative sum of the cell histogram
-    cellstarts[0] = 0;
-    for(int64_t c = 1; c < totncells; c++){
-        cellstarts[c] = cell_occupation[0][c-1] + cellstarts[c-1];
-    }
+    // Fill cellstarts with the cumulative sum of the cell histogram
+    parallel_cumsum(cell_occupation[0], totncells, cellstarts);
 
     // Initialize the lattice
-    //#pragma omp parallel for schedule(static)
+#if defined(_OPENMP)
+    #pragma omp parallel for schedule(static)
+#endif
     for (int64_t icell=0;icell<totncells;icell++) {
         lattice[icell].nelements = 0;
         lattice[icell].owns_memory = 0;
@@ -235,31 +242,47 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     
     free(cellstarts);
 
-    // Second loop over particles: having computed the starts of each cell, fill the cells
-    for (int64_t i=0;i<NPART;i++) {
-        const int64_t icell = all_cell_indices[i];
-        if(options->copy_particles) {
-            const int64_t ipos = lattice[icell].nelements;
-            lattice[icell].x[ipos] = X[i];
-            lattice[icell].y[ipos] = Y[i];
-            lattice[icell].z[ipos] = Z[i];
-            for(int w = 0; w < num_weights; w++){
-                lattice[icell].weights.weights[w][ipos] = ((DOUBLE *) WEIGHTS->weights[w])[i];
+    // Each thread is going to loop over all particles, but only process those in its cell domain
+#if defined(_OPENMP)
+    #pragma omp parallel
+#endif
+    {
+        #if defined(_OPENMP)
+        int tid = omp_get_thread_num();
+        #else
+        int tid = 0;
+        #endif
+        int64_t cstart = totncells*tid/Nthread;
+        int64_t cend = totncells*(tid+1)/Nthread;
+        // Second loop over particles: having computed the starts of each cell, fill the cells
+        for (int64_t i=0;i<NPART;i++) {
+            const int64_t icell = all_cell_indices[i];
+            if(icell < cstart || icell >= cend){
+                continue;
             }
+            if(options->copy_particles) {
+                const int64_t ipos = lattice[icell].nelements;
+                lattice[icell].x[ipos] = X[i];
+                lattice[icell].y[ipos] = Y[i];
+                lattice[icell].z[ipos] = Z[i];
+                for(int w = 0; w < num_weights; w++){
+                    lattice[icell].weights.weights[w][ipos] = ((DOUBLE *) WEIGHTS->weights[w])[i];
+                }
+            }
+
+            // Store the particle bounds
+            // Needs to be done for both the copy and in-place versions
+            lattice[icell].xbounds[0] = X[i] < lattice[icell].xbounds[0] ? X[i]:lattice[icell].xbounds[0];
+            lattice[icell].ybounds[0] = Y[i] < lattice[icell].ybounds[0] ? Y[i]:lattice[icell].ybounds[0];
+            lattice[icell].zbounds[0] = Z[i] < lattice[icell].zbounds[0] ? Z[i]:lattice[icell].zbounds[0];
+
+            lattice[icell].xbounds[1] = X[i] > lattice[icell].xbounds[1] ? X[i]:lattice[icell].xbounds[1];
+            lattice[icell].ybounds[1] = Y[i] > lattice[icell].ybounds[1] ? Y[i]:lattice[icell].ybounds[1];
+            lattice[icell].zbounds[1] = Z[i] > lattice[icell].zbounds[1] ? Z[i]:lattice[icell].zbounds[1];
+
+            lattice[icell].nelements++;
         }
-
-        // Store the particle bounds
-        // Needs to be done for both the copy and in-place versions
-        lattice[icell].xbounds[0] = X[i] < lattice[icell].xbounds[0] ? X[i]:lattice[icell].xbounds[0];
-        lattice[icell].ybounds[0] = Y[i] < lattice[icell].ybounds[0] ? Y[i]:lattice[icell].ybounds[0];
-        lattice[icell].zbounds[0] = Z[i] < lattice[icell].zbounds[0] ? Z[i]:lattice[icell].zbounds[0];
-
-        lattice[icell].xbounds[1] = X[i] > lattice[icell].xbounds[1] ? X[i]:lattice[icell].xbounds[1];
-        lattice[icell].ybounds[1] = Y[i] > lattice[icell].ybounds[1] ? Y[i]:lattice[icell].ybounds[1];
-        lattice[icell].zbounds[1] = Z[i] > lattice[icell].zbounds[1] ? Z[i]:lattice[icell].zbounds[1];
-
-        lattice[icell].nelements++;
-    }
+    }  // end parallel region
     
     for(int64_t c = 0; c < totncells; c++){
         XRETURN(lattice[c].nelements == cell_occupation[0][c], NULL,

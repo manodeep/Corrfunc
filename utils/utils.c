@@ -36,6 +36,10 @@
 #include <mach/mach_time.h> /* mach_absolute_time -> really fast */
 #endif
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 void get_max_float(const int64_t ND1, const float *cz1, float *czmax)
 {
     float max=*czmax;
@@ -845,3 +849,55 @@ int AlmostEqualRelativeAndAbs_double(double A, double B,
 }
 
 /* #undef __USE_XOPEN2K */
+
+// A parallel cumulative sum
+// Output convention is: cumsum[0] = 0; cumsum[N-1] = sum(a[0:N-1]);
+void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
+    #ifdef _OPENMP
+    int Nthread = omp_get_max_threads();
+    #else
+    int Nthread = 1;
+    #endif
+    
+    int64_t min_N_per_thread = 10000;  // heuristic to avoid overheads
+    if(N/min_N_per_thread < Nthread)
+        Nthread = N/min_N_per_thread;
+    if(Nthread < 1)
+        Nthread = 1;
+    
+    #ifdef _OPENMP
+    #pragma omp parallel num_threads(Nthread)
+    #endif
+    {
+        #ifdef _OPENMP
+        int tid = omp_get_thread_num();
+        #else
+        int tid = 0;
+        #endif
+        
+        int64_t cstart = N*tid/Nthread;
+        int64_t cend = N*(tid+1)/Nthread;
+        cumsum[cstart] = cstart > 0 ? a[cstart-1] : 0;
+        for(int64_t c = cstart+1; c < cend; c++){
+            cumsum[c] = a[c-1] + cumsum[c-1];
+        }
+        
+        #ifdef _OPENMP
+        #pragma omp barrier
+        #endif
+        
+        int64_t offset = 0;
+        for(int t = 0; t < tid; t++)
+            offset += cumsum[N*(t+1)/Nthread-1];
+        
+        #ifdef _OPENMP
+        #pragma omp barrier
+        #endif
+        
+        if(offset != 0){
+            for(int64_t c = cstart; c < cend; c++){
+                cumsum[c] += offset;
+            }
+        }
+    }
+}
