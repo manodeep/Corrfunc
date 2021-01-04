@@ -98,14 +98,13 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     int w_alloc_status = 0;
     int num_weights = (WEIGHTS == NULL) ? 0 : WEIGHTS->num_weights;
     
-    int64_t *cellstarts = NULL;
-    int64_t *original_indices =  NULL;
+    int64_t *cellstarts = cellstarts = (int64_t *) my_malloc(sizeof(int64_t), totncells);
     int64_t *all_cell_indices = (int64_t *) my_malloc(sizeof(*all_cell_indices), NPART);
+    int64_t *original_indices =  NULL;
     if(options->copy_particles) {
         realX = (DOUBLE *) my_malloc(sizeof(DOUBLE), NPART);
         realY = (DOUBLE *) my_malloc(sizeof(DOUBLE), NPART);
         realZ = (DOUBLE *) my_malloc(sizeof(DOUBLE), NPART);
-        cellstarts = (int64_t *) my_malloc(sizeof(int64_t), totncells);
         
         for(int w = 0; w < num_weights; w++){
             realW[w] = (DOUBLE *) my_malloc(sizeof(DOUBLE), NPART);
@@ -229,7 +228,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
             lattice[icell].original_index = original_indices + cellstarts[icell];
                 
             // The lattice will point into the original arrays
-            lattice[icell].z = X + cellstarts[icell];
+            lattice[icell].x = X + cellstarts[icell];
             lattice[icell].y = Y + cellstarts[icell];
             lattice[icell].z = Z + cellstarts[icell];
 
@@ -315,7 +314,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
             SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, Z, i, j);            \
             SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, original_indices, i, j); \
             SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, all_cell_indices, i, j); \
-            for(int w = 0; w < WEIGHTS->num_weights; w++) {             \
+            for(int w = 0; w < num_weights; w++) {             \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, ((DOUBLE *) WEIGHTS->weights[w]), i, j); \
             }                                                           \
         }
@@ -339,9 +338,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                 SGLIB_ARRAY_QUICK_SORT(int64_t, all_cell_indices, NPART, SGLIB_NUMERIC_COMPARATOR, MULTIPLE_ARRAY_EXCHANGER);
             }
         }
-
-        //Now the particles are sorted contiguously according to their respective cellindex
-        //We need to fix up the x/y/z pointers at the beginning of each cell to point to the right places
+        
 #undef MULTIPLE_ARRAY_EXCHANGER
     }//end of options->copy_particles == 0
     
