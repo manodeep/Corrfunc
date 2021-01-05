@@ -13,6 +13,10 @@ New features
 2.4.0 (upcoming)
 ==================
 
+Enhancements
+------------
+- In the theoretical VPF calculation (``theory.vpf``), the total volume of the random spheres can now exceed the volume of the sample  [#238]
+
 Bug fixes
 ---------
 - Fix Python reference leak to results struct [#229]
