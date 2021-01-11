@@ -13,6 +13,10 @@ New features
 2.4.0 (upcoming)
 ==================
 
+Enhancements
+------------
+- Gridlink (the binning of particles into cells) now uses a parallel algorithm for the theory module [#239]
+
 Bug fixes
 ---------
 - Fix Python reference leak to results struct [#229]
