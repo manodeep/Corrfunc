@@ -32,21 +32,21 @@
 
 void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
 {
-    //In the case where we have not requested to copy particles.
-    //the memory address for the 'original_indices' from gridlink will be
-    //at the first cell. We need to free this memory to avoid a leak
+    // `totncells` is currently unused, but no need to break the C API.
+    (void) totncells;
+    
+    // If we have not copied the particles, the lattice does not own the memory
+    // and the only thing to free is the original index
     if(lattice[0].owns_memory == 0) {
         free(lattice[0].original_index);
     } else {
-        for(int64_t i=0;i<totncells;i++){
-            if(lattice[i].owns_memory) {
-                free(lattice[i].x);
-                free(lattice[i].y);
-                free(lattice[i].z);
-                for(int w = 0; w < lattice[i].weights.num_weights; w++){
-                    free(lattice[i].weights.weights[w]);
-                }
-            }
+        // If we have copied the particles, then the first cell (lattice[0]) owns
+        // the original pointers for the whole lattice, and we should free them
+        free(lattice[0].x);
+        free(lattice[0].y);
+        free(lattice[0].z);
+        for(int w = 0; w < lattice[0].weights.num_weights; w++){
+            free(lattice[0].weights.weights[w]);
         }
     }
 
@@ -98,7 +98,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     int w_alloc_status = 0;
     int num_weights = (WEIGHTS == NULL) ? 0 : WEIGHTS->num_weights;
     
-    int64_t *cellstarts = cellstarts = (int64_t *) my_malloc(sizeof(int64_t), totncells);
+    int64_t *cellstarts = (int64_t *) my_malloc(sizeof(int64_t), totncells);
     int64_t *all_cell_indices = (int64_t *) my_malloc(sizeof(*all_cell_indices), NPART);
     int64_t *original_indices =  NULL;
     if(options->copy_particles) {
@@ -157,34 +157,36 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     // Now determine the number of particles per cell so each cell knows its global starting index
     // This information is used for both the copy and in-place versions
 #if defined(_OPENMP)
-    int Nthread = omp_get_max_threads();
+    int max_nthreads = omp_get_max_threads();
 #else
-    int Nthread = 1;
+    int max_nthreads = 1;
 #endif
-    int64_t *cell_occupation[Nthread];
+    int64_t *cell_occupation[max_nthreads];
 
 #if defined(_OPENMP)
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel
 #endif
-    for(int t = 0; t < Nthread; t++){
-        cell_occupation[t] = my_calloc(totncells, sizeof(int64_t));
-    }
-#if defined(_OPENMP)
-    #pragma omp parallel for schedule(static)
-#endif
-    for(int64_t i = 0; i < NPART; i++){
+    {
         #if defined(_OPENMP)
         int tid = omp_get_thread_num();
         #else
         int tid = 0;
         #endif
-        cell_occupation[tid][all_cell_indices[i]]++;
+        cell_occupation[tid] = my_calloc(totncells, sizeof(int64_t));
+        
+        #if defined(_OPENMP)
+        #pragma omp for schedule(static)
+        #endif
+        for(int64_t i = 0; i < NPART; i++){
+            cell_occupation[tid][all_cell_indices[i]]++;
+        }
     }
+    
 #if defined(_OPENMP)
     #pragma omp parallel for schedule(static)
 #endif
     for(int64_t c = 0; c < totncells; c++){
-        for(int t = 1; t < Nthread; t++){
+        for(int t = 1; t < max_nthreads; t++){
             cell_occupation[0][c] += cell_occupation[t][c];
         }
     }
@@ -241,19 +243,21 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     
     free(cellstarts);
 
-    // Each thread is going to loop over all particles, but only process those in its cell domain
+    // Now we come to the final writes of the particles into their cells
 #if defined(_OPENMP)
     #pragma omp parallel
 #endif
     {
         #if defined(_OPENMP)
         int tid = omp_get_thread_num();
+        int nthreads = omp_get_num_threads();
         #else
         int tid = 0;
         #endif
-        int64_t cstart = totncells*tid/Nthread;
-        int64_t cend = totncells*(tid+1)/Nthread;
+        int64_t cstart = totncells*tid/nthreads;
+        int64_t cend = totncells*(tid+1)/nthreads;
         // Second loop over particles: having computed the starts of each cell, fill the cells
+        // Each thread is going to loop over all particles, but only process those in its cell domain
         for (int64_t i=0;i<NPART;i++) {
             const int64_t icell = all_cell_indices[i];
             if(icell < cstart || icell >= cend){
@@ -290,7 +294,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                 __FUNCTION__, cell_occupation[0][c], lattice[c].nelements);
     }
     
-    for(int t = 0; t < Nthread; t++)
+    for(int t = 0; t < max_nthreads; t++)
         free(cell_occupation[t]);
 
     if(!options->copy_particles) {
@@ -357,6 +361,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->x, i, j); \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->y, i, j); \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->z, i, j); \
+                /* original_index is not used if copying the particles */ \
                 if(!options->copy_particles) { \
                     SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, first->original_index, i, j); \
                 } \
