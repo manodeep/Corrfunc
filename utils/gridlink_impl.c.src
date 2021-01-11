@@ -253,6 +253,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         int nthreads = omp_get_num_threads();
         #else
         int tid = 0;
+        int nthreads = 1;
         #endif
         int64_t cstart = totncells*tid/nthreads;
         int64_t cend = totncells*(tid+1)/nthreads;
