@@ -118,7 +118,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
        (options->copy_particles && (realX == NULL || realY == NULL || realZ == NULL || cellstarts == NULL || w_alloc_status != 0))){
 
         free(lattice);free(realX);free(realY);free(realZ);free(all_cell_indices);free(original_indices);
-        for(int w = 0; w < MAX_NUM_WEIGHTS; w++){
+        for(int w = 0; w < num_weights; w++){
             free(realW[w]);
         }
         fprintf(stderr,"Error: In %s> Could not allocate memory for creating the lattice and associated arrays\n", __FUNCTION__);
@@ -157,11 +157,11 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     // Now determine the number of particles per cell so each cell knows its global starting index
     // This information is used for both the copy and in-place versions
 #if defined(_OPENMP)
-    int max_nthreads = omp_get_max_threads();
+    int nthreads = omp_get_max_threads();  // this is the upper bound, we will find the actual value (usually the same) below
 #else
-    int max_nthreads = 1;
+    int nthreads = 1;
 #endif
-    int64_t *cell_occupation[max_nthreads];
+    int64_t *cell_occupation[nthreads];
 
 #if defined(_OPENMP)
     #pragma omp parallel
@@ -169,6 +169,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     {
         #if defined(_OPENMP)
         int tid = omp_get_thread_num();
+        nthreads = omp_get_num_threads();  // reduce to actual number of threads, will be the same in almost all cases
         #else
         int tid = 0;
         #endif
@@ -186,7 +187,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     #pragma omp parallel for schedule(static)
 #endif
     for(int64_t c = 0; c < totncells; c++){
-        for(int t = 1; t < max_nthreads; t++){
+        for(int t = 1; t < nthreads; t++){
             cell_occupation[0][c] += cell_occupation[t][c];
         }
     }
@@ -250,10 +251,8 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     {
         #if defined(_OPENMP)
         int tid = omp_get_thread_num();
-        int nthreads = omp_get_num_threads();
         #else
         int tid = 0;
-        int nthreads = 1;
         #endif
         int64_t cstart = totncells*tid/nthreads;
         int64_t cend = totncells*(tid+1)/nthreads;
@@ -295,7 +294,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                 __FUNCTION__, cell_occupation[0][c], lattice[c].nelements);
     }
     
-    for(int t = 0; t < max_nthreads; t++)
+    for(int t = 0; t < nthreads; t++)
         free(cell_occupation[t]);
 
     if(!options->copy_particles) {
@@ -363,7 +362,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->y, i, j); \
                 SGLIB_ARRAY_ELEMENTS_EXCHANGER(DOUBLE, first->z, i, j); \
                 /* original_index is not used if copying the particles */ \
-                if(!options->copy_particles) { \
+                if(options->copy_particles == 0) { \
                     SGLIB_ARRAY_ELEMENTS_EXCHANGER(int64_t, first->original_index, i, j); \
                 } \
                 for(int w = 0; w < first->weights.num_weights; w++){    \
