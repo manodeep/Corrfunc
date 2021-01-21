@@ -147,7 +147,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
 
         const int64_t icell = CONVERT_3D_INDEX_TO_LINEAR(ix, iy, iz, nmesh_x, nmesh_y, nmesh_z);
         all_cell_indices[i] = icell;
-        if(!options->copy_particles){
+        if(options->copy_particles == 0){
             original_indices[i] = i;
         }
     }
@@ -172,7 +172,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         #else
         int tid = 0;
         #endif
-        cell_occupation[tid] = my_calloc(totncells, sizeof(int64_t));
+        cell_occupation[tid] = my_calloc(totncells, sizeof(*cell_occupation[0]));
         
         #if defined(_OPENMP)
         #pragma omp for schedule(static)
