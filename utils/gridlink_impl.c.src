@@ -98,16 +98,16 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     int w_alloc_status = 0;
     int num_weights = (WEIGHTS == NULL) ? 0 : WEIGHTS->num_weights;
     
-    int64_t *cellstarts = (int64_t *) my_malloc(sizeof(int64_t), totncells);
+    int64_t *cellstarts = (int64_t *) my_malloc(sizeof(*cellstarts), totncells);
     int64_t *all_cell_indices = (int64_t *) my_malloc(sizeof(*all_cell_indices), NPART);
     int64_t *original_indices =  NULL;
     if(options->copy_particles) {
-        realX = (DOUBLE *) my_malloc(sizeof(DOUBLE), NPART);
-        realY = (DOUBLE *) my_malloc(sizeof(DOUBLE), NPART);
-        realZ = (DOUBLE *) my_malloc(sizeof(DOUBLE), NPART);
+        realX = (DOUBLE *) my_malloc(sizeof(*realX), NPART);
+        realY = (DOUBLE *) my_malloc(sizeof(*realY), NPART);
+        realZ = (DOUBLE *) my_malloc(sizeof(*realZ), NPART);
         
         for(int w = 0; w < num_weights; w++){
-            realW[w] = (DOUBLE *) my_malloc(sizeof(DOUBLE), NPART);
+            realW[w] = (DOUBLE *) my_malloc(sizeof(*(realW[w])), NPART);
             w_alloc_status |= realW[w] == NULL;
         }
     } else {
@@ -173,7 +173,7 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         #else
         int tid = 0;
         #endif
-        cell_occupation[tid] = my_calloc(totncells, sizeof(*cell_occupation[0]));
+        cell_occupation[tid] = my_calloc(sizeof(*(cell_occupation[0])), totncells);
         
         #if defined(_OPENMP)
         #pragma omp for schedule(static)

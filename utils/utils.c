@@ -859,13 +859,21 @@ int AlmostEqualRelativeAndAbs_double(double A, double B,
    - apply the offset
 */
 void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
+    if (N <= 0){
+        return;  // nothing to do
+    }
+    
     #ifdef _OPENMP
     int nthreads = omp_get_max_threads();
     #else
     int nthreads = 1;
     #endif
     
-    int64_t min_N_per_thread = 10000;  // heuristic to avoid overheads
+    // We will heuristically limit the number of threads
+    // if there isn't enough work for multithreading to be efficient.
+    // This is also important for the correctness of the algorithm below,
+    // since it enforces nthreads <= N
+    int64_t min_N_per_thread = 10000;
     if(N/min_N_per_thread < nthreads){
         nthreads = N/min_N_per_thread;
     }
