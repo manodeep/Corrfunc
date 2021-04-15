@@ -37,9 +37,9 @@ jobs:
           - os: "ubuntu-20.04"
             compiler: gcc-7
 
-          # only gcc-7 on 16.04
+          # only gcc-9 on 16.04
           - os: "ubuntu-16.04"
-            compiler: gcc-9
+            compiler: gcc-7
           - os: "ubuntu-16.04"
             compiler: gcc-10
 
