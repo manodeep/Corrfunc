@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-16.04", "ubuntu-18.04", "ubuntu-20.04", "macos-latest"]
-        compiler: [gcc-7, gcc-8, gcc-9, clang]
+        compiler: [gcc-7, gcc-9, gcc-10, clang]
         python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
         numpy-version: ["1.14", "1.16", "1.18"]
         exclude:
@@ -19,29 +19,29 @@ jobs:
           - os: "macos-latest"
             compiler: gcc-7
           - os: "macos-latest"
-            compiler: gcc-8
-          - os: "macos-latest"
             compiler: gcc-9
+          - os: "macos-latest"
+            compiler: gcc-10
 
           # Don't use 'clang' on linux
+          - os: "ubuntu-16.04"
+            compiler: clang
           - os: "ubuntu-18.04"
             compiler: clang
           - os: "ubuntu-20.04"
             compiler: clang
-          - os: "ubuntu-16.04"
-            compiler: clang
 
-          # only gcc-9 on 20.04
+          # only gcc-10 on 20.04
+          - os: "ubuntu-20.04"
+            compiler: gcc-9
           - os: "ubuntu-20.04"
             compiler: gcc-7
-          - os: "ubuntu-20.04"
-            compiler: gcc-8
 
-          # only gcc-7 on 16.04
+          # only gcc-9 on 16.04
           - os: "ubuntu-16.04"
-            compiler: gcc-8
+            compiler: gcc-7
           - os: "ubuntu-16.04"
-            compiler: gcc-9
+            compiler: gcc-10
 
           # python3.8 only on 20.04
           - os: "ubuntu-16.04"
