@@ -24,6 +24,8 @@ if not __CORRFUNC_SETUP__:
     from . import utils
     from . import theory
     from . import mocks
+    
+    utils.check_runtime_env()
 
 
 def read_text_file(filename, encoding="utf-8"):
