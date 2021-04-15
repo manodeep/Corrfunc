@@ -1056,19 +1056,22 @@ def sys_pipes():
             yield
     except:
         yield
-        
+
+
 def check_runtime_env():
     '''
     Detect any computing environment conditions that may cause Corrfunc
     to fail, and inform the user if there is any action they can take.
     '''
-    
+
     # Check if Cray hugepages is enabled at NERSC, which will crash
     # C Python extensions due to a hugepages bug
     if 'NERSC_HOST' in os.environ and os.getenv('HUGETLB_DEFAULT_PAGE_SIZE'):
-        warnings.warn('Warning: Cray hugepages has a bug that may crash Corrfunc. '
-                      'You might be able to fix such a crash with `module unload craype-hugepages2M` '
-                      '(see https://github.com/manodeep/Corrfunc/issues/245 for details)')
+        warnings.warn('Warning: Cray hugepages has a bug that may crash 
+                      'Corrfunc. You might be able to fix such a crash with '
+                      '`module unload craype-hugepages2M` (see '
+                      'https://github.com/manodeep/Corrfunc/issues/245 '
+                      'for details)')
 
 if __name__ == '__main__':
     import doctest
