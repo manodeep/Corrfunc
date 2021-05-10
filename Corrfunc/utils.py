@@ -26,7 +26,7 @@ except NameError:
 
 def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
                             D1D2, D1R2, D2R1, R1R2,
-                            estimator='LS'):
+                            estimator='LS', autocorr=False):
     """
     Converts raw pair counts to a correlation function.
 
@@ -63,6 +63,9 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
     estimator: string, default='LS' (Landy-Szalay)
         The kind of estimator to use for computing the correlation
         function. Currently, only supports Landy-Szalay
+
+    autocorr: bool, default=False
+        Whether the counts are from an autocorrelation
 
     Returns
     ---------
@@ -141,14 +144,24 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
     nonzero = pair_counts['R1R2'] > 0
     if 'LS' in estimator or 'Landy' in estimator:
-        fN1 = np.float(NR1) / np.float(ND1)
-        fN2 = np.float(NR2) / np.float(ND2)
         cf = np.zeros(nbins)
         cf[:] = np.nan
-        cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
-                       fN1 * pair_counts['D1R2'][nonzero] -
-                       fN2 * pair_counts['D2R1'][nonzero] +
-                       pair_counts['R1R2'][nonzero]) / pair_counts['R1R2'][nonzero]
+        if autocorr:
+            fN1 = np.float(NR1) / np.float(ND1)
+            fN2 = (np.float(NR1) - 1) / (np.float(ND1) - 1)
+            fN3 = (np.float(NR1) - 1) / np.float(ND1)
+            cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
+                           2 * fN3 * pair_counts['D1R2'][nonzero] +
+                           pair_counts['R1R2'][nonzero]
+                           ) / pair_counts['R1R2'][nonzero]
+        else:
+            fN1 = np.float(NR1) / np.float(ND1)
+            fN2 = np.float(NR2) / np.float(ND2)
+            cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
+                           fN1 * pair_counts['D1R2'][nonzero] -
+                           fN2 * pair_counts['D2R1'][nonzero] +
+                           pair_counts['R1R2'][nonzero]
+                           ) / pair_counts['R1R2'][nonzero]
         if len(cf) != nbins:
             msg = 'Bug in code. Calculated correlation function does not '\
                   'have the same number of bins as input arrays. Input bins '\
@@ -166,7 +179,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
                                D1D2, D1R2, D2R1, R1R2,
                                nrpbins, pimax, dpi=1.0,
-                               estimator='LS'):
+                               estimator='LS', autocorr=False):
     """
     Converts raw pair counts to a correlation function.
 
@@ -212,6 +225,10 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     estimator: string, default='LS' (Landy-Szalay)
         The kind of estimator to use for computing the correlation
         function. Currently, only supports Landy-Szalay
+
+    autocorr: bool, default=False
+        Whether the counts are from an autocorrelation
+
 
     Returns
     ---------
@@ -292,7 +309,7 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
 
     xirppi = convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
                                      D1D2, D1R2, D2R1, R1R2,
-                                     estimator=estimator)
+                                     estimator=estimator, autocorr=autocorr)
     wp = np.empty(nrpbins)
     npibins = len(xirppi) // nrpbins
     if ((npibins * nrpbins) != len(xirppi)):
