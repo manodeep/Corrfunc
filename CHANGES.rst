@@ -17,6 +17,7 @@ Enhancements
 ------------
 - In the theoretical VPF calculation (``theory.vpf``), the total volume of the random spheres can now exceed the volume of the sample  [#238]
 - Gridlink (the binning of particles into cells) now uses a parallel algorithm for the theory module [#239]
+- Add detection of known-bad Cray hugepages library at NERSC [#246]
 
 Bug fixes
 ---------
