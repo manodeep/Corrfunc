@@ -338,11 +338,11 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
         import os
         os.remove(rbinfile)
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'thetamin'), np.float),
-                              (bytes_to_native_str(b'thetamax'), np.float),
-                              (bytes_to_native_str(b'thetaavg'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'thetamin'), np.float64),
+                              (bytes_to_native_str(b'thetamax'), np.float64),
+                              (bytes_to_native_str(b'thetaavg'), np.float64),
                               (bytes_to_native_str(b'npairs'), np.uint64),
-                              (bytes_to_native_str(b'weightavg'), np.float)])
+                              (bytes_to_native_str(b'weightavg'), np.float64)])
     results = np.array(extn_results, dtype=results_dtype)
 
     if not c_api_timer:
@@ -556,8 +556,8 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
 
     dtype = np.dtype([(bytes_to_native_str(b'nRA'), np.int),
                       (bytes_to_native_str(b'nDEC'), np.int),
-                      (bytes_to_native_str(b'avg_time'), np.float),
-                      (bytes_to_native_str(b'sigma_time'), np.float)])
+                      (bytes_to_native_str(b'avg_time'), np.float64),
+                      (bytes_to_native_str(b'sigma_time'), np.float64)])
     all_runtimes = np.zeros(nperms, dtype=dtype)
     all_runtimes[:] = np.inf
 

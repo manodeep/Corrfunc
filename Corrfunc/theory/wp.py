@@ -174,8 +174,8 @@ def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
     dtype = np.dtype([(bytes_to_native_str(b'nx'), np.int),
                       (bytes_to_native_str(b'ny'), np.int),
                       (bytes_to_native_str(b'nz'), np.int),
-                      (bytes_to_native_str(b'avg_time'), np.float),
-                      (bytes_to_native_str(b'sigma_time'), np.float)])
+                      (bytes_to_native_str(b'avg_time'), np.float64),
+                      (bytes_to_native_str(b'sigma_time'), np.float64)])
     all_runtimes = np.zeros(maxbinref**3, dtype=dtype)
     all_runtimes[:] = np.inf
 
@@ -525,12 +525,12 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
         import os
         os.remove(rbinfile)
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float),
-                              (bytes_to_native_str(b'rmax'), np.float),
-                              (bytes_to_native_str(b'rpavg'), np.float),
-                              (bytes_to_native_str(b'wp'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float64),
+                              (bytes_to_native_str(b'rmax'), np.float64),
+                              (bytes_to_native_str(b'rpavg'), np.float64),
+                              (bytes_to_native_str(b'wp'), np.float64),
                               (bytes_to_native_str(b'npairs'), np.uint64),
-                              (bytes_to_native_str(b'weightavg'), np.float)])
+                              (bytes_to_native_str(b'weightavg'), np.float64)])
     results = np.array(extn_results, dtype=results_dtype)
 
     # A better solution for returning multiple values based on

@@ -254,11 +254,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         import os
         os.remove(rbinfile)
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float),
-                              (bytes_to_native_str(b'rmax'), np.float),
-                              (bytes_to_native_str(b'ravg'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float64),
+                              (bytes_to_native_str(b'rmax'), np.float64),
+                              (bytes_to_native_str(b'ravg'), np.float64),
                               (bytes_to_native_str(b'npairs'), np.uint64),
-                              (bytes_to_native_str(b'weightavg'), np.float)])
+                              (bytes_to_native_str(b'weightavg'), np.float64)])
     results = np.array(extn_results, dtype=results_dtype)
     if not c_api_timer:
         return results

@@ -142,7 +142,7 @@ def read_catalog(filebase=None):
                 assert skip1 == ngal * 4 or skip1 == ngal * 8, \
                     "fast-food file seems to be corrupt (padding bytes a)"
                 # the next division must be the integer division
-                input_dtype = np.float32 if skip1 // ngal == 4 else np.float
+                input_dtype = np.float32 if skip1 // ngal == 4 else np.float64
                 array = np.fromfile(f, input_dtype, ngal)
                 skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
                 pos[field] = array if return_dtype == input_dtype \
@@ -181,7 +181,7 @@ def read_catalog(filebase=None):
             f = read_fastfood_catalog if '.ff' in extension else read_ascii_catalog
 
             # default return is double
-            x, y, z = f(filebase, np.float)
+            x, y, z = f(filebase, np.float64)
             return x, y, z
 
         raise IOError("Could not locate file {0}", filebase)
