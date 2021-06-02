@@ -795,7 +795,7 @@ def gridlink_sphere(thetamax,
     dec_binsize = dec_diff/ngrid_dec
 
     # Upper and lower limits of the declination bands
-    grid_dtype= np.dtype({'names': ['dec_limit','ra_limit'],
+    grid_dtype = np.dtype({'names': ['dec_limit', 'ra_limit'],
                           'formats': [(np.float64, (2, )), (np.float64, (2, ))]
     })
     if not link_in_ra:

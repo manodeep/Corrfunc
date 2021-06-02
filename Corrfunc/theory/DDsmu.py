@@ -328,7 +328,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
                               (bytes_to_native_str(b'mu_max'), np.float64),
                               (bytes_to_native_str(b'npairs'), np.uint64),
                               (bytes_to_native_str(b'weightavg'), np.float64),
-                             ])
+                              ])
     results = np.array(extn_results, dtype=results_dtype)
 
     if not c_api_timer:
