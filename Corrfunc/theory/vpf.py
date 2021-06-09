@@ -86,7 +86,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is 0., then the wrapping is done based on
         the maximum difference within each dimension of the X/Y/Z arrays.
-        
+
         .. versionchanged:: 2.4.0
            Required if ``periodic=True``.
 
