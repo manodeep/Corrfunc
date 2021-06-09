@@ -36,6 +36,10 @@
 #include <mach/mach_time.h> /* mach_absolute_time -> really fast */
 #endif
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 void get_max_float(const int64_t ND1, const float *cz1, float *czmax)
 {
     float max=*czmax;
@@ -845,3 +849,72 @@ int AlmostEqualRelativeAndAbs_double(double A, double B,
 }
 
 /* #undef __USE_XOPEN2K */
+
+/* A parallel cumulative sum
+   Output convention is: cumsum[0] = 0; cumsum[N-1] = sum(a[0:N-1]);
+   The algorithm is:
+   - Divide the array into `nthreads` chunks
+   - cumsum within each chunk
+   - compute the "offset" for each chunk by summing the cumsum at the tail of all previous chunks
+   - apply the offset
+*/
+void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
+    if (N <= 0){
+        return;  // nothing to do
+    }
+    
+    #ifdef _OPENMP
+    int nthreads = omp_get_max_threads();
+    #else
+    int nthreads = 1;
+    #endif
+    
+    // We will heuristically limit the number of threads
+    // if there isn't enough work for multithreading to be efficient.
+    // This is also important for the correctness of the algorithm below,
+    // since it enforces nthreads <= N
+    int64_t min_N_per_thread = 10000;
+    if(N/min_N_per_thread < nthreads){
+        nthreads = N/min_N_per_thread;
+    }
+    if(nthreads < 1){
+        nthreads = 1;
+    }
+    
+    #ifdef _OPENMP
+    #pragma omp parallel num_threads(nthreads)
+    #endif
+    {
+        #ifdef _OPENMP
+        int tid = omp_get_thread_num();
+        #else
+        int tid = 0;
+        #endif
+        
+        int64_t cstart = N*tid/nthreads;
+        int64_t cend = N*(tid+1)/nthreads;
+        cumsum[cstart] = cstart > 0 ? a[cstart-1] : 0;
+        for(int64_t c = cstart+1; c < cend; c++){
+            cumsum[c] = a[c-1] + cumsum[c-1];
+        }
+        
+        #ifdef _OPENMP
+        #pragma omp barrier
+        #endif
+        
+        int64_t offset = 0;
+        for(int t = 0; t < tid; t++){
+            offset += cumsum[N*(t+1)/nthreads-1];
+        }
+        
+        #ifdef _OPENMP
+        #pragma omp barrier
+        #endif
+        
+        if(offset != 0){
+            for(int64_t c = cstart; c < cend; c++){
+                cumsum[c] += offset;
+            }
+        }
+    }
+}

@@ -322,12 +322,12 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         import os
         os.remove(sbinfile)
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'smin'), np.float),
-                              (bytes_to_native_str(b'smax'), np.float),
-                              (bytes_to_native_str(b'savg'), np.float),
-                              (bytes_to_native_str(b'mumax'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'smin'), np.float64),
+                              (bytes_to_native_str(b'smax'), np.float64),
+                              (bytes_to_native_str(b'savg'), np.float64),
+                              (bytes_to_native_str(b'mumax'), np.float64),
                               (bytes_to_native_str(b'npairs'), np.uint64),
-                              (bytes_to_native_str(b'weightavg'), np.float)])
+                              (bytes_to_native_str(b'weightavg'), np.float64)])
 
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)

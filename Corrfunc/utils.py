@@ -6,7 +6,10 @@ A set of utility routines
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import sys
+import os
+import warnings
 from os.path import exists as file_exists
+
 import wurlitzer
 from contextlib import contextmanager
 
@@ -139,8 +142,8 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
     nonzero = pair_counts['R1R2'] > 0
     if 'LS' in estimator or 'Landy' in estimator:
-        fN1 = np.float(NR1) / np.float(ND1)
-        fN2 = np.float(NR2) / np.float(ND2)
+        fN1 = np.float64(NR1) / np.float64(ND1)
+        fN2 = np.float64(NR2) / np.float64(ND2)
         cf = np.zeros(nbins)
         cf[:] = np.nan
         cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
@@ -793,8 +796,8 @@ def gridlink_sphere(thetamax,
     dec_binsize = dec_diff/ngrid_dec
 
     # Upper and lower limits of the declination bands
-    grid_dtype= np.dtype({'names':['dec_limit','ra_limit'],
-                          'formats':[(np.float, (2, )), (np.float, (2, ))]
+    grid_dtype = np.dtype({'names': ['dec_limit', 'ra_limit'],
+                          'formats': [(np.float64, (2, )), (np.float64, (2, ))]
     })
     if not link_in_ra:
         sphere_grid = np.zeros(ngrid_dec, dtype=grid_dtype)
@@ -1054,6 +1057,22 @@ def sys_pipes():
             yield
     except:
         yield
+
+
+def check_runtime_env():
+    '''
+    Detect any computing environment conditions that may cause Corrfunc
+    to fail, and inform the user if there is any action they can take.
+    '''
+
+    # Check if Cray hugepages is enabled at NERSC, which will crash
+    # C Python extensions due to a hugepages bug
+    if 'NERSC_HOST' in os.environ and os.getenv('HUGETLB_DEFAULT_PAGE_SIZE'):
+        warnings.warn('Warning: Cray hugepages has a bug that may crash '
+                      'Corrfunc. You might be able to fix such a crash with '
+                      '`module unload craype-hugepages2M` (see '
+                      'https://github.com/manodeep/Corrfunc/issues/245 '
+                      'for details)')
 
 if __name__ == '__main__':
     import doctest

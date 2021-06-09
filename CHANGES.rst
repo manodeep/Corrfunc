@@ -11,17 +11,25 @@ New features
 - GPU version
 
 
-2.4.0 (Upcoming)
+2.4.0 (upcoming)
 ================
 This release adds the boxsize parameter to the command line interfaces and
 requires the user to specify boxsize in the Python interfaces to the periodic
-theory functions.
+theory functions.  It also contains a number of performance and quality-of-life
+improvements.
 
 **Breaking Changes**
 --------------------
 - Require user to specify `boxsize` rather than automatically detect particle
   extent in periodic theory boxes. Applies to Python, command line, and C API. [#199]
-  
+
+Enhancements
+------------
+- In the theoretical VPF calculation (``theory.vpf``), the total volume of the random spheres can now exceed the volume of the sample  [#238]
+- Gridlink (the binning of particles into cells) now uses a parallel algorithm for the theory module [#239]
+- Add detection of known-bad Cray hugepages library at NERSC [#246]
+- Replace ``np.float`` with ``np.float64`` to fix numpy 1.20 deprecation [#250]
+
 Bug fixes
 ---------
 - Fix Python reference leak to results struct [#229]

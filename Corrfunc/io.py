@@ -30,7 +30,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
 
     return_dtype: numpy dtype for returned arrays. Default ``numpy.float``
         Specifies the datatype for the returned arrays. Must be in
-        {np.float, np.float32}
+        {np.float64, np.float32}
 
     need_header: boolean, default None.
         Returns the header found in the fast-food file in addition to the
@@ -81,9 +81,9 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
 
     """
     if return_dtype is None:
-        return_dtype = np.float
+        return_dtype = np.float64
 
-    if return_dtype not in [np.float32, np.float]:
+    if return_dtype not in [np.float32, np.float64]:
         msg = "Return data-type must be set and a valid numpy float"
         raise ValueError(msg)
 
@@ -142,7 +142,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
             assert skip1 == ngal * 4 or skip1 == ngal * 8, \
                 "fast-food file seems to be corrupt (padding bytes a)"
             # the next division must be the integer division
-            input_dtype = np.float32 if skip1 // ngal == 4 else np.float
+            input_dtype = np.float32 if skip1 // ngal == 4 else np.float64
             array = np.fromfile(f, input_dtype, ngal)
             skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
             if return_dtype == input_dtype:
@@ -171,7 +171,7 @@ def read_ascii_catalog(filename, return_dtype=None):
 
     return_dtype: numpy dtype for returned arrays. Default ``numpy.float``
         Specifies the datatype for the returned arrays. Must be in
-        {np.float, np.float32}
+        {np.float64, np.float32}
 
     Returns
     --------
@@ -216,7 +216,7 @@ def read_ascii_catalog(filename, return_dtype=None):
     """
 
     if return_dtype is None:
-        return_dtype = np.float
+        return_dtype = np.float64
 
     if not file_exists(filename):
         msg = "Could not find file = {0}".format(filename)
@@ -241,7 +241,7 @@ def read_ascii_catalog(filename, return_dtype=None):
     return x, y, z
 
 
-def read_catalog(filebase=None, return_dtype=np.float):
+def read_catalog(filebase=None, return_dtype=np.float64):
     """
     Reads a galaxy/randoms catalog and returns 3 XYZ arrays.
 
@@ -254,7 +254,7 @@ def read_catalog(filebase=None, return_dtype=np.float):
 
     return_dtype: numpy dtype for returned arrays. Default ``numpy.float``
         Specifies the datatype for the returned arrays. Must be in
-        {np.float, np.float32}
+        {np.float64, np.float32}
 
     Returns
     --------

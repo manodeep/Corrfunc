@@ -65,6 +65,8 @@ extern int test_all_files_present(const int nfiles, ...);
 /* Floating point comparison utilities */
 extern int AlmostEqualRelativeAndAbs_float(float A, float B, const float maxDiff, const float maxRelDiff);
 extern int AlmostEqualRelativeAndAbs_double(double A, double B, const double maxDiff, const double maxRelDiff);
+    
+extern void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum);
 
 //end function declarations
 

@@ -330,12 +330,13 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         import os
         os.remove(sbinfile)
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'smin'), np.float),
-                              (bytes_to_native_str(b'smax'), np.float),
-                              (bytes_to_native_str(b'savg'), np.float),
-                              (bytes_to_native_str(b'mu_max'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'smin'), np.float64),
+                              (bytes_to_native_str(b'smax'), np.float64),
+                              (bytes_to_native_str(b'savg'), np.float64),
+                              (bytes_to_native_str(b'mu_max'), np.float64),
                               (bytes_to_native_str(b'npairs'), np.uint64),
-                              (bytes_to_native_str(b'weightavg'), np.float),])
+                              (bytes_to_native_str(b'weightavg'), np.float64),
+                              ])
     results = np.array(extn_results, dtype=results_dtype)
 
     if not c_api_timer:

@@ -15,6 +15,14 @@ in which the pair weight is the product of the point weights
 (but see :ref:`custom_weighting` for how to write your own
 function).
 
+.. warning::
+    The computation of the weighted result is susceptible to loss of floating
+    point precision, especially in single precision.  If you are using single
+    precision, make sure you test double precision as well (by casting all
+    pos and weight input arrays to type ``np.float64``, for example)
+    and check that the difference with the single-precision result
+    is acceptable.
+
 If ``weight_type`` and ``weights`` (or ``weights1`` and ``weights2``
 for cross-correlations) are given, the mean pair weight in a
 separation bin will be given in the ``weightavg`` field of the

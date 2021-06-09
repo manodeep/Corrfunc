@@ -203,22 +203,6 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     if periodic and boxsize is None:
         raise ValueError("Must specify a boxsize if periodic=True")
 
-    if boxsize > 0.0:
-        volume = boxsize * boxsize * boxsize
-    else:
-        volume = (max(X) - min(X)) * \
-                 (max(Y) - min(Y)) * \
-                 (max(Z) - min(Z))
-
-    volume_sphere = 4. / 3. * pi * rmax * rmax * rmax
-    if nspheres * volume_sphere > volume:
-        msg = "There are not as many independent volumes in the "\
-              "requested particle distribution. Num. spheres = {0} "\
-              "rmax = {1} => effective volume = {2}.\nVolume of particles ="\
-              "{3}. Reduce rmax or Nspheres"\
-              .format(nspheres, rmax, nspheres * volume_sphere, volume)
-        raise ValueError(msg)
-
     # Ensure all input arrays are native endian
     X, Y, Z = [convert_to_native_endian(arr, warn=True)
                for arr in [X, Y, Z]]
@@ -246,9 +230,9 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     else:
         extn_results, api_time = extn_results
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'rmax'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'rmax'), np.float64),
                               (bytes_to_native_str(b'pN'),
-                               (np.float, numpN))])
+                               (np.float64, numpN))])
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
 

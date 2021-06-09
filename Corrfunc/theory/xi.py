@@ -234,12 +234,12 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
         import os
         os.remove(rbinfile)
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float),
-                              (bytes_to_native_str(b'rmax'), np.float),
-                              (bytes_to_native_str(b'ravg'), np.float),
-                              (bytes_to_native_str(b'xi'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float64),
+                              (bytes_to_native_str(b'rmax'), np.float64),
+                              (bytes_to_native_str(b'ravg'), np.float64),
+                              (bytes_to_native_str(b'xi'), np.float64),
                               (bytes_to_native_str(b'npairs'), np.uint64),
-                              (bytes_to_native_str(b'weightavg'), np.float)])
+                              (bytes_to_native_str(b'weightavg'), np.float64)])
     results = np.array(extn_results, dtype=results_dtype)
 
     if not c_api_timer:

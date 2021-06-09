@@ -387,12 +387,12 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         import os
         os.remove(rbinfile)
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float),
-                              (bytes_to_native_str(b'rmax'), np.float),
-                              (bytes_to_native_str(b'rpavg'), np.float),
-                              (bytes_to_native_str(b'pimax'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'rmin'), np.float64),
+                              (bytes_to_native_str(b'rmax'), np.float64),
+                              (bytes_to_native_str(b'rpavg'), np.float64),
+                              (bytes_to_native_str(b'pimax'), np.float64),
                               (bytes_to_native_str(b'npairs'), np.uint64),
-                              (bytes_to_native_str(b'weightavg'), np.float)])
+                              (bytes_to_native_str(b'weightavg'), np.float64)])
     results = np.array(extn_results, dtype=results_dtype)
 
     if not c_api_timer:
