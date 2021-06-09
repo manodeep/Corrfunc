@@ -48,7 +48,7 @@ def main():
     # Double-precision calculations
     # (if you want single-prec, just change the following line
     # to dtype = np.float32)
-    dtype = np.float
+    dtype = np.float64
 
     # Check if pandas is available - much faster to read in the
     # data through pandas

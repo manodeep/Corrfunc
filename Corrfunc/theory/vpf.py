@@ -223,9 +223,9 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     else:
         extn_results, api_time = extn_results
 
-    results_dtype = np.dtype([(bytes_to_native_str(b'rmax'), np.float),
+    results_dtype = np.dtype([(bytes_to_native_str(b'rmax'), np.float64),
                               (bytes_to_native_str(b'pN'),
-                               (np.float, numpN))])
+                               (np.float64, numpN))])
     nbin = len(extn_results)
     results = np.zeros(nbin, dtype=results_dtype)
 
