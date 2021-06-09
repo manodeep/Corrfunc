@@ -12,7 +12,7 @@ jobs:
         os: ["ubuntu-16.04", "ubuntu-18.04", "ubuntu-20.04", "macos-latest"]
         compiler: [gcc-7, gcc-9, gcc-10, clang]
         python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
-        numpy-version: ["1.14", "1.16", "1.18"]
+        numpy-version: ["1.14", "1.18", "1.20"]
         exclude:
 
           # Only run with 'clang' on OSX
@@ -51,11 +51,7 @@ jobs:
           - os: "macos-latest"
             python-version: "3.8"
 
-          # No numpy1.16 for python3.5
-          - python-version: "3.5"
-            numpy-version: "1.16"
-
-          # numpy1.18 only on python3.8 
+          # numpy1.18 and 1.20 only on python3.8 
           # (which, in turn, is only on '20.04')
           - python-version: "2.7"
             numpy-version: "1.18"
@@ -65,6 +61,14 @@ jobs:
             numpy-version: "1.18"
           - python-version: "3.7"
             numpy-version: "1.18"
+          - python-version: "2.7"
+            numpy-version: "1.20"
+          - python-version: "3.5"
+            numpy-version: "1.20"
+          - python-version: "3.6"
+            numpy-version: "1.20"
+          - python-version: "3.7"
+            numpy-version: "1.20"
 
     env:
       CC: ${{ matrix.compiler }}
