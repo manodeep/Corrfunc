@@ -29,6 +29,7 @@ Enhancements
 - Gridlink (the binning of particles into cells) now uses a parallel algorithm for the theory module [#239]
 - Add detection of known-bad Cray hugepages library at NERSC [#246]
 - Replace ``np.float`` with ``np.float64`` to fix numpy 1.20 deprecation [#250]
+- Test Numpy versions as old as 1.14 and recent as 1.20 [#251]
 
 Bug fixes
 ---------
