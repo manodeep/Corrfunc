@@ -476,7 +476,7 @@ Project URLs
    :target: https://bestpractices.coreinfrastructure.org/en/projects/5037
    :alt: Core Infrastructure Best Practices Status
 
-.. |FAIRSoft| image:: https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow
+.. |FAIRSoft| image:: https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green
    :target: https://fair-software.eu
    :alt: Fair Software (EU) Compliance
 
