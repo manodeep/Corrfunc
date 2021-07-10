@@ -1,8 +1,11 @@
 |logo|
 
-|Release| |PyPI| |MIT licensed| |Travis Build| |GitHub CI| |RTD| |Codacy| |Issues|
+|Release| |PyPI| |MIT licensed| |Travis Build| |GitHub CI| |RTD| |Issues|
+
+|CoreInfra| |FAIRSoft|
 
 |Paper I| |Paper II|
+
 
 Description
 ===========
@@ -469,9 +472,13 @@ Project URLs
    :target: http://corrfunc.readthedocs.io/en/master/?badge=master
    :alt: Documentation Status
 
-.. |Codacy| image:: https://api.codacy.com/project/badge/Grade/95717e4798b04ee5ad42d5cab3c15429
-   :target: https://app.codacy.com/project/manodeep/Corrfunc/dashboard
-   :alt: Code Quality
+.. |CoreInfra| image:: https://bestpractices.coreinfrastructure.org/projects/5037/badge
+   :target: https://bestpractices.coreinfrastructure.org/en/projects/5037
+   :alt: Core Infrastructure Best Practices Status
+
+.. |FAIRSoft| image:: https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow
+   :target: https://fair-software.eu
+   :alt: Fair Software (EU) Compliance
 
 .. |Paper I| image:: https://img.shields.io/badge/arXiv-1911.03545-%23B31B1B
    :target: https://arxiv.org/abs/1911.03545
