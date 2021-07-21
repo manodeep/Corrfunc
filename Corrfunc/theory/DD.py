@@ -14,7 +14,7 @@ __all__ = ('DD', )
 
 
 def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
-       X2=None, Y2=None, Z2=None, weights2=None, verbose=False, boxsize=None,
+       boxsize=None, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,
        output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
        copy_particles=True, enable_min_sep_opt=True,
@@ -70,6 +70,15 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
+        
+    boxsize: double, required if ``periodic=True``
+        The side-length of the cube in the cosmological simulation.
+        Present to facilitate exact calculations for periodic wrapping.
+        If boxsize is 0., then the wrapping is done based on
+        the maximum difference within each dimension of the X/Y/Z arrays.
+
+        .. versionchanged:: 2.4.0
+           Required if ``periodic=True``.
 
     X2/Y2/Z2: array-like, real (float/double)
         Array of XYZ positions for the second set of points. *Must* be the same
@@ -80,15 +89,6 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     verbose: boolean (default false)
         Boolean flag to control output of informational messages
-
-    boxsize: double
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is 0., then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
-
-        .. versionchanged:: 2.4.0
-           Required if ``periodic=True``.
 
     output_ravg: boolean (default false)
         Boolean flag to output the average ``r`` for each bin. Code will
@@ -177,7 +177,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     >>> weights = np.ones_like(X)
     >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, weights1=weights,
     ...              weight_type='pair_product', output_ravg=True,
-    ...              boxsize=boxsize)
+    ...              boxsize=boxsize, periodic=True)
     >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['rmin'], r['rmax'], r['ravg'],
     ...                         r['npairs'], r['weightavg'])) # doctest: +NORMALIZE_WHITESPACE

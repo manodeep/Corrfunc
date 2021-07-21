@@ -14,8 +14,9 @@ __all__ = ('DDrppi', )
 
 
 def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
-           periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
-           verbose=False, boxsize=None, output_rpavg=False,
+           periodic=True, boxsize=None,
+           X2=None, Y2=None, Z2=None, weights2=None,
+           verbose=False, output_rpavg=False,
            xbin_refine_factor=2, ybin_refine_factor=2,
            zbin_refine_factor=1, max_cells_per_dim=100,
            copy_particles=True, enable_min_sep_opt=True,
@@ -83,6 +84,18 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         results are returned in the ``weightavg`` field.  If only one of
         weights1 and weights2 is specified, the other will be set to uniform
         weights.
+        
+    periodic: boolean
+        Boolean flag to indicate periodic boundary conditions.
+        
+    boxsize: double, required if ``periodic=True``
+        The side-length of the cube in the cosmological simulation.
+        Present to facilitate exact calculations for periodic wrapping.
+        If boxsize is 0., then the wrapping is done based on
+        the maximum difference within each dimension of the X/Y/Z arrays.
+
+        .. versionchanged:: 2.4.0
+           Required if ``periodic=True``.
 
     X2/Y2/Z2: array-like, real (float/double)
         Array of XYZ positions for the second set of points. *Must* be the same
@@ -91,20 +104,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     weights2: array-like, real (float/double), optional
         Same as weights1, but for the second set of positions
 
-    periodic: boolean
-        Boolean flag to indicate periodic boundary conditions.
-
     verbose: boolean (default false)
         Boolean flag to control output of informational messages
-
-    boxsize: double
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is 0., then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
-
-        .. versionchanged:: 2.4.0
-           Required if ``periodic=True``.
 
     output_rpavg: boolean (default false)
         Boolean flag to output the average ``rp`` for each bin. Code will
@@ -194,7 +195,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     >>> weights = np.ones_like(X)
     >>> results = DDrppi(autocorr, nthreads, pimax, binfile,
     ...                  X, Y, Z, weights1=weights, weight_type='pair_product',
-    ...                  output_rpavg=True, boxsize=boxsize)
+    ...                  output_rpavg=True, boxsize=boxsize, periodic=True)
     >>> for r in results[519:]: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.1f}"
     ...                               " {4:10d} {5:10.6f}".format(r['rmin'], r['rmax'],
     ...                               r['rpavg'], r['pimax'], r['npairs'], r['weightavg']))

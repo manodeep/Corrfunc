@@ -14,9 +14,9 @@ __all__ = ('DDsmu', )
 
 
 def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
-          X1, Y1, Z1, weights1=None,
-          periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
-          verbose=False, boxsize=None, output_savg=False,
+          X1, Y1, Z1, weights1=None, periodic=True, boxsize=None,
+          X2=None, Y2=None, Z2=None, weights2=None,
+          verbose=False, output_savg=False,
           fast_divide_and_NR_steps=0,
           xbin_refine_factor=2, ybin_refine_factor=2,
           zbin_refine_factor=1, max_cells_per_dim=100,
@@ -89,6 +89,15 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     periodic : boolean
         Boolean flag to indicate periodic boundary conditions.
+        
+    boxsize : double, required if ``periodic=True``
+        The side-length of the cube in the cosmological simulation.
+        Present to facilitate exact calculations for periodic wrapping.
+        If boxsize is 0., then the wrapping is done based on
+        the maximum difference within each dimension of the X/Y/Z arrays.
+
+        .. versionchanged:: 2.4.0
+           Required if ``periodic=True``.
 
     X2/Y2/Z2 : array-like, real (float/double)
         Array of XYZ positions for the second set of points. *Must* be the same
@@ -99,15 +108,6 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     verbose : boolean (default false)
         Boolean flag to control output of informational messages
-
-    boxsize : double
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is 0., then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
-
-        .. versionchanged:: 2.4.0
-           Required if ``periodic=True``.
 
     output_savg : boolean (default false)
         Boolean flag to output the average ``s`` for each bin. Code will
@@ -203,7 +203,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
     >>> weights = np.ones_like(X)
     >>> results = DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
     ...                  X, Y, Z, weights1=weights, weight_type='pair_product',
-    ...                  output_savg=True, boxsize=boxsize)
+    ...                  output_savg=True, boxsize=boxsize, periodic=True)
     >>> for r in results[100:]: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.1f}"
     ...                               " {4:10d} {5:10.6f}".format(r['smin'], r['smax'],
     ...                               r['savg'], r['mu_max'], r['npairs'], r['weightavg']))

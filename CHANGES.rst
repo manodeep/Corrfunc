@@ -13,15 +13,16 @@ New features
 
 2.4.0 (upcoming)
 ================
-This release adds the boxsize parameter to the command line interfaces and
-requires the user to specify boxsize in the Python interfaces to the periodic
-theory functions.  It also contains a number of performance and quality-of-life
-improvements.
+This release adds the ``boxsize`` parameter to the command line interfaces and
+requires the user to specify the box size in the Python interfaces to the periodic
+theory functions.  It also contains a number of performance, code-quality, and
+user-experience improvements.
 
 **Breaking Changes**
 --------------------
-- Require user to specify `boxsize` rather than automatically detect particle
-  extent in periodic theory boxes. Applies to Python, command line, and C API. [#199]
+- Require user to specify ``boxsize`` rather than automatically detect particle
+  extent in periodic theory boxes. Applies to Python, command line, and C API.
+  The order of some Python keyword args has also changed. [#199]
 
 Enhancements
 ------------

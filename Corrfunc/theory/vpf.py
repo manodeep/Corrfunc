@@ -81,7 +81,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
 
-    boxsize: double
+    boxsize: double, required if ``periodic=True``
         The side-length of the cube in the cosmological simulation.
         Present to facilitate exact calculations for periodic wrapping.
         If boxsize is 0., then the wrapping is done based on
@@ -162,7 +162,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     >>> Y = np.random.uniform(0, boxsize, N)
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> results = vpf(rmax, nbins, nspheres, numpN, seed, X, Y, Z,
-    ...               boxsize=boxsize)
+    ...               boxsize=boxsize, periodic=True)
     >>> for r in results:
     ...     print("{0:10.1f} ".format(r[0]), end="")
     ...     # doctest: +NORMALIZE_WHITESPACE
