@@ -5,7 +5,7 @@
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
 
---- DD file1 format1 file2 format2 binfile numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
+--- DD file1 format1 file2 format2 binfile boxsize numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile
 --- Measure the cross-correlation function DD(r) for two different
    data files (or autocorrelation if file1=file2).
  * file1         = name of first data file
@@ -13,6 +13,7 @@
  * file2         = name of second data file
  * format2       = format of second data file (a=ascii, c=csv, f=fast-food)
  * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)
+ * boxsize       = if periodic, the boxsize to use for the periodic wrap (0 means detect the particle extent)
  * numthreads    = number of threads to use
 --- OPTIONAL ARGS:
  * weight_method = the type of pair weighting to apply.  Options are: 'pair_product', 'none'.  Default: 'none'.
@@ -55,13 +56,15 @@ int main(int argc, char *argv[])
     weight_method_t weight_method = NONE;
     int num_weights = 0;
 
+    double boxsize = -1.;
+
     /*---Corrfunc-variables----------------*/
 #if !(defined(USE_OMP) && defined(_OPENMP))
     const int nthreads=1;
-    const char argnames[][30]={"file1","format1","file2","format2","binfile"};
+    const char argnames[][30]={"file1","format1","file2","format2","binfile","boxsize"};
 #else
     int nthreads=2;
-    const char argnames[][30]={"file1","format1","file2","format2","binfile","Nthreads"};
+    const char argnames[][30]={"file1","format1","file2","format2","binfile","boxsize","Nthreads"};
 #endif
     const char optargnames[][30]={"weight_method", "weights_file1","weights_format1","weights_file2","weights_format2"};
 
@@ -113,9 +116,10 @@ int main(int argc, char *argv[])
     file2=argv[3];
     fileformat2=argv[4];
     binfile=argv[5];
+    boxsize=atof(argv[6]);
 
 #if defined(USE_OMP) && defined(_OPENMP)
-    nthreads=atoi(argv[6]);
+    nthreads=atoi(argv[7]);
     if(nthreads < 1) {
         fprintf(stderr,"Error: Nthreads must be at least 1...returning\n");
         return EXIT_FAILURE;
@@ -210,6 +214,7 @@ int main(int argc, char *argv[])
     /*---Count-pairs--------------------------------------*/
     gettimeofday(&t0,NULL);
     struct config_options options = get_config_options();
+    options.boxsize = boxsize;
 
     /* Pack weights into extra options */
     struct extra_options extra = get_extra_options(weight_method);
@@ -268,7 +273,7 @@ void Printhelp(void)
 {
     fprintf(stderr,"=========================================================================\n") ;
 #if defined(USE_OMP) && defined(_OPENMP)
-    fprintf(stderr,"   --- DD file1 format1 file2 format2 binfile numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
+    fprintf(stderr,"   --- DD file1 format1 file2 format2 binfile boxsize numthreads [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n");
 #else
     fprintf(stderr,"   --- DD file1 format1 file2 format2 binfile [weight_method weights_file1 weights_format1 [weights_file2 weights_format2]] > DDfile\n") ;
 #endif
@@ -279,6 +284,7 @@ void Printhelp(void)
     fprintf(stderr,"     * file2         = name of second data file\n") ;
     fprintf(stderr,"     * format2       = format of second data file (a=ascii, c=csv, f=fast-food)\n") ;
     fprintf(stderr,"     * binfile       = name of ascii file containing the r-bins (rmin rmax for each bin)\n") ;
+    fprintf(stderr,"     * boxsize       = if periodic, the boxsize to use for the periodic wrap (0 means detect the particle extent)\n") ;
 #if defined(USE_OMP) && defined(_OPENMP)
     fprintf(stderr,"     * numthreads    = number of threads to use\n");
 #endif

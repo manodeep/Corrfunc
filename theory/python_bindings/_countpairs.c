@@ -146,7 +146,7 @@ static PyMethodDef module_methods[] = {
      "boxsize : double\n"
      "    The side-length of the cube in the cosmological simulation.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If boxsize is not supplied, then the wrapping is done based on\n"
+     "    If boxsize is 0., then the wrapping is done based on\n"
      "    the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
 
      "output_ravg : boolean (default false)\n"
@@ -290,7 +290,7 @@ static PyMethodDef module_methods[] = {
      "boxsize : double\n"
      "    The side-length of the cube in the cosmological simulation.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If boxsize is not supplied, then the wrapping is done based on\n"
+     "    If boxsize is 0., then the wrapping is done based on\n"
      "    the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
 
      "output_rpavg : boolean (default false)\n"
@@ -715,7 +715,7 @@ static PyMethodDef module_methods[] = {
      "boxsize : double\n"
      "    The side-length of the cube in the cosmological simulation.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If boxsize is not supplied, then the wrapping is done based on\n"
+     "    If boxsize is 0., then the wrapping is done based on\n"
      "    the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
 
      "output_savg : boolean (default false)\n"
@@ -855,7 +855,7 @@ static PyMethodDef module_methods[] = {
      "boxsize: double\n"
      "    The side-length of the cube in the cosmological simulation.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If boxsize is not supplied, then the wrapping is done based on\n"
+     "    If boxsize is 0., then the wrapping is done based on\n"
      "    the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
 
      "(xyz)bin_refine_factor: integer (default (1,1,1) typical values in [1-3]) \n"

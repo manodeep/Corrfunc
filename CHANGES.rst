@@ -10,8 +10,19 @@ New features
 - conda installable package
 - GPU version
 
+
 2.4.0 (upcoming)
-==================
+================
+This release adds the ``boxsize`` parameter to the command line interfaces and
+requires the user to specify the box size in the Python interfaces to the periodic
+theory functions.  It also contains a number of performance, code-quality, and
+user-experience improvements.
+
+**Breaking Changes**
+--------------------
+- Require user to specify ``boxsize`` rather than automatically detect particle
+  extent in periodic theory boxes. Applies to Python, command line, and C API.
+  The order of some Python keyword args has also changed. [#199]
 
 Enhancements
 ------------
@@ -65,12 +76,10 @@ Bug fixes
 This is a release for bug-fixes and general code quality improvements. Travis
 now also tests for ``python3.7``.
 
-
 Enhancements
 ------------
 - Improved code quality and adherence to PEP8 [#189]
 - Documentation no longer shows duplicate entries [#205]
-
 
 
 Bug fixes

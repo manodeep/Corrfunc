@@ -222,6 +222,12 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
             fprintf(stderr,"ND2 = %12"PRId64" [xmin,ymin,zmin] = [%lf,%lf,%lf], [xmax,ymax,zmax] = [%lf,%lf,%lf]\n",ND2,xmin,ymin,zmin,xmax,ymax,zmax);
         }
     }
+
+    if(options->boxsize < 0 && options->periodic){
+        fprintf(stderr, "boxsize = %g must be >= 0 with periodic wrap. Please specify a non-zero boxsize or zero to detect the particle extent.\n",
+            options->boxsize);
+        return EXIT_FAILURE;
+    }
     const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
     const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
     const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);

@@ -346,7 +346,7 @@ def main():
     seed = -1
     results_vpf, _ = vpf(rmax=rmax, nbins=nbin, nspheres=nspheres,
                          num_pN=num_pN, seed=seed, X=x, Y=y, Z=z, verbose=True,
-                         periodic=periodic)
+                         periodic=periodic, boxsize=boxsize)
 
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))

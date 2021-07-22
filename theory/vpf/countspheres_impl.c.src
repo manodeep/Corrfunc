@@ -217,6 +217,11 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
 
     int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
+    if(options->boxsize < 0 && options->periodic){
+        fprintf(stderr, "boxsize = %g must be >= 0 with periodic wrap. Please specify a non-zero boxsize or zero to detect the particle extent.\n",
+            options->boxsize);
+        return EXIT_FAILURE;
+    }
     const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
     const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
     const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);

@@ -8,7 +8,7 @@
 
 /* PROGRAM VPF
 
---- vpf rmax nbins ncentres num_pN file format seed > VPFfile
+--- vpf rmax nbins ncentres num_pN file format seed boxsize > VPFfile
 --- Measures the counts-in-spheres in a simulation box
  * rmax         = size of the biggest sphere
  * nbins        = number of bins to use for the counts-in-spheres
@@ -17,6 +17,7 @@
  * file         = name of data file
  * format       = format of data file  (a=ascii, c=csv, f=fast-food)
  * seed         = seed for random number generator
+ * boxsize      = if periodic, the boxsize to use for the periodic wrap (0 means detect the particle extent)
  > VPFfile      = name of output file <r P0 P1 P2 ...>
    */
 
@@ -43,8 +44,10 @@ int main(int argc, char *argv[])
     unsigned long seed=-1;
     char *file=NULL,*fileformat=NULL;
 
+    double boxsize = -1.;
+
     /*---VPF-variables----------------*/
-    const char argnames[][30]={"rmax","nbins","ncentres","num_pN","file","format","seed"};
+    const char argnames[][30]={"rmax","nbins","ncentres","num_pN","file","format","seed","boxsize"};
     int nargs=sizeof(argnames)/(sizeof(char)*30);
 
     int64_t np;
@@ -79,6 +82,7 @@ int main(int argc, char *argv[])
     file =  argv[5];
     fileformat = argv[6];
     seed = atol(argv[7]);
+    boxsize = atof(argv[8]);
 
     assert(nbin >=1 && "Number of bins has to be at least 1");
     assert(nc >=1   && "Number of spheres has to be at least 1");
@@ -102,6 +106,7 @@ int main(int argc, char *argv[])
 
     results_countspheres results;
     struct config_options options = get_config_options();
+    options.boxsize = boxsize;
 
     /* If you want to change the bin refine factors */
     /* const int bf[] = {2, 2, 1}; */
@@ -151,6 +156,7 @@ void Printhelp(void)
     fprintf(stderr,"     * file         = name of data file\n") ;
     fprintf(stderr,"     * format       = format of data file  (a=ascii, c=csv, f=fast-food)\n") ;
     fprintf(stderr,"     * seed         = seed for random number generator\n");
+    fprintf(stderr,"     * boxsize      = if periodic, the boxsize to use for the periodic wrap (0 means detect the particle extent)\n");
     fprintf(stderr,"     > VPFfile      = name of output file <r P0 P1 P2 ...>\n") ;
     fprintf(stderr,"\n\tCompile options: \n");
 #ifdef PERIODIC

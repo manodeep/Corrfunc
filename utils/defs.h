@@ -23,7 +23,6 @@ extern "C" {
 
 #define API_VERSION          STR("2.3.4")
 
-
 /* Macros as mask for the binning_flags */
 /* These consititute the 32 bytes for
 the ``uint32_t binning_flags`` */
@@ -244,6 +243,11 @@ static inline struct config_options get_config_options(void)
 
     memset(&options, 0, OPTIONS_HEADER_SIZE);
     snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", API_VERSION);
+
+    // If periodic, set to -1 to require the user to set a boxsize.
+    // A value of 0 will use automatic detection of the particle extent
+    options.boxsize = -1.;
+
 #ifdef DOUBLE_PREC
     options.float_type = sizeof(double);
 #else

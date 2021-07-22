@@ -14,7 +14,7 @@ __all__ = ('DD', )
 
 
 def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
-       X2=None, Y2=None, Z2=None, weights2=None, verbose=False, boxsize=0.0,
+       boxsize=None, X2=None, Y2=None, Z2=None, weights2=None, verbose=False,
        output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
        copy_particles=True, enable_min_sep_opt=True,
@@ -70,6 +70,15 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
+        
+    boxsize: double, required if ``periodic=True``
+        The side-length of the cube in the cosmological simulation.
+        Present to facilitate exact calculations for periodic wrapping.
+        If boxsize is 0., then the wrapping is done based on
+        the maximum difference within each dimension of the X/Y/Z arrays.
+
+        .. versionchanged:: 2.4.0
+           Required if ``periodic=True``.
 
     X2/Y2/Z2: array-like, real (float/double)
         Array of XYZ positions for the second set of points. *Must* be the same
@@ -80,12 +89,6 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     verbose: boolean (default false)
         Boolean flag to control output of informational messages
-
-    boxsize: double
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is not supplied, then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
 
     output_ravg: boolean (default false)
         Boolean flag to output the average ``r`` for each bin. Code will
@@ -173,7 +176,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> weights = np.ones_like(X)
     >>> results = DD(autocorr, nthreads, binfile, X, Y, Z, weights1=weights,
-    ...              weight_type='pair_product', output_ravg=True)
+    ...              weight_type='pair_product', output_ravg=True,
+    ...              boxsize=boxsize, periodic=True)
     >>> for r in results: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10d} {4:10.6f}".
     ...                         format(r['rmin'], r['rmax'], r['ravg'],
     ...                         r['npairs'], r['weightavg'])) # doctest: +NORMALIZE_WHITESPACE
@@ -184,13 +188,13 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
       0.691021   0.984777   0.945372          2   1.000000
       0.984777   1.403410   1.340525         10   1.000000
       1.403410   2.000000   1.732968         36   1.000000
-      2.000000   2.850200   2.558878         54   1.000000
-      2.850200   4.061840   3.564959        208   1.000000
-      4.061840   5.788530   4.999278        674   1.000000
-      5.788530   8.249250   7.126673       2154   1.000000
-      8.249250  11.756000  10.201834       5996   1.000000
-     11.756000  16.753600  14.517830      17746   1.000000
-     16.753600  23.875500  20.716017      50252   1.000000
+      2.000000   2.850200   2.549059         52   1.000000
+      2.850200   4.061840   3.559061        210   1.000000
+      4.061840   5.788530   4.996275        670   1.000000
+      5.788530   8.249250   7.124926       2156   1.000000
+      8.249250  11.756000  10.201393       5990   1.000000
+     11.756000  16.753600  14.517498      17736   1.000000
+     16.753600  23.875500  20.716714      50230   1.000000
 
     """
     try:
@@ -211,6 +215,9 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                   "computing cross-correlation"
             raise ValueError(msg)
+
+    if periodic and boxsize is None:
+        raise ValueError("Must specify a boxsize if periodic=True")
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 

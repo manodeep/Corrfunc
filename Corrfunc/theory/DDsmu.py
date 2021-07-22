@@ -14,9 +14,9 @@ __all__ = ('DDsmu', )
 
 
 def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
-          X1, Y1, Z1, weights1=None,
-          periodic=True, X2=None, Y2=None, Z2=None, weights2=None,
-          verbose=False, boxsize=0.0, output_savg=False,
+          X1, Y1, Z1, weights1=None, periodic=True, boxsize=None,
+          X2=None, Y2=None, Z2=None, weights2=None,
+          verbose=False, output_savg=False,
           fast_divide_and_NR_steps=0,
           xbin_refine_factor=2, ybin_refine_factor=2,
           zbin_refine_factor=1, max_cells_per_dim=100,
@@ -89,6 +89,15 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     periodic : boolean
         Boolean flag to indicate periodic boundary conditions.
+        
+    boxsize : double, required if ``periodic=True``
+        The side-length of the cube in the cosmological simulation.
+        Present to facilitate exact calculations for periodic wrapping.
+        If boxsize is 0., then the wrapping is done based on
+        the maximum difference within each dimension of the X/Y/Z arrays.
+
+        .. versionchanged:: 2.4.0
+           Required if ``periodic=True``.
 
     X2/Y2/Z2 : array-like, real (float/double)
         Array of XYZ positions for the second set of points. *Must* be the same
@@ -99,12 +108,6 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     verbose : boolean (default false)
         Boolean flag to control output of informational messages
-
-    boxsize : double
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is not supplied, then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
 
     output_savg : boolean (default false)
         Boolean flag to output the average ``s`` for each bin. Code will
@@ -199,51 +202,53 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
     >>> Z = np.random.uniform(0, boxsize, N)
     >>> weights = np.ones_like(X)
     >>> results = DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
-    ...                  X, Y, Z, weights1=weights, weight_type='pair_product', output_savg=True)
+    ...                  X, Y, Z, weights1=weights, weight_type='pair_product',
+    ...                  output_savg=True, boxsize=boxsize, periodic=True)
     >>> for r in results[100:]: print("{0:10.6f} {1:10.6f} {2:10.6f} {3:10.1f}"
     ...                               " {4:10d} {5:10.6f}".format(r['smin'], r['smax'],
     ...                               r['savg'], r['mu_max'], r['npairs'], r['weightavg']))
     ...                         # doctest: +NORMALIZE_WHITESPACE
-     5.788530   8.249250   7.148213        0.1        230   1.000000
-     5.788530   8.249250   7.157218        0.2        236   1.000000
-     5.788530   8.249250   7.165338        0.3        208   1.000000
-     5.788530   8.249250   7.079905        0.4        252   1.000000
-     5.788530   8.249250   7.251661        0.5        184   1.000000
-     5.788530   8.249250   7.118536        0.6        222   1.000000
-     5.788530   8.249250   7.083466        0.7        238   1.000000
-     5.788530   8.249250   7.198184        0.8        170   1.000000
-     5.788530   8.249250   7.127409        0.9        208   1.000000
-     5.788530   8.249250   6.973090        1.0        206   1.000000
-     8.249250  11.756000  10.149183        0.1        592   1.000000
-     8.249250  11.756000  10.213009        0.2        634   1.000000
-     8.249250  11.756000  10.192220        0.3        532   1.000000
-     8.249250  11.756000  10.246931        0.4        544   1.000000
-     8.249250  11.756000  10.102675        0.5        530   1.000000
-     8.249250  11.756000  10.276180        0.6        644   1.000000
-     8.249250  11.756000  10.251264        0.7        666   1.000000
-     8.249250  11.756000  10.138399        0.8        680   1.000000
-     8.249250  11.756000  10.191916        0.9        566   1.000000
-     8.249250  11.756000  10.243229        1.0        608   1.000000
-    11.756000  16.753600  14.552776        0.1       1734   1.000000
-    11.756000  16.753600  14.579991        0.2       1806   1.000000
-    11.756000  16.753600  14.599611        0.3       1802   1.000000
-    11.756000  16.753600  14.471100        0.4       1820   1.000000
-    11.756000  16.753600  14.480192        0.5       1740   1.000000
-    11.756000  16.753600  14.493679        0.6       1746   1.000000
-    11.756000  16.753600  14.547713        0.7       1722   1.000000
-    11.756000  16.753600  14.465390        0.8       1750   1.000000
-    11.756000  16.753600  14.547465        0.9       1798   1.000000
-    11.756000  16.753600  14.440975        1.0       1828   1.000000
-    16.753600  23.875500  20.720406        0.1       5094   1.000000
-    16.753600  23.875500  20.735403        0.2       5004   1.000000
-    16.753600  23.875500  20.721069        0.3       5172   1.000000
-    16.753600  23.875500  20.723648        0.4       5014   1.000000
-    16.753600  23.875500  20.650621        0.5       5094   1.000000
-    16.753600  23.875500  20.688135        0.6       5076   1.000000
-    16.753600  23.875500  20.735691        0.7       4910   1.000000
-    16.753600  23.875500  20.714097        0.8       4864   1.000000
-    16.753600  23.875500  20.751836        0.9       4954   1.000000
-    16.753600  23.875500  20.721183        1.0       5070   1.000000
+      5.788530   8.249250   7.149762        0.1        230   1.000000
+      5.788530   8.249250   7.158884        0.2        236   1.000000
+      5.788530   8.249250   7.153403        0.3        210   1.000000
+      5.788530   8.249250   7.091504        0.4        254   1.000000
+      5.788530   8.249250   7.216417        0.5        182   1.000000
+      5.788530   8.249250   7.120980        0.6        222   1.000000
+      5.788530   8.249250   7.086361        0.7        238   1.000000
+      5.788530   8.249250   7.199075        0.8        170   1.000000
+      5.788530   8.249250   7.128768        0.9        208   1.000000
+      5.788530   8.249250   6.973382        1.0        206   1.000000
+      8.249250  11.756000  10.147488        0.1        590   1.000000
+      8.249250  11.756000  10.216417        0.2        634   1.000000
+      8.249250  11.756000  10.195979        0.3        532   1.000000
+      8.249250  11.756000  10.248775        0.4        544   1.000000
+      8.249250  11.756000  10.091439        0.5        530   1.000000
+      8.249250  11.756000  10.282170        0.6        642   1.000000
+      8.249250  11.756000  10.245368        0.7        666   1.000000
+      8.249250  11.756000  10.139694        0.8        680   1.000000
+      8.249250  11.756000  10.190839        0.9        566   1.000000
+      8.249250  11.756000  10.241730        1.0        606   1.000000
+     11.756000  16.753600  14.553911        0.1       1736   1.000000
+     11.756000  16.753600  14.576144        0.2       1800   1.000000
+     11.756000  16.753600  14.595632        0.3       1798   1.000000
+     11.756000  16.753600  14.477071        0.4       1820   1.000000
+     11.756000  16.753600  14.479887        0.5       1740   1.000000
+     11.756000  16.753600  14.492835        0.6       1748   1.000000
+     11.756000  16.753600  14.546800        0.7       1720   1.000000
+     11.756000  16.753600  14.467235        0.8       1750   1.000000
+     11.756000  16.753600  14.541123        0.9       1798   1.000000
+     11.756000  16.753600  14.445188        1.0       1826   1.000000
+     16.753600  23.875500  20.722545        0.1       5088   1.000000
+     16.753600  23.875500  20.730212        0.2       5000   1.000000
+     16.753600  23.875500  20.717056        0.3       5166   1.000000
+     16.753600  23.875500  20.727119        0.4       5014   1.000000
+     16.753600  23.875500  20.654365        0.5       5094   1.000000
+     16.753600  23.875500  20.695877        0.6       5082   1.000000
+     16.753600  23.875500  20.729774        0.7       4900   1.000000
+     16.753600  23.875500  20.718821        0.8       4874   1.000000
+     16.753600  23.875500  20.750061        0.9       4946   1.000000
+     16.753600  23.875500  20.723266        1.0       5066   1.000000
+
     """
     try:
         from Corrfunc._countpairs import countpairs_s_mu as DDsmu_extn
@@ -277,6 +282,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
             msg = "Must pass valid arrays for X2/Y2/Z2 for "\
                 "computing cross-correlation"
             raise ValueError(msg)
+
+    if periodic and boxsize is None:
+        raise ValueError("Must specify a boxsize if periodic=True")
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 

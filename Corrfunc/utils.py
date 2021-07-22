@@ -96,28 +96,29 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
     >>> nbins = 10
     >>> bins = np.linspace(rmin, rmax, nbins + 1)
     >>> autocorr = 1
-    >>> DD_counts = DD(autocorr, nthreads, bins, X, Y, Z)
+    >>> DD_counts = DD(autocorr, nthreads, bins, X, Y, Z, boxsize=boxsize)
     >>> autocorr = 0
     >>> DR_counts = DD(autocorr, nthreads, bins,
     ...                X, Y, Z,
-    ...                X2=rand_X, Y2=rand_Y, Z2=rand_Z)
+    ...                X2=rand_X, Y2=rand_Y, Z2=rand_Z, boxsize=boxsize)
     >>> autocorr = 1
-    >>> RR_counts = DD(autocorr, nthreads, bins, rand_X, rand_Y, rand_Z)
+    >>> RR_counts = DD(autocorr, nthreads, bins, rand_X, rand_Y, rand_Z,
+    ...                boxsize=boxsize)
     >>> cf = convert_3d_counts_to_cf(N, N, rand_N, rand_N,
     ...                              DD_counts, DR_counts,
     ...                              DR_counts, RR_counts)
     >>> for xi in cf: print("{0:10.6f}".format(xi))
     ...                    # doctest: +NORMALIZE_WHITESPACE
-    22.769019
-     3.612709
-     1.621372
-     1.000969
-     0.691646
-     0.511819
-     0.398872
-     0.318815
-     0.255643
-     0.207759
+     22.769060
+      3.612701
+      1.621368
+      1.000967
+      0.691637
+      0.511813
+      0.398869
+      0.318813
+      0.255639
+      0.207754
 
     """
 
@@ -247,40 +248,40 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     >>> bins = np.linspace(rpmin, rpmax, nrpbins + 1)
     >>> autocorr = 1
     >>> DD_counts = DDrppi(autocorr, nthreads, pimax, bins,
-    ...                    X, Y, Z)
+    ...                    X, Y, Z, boxsize=boxsize)
     >>> autocorr = 0
     >>> DR_counts = DDrppi(autocorr, nthreads, pimax, bins,
     ...                    X, Y, Z,
-    ...                    X2=rand_X, Y2=rand_Y, Z2=rand_Z)
+    ...                    X2=rand_X, Y2=rand_Y, Z2=rand_Z, boxsize=boxsize)
     >>> autocorr = 1
     >>> RR_counts = DDrppi(autocorr, nthreads, pimax, bins,
-    ...                    rand_X, rand_Y, rand_Z)
+    ...                    rand_X, rand_Y, rand_Z, boxsize=boxsize)
     >>> wp = convert_rp_pi_counts_to_wp(N, N, rand_N, rand_N,
     ...                                 DD_counts, DR_counts,
     ...                                 DR_counts, RR_counts,
     ...                                 nrpbins, pimax)
     >>> for w in wp: print("{0:10.6f}".format(w))
     ...                    # doctest: +NORMALIZE_WHITESPACE
-    187.592199
-     83.059181
-     53.200599
-     40.389354
-     33.356371
-     29.045476
-     26.088133
-     23.628340
-     21.703961
-     20.153125
-     18.724781
-     17.433235
-     16.287183
-     15.443230
-     14.436193
-     13.592727
-     12.921226
-     12.330074
-     11.696364
-     11.208365
+    187.591897
+     83.059026
+     53.200243
+     40.389026
+     33.355778
+     29.044893
+     26.087995
+     23.627759
+     21.703655
+     20.152961
+     18.724304
+     17.432795
+     16.286740
+     15.443105
+     14.435802
+     13.592479
+     12.920796
+     12.329687
+     11.696258
+     11.208016
 
     """
 
