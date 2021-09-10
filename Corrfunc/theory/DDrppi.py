@@ -279,7 +279,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
-    for k in ['weights1', 'weights2', 'weight_type', 'X2', 'Y2', 'Z2', 'boxsize']:
+    for k in ['weights1', 'weights2', 'weight_type',
+              'X2', 'Y2', 'Z2', 'boxsize']:
         v = locals()[k]
         if v is not None:
             kwargs[k] = v
