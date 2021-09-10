@@ -200,8 +200,12 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         msg = "Number of counts-in-cells wanted must be at least 1"
         raise ValueError(msg)
 
-    if periodic and boxsize is None:
-        raise ValueError("Must specify a boxsize if periodic=True")
+    kwargs = {}
+    if boxsize is None:
+        if periodic:
+            raise ValueError("Must specify a boxsize if periodic=True")
+    else:
+        kwargs['boxsize'] = boxsize
 
     # Ensure all input arrays are native endian
     X, Y, Z = [convert_to_native_endian(arr, warn=True)
@@ -216,14 +220,14 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
                               X, Y, Z,
                               verbose=verbose,
                               periodic=periodic,
-                              boxsize=boxsize,
                               xbin_refine_factor=xbin_refine_factor,
                               ybin_refine_factor=ybin_refine_factor,
                               zbin_refine_factor=zbin_refine_factor,
                               max_cells_per_dim=max_cells_per_dim,
                               copy_particles=copy_particles,
                               c_api_timer=c_api_timer,
-                              isa=integer_isa)
+                              isa=integer_isa,
+                              **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
