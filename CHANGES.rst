@@ -35,6 +35,7 @@ Enhancements
 Bug fixes
 ---------
 - Fix Python reference leak to results struct [#229]
+- Fix parsing error when ``periodic=False`` and ``boxsize`` not given in the theory module [#257]
 
 
 2.3.4 (2019-07-21)
