@@ -200,11 +200,11 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
         msg = "Number of counts-in-cells wanted must be at least 1"
         raise ValueError(msg)
 
+    if periodic and boxsize is None:
+        raise ValueError("Must specify a boxsize if periodic=True")
+        
     kwargs = {}
-    if boxsize is None:
-        if periodic:
-            raise ValueError("Must specify a boxsize if periodic=True")
-    else:
+    if boxsize is not None:
         kwargs['boxsize'] = boxsize
 
     # Ensure all input arrays are native endian
