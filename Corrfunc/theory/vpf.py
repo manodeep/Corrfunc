@@ -202,7 +202,7 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
 
     if periodic and boxsize is None:
         raise ValueError("Must specify a boxsize if periodic=True")
-        
+
     kwargs = {}
     if boxsize is not None:
         kwargs['boxsize'] = boxsize
