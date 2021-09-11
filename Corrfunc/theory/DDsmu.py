@@ -295,7 +295,8 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
-    for k in ['weights1', 'weights2', 'weight_type', 'X2', 'Y2', 'Z2']:
+    for k in ['weights1', 'weights2', 'weight_type',
+              'X2', 'Y2', 'Z2', 'boxsize']:
         v = locals()[k]
         if v is not None:
             kwargs[k] = v
@@ -309,7 +310,6 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
                                   X1, Y1, Z1,
                                   periodic=periodic,
                                   verbose=verbose,
-                                  boxsize=boxsize,
                                   output_savg=output_savg,
                                   fast_divide_and_NR_steps=fast_divide_and_NR_steps,
                                   xbin_refine_factor=xbin_refine_factor,

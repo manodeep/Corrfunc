@@ -228,7 +228,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     # Passing None parameters breaks the parsing code, so avoid this
     kwargs = {}
-    for k in ['weights1', 'weights2', 'weight_type', 'X2', 'Y2', 'Z2']:
+    for k in ['weights1', 'weights2', 'weight_type',
+              'X2', 'Y2', 'Z2', 'boxsize']:
         v = locals()[k]
         if v is not None:
             kwargs[k] = v
@@ -241,7 +242,6 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
                               X1, Y1, Z1,
                               periodic=periodic,
                               verbose=verbose,
-                              boxsize=boxsize,
                               output_ravg=output_ravg,
                               xbin_refine_factor=xbin_refine_factor,
                               ybin_refine_factor=ybin_refine_factor,
