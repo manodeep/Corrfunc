@@ -548,7 +548,7 @@ def translate_bin_type_string_to_enum(bin_type):
     except NameError:
         if not isinstance(bin_type, str):
             raise TypeError(msg)
-    valid_bin_type = ['AUTO','CUSTOM','LIN']
+    valid_bin_type = ['AUTO', 'CUSTOM', 'LIN']
     bin_type_upper = bin_type.upper()
     if bin_type_upper not in valid_bin_type:
         msg = "Desired bin type = {0} is not in the list of valid "\

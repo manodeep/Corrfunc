@@ -22,7 +22,8 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
                 xbin_refine_factor=2, ybin_refine_factor=2,
                 zbin_refine_factor=1, max_cells_per_dim=100,
                 copy_particles=True, enable_min_sep_opt=True,
-                c_api_timer=False, isa='fastest', weight_type=None, bin_type=r'auto'):
+                c_api_timer=False, isa='fastest',
+                weight_type=None, bin_type=r'auto'):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
     function, :math:`\\xi(s, \mu)`. The pairs are counted in bins of

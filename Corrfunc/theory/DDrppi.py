@@ -20,7 +20,8 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
            xbin_refine_factor=2, ybin_refine_factor=2,
            zbin_refine_factor=1, max_cells_per_dim=100,
            copy_particles=True, enable_min_sep_opt=True,
-           c_api_timer=False, isa=r'fastest', weight_type=None, bin_type=r'auto'):
+           c_api_timer=False, isa=r'fastest',
+           weight_type=None, bin_type=r'auto'):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r_p, \pi)` or :math:`\\wp(r_p)`. Pairs which are
