@@ -18,7 +18,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
        copy_particles=True, enable_min_sep_opt=True,
-       c_api_timer=False, isa=r'fastest', weight_type=None):
+       c_api_timer=False, isa=r'fastest', weight_type=None, bin_type=r'auto'):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
@@ -70,7 +70,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
-        
+
     boxsize: double, required if ``periodic=True``
         The side-length of the cube in the cosmological simulation.
         Present to facilitate exact calculations for periodic wrapping.
@@ -140,6 +140,11 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     weight_type: string, optional. Default: None.
         The type of weighting to apply.  One of ["pair_product", None].
 
+    bin_type : string, case-insensitive (default ``auto``)
+        If bins in ``binfile`` are linearly-spaced, set to ``lin`` for speed-up.
+        Else, set to ``custom``.
+        ``auto`` allows for auto-detection of the binning type.
+
     Returns
     --------
 
@@ -205,7 +210,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
         raise ImportError(msg)
 
     import numpy as np
-    from Corrfunc.utils import translate_isa_string_to_enum,\
+    from Corrfunc.utils import translate_isa_string_to_enum, translate_bin_type_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
         sys_pipes, process_weights
     from future.utils import bytes_to_native_str
@@ -235,6 +240,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
             kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
+    integer_bin_type = translate_bin_type_string_to_enum(bin_type)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
 
     with sys_pipes():
@@ -250,7 +256,8 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
                               copy_particles=copy_particles,
                               enable_min_sep_opt=enable_min_sep_opt,
                               c_api_timer=c_api_timer,
-                              isa=integer_isa, **kwargs)
+                              isa=integer_isa,
+                              bin_type=integer_bin_type, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)

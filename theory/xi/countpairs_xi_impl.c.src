@@ -203,7 +203,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     double *rupp;
     int nbins;
     double rmin,rmax;
-    setup_bins(binfile,&rmin,&rmax,&nbins,&rupp);
+    setup_bins(binfile,&rmin,&rmax,&nbins,&rupp,&(options->bin_type));
     if( ! (rmin >= 0.0 && rmax > 0.0 && rmin < rmax && nbins > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rmin, rmax, nbins);
@@ -410,7 +410,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                                                       this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                       this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                       this_rpavg, npairs,
-                                                      this_weightavg, extra->weight_method);
+                                                      this_weightavg, extra->weight_method, options->bin_type);
 
                 /* This actually causes a race condition under OpenMP - but mostly
                    I care that an error occurred - rather than the exact value of

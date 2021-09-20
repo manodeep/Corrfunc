@@ -31,6 +31,7 @@
 
 #include "macros.h"
 #include "utils.h"
+#include "defs.h"
 
 #ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
 #include <mach/mach_time.h> /* mach_absolute_time -> really fast */
@@ -58,8 +59,53 @@ void get_max_double(const int64_t ND1, const double *cz1, double *czmax)
     *czmax = max;
 }
 
+static int setup_bin_type_float(const float *rupp, int nbin, uint8_t *bin_type)
+{
+    // bin_type = 0: automatic detection
+    // bin_type = 1: linear
+    // bin_type = 2: custom
+    if (*bin_type == 0) {
+        // if linear spacing, return 1, else 0
+        const float atol = 1e-12;
+        const float rtol = 1e-12;
+        float rmin = rupp[0];
+        float rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
+        *bin_type = 1;
+        for (int ii=1; ii<nbin; ii++) {
+            float pred = rmin + rstep*ii;
+            if ((fabsf(rupp[ii] - pred) > atol)||(fabsf((rupp[ii] - pred)/pred) > rtol)) {
+                *bin_type = 2;
+                break;
+            }
+        }
+    }
+    return EXIT_SUCCESS;
+}
 
-int setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)
+static int setup_bin_type_double(const double *rupp, int nbin, uint8_t *bin_type)
+{
+    // bin_type = 0: automatic detection
+    // bin_type = 1: linear
+    // bin_type = 2: custom
+    if (*bin_type == 0) {
+        // if linear spacing, return 1, else 0
+        const double atol = 1e-12;
+        const double rtol = 1e-12;
+        double rmin = rupp[0];
+        double rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
+        *bin_type = 1;
+        for (int ii=1; ii<nbin; ii++) {
+            double pred = rmin + rstep*ii;
+            if ((fabs(rupp[ii] - pred) > atol)||(fabs((rupp[ii] - pred)/pred) > rtol)) {
+                *bin_type = 2;
+                break;
+            }
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, uint8_t *bin_type)
 {
     //set up the bins according to the binned data file
     //the form of the data file should be <rlow  rhigh ....>
@@ -98,16 +144,15 @@ int setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **ru
     }
     *rmax = (*rupp)[index-1];
     fclose(fp);
+    setup_bin_type_double(*rupp, *nbin, bin_type);
 
-    (*rupp)[*nbin]=*rmax ;
-    (*rupp)[*nbin-1]=*rmax ;
+    (*rupp)[*nbin] = *rmax;
+    (*rupp)[*nbin-1] = *rmax;
 
     return EXIT_SUCCESS;
 }
 
-
-
-int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp)
+int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, uint8_t *bin_type)
 {
     //set up the bins according to the binned data file
     //the form of the data file should be <rlow  rhigh ....>
@@ -144,14 +189,15 @@ int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,doub
     }
     *rmax = (*rupp)[index-1];
     fclose(fp);
+    setup_bin_type_double(*rupp, *nbin, bin_type);
 
-    (*rupp)[*nbin]=*rmax ;
-    (*rupp)[*nbin-1]=*rmax ;
+    (*rupp)[*nbin] = *rmax;
+    (*rupp)[*nbin-1] = *rmax;
 
     return EXIT_SUCCESS;
 }
 
-int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float **rupp)
+int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp, uint8_t *bin_type)
 {
     //set up the bins according to the binned data file
     //the form of the data file should be <rlow  rhigh ....>
@@ -189,9 +235,10 @@ int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float *
     }
     *rmax = (*rupp)[index-1];
     fclose(fp);
+    setup_bin_type_float(*rupp, *nbin, bin_type);
 
-    (*rupp)[*nbin]=*rmax ;
-    (*rupp)[*nbin-1]=*rmax ;
+    (*rupp)[*nbin] =* rmax;
+    (*rupp)[*nbin-1] =* rmax;
 
     return EXIT_SUCCESS;
 }
@@ -199,7 +246,7 @@ int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float *
 
 int run_system_call(const char *execstring)
 {
-    int status=system(execstring);
+    int status = system(execstring);
     if(status != EXIT_SUCCESS) {
         fprintf(stderr,"ERROR: executing system command: \n`%s'\n\n",execstring);
         perror(NULL);
@@ -862,13 +909,13 @@ void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
     if (N <= 0){
         return;  // nothing to do
     }
-    
+
     #ifdef _OPENMP
     int nthreads = omp_get_max_threads();
     #else
     int nthreads = 1;
     #endif
-    
+
     // We will heuristically limit the number of threads
     // if there isn't enough work for multithreading to be efficient.
     // This is also important for the correctness of the algorithm below,
@@ -880,7 +927,7 @@ void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
     if(nthreads < 1){
         nthreads = 1;
     }
-    
+
     #ifdef _OPENMP
     #pragma omp parallel num_threads(nthreads)
     #endif
@@ -890,27 +937,27 @@ void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
         #else
         int tid = 0;
         #endif
-        
+
         int64_t cstart = N*tid/nthreads;
         int64_t cend = N*(tid+1)/nthreads;
         cumsum[cstart] = cstart > 0 ? a[cstart-1] : 0;
         for(int64_t c = cstart+1; c < cend; c++){
             cumsum[c] = a[c-1] + cumsum[c-1];
         }
-        
+
         #ifdef _OPENMP
         #pragma omp barrier
         #endif
-        
+
         int64_t offset = 0;
         for(int t = 0; t < tid; t++){
             offset += cumsum[N*(t+1)/nthreads-1];
         }
-        
+
         #ifdef _OPENMP
         #pragma omp barrier
         #endif
-        
+
         if(offset != 0){
             for(int64_t c = cstart; c < cend; c++){
                 cumsum[c] += offset;

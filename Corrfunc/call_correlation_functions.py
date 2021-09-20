@@ -11,22 +11,21 @@ in :py:mod:`Corrfunc.theory`.
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from os.path import dirname, abspath, join as pjoin
-import time
-import numpy as np
-
-import Corrfunc
-from Corrfunc.io import read_catalog
-from Corrfunc._countpairs import\
-    countpairs as DD_extn,\
-    countpairs_rp_pi as DDrppi_extn,\
-    countpairs_wp as wp_extn,\
-    countpairs_xi as xi_extn,\
-    countspheres_vpf as vpf_extn,\
-    countpairs_s_mu as DDsmu_extn
-
 
 def main():
+    from os.path import dirname, abspath, join as pjoin
+    import time
+    import numpy as np
+    import Corrfunc
+    from Corrfunc.io import read_catalog
+    from Corrfunc._countpairs import\
+        countpairs as DD_extn,\
+        countpairs_rp_pi as DDrppi_extn,\
+        countpairs_wp as wp_extn,\
+        countpairs_xi as xi_extn,\
+        countspheres_vpf as vpf_extn,\
+        countpairs_s_mu as DDsmu_extn
+
     tstart = time.time()
     t0 = tstart
     x, y, z = read_catalog()

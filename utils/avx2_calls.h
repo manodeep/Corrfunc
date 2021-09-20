@@ -16,7 +16,7 @@
 extern "C" {
 #endif
 
-#include "function_precision.h" 
+#include "function_precision.h"
 
 #define PREFETCH(mem)        asm ("prefetcht0 %0"::"m"(mem))
 
@@ -33,8 +33,8 @@ extern "C" {
 
 #ifndef DOUBLE_PREC
 
-#define DOUBLE                           float  
-#define AVX2_NVEC                         8    
+#define DOUBLE                           float
+#define AVX2_NVEC                         8
 #define AVX2_INTS                         __m256i
 #define AVX2_FLOATS                       __m256
 
@@ -44,12 +44,12 @@ extern "C" {
 #define AVX2_MULTIPLY_FLOATS(X,Y)         _mm256_mul_ps(X,Y)
 #define AVX2_DIVIDE_FLOATS(X,Y)           _mm256_div_ps(X,Y)
 #define AVX2_SUBTRACT_FLOATS(X,Y)         _mm256_sub_ps(X,Y)
-#if defined(__FMA__) 
+#if defined(__FMA__)
 #define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_fmadd_ps(X,Y,Z)
 #elif defined(__FMA4__) /* on AMD cpus with FMA4 */
 #define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_macc_ps(X,Y,Z)
 #else
-#error Can not detect applicable FMA instruction 
+#error Can not detect applicable FMA instruction
 #endif
 
 #define AVX2_ADD_FLOATS(X,Y)              _mm256_add_ps(X,Y)
@@ -63,6 +63,7 @@ extern "C" {
 #define AVX2_LOG10_FLOAT(X)                 _mm256_log10_ps(X)
 #define AVX2_LOG2_FLOAT(X)                _mm256_log2_ps(X)
 #define AVX2_RECIPROCAL_FLOATS(X)         _mm256_rcp_ps(X)
+#define AVX2_CONVERT_INT_TO_FLOAT(X)      _mm256_cvtepi32_ps(X)
 
 #define AVX2_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X)
 #define AVX2_SET_FLOAT(X)                 _mm256_set1_ps(X)
@@ -97,7 +98,7 @@ extern "C" {
 
   //Absolute value
 #define AVX2_ABS_FLOAT(X)                  _mm256_max_ps(_mm256_sub_ps(_mm256_setzero_ps(), X), X)
-  
+
     //Casting (does not actual convert between types)
 #define AVX2_CAST_FLOAT_TO_INT(X)          _mm256_castps_si256(X)
 #define AVX2_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_ps(X)
@@ -107,13 +108,13 @@ extern "C" {
 #define AVX2_STREAMING_STORE_INTS(X,Y)     _mm256_stream_si256(X,Y)
 
 #else //DOUBLE PRECISION CALCULATIONS
-  
+
 #define DOUBLE                           double
-#define AVX2_NVEC                         4    
+#define AVX2_NVEC                         4
 #define AVX2_INTS                         __m128i
 #define AVX2_FLOATS                       __m256d
 
-#define AVX2_SETZERO_FLOAT()              _mm256_setzero_pd()    
+#define AVX2_SETZERO_FLOAT()              _mm256_setzero_pd()
 #define AVX2_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_pd(X)
 #define AVX2_LOAD_FLOATS_ALIGNED(X)       _mm256_load_pd(X)
 #define AVX2_MULTIPLY_FLOATS(X,Y)         _mm256_mul_pd(X,Y)
@@ -121,12 +122,12 @@ extern "C" {
 #define AVX2_SUBTRACT_FLOATS(X,Y)         _mm256_sub_pd(X,Y)
 #define AVX2_ADD_FLOATS(X,Y)              _mm256_add_pd(X,Y)
 
-#if defined(__FMA__) 
+#if defined(__FMA__)
 #define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_fmadd_pd(X,Y,Z)
 #elif defined(__FMA4__)
 #define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_macc_pd(X,Y,Z)
 #else
-#error Can not detect applicable FMA instruction 
+#error Can not detect applicable FMA instruction
 #endif
 
 #define AVX2_SQRT_FLOAT(X)                _mm256_sqrt_pd(X)
@@ -138,6 +139,7 @@ extern "C" {
 #define AVX2_LOG2_FLOAT(X)                _mm256_log2_pd(X)
 #define AVX2_LOG10_FLOAT(X)                _mm256_log10_pd(X)
 #define AVX2_RECIPROCAL_FLOATS(X)         _mm256_rcp_pd(X)
+#define AVX2_CONVERT_INT_TO_FLOAT(X)      _mm256_cvtepi32_pd(X)
 
     // X OP Y
 #define AVX2_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_pd(X,Y,OP)
@@ -170,7 +172,7 @@ extern "C" {
 
 //Absolute value
 #define AVX2_ABS_FLOAT(X)                  _mm256_max_pd(_mm256_sub_pd(_mm256_setzero_pd(), X), X)
-  
+
     //Casting (does not actual convert between types)
 #define AVX2_CAST_FLOAT_TO_INT(X)          _mm256_castpd_si256(X)
 #define AVX2_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_pd(X)

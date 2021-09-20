@@ -1180,11 +1180,12 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
         "weight_type",
+        "bin_type",
         NULL
     };
 
     // Note: type 'O!' doesn't allow for None to be passed, which we might want to do.
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|O!O!O!O!O!bbdbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|O!O!O!O!O!bbdbbbbhbbbisI", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1204,7 +1205,8 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
-                                       &weighting_method_str)
+                                       &weighting_method_str,
+                                       &(options.bin_type))
 
          ) {
 
@@ -1484,10 +1486,11 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
         "weight_type",
+        "bin_type",
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iidsO!O!O!|O!O!O!O!O!bbdbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iidsO!O!O!|O!O!O!O!O!bbdbbbbhbbbisI", kwlist,
                                        &autocorr,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1507,7 +1510,8 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
-                                       &weighting_method_str)
+                                       &weighting_method_str,
+                                       &(options.bin_type))
 
          ) {
         PyObject_Print(kwargs, stdout, 0);
@@ -1779,10 +1783,11 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
         "c_api_timer",
         "c_cell_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
+        "bin_type",
         NULL
     };
 
-    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|O!sbbbbbhbbbbi", kwlist,
+    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "ddisO!O!O!|O!sbbbbbhbbbbiI", kwlist,
                                       &boxsize,&pimax,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
@@ -1797,7 +1802,8 @@ static PyObject *countpairs_countpairs_wp(PyObject *self, PyObject *args, PyObje
                                       &(options.enable_min_sep_opt),
                                       &(options.c_api_timer),
                                       &(options.c_cell_timer),
-                                      &(options.instruction_set))
+                                      &(options.instruction_set),
+                                      &(options.bin_type))
 
         ){
         PyObject_Print(kwargs, stdout, 0);
@@ -2019,11 +2025,12 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
         "enable_min_sep_opt",
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
+        "bin_type",
         NULL
     };
 
 
-    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|O!sbbbbbhbbbi", kwlist,
+    if( ! PyArg_ParseTupleAndKeywords(args, kwargs, "disO!O!O!|O!sbbbbbhbbbiI", kwlist,
                                       &boxsize,&nthreads,&binfile,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
@@ -2037,7 +2044,8 @@ static PyObject *countpairs_countpairs_xi(PyObject *self, PyObject *args, PyObje
                                       &(options.copy_particles),
                                       &(options.enable_min_sep_opt),
                                       &(options.c_api_timer),
-                                      &(options.instruction_set))
+                                      &(options.instruction_set),
+                                      &(options.bin_type))
         ) {
 
         PyObject_Print(kwargs, stdout, 0);
@@ -2256,10 +2264,11 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
         "weight_type",
+        "bin_type",
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisdiO!O!O!|O!O!O!O!O!bbdbbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisdiO!O!O!|O!O!O!O!O!bbdbbbbbhbbbisI", kwlist,
                                        &autocorr,&nthreads,&binfile, &mu_max, &nmu_bins,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -2280,7 +2289,8 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
-                                       &weighting_method_str)
+                                       &weighting_method_str,
+                                       &(options.bin_type))
 
          ) {
         PyObject_Print(kwargs, stdout, 0);

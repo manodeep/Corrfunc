@@ -56,16 +56,16 @@ void volume_free(void ***v,int64_t nrow,int64_t ncol);
 
 extern int run_system_call(const char *execstring);
 
-extern int setup_bins(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
-extern int setup_bins_double(const char *fname,double *rmin,double *rmax,int *nbin,double **rupp);
-extern int setup_bins_float(const char *fname,float *rmin,float *rmax,int *nbin,float **rupp);
+extern int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, uint8_t *bin_type);
+extern int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, uint8_t *bin_type);
+extern int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp, uint8_t *bin_type);
 
 extern int test_all_files_present(const int nfiles, ...);
 
 /* Floating point comparison utilities */
 extern int AlmostEqualRelativeAndAbs_float(float A, float B, const float maxDiff, const float maxRelDiff);
 extern int AlmostEqualRelativeAndAbs_double(double A, double B, const double maxDiff, const double maxRelDiff);
-    
+
 extern void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum);
 
 //end function declarations

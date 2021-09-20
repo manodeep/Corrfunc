@@ -275,8 +275,8 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
         raise ImportError(msg)
 
     import numpy as np
-    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
-        return_file_with_rbins, convert_to_native_endian,\
+    from Corrfunc.utils import translate_isa_string_to_enum,\
+        fix_ra_dec, return_file_with_rbins, convert_to_native_endian,\
         sys_pipes, process_weights
     from future.utils import bytes_to_native_str
 

@@ -23,7 +23,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                  xbin_refine_factor=2, ybin_refine_factor=2,
                  zbin_refine_factor=1, max_cells_per_dim=100,
                  copy_particles=True, enable_min_sep_opt=True,
-                 c_api_timer=False, isa=r'fastest', weight_type=None):
+                 c_api_timer=False, isa=r'fastest', weight_type=None, bin_type=r'auto'):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
     function, :math:`\\xi(r_p, \pi)`. Pairs which are separated by less
@@ -83,7 +83,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         along the ``pi`` direction. Only pairs with ``0 <= dz < pimax``
         are counted (no equality).
 
-    binfile: string or an list/array of floats
+    binfile : string or an list/array of floats
         For string input: filename specifying the ``rp`` bins for
         ``DDrppi_mocks``. The file should contain white-space separated values
         of (rpmin, rpmax)  for each ``rp`` wanted. The bins need to be
@@ -219,6 +219,11 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
     weight_type : string, optional (default None)
         The type of weighting to apply.  One of ["pair_product", None].
 
+    bin_type : string, case-insensitive (default ``auto``)
+        If bins in ``binfile`` are linearly-spaced, set to ``lin`` for speed-up.
+        Else, set to ``custom``.
+        ``auto`` allows for auto-detection of the binning type.
+
     Returns
     --------
 
@@ -326,8 +331,8 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         raise ImportError(msg)
 
     import numpy as np
-    from Corrfunc.utils import translate_isa_string_to_enum, fix_ra_dec,\
-        return_file_with_rbins, convert_to_native_endian,\
+    from Corrfunc.utils import translate_isa_string_to_enum, translate_bin_type_string_to_enum,\
+        fix_ra_dec, return_file_with_rbins, convert_to_native_endian,\
         sys_pipes, process_weights
     from future.utils import bytes_to_native_str
 
@@ -360,6 +365,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
             kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
+    integer_bin_type = translate_bin_type_string_to_enum(bin_type)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     with sys_pipes():
         extn_results = DDrppi_extn(autocorr, cosmology, nthreads,
@@ -376,7 +382,8 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                                    copy_particles=copy_particles,
                                    enable_min_sep_opt=enable_min_sep_opt,
                                    c_api_timer=c_api_timer,
-                                   isa=integer_isa, **kwargs)
+                                   isa=integer_isa,
+                                   bin_type=integer_bin_type, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)

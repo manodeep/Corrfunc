@@ -176,7 +176,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
         fprintf(stderr,"Warning: Max. cells per dimension is set to 0 - resetting to `NLATMAX' = %d\n", NLATMAX);
         options->max_cells_per_dim = NLATMAX;
     }
-    
+
     for(int i=0;i<3;i++) {
         if(options->bin_refine_factors[i] < 1) {
             fprintf(stderr,"Warning: bin refine factor along axis = %d *must* be >=1. Instead found bin refine factor =%d\n",
@@ -198,7 +198,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
     double *rupp=NULL;
     int nrpbin ;
     double rpmin,rpmax;
-    setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
+    setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp,&(options->bin_type));
     if( ! (rpmin >=0.0 && rpmax > 0.0 && rpmin < rpmax && nrpbin > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). "
                 "Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
@@ -472,7 +472,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                                                               this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                               this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                               this_rpavg, npairs,
-                                                              this_weightavg, extra->weight_method);
+                                                              this_weightavg, extra->weight_method, options->bin_type);
                 /* This actually causes a race condition under OpenMP - but mostly
                    I care that an error occurred - rather than the exact value of
                    the error status */

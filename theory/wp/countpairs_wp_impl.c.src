@@ -218,7 +218,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     double *rupp;
     double rpmin,rpmax;
     int nrpbins;
-    setup_bins(binfile,&rpmin,&rpmax,&nrpbins,&rupp);
+    setup_bins(binfile,&rpmin,&rpmax,&nrpbins,&rupp,&(options->bin_type));
     if( ! (rpmin >=0 && rpmax > 0.0 && rpmin < rpmax && nrpbins > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rpmin, rpmax, nrpbins);
@@ -435,15 +435,15 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                 const cellarray_DOUBLE *first = &lattice[icell];
                 const cellarray_DOUBLE *second = &lattice[icell2];
 
-                const int status = wp_function_DOUBLE(first->x, first->y, first->z, &(first->weights), first->nelements, 
-                                                      second->x, second->y, second->z, &(second->weights), second->nelements, 
+                const int status = wp_function_DOUBLE(first->x, first->y, first->z, &(first->weights), first->nelements,
+                                                      second->x, second->y, second->z, &(second->weights), second->nelements,
                                                       this_cell_pair->same_cell,
                                                       sqr_rpmax, sqr_rpmin, nrpbins, rupp_sqr, pimax,
                                                       this_cell_pair->xwrap, this_cell_pair->ywrap, this_cell_pair->zwrap,
                                                       this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                       this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                       this_rpavg, npairs,
-                                                      this_weightavg, extra->weight_method);
+                                                      this_weightavg, extra->weight_method, options->bin_type);
 
                 /* This actually causes a race condition under OpenMP - but mostly
                    I care that an error occurred - rather than the exact value of

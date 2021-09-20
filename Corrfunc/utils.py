@@ -14,8 +14,8 @@ import wurlitzer
 from contextlib import contextmanager
 
 __all__ = ['convert_3d_counts_to_cf', 'convert_rp_pi_counts_to_wp',
-           'translate_isa_string_to_enum', 'return_file_with_rbins',
-           'fix_ra_dec', 'fix_cz', 'compute_nbins', 'gridlink_sphere', ]
+           'translate_isa_string_to_enum', 'translate_bin_type_string_to_enum',
+            'return_file_with_rbins', 'fix_ra_dec', 'fix_cz', 'compute_nbins', 'gridlink_sphere', ]
 if sys.version_info[0] < 3:
     __all__ = [n.encode('ascii') for n in __all__]
 
@@ -515,6 +515,55 @@ def translate_isa_string_to_enum(isa):
     except KeyError:
         print("Do not know instruction type = {0}".format(isa))
         print("Valid instructions are {0}".format(enums.keys()))
+        raise
+
+
+def translate_bin_type_string_to_enum(bin_type):
+    """
+    Helper function to convert an user-supplied string to the
+    underlying enum in the C-API. The extensions only have specific
+    implementations for AUTO and LIN. Any other
+    value will raise a ValueError.
+
+    Parameters
+    ------------
+    bin_type: string
+       A string containing the desired instruction set. Valid values are
+       ['AUTO','CUSTOM','LIN']
+
+    Returns
+    --------
+    bin_type: integer
+       An integer corresponding to the desired bin type, as used in the
+       underlying C API. The enum used here should be defined *exactly* the
+       same way as the enum in ``utils/defs.h``.
+
+    """
+
+    msg = "Input to translate_bin_type_string_to_enum must be "\
+          "of string type. Found type = {0}".format(type(bin_type))
+    try:
+        if not isinstance(bin_type, basestring):
+            raise TypeError(msg)
+    except NameError:
+        if not isinstance(bin_type, str):
+            raise TypeError(msg)
+    valid_bin_type = ['AUTO','CUSTOM','LIN']
+    bin_type_upper = bin_type.upper()
+    if bin_type_upper not in valid_bin_type:
+        msg = "Desired bin type = {0} is not in the list of valid "\
+              "bin types = {1}".format(bin_type, valid_bin_type)
+        raise ValueError(msg)
+
+    enums = {'AUTO': 0,
+             'LIN': 1,
+             'CUSTOM': 2,
+             }
+    try:
+        return enums[bin_type_upper]
+    except KeyError:
+        print("Do not know bin type = {0}".format(bin_type))
+        print("Valid bin types are {0}".format(enums.keys()))
         raise
 
 

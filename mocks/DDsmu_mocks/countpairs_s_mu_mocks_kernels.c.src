@@ -34,7 +34,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                                                                  const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                                                  const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                                                  DOUBLE *src_savg,
-                                                                 uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                                 uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method, uint8_t bin_type)
 {
 
     if(N0 == 0 || N1 == 0) {
@@ -47,6 +47,15 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
 
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
+    DOUBLE sstep=0, smin=0;
+    AVX512_FLOATS m_sstep = AVX512_SETZERO_FLOAT();
+    AVX512_FLOATS m_smin = AVX512_SETZERO_FLOAT();
+    if (bin_type == 1) {
+        sstep = (SQRT(sqr_smax) - SQRT(sqr_smin))/(nsbin - 1);
+        smin = SQRT(sqr_smin) - sstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_sstep = AVX512_SET_FLOAT(sstep);
+        m_smin = AVX512_SET_FLOAT(smin);
+    }
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     const DOUBLE sqr_mumax = mu_max*mu_max;
@@ -276,16 +285,26 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
             }
 
             const AVX512_MASK m_mask = m_mask_left;
-            AVX512_FLOATS m_sbin     = AVX512_SETZERO_FLOAT();
-            for(int kbin=nsbin-1;kbin>=1;kbin--) {
-                const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_s, m_supp_sqr[kbin-1],_CMP_GE_OQ);
-                m_sbin = AVX512_BLEND_FLOATS_WITH_MASK(m_bin_mask, m_sbin, AVX512_SET_FLOAT(kbin));
-                m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
-                if(m_mask_left == 0) {
-                    break;
+            AVX512_FLOATS m_sbin = AVX512_SETZERO_FLOAT();
+
+            if (bin_type == 1) {
+                if (!need_savg) {
+                    union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_s);
+                }
+                m_sbin = AVX512_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_smin);
+                m_sbin = AVX512_CONVERT_INT_TO_FLOAT(AVX512_TRUNCATE_FLOAT_TO_INT(AVX512_DIVIDE_FLOATS(m_sbin, m_sstep)));
+            }
+            else {
+                for(int kbin=nsbin-1;kbin>=1;kbin--) {
+                    const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_sqr_s, m_supp_sqr[kbin-1],_CMP_GE_OQ);
+                    m_sbin = AVX512_BLEND_FLOATS_WITH_MASK(m_bin_mask, m_sbin, AVX512_SET_FLOAT(kbin));
+                    m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
+                    if(m_mask_left == 0) {
+                        break;
+                    }
                 }
             }
-            const AVX512_FLOATS m_inv_dmu    = AVX512_SET_FLOAT(inv_dmu);
+            const AVX512_FLOATS m_inv_dmu = AVX512_SET_FLOAT(inv_dmu);
             const AVX512_FLOATS m_nmu_bins = AVX512_SET_FLOAT((DOUBLE) nmu_bins);
             const AVX512_FLOATS m_nmu_bins_p1 = AVX512_SET_FLOAT((DOUBLE) (nmu_bins + 1));
             const AVX512_FLOATS m_mubin = AVX512_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
@@ -341,7 +360,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                                                               const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
                                                               const DOUBLE closest_icell_zpos,
                                                               DOUBLE *src_savg,
-                                                              uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                              uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method, uint8_t bin_type)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -353,6 +372,15 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
+    DOUBLE sstep=0, smin=0;
+    AVX_FLOATS m_sstep = AVX_SETZERO_FLOAT();
+    AVX_FLOATS m_smin = AVX_SETZERO_FLOAT();
+    if (bin_type == 1) {
+        sstep = (SQRT(sqr_smax) - SQRT(sqr_smin))/(nsbin - 1);
+        smin = SQRT(sqr_smin) - sstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_sstep = AVX_SET_FLOAT(sstep);
+        m_smin = AVX_SET_FLOAT(smin);
+    }
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
     const DOUBLE sqr_mumax = mu_max*mu_max;
@@ -587,16 +615,25 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 
             const AVX_FLOATS m_mask = m_mask_left;
             AVX_FLOATS m_sbin = AVX_SETZERO_FLOAT();
-            for(int kbin=nsbin-1;kbin>=1;kbin--) {
-                const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_sqr_s,m_supp_sqr[kbin-1],_CMP_GE_OQ);
-                const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
-                m_sbin = AVX_BLEND_FLOATS_WITH_MASK(m_sbin,m_kbin[kbin], m_bin_mask);
-                m_mask_left = AVX_COMPARE_FLOATS(m_sqr_s, m_supp_sqr[kbin-1],_CMP_LT_OQ);
-                if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
-                    break;
+
+            if (bin_type == 1) {
+                if (!need_savg) {
+                    union_msep.m_Dperp = AVX_SQRT_FLOAT(m_sqr_s);
+                }
+                m_sbin = AVX_SUBTRACT_FLOATS(union_msep.m_Dperp, m_smin);
+                m_sbin = AVX_CONVERT_INT_TO_FLOAT(AVX_TRUNCATE_FLOAT_TO_INT(AVX_DIVIDE_FLOATS(m_sbin, m_sstep)));
+            }
+            else {
+                for(int kbin=nsbin-1;kbin>=1;kbin--) {
+                    const AVX_FLOATS m_mask_low = AVX_COMPARE_FLOATS(m_sqr_s,m_supp_sqr[kbin-1],_CMP_GE_OQ);
+                    const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m_mask_low,m_mask_left);
+                    m_sbin = AVX_BLEND_FLOATS_WITH_MASK(m_sbin,m_kbin[kbin], m_bin_mask);
+                    m_mask_left = AVX_COMPARE_FLOATS(m_sqr_s, m_supp_sqr[kbin-1],_CMP_LT_OQ);
+                    if(AVX_TEST_COMPARISON(m_mask_left) == 0) {
+                        break;
+                    }
                 }
             }
-
             /* Compute the 1-D index to the [sbin, mubin] := sbin*(nmu_bins+1) + mubin */
             const AVX_FLOATS m_tmp2 = AVX_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
             const AVX_FLOATS m_mubin = AVX_BLEND_FLOATS_WITH_MASK(m_nmu_bins, m_tmp2, m_mask);
@@ -671,18 +708,27 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 pairweight = fallback_weight_func(&pair);
             }
 
-            for(int kbin=nsbin-1;kbin>=1;kbin--) {
-                if(sqr_s >= supp_sqr[kbin-1]) {
-                    const int ibin = kbin*(nmu_bins+1) + mubin;
-                    npairs[ibin]++;
-                    if(need_savg) {
-                        savg[ibin] += s;
-                    }
-                    if(need_weightavg){
-                        weightavg[ibin] += pairweight;
-                    }
-                    break;
+            int kbin = 0;
+            if (bin_type == 1) {
+                if (!need_savg) {
+                    s = SQRT(sqr_s);
                 }
+                kbin = (int) ((s - smin)/sstep);
+            }
+            else {
+                for(kbin=nsbin-1;kbin>=1;kbin--) {
+                    if(sqr_s >= supp_sqr[kbin-1]) {
+                      break;
+                    }
+                }//finding kbin
+            }
+            const int ibin = kbin*(nmu_bins+1) + mubin;
+            npairs[ibin]++;
+            if(need_savg) {
+                savg[ibin] += s;
+            }
+            if(need_weightavg){
+                weightavg[ibin] += pairweight;
             }
         }//remainder jloop
     }//i-loop
@@ -716,7 +762,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
                                                               const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
                                                               const DOUBLE closest_icell_zpos,
                                                               DOUBLE *src_savg, uint64_t *src_npairs,
-                                                              DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                              DOUBLE *src_weightavg, const weight_method_t weight_method, uint8_t bin_type)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -727,6 +773,16 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
+    DOUBLE sstep=0, smin=0;
+    SSE_FLOATS m_sstep = SSE_SETZERO_FLOAT();
+    SSE_FLOATS m_smin = SSE_SETZERO_FLOAT();
+    if (bin_type == 1) {
+        sstep = (SQRT(sqr_smax) - SQRT(sqr_smin))/(nsbin - 1);
+        smin = SQRT(sqr_smin) - sstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_sstep = SSE_SET_FLOAT(sstep);
+        m_smin = SSE_SET_FLOAT(smin);
+    }
+
     (void) fast_divide_and_NR_steps; //unused
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
@@ -956,16 +1012,25 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
             const SSE_FLOATS m_mask = m_mask_left;
             SSE_FLOATS m_sbin = SSE_SETZERO_FLOAT();
-            for(int kbin=nsbin-1;kbin>=1;kbin--) {
-                const SSE_FLOATS m_mask_low = SSE_COMPARE_FLOATS_GE(m_sqr_s,m_supp_sqr[kbin-1]);
-                const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m_mask_low,m_mask_left);
-                m_sbin = SSE_BLEND_FLOATS_WITH_MASK(m_sbin,m_kbin[kbin], m_bin_mask);
-                m_mask_left = SSE_COMPARE_FLOATS_LT(m_sqr_s, m_supp_sqr[kbin-1]);
-                if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
-                    break;
+
+            if (bin_type == 1) {
+                if (!need_savg) {
+                    union_msep.m_Dperp = SSE_SQRT_FLOAT(m_sqr_s);
+                }
+                m_sbin = SSE_SUBTRACT_FLOATS(union_msep.m_Dperp, m_smin);
+                m_sbin = SSE_CONVERT_INT_TO_FLOAT(SSE_TRUNCATE_FLOAT_TO_INT(SSE_DIVIDE_FLOATS(m_sbin, m_sstep)));
+            }
+            else {
+                for(int kbin=nsbin-1;kbin>=1;kbin--) {
+                    const SSE_FLOATS m_mask_low = SSE_COMPARE_FLOATS_GE(m_sqr_s,m_supp_sqr[kbin-1]);
+                    const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m_mask_low,m_mask_left);
+                    m_sbin = SSE_BLEND_FLOATS_WITH_MASK(m_sbin,m_kbin[kbin], m_bin_mask);
+                    m_mask_left = SSE_COMPARE_FLOATS_LT(m_sqr_s, m_supp_sqr[kbin-1]);
+                    if(SSE_TEST_COMPARISON(m_mask_left) == 0) {
+                        break;
+                    }
                 }
             }
-
             /* Compute the 1-D index to the [sbin, mubin] := sbin*(nmu_bins+1) + mubin */
             const SSE_FLOATS m_tmp2 = SSE_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
             const SSE_FLOATS m_mubin = SSE_BLEND_FLOATS_WITH_MASK(m_nmu_bins, m_tmp2, m_mask);
@@ -1029,20 +1094,27 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
                 pairweight = fallback_weight_func(&pair);
             }
-
-
-            for(int kbin=nsbin-1;kbin>=1;kbin--) {
-                if(sqr_s >= supp_sqr[kbin-1]) {
-                    const int ibin = kbin*(nmu_bins+1) + mubin;
-                    npairs[ibin]++;
-                    if(need_savg){
-                        savg[ibin] += s;
-                    }
-                    if(need_weightavg){
-                        weightavg[ibin] += pairweight;
-                    }
-                    break;
+            int kbin = 0;
+            if (bin_type == 1) {
+                if (!need_savg) {
+                    s = SQRT(sqr_s);
                 }
+                kbin = (int) ((s - smin)/sstep);
+            }
+            else {
+                for(kbin=nsbin-1;kbin>=1;kbin--) {
+                    if(sqr_s >= supp_sqr[kbin-1]) {
+                      break;
+                    }
+                }//finding kbin
+            }
+            const int ibin = kbin*(nmu_bins+1) + mubin;
+            npairs[ibin]++;
+            if(need_savg) {
+                savg[ibin] += s;
+            }
+            if(need_weightavg){
+                weightavg[ibin] += pairweight;
             }
         }//remainder jloop
     }//i-loop
@@ -1073,7 +1145,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
                                                         const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
                                                         const DOUBLE closest_icell_zpos,
                                                         DOUBLE *src_savg, uint64_t *src_npairs,
-                                                        DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                        DOUBLE *src_weightavg, const weight_method_t weight_method, uint8_t bin_type)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -1086,6 +1158,11 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
     (void) fast_divide_and_NR_steps;//unused parameter but required to keep the same function signature amongst the kernels
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
+    DOUBLE sstep=0, smin=0;
+    if (bin_type == 1) {
+        sstep = (SQRT(sqr_smax) - SQRT(sqr_smin))/(nsbin - 1);
+        smin = SQRT(sqr_smin) - sstep; //trick to avoid adding one to (r - rmin)/rstep
+    }
 
     const DOUBLE sqr_mumax = mu_max*mu_max;
 
@@ -1234,19 +1311,28 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
                 pairweight = weight_func(&pair);
             }
 
-            for(int kbin=nsbin-1;kbin>=1;kbin--) {
-                if(sqr_s >= supp_sqr[kbin-1]) {
-                    const int ibin = kbin*(nmu_bins+1) + mubin;
-                    npairs[ibin]++;
-                    if(need_savg) {
-                        savg[ibin]+=s;
-                    }
-                    if(need_weightavg){
-                        weightavg[ibin] += pairweight;
-                    }
-                    break;
+            int kbin = 0;
+            if (bin_type == 1) {
+                if (!need_savg) {
+                    s = SQRT(sqr_s);
                 }
-            }//finding kbin
+                kbin = (int) ((s - smin)/sstep);
+            }
+            else {
+                for(kbin=nsbin-1;kbin>=1;kbin--) {
+                    if(sqr_s >= supp_sqr[kbin-1]) {
+                      break;
+                    }
+                }//finding kbin
+            }
+            const int ibin = kbin*(nmu_bins+1) + mubin;
+            npairs[ibin]++;
+            if(need_savg) {
+                savg[ibin] += s;
+            }
+            if(need_weightavg){
+                weightavg[ibin] += pairweight;
+            }
         }//j loop over second set of particles
     }//i loop over first set of particles
 

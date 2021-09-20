@@ -197,7 +197,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
     double *rupp;
     int nrpbin ;
     double rpmin,rpmax;
-    setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
+    setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp,&(options->bin_type));
     if( ! (rpmin >= 0.0 && rpmax > 0.0 && rpmin < rpmax && nrpbin > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rpmin, rpmax, nrpbin);
@@ -464,7 +464,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
                                                                     this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                                     this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                                     this_rpavg, npairs,
-                                                                    this_weightavg, extra->weight_method);
+                                                                    this_weightavg, extra->weight_method, options->bin_type);
 
                 /* This actually causes a race condition under OpenMP - but mostly
                    I care that an error occurred - rather than the exact value of
@@ -508,7 +508,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
     if(autocorr == 0) {
         free_cellarray_DOUBLE(lattice2, totncells);
     }
-    
+
     if(abort_status != EXIT_SUCCESS || interrupt_status_DDrppi_DOUBLE != EXIT_SUCCESS) {
         /* Cleanup memory here if aborting */
         free(rupp);

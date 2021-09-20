@@ -16,7 +16,7 @@
 extern "C" {
 #endif
 
-#include "function_precision.h" 
+#include "function_precision.h"
 
 #define PREFETCH(mem)        asm ("prefetcht0 %0"::"m"(mem))
 
@@ -35,13 +35,13 @@ extern "C" {
 
 #ifndef DOUBLE_PREC
 
-#define DOUBLE                           float  
-#define AVX_NVEC                         8    
+#define DOUBLE                           float
+#define AVX_NVEC                         8
 #define AVX_INTS                         __m256i
 #define AVX_FLOATS                       __m256
 
 #define AVX_SETZERO_FLOAT()              _mm256_setzero_ps()
-    
+
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_ps(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_ps(X)
 #define AVX_MULTIPLY_FLOATS(X,Y)         _mm256_mul_ps(X,Y)
@@ -57,6 +57,7 @@ extern "C" {
 #define AVX_LOG10_FLOAT(X)                 _mm256_log10_ps(X)
 #define AVX_LOG2_FLOAT(X)                _mm256_log2_ps(X)
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_ps(X)
+#define AVX_CONVERT_INT_TO_FLOAT(X)      _mm256_cvtepi32_ps(X)
 
 #define AVX_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X)
 #define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X)
@@ -89,7 +90,7 @@ extern "C" {
 
   //Absolute value
 #define AVX_ABS_FLOAT(X)                  _mm256_max_ps(_mm256_sub_ps(_mm256_setzero_ps(), X), X)
-  
+
     //Casting (does not actual convert between types)
 #define AVX_CAST_FLOAT_TO_INT(X)          _mm256_castps_si256(X)
 #define AVX_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_ps(X)
@@ -99,13 +100,13 @@ extern "C" {
 #define AVX_STREAMING_STORE_INTS(X,Y)     _mm256_stream_si256(X,Y)
 
 #else //DOUBLE PRECISION CALCULATIONS
-  
+
 #define DOUBLE                           double
-#define AVX_NVEC                         4    
+#define AVX_NVEC                         4
 #define AVX_INTS                         __m128i
 #define AVX_FLOATS                       __m256d
 
-#define AVX_SETZERO_FLOAT()              _mm256_setzero_pd()    
+#define AVX_SETZERO_FLOAT()              _mm256_setzero_pd()
 
 #define AVX_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_pd(X)
 #define AVX_LOAD_FLOATS_ALIGNED(X)       _mm256_load_pd(X)
@@ -122,6 +123,7 @@ extern "C" {
 #define AVX_LOG2_FLOAT(X)                _mm256_log2_pd(X)
 #define AVX_LOG10_FLOAT(X)                _mm256_log10_pd(X)
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_pd(X)
+#define AVX_CONVERT_INT_TO_FLOAT(X)      _mm256_cvtepi32_pd(X)
 
     // X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_pd(X,Y,OP)
@@ -150,7 +152,7 @@ extern "C" {
 
   //Absolute value
 #define AVX_ABS_FLOAT(X)                  _mm256_max_pd(_mm256_sub_pd(_mm256_setzero_pd(), X), X)
-  
+
     //Casting (does not actual convert between types)
 #define AVX_CAST_FLOAT_TO_INT(X)          _mm256_castpd_si256(X)
 #define AVX_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_pd(X)
@@ -163,7 +165,7 @@ extern "C" {
 
 #ifndef  __INTEL_COMPILER
 #include "fast_acos.h"
-    
+
 static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
 {
     union cos{
@@ -182,7 +184,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
         union_costheta.x[ii] = costheta <= minus_one ? minus_one:costheta;
         union_costheta.x[ii] = costheta >= one ? one:costheta;
     }
-    
+
     if(order == 0) {
         for(int ii=0;ii<AVX_NVEC;ii++) {
             const DOUBLE costheta = union_costheta.x[ii];
@@ -200,7 +202,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
 
 
 #endif
-  
+
   //The three different unions used
   //for computing rpavg and weightavg
   union int8 {
@@ -216,7 +218,7 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
     DOUBLE weights[AVX_NVEC];
   };
 
-#ifdef DOUBLE_PREC    
+#ifdef DOUBLE_PREC
 #define CHECK_AND_FAST_DIVIDE_AVX(result, numerator, denominator, fast_divide_and_NR_steps)                      { \
         /* For double precision floats */                               \
         if (fast_divide_and_NR_steps == 0) {                            \

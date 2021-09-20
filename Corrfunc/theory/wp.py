@@ -285,7 +285,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
        copy_particles=True, enable_min_sep_opt=True,
-       c_api_timer=False, c_cell_timer=False, isa='fastest'):
+       c_api_timer=False, c_cell_timer=False, isa='fastest', bin_type=r'auto'):
     """
     Function to compute the projected correlation function in a
     periodic cosmological box. Pairs which are separated by less
@@ -407,6 +407,11 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     weight_type: string, optional.  Default: None.
         The type of weighting to apply.  One of ["pair_product", None].
 
+    bin_type : string, case-insensitive (default ``auto``)
+        If bins in ``binfile`` are linearly-spaced, set to ``lin`` for speed-up.
+        Else, set to ``custom``.
+        ``auto`` allows for auto-detection of the binning type.
+
     Returns
     --------
 
@@ -481,7 +486,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
 
     import numpy as np
     from future.utils import bytes_to_native_str
-    from Corrfunc.utils import translate_isa_string_to_enum,\
+    from Corrfunc.utils import translate_isa_string_to_enum, translate_bin_type_string_to_enum,\
         return_file_with_rbins, convert_to_native_endian,\
         sys_pipes, process_weights
 
@@ -499,6 +504,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
             kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
+    integer_bin_type = translate_bin_type_string_to_enum(bin_type)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     with sys_pipes():
       extn_results = wp_extn(boxsize, pimax, nthreads,
@@ -514,7 +520,8 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
                              enable_min_sep_opt=enable_min_sep_opt,
                              c_api_timer=c_api_timer,
                              c_cell_timer=c_cell_timer,
-                             isa=integer_isa, **kwargs)
+                             isa=integer_isa,
+                             bin_type=integer_bin_type, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)

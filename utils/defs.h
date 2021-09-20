@@ -48,6 +48,7 @@ struct api_cell_timings
 #define MAX_FAST_DIVIDE_NR_STEPS  3
 #define OPTIONS_HEADER_SIZE     1024
 
+
 struct config_options
 {
     /* The fields should appear here in decreasing order of
@@ -141,12 +142,13 @@ struct config_options
                                   functionality */
         uint8_t bin_masks[4];
     };
+    uint8_t bin_type; /* binning type, allow significant speed-up with higher number of linear bins */
 
     /* Reserving to maintain ABI compatibility for the future */
     /* Note that the math here assumes no padding bytes, that's because of the
        order in which the fields are declared (largest to smallest alignments)  */
     uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - 3*sizeof(int)
-                     - sizeof(uint16_t) - 16*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
+                     - sizeof(uint16_t) - 17*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
 };
 
 static inline void set_bin_refine_scheme(struct config_options *options, const int8_t flag)
@@ -247,6 +249,8 @@ static inline struct config_options get_config_options(void)
     // If periodic, set to -1 to require the user to set a boxsize.
     // A value of 0 will use automatic detection of the particle extent
     options.boxsize = -1.;
+    // Default: automatic detection of linear binning
+    options.bin_type = 0;
 
 #ifdef DOUBLE_PREC
     options.float_type = sizeof(double);

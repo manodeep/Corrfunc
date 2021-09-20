@@ -1148,10 +1148,11 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK (enum) */
         "weight_type",
+        "bin_type",
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!O!O!bbbbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidsO!O!O!|O!O!O!O!O!bbbbbbbhbbbisI", kwlist,
                                        &autocorr,&cosmology,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1171,7 +1172,8 @@ static PyObject *countpairs_countpairs_rp_pi_mocks(PyObject *self, PyObject *arg
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
-                                       &weighting_method_str)
+                                       &weighting_method_str,
+                                       &(options.bin_type))
 
          ) {
 
@@ -1473,10 +1475,11 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK (enum) */
         "weight_type",
+        "bin_type",
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidisO!O!O!|O!O!O!O!O!bbbbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iiidisO!O!O!|O!O!O!O!O!bbbbbbbhbbbisI", kwlist,
                                        &autocorr,&cosmology,&nthreads,&mu_max,&nmu_bins,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1496,7 +1499,8 @@ static PyObject *countpairs_countpairs_s_mu_mocks(PyObject *self, PyObject *args
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
-                                       &weighting_method_str)
+                                       &weighting_method_str,
+                                       &(options.bin_type))
 
          ) {
 
@@ -1785,11 +1789,12 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
         "c_api_timer",
         "isa",/* instruction set to use of type enum isa; valid values are AVX512F, AVX, SSE, FALLBACK */
         "weight_type",
+        "bin_type",
         NULL
     };
 
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!O!O!bbbbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!|O!O!O!O!bbbbbbbhbbbisI", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1808,7 +1813,8 @@ static PyObject *countpairs_countpairs_theta_mocks(PyObject *self, PyObject *arg
                                        &(options.enable_min_sep_opt),
                                        &(options.c_api_timer),
                                        &(options.instruction_set),
-                                       &weighting_method_str)
+                                       &weighting_method_str,
+                                       &(options.bin_type))
 
          ) {
         PyObject_Print(kwargs, stdout, 0);
