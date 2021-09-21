@@ -62,9 +62,9 @@ void get_max_double(const int64_t ND1, const double *cz1, double *czmax)
 static int detect_bin_type_float(const float *rupp, int nbin, bin_type_t *bin_type)
 {
     if (*bin_type == BIN_AUTO) {
-        // if linear spacing, return 1, else 0
-        const float atol = 1e-12;
-        const float rtol = 1e-12;
+        // if linear spacing, return BIN_LIN, else BIN_CUSTOM
+        const float atol = 1e-8; // same tol as numpy.allclose
+        const float rtol = 1e-5;
         float rmin = rupp[0];
         float rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
         *bin_type = BIN_LIN;
@@ -82,9 +82,9 @@ static int detect_bin_type_float(const float *rupp, int nbin, bin_type_t *bin_ty
 static int detect_bin_type_double(const double *rupp, int nbin, bin_type_t *bin_type)
 {
     if (*bin_type == BIN_AUTO) {
-        // if linear spacing, return 1, else 0
-        const double atol = 1e-12;
-        const double rtol = 1e-12;
+        // if linear spacing, return BIN_LIN, else BIN_CUSTOM
+        const double atol = 1e-8; // same tol as numpy.allclose
+        const double rtol = 1e-5;
         double rmin = rupp[0];
         double rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
         *bin_type = BIN_LIN;

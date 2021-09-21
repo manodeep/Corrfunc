@@ -252,8 +252,8 @@ static inline struct config_options get_config_options(void)
     // If periodic, set to -1 to require the user to set a boxsize.
     // A value of 0 will use automatic detection of the particle extent
     options.boxsize = -1.;
-    // Default: automatic detection of linear binning
-    options.bin_type = 0;
+    // Default: custom binning
+    options.bin_type = BIN_CUSTOM;
 
 #ifdef DOUBLE_PREC
     options.float_type = sizeof(double);
