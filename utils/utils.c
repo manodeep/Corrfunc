@@ -59,22 +59,19 @@ void get_max_double(const int64_t ND1, const double *cz1, double *czmax)
     *czmax = max;
 }
 
-static int detect_bin_type_float(const float *rupp, int nbin, uint8_t *bin_type)
+static int detect_bin_type_float(const float *rupp, int nbin, bin_type_t *bin_type)
 {
-    // bin_type = 0: automatic detection
-    // bin_type = 1: linear
-    // bin_type = 2: custom
-    if (*bin_type == 0) {
+    if (*bin_type == BIN_AUTO) {
         // if linear spacing, return 1, else 0
         const float atol = 1e-12;
         const float rtol = 1e-12;
         float rmin = rupp[0];
         float rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
-        *bin_type = 1;
+        *bin_type = BIN_LIN;
         for (int ii=1; ii<nbin; ii++) {
             float pred = rmin + rstep*ii;
             if ((fabsf(rupp[ii] - pred) > atol)||(fabsf((rupp[ii] - pred)/pred) > rtol)) {
-                *bin_type = 2;
+                *bin_type = BIN_CUSTOM;
                 break;
             }
         }
@@ -82,22 +79,19 @@ static int detect_bin_type_float(const float *rupp, int nbin, uint8_t *bin_type)
     return EXIT_SUCCESS;
 }
 
-static int detect_bin_type_double(const double *rupp, int nbin, uint8_t *bin_type)
+static int detect_bin_type_double(const double *rupp, int nbin, bin_type_t *bin_type)
 {
-    // bin_type = 0: automatic detection
-    // bin_type = 1: linear
-    // bin_type = 2: custom
-    if (*bin_type == 0) {
+    if (*bin_type == BIN_AUTO) {
         // if linear spacing, return 1, else 0
         const double atol = 1e-12;
         const double rtol = 1e-12;
         double rmin = rupp[0];
         double rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
-        *bin_type = 1;
+        *bin_type = BIN_LIN;
         for (int ii=1; ii<nbin; ii++) {
             double pred = rmin + rstep*ii;
             if ((fabs(rupp[ii] - pred) > atol)||(fabs((rupp[ii] - pred)/pred) > rtol)) {
-                *bin_type = 2;
+                *bin_type = BIN_CUSTOM;
                 break;
             }
         }
@@ -105,7 +99,7 @@ static int detect_bin_type_double(const double *rupp, int nbin, uint8_t *bin_typ
     return EXIT_SUCCESS;
 }
 
-int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, uint8_t *bin_type)
+int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, bin_type_t *bin_type)
 {
     //set up the bins according to the binned data file
     //the form of the data file should be <rlow  rhigh ....>
@@ -152,7 +146,7 @@ int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double 
     return EXIT_SUCCESS;
 }
 
-int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, uint8_t *bin_type)
+int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, bin_type_t *bin_type)
 {
     //set up the bins according to the binned data file
     //the form of the data file should be <rlow  rhigh ....>
@@ -197,7 +191,7 @@ int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, 
     return EXIT_SUCCESS;
 }
 
-int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp, uint8_t *bin_type)
+int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp, bin_type_t *bin_type)
 {
     //set up the bins according to the binned data file
     //the form of the data file should be <rlow  rhigh ....>

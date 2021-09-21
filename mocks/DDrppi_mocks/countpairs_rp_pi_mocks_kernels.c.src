@@ -40,7 +40,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                                                                   const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
                                                                   const DOUBLE closest_icell_zpos,
                                                                   DOUBLE *src_rpavg,
-                                                                  uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method, const uint8_t bin_type)
+                                                                  uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -381,7 +381,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                                                                const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
                                                                const DOUBLE closest_icell_zpos,
                                                                DOUBLE *src_rpavg,
-                                                               uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method, const uint8_t bin_type)
+                                                               uint64_t *src_npairs, DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -805,7 +805,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                                                                const DOUBLE closest_icell_zpos,
                                                                DOUBLE *src_rpavg,
                                                                uint64_t *src_npairs,
-                                                               DOUBLE *src_weightavg, const weight_method_t weight_method, const uint8_t bin_type)
+                                                               DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -1201,7 +1201,7 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                                                          const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos,
                                                          const DOUBLE closest_icell_zpos,
                                                          DOUBLE *src_rpavg, uint64_t *src_npairs,
-                                                         DOUBLE *src_weightavg, const weight_method_t weight_method, const uint8_t bin_type)
+                                                         DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;

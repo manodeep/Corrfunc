@@ -304,12 +304,8 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         return EXIT_FAILURE;
     }
     if (options->verbose) {
-        if (options->bin_type == 1) fprintf(stderr,"R binning is linear\n");
-        if (options->bin_type == 2) fprintf(stderr,"R binning is custom\n");
-        else {
-          fprintf(stderr,"Error: Could not setup with R binning type correctly\n");
-          return EXIT_FAILURE;
-        }
+        if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
+        else fprintf(stderr,"Custom R binning\n");
     }
 
     const DOUBLE sqr_max_sep = rpmax*rpmax + pimax*pimax;

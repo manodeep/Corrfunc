@@ -210,6 +210,10 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                 smin, smax, nsbin);
         return EXIT_FAILURE;
     }
+    if (options->verbose) {
+        if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
+        else fprintf(stderr,"Custom R binning\n");
+    }
 
     if(max_mu <= 0.0 || max_mu > 1.0) {
         fprintf(stderr,"Error: max_mu (max. value for the cosine of the angle with line of sight) must be greater than 0 and at most 1).\n"

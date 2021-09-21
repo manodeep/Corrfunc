@@ -30,7 +30,7 @@ extern "C" {
                                       const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                       const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
                                       DOUBLE *src_rpavg, uint64_t *src_npairs,
-                                      DOUBLE *src_weightavg, const weight_method_t weight_method, const uint8_t bin_type);
+                                      DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type);
 
     extern wp_func_ptr_DOUBLE wp_driver_DOUBLE(const struct config_options *options) __attribute__((warn_unused_result));
 

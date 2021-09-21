@@ -205,6 +205,10 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                 rpmin, rpmax, nrpbin);
         return EXIT_FAILURE;
     }
+    if (options->verbose) {
+        if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
+        else fprintf(stderr,"Custom R binning\n");
+    }
 
     //Find the min/max of the data
     DOUBLE xmin, xmax, ymin, ymax, zmin, zmax;

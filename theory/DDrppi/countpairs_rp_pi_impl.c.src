@@ -203,6 +203,11 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
                 rpmin, rpmax, nrpbin);
         return EXIT_FAILURE;
     }
+    if (options->verbose) {
+        if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
+        else fprintf(stderr,"Custom R binning\n");
+    }
+
     DOUBLE rupp_sqr[nrpbin];
     const int64_t totnbins = (npibin+1)*(nrpbin+1);
     for(int i=0; i < nrpbin;i++) {

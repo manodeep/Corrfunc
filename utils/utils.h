@@ -16,6 +16,8 @@
 #include<sys/times.h>
 #include <sys/types.h>
 
+#include "defs.h" //defines bin_type_t
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,9 +58,9 @@ void volume_free(void ***v,int64_t nrow,int64_t ncol);
 
 extern int run_system_call(const char *execstring);
 
-extern int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, uint8_t *bin_type);
-extern int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, uint8_t *bin_type);
-extern int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp, uint8_t *bin_type);
+extern int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, bin_type_t *bin_type);
+extern int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, bin_type_t *bin_type);
+extern int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp, bin_type_t *bin_type);
 
 extern int test_all_files_present(const int nfiles, ...);
 

@@ -49,6 +49,9 @@ struct api_cell_timings
 #define OPTIONS_HEADER_SIZE     1024
 
 
+typedef enum {BIN_AUTO, BIN_LIN, BIN_CUSTOM} bin_type_t; // type of weighting to apply
+
+
 struct config_options
 {
     /* The fields should appear here in decreasing order of
@@ -142,13 +145,13 @@ struct config_options
                                   functionality */
         uint8_t bin_masks[4];
     };
-    uint8_t bin_type; /* binning type, allow significant speed-up with higher number of linear bins */
+    bin_type_t bin_type; /* binning type, allow significant speed-up with higher number of linear bins */
 
     /* Reserving to maintain ABI compatibility for the future */
     /* Note that the math here assumes no padding bytes, that's because of the
        order in which the fields are declared (largest to smallest alignments)  */
     uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - 3*sizeof(int)
-                     - sizeof(uint16_t) - 17*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
+                     - sizeof(uint16_t) - 16*sizeof(uint8_t) - sizeof(bin_type_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
 };
 
 static inline void set_bin_refine_scheme(struct config_options *options, const int8_t flag)

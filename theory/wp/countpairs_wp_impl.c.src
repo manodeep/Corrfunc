@@ -224,6 +224,10 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                 rpmin, rpmax, nrpbins);
         return EXIT_FAILURE;
     }
+    if (options->verbose) {
+        if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
+        else fprintf(stderr,"Custom R binning\n");
+    }
 
     const DOUBLE xmin = 0.0, xmax=boxsize;
     const DOUBLE ymin = 0.0, ymax=boxsize;
