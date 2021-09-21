@@ -228,8 +228,6 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
         supp_sqr[i] = supp[i]*supp[i];
     }
 
-    const DOUBLE sqr_smax=supp_sqr[nsbin-1];
-    const DOUBLE sqr_smin=supp_sqr[0];
     const DOUBLE mu_max = (DOUBLE) max_mu;
     const DOUBLE pimax = smax*mu_max;
 
@@ -480,7 +478,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                                                                    second->nelements, second->x, second->y, second->z, &(second->weights),
                                                                    this_cell_pair->same_cell,
                                                                    options->fast_divide_and_NR_steps,
-                                                                   sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max, pimax,
+                                                                   smax, smin, nsbin, nmu_bins, supp_sqr, mu_max, pimax,
                                                                    this_cell_pair->xwrap, this_cell_pair->ywrap, this_cell_pair->zwrap,
                                                                    this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                                    this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,

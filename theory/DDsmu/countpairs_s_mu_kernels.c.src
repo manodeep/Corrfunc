@@ -25,7 +25,7 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
                                                            const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                            const int same_cell,
                                                            const unsigned int fast_divide_and_NR_steps,
-                                                           const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
+                                                           const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                            const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                            const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                            const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -44,14 +44,15 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
 
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE sstep=0, smin=0;
-    AVX512_FLOATS m_sstep = AVX512_SETZERO_FLOAT();
-    AVX512_FLOATS m_smin = AVX512_SETZERO_FLOAT();
+    const DOUBLE sqr_smin=smin*smin, sqr_smax=smax*smax;
+    DOUBLE inv_sstep=0., smin_invstep=0.;
+    AVX512_FLOATS m_inv_sstep = AVX512_SETZERO_FLOAT();
+    AVX512_FLOATS m_smin_invstep = AVX512_SETZERO_FLOAT();
     if (bin_type == 1) {
-        sstep = (SQRT(sqr_smax) - SQRT(sqr_smin))/(nsbin - 1);
-        smin = SQRT(sqr_smin) - sstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_sstep = AVX512_SET_FLOAT(sstep);
-        m_smin = AVX512_SET_FLOAT(smin);
+        inv_sstep = (nsbin - 1)/(smax - smin);
+        smin_invstep = 1 - smin*inv_sstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_sstep = AVX512_SET_FLOAT(inv_sstep);
+        m_smin_invstep = AVX512_SET_FLOAT(smin_invstep);
     }
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
@@ -272,8 +273,7 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
                 if (!need_savg) {
                     union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, s2);
                 }
-                m_sbin = AVX512_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_smin);
-                m_sbin = AVX512_CONVERT_INT_TO_FLOAT(AVX512_TRUNCATE_FLOAT_TO_INT(AVX512_DIVIDE_FLOATS(m_sbin, m_sstep)));
+                m_sbin = AVX512_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep);
             }
             else {
                 for(int kbin=nsbin-1;kbin>=1;kbin--) {
@@ -335,7 +335,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                         const int same_cell,
                                                         const unsigned int fast_divide_and_NR_steps,
-                                                        const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin,
+                                                        const DOUBLE smax, const DOUBLE smin, const int nsbin,
                                                         const int nmu_bins, const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                         const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                         const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -353,14 +353,15 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE sstep=0, smin=0;
-    AVX_FLOATS m_sstep = AVX_SETZERO_FLOAT();
-    AVX_FLOATS m_smin = AVX_SETZERO_FLOAT();
+    const DOUBLE sqr_smin=smin*smin, sqr_smax=smax*smax;
+    DOUBLE inv_sstep=0., smin_invstep=0.;
+    AVX_FLOATS m_inv_sstep = AVX_SETZERO_FLOAT();
+    AVX_FLOATS m_smin_invstep = AVX_SETZERO_FLOAT();
     if (bin_type == 1) {
-        sstep = (SQRT(sqr_smax) - SQRT(sqr_smin))/(nsbin - 1);
-        smin = SQRT(sqr_smin) - sstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_sstep = AVX_SET_FLOAT(sstep);
-        m_smin = AVX_SET_FLOAT(smin);
+        inv_sstep = (nsbin - 1)/(smax - smin);
+        smin_invstep = 1 - smin*inv_sstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_sstep = AVX_SET_FLOAT(inv_sstep);
+        m_smin_invstep = AVX_SET_FLOAT(smin_invstep);
     }
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
@@ -602,8 +603,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                 if (!need_savg) {
                     union_mDperp.m_Dperp = AVX_SQRT_FLOAT(s2);
                 }
-                m_sbin = AVX_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_smin);
-                m_sbin = AVX_CONVERT_INT_TO_FLOAT(AVX_TRUNCATE_FLOAT_TO_INT(AVX_DIVIDE_FLOATS(m_sbin, m_sstep)));
+                m_sbin = AVX_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep);
             }
             else {
                 for(int kbin=nsbin-1;kbin>=1;kbin--) {
@@ -678,7 +678,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                 if (!need_savg) {
                     s = SQRT(s2);
                 }
-                kbin = (int) ((s - smin)/sstep);
+                kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {
                 for(kbin=nsbin-1;kbin>=1;kbin--) {
@@ -721,7 +721,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                                                         const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                         const int same_cell,
                                                         const unsigned int fast_divide_and_NR_steps,
-                                                        const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin, const int nmu_bins,
+                                                        const DOUBLE smax, const DOUBLE smin, const int nsbin, const int nmu_bins,
                                                         const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                         const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                         const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -741,14 +741,15 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE sstep=0, smin=0;
-    SSE_FLOATS m_sstep = SSE_SETZERO_FLOAT();
-    SSE_FLOATS m_smin = SSE_SETZERO_FLOAT();
+    const DOUBLE sqr_smin=smin*smin, sqr_smax=smax*smax;
+    DOUBLE inv_sstep=0., smin_invstep=0.;
+    SSE_FLOATS m_inv_sstep = SSE_SETZERO_FLOAT();
+    SSE_FLOATS m_smin_invstep = SSE_SETZERO_FLOAT();
     if (bin_type == 1) {
-        sstep = (SQRT(sqr_smax) - SQRT(sqr_smin))/(nsbin - 1);
-        smin = SQRT(sqr_smin) - sstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_sstep = SSE_SET_FLOAT(sstep);
-        m_smin = SSE_SET_FLOAT(smin);
+        inv_sstep = (nsbin - 1)/(smax - smin);
+        smin_invstep = 1 - smin*inv_sstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_sstep = SSE_SET_FLOAT(inv_sstep);
+        m_smin_invstep = SSE_SET_FLOAT(smin_invstep);
     }
 
     const int64_t totnbins = (nmu_bins+1) * (nsbin+1);
@@ -981,8 +982,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                 if (!need_savg) {
                     union_mDperp.m_Dperp = SSE_SQRT_FLOAT(s2);
                 }
-                m_sbin = SSE_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_smin);
-                m_sbin = SSE_CONVERT_INT_TO_FLOAT(SSE_TRUNCATE_FLOAT_TO_INT(SSE_DIVIDE_FLOATS(m_sbin, m_sstep)));
+                m_sbin = SSE_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep);
             }
             else {
                 for(int kbin=nsbin-1;kbin>=1;kbin--) {
@@ -1056,7 +1056,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                 if (!need_savg) {
                     s = SQRT(s2);
                 }
-                kbin = (int) ((s - smin)/sstep);
+                kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {
                 for(kbin=nsbin-1;kbin>=1;kbin--) {
@@ -1095,7 +1095,7 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                   const int same_cell,
                                                   const unsigned int fast_divide_and_NR_steps,
-                                                  const DOUBLE sqr_smax, const DOUBLE sqr_smin, const int nsbin, const int nmu_bins,
+                                                  const DOUBLE smax, const DOUBLE smin, const int nsbin, const int nmu_bins,
                                                   const DOUBLE *supp_sqr, const DOUBLE mu_max, const DOUBLE pimax,
                                                   const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                   const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -1116,10 +1116,11 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
     /*----------------- FALLBACK CODE --------------------*/
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE sstep=0, smin=0;
+    const DOUBLE sqr_smin=smin*smin, sqr_smax=smax*smax;
+    DOUBLE inv_sstep=0., smin_invstep=0.;
     if (bin_type == 1) {
-        sstep = (SQRT(sqr_smax) - SQRT(sqr_smin))/(nsbin - 1);
-        smin = SQRT(sqr_smin) - sstep; //trick to avoid adding one to (r - rmin)/rstep
+        inv_sstep = (nsbin - 1)/(smax - smin);
+        smin_invstep = 1 - smin*inv_sstep; //trick to avoid adding one to (r - rmin)/rstep
     }
 
     const int64_t totnbins = (nmu_bins+1)*(nsbin+1);
@@ -1282,7 +1283,7 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
                 if (!need_savg) {
                     s = SQRT(s2);
                 }
-                kbin = (int) ((s - smin)/sstep);
+                kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {
                 for(kbin=nsbin-1;kbin>=1;kbin--) {

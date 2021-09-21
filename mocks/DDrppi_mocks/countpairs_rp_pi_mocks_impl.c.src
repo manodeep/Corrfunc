@@ -303,6 +303,14 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                 rpmin, rpmax, nrpbin);
         return EXIT_FAILURE;
     }
+    if (options->verbose) {
+        if (options->bin_type == 1) fprintf(stderr,"R binning is linear\n");
+        if (options->bin_type == 2) fprintf(stderr,"R binning is custom\n");
+        else {
+          fprintf(stderr,"Error: Could not setup with R binning type correctly\n");
+          return EXIT_FAILURE;
+        }
+    }
 
     const DOUBLE sqr_max_sep = rpmax*rpmax + pimax*pimax;
     const DOUBLE max_sep = SQRT(sqr_max_sep);
@@ -389,11 +397,8 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
         Y2 = Y1;
         Z2 = Z1;
     }
-    DOUBLE sqr_rpmin = rpmin*rpmin;
-    DOUBLE sqr_rpmax = rpmax*rpmax;
 
     DOUBLE rupp_sqr[nrpbin];
-    rupp_sqr[0] = sqr_rpmin;
     for(int i=0;i<nrpbin;i++) {
         rupp_sqr[i] = rupp[i]*rupp[i];
     }
@@ -635,7 +640,7 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
                                                                           second->nelements, second->x, second->y, second->z, &(second->weights),
                                                                           this_cell_pair->same_cell,
                                                                           options->fast_divide_and_NR_steps,
-                                                                          sqr_rpmax, sqr_rpmin, nrpbin, npibin, rupp_sqr, pimax,
+                                                                          rpmax, rpmin, nrpbin, npibin, rupp_sqr, pimax,
                                                                           this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                                           this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                                           this_rpavg, npairs,

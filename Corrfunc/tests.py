@@ -60,7 +60,7 @@ def test_linear_binning_mocks(isa='fallback'):
                     "../mocks/tests/", "bins_lin")
     rbins = np.linspace(0.1, 45.1, 46)
     with open(binfile,'w') as file:
-        for low,hi in zip(rbins[:-1], rbins[1:]):
+        for low, hi in zip(rbins[:-1], rbins[1:]):
             file.write("{0} {1}\n".format(low, hi))
     autocorr = 1
     numbins_to_print = 5
@@ -206,7 +206,7 @@ def test_linear_binning_theory(isa='fallback'):
 
 if __name__ == '__main__':
 
-    tests()
+    #tests()
     for isa in ['fallback','sse42','avx','avx512f']:
         test_linear_binning_mocks(isa=isa)
         test_linear_binning_theory(isa=isa)

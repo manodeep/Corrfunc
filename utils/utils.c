@@ -59,7 +59,7 @@ void get_max_double(const int64_t ND1, const double *cz1, double *czmax)
     *czmax = max;
 }
 
-static int setup_bin_type_float(const float *rupp, int nbin, uint8_t *bin_type)
+static int detect_bin_type_float(const float *rupp, int nbin, uint8_t *bin_type)
 {
     // bin_type = 0: automatic detection
     // bin_type = 1: linear
@@ -82,7 +82,7 @@ static int setup_bin_type_float(const float *rupp, int nbin, uint8_t *bin_type)
     return EXIT_SUCCESS;
 }
 
-static int setup_bin_type_double(const double *rupp, int nbin, uint8_t *bin_type)
+static int detect_bin_type_double(const double *rupp, int nbin, uint8_t *bin_type)
 {
     // bin_type = 0: automatic detection
     // bin_type = 1: linear
@@ -144,7 +144,7 @@ int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double 
     }
     *rmax = (*rupp)[index-1];
     fclose(fp);
-    setup_bin_type_double(*rupp, *nbin, bin_type);
+    detect_bin_type_double(*rupp, *nbin, bin_type);
 
     (*rupp)[*nbin] = *rmax;
     (*rupp)[*nbin-1] = *rmax;
@@ -189,7 +189,7 @@ int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, 
     }
     *rmax = (*rupp)[index-1];
     fclose(fp);
-    setup_bin_type_double(*rupp, *nbin, bin_type);
+    detect_bin_type_double(*rupp, *nbin, bin_type);
 
     (*rupp)[*nbin] = *rmax;
     (*rupp)[*nbin-1] = *rmax;
@@ -235,7 +235,7 @@ int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, flo
     }
     *rmax = (*rupp)[index-1];
     fclose(fp);
-    setup_bin_type_float(*rupp, *nbin, bin_type);
+    detect_bin_type_float(*rupp, *nbin, bin_type);
 
     (*rupp)[*nbin] =* rmax;
     (*rupp)[*nbin-1] =* rmax;

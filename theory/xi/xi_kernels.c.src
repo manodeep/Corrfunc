@@ -24,7 +24,7 @@
 static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1,
                                               DOUBLE *x2, DOUBLE *y2, DOUBLE *z2, const weight_struct_DOUBLE *weights2, const int64_t N2,
                                               const int same_cell,
-                                              const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin,
+                                              const DOUBLE rmax, const DOUBLE rmin, const int nbin,
                                               const DOUBLE *rupp_sqr,
                                               const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                               const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -50,14 +50,15 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
     }
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE rpstep=0, rpmin=0;
-    AVX512_FLOATS m_rpstep = AVX512_SETZERO_FLOAT();
-    AVX512_FLOATS m_rpmin = AVX512_SETZERO_FLOAT();
+    const DOUBLE sqr_rmin=rmin*rmin, sqr_rmax=rmax*rmax;
+    DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+    AVX512_FLOATS m_inv_rpstep = AVX512_SETZERO_FLOAT();
+    AVX512_FLOATS m_rpmin_invstep = AVX512_SETZERO_FLOAT();
     if (bin_type == 1) {
-        rpstep = (SQRT(sqr_rmax) - SQRT(sqr_rmin))/(nbin - 1);
-        rpmin = SQRT(sqr_rmin) - rpstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_rpstep = AVX512_SET_FLOAT(rpstep);
-        m_rpmin = AVX512_SET_FLOAT(rpmin);
+        inv_rpstep = (nbin - 1)/(rmax - rmin);
+        rpmin_invstep = 1 - rmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_rpstep = AVX512_SET_FLOAT(inv_rpstep);
+        m_rpmin_invstep = AVX512_SET_FLOAT(rpmin_invstep);
     }
 
     /* variables required for rpavg and weightavg*/
@@ -227,7 +228,7 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
                 if (!need_rpavg) {
                     union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
                 }
-                m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(AVX512_DIVIDE_FLOATS(AVX512_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_rpmin), m_rpstep));
+                m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(AVX512_FMA_ADD_FLOATS(union_mDperp.m_Dperp, m_inv_rpstep, m_rpmin_invstep));
             }
             else {
                 //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
@@ -299,7 +300,7 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
 static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1,
                                            DOUBLE *x2, DOUBLE *y2, DOUBLE *z2, const weight_struct_DOUBLE *weights2, const int64_t N2,
                                            const int same_cell,
-                                           const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr,
+                                           const DOUBLE rmax, const DOUBLE rmin, const int nbin, const DOUBLE *rupp_sqr,
                                            const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                            const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                            const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
@@ -315,14 +316,15 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
 
     const int32_t need_ravg = src_ravg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE rpstep=0, rpmin=0;
-    AVX_FLOATS m_rpstep = AVX_SETZERO_FLOAT();
-    AVX_FLOATS m_rpmin = AVX_SETZERO_FLOAT();
+    const DOUBLE sqr_rmin=rmin*rmin, sqr_rmax=rmax*rmax;
+    DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+    AVX_FLOATS m_inv_rpstep = AVX_SETZERO_FLOAT();
+    AVX_FLOATS m_rpmin_invstep = AVX_SETZERO_FLOAT();
     if (bin_type == 1) {
-        rpstep = (SQRT(sqr_rmax) - SQRT(sqr_rmin))/(nbin - 1);
-        rpmin = SQRT(sqr_rmin) - rpstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_rpstep = AVX_SET_FLOAT(rpstep);
-        m_rpmin = AVX_SET_FLOAT(rpmin);
+        inv_rpstep = (nbin - 1)/(rmax - rmin);
+        rpmin_invstep = 1 - rmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_rpstep = AVX_SET_FLOAT(inv_rpstep);
+        m_rpmin_invstep = AVX_SET_FLOAT(rpmin_invstep);
     }
 
     AVX_FLOATS m_kbin[nbin];
@@ -504,8 +506,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 if (!need_ravg) {
                     union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
                 }
-                m_rbin = AVX_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_rpmin);
-                m_rbin = AVX_DIVIDE_FLOATS(m_rbin, m_rpstep);
+                m_rbin = AVX_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep);
             }
             else {
                 //Loop backwards through nbins. m_mask_left contains all the points that are less than rmax
@@ -578,7 +579,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                 if (!need_ravg) {
                     r = SQRT(r2);
                 }
-                kbin = (int) ((r - rpmin)/rpstep);
+                kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
                 for(kbin=nbin-1;kbin>=1;kbin--) {
@@ -618,7 +619,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
 
 static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
                                            DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell,
-                                           const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr,
+                                           const DOUBLE rmax, const DOUBLE rmin, const int nbin, const DOUBLE *rupp_sqr,
                                            const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                            const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                            const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
@@ -634,14 +635,15 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 
     const int32_t need_ravg = src_ravg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE rpstep=0, rpmin=0;
-    SSE_FLOATS m_rpstep = SSE_SETZERO_FLOAT();
-    SSE_FLOATS m_rpmin = SSE_SETZERO_FLOAT();
+    const DOUBLE sqr_rmin=rmin*rmin, sqr_rmax=rmax*rmax;
+    DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+    SSE_FLOATS m_inv_rpstep = SSE_SETZERO_FLOAT();
+    SSE_FLOATS m_rpmin_invstep = SSE_SETZERO_FLOAT();
     if (bin_type == 1) {
-        rpstep = (SQRT(sqr_rmax) - SQRT(sqr_rmin))/(nbin - 1);
-        rpmin = SQRT(sqr_rmin) - rpstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_rpstep = SSE_SET_FLOAT(rpstep);
-        m_rpmin = SSE_SET_FLOAT(rpmin);
+        inv_rpstep = (nbin - 1)/(rmax - rmin);
+        rpmin_invstep = 1 - rmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_rpstep = SSE_SET_FLOAT(inv_rpstep);
+        m_rpmin_invstep = SSE_SET_FLOAT(rpmin_invstep);
     }
 
     DOUBLE ravg[nbin], weightavg[nbin];
@@ -812,8 +814,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 if (!need_ravg) {
                     union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
                 }
-                m_rbin = SSE_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_rpmin);
-                m_rbin = SSE_DIVIDE_FLOATS(m_rbin, m_rpstep);
+                m_rbin = SSE_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep);
             }
             else {
           			for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -882,7 +883,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 if (!need_ravg) {
                     r = SQRT(r2);
                 }
-                kbin = (int) ((r - rpmin)/rpstep);
+                kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
                 for(kbin=nbin-1;kbin>=1;kbin--) {
@@ -918,7 +919,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 
 static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0, const int64_t N0,
                                      DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1, const int64_t N1, const int same_cell,
-                                     const DOUBLE sqr_rmax, const DOUBLE sqr_rmin, const int nbin, const DOUBLE *rupp_sqr,
+                                     const DOUBLE rmax, const DOUBLE rmin, const int nbin, const DOUBLE *rupp_sqr,
                                      const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                      const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                      const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
@@ -933,10 +934,11 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
 
     const int32_t need_ravg = src_ravg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE rpstep=0, rpmin=0;
+    const DOUBLE sqr_rmin=rmin*rmin, sqr_rmax=rmax*rmax;
+    DOUBLE inv_rpstep=0., rpmin_invstep=0.;
     if (bin_type == 1) {
-        rpstep = (SQRT(sqr_rmax) - SQRT(sqr_rmin))/(nbin - 1);
-        rpmin = SQRT(sqr_rmin) - rpstep; //trick to avoid adding one to (r - rmin)/rstep
+        inv_rpstep = (nbin - 1)/(rmax - rmin);
+        rpmin_invstep = 1 - rmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
     }
 
     DOUBLE ravg[nbin], weightavg[nbin];
@@ -1061,7 +1063,7 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
                 if (!need_ravg) {
                     r = SQRT(r2);
                 }
-                kbin = (int) ((r - rpmin)/rpstep);
+                kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
                 for(kbin=nbin-1;kbin>=1;kbin--) {

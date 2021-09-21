@@ -41,7 +41,6 @@ extern "C" {
 #define SSE_TRUNCATE_FLOAT_TO_INT(X)     _mm_cvttps_epi32(X)
 #define SSE_SQUARE_FLOAT(X)              _mm_mul_ps(X,X)
 #define SSE_SET_FLOAT(X)                 _mm_set1_ps(X)
-#define SSE_CONVERT_INT_TO_FLOAT(X)      _mm_cvtepi32_ps(X)
 
 #define SSE_COMPARE_FLOATS_GE(X,Y)       _mm_cmpge_ps(X,Y)
 #define SSE_COMPARE_FLOATS_LT(X,Y)       _mm_cmplt_ps(X,Y)
@@ -60,6 +59,12 @@ extern "C" {
 #define SSE_MAX_FLOATS(X,Y)               _mm_max_ps(X,Y)
 
 #define SSE_ABS_FLOAT(X)                  _mm_max_ps(_mm_sub_ps(_mm_setzero_ps(), X), X)
+
+/* returns Z + XY*/
+//#define SSE_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm_fmadd_round_ss(X,Y,Z,_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+#define SSE_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm_round_ps(_mm_fmadd_ps(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+
+#define SSE_CONVERT_INT_TO_FLOAT(X)                            _mm_cvtepi32_ps(X)
 
 
 #ifdef  __INTEL_COMPILER
@@ -91,7 +96,6 @@ extern "C" {
 //Memory stores
 #define SSE_TRUNCATE_FLOAT_TO_INT(X)     _mm_cvttpd_epi32(X)
 #define SSE_STORE_FLOATS_TO_MEMORY(X,Y)  _mm_storeu_pd(X,Y)
-#define SSE_CONVERT_INT_TO_FLOAT(X)      _mm_cvtepi32_pd(X)
 
 //The comparisons
 #define SSE_COMPARE_FLOATS_GE(X,Y)       _mm_cmpge_pd(X,Y)
@@ -116,6 +120,12 @@ extern "C" {
 
 #define SSE_MAX_FLOATS(X,Y)               _mm_max_pd(X,Y)
 #define SSE_ABS_FLOAT(X)                  _mm_max_pd(_mm_sub_pd(_mm_setzero_pd(), X), X)
+
+/* returns Z + XY*/
+//#define SSE_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm_fmadd_round_sd(X,Y,Z,_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+#define SSE_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm_round_pd(_mm_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+
+#define SSE_CONVERT_INT_TO_FLOAT(X)                            _mm_cvtepi32_pd(X)
 
 #endif
 

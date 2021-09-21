@@ -399,8 +399,6 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
         Z2 = Z1;
     }
 
-    const DOUBLE sqr_smax = smax*smax;
-    const DOUBLE sqr_smin = smin*smin;
     DOUBLE supp_sqr[nsbin];
     for(int i=0; i < nsbin;i++) {
         supp_sqr[i] = supp[i]*supp[i];
@@ -640,7 +638,7 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
                                                                          second->nelements, second->x, second->y, second->z, &(second->weights),
                                                                          this_cell_pair->same_cell,
                                                                          options->fast_divide_and_NR_steps,
-                                                                         sqr_smax, sqr_smin, nsbin, nmu_bins, supp_sqr, mu_max,
+                                                                         smax, smin, nsbin, nmu_bins, supp_sqr, mu_max,
                                                                          this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                                          this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                                          this_savg, npairs,

@@ -209,9 +209,6 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
         rupp_sqr[i] = rupp[i]*rupp[i];
     }
 
-    const DOUBLE sqr_rpmax=rupp_sqr[nrpbin-1];
-    const DOUBLE sqr_rpmin=rupp_sqr[0];
-
     //Find the min/max of the data
     DOUBLE xmin, xmax, ymin, ymax, zmin, zmax;
     xmin = ymin = zmin = MAX_POSITIVE_FLOAT;
@@ -459,7 +456,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
                 const int status = countpairs_rp_pi_function_DOUBLE(first->nelements, first->x, first->y, first->z, &(first->weights),
                                                                     second->nelements, second->x, second->y, second->z, &(second->weights),
                                                                     this_cell_pair->same_cell,
-                                                                    sqr_rpmax, sqr_rpmin, nrpbin, npibin, rupp_sqr, pimax,
+                                                                    rpmax, rpmin, nrpbin, npibin, rupp_sqr, pimax,
                                                                     this_cell_pair->xwrap, this_cell_pair->ywrap, this_cell_pair->zwrap,
                                                                     this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                                     this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,

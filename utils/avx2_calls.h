@@ -69,7 +69,7 @@ extern "C" {
 #define AVX2_SET_FLOAT(X)                 _mm256_set1_ps(X)
 #define AVX2_SET_INT(X)                   _mm256_set1_epi32(X)
 
-    // X OP Y
+// X OP Y
 #define AVX2_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_ps(X,Y,OP)
 #define AVX2_BITWISE_AND(X,Y)              _mm256_and_ps(X,Y)
 #define AVX2_BITWISE_OR(X,Y)               _mm256_or_ps(X,Y)
@@ -106,6 +106,9 @@ extern "C" {
     //Streaming store
 #define AVX2_STREAMING_STORE_FLOATS(X,Y)   _mm256_stream_ps(X,Y)
 #define AVX2_STREAMING_STORE_INTS(X,Y)     _mm256_stream_si256(X,Y)
+
+/* returns Z + XY*/
+#define AVX2_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_ps(_mm256_fmadd_ps(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
 #else //DOUBLE PRECISION CALCULATIONS
 
@@ -180,6 +183,9 @@ extern "C" {
     //Streaming store
 #define AVX2_STREAMING_STORE_FLOATS(X,Y)   _mm256_stream_pd(X,Y)
 #define AVX2_STREAMING_STORE_INTS(X,Y)     _mm_stream_si128(X,Y)
+
+/* returns Z + XY*/
+#define AVX2_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_pd(_mm256_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
 #endif //DOUBLE_PREC
 

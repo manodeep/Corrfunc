@@ -24,7 +24,7 @@
 static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                             const int same_cell,
-                                                            const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin,
+                                                            const DOUBLE rpmax, const DOUBLE rpmin, const int nbin,
                                                             const int npibin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
                                                             const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                             const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -43,14 +43,15 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
 
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE rpstep=0, rpmin=0;
-    AVX512_FLOATS m_rpstep = AVX512_SETZERO_FLOAT();
-    AVX512_FLOATS m_rpmin = AVX512_SETZERO_FLOAT();
+    const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
+    DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+    AVX512_FLOATS m_inv_rpstep = AVX512_SETZERO_FLOAT();
+    AVX512_FLOATS m_rpmin_invstep = AVX512_SETZERO_FLOAT();
     if (bin_type == 1) {
-        rpstep = (SQRT(sqr_rpmax) - SQRT(sqr_rpmin))/(nbin - 1);
-        rpmin = SQRT(sqr_rpmin) - rpstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_rpstep = AVX512_SET_FLOAT(rpstep);
-        m_rpmin = AVX512_SET_FLOAT(rpmin);
+        inv_rpstep = (nbin - 1)/(rpmax - rpmin);
+        rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_rpstep = AVX512_SET_FLOAT(inv_rpstep);
+        m_rpmin_invstep = AVX512_SET_FLOAT(rpmin_invstep);
     }
 
     const int64_t totnbins = (npibin+1)*(nbin+1);
@@ -250,8 +251,7 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
                 if (!need_rpavg) {
                     union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
                 }
-                m_rpbin = AVX512_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_rpmin);
-                m_rpbin = AVX512_CONVERT_INT_TO_FLOAT(AVX512_TRUNCATE_FLOAT_TO_INT(AVX512_DIVIDE_FLOATS(m_rpbin, m_rpstep)));
+                m_rpbin = AVX512_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp, m_inv_rpstep, m_rpmin_invstep);
             }
             else {
                 for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -310,7 +310,7 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
 static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                          const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                          const int same_cell,
-                                                         const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin,
+                                                         const DOUBLE rpmax, const DOUBLE rpmin, const int nbin,
                                                          const int npibin, const DOUBLE *rupp_sqr, const DOUBLE pimax,
                                                          const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                          const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -328,14 +328,15 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
 
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE rpstep=0, rpmin=0;
-    AVX_FLOATS m_rpstep = AVX_SETZERO_FLOAT();
-    AVX_FLOATS m_rpmin = AVX_SETZERO_FLOAT();
+    const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
+    DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+    AVX_FLOATS m_inv_rpstep = AVX_SETZERO_FLOAT();
+    AVX_FLOATS m_rpmin_invstep = AVX_SETZERO_FLOAT();
     if (bin_type == 1) {
-        rpstep = (SQRT(sqr_rpmax) - SQRT(sqr_rpmin))/(nbin - 1);
-        rpmin = SQRT(sqr_rpmin) - rpstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_rpstep = AVX_SET_FLOAT(rpstep);
-        m_rpmin = AVX_SET_FLOAT(rpmin);
+        inv_rpstep = (nbin - 1)/(rpmax - rpmin);
+        rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_rpstep = AVX_SET_FLOAT(inv_rpstep);
+        m_rpmin_invstep = AVX_SET_FLOAT(rpmin_invstep);
     }
 
     const int64_t totnbins = (npibin+1)*(nbin+1);
@@ -559,8 +560,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 if (!need_rpavg) {
                     union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
                 }
-                m_rpbin = AVX_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_rpmin);
-                m_rpbin = AVX_CONVERT_INT_TO_FLOAT(AVX_TRUNCATE_FLOAT_TO_INT(AVX_DIVIDE_FLOATS(m_rpbin, m_rpstep)));
+                m_rpbin = AVX_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep);
             }
             else {
                 for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -634,7 +634,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 if (!need_rpavg) {
                     r = SQRT(r2);
                 }
-                kbin = (int) ((r - rpmin)/rpstep);
+                kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
                 for(kbin=nbin-1;kbin>=1;kbin--) {
@@ -676,7 +676,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
 static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                          const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                          const int same_cell,
-                                                         const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
+                                                         const DOUBLE rpmax, const DOUBLE rpmin, const int nbin, const int npibin,
                                                          const DOUBLE *rupp_sqr, const DOUBLE pimax,
                                                          const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                          const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -694,14 +694,15 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
 
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE rpstep=0, rpmin=0;
-    SSE_FLOATS m_rpstep = SSE_SETZERO_FLOAT();
-    SSE_FLOATS m_rpmin = SSE_SETZERO_FLOAT();
+    const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
+    DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+    SSE_FLOATS m_inv_rpstep = SSE_SETZERO_FLOAT();
+    SSE_FLOATS m_rpmin_invstep = SSE_SETZERO_FLOAT();
     if (bin_type == 1) {
-        rpstep = (SQRT(sqr_rpmax) - SQRT(sqr_rpmin))/(nbin - 1);
-        rpmin = SQRT(sqr_rpmin) - rpstep; //trick to avoid adding one to (r - rmin)/rstep
-        m_rpstep = SSE_SET_FLOAT(rpstep);
-        m_rpmin = SSE_SET_FLOAT(rpmin);
+        inv_rpstep = (nbin - 1)/(rpmax - rpmin);
+        rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
+        m_inv_rpstep = SSE_SET_FLOAT(inv_rpstep);
+        m_rpmin_invstep = SSE_SET_FLOAT(rpmin_invstep);
     }
 
     const int64_t totnbins = (npibin+1) * (nbin+1);
@@ -930,8 +931,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 if (!need_rpavg) {
                     union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
                 }
-                m_rpbin = SSE_SUBTRACT_FLOATS(union_mDperp.m_Dperp, m_rpmin);
-                m_rpbin = SSE_CONVERT_INT_TO_FLOAT(SSE_TRUNCATE_FLOAT_TO_INT(SSE_DIVIDE_FLOATS(m_rpbin, m_rpstep)));
+                m_rpbin = SSE_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep);
             }
             else {
                 for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -1004,7 +1004,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 if (!need_rpavg) {
                     r = SQRT(r2);
                 }
-                kbin = (int) ((r - rpmin)/rpstep);
+                kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
                 for(kbin=nbin-1;kbin>=1;kbin--) {
@@ -1042,7 +1042,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
 static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
                                                    const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                    const int same_cell,
-                                                   const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const int npibin,
+                                                   const DOUBLE rpmax, const DOUBLE rpmin, const int nbin, const int npibin,
                                                    const DOUBLE *rupp_sqr, const DOUBLE pimax,
                                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                    const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
@@ -1062,10 +1062,11 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
     /*----------------- FALLBACK CODE --------------------*/
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    DOUBLE rpstep=0, rpmin=0;
+    const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
+    DOUBLE inv_rpstep=0., rpmin_invstep=0.;
     if (bin_type == 1) {
-        rpstep = (SQRT(sqr_rpmax) - SQRT(sqr_rpmin))/(nbin - 1);
-        rpmin = SQRT(sqr_rpmin) - rpstep; //trick to avoid adding one to (r - rmin)/rstep
+        inv_rpstep = (nbin - 1)/(rpmax - rpmin);
+        rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
     }
 
     const int64_t totnbins = (npibin+1)*(nbin+1);
@@ -1215,7 +1216,7 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
                 if (!need_rpavg) {
                     r = SQRT(r2);
                 }
-                kbin = (int) ((r - rpmin)/rpstep);
+                kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
                 for(kbin=nbin-1;kbin>=1;kbin--) {

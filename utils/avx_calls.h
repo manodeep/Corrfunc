@@ -57,13 +57,15 @@ extern "C" {
 #define AVX_LOG10_FLOAT(X)                 _mm256_log10_ps(X)
 #define AVX_LOG2_FLOAT(X)                _mm256_log2_ps(X)
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_ps(X)
-#define AVX_CONVERT_INT_TO_FLOAT(X)      _mm256_cvtepi32_ps(X)
 
 #define AVX_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X)
 #define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X)
 
+/* returns Z + XY*/
+#define AVX_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_ps(_mm256_fmadd_ps(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+#define AVX_CONVERT_INT_TO_FLOAT(X)        _mm256_cvtepi32_ps(X)
 
-    // X OP Y
+// X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_ps(X,Y,OP)
 #define AVX_BITWISE_AND(X,Y)              _mm256_and_ps(X,Y)
 #define AVX_BITWISE_OR(X,Y)               _mm256_or_ps(X,Y)
@@ -121,11 +123,14 @@ extern "C" {
 #define AVX_SQUARE_FLOAT(X)              _mm256_mul_pd(X,X)
 #define AVX_LOG_FLOAT(X)                 _mm256_log_pd(X)
 #define AVX_LOG2_FLOAT(X)                _mm256_log2_pd(X)
-#define AVX_LOG10_FLOAT(X)                _mm256_log10_pd(X)
+#define AVX_LOG10_FLOAT(X)               _mm256_log10_pd(X)
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_pd(X)
-#define AVX_CONVERT_INT_TO_FLOAT(X)      _mm256_cvtepi32_pd(X)
 
-    // X OP Y
+/* returns Z + XY*/
+#define AVX_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_pd(_mm256_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+#define AVX_CONVERT_INT_TO_FLOAT(X)        _mm256_cvtepi32_pd(X)
+
+// X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_pd(X,Y,OP)
 #define AVX_BITWISE_AND(X,Y)              _mm256_and_pd(X,Y)
 #define AVX_BITWISE_OR(X,Y)               _mm256_or_pd(X,Y)
