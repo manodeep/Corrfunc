@@ -203,12 +203,13 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     double *rupp;
     int nbins;
     double rmin,rmax;
-    setup_bins(binfile,&rmin,&rmax,&nbins,&rupp,&(options->bin_type));
+    setup_bins(binfile,&rmin,&rmax,&nbins,&rupp);
     if( ! (rmin >= 0.0 && rmax > 0.0 && rmin < rmax && nbins > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rmin, rmax, nbins);
         return EXIT_FAILURE;
     }
+    detect_bin_type(rupp, nbins, &(options->bin_type));
     if (options->verbose) {
         if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
         else fprintf(stderr,"Custom R binning\n");

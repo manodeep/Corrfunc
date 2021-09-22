@@ -297,12 +297,13 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     double *supp;
     int nsbin;
     double smin,smax;
-    setup_bins(sbinfile,&smin,&smax,&nsbin,&supp,&(options->bin_type));
+    setup_bins(sbinfile,&smin,&smax,&nsbin,&supp);
     if( ! (smin > 0.0 && smax > 0.0 && smin < smax && nsbin > 0)) {
         fprintf(stderr,"Error: Could not setup with S bins correctly. (smin = %lf, smax = %lf, with nbins = %d). Expected non-zero smin/smax with smax > smin and nbins >=1 \n",
                 smin, smax, nsbin);
         return EXIT_FAILURE;
     }
+    detect_bin_type(supp, nsbin, &(options->bin_type));
     if (options->verbose) {
         if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear S binning\n");
         else fprintf(stderr,"Custom S binning\n");

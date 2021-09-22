@@ -58,9 +58,10 @@ void volume_free(void ***v,int64_t nrow,int64_t ncol);
 
 extern int run_system_call(const char *execstring);
 
-extern int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, bin_type_t *bin_type);
-extern int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp, bin_type_t *bin_type);
-extern int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp, bin_type_t *bin_type);
+extern int detect_bin_type(const double *rupp, int nbin, bin_type_t *bin_type);
+extern int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp);
+extern int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp);
+extern int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp);
 
 extern int test_all_files_present(const int nfiles, ...);
 

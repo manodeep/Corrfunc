@@ -65,38 +65,33 @@ def test_linear_binning_mocks(isa='fallback'):
     autocorr = 1
     numbins_to_print = 5
     cosmology = 1
+    bin_types = ['custom', 'lin']
 
-    def allclose(a, b):
-        return all(np.allclose(a[name], b[name]) for name in a.dtype.names)
+    def allclose(a, *others):
+        toret = True
+        for b in others:
+            toret &= all(np.allclose(a[name], b[name]) for name in ['npairs'])
+        return toret
+
+    def test_bin_type(pair_counter, *args, **kwargs):
+        res = (pair_counter(*args, bin_type=bin_type, weight_type=weight_type, **kwargs) for bin_type in bin_types for weight_type in [None, "pair_product"])
+        assert allclose(*res)
 
     print("\nRunning 2-D correlation function xi(rp,pi)")
-    results_DDrppi_ref = DDrppi_mocks(autocorr, cosmology, nthreads,
-                                      pimax, binfile,
-                                      ra, dec, cz,
-                                      weights1=w, weight_type='pair_product',
-                                      output_rpavg=True, verbose=True, isa=isa, bin_type='custom')
-    results_DDrppi = DDrppi_mocks(autocorr, cosmology, nthreads,
-                                  pimax, binfile,
-                                  ra, dec, cz,
-                                  weights1=w, weight_type='pair_product',
-                                  output_rpavg=True, verbose=False, isa=isa, bin_type='lin')
-    assert allclose(results_DDrppi, results_DDrppi_ref)
+    test_bin_type(DDrppi_mocks, autocorr, cosmology, nthreads,
+                  pimax, binfile,
+                  ra, dec, cz, weights1=w,
+                  output_rpavg=True, verbose=True,
+                  isa=isa)
 
     nmu_bins = 10
     mu_max = 1.0
-
     print("\nRunning 2-D correlation function xi(s,mu)")
-    results_DDsmu_ref = DDsmu_mocks(autocorr, cosmology, nthreads,
-                                    mu_max, nmu_bins, binfile,
-                                    ra, dec, cz, weights1=w,
-                                    output_savg=True, verbose=True,
-                                    weight_type='pair_product', isa=isa, bin_type='custom')
-    results_DDsmu = DDsmu_mocks(autocorr, cosmology, nthreads,
-                                mu_max, nmu_bins, binfile,
-                                ra, dec, cz, weights1=w,
-                                output_savg=True, verbose=False,
-                                weight_type='pair_product', isa=isa, bin_type='lin')
-    assert allclose(results_DDsmu, results_DDsmu_ref)
+    test_bin_type(DDsmu_mocks, autocorr, cosmology, nthreads,
+                  mu_max, nmu_bins, binfile,
+                  ra, dec, cz, weights1=w,
+                  output_savg=True, verbose=True,
+                  isa=isa)
 
 
 def test_linear_binning_theory(isa='fallback'):
@@ -113,7 +108,7 @@ def test_linear_binning_theory(isa='fallback'):
 
     tstart = time.time()
     t0 = tstart
-    x, y, z = read_catalog()
+    x, y, z = np.array(read_catalog())[:,:1000]
     w = np.ones((1, len(x)), dtype=x.dtype)
     boxsize = 420.0
     t1 = time.time()
@@ -133,80 +128,54 @@ def test_linear_binning_theory(isa='fallback'):
             file.write("{0} {1}\n".format(low, hi))
     autocorr = 1
     periodic = 1
+    bin_types = ['custom', 'lin']
 
-    def allclose(a, b):
-        return all(np.allclose(a[name], b[name]) for name in a.dtype.names)
+    def allclose(a, *others):
+        toret = True
+        for b in others:
+            toret &= all(np.allclose(a[name], b[name]) for name in ['npairs'])
+        return toret
+
+    def test_bin_type(pair_counter, *args, **kwargs):
+        res = (pair_counter(*args, bin_type=bin_type, weight_type=weight_type, **kwargs) for bin_type in bin_types for weight_type in [None, "pair_product"])
+        assert allclose(*res)
 
     print("Running 3-D correlation function DD(r)")
-    results_DD_ref = DD(autocorr, nthreads, binfile, x, y, z,
-                        weights1=w, weight_type='pair_product',
-                        verbose=True, periodic=periodic, boxsize=boxsize,
-                        isa=isa, bin_type='custom')
-    results_DD = DD(autocorr, nthreads, binfile, x, y, z,
-                    weights1=w, weight_type='pair_product',
-                    verbose=False, periodic=periodic, boxsize=boxsize,
-                    isa=isa, bin_type='auto')
-    allclose(results_DD, results_DD_ref)
+
+    test_bin_type(DD, autocorr, nthreads, binfile, x, y, z, weights1=w,
+                  verbose=True, periodic=periodic, boxsize=boxsize, isa=isa)
+
 
     print("\nRunning 2-D correlation function DD(rp,pi)")
-    results_DDrppi_ref = DDrppi(autocorr, nthreads, pimax,
-                                binfile, x, y, z,
-                                weights1=w, weight_type='pair_product',
-                                verbose=False, periodic=periodic,
-                                boxsize=boxsize, isa=isa, bin_type='custom')
-    results_DDrppi = DDrppi(autocorr, nthreads, pimax,
-                            binfile, x, y, z,
-                            weights1=w, weight_type='pair_product',
-                            verbose=False, periodic=periodic,
-                            boxsize=boxsize, isa=isa, bin_type='lin')
-    allclose(results_DDrppi, results_DDrppi_ref)
+    test_bin_type(DDrppi, autocorr, nthreads, pimax,
+                  binfile, x, y, z, weights1=w,
+                  verbose=True, periodic=periodic,
+                  boxsize=boxsize, isa=isa)
 
     mu_max = 0.5
     nmu_bins = 10
 
     print("\nRunning 2-D correlation function DD(s,mu)")
-    results_DDsmu_ref = DDsmu(autocorr, nthreads, binfile,
-                              mu_max, nmu_bins,
-                              x, y, z,
-                              weights1=w, weight_type='pair_product',
-                              verbose=True, periodic=periodic,
-                              boxsize=boxsize, output_savg=True,
-                              isa=isa, bin_type='custom')
-    results_DDsmu = DDsmu(autocorr, nthreads, binfile,
-                          mu_max, nmu_bins,
-                          x, y, z,
-                          weights1=w, weight_type='pair_product',
-                          verbose=False, periodic=periodic,
-                          boxsize=boxsize, output_savg=True,
-                          isa=isa, bin_type='lin')
-    allclose(results_DDsmu, results_DDsmu_ref)
+    test_bin_type(DDsmu, autocorr, nthreads, binfile,
+                  mu_max, nmu_bins,
+                  x, y, z, weights1=w,
+                  verbose=True, periodic=periodic,
+                  boxsize=boxsize, output_savg=True, isa=isa)
 
     print("\nRunning 2-D projected correlation function wp(rp)")
-    results_wp_ref = wp(boxsize, pimax, nthreads,
-                        binfile, x, y, z,
-                        weights=w, weight_type='pair_product',
-                        verbose=True, isa=isa, bin_type='custom')
-    results_wp = wp(boxsize, pimax, nthreads,
-                    binfile, x, y, z,
-                    weights=w, weight_type='pair_product',
-                    verbose=False, isa=isa, bin_type='custom')
-    allclose(results_wp, results_wp_ref)
+    test_bin_type(wp, boxsize, pimax, nthreads,
+                  binfile, x, y, z, weights=w,
+                  verbose=True, isa=isa)
 
     print("\nRunning 3-D auto-correlation function xi(r)")
-    results_xi_ref = xi(boxsize, nthreads, binfile,
-                        x, y, z,
-                        weights=w, weight_type='pair_product',
-                        verbose=True, isa=isa, bin_type='custom')
-    results_xi = xi(boxsize, nthreads, binfile,
-                    x, y, z,
-                    weights=w, weight_type='pair_product',
-                    verbose=False, isa=isa, bin_type='lin')
-    allclose(results_xi, results_xi_ref)
+    test_bin_type(xi, boxsize, nthreads, binfile,
+                  x, y, z, weights=w,
+                  verbose=True, isa=isa)
 
 
 if __name__ == '__main__':
 
-    #tests()
+    tests()
     for isa in ['fallback','sse42','avx','avx512f']:
         test_linear_binning_mocks(isa=isa)
         test_linear_binning_theory(isa=isa)

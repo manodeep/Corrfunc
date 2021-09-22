@@ -218,12 +218,13 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     double *rupp;
     double rpmin,rpmax;
     int nrpbins;
-    setup_bins(binfile,&rpmin,&rpmax,&nrpbins,&rupp,&(options->bin_type));
+    setup_bins(binfile,&rpmin,&rpmax,&nrpbins,&rupp);
     if( ! (rpmin >=0 && rpmax > 0.0 && rpmin < rpmax && nrpbins > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rpmin, rpmax, nrpbins);
         return EXIT_FAILURE;
     }
+    detect_bin_type(rupp, nrpbins, &(options->bin_type));
     if (options->verbose) {
         if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
         else fprintf(stderr,"Custom R binning\n");

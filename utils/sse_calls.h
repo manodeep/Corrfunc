@@ -61,10 +61,9 @@ extern "C" {
 #define SSE_ABS_FLOAT(X)                  _mm_max_ps(_mm_sub_ps(_mm_setzero_ps(), X), X)
 
 /* returns Z + XY*/
+#define SSE_FMA_ADD_FLOATS(X,Y,Z)          _mm_fmadd_ps(X,Y,Z)
 //#define SSE_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm_fmadd_round_ss(X,Y,Z,_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 #define SSE_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm_round_ps(_mm_fmadd_ps(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
-
-#define SSE_CONVERT_INT_TO_FLOAT(X)                            _mm_cvtepi32_ps(X)
 
 
 #ifdef  __INTEL_COMPILER
@@ -122,10 +121,9 @@ extern "C" {
 #define SSE_ABS_FLOAT(X)                  _mm_max_pd(_mm_sub_pd(_mm_setzero_pd(), X), X)
 
 /* returns Z + XY*/
+#define SSE_FMA_ADD_FLOATS(X,Y,Z)           _mm_fmadd_pd(X,Y,Z)
 //#define SSE_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm_fmadd_round_sd(X,Y,Z,_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 #define SSE_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm_round_pd(_mm_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
-
-#define SSE_CONVERT_INT_TO_FLOAT(X)                            _mm_cvtepi32_pd(X)
 
 #endif
 

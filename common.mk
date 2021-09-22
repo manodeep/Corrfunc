@@ -19,7 +19,7 @@ CLINK ?=
 ## Set the python command (supply the full path to python you want to
 ## use, if different from directly calling `python` on the shell,
 ## as can be the case if python is set via an alias)
-PYTHON:=/local/home/adematti/anaconda3/envs/cosmopipe-dev/bin/python
+PYTHON:=python
 
 ## Important note -> if you directly call /some/path/to/python
 ## then the previous two variables will be updated to point

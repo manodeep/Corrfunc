@@ -62,8 +62,8 @@ extern "C" {
 #define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X)
 
 /* returns Z + XY*/
+#define AVX_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_ps(X,Y,Z)
 #define AVX_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_ps(_mm256_fmadd_ps(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
-#define AVX_CONVERT_INT_TO_FLOAT(X)        _mm256_cvtepi32_ps(X)
 
 // X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_ps(X,Y,OP)
@@ -127,8 +127,8 @@ extern "C" {
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_pd(X)
 
 /* returns Z + XY*/
+#define AVX_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_pd(X,Y,Z)
 #define AVX_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_pd(_mm256_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
-#define AVX_CONVERT_INT_TO_FLOAT(X)        _mm256_cvtepi32_pd(X)
 
 // X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_pd(X,Y,OP)
@@ -152,13 +152,13 @@ extern "C" {
 #define AVX_ARC_COSINE(X, order)                  inv_cosine_avx(X, order)
 #endif
 
-    //Max
+//Max
 #define AVX_MAX_FLOATS(X,Y)               _mm256_max_pd(X,Y)
 
   //Absolute value
 #define AVX_ABS_FLOAT(X)                  _mm256_max_pd(_mm256_sub_pd(_mm256_setzero_pd(), X), X)
 
-    //Casting (does not actual convert between types)
+//Casting (does not actual convert between types)
 #define AVX_CAST_FLOAT_TO_INT(X)          _mm256_castpd_si256(X)
 #define AVX_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_pd(X)
 

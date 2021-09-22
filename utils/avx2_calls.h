@@ -63,7 +63,6 @@ extern "C" {
 #define AVX2_LOG10_FLOAT(X)                 _mm256_log10_ps(X)
 #define AVX2_LOG2_FLOAT(X)                _mm256_log2_ps(X)
 #define AVX2_RECIPROCAL_FLOATS(X)         _mm256_rcp_ps(X)
-#define AVX2_CONVERT_INT_TO_FLOAT(X)      _mm256_cvtepi32_ps(X)
 
 #define AVX2_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X)
 #define AVX2_SET_FLOAT(X)                 _mm256_set1_ps(X)
@@ -108,6 +107,7 @@ extern "C" {
 #define AVX2_STREAMING_STORE_INTS(X,Y)     _mm256_stream_si256(X,Y)
 
 /* returns Z + XY*/
+#define AVX2_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_ps(X,Y,Z)
 #define AVX2_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_ps(_mm256_fmadd_ps(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
 #else //DOUBLE PRECISION CALCULATIONS
@@ -142,7 +142,6 @@ extern "C" {
 #define AVX2_LOG2_FLOAT(X)                _mm256_log2_pd(X)
 #define AVX2_LOG10_FLOAT(X)                _mm256_log10_pd(X)
 #define AVX2_RECIPROCAL_FLOATS(X)         _mm256_rcp_pd(X)
-#define AVX2_CONVERT_INT_TO_FLOAT(X)      _mm256_cvtepi32_pd(X)
 
     // X OP Y
 #define AVX2_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_pd(X,Y,OP)
@@ -185,6 +184,7 @@ extern "C" {
 #define AVX2_STREAMING_STORE_INTS(X,Y)     _mm_stream_si128(X,Y)
 
 /* returns Z + XY*/
+#define AVX2_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_pd(X,Y,Z)
 #define AVX2_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_pd(_mm256_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
 #endif //DOUBLE_PREC

@@ -197,12 +197,13 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
     double *rupp;
     int nrpbin ;
     double rpmin,rpmax;
-    setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp,&(options->bin_type));
+    setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
     if( ! (rpmin >= 0.0 && rpmax > 0.0 && rpmin < rpmax && nrpbin > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rpmin, rpmax, nrpbin);
         return EXIT_FAILURE;
     }
+    detect_bin_type(rupp, nrpbin, &(options->bin_type));
     if (options->verbose) {
         if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
         else fprintf(stderr,"Custom R binning\n");

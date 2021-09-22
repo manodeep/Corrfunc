@@ -148,7 +148,6 @@ extern "C" {
 #define AVX512_RECIPROCAL_FLOATS(X)                               _mm512_rcp14_ps(X)
 #define AVX512_MASK_RECIPROCAL_FLOATS(FALSEVALS, MASK, X)         _mm512_mask_rcp14_ps(FALSEVALS, MASK, X)
 #define AVX512_MASKZ_RECIPROCAL_FLOATS(MASK, X)                   _mm512_maskz_rcp14_ps(MASK, X)
-#define AVX512_CONVERT_INT_TO_FLOAT(X)                            _mm512_cvtepi32_ps(X)
 
 #define AVX512_SET_FLOAT(X)                                       _mm512_set1_ps(X)
 
@@ -285,7 +284,6 @@ extern "C" {
 #define AVX512_RECIPROCAL_FLOATS(X)                               _mm512_rcp14_pd(X)
 #define AVX512_MASK_RECIPROCAL_FLOATS(FALSEVALS, MASK, X)         _mm512_mask_rcp14_pd(FALSEVALS, MASK, X)
 #define AVX512_MASKZ_RECIPROCAL_FLOATS(MASK, X)                   _mm512_maskz_rcp14_pd(MASK, X)
-#define AVX512_CONVERT_INT_TO_FLOAT(X)                            _mm512_cvtepi32_pd(X)
 
     // X OP Y
 #define AVX512_COMPARE_FLOATS(X, Y, OP)                           _mm512_cmp_pd_mask(X, Y, OP)
