@@ -59,7 +59,7 @@ void get_max_double(const int64_t ND1, const double *cz1, double *czmax)
     *czmax = max;
 }
 
-int detect_bin_type(const double *rupp, int nbin, bin_type_t *bin_type)
+int detect_bin_type(const double *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose)
 {
     if (*bin_type == BIN_AUTO) {
         // if linear spacing, return BIN_LIN, else BIN_CUSTOM
@@ -75,6 +75,58 @@ int detect_bin_type(const double *rupp, int nbin, bin_type_t *bin_type)
                 break;
             }
         }
+    }
+    if (verbose) {
+        if (*bin_type == BIN_LIN) fprintf(stderr,"Linear binning\n");
+        else fprintf(stderr,"Custom binning\n");
+    }
+    return EXIT_SUCCESS;
+}
+
+int detect_bin_type_double(const double *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose)
+{
+    if (*bin_type == BIN_AUTO) {
+        // if linear spacing, return BIN_LIN, else BIN_CUSTOM
+        const double atol = 1e-8; // same tol as numpy.allclose
+        const double rtol = 1e-5;
+        double rmin = rupp[0];
+        double rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
+        *bin_type = BIN_LIN;
+        for (int ii=1; ii<nbin; ii++) {
+            double pred = rmin + rstep*ii;
+            if ((fabs(rupp[ii] - pred) > atol)||(fabs((rupp[ii] - pred)/pred) > rtol)) {
+                *bin_type = BIN_CUSTOM;
+                break;
+            }
+        }
+    }
+    if (verbose) {
+        if (*bin_type == BIN_LIN) fprintf(stderr,"Linear binning\n");
+        else fprintf(stderr,"Custom binning\n");
+    }
+    return EXIT_SUCCESS;
+}
+
+int detect_bin_type_float(const float *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose)
+{
+    if (*bin_type == BIN_AUTO) {
+        // if linear spacing, return BIN_LIN, else BIN_CUSTOM
+        const float atol = 1e-8; // same tol as numpy.allclose
+        const float rtol = 1e-5;
+        float rmin = rupp[0];
+        float rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
+        *bin_type = BIN_LIN;
+        for (int ii=1; ii<nbin; ii++) {
+            float pred = rmin + rstep*ii;
+            if ((fabs(rupp[ii] - pred) > atol)||(fabs((rupp[ii] - pred)/pred) > rtol)) {
+                *bin_type = BIN_CUSTOM;
+                break;
+            }
+        }
+    }
+    if (verbose) {
+        if (*bin_type == BIN_LIN) fprintf(stderr,"Linear binning\n");
+        else fprintf(stderr,"Custom binning\n");
     }
     return EXIT_SUCCESS;
 }

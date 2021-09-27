@@ -209,11 +209,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                 rmin, rmax, nbins);
         return EXIT_FAILURE;
     }
-    detect_bin_type(rupp, nbins, &(options->bin_type));
-    if (options->verbose) {
-        if (options->bin_type == BIN_LIN) fprintf(stderr,"Linear R binning\n");
-        else fprintf(stderr,"Custom R binning\n");
-    }
+    detect_bin_type(rupp, nbins, &(options->bin_type), options->verbose);
 
     if(get_bin_refine_scheme(options) == BINNING_DFL) {
         if(rmax < 0.05*boxsize) {

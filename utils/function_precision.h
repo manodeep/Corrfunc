@@ -19,6 +19,7 @@ extern "C" {
 
 #define PI_OVER_180       0.017453292519943295769236907684886127134428718885417254560971
 #define INV_PI_OVER_180   57.29577951308232087679815481410517033240547246656432154916024
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x))) //min(max(a,low),high)
 
 //Define the Macros
 #ifdef DOUBLE_PREC
@@ -30,7 +31,7 @@ extern "C" {
 #endif
 
 #ifdef __AVX__
-    
+
 #define REGISTER_WIDTH 256  //cpu supports avx instructions
 #define NVECF  8  //8 floats per ymm register
 #define NVECD  4  //4 doubles per ymm register
@@ -38,7 +39,7 @@ extern "C" {
 #else
 
 #ifdef __SSE4_2__
-    
+
 #define REGISTER_WIDTH 128  //cpu supports sse instructions
 #define NVECF  4  //8 floats per xmm register
 #define NVECD  2  //4 doubles per xmm register
@@ -54,7 +55,7 @@ extern "C" {
 
 
 #include <float.h>
-    
+
 #ifdef DOUBLE_PREC
 #define DOUBLE double
 #define REAL_FORMAT "lf"

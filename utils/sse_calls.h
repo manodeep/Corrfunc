@@ -117,6 +117,7 @@ extern "C" {
 #define SSE_ARC_COSINE(X, order)                  inv_cosine_sse(X, order)
 #endif
 
+#define SSE_MIN_FLOATS(X,Y)               _mm_min_pd(X,Y)
 #define SSE_MAX_FLOATS(X,Y)               _mm_max_pd(X,Y)
 #define SSE_ABS_FLOAT(X)                  _mm_max_pd(_mm_sub_pd(_mm_setzero_pd(), X), X)
 

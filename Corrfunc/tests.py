@@ -44,7 +44,7 @@ def test_linear_binning_mocks(isa='fallback'):
                      "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
 
     t0 = time.time()
-    ra, dec, cz = read_catalog(filename)
+    ra, dec, cz = np.array(read_catalog(filename))[:,:1000]
     w = np.ones((1, len(ra)), dtype=ra.dtype)
     t1 = time.time()
     print("RA min  = {0} max = {1}".format(np.min(ra), np.max(ra)))
@@ -56,12 +56,7 @@ def test_linear_binning_mocks(isa='fallback'):
 
     nthreads = 4
     pimax = 40.0
-    binfile = pjoin(dirname(abspath(__file__)),
-                    "../mocks/tests/", "bins_lin")
-    rbins = np.linspace(0.1, 45.1, 46)
-    with open(binfile,'w') as file:
-        for low, hi in zip(rbins[:-1], rbins[1:]):
-            file.write("{0} {1}\n".format(low, hi))
+    binfile = np.linspace(5.1, 50.1, 46)
     autocorr = 1
     numbins_to_print = 5
     cosmology = 1
@@ -70,11 +65,13 @@ def test_linear_binning_mocks(isa='fallback'):
     def allclose(a, *others):
         toret = True
         for b in others:
-            toret &= all(np.allclose(a[name], b[name]) for name in ['npairs'])
+            toret &= all((a[name] == b[name]).all()
+                         for name in ['npairs','weightavg'])
         return toret
 
     def test_bin_type(pair_counter, *args, **kwargs):
-        res = (pair_counter(*args, bin_type=bin_type, weight_type=weight_type, **kwargs) for bin_type in bin_types for weight_type in [None, "pair_product"])
+        res = (pair_counter(*args, bin_type=bin_type,
+               weight_type="pair_product", **kwargs) for bin_type in bin_types)
         assert allclose(*res)
 
     print("\nRunning 2-D correlation function xi(rp,pi)")
@@ -92,6 +89,15 @@ def test_linear_binning_mocks(isa='fallback'):
                   ra, dec, cz, weights1=w,
                   output_savg=True, verbose=True,
                   isa=isa)
+
+    binfile = np.linspace(3.1, 13.1, 11)
+    print("\nRunning angular correlation function DD(theta)")
+    test_bin_type(DDtheta_mocks, autocorr, nthreads, binfile,
+                  ra, dec, RA2=ra, DEC2=dec,
+                  weights1=w,
+                  weights2=w,
+                  output_thetaavg=True, fast_acos=False,
+                  verbose=True, isa=isa)
 
 
 def test_linear_binning_theory(isa='fallback'):
@@ -120,12 +126,7 @@ def test_linear_binning_theory(isa='fallback'):
     print("Beginning Theory Correlation functions calculations")
     nthreads = 4
     pimax = 40.0
-    binfile = pjoin(dirname(abspath(__file__)),
-                    "../theory/tests/", "bins_lin")
-    rbins = np.linspace(0.1, 25.1, 26)
-    with open(binfile,'w') as file:
-        for low, hi in zip(rbins[:-1], rbins[1:]):
-            file.write("{0} {1}\n".format(low, hi))
+    binfile = np.linspace(5.1, 30.1, 26)
     autocorr = 1
     periodic = 1
     bin_types = ['custom', 'lin']
@@ -133,18 +134,18 @@ def test_linear_binning_theory(isa='fallback'):
     def allclose(a, *others):
         toret = True
         for b in others:
-            toret &= all(np.allclose(a[name], b[name]) for name in ['npairs'])
+            toret &= all((a[name] == b[name]).all()
+                         for name in ['npairs','weightavg'])
         return toret
 
     def test_bin_type(pair_counter, *args, **kwargs):
-        res = (pair_counter(*args, bin_type=bin_type, weight_type=weight_type, **kwargs) for bin_type in bin_types for weight_type in [None, "pair_product"])
+        res = (pair_counter(*args, bin_type=bin_type,
+               weight_type="pair_product", **kwargs) for bin_type in bin_types)
         assert allclose(*res)
 
     print("Running 3-D correlation function DD(r)")
-
     test_bin_type(DD, autocorr, nthreads, binfile, x, y, z, weights1=w,
                   verbose=True, periodic=periodic, boxsize=boxsize, isa=isa)
-
 
     print("\nRunning 2-D correlation function DD(rp,pi)")
     test_bin_type(DDrppi, autocorr, nthreads, pimax,

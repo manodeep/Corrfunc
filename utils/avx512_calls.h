@@ -111,6 +111,7 @@ extern "C" {
 #define AVX512_MASK_FMA_ADD_FLOATS(X, MASK, Y, Z)                 _mm512_mask_fmadd_ps(X, MASK, Y, Z)
 #define AVX512_MASKZ_FMA_ADD_FLOATS(X, MASK, Y, Z)                _mm512_maskz_fmadd_ps(MASK, X, Y, Z)
 #define AVX512_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z)                     _mm512_fmadd_round_ps(X, Y, Z, _MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+#define AVX512_MASKZ_FMA_ADD_TRUNCATE_FLOATS(MASK, X,Y,Z)         _mm512_fmadd_maskz_round_ps(MASK, X, Y, Z, _MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
   /* returns Z - XY*/
 #define AVX512_FNMA_ADD_FLOATS(X, Y, Z)                           _mm512_fnmadd_ps(X, Y, Z)

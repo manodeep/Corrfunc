@@ -21,7 +21,7 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
               verbose=False, is_comoving_dist=False,
               xbin_refine_factor=1, ybin_refine_factor=1,
               zbin_refine_factor=1, max_cells_per_dim=100,
-              copy_particles=True, c_api_timer=False, isa=r'fastest'):
+              copy_particles=True, c_api_timer=False, isa='fastest'):
     """
     Function to compute the counts-in-cells on points on the sky. Suitable
     for mock catalogs and observed galaxies.

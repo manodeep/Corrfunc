@@ -23,7 +23,8 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
                   fast_acos=False, ra_refine_factor=2,
                   dec_refine_factor=2, max_cells_per_dim=100,
                   copy_particles=True, enable_min_sep_opt=True,
-                  c_api_timer=False, isa=r'fastest', weight_type=None):
+                  c_api_timer=False, isa='fastest',
+                  weight_type=None, bin_type='custom'):
     """
     Function to compute the angular correlation function for points on
     the sky (i.e., mock catalogs or observed galaxies).
@@ -42,7 +43,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
 
     Parameters
-    -----------
+    ----------
 
     autocorr : boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
@@ -137,7 +138,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
     fast_acos : boolean (default false)
         Flag to use numerical approximation for the ``arccos`` - gives better
         performance at the expense of some precision. Relevant only if
-        ``output_thetaavg==True``.
+        ``output_thetaavg==True`` or ``bin_type!='custom'``.
 
         Developers: Two versions already coded up in ``utils/fast_acos.h``,
         so you can choose the version you want. There are also notes on how
@@ -195,6 +196,21 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
     weight_type : string, optional (default None)
         The type of weighting to apply.  One of ["pair_product", None].
+
+    bin_type : string, case-insensitive (default ``custom``)
+        Set to ``lin`` for speed-up in case of linearly-spaced bins.
+        In this case, the bin number for a pair separated by ``theta`` is given by
+        ``(theta - binfile[0])/(binfile[-1] - binfile[0])*(len(binfile) - 1)``,
+        i.e. only the first and last bins of input ``binfile`` are considered.
+        Then setting ``output_thetaavg`` is virtually costless.
+        NOTE: use the most precise ``arccos``, except if ``fast_acos==True``;
+        in this case, some pairs may shift bins!
+        For non-linear binning, set to ``custom``.
+        ``auto`` allows for auto-detection of the binning type:
+        linear binning will be chosen if input ``binfile`` is
+        within ``rtol = 1e-05`` (relative tolerance) *and* ``atol = 1e-08``
+        (absolute tolerance) of the array
+        ``np.linspace(binfile[0], binfile[-1], len(binfile))``.
 
     Returns
     --------
@@ -275,7 +291,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
         raise ImportError(msg)
 
     import numpy as np
-    from Corrfunc.utils import translate_isa_string_to_enum,\
+    from Corrfunc.utils import translate_isa_string_to_enum, translate_bin_type_string_to_enum,\
         fix_ra_dec, return_file_with_rbins, convert_to_native_endian,\
         sys_pipes, process_weights
     from future.utils import bytes_to_native_str
@@ -312,6 +328,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
             kwargs[k] = v
 
     integer_isa = translate_isa_string_to_enum(isa)
+    integer_bin_type = translate_bin_type_string_to_enum(bin_type)
     rbinfile, delete_after_use = return_file_with_rbins(binfile)
     with sys_pipes():
         extn_results = DDtheta_mocks_extn(autocorr, nthreads, rbinfile,
@@ -327,7 +344,8 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
                                           copy_particles=copy_particles,
                                           enable_min_sep_opt=enable_min_sep_opt,
                                           c_api_timer=c_api_timer,
-                                          isa=integer_isa, **kwargs)
+                                          isa=integer_isa,
+                                          bin_type=integer_bin_type, **kwargs)
     if extn_results is None:
         msg = "RuntimeError occurred"
         raise RuntimeError(msg)
@@ -356,7 +374,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
                                         link_in_dec=True, link_in_ra=True,
                                         verbose=False, output_thetaavg=False,
                                         max_cells_per_dim=100,
-                                        isa=r'fastest',
+                                        isa='fastest',
                                         maxbinref=3, nrepeats=3,
                                         return_runtimes=False):
     """

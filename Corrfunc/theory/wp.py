@@ -17,7 +17,7 @@ __all__ = ('wp', 'find_fastest_wp_bin_refs', )
 def find_fastest_wp_bin_refs(boxsize, pimax, nthreads, binfile, X, Y, Z,
                              verbose=False, output_rpavg=False,
                              max_cells_per_dim=100,
-                             isa=r'fastest',
+                             isa='fastest',
                              maxbinref=3, nrepeats=3,
                              return_runtimes=False):
 
@@ -285,7 +285,7 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
        xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
        copy_particles=True, enable_min_sep_opt=True,
-       c_api_timer=False, c_cell_timer=False, isa='fastest', bin_type=r'auto'):
+       c_api_timer=False, c_cell_timer=False, isa='fastest', bin_type='custom'):
     """
     Function to compute the projected correlation function in a
     periodic cosmological box. Pairs which are separated by less
@@ -407,10 +407,18 @@ def wp(boxsize, pimax, nthreads, binfile, X, Y, Z,
     weight_type: string, optional.  Default: None.
         The type of weighting to apply.  One of ["pair_product", None].
 
-    bin_type : string, case-insensitive (default ``auto``)
-        If bins in ``binfile`` are linearly-spaced, set to ``lin`` for speed-up.
-        Else, set to ``custom``.
-        ``auto`` allows for auto-detection of the binning type.
+    bin_type : string, case-insensitive (default ``custom``)
+        Set to ``lin`` for speed-up in case of linearly-spaced bins.
+        In this case, the bin number for a pair separated by ``r_p`` is given by
+        ``(r_p - binfile[0])/(binfile[-1] - binfile[0])*(len(binfile) - 1)``,
+        i.e. only the first and last bins of input ``binfile`` are considered.
+        Then setting ``output_rpavg`` is virtually costless.
+        For non-linear binning, set to ``custom``.
+        ``auto`` allows for auto-detection of the binning type:
+        linear binning will be chosen if input ``binfile`` is
+        within ``rtol = 1e-05`` (relative tolerance) *and* ``atol = 1e-08``
+        (absolute tolerance) of the array
+        ``np.linspace(binfile[0], binfile[-1], len(binfile))``.
 
     Returns
     --------

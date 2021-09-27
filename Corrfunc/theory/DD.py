@@ -18,7 +18,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
        output_ravg=False, xbin_refine_factor=2, ybin_refine_factor=2,
        zbin_refine_factor=1, max_cells_per_dim=100,
        copy_particles=True, enable_min_sep_opt=True,
-       c_api_timer=False, isa=r'fastest', weight_type=None, bin_type=r'auto'):
+       c_api_timer=False, isa='fastest', weight_type=None, bin_type='custom'):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
     function, :math:`\\xi(r)`.
@@ -35,7 +35,7 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
 
     Parameters
-    -----------
+    ----------
 
     autocorr: boolean, required
         Boolean flag for auto/cross-correlation. If autocorr is set to 1,
@@ -140,10 +140,18 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     weight_type: string, optional. Default: None.
         The type of weighting to apply.  One of ["pair_product", None].
 
-    bin_type : string, case-insensitive (default ``auto``)
-        If bins in ``binfile`` are linearly-spaced, set to ``lin`` for speed-up.
-        Else, set to ``custom``.
-        ``auto`` allows for auto-detection of the binning type.
+    bin_type : string, case-insensitive (default ``custom``)
+        Set to ``lin`` for speed-up in case of linearly-spaced bins.
+        In this case, the bin number for a pair separated by ``r`` is given by
+        ``(r - binfile[0])/(binfile[-1] - binfile[0])*(len(binfile) - 1)``,
+        i.e. only the first and last bins of input ``binfile`` are considered.
+        Then setting ``output_ravg`` is virtually costless.
+        For non-linear binning, set to ``custom``.
+        ``auto`` allows for auto-detection of the binning type:
+        linear binning will be chosen if input ``binfile`` is
+        within ``rtol = 1e-05`` (relative tolerance) *and* ``atol = 1e-08``
+        (absolute tolerance) of the array
+        ``np.linspace(binfile[0], binfile[-1], len(binfile))``.
 
     Returns
     --------

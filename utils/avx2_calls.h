@@ -108,7 +108,6 @@ extern "C" {
 
 /* returns Z + XY*/
 #define AVX2_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_ps(X,Y,Z)
-#define AVX2_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_ps(_mm256_fmadd_ps(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
 #else //DOUBLE PRECISION CALCULATIONS
 

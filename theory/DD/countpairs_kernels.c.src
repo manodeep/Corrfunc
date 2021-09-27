@@ -219,7 +219,7 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
                 continue;
             }
 
-            if(need_rpavg) {
+            if(need_rpavg || bin_type == BIN_LIN) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
             }
             if(need_weightavg){
@@ -228,10 +228,8 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
 
             AVX512_INTS m_rpbin = AVX512_SETZERO_INT();
             if (bin_type == BIN_LIN) {
-                if (!need_rpavg) {
-                    union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
-                }
-                m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(AVX512_FMA_ADD_FLOATS(union_mDperp.m_Dperp, m_inv_rpstep, m_rpmin_invstep));
+                m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(
+                          AVX512_MASKZ_FMA_ADD_FLOATS(union_mDperp.m_Dperp, m_mask_left, m_inv_rpstep, m_rpmin_invstep));
             }
             else {
                 //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
@@ -248,7 +246,7 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
                     }
                 }//backwards loop over the bins
             }
-            if(need_rpavg || need_weightavg || (bin_type == BIN_LIN)) {
+            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
                 //Do I need this step of going via the union? accessing int[] -> AVX* vector might
                 //cause alignment problems but accessing the ints from an AVX*
                 //register should always be fine
@@ -517,17 +515,14 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             }
 
             AVX_FLOATS m_rpbin = AVX_SETZERO_FLOAT();
-            if(need_rpavg) {
+            if(need_rpavg || bin_type == BIN_LIN) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
                 union_mweight.m_weights = avx_weight_func(&pair);
             }
             if (bin_type == BIN_LIN) {
-                if (!need_rpavg) {
-                    union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
-                }
-                m_rpbin = AVX_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep);
+                m_rpbin = AVX_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
                 union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
             }
             else {
@@ -547,7 +542,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
                     }
                 }
             }
-            if(need_rpavg || need_weightavg || (bin_type == BIN_LIN)) {
+            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
                 union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
@@ -593,7 +588,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             }
 
             DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_rpavg) {
+            if(need_rpavg || bin_type == BIN_LIN) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
@@ -602,9 +597,6 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
 
             int kbin = 0;
             if (bin_type == BIN_LIN) {
-                if (!need_rpavg) {
-                    r = SQRT(r2);
-                }
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -834,7 +826,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
           }
 
           SSE_FLOATS m_rpbin = SSE_SETZERO_FLOAT();
-          if(need_rpavg) {
+          if(need_rpavg || bin_type == BIN_LIN) {
               union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
           }
           if(need_weightavg){
@@ -842,10 +834,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
           }
 
           if (bin_type == BIN_LIN) {
-              if (!need_rpavg) {
-                  union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
-              }
-              m_rpbin = SSE_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep);
+              m_rpbin = SSE_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
               union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
           }
           else {
@@ -865,7 +854,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
                   }
               }
           }
-          if(need_rpavg || need_weightavg || (bin_type == BIN_LIN)) {
+          if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
               //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
 #pragma unroll(SSE_NVEC)
@@ -907,7 +896,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
           }
 
           DOUBLE r = ZERO, pairweight = ZERO;
-          if(need_rpavg) {
+          if(need_rpavg || bin_type == BIN_LIN) {
               r = SQRT(r2);
           }
           if(need_weightavg){
@@ -916,9 +905,6 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
 
           int kbin = 0;
           if (bin_type == BIN_LIN) {
-              if (!need_rpavg) {
-                  r = SQRT(r2);
-              }
               kbin = (int) (r*inv_rpstep + rpmin_invstep);
           }
           else {
@@ -1089,7 +1075,7 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
             }
 
             DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_rpavg) {
+            if(need_rpavg || bin_type == BIN_LIN) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
@@ -1098,9 +1084,6 @@ static inline int countpairs_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBL
 
             int kbin = 0;
             if (bin_type == BIN_LIN) {
-                if (!need_rpavg) {
-                    r = SQRT(r2);
-                }
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {

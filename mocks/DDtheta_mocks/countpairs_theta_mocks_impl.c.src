@@ -183,7 +183,7 @@ countpairs_theta_mocks_func_ptr_DOUBLE countpairs_theta_mocks_driver_DOUBLE(cons
 static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0,
                                                             const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1,
                                                             const int numthreads,
-                                                            const DOUBLE costhetamax, const DOUBLE costhetamin, const int nthetabin,
+                                                            const DOUBLE thetamax, const DOUBLE thetamin, const int nthetabin,
                                                             const DOUBLE *theta_upp,
                                                             const DOUBLE *costheta_upp,
                                                             results_countpairs_theta *results,
@@ -347,12 +347,12 @@ static inline int countpairs_theta_mocks_brute_force_DOUBLE(const int64_t N0, DO
                                                                         block_size2, &x1[j], &y1[j], &z1[j], &this_weights1,
                                                                         same_cell,
                                                                         options->fast_acos,
-                                                                        costhetamax, costhetamin, nthetabin,
+                                                                        thetamax, thetamin, nthetabin,
                                                                         costheta_upp,
                                                                         ZERO, ZERO, ZERO, /* min xyz diff */
                                                                         ZERO, ZERO, ZERO, /* closest xyz positions */
                                                                         this_thetaavg, npairs,
-                                                                        this_weightavg, extra->weight_method);
+                                                                        this_weightavg, extra->weight_method, options->bin_type);
                     abort_status |= status;
                 } //N1 loop
             } //abort_status condition
@@ -531,12 +531,14 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     DOUBLE *theta_upp;
     int nthetabin;
     DOUBLE thetamin,thetamax;
-    setup_bins_DOUBLE(binfile,&thetamin,&thetamax,&nthetabin,&theta_upp,&(options->bin_type));
+    setup_bins_DOUBLE(binfile,&thetamin,&thetamax,&nthetabin,&theta_upp);
     if( ! (thetamin >= 0.0 && thetamax > 0.0 && thetamin < thetamax && thetamax <= 180.0 && nthetabin >= 1) ) {
         fprintf(stderr,"Error: Could not setup with theta bins correctly. (thetamin = %lf, thetamax = %lf, with nbins = %d). Expected non-zero rmin/rmax with thetamax > "
                 "thetamin and nbins >=1 \n",thetamin, thetamax, nthetabin);
         return EXIT_FAILURE;
     }
+    detect_bin_type_DOUBLE(theta_upp, nthetabin, &(options->bin_type), options->verbose);
+
 
 #if defined(_OPENMP)
     if((options->link_in_ra == 0) &&
@@ -570,8 +572,6 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     for(int i=0;i<nthetabin;i++) {
         costheta_upp[i] = COSD(theta_upp[i]);
     }
-    const DOUBLE costhetamin=costheta_upp[0];
-    const DOUBLE costhetamax=costheta_upp[nthetabin-1];
 
     DOUBLE *X1 = my_malloc(sizeof(*X1),ND1);
     DOUBLE *Y1 = my_malloc(sizeof(*Y1),ND1);
@@ -647,7 +647,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
                                                                numthreads,
-                                                               costhetamax, costhetamin, nthetabin,
+                                                               thetamax, thetamin, nthetabin,
                                                                theta_upp,
                                                                costheta_upp,
                                                                results,
@@ -881,7 +881,7 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
                                                                numthreads,
-                                                               costhetamax, costhetamin, nthetabin,
+                                                               thetamax, thetamin, nthetabin,
                                                                theta_upp,
                                                                costheta_upp,
                                                                results,
@@ -1019,12 +1019,12 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                                           second->nelements, second->x, second->y, second->z, &(second->weights),
                                                                           this_cell_pair->same_cell,
                                                                           options->fast_acos,
-                                                                          costhetamax, costhetamin, nthetabin,
+                                                                          thetamax, thetamin, nthetabin,
                                                                           costheta_upp,
                                                                           this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                                           this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                                           this_thetaavg, npairs,
-                                                                          this_weightavg, extra->weight_method);
+                                                                          this_weightavg, extra->weight_method, options->bin_type);
 
                 /* This actually causes a race condition under OpenMP - but mostly
                    I care that an error occurred - rather than the exact value of

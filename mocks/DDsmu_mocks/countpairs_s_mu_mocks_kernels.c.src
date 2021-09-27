@@ -269,7 +269,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
                 }
             }
 
-            if(need_savg) {
+            if(need_savg || bin_type == BIN_LIN) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_s);
             }
             if(need_weightavg){
@@ -288,10 +288,7 @@ static inline int countpairs_s_mu_mocks_avx512_intrinsics_DOUBLE(const int64_t N
             AVX512_FLOATS m_sbin = AVX512_SETZERO_FLOAT();
 
             if (bin_type == BIN_LIN) {
-                if (!need_savg) {
-                    union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_s);
-                }
-                m_sbin = AVX512_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep);
+                m_sbin = AVX512_MASKZ_FMA_ADD_TRUNCATE_FLOATS(m_mask_left, union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep);
             }
             else {
                 for(int kbin=nsbin-1;kbin>=1;kbin--) {
@@ -598,7 +595,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
                 m_sqr_mu  = AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax,m_sqr_mu,m_mask_left);
             }
 
-            if(need_savg) {
+            if(need_savg || bin_type == BIN_LIN) {
                 union_msep.m_Dperp = AVX_SQRT_FLOAT(m_sqr_s);
             }
             if(need_weightavg){
@@ -617,10 +614,9 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             AVX_FLOATS m_sbin = AVX_SETZERO_FLOAT();
 
             if (bin_type == BIN_LIN) {
-                if (!need_savg) {
-                    union_msep.m_Dperp = AVX_SQRT_FLOAT(m_sqr_s);
-                }
-                m_sbin = AVX_FMA_ADD_TRUNCATE_FLOATS(union_msep.m_Dperp, m_inv_sstep, m_smin_invstep);
+                m_sbin = AVX_BLEND_FLOATS_WITH_MASK(m_sbin,
+                         AVX_FMA_ADD_TRUNCATE_FLOATS(union_msep.m_Dperp, m_inv_sstep, m_smin_invstep),
+                         m_mask_left);
             }
             else {
                 for(int kbin=nsbin-1;kbin>=1;kbin--) {
@@ -692,7 +688,7 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);
             DOUBLE s = ZERO, pairweight = ZERO;
-            if(need_savg) {
+            if(need_savg || bin_type == BIN_LIN) {
                 s = SQRT(sqr_s);
             }
             if(need_weightavg){
@@ -709,9 +705,6 @@ static inline int countpairs_s_mu_mocks_avx_intrinsics_DOUBLE(const int64_t N0, 
 
             int kbin = 0;
             if (bin_type == BIN_LIN) {
-                if (!need_savg) {
-                    s = SQRT(sqr_s);
-                }
                 kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {
@@ -995,7 +988,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
                 m_sqr_s = SSE_BLEND_FLOATS_WITH_MASK(m_zero,m_sqr_s,m_mask_left);
                 m_sqr_mu  = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_mumax,m_sqr_mu,m_mask_left);
             }
-            if(need_savg) {
+            if(need_savg || bin_type == BIN_LIN) {
                 union_msep.m_Dperp = SSE_SQRT_FLOAT(m_sqr_s);
             }
             if(need_weightavg){
@@ -1014,10 +1007,9 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             SSE_FLOATS m_sbin = SSE_SETZERO_FLOAT();
 
             if (bin_type == BIN_LIN) {
-                if (!need_savg) {
-                    union_msep.m_Dperp = SSE_SQRT_FLOAT(m_sqr_s);
-                }
-                m_sbin = SSE_FMA_ADD_TRUNCATE_FLOATS(union_msep.m_Dperp, m_inv_sstep, m_smin_invstep);
+                m_sbin = SSE_BLEND_FLOATS_WITH_MASK(m_sbin,
+                         SSE_FMA_ADD_TRUNCATE_FLOATS(union_msep.m_Dperp, m_inv_sstep, m_smin_invstep),
+                         m_mask_left);
             }
             else {
                 for(int kbin=nsbin-1;kbin>=1;kbin--) {
@@ -1079,7 +1071,7 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
             const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);
             DOUBLE s = ZERO, pairweight = ZERO;
-            if(need_savg) {
+            if(need_savg || bin_type == BIN_LIN) {
                 s = SQRT(sqr_s);
             }
             if(need_weightavg){
@@ -1096,9 +1088,6 @@ static inline int countpairs_s_mu_mocks_sse_intrinsics_DOUBLE(const int64_t N0, 
 
             int kbin = 0;
             if (bin_type == BIN_LIN) {
-                if (!need_savg) {
-                    s = SQRT(sqr_s);
-                }
                 kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {
@@ -1297,7 +1286,7 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
             const DOUBLE sqr_mu = sqr_s_dot_l/(sqr_l * sqr_s);
             const int mubin  = (sqr_mu >= sqr_mumax) ? nmu_bins:(int) (SQRT(sqr_mu)*inv_dmu);
             DOUBLE s = ZERO, pairweight = ZERO;
-            if(need_savg) {
+            if(need_savg || bin_type == BIN_LIN) {
                 s = SQRT(sqr_s);
             }
             if(need_weightavg){
@@ -1314,9 +1303,6 @@ static inline int countpairs_s_mu_mocks_fallback_DOUBLE(const int64_t N0, DOUBLE
 
             int kbin = 0;
             if (bin_type == BIN_LIN) {
-                if (!need_savg) {
-                    s = SQRT(sqr_s);
-                }
                 kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {

@@ -215,7 +215,7 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
                 continue;
             }
 
-            if(need_rpavg) {
+            if(need_rpavg || bin_type == BIN_LIN) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
             }
             if(need_weightavg){
@@ -224,10 +224,8 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
 
             AVX512_INTS m_rpbin = AVX512_SETZERO_INT();
             if (bin_type == BIN_LIN) {
-                if (!need_rpavg) {
-                    union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
-                }
-                m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(AVX512_FMA_ADD_FLOATS(union_mDperp.m_Dperp, m_inv_rpstep, m_rpmin_invstep));
+                m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(
+                          AVX512_MASKZ_FMA_ADD_FLOATS(union_mDperp.m_Dperp, m_mask_left, m_inv_rpstep, m_rpmin_invstep));
             }
             else {
                 //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
@@ -244,7 +242,7 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
                     }
                 }//backwards loop over the bins
             }
-            if(need_rpavg || need_weightavg || (bin_type == BIN_LIN)) {
+            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
                 //Do I need this step of going via the union? accessing int[] -> AVX* vector might
                 //cause alignment problems but accessing the ints from an AVX*
                 //register should always be fine
@@ -498,17 +496,14 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
             }
 
             AVX_FLOATS m_rbin = AVX_SETZERO_FLOAT();
-            if(need_ravg) {
+            if(need_ravg || bin_type == BIN_LIN) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
                 union_mweight.m_weights = avx_weight_func(&pair);
             }
             if (bin_type == BIN_LIN) {
-                if (!need_ravg) {
-                    union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
-                }
-                m_rbin = AVX_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep);
+                m_rbin = AVX_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
                 union_rbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rbin);
             }
             else {
@@ -528,7 +523,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
                     }
                 }
             }
-            if(need_ravg || need_weightavg || (bin_type == BIN_LIN)) {
+            if(need_ravg || need_weightavg || bin_type == BIN_LIN) {
                 union_rbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
@@ -573,7 +568,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
             }
 
             DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_ravg) {
+            if(need_ravg || bin_type == BIN_LIN) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
@@ -582,9 +577,6 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
 
             int kbin = 0;
             if (bin_type == BIN_LIN) {
-                if (!need_ravg) {
-                    r = SQRT(r2);
-                }
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -809,7 +801,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             r2 = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_rmax, r2, m_mask_left);
 
             SSE_FLOATS m_rbin = SSE_SETZERO_FLOAT();
-            if(need_ravg) {
+            if(need_ravg || bin_type == BIN_LIN) {
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
@@ -817,11 +809,8 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             }
 
             if (bin_type == BIN_LIN) {
-                if (!need_ravg) {
-                    union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
-                }
                 m_rbin = SSE_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep);
-                union_rbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rbin);
+                union_rbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rbin); // r2, then union_mDperp.m_Dperp aready clipped
             }
             else {
           			for(int kbin=nbin-1;kbin>=1;kbin--) {
@@ -830,16 +819,16 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             				m_mask_left = SSE_COMPARE_FLOATS_LT(r2,m_rupp_sqr[kbin-1]);
             				int test2  = SSE_TEST_COMPARISON(m_bin_mask);
             				npairs[kbin] += SSE_BIT_COUNT_INT(test2);
-                            if(need_ravg || need_weightavg) {
-                                m_rbin = SSE_BLEND_FLOATS_WITH_MASK(m_rbin,m_kbin[kbin], m_bin_mask);
-                            }
+                    if(need_ravg || need_weightavg) {
+                        m_rbin = SSE_BLEND_FLOATS_WITH_MASK(m_rbin,m_kbin[kbin], m_bin_mask);
+                    }
             				int test3 = SSE_TEST_COMPARISON(m_mask_left);
             				if(test3 == 0) {
               					break;
             				}
           			}
             }
-            if(need_ravg || need_weightavg || (bin_type == BIN_LIN)) {
+            if(need_ravg || need_weightavg || bin_type == BIN_LIN) {
                 union_rbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
@@ -881,7 +870,7 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             }
 
             DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_ravg) {
+            if(need_ravg || bin_type == BIN_LIN) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
@@ -890,9 +879,6 @@ static inline int xi_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 
             int kbin = 0;
             if (bin_type == BIN_LIN) {
-                if (!need_ravg) {
-                    r = SQRT(r2);
-                }
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -1061,7 +1047,7 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
             }
 
             DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_ravg) {
+            if(need_ravg || bin_type == BIN_LIN) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
@@ -1070,9 +1056,6 @@ static inline int xi_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
 
             int kbin = 0;
             if (bin_type == BIN_LIN) {
-                if (!need_ravg) {
-                    r = SQRT(r2);
-                }
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
