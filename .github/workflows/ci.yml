@@ -109,6 +109,10 @@ jobs:
           echo "COMPILER VERSION = " `${{ matrix.compiler }} --version`
           echo "PYTHON = " `which python`
           echo "(PYTHON, NUMPY) version = " `python -c "import sys; import numpy as np; print(sys.version); print(np.__version__);"`
+          echo "lscpu output:"
+          lscpu
+          echo "${{ matrix.compiler }} -march=native preprocessor defs:"
+          echo | ${{ matrix.compiler }} -dM -E - -march=native
 
 #      - name: Add linker flag to OSX + gcc
 #        shell: bash -l {0}
