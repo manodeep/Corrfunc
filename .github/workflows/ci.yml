@@ -110,7 +110,7 @@ jobs:
           echo "PYTHON = " `which python`
           echo "(PYTHON, NUMPY) version = " `python -c "import sys; import numpy as np; print(sys.version); print(np.__version__);"`
           echo "Preprocessor defs:"
-          echo ${{ matrix.compiler }} -dM -E - -march=native
+          echo `${{ matrix.compiler }} -dM -E - -march=native`
 
       - name: lscpu on Linux
         if: matrix.os != 'macos-latest'
