@@ -109,10 +109,18 @@ jobs:
           echo "COMPILER VERSION = " `${{ matrix.compiler }} --version`
           echo "PYTHON = " `which python`
           echo "(PYTHON, NUMPY) version = " `python -c "import sys; import numpy as np; print(sys.version); print(np.__version__);"`
-          echo "lscpu output:"
+          echo "Preprocessor defs:"
+          echo ${{ matrix.compiler }} -dM -E - -march=native
+
+      - name: lscpu on Linux
+        if: matrix.os != 'macos-latest'
+        run: |
           lscpu
-          echo "${{ matrix.compiler }} -march=native preprocessor defs:"
-          echo | ${{ matrix.compiler }} -dM -E - -march=native
+
+      - name: sysctl machdep.cpu on OSX
+        if: matrix.os == 'macos-latest'
+        run: |
+          sysctl machdep.cpu
 
 #      - name: Add linker flag to OSX + gcc
 #        shell: bash -l {0}
