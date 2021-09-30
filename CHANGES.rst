@@ -11,8 +11,8 @@ New features
 - GPU version
 
 
-2.4.0 (upcoming)
-================
+2.4.0 (2021-09-30)
+==================
 This release adds the ``boxsize`` parameter to the command line interfaces and
 requires the user to specify the box size in the Python interfaces to the periodic
 theory functions.  It also contains a number of performance, code-quality, and
