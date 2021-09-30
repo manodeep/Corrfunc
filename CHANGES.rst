@@ -31,6 +31,7 @@ Enhancements
 - Add detection of known-bad Cray hugepages library at NERSC [#246]
 - Replace ``np.float`` with ``np.float64`` to fix numpy 1.20 deprecation [#250]
 - Test Numpy versions as old as 1.14 and recent as 1.20 [#251]
+- Add lscpu and preprocessor defs to CI output [#259]
 
 Bug fixes
 ---------
