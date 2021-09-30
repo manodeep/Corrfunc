@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#define API_VERSION          STR("2.3.4")
+#define API_VERSION          STR("2.4.0")
 
 /* Macros as mask for the binning_flags */
 /* These consititute the 32 bytes for
