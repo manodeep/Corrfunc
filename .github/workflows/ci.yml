@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-16.04", "ubuntu-18.04", "ubuntu-20.04", "macos-latest"]
+        os: ["ubuntu-18.04", "ubuntu-20.04", "macos-latest"]
         compiler: [gcc-7, gcc-9, gcc-10, clang]
         python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
         numpy-version: ["1.14", "1.18", "1.20"]
@@ -24,8 +24,6 @@ jobs:
             compiler: gcc-10
 
           # Don't use 'clang' on linux
-          - os: "ubuntu-16.04"
-            compiler: clang
           - os: "ubuntu-18.04"
             compiler: clang
           - os: "ubuntu-20.04"
@@ -37,15 +35,7 @@ jobs:
           - os: "ubuntu-20.04"
             compiler: gcc-7
 
-          # only gcc-9 on 16.04
-          - os: "ubuntu-16.04"
-            compiler: gcc-7
-          - os: "ubuntu-16.04"
-            compiler: gcc-10
-
           # python3.8 only on 20.04
-          - os: "ubuntu-16.04"
-            python-version: "3.8"
           - os: "ubuntu-18.04"
             python-version: "3.8"
           - os: "macos-latest"
@@ -88,7 +78,7 @@ jobs:
 
       - name: Install binutils on linux
         shell: bash -l {0}
-        if: matrix.os == 'ubuntu-16.04' || matrix.os == 'ubuntu-18.04'
+        if: matrix.os == 'ubuntu-18.04'
         run: |
           sudo apt-get update
           sudo apt-get install binutils
@@ -109,6 +99,18 @@ jobs:
           echo "COMPILER VERSION = " `${{ matrix.compiler }} --version`
           echo "PYTHON = " `which python`
           echo "(PYTHON, NUMPY) version = " `python -c "import sys; import numpy as np; print(sys.version); print(np.__version__);"`
+          echo "Preprocessor defs:"
+          echo `${{ matrix.compiler }} -dM -E - -march=native`
+
+      - name: lscpu on Linux
+        if: matrix.os != 'macos-latest'
+        run: |
+          lscpu
+
+      - name: sysctl machdep.cpu on OSX
+        if: matrix.os == 'macos-latest'
+        run: |
+          sysctl machdep.cpu
 
 #      - name: Add linker flag to OSX + gcc
 #        shell: bash -l {0}
