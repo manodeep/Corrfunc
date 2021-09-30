@@ -33,7 +33,7 @@ static inline int xi_avx512_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1
                                               uint64_t *src_npairs,
                                               DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type)
 {
-    (void) sqr_rmin;
+
 #ifdef COUNT_VECTORIZED
     struct timespec tcell_start;
     current_utc_time(&tcell_start);

@@ -32,7 +32,6 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
                                                       DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                       DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type)
 {
-    (void) sqr_rpmax, (void) sqr_rpmin;
 
 #ifdef COUNT_VECTORIZED
     struct timespec tcell_start;

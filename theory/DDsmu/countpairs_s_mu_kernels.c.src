@@ -33,7 +33,6 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
                                                            DOUBLE *src_savg, uint64_t *src_npairs,
                                                            DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type)
 {
-    (void) sqr_smax, (void) sqr_smin;
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
@@ -1089,6 +1088,7 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
 {
 
     (void) fast_divide_and_NR_steps;
+
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }

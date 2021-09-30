@@ -32,7 +32,7 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
                                                             DOUBLE *src_rpavg, uint64_t *src_npairs,
                                                             DOUBLE *src_weightavg, const weight_method_t weight_method, const bin_type_t bin_type)
 {
-    (void) sqr_rpmin;
+
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
