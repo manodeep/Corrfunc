@@ -28,7 +28,7 @@ const uint16_t masks_per_misalignment_value_float[] = {0b1111111111111111,
                                                        0b0111111111111111};
 
 const int64_t bits_set_in_avx512_mask_double[] = { B8(0) };
-const uint8_t masks_per_misalignment_value_double[] = {0b11111111, 
+const uint8_t masks_per_misalignment_value_double[] = {0b11111111,
                                                        0b00000001,
                                                        0b00000011,
                                                        0b00000111,

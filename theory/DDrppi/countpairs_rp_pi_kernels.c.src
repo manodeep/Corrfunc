@@ -43,7 +43,7 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
 
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
+    const DOUBLE sqr_rpmax=rpmax*rpmax;
     AVX512_FLOATS m_inv_rpstep = AVX512_SETZERO_FLOAT();
     AVX512_FLOATS m_rpmin_invstep = AVX512_SETZERO_FLOAT();
     if (bin_type == BIN_LIN) {

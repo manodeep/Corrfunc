@@ -62,8 +62,12 @@ extern "C" {
 #define AVX_SET_FLOAT(X)                 _mm256_set1_ps(X)
 
 /* returns Z + XY*/
+#ifdef __FMA__
 #define AVX_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_ps(X,Y,Z)
-#define AVX_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_ps(_mm256_fmadd_ps(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+#else
+#define AVX_FMA_ADD_FLOATS(X,Y,Z)          _mm256_add_ps(_mm256_mul_ps(X,Y),Z)
+#endif
+#define AVX_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_ps(AVX_FMA_ADD_FLOATS(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
 // X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_ps(X,Y,OP)
@@ -82,11 +86,11 @@ extern "C" {
 #ifdef  __INTEL_COMPILER
 #define AVX_ARC_COSINE(X, order)                 _mm256_acos_ps(X)
 #else
-    //Other compilers do not have the vectorized arc-cosine
+//Other compilers do not have the vectorized arc-cosine
 #define AVX_ARC_COSINE(X, order)                  inv_cosine_avx(X, order)
 #endif
 
-    //Max
+//Max
 #define AVX_MAX_FLOATS(X,Y)               _mm256_max_ps(X,Y)
 
 
@@ -127,8 +131,12 @@ extern "C" {
 #define AVX_RECIPROCAL_FLOATS(X)         _mm256_rcp_pd(X)
 
 /* returns Z + XY*/
+#ifdef __FMA__
 #define AVX_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_pd(X,Y,Z)
-#define AVX_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_pd(_mm256_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+#else
+#define AVX_FMA_ADD_FLOATS(X,Y,Z)          _mm256_add_pd(_mm256_mul_pd(X,Y),Z)
+#endif
+#define AVX_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_pd(AVX_FMA_ADD_FLOATS(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
 // X OP Y
 #define AVX_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_pd(X,Y,OP)

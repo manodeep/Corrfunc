@@ -43,7 +43,7 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
 
     const int32_t need_savg = src_savg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
-    const DOUBLE sqr_smin=smin*smin, sqr_smax=smax*smax;
+    const DOUBLE sqr_smax=smax*smax;
     AVX512_FLOATS m_inv_sstep = AVX512_SETZERO_FLOAT();
     AVX512_FLOATS m_smin_invstep = AVX512_SETZERO_FLOAT();
     if (bin_type == BIN_LIN) {
