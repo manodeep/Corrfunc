@@ -11,6 +11,14 @@ New features
 - GPU version
 
 
+2.5.0 (upcoming)
+================
+
+Changes
+-------
+- Add Corrfunc/tests.py to CI testing [#260]
+
+
 2.4.0 (2021-09-30)
 ==================
 This release adds the ``boxsize`` parameter to the command line interfaces and
