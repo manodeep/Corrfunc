@@ -45,7 +45,8 @@ def test_linear_binning_mocks(isa='fallback'):
 
     t0 = time.time()
     ra, dec, cz = np.array(read_catalog(filename))[:,:1000]
-    w = np.ones((1, len(ra)), dtype=ra.dtype)
+    rng = np.random.RandomState(seed=42)
+    w = rng.uniform(0.5, 1., (1, len(ra)))
     t1 = time.time()
     print("RA min  = {0} max = {1}".format(np.min(ra), np.max(ra)))
     print("DEC min = {0} max = {1}".format(np.min(dec), np.max(dec)))
@@ -65,7 +66,7 @@ def test_linear_binning_mocks(isa='fallback'):
     def allclose(a, *others):
         toret = True
         for b in others:
-            toret &= all((a[name] == b[name]).all()
+            toret &= all(np.allclose(a[name], b[name])
                          for name in ['npairs','weightavg'])
         return toret
 
@@ -115,7 +116,8 @@ def test_linear_binning_theory(isa='fallback'):
     tstart = time.time()
     t0 = tstart
     x, y, z = np.array(read_catalog())[:,:1000]
-    w = np.ones((1, len(x)), dtype=x.dtype)
+    rng = np.random.RandomState(seed=42)
+    w = rng.uniform(0.5, 1., (1, len(x)))
     boxsize = 420.0
     t1 = time.time()
     print("Done reading the data - time taken = {0:10.1f} seconds"
@@ -134,7 +136,7 @@ def test_linear_binning_theory(isa='fallback'):
     def allclose(a, *others):
         toret = True
         for b in others:
-            toret &= all((a[name] == b[name]).all()
+            toret &= all(np.allclose(a[name], b[name])
                          for name in ['npairs','weightavg'])
         return toret
 
