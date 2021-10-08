@@ -226,12 +226,15 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         ``(r_p - binfile[0])/(binfile[-1] - binfile[0])*(len(binfile) - 1)``,
         i.e. only the first and last bins of input ``binfile`` are considered.
         Then setting ``output_rpavg`` is virtually costless.
-        For non-linear binning, set to ``custom``.
-        ``auto`` allows for auto-detection of the binning type:
-        linear binning will be chosen if input ``binfile`` is
-        within ``rtol = 1e-05`` (relative tolerance) *and* ``atol = 1e-08``
-        (absolute tolerance) of the array
-        ``np.linspace(binfile[0], binfile[-1], len(binfile))``.
+        For non-linear binning, set to 'custom'.
+        In the vast majority of cases, bin_type='linear' will yield identical
+        results to custom linear binning but with higher performance.
+        In a few rare cases where a pair falls on a bin boundary,
+        'linear' and custom linear may disagree on which bin the pair falls into
+        due to finite floating point precision.
+        ``auto`` will choose linear binning if input ``binfile`` is within
+        ``rtol = 1e-05`` *and* ``atol = 1e-08`` (relative and absolute tolerance)
+        of ``np.linspace(binfile[0], binfile[-1], len(binfile))``.
 
     Returns
     --------

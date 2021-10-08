@@ -206,11 +206,14 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
         NOTE: use the most precise ``arccos``, except if ``fast_acos==True``;
         in this case, some pairs may shift bins!
         For non-linear binning, set to ``custom``.
-        ``auto`` allows for auto-detection of the binning type:
-        linear binning will be chosen if input ``binfile`` is
-        within ``rtol = 1e-05`` (relative tolerance) *and* ``atol = 1e-08``
-        (absolute tolerance) of the array
-        ``np.linspace(binfile[0], binfile[-1], len(binfile))``.
+        In the vast majority of cases, bin_type='linear' will yield identical
+        results to custom linear binning but with higher performance.
+        In a few rare cases where a pair falls on a bin boundary,
+        'linear' and custom linear may disagree on which bin the pair falls into
+        due to finite floating point precision.
+        ``auto`` will choose linear binning if input ``binfile`` is within
+        ``rtol = 1e-05`` *and* ``atol = 1e-08`` (relative and absolute tolerance)
+        of ``np.linspace(binfile[0], binfile[-1], len(binfile))``.
 
     Returns
     --------
