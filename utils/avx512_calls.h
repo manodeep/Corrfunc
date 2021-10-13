@@ -179,6 +179,9 @@ extern "C" {
  //Casting (does not actual convert between types)
 #define AVX512_CAST_FLOAT_TO_INT(X)          _mm512_castps_si512(X)
 #define AVX512_CAST_INT_TO_FLOAT(X)          _mm512_castsi512_ps(X)
+    
+// Slow rounding
+#define AVX512_TRUNCATE_FLOAT_TO_FLOAT(X) _mm512_roundscale_ps(X, _MM_FROUND_TO_ZERO)
 
 
 #else //DOUBLE PRECISION CALCULATIONS
@@ -326,6 +329,9 @@ extern "C" {
  //Casting (does not actual convert between types)
 #define AVX512_CAST_FLOAT_TO_INT(X)          _mm512_castpd_si512(X)
 #define AVX512_CAST_INT_TO_FLOAT(X)          _mm512_castsi512_pd(_mm512_castsi256_si512(X))
+    
+// Slow rounding
+#define AVX512_TRUNCATE_FLOAT_TO_FLOAT(X) _mm512_roundscale_pd(X, _MM_FROUND_TO_ZERO)
 
 #endif //DOUBLE_PREC
 
