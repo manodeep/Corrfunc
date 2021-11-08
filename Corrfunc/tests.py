@@ -3,7 +3,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import sys
-
+import numpy as np
 
 __all__ = ['tests', ]
 if sys.version_info[0] < 3:
@@ -31,10 +31,19 @@ def tests():
     cm.main()
 
 
+def allclose(a, *others):
+    toret = True
+    for b in others:
+        for name in ['npairs','weightavg']:
+            if not np.all(np.allclose(a[name], b[name])):
+                print("Mis-match for {0}: (a, b) = {1} ".format(name, list(zip(a[name], b[name]))))
+            toret &= np.allclose(a[name], b[name])
+
+    return toret
+
 def test_linear_binning_mocks(isa='fallback'):
     """Here we test that the special treatment for linear binning returns the correct result."""
     from os.path import dirname, abspath, join as pjoin
-    import numpy as np
     import time
     import Corrfunc
     from Corrfunc.io import read_catalog
@@ -62,13 +71,6 @@ def test_linear_binning_mocks(isa='fallback'):
     numbins_to_print = 5
     cosmology = 1
     bin_types = ['custom', 'lin']
-
-    def allclose(a, *others):
-        toret = True
-        for b in others:
-            toret &= all(np.allclose(a[name], b[name])
-                         for name in ['npairs','weightavg'])
-        return toret
 
     def test_bin_type(pair_counter, *args, **kwargs):
         res = (pair_counter(*args, bin_type=bin_type,
@@ -133,27 +135,24 @@ def test_linear_binning_theory(isa='fallback'):
     periodic = 1
     bin_types = ['custom', 'lin']
 
-    def allclose(a, *others):
-        toret = True
-        for b in others:
-            toret &= all(np.allclose(a[name], b[name])
-                         for name in ['npairs','weightavg'])
-        return toret
-
     def test_bin_type(pair_counter, *args, **kwargs):
         res = (pair_counter(*args, bin_type=bin_type,
                weight_type="pair_product", **kwargs) for bin_type in bin_types)
         assert allclose(*res)
 
-    print("Running 3-D correlation function DD(r)")
+
+    print("Running 3-D correlation function DD(r) (isa={})".format(isa))
     test_bin_type(DD, autocorr, nthreads, binfile, x, y, z, weights1=w,
                   verbose=True, periodic=periodic, boxsize=boxsize, isa=isa)
+    print("Running 3-D correlation function DD(r) (isa={})...PASSED".format(isa))
 
-    print("\nRunning 2-D correlation function DD(rp,pi)")
+
+    print("\nRunning 2-D correlation function DD(rp,pi) (isa={})".format(isa))
     test_bin_type(DDrppi, autocorr, nthreads, pimax,
                   binfile, x, y, z, weights1=w,
                   verbose=True, periodic=periodic,
                   boxsize=boxsize, isa=isa)
+    print("\nRunning 2-D correlation function DD(rp,pi) (isa={})...PASSED".format(isa))
 
     mu_max = 0.5
     nmu_bins = 10
@@ -178,7 +177,7 @@ def test_linear_binning_theory(isa='fallback'):
 
 if __name__ == '__main__':
 
-    tests()
+    # tests()
     for isa in ['fallback','sse42','avx','avx512f']:
-        test_linear_binning_mocks(isa=isa)
         test_linear_binning_theory(isa=isa)
+        test_linear_binning_mocks(isa=isa)
