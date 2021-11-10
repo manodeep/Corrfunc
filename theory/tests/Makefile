@@ -22,7 +22,7 @@ VPF_LIB := countspheres
 
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
-TARGETS := test_periodic test_nonperiodic
+TARGETS := test_periodic test_nonperiodic test_periodic_lin
 
 ifneq ($(COMPILE_PYTHON_EXT), 0)
   TARGETS += python_lib
@@ -47,7 +47,7 @@ all: tests $(TARGETS) $(INCL) uncompress $(ROOT_DIR)/theory.options $(ROOT_DIR)/
 
 test_periodic: $(OBJS1) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(GSL_LINK) $(CLINK) -o $@
-    
+
 test_periodic_lin: $(OBJS_LIN) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OBJS_LIN) $(C_LIBRARIES) $(GSL_LINK) $(CLINK) -o $@
 
@@ -84,6 +84,9 @@ python_lib: tests $(OBJS1) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common
 tests: test_periodic test_nonperiodic
 	./test_nonperiodic
 	./test_periodic
+
+tests_bin: test_periodic_lin
+	./test_periodic_lin
 
 uncompress: | data
 	@{\

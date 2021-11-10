@@ -5,6 +5,7 @@
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
 */
+//#define INTEGRATION_TESTS
 
 #include "tests_common.h"
 #include "io.h"
@@ -16,7 +17,9 @@ char binfile_lin[]="../tests/bins_lin";
 
 int test_periodic_DD(const char *correct_outputfile);
 void read_data_and_set_globals(const char *firstfilename, const char *firstformat);
-
+int write_bins_to_file(const double rmin, const double rmax, const double nbins, const char *linear_binfile);
+int compare_two_results(const results_countpairs *results_reference, const results_countpairs *results_test);
+int test_custom_and_linear_bins(void);
 
 //Global variables
 int64_t ND1;
@@ -114,11 +117,122 @@ void read_data_and_set_globals(const char *firstfilename, const char *firstforma
     }
 }
 
+int write_bins_to_file(const double rmin, const double rmax, const double nbins, const char *linear_binfile)
+{
+    FILE *fp = fopen(linear_binfile,"w");
+    if(fp == NULL) {
+        fprintf(stderr,"Failed to open file %s for writing\n",linear_binfile);
+        return EXIT_FAILURE;
+    }
+    const double dr = (rmax-rmin)/nbins;
+    for(int i=0;i<nbins;i++) {
+        const double rp_low = rmin + i*dr;
+        const double rp_upp = rmin + (i+1)*dr;
+        fprintf(fp,"%g %g\n",rp_low,rp_upp);
+    }
+    fclose(fp);
+
+    return EXIT_SUCCESS;
+}
+
+int compare_two_results(const results_countpairs *results_reference, const results_countpairs *results_test)
+{
+    int ret = EXIT_FAILURE;
+    for(int i=1;i<results_reference->nbin;i++) {
+        ret = EXIT_FAILURE;
+        int floats_equal = AlmostEqualRelativeAndAbs_double(results_reference->rpavg[i],
+                                                            results_test->rpavg[i],  maxdiff, maxreldiff);
+        int weights_equal = AlmostEqualRelativeAndAbs_double(results_reference->weightavg[i],
+                                                             results_test->weightavg[i], maxdiff, maxreldiff);
+
+        //Check for exact equality of npairs and float "equality" for rpavg
+        if(results_test->npairs[i] == results_reference->npairs[i]
+            && floats_equal == EXIT_SUCCESS
+            && weights_equal == EXIT_SUCCESS) {
+            ret = EXIT_SUCCESS;
+        } else {
+            ret = EXIT_FAILURE;//not required but showing intent
+            fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", results_reference->npairs[i], results_test->npairs[i]);
+            fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n",
+            results_reference->rpavg[i], results_test->rpavg[i], floats_equal);
+            fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", results_reference->weightavg[i], results_test->weightavg[i], weights_equal);
+            break;
+        }
+    }
+
+    return ret;
+}
+
+int test_custom_and_linear_bins(void)
+{
+    int autocorr = 1;
+    const double rmin = 0.1;
+    const double rmax_lower = 1.0, rmax_upper=50.0, rmax_step=3.0;
+    const double max_nbins = 20;
+    const int nbins_step = 3;
+    const char *linear_binfile = "../tests/test_custom_and_linear_bins";
+
+    for(double rmax=rmax_lower;rmax<rmax_upper; rmax+=rmax_step){
+        for(int nbins=1;nbins<max_nbins;nbins+=nbins_step) {
+            int status = write_bins_to_file(rmin, rmax, nbins, linear_binfile);
+            if (status != EXIT_SUCCESS) {
+                return status;
+            }
+            for(int iset=num_instructions-1;iset>=0;iset--) {
+                fprintf(stderr,"[rmin, rmax, nbins] = [%0.2f, %0.2f, %0d], isa = %10s ",rmin, rmax, nbins, isa_name[iset]);
+                results_countpairs results_reference, results_linear;
+                // Set up the weights pointers
+                weight_method_t weight_method = PAIR_PRODUCT;
+                struct extra_options extra = get_extra_options(weight_method);
+                extra.weights0.weights[0] = weights1;
+                options.instruction_set = valid_instruction_sets[iset];
+
+                options.bin_type = BIN_CUSTOM;
+                //Do the straight-up DD counts
+                status = countpairs(ND1,X1,Y1,Z1,
+                                    ND1,X1,Y1,Z1,
+                                    nthreads,
+                                    autocorr,
+                                    linear_binfile,
+                                    &results_reference,
+                                    &options,
+                                    &extra);
+                if(status != EXIT_SUCCESS) {
+                    return status;
+                }
+
+                options.bin_type = BIN_LIN;
+                status = countpairs(ND1,X1,Y1,Z1,
+                                    ND1,X1,Y1,Z1,
+                                    nthreads,
+                                    autocorr,
+                                    linear_binfile,
+                                    &results_linear,
+                                    &options,
+                                    &extra);
+                if(status != EXIT_SUCCESS) {
+                    return status;
+                }
+
+                int ret = compare_two_results(&results_reference, &results_linear);
+                if(ret != EXIT_SUCCESS) {
+                    return ret;
+                } else {
+                    fprintf(stderr,ANSI_COLOR_GREEN "PASSED" ANSI_COLOR_RESET"\n");
+                }
+            }
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+
 int main(int argc, char **argv)
 {
     (void) argc;
     (void) argv;
-    
+
     struct timeval tstart,t0,t1;
     options = get_config_options();
     options.need_avg_sep=1;
@@ -143,6 +257,16 @@ int main(int argc, char **argv)
 
     int failed=0;
     int status;
+
+    //Test the linear bins by comparing the results obtained
+    // with bin_type=BIN_CUSTOM and bin_type=BIN_LIN. This is
+    // a comprehensive test running over a large set of
+    // (rmax, nbins) for each instruction set.
+    status = test_custom_and_linear_bins();
+    if(status != EXIT_SUCCESS) {
+        failed++;
+        return failed;
+    }
 
     const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)",
                                           };
