@@ -81,7 +81,8 @@ python_lib: tests $(OBJS1) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common
 	@echo
 	$(MAKE) -C ../python_bindings tests
 
-tests: test_periodic test_nonperiodic
+tests: test_periodic test_nonperiodic test_periodic_lin
+	./test_periodic_lin
 	./test_nonperiodic
 	./test_periodic
 
