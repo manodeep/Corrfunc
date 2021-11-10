@@ -5,7 +5,7 @@
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
 */
-//#define INTEGRATION_TESTS
+#define INTEGRATION_TESTS
 
 #include "tests_common.h"
 #include "io.h"
