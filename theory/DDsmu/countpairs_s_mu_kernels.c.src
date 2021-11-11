@@ -354,6 +354,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
     const int32_t need_weightavg = src_weightavg != NULL;
     const DOUBLE sqr_smin=smin*smin, sqr_smax=smax*smax;
     DOUBLE inv_sstep=0., smin_invstep=0.;
+    const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_inv_sstep = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_smin_invstep = AVX_SETZERO_FLOAT();
     if (bin_type == BIN_LIN) {
@@ -600,6 +601,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             //AVX_FLOATS m_all_ones = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
             if (bin_type == BIN_LIN) {
                 m_sbin = AVX_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep); // s2, then union_mDperp.m_Dperp aready clipped
+                m_sbin = AVX_BLEND_FLOATS_WITH_MASK(m_zero, m_sbin, m_mask_left);
             }
             else {
                 for(int kbin=nsbin-1;kbin>=1;kbin--) {
