@@ -5,7 +5,7 @@
   License: MIT LICENSE. See LICENSE file under the top-level
   directory at https://github.com/manodeep/Corrfunc/
 */
-#define INTEGRATION_TESTS
+//#define INTEGRATION_TESTS
 
 #include "tests_common.h"
 #include "io.h"
@@ -137,9 +137,8 @@ int write_bins_to_file(const double rmin, const double rmax, const double nbins,
 
 int compare_two_results(const results_countpairs *results_reference, const results_countpairs *results_test)
 {
-    int ret = EXIT_FAILURE;
+    int ret = 0;
     for(int i=1;i<results_reference->nbin;i++) {
-        ret = EXIT_FAILURE;
         int floats_equal = AlmostEqualRelativeAndAbs_double(results_reference->rpavg[i],
                                                             results_test->rpavg[i],  maxdiff, maxreldiff);
         int weights_equal = AlmostEqualRelativeAndAbs_double(results_reference->weightavg[i],
@@ -149,14 +148,16 @@ int compare_two_results(const results_countpairs *results_reference, const resul
         if(results_test->npairs[i] == results_reference->npairs[i]
             && floats_equal == EXIT_SUCCESS
             && weights_equal == EXIT_SUCCESS) {
-            ret = EXIT_SUCCESS;
+            continue;
         } else {
-            ret = EXIT_FAILURE;//not required but showing intent
-            fprintf(stderr,"Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", results_reference->npairs[i], results_test->npairs[i]);
-            fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n",
-            results_reference->rpavg[i], results_test->rpavg[i], floats_equal);
-            fprintf(stderr,"Failed. True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", results_reference->weightavg[i], results_test->weightavg[i], weights_equal);
-            break;
+            ret++;
+            fprintf(stderr,"[nbin = %d] Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", i-1, results_reference->npairs[i], results_test->npairs[i]);
+            if(!floats_equal) {
+                fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n", results_reference->rpavg[i], results_test->rpavg[i], floats_equal);
+            }
+            if(!weights_equal) {
+                fprintf(stderr,"[nbin = %d] Failed. True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", i-1, results_reference->weightavg[i], results_test->weightavg[i], weights_equal);
+            }
         }
     }
 
@@ -172,6 +173,7 @@ int test_custom_and_linear_bins(void)
     const int nbins_step = 3;
     const char *linear_binfile = "../tests/test_custom_and_linear_bins";
 
+    int ntests = 0, nfailed = 0;
     for(double rmax=rmax_lower;rmax<rmax_upper; rmax+=rmax_step){
         for(int nbins=1;nbins<max_nbins;nbins+=nbins_step) {
             int status = write_bins_to_file(rmin, rmax, nbins, linear_binfile);
@@ -213,18 +215,20 @@ int test_custom_and_linear_bins(void)
                 if(status != EXIT_SUCCESS) {
                     return status;
                 }
-
+                ntests++;
                 int ret = compare_two_results(&results_reference, &results_linear);
                 if(ret != EXIT_SUCCESS) {
-                    return ret;
+                    nfailed++;
+                    fprintf(stderr,ANSI_COLOR_RED "FAILED" ANSI_COLOR_RESET"\n");
                 } else {
                     fprintf(stderr,ANSI_COLOR_GREEN "PASSED" ANSI_COLOR_RESET"\n");
                 }
             }
         }
     }
+    fprintf(stderr,ANSI_COLOR_RESET"ntests run = %d nfailed = %d"ANSI_COLOR_RESET"\n", ntests, nfailed);
 
-    return EXIT_SUCCESS;
+    return nfailed;
 }
 
 
@@ -236,7 +240,7 @@ int main(int argc, char **argv)
     struct timeval tstart,t0,t1;
     options = get_config_options();
     options.need_avg_sep=1;
-    options.verbose=1;
+    options.verbose=0;
     options.periodic=1;
     options.fast_divide_and_NR_steps=0;
     options.copy_particles=1;
