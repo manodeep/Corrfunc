@@ -22,10 +22,6 @@
 #include "defs.h"
 #include "utils.h"
 
-#ifdef INTEGRATION_TESTS
-
-#pragma message("Running (SLOW) integration tests")
-
 /* Define the instruction sets that are supported by the compiler */
 const isa valid_instruction_sets[] = {FALLBACK
 #ifdef __SSE4_2__
@@ -62,6 +58,29 @@ const char isa_name[][20] = {"FALLBACK"
    required to store the array. As in the typeof valid_instruction_sets is int[5] when
    all 5 instructions sets are supported */
 const int num_instructions = sizeof(valid_instruction_sets)/sizeof(valid_instruction_sets[0]);
+
+#ifdef _OPENMP
+const int nthreads=4;
+#else
+const int nthreads=1;
+#endif
+
+const double maxdiff = 1e-9;
+const double maxreldiff = 1e-6;
+
+char binfile[]="../tests/bins";
+char angular_binfile[]="../tests/angular_bins";
+double pimax=40.0;
+double theory_mu_max=0.5;
+double mocks_mu_max=1.0;
+int nmu_bins=10;
+double boxsize=420.0;
+
+
+#ifdef INTEGRATION_TESTS
+
+#pragma message("Running (SLOW) integration tests")
+
 
 /* The max. value of bin refine factor to probe. Each of bin refinements factors is set from [1, max_binref]
  (inclusive) */
@@ -242,20 +261,3 @@ const int min_bin_ref = 1, max_bin_ref = 3;
 
 #endif/*INTEGRATION_TESTS*/
 
-
-#ifdef _OPENMP
-const int nthreads=4;
-#else
-const int nthreads=1;
-#endif
-
-const double maxdiff = 1e-9;
-const double maxreldiff = 1e-6;
-
-char binfile[]="../tests/bins";
-char angular_binfile[]="../tests/angular_bins";
-double pimax=40.0;
-double theory_mu_max=0.5;
-double mocks_mu_max=1.0;
-int nmu_bins=10;
-double boxsize=420.0;
