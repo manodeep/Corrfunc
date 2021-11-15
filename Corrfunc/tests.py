@@ -41,6 +41,7 @@ def allclose(a, *others):
 
     return toret
 
+
 def test_linear_binning_mocks(isa='fallback'):
     """Here we test that the special treatment for linear binning returns the correct result."""
     from os.path import dirname, abspath, join as pjoin
@@ -49,7 +50,7 @@ def test_linear_binning_mocks(isa='fallback'):
     from Corrfunc.io import read_catalog
     from Corrfunc.mocks import DDrppi_mocks, DDsmu_mocks, DDtheta_mocks
     tstart = time.time()
-    filename = pjoin(dirname(abspath(Corrfunc.__file__)),
+    filename = pjoin(dirname(abspath(__file__)),
                      "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
 
     t0 = time.time()
@@ -177,7 +178,7 @@ def test_linear_binning_theory(isa='fallback'):
 
 if __name__ == '__main__':
 
-    # tests()
+    tests()
     for isa in ['fallback','sse42','avx','avx512f']:
         test_linear_binning_theory(isa=isa)
         test_linear_binning_mocks(isa=isa)

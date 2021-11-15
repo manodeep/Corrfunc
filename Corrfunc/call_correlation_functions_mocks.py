@@ -16,20 +16,34 @@ def main():
     import numpy as np
     import time
     import Corrfunc
-    from Corrfunc.io import read_catalog
+    from Corrfunc.io import read_fastfood_catalog
     from Corrfunc._countpairs_mocks import\
         countpairs_rp_pi_mocks as rp_pi_mocks_extn,\
         countpairs_s_mu_mocks as s_mu_mocks_extn,\
         countpairs_theta_mocks as theta_mocks_extn,\
         countspheres_vpf_mocks as vpf_mocks_extn
 
+    def check_against_reference(results, filename, results_cols=(-2, -1, 2), ref_cols=(0, 4, 1)):
+        # results is output of Python function
+        # filename the reference counts
+        # ref_cols in order of npairs, weightavg, rpavg
+        refs = np.loadtxt(filename, unpack=True, usecols=ref_cols)
+        for ii, items in enumerate(results):
+            for icol, ref in zip(results_cols, refs):
+                assert np.allclose(items[icol], ref[ii])
+
     tstart = time.time()
+    t0 = time.time()
     filename = pjoin(dirname(abspath(Corrfunc.__file__)),
                      "../mocks/tests/data/", "Mr19_mock_northonly.rdcz.ff")
+    ra, dec, cz, w = read_fastfood_catalog(filename, need_weights=True)
+    w = w[None,:]
 
-    t0 = time.time()
-    ra, dec, cz = read_catalog(filename)
-    w = np.ones((1,len(ra)), dtype=ra.dtype)
+    filename = pjoin(dirname(abspath(Corrfunc.__file__)),
+                     "../mocks/tests/data/", "Mr19_randoms_northonly.rdcz.ff")
+    ra_ran, dec_ran, cz_ran, w_ran = read_fastfood_catalog(filename, need_weights=True)
+    w_ran = w_ran[None,:]
+
     t1 = time.time()
     print("RA min  = {0} max = {1}".format(np.min(ra), np.max(ra)))
     print("DEC min = {0} max = {1}".format(np.min(dec), np.max(dec)))
@@ -60,16 +74,19 @@ def main():
         items = results_DDrppi[ibin]
         print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:10.4f}"
               .format(items[0], items[1], items[2], items[3], items[4], items[5]))
-
     print("------------------------------------------------------------------------")
+    file_ref = pjoin(dirname(abspath(__file__)),
+                    "../mocks/tests/", "Mr19_mock.DD")
+    check_against_reference(results_DDrppi, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
 
     nmu_bins = 10
     mu_max = 1.0
 
     print("\nRunning 2-D correlation function xi(s,mu)")
-    results_DDsmu, _ = s_mu_mocks_extn(autocorr, cosmology, nthreads,
+    results_DDsmu, _ = s_mu_mocks_extn(0, cosmology, nthreads,
                                        mu_max, nmu_bins, binfile,
                                        ra, dec, cz, weights1=w,
+                                       RA2=ra_ran, DEC2=dec_ran, CZ2=cz_ran, weights2=w_ran,
                                        output_savg=True, verbose=True,
                                        weight_type='pair_product')
     print("\n#            ****** DD(s,mu): first {0} bins  *******      "
@@ -80,8 +97,10 @@ def main():
         items = results_DDsmu[ibin]
         print("{0:12.4f} {1:12.4f} {2:10.4f} {3:10.1f} {4:10d} {5:12.4f}"
               .format(items[0], items[1], items[2], items[3], items[4], items[5]))
-
     print("--------------------------------------------------------------------------")
+    file_ref = pjoin(dirname(abspath(__file__)),
+                    "../mocks/tests/", "Mr19_mock_DDsmu.DR")
+    check_against_reference(results_DDsmu, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
 
     binfile = pjoin(dirname(abspath(__file__)),
                     "../mocks/tests/", "angular_bins")
@@ -102,6 +121,9 @@ def main():
         print("{0:14.4f} {1:14.4f} {2:14.4f} {3:14d} {4:14.4f}"
               .format(items[0], items[1], items[2], items[3], items[4]))
     print("-----------------------------------------------------------------------")
+    file_ref = pjoin(dirname(abspath(__file__)),
+                    "../mocks/tests/", "Mr19_mock_wtheta.DD")
+    check_against_reference(results_wtheta, file_ref, results_cols=(3, 4, 2), ref_cols=(0, 4, 1))
 
     print("Beginning the VPF")
     # Max. sphere radius of 10 Mpc
@@ -142,9 +164,14 @@ def main():
 
     print("-----------------------------------------------------------")
     print("Done with the VPF.")
+    file_ref = pjoin(dirname(abspath(__file__)),
+                    "../mocks/tests/", "Mr19_mock_vpf")
+    check_against_reference(results_vpf, file_ref, ref_cols=range(7), results_cols=range(7))
+
     tend = time.time()
     print("Done with all the MOCK clustering calculations. Total time \
     taken = {0:0.2f} seconds.".format(tend - tstart))
+
 
 if __name__ == "__main__":
     main()
