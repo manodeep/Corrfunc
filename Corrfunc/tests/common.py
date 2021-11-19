@@ -37,7 +37,10 @@ def Mr19_randoms_northonly():
 def nthreads():
     '''Use as many threads as cores that are available to this process'''
     import os
-    return len(os.sched_getaffinity(0))
+    try:
+        return len(os.sched_getaffinity(0))
+    except:
+        return os.cpu_count() or 1
 
 
 def _check_against_reference(results, filename, results_cols=(-2, -1, 2), ref_cols=(0, 4, 1)):
