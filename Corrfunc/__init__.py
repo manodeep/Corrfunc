@@ -9,10 +9,15 @@ points.
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 import os
+import sys
+import warnings
 
 __version__ = "2.4.0"
 __author__ = "Manodeep Sinha <manodeep@gmail.com>"
 
+
+if sys.version_info[0] < 3:
+    warnings.warn('Python 2 support is deprecated and will be dropped in Corrfunc v2.6', FutureWarning)
 
 try:
         __CORRFUNC_SETUP__
