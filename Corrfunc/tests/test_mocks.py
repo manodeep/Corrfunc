@@ -7,10 +7,10 @@ import numpy as np
 
 from Corrfunc.tests.common import Mr19_mock_northonly, Mr19_randoms_northonly
 from Corrfunc.tests.common import _check_against_reference
-from Corrfunc.tests.common import nthreads
+from Corrfunc.tests.common import all_isa_nthreads
     
 
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_DDrppi_mocks(Mr19_mock_northonly, isa, nthreads):
     from Corrfunc.mocks import DDrppi_mocks
     
@@ -33,7 +33,7 @@ def test_DDrppi_mocks(Mr19_mock_northonly, isa, nthreads):
     _check_against_reference(results_DDrppi_mocks, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
 
     
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_DDsmu_mocks(Mr19_randoms_northonly, isa, nthreads):
     from Corrfunc.mocks import DDsmu_mocks
     
@@ -57,7 +57,7 @@ def test_DDsmu_mocks(Mr19_randoms_northonly, isa, nthreads):
     _check_against_reference(results_DDsmu_mocks, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
     
     
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_DDtheta_mocks(Mr19_mock_northonly, isa, nthreads):
     from Corrfunc.mocks import DDtheta_mocks
     
@@ -78,7 +78,7 @@ def test_DDtheta_mocks(Mr19_mock_northonly, isa, nthreads):
     _check_against_reference(results_DDtheta_mocks, file_ref, results_cols=(3, 4, 2), ref_cols=(0, 4, 1))
 
 
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_vpf_mocks(Mr19_mock_northonly, isa, nthreads):
     from Corrfunc.mocks import vpf_mocks
     

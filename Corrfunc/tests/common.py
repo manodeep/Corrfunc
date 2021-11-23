@@ -1,3 +1,4 @@
+import os
 from os.path import dirname, abspath, join as pjoin
 
 import numpy as np
@@ -33,14 +34,30 @@ def Mr19_randoms_northonly():
     return ra, dec, cz, w
 
 
-@pytest.fixture(scope='module')
-def nthreads():
+def maxthreads():
     '''Use as many threads as cores that are available to this process'''
-    import os
     try:
-        return len(os.sched_getaffinity(0))
+        maxthreads = len(os.sched_getaffinity(0))
     except:
-        return os.cpu_count() or 1
+        maxthreads = os.cpu_count() or 1
+        
+    return maxthreads
+
+
+def all_isa_nthreads(fastest_nthreads=4):
+    '''Test all ISA with maxthreads, and the fastest ISA with threads 1 to `fastest_nthreads`'''
+    mx = maxthreads()
+    # don't test with more threads than cores
+    fastest_nthreads = min(fastest_nthreads,mx)
+    # ... except for one test, which we'll force to have more threads than cores as a "stress test"
+    all_nthreads = list(range(1,fastest_nthreads+1)) + [mx+1,]
+    
+    combos = []
+    all_isa = ['fallback','sse42','avx','avx512f']
+    combos += [(isa,mx) for isa in all_isa]
+    combos += [('fastest',n) for n in all_nthreads]
+    
+    return combos
 
 
 def _check_against_reference(results, filename, results_cols=(-2, -1, 2), ref_cols=(0, 4, 1)):

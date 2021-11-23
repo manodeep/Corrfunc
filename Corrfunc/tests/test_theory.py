@@ -7,10 +7,10 @@ import numpy as np
 
 from Corrfunc.tests.common import gals_Mr19
 from Corrfunc.tests.common import _check_against_reference
-from Corrfunc.tests.common import nthreads
+from Corrfunc.tests.common import all_isa_nthreads
 
 
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_DD(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DD
     
@@ -33,7 +33,7 @@ def test_DD(gals_Mr19, isa, nthreads):
                             results_cols=(3, 4, 2), ref_cols=(0, 4, 1))
     
 
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_DDrppi(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DDrppi
     
@@ -56,7 +56,7 @@ def test_DDrppi(gals_Mr19, isa, nthreads):
     _check_against_reference(results_DDrppi, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
 
     
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_DDsmu(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DDsmu
     
@@ -82,7 +82,7 @@ def test_DDsmu(gals_Mr19, isa, nthreads):
     _check_against_reference(results_DDsmu, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
     
     
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_wp(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import wp
     
@@ -103,7 +103,7 @@ def test_wp(gals_Mr19, isa, nthreads):
     _check_against_reference(results_wp, file_ref, results_cols=(4, 5, 2, 3), ref_cols=(4, 5, 1, 0))
     
 
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_xi(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import xi
     
@@ -123,7 +123,7 @@ def test_xi(gals_Mr19, isa, nthreads):
     _check_against_reference(results_xi, file_ref, results_cols=(4, 5, 2, 3), ref_cols=(4, 5, 1, 0))
     
 
-@pytest.mark.parametrize('isa', ['fallback','sse42','avx','avx512f'])
+@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
 def test_vpf(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import vpf
     
