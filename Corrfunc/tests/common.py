@@ -36,10 +36,12 @@ def Mr19_randoms_northonly():
 
 def maxthreads():
     '''Use as many threads as cores that are available to this process'''
+    import multiprocessing
+    
     try:
         maxthreads = len(os.sched_getaffinity(0))
     except:
-        maxthreads = os.cpu_count() or 1
+        maxthreads = multiprocessing.cpu_count() or 1
         
     return maxthreads
 
