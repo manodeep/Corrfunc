@@ -40,19 +40,22 @@ def maxthreads():
     
     try:
         maxthreads = len(os.sched_getaffinity(0))
-    except:
+    except AttributeError:
         maxthreads = multiprocessing.cpu_count() or 1
         
     return maxthreads
 
 
-def all_isa_nthreads(fastest_nthreads=4):
+def generate_isa_and_nthreads_combos(thread_sweep_max=4):
     '''Test all ISA with maxthreads, and the fastest ISA with threads 1 to `fastest_nthreads`'''
     mx = maxthreads()
-    # don't test with more threads than cores
-    fastest_nthreads = min(fastest_nthreads,mx)
+    
+    # this is the max number of threads we will use when testing multiple values of nthreads
+    # we will cap this at the number of cores
+    thread_sweep_max = min(thread_sweep_max,mx)
+    all_nthreads = list(range(1,thread_sweep_max+1))
     # ... except for one test, which we'll force to have more threads than cores as a "stress test"
-    all_nthreads = list(range(1,fastest_nthreads+1)) + [mx+1,]
+    all_nthreads += [mx+1]
     
     combos = []
     all_isa = ['fallback','sse42','avx','avx512f']
@@ -62,11 +65,37 @@ def all_isa_nthreads(fastest_nthreads=4):
     return combos
 
 
-def _check_against_reference(results, filename, results_cols=(-2, -1, 2), ref_cols=(0, 4, 1)):
+def check_against_reference(results, filename,
+                            ref_cols=(0, 4, 1),
+                            ravg_name='ravg',
+                            cf_name=None,
+                            atol=1e-9, rtol=1e-6):
     # results is output of Python function
-    # filename the reference counts
-    # ref_cols in order of npairs, weightavg, rpavg
-    refs = np.loadtxt(filename, unpack=True, usecols=ref_cols)
-    for ii, items in enumerate(results):
-        for icol, ref in zip(results_cols, refs):
-            assert np.allclose(items[icol], ref[ii])
+    # filename has the reference counts
+    # ref_cols in order of npairs, weightavg, rpavg, [xi]
+    
+    names = ['npairs','weightavg',ravg_name]
+    dtypes = [np.int64,np.float64,np.float64]
+    if cf_name != None:
+        # modules like xi return both npairs and xi, so we'll check both
+        names += [cf_name]
+        dtypes += [np.float64]
+    
+    refs = np.genfromtxt(filename, usecols=ref_cols,
+                         names=names, dtype=dtypes,
+                        )
+    
+    assert (results['npairs'] == refs['npairs']).all()
+    for name in names[1:]:
+        assert np.allclose(results[name], refs[name], atol=atol, rtol=rtol)
+
+def check_vpf_against_reference(results, filename,
+                                atol=1e-9, rtol=1e-6):
+    # results is output of Python function
+    # filename has the reference counts
+    
+    numN = results['pN'].shape[-1]
+    refs = np.genfromtxt(filename, usecols=range(1,numN+1),
+                         dtype=np.float64,
+                        )
+    assert np.allclose(results['pN'], refs, atol=atol, rtol=rtol)

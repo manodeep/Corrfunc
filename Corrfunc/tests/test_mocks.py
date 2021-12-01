@@ -6,11 +6,12 @@ import pytest
 import numpy as np
 
 from Corrfunc.tests.common import Mr19_mock_northonly, Mr19_randoms_northonly
-from Corrfunc.tests.common import _check_against_reference
-from Corrfunc.tests.common import all_isa_nthreads
+from Corrfunc.tests.common import (check_against_reference,
+                                   check_vpf_against_reference)
+from Corrfunc.tests.common import generate_isa_and_nthreads_combos
     
 
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDrppi_mocks(Mr19_mock_northonly, isa, nthreads):
     from Corrfunc.mocks import DDrppi_mocks
     
@@ -30,10 +31,10 @@ def test_DDrppi_mocks(Mr19_mock_northonly, isa, nthreads):
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../mocks/tests/", "Mr19_mock.DD")
-    _check_against_reference(results_DDrppi_mocks, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
+    check_against_reference(results_DDrppi_mocks, file_ref, ravg_name='rpavg', ref_cols=(0, 4, 1))
 
     
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDsmu_mocks(Mr19_randoms_northonly, isa, nthreads):
     from Corrfunc.mocks import DDsmu_mocks
     
@@ -54,10 +55,10 @@ def test_DDsmu_mocks(Mr19_randoms_northonly, isa, nthreads):
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../mocks/tests/", "Mr19_mock_DDsmu.RR")
-    _check_against_reference(results_DDsmu_mocks, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
+    check_against_reference(results_DDsmu_mocks, file_ref, ravg_name='savg', ref_cols=(0, 4, 1))
     
     
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDtheta_mocks(Mr19_mock_northonly, isa, nthreads):
     from Corrfunc.mocks import DDtheta_mocks
     
@@ -75,10 +76,10 @@ def test_DDtheta_mocks(Mr19_mock_northonly, isa, nthreads):
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../mocks/tests/", "Mr19_mock_wtheta.DD")
-    _check_against_reference(results_DDtheta_mocks, file_ref, results_cols=(3, 4, 2), ref_cols=(0, 4, 1))
+    check_against_reference(results_DDtheta_mocks, file_ref, ravg_name='thetaavg', ref_cols=(0, 4, 1))
 
 
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_vpf_mocks(Mr19_mock_northonly, isa, nthreads):
     from Corrfunc.mocks import vpf_mocks
     
@@ -104,8 +105,8 @@ def test_vpf_mocks(Mr19_mock_northonly, isa, nthreads):
                                     cosmology,
                                     ra, dec, cz, ra, dec, cz, 
                                     verbose=True, isa=isa,)
-    results_vpf_mocks = results_vpf_mocks.view(dtype=np.float64).reshape(nbin,-1)  # flatten to same shape as results
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../mocks/tests/", "Mr19_mock_vpf")
-    _check_against_reference(results_vpf_mocks, file_ref, ref_cols=range(7), results_cols=range(7))
+    check_vpf_against_reference(results_vpf_mocks, file_ref)
+    

@@ -6,11 +6,12 @@ import pytest
 import numpy as np
 
 from Corrfunc.tests.common import gals_Mr19
-from Corrfunc.tests.common import _check_against_reference
-from Corrfunc.tests.common import all_isa_nthreads
+from Corrfunc.tests.common import (check_against_reference,
+                                   check_vpf_against_reference)
+from Corrfunc.tests.common import generate_isa_and_nthreads_combos
 
 
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DD(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DD
     
@@ -29,11 +30,11 @@ def test_DD(gals_Mr19, isa, nthreads):
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "Mr19_DD_periodic")
-    _check_against_reference(results_DD, file_ref,
-                            results_cols=(3, 4, 2), ref_cols=(0, 4, 1))
+    check_against_reference(results_DD, file_ref,
+                            ravg_name='ravg', ref_cols=(0, 4, 1))
     
 
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDrppi(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DDrppi
     
@@ -53,10 +54,10 @@ def test_DDrppi(gals_Mr19, isa, nthreads):
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "Mr19_DDrppi_periodic")
-    _check_against_reference(results_DDrppi, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
+    check_against_reference(results_DDrppi, file_ref, ravg_name='rpavg', ref_cols=(0, 4, 1))
 
     
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDsmu(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DDsmu
     
@@ -79,10 +80,10 @@ def test_DDsmu(gals_Mr19, isa, nthreads):
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "Mr19_DDsmu_periodic")
-    _check_against_reference(results_DDsmu, file_ref, results_cols=(4, 5, 2), ref_cols=(0, 4, 1))
+    check_against_reference(results_DDsmu, file_ref, ravg_name='savg', ref_cols=(0, 4, 1))
     
     
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_wp(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import wp
     
@@ -100,10 +101,11 @@ def test_wp(gals_Mr19, isa, nthreads):
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "Mr19_wp")
-    _check_against_reference(results_wp, file_ref, results_cols=(4, 5, 2, 3), ref_cols=(4, 5, 1, 0))
+    check_against_reference(results_wp, file_ref, ravg_name='rpavg', cf_name='wp',
+                            ref_cols=(4, 5, 1, 0))
     
 
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_xi(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import xi
     
@@ -120,10 +122,10 @@ def test_xi(gals_Mr19, isa, nthreads):
     
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "Mr19_xi")
-    _check_against_reference(results_xi, file_ref, results_cols=(4, 5, 2, 3), ref_cols=(4, 5, 1, 0))
+    check_against_reference(results_xi, file_ref, ravg_name='ravg', cf_name='xi', ref_cols=(4, 5, 1, 0))
     
 
-@pytest.mark.parametrize('isa,nthreads', all_isa_nthreads())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_vpf(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import vpf
     
@@ -139,7 +141,7 @@ def test_vpf(gals_Mr19, isa, nthreads):
     results_vpf  = vpf(rmax, nbin, nspheres, num_pN,
                           seed, x, y, z, verbose=True, periodic=periodic,
                           boxsize=boxsize)
-    results_vpf = results_vpf.view(dtype=np.float64).reshape(nbin,-1)  # flatten to same shape as results
+    #results_vpf = results_vpf.view(dtype=np.float64).reshape(nbin,-1)  # flatten to same shape as results
     file_ref = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "Mr19_vpf_periodic")
-    _check_against_reference(results_vpf, file_ref, ref_cols=range(num_pN+1), results_cols=range(num_pN+1))
+    check_vpf_against_reference(results_vpf, file_ref)
