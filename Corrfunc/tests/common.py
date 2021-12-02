@@ -53,7 +53,7 @@ def generate_isa_and_nthreads_combos(extra_isa=None):
     # the ISA sweep will use maxthreads
     # and then with the fastest ISA, we will test single-threaded,
     # plus "oversubscribed", where we use more threads than cores
-    all_nthreads = [1,maxthreads+1]
+    all_nthreads = [1,mx+1]
     
     combos = []
     all_isa = ['fallback','sse42','avx','avx512f']
