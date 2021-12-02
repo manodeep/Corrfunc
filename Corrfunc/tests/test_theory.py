@@ -83,7 +83,7 @@ def test_DDsmu(gals_Mr19, isa, nthreads):
     check_against_reference(results_DDsmu, file_ref, ravg_name='savg', ref_cols=(0, 4, 1))
     
     
-@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
+@pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos(extra_isa=['AVX2']))
 def test_wp(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import wp
     

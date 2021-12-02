@@ -46,19 +46,19 @@ def maxthreads():
     return maxthreads
 
 
-def generate_isa_and_nthreads_combos(thread_sweep_max=4):
-    '''Test all ISA with maxthreads, and the fastest ISA with threads 1 to `fastest_nthreads`'''
+def generate_isa_and_nthreads_combos(extra_isa=None):
+    '''Test all ISA with maxthreads, and the fastest ISA with threads 1 and maxthreads+1'''
     mx = maxthreads()
     
-    # this is the max number of threads we will use when testing multiple values of nthreads
-    # we will cap this at the number of cores
-    thread_sweep_max = min(thread_sweep_max,mx)
-    all_nthreads = list(range(1,thread_sweep_max+1))
-    # ... except for one test, which we'll force to have more threads than cores as a "stress test"
-    all_nthreads += [mx+1]
+    # the ISA sweep will use maxthreads
+    # and then with the fastest ISA, we will test single-threaded,
+    # plus "oversubscribed", where we use more threads than cores
+    all_nthreads = [1,maxthreads+1]
     
     combos = []
     all_isa = ['fallback','sse42','avx','avx512f']
+    if extra_isa:
+        all_isa += extra_isa
     combos += [(isa,mx) for isa in all_isa]
     combos += [('fastest',n) for n in all_nthreads]
     
