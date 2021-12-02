@@ -19,7 +19,7 @@ except ImportError:
 __all__ = ('read_fastfood_catalog', 'read_ascii_catalog', 'read_catalog')
 
 
-def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
+def read_fastfood_catalog(filename, return_dtype=None, need_weights=None):
     """
     Read a galaxy catalog from a fast-food binary file.
 
@@ -32,17 +32,15 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
         Specifies the datatype for the returned arrays. Must be in
         {np.float64, np.float32}
 
-    need_header: boolean, default None.
-        Returns the header found in the fast-food file in addition to the
-        X/Y/Z arrays.
+    need_weights: boolean, default None.
+        Returns weight array in addition to the X/Y/Z arrays.
 
     Returns
     --------
 
     X, Y, Z: numpy arrays
         Returns the triplet of X/Y/Z positions as separate numpy arrays.
-
-        If need_header is set, then the header is also returned
+        
 
     Example
     --------
@@ -108,26 +106,11 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
             "fast-food file seems to be incorrect (reading idat)"
         ngal = idat[1]
 
-        if need_header is not None:
-            # now read fdat
-            skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-            fdat = struct.unpack(bytes_to_native_str(b'@fffffffff'),
-                                 f.read(36))[0:9]
-            skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-            assert skip1 == 36 and skip2 == 36,\
-                "fast-food file seems to be incorrect (reading fdat )"
-
-            skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-            znow = struct.unpack(bytes_to_native_str(b'@f'), f.read(4))[0]
-            skip2 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
-            assert skip1 == 4 and skip2 == 4,\
-                "fast-food file seems to be incorrect (reading redshift)"
-        else:
-            fdat_bytes = 4 + 36 + 4
-            znow_bytes = 4 + 4 + 4
-            # seek over the fdat + znow fields + padding bytes
-            # from current position
-            f.seek(fdat_bytes + znow_bytes, 1)
+        fdat_bytes = 4 + 36 + 4
+        znow_bytes = 4 + 4 + 4
+        # seek over the fdat + znow fields + padding bytes
+        # from current position
+        f.seek(fdat_bytes + znow_bytes, 1)
 
         # read the padding bytes for the x-positions
         skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
@@ -137,7 +120,7 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
         # seek back 4 bytes from current position
         f.seek(-4, 1)
         pos = {}
-        for field in 'xyz':
+        for field in 'xyz' + ('w' if need_weights else ''):
             skip1 = struct.unpack(bytes_to_native_str(b'@i'), f.read(4))[0]
             assert skip1 == ngal * 4 or skip1 == ngal * 8, \
                 "fast-food file seems to be corrupt (padding bytes a)"
@@ -150,14 +133,11 @@ def read_fastfood_catalog(filename, return_dtype=None, need_header=None):
             else:
                 pos[field] = [return_dtype(a) for a in array]
 
-    x = np.array(pos['x'])
-    y = np.array(pos['y'])
-    z = np.array(pos['z'])
+    toret = [np.array(pos[name]) for name in ['x','y','z']]
+    if need_weights:
+        toret.append(np.array(pos['w']))
 
-    if need_header is not None:
-        return idat, fdat, znow, x, y, z
-    else:
-        return x, y, z
+    return toret
 
 
 def read_ascii_catalog(filename, return_dtype=None):

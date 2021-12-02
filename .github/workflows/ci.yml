@@ -146,4 +146,5 @@ jobs:
       - name: Python tests
         shell: bash -l {0}
         run: |
-          python -m Corrfunc.tests
+          python -m pip install pytest
+          pytest -v
