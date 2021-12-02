@@ -17,7 +17,8 @@ New features
 Changes
 -------
 - Add Corrfunc/tests.py to CI testing [#260]
-- Migrate doctets to Python 3.8 [#261]
+- Migrate doctests to Python 3.8 [#261]
+- Migrate Python tests to pytest [#265]
 
 
 2.4.0 (2021-09-30)
