@@ -22,6 +22,12 @@
 #include "defs.h"
 #include "utils.h"
 
+#ifdef __linux__
+#include "sched.h"
+#endif
+
+int get_nthreads_from_affinity(void);
+
 /* Define the instruction sets that are supported by the compiler */
 const isa valid_instruction_sets[] = {FALLBACK
 #ifdef __SSE4_2__
@@ -59,12 +65,6 @@ const char isa_name[][20] = {"FALLBACK"
    all 5 instructions sets are supported */
 const int num_instructions = sizeof(valid_instruction_sets)/sizeof(valid_instruction_sets[0]);
 
-#ifdef _OPENMP
-const int nthreads=4;
-#else
-const int nthreads=1;
-#endif
-
 const double maxdiff = 1e-9;
 const double maxreldiff = 1e-6;
 
@@ -75,6 +75,24 @@ double theory_mu_max=0.5;
 double mocks_mu_max=1.0;
 int nmu_bins=10;
 double boxsize=420.0;
+
+int get_nthreads_from_affinity(void){
+#ifdef _OPENMP
+#ifdef __linux__ 
+    // Look at the processor affinity mask to determine the number of available CPUs
+    cpu_set_t cs;
+    CPU_ZERO(&cs);
+    sched_getaffinity(0, sizeof(cs), &cs);
+    return CPU_COUNT(&cs);
+#else
+    // non-linux, revert to the old behavior, which was just a constant
+    // we'll use 3 because that's the number of GitHub CI cores for Mac
+    return 3;  
+#endif  // __linux__
+#else
+    return 1;
+#endif // _OPENMP
+}
 
 
 #ifdef INTEGRATION_TESTS

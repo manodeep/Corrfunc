@@ -24,8 +24,10 @@ int test_custom_and_linear_bins(void);
 //Global variables
 int64_t ND1;
 double *X1=NULL,*Y1=NULL,*Z1=NULL,*weights1=NULL;
+int nthreads;
 
 char current_file1[MAXLEN+1];
+
 
 struct config_options options;
 //end global variables
@@ -66,11 +68,12 @@ int test_periodic_DD(const char *correct_outputfile)
                 ret = EXIT_FAILURE;//not required but showing intent
                 break;
             }
+            int npairs_equal = npairs == results.npairs[i] ? EXIT_SUCCESS : EXIT_FAILURE;
             int floats_equal = AlmostEqualRelativeAndAbs_double(rpavg, results.rpavg[i], maxdiff, maxreldiff);
             int weights_equal = AlmostEqualRelativeAndAbs_double(weightavg, results.weightavg[i], maxdiff, maxreldiff);
 
             //Check for exact equality of npairs and float "equality" for rpavg
-            if(npairs == results.npairs[i] && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
+            if(npairs_equal == EXIT_SUCCESS && floats_equal == EXIT_SUCCESS && weights_equal == EXIT_SUCCESS) {
                 ret = EXIT_SUCCESS;
             } else {
                 ret = EXIT_FAILURE;//not required but showing intent
@@ -128,7 +131,7 @@ int write_bins_to_file(const double rmin, const double rmax, const double nbins,
     for(int i=0;i<nbins;i++) {
         const double rp_low = rmin + i*dr;
         const double rp_upp = rmin + (i+1)*dr;
-        fprintf(fp,"%g %g\n",rp_low,rp_upp);
+        fprintf(fp,"%a %a\n",rp_low,rp_upp);
     }
     fclose(fp);
 
@@ -139,25 +142,29 @@ int compare_two_results(const results_countpairs *results_reference, const resul
 {
     int ret = 0;
     for(int i=1;i<results_reference->nbin;i++) {
+        int npairs_equal = results_reference->npairs[i] == results_test->npairs[i] ? EXIT_SUCCESS : EXIT_FAILURE;
         int floats_equal = AlmostEqualRelativeAndAbs_double(results_reference->rpavg[i],
                                                             results_test->rpavg[i],  maxdiff, maxreldiff);
         int weights_equal = AlmostEqualRelativeAndAbs_double(results_reference->weightavg[i],
                                                              results_test->weightavg[i], maxdiff, maxreldiff);
 
-        //Check for exact equality of npairs and float "equality" for rpavg
-        if(results_test->npairs[i] == results_reference->npairs[i]
+        // Check for exact equality of npairs and float "equality" for rpavg
+        if(npairs_equal == EXIT_SUCCESS
             && floats_equal == EXIT_SUCCESS
             && weights_equal == EXIT_SUCCESS) {
             continue;
         } else {
             ret++;
-            fprintf(stderr,"[nbin = %d] Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", i-1, results_reference->npairs[i], results_test->npairs[i]);
-            if(!floats_equal) {
-                fprintf(stderr,"Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n", results_reference->rpavg[i], results_test->rpavg[i], floats_equal);
+            if(npairs_equal != EXIT_SUCCESS){
+                fprintf(stderr,"\n[nbin = %d] Failed. True npairs = %"PRIu64 " Computed results npairs = %"PRIu64"\n", i-1, results_reference->npairs[i], results_test->npairs[i]);
             }
-            if(!weights_equal) {
+            if(floats_equal != EXIT_SUCCESS) {
+                fprintf(stderr,"[nbin = %d] Failed. True rpavg = %e Computed rpavg = %e. floats_equal = %d\n", i-1, results_reference->rpavg[i], results_test->rpavg[i], floats_equal);
+            }
+            if(weights_equal != EXIT_SUCCESS) {
                 fprintf(stderr,"[nbin = %d] Failed. True weightavg = %e Computed weightavg = %e. weights_equal = %d\n", i-1, results_reference->weightavg[i], results_test->weightavg[i], weights_equal);
             }
+            break;
         }
     }
 
@@ -255,6 +262,7 @@ int main(int argc, char **argv)
 
     //set the globals
     ND1 = read_positions(file,fileformat, sizeof(double), 4, &X1, &Y1, &Z1, &weights1);
+    nthreads = get_nthreads_from_affinity();
 
     strncpy(current_file1,file,MAXLEN);
     reset_bin_refine_factors(&options);
@@ -266,11 +274,13 @@ int main(int argc, char **argv)
     // with bin_type=BIN_CUSTOM and bin_type=BIN_LIN. This is
     // a comprehensive test running over a large set of
     // (rmax, nbins) for each instruction set.
+#ifdef INTEGRATION_TESTS
     status = test_custom_and_linear_bins();
     if(status != EXIT_SUCCESS) {
         failed++;
         return failed;
     }
+#endif
 
     const char alltests_names[][MAXLEN] = {"Mr19 DD (periodic)",
                                           };
@@ -287,7 +297,7 @@ int main(int argc, char **argv)
 
     int (*allfunctions[]) (const char *) = {test_periodic_DD,
                                             };
-    const int numfunctions=1;//6 functions total
+    const int numfunctions=1;
 
     int total_tests=0,skipped=0;
 

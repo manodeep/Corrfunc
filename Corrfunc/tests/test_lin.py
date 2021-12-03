@@ -16,11 +16,13 @@ def _allclose(a, *others, ravg_name):
     toret = True
     for b in others:
         for name in ['npairs','weightavg',ravg_name]:
-            # Here we are using allclose, even for npairs,
-            # because we accept that linear binning will cause a small amount of pairs to shift bins
-            if not np.all(np.allclose(a[name], b[name])):
+            if name == 'npairs':
+                ac = np.all(a[name] == b[name])
+            else:
+                ac = np.allclose(a[name], b[name])
+            if not ac:
                 print("Mis-match for {0}: (a, b) = {1} ".format(name, list(zip(a[name], b[name]))))
-            toret &= np.allclose(a[name], b[name])
+            toret &= ac
 
     return toret
 
@@ -65,7 +67,7 @@ def points_mock(request, npts=10**4):
 
 @pytest.fixture(scope='module')
 def linbins():
-    binfile = np.linspace(2.1, 20.1, 12)
+    binfile = np.linspace(2.0, 20.1, 12)
     return binfile
 
 
