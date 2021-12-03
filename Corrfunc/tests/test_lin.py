@@ -12,17 +12,16 @@ from Corrfunc.io import read_fastfood_catalog
 from Corrfunc.tests.common import gals_Mr19
 from Corrfunc.tests.common import maxthreads
 
-def _allclose(a, *others, ravg_name):
+def _allclose(a, b, ravg_name=None):
     toret = True
-    for b in others:
-        for name in ['npairs','weightavg',ravg_name]:
-            if name == 'npairs':
-                ac = np.all(a[name] == b[name])
-            else:
-                ac = np.allclose(a[name], b[name])
-            if not ac:
-                print("Mis-match for {0}: (a, b) = {1} ".format(name, list(zip(a[name], b[name]))))
-            toret &= ac
+    for name in ['npairs','weightavg',ravg_name]:
+        if name == 'npairs':
+            ac = np.all(a[name] == b[name])
+        else:
+            ac = np.allclose(a[name], b[name])
+        if not ac:
+            print("Mis-match for {0}: (a, b) = {1} ".format(name, list(zip(a[name], b[name]))))
+        toret &= ac
 
     return toret
 
