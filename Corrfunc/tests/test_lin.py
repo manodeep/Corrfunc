@@ -43,8 +43,10 @@ def points(request, npts=10**4):
         filename = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/data", "gals_Mr19.ff")
         data = read_fastfood_catalog(filename, need_weights=True)
-        rng = np.random.default_rng(42)
-        data = rng.choice(data, npts, replace=False, axis=-1)
+        data = np.array(data)
+        np.random.seed(42)
+        i = np.random.choice(data.shape[-1], size=npts, replace=False)
+        data = data[:,i]
 
         return dict(data=data, boxsize=420.)
     
@@ -56,8 +58,10 @@ def points_mock(request, npts=10**4):
         filename = pjoin(dirname(abspath(__file__)),
                     "../../mocks/tests/data", "Mr19_mock_northonly.rdcz.ff")
         data = read_fastfood_catalog(filename, need_weights=True)
-        rng = np.random.default_rng(42)
-        data = rng.choice(data, npts, replace=False, axis=-1)
+        data = np.array(data)
+        np.random.seed(42)
+        i = np.random.choice(data.shape[-1], size=npts, replace=False)
+        data = data[:,i]
 
         return dict(data=data)
     
