@@ -75,6 +75,7 @@ double theory_mu_max=0.5;
 double mocks_mu_max=1.0;
 int nmu_bins=10;
 double boxsize=420.0;
+int nthreads = 1;  // a safe default, but each tests should fill this with get_nthreads_from_affinity()
 
 int get_nthreads_from_affinity(void){
 #ifdef _OPENMP

@@ -24,7 +24,6 @@ int test_custom_and_linear_bins(void);
 //Global variables
 int64_t ND1;
 double *X1=NULL,*Y1=NULL,*Z1=NULL,*weights1=NULL;
-int nthreads;
 
 char current_file1[MAXLEN+1];
 
