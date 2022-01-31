@@ -1034,8 +1034,8 @@ def sys_pipes():
     uses os.dup2 to redirect fds 1 & 2 to the new location and restore them on return,
     but will cause the output to hang if they were not already redirected.  It seems
     we can compare Python's ``sys.stdout`` to the saved ``sys.__stdout__`` to tell
-    if redirection occurred.  We can also check if the output is a TTY, but that's
-    probably a subset of the preceeding check.
+    if redirection occurred.  We will also check if the output is a TTY as a safety
+    net, even though it is probably a subset of the preceeding check.
 
     Basic usage is:
 
