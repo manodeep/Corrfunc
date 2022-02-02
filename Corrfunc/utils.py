@@ -1029,12 +1029,13 @@ def process_weights(weights1, weights2, X1, X2, weight_type, autocorr):
 @contextmanager
 def sys_pipes():
     '''
-    We can use the Wurlitzer package to redirect stdout and stderr
-    from the command line into a Jupyter notebook.  But if we're not
-    in a notebook, this isn't safe because we can't redirect stdout
-    to itself.  This function is a thin wrapper that checks if the
-    stdout/err streams are TTYs and enables output redirection
-    based on that.
+    In a Jupyter notebook, Python's ``sys.stdout`` and ``sys.stderr`` are redirected
+    so output ends up in cells.  But C extensions don't know about that!  Wurlitzer
+    uses os.dup2 to redirect fds 1 & 2 to the new location and restore them on return,
+    but will cause the output to hang if they were not already redirected.  It seems
+    we can compare Python's ``sys.stdout`` to the saved ``sys.__stdout__`` to tell
+    if redirection occurred.  We will also check if the output is a TTY as a safety
+    net, even though it is probably a subset of the preceeding check.
 
     Basic usage is:
 
@@ -1042,11 +1043,19 @@ def sys_pipes():
     ...    call_some_c_function()
 
     See the Wurlitzer package for usage of `wurlitzer.pipes()`;
-    see also https://github.com/manodeep/Corrfunc/issues/157.
+    see also https://github.com/manodeep/Corrfunc/issues/157,
+    https://github.com/manodeep/Corrfunc/issues/269.
     '''
-
-    kwargs = {'stdout':None if sys.stdout.isatty() else sys.stdout,
-              'stderr':None if sys.stderr.isatty() else sys.stderr }
+    
+    kwargs = {}
+    if sys.stdout.isatty() or (sys.stdout is sys.__stdout__):
+        kwargs['stdout'] = None
+    else:
+        kwargs['stdout'] = sys.stdout
+    if sys.stderr.isatty() or (sys.stderr is sys.__stderr__):
+        kwargs['stderr'] = None
+    else:
+        kwargs['stderr'] = sys.stderr
 
     # Redirection might break for any number of reasons, like
     # stdout/err already being closed/redirected.  We probably
