@@ -921,7 +921,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
               continue;
           }
           DOUBLE theta = ZERO, pairweight = ZERO;
-          if(need_rpavg) {
+          if(need_rpavg || bin_type == BIN_LIN) {
               if(order) {
                   theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
               } else {
