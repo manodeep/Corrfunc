@@ -41,7 +41,7 @@ void interrupt_handler_countpairs_s_mu_mocks_DOUBLE(int signo)
 }
 
 
-int check_ra_dec_cz_s_mu_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz, int is_comoving_dist)
+int check_ra_dec_cz_s_mu_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz, const uint8_t is_comoving_dist)
 {
 
     if(N==0) {
