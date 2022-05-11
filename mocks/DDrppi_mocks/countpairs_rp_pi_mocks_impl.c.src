@@ -40,7 +40,7 @@ void interrupt_handler_countpairs_rp_pi_mocks_DOUBLE(int signo)
 }
 
 
-int check_ra_dec_cz_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz)
+int check_ra_dec_cz_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz, const uint8_t is_comoving_dist)
 {
 
     if(N==0) {
@@ -71,7 +71,7 @@ int check_ra_dec_cz_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *
             return EXIT_FAILURE;
         }
     }
-    if(max_cz < max_cz_threshold) fix_cz = 1;
+    if((max_cz < max_cz_threshold) && (is_comoving_dist == 0)) fix_cz = 1; // only fix "cz" if it's not comoving distance but indeed cz
 
     //Only run the loop if something needs to be fixed
     if(fix_cz==1 || fix_ra == 1 || fix_dec == 1) {
@@ -246,12 +246,12 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     }
 
     //Check inputs
-    int status1 = check_ra_dec_cz_DOUBLE(ND1, ra1, dec1, czD1);
+    int status1 = check_ra_dec_cz_DOUBLE(ND1, ra1, dec1, czD1, options->is_comoving_dist);
     if(status1 != EXIT_SUCCESS) {
         return status1;
     }
     if(autocorr==0) {
-        int status2 = check_ra_dec_cz_DOUBLE(ND2, ra2, dec2, czD2);
+        int status2 = check_ra_dec_cz_DOUBLE(ND2, ra2, dec2, czD2, options->is_comoving_dist);
         if(status2 != EXIT_SUCCESS) {
             return status2;
         }
