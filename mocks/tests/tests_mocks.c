@@ -473,6 +473,7 @@ int main(int argc, char **argv)
 
     //set the globals.
     ND1 = read_positions(file,fileformat, sizeof(double), 4, &RA1, &DEC1, &CZ1, &weights1);
+    nthreads = get_nthreads_from_affinity();
 
     ND2 = ND1;
     RA2 = RA1;

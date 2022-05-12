@@ -22,7 +22,7 @@ VPF_LIB := countspheres
 
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
-TARGETS := test_periodic test_nonperiodic
+TARGETS := test_periodic test_nonperiodic test_periodic_lin
 
 ifneq ($(COMPILE_PYTHON_EXT), 0)
   TARGETS += python_lib
@@ -32,6 +32,8 @@ endif
 
 SRC1   := test_periodic.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(UTILS_DIR)/utils.c
 OBJS1  := $(SRC1:.c=.o)
+SRC_LIN   := test_periodic_lin.c $(IO_DIR)/io.c $(IO_DIR)/ftread.c $(UTILS_DIR)/utils.c
+OBJS_LIN  := $(SRC_LIN:.c=.o)
 C_LIBRARIES := $(DD_DIR)/lib$(DD_LIB).a $(DDrppi_DIR)/lib$(DDrppi_LIB).a $(DDsmu_DIR)/lib$(DDsmu_LIB).a $(WP_DIR)/lib$(WP_LIB).a \
              $(XI_DIR)/lib$(XI_LIB).a $(VPF_DIR)/lib$(VPF_LIB).a
 INCL   := $(IO_DIR)/io.h $(IO_DIR)/ftread.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/tests_common.h \
@@ -45,6 +47,9 @@ all: tests $(TARGETS) $(INCL) uncompress $(ROOT_DIR)/theory.options $(ROOT_DIR)/
 
 test_periodic: $(OBJS1) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OBJS1) $(C_LIBRARIES) $(GSL_LINK) $(CLINK) -o $@
+
+test_periodic_lin: $(OBJS_LIN) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
+	$(CC) $(OBJS_LIN) $(C_LIBRARIES) $(GSL_LINK) $(CLINK) -o $@
 
 test_nonperiodic: $(OBJS2) $(C_LIBRARIES) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk Makefile
 	$(CC) $(OBJS2) $(C_LIBRARIES) $(CLINK) -o $@
@@ -76,9 +81,13 @@ python_lib: tests $(OBJS1) $(INCL) $(ROOT_DIR)/theory.options $(ROOT_DIR)/common
 	@echo
 	$(MAKE) -C ../python_bindings tests
 
-tests: test_periodic test_nonperiodic
+tests: test_periodic test_nonperiodic test_periodic_lin
+	./test_periodic_lin
 	./test_nonperiodic
 	./test_periodic
+
+tests_bin: test_periodic_lin
+	./test_periodic_lin
 
 uncompress: | data
 	@{\

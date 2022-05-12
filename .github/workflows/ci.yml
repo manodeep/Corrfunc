@@ -146,4 +146,12 @@ jobs:
       - name: Python tests
         shell: bash -l {0}
         run: |
-          python -m Corrfunc.tests
+          python -m pip install pytest
+          pytest -v Corrfunc/tests/test_{theory,mocks}.py
+
+      - name: Python linear binning tests
+        shell: bash -l {0}
+        if: matrix.python-version != '2.7'
+        run: |
+          pytest -v Corrfunc/tests/test_lin.py
+         

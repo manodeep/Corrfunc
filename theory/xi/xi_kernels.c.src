@@ -318,6 +318,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
     const int32_t need_weightavg = src_weightavg != NULL;
     const DOUBLE sqr_rmin=rmin*rmin, sqr_rmax=rmax*rmax;
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+    const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_inv_rpstep = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_rpmin_invstep = AVX_SETZERO_FLOAT();
     if (bin_type == BIN_LIN) {
@@ -504,6 +505,7 @@ static inline int xi_avx_intrinsics_DOUBLE(DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, c
             }
             if (bin_type == BIN_LIN) {
                 m_rbin = AVX_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
+                m_rbin = AVX_BLEND_FLOATS_WITH_MASK(m_zero, m_rbin, m_mask_left);
                 union_rbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rbin);
             }
             else {

@@ -169,7 +169,9 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     {
         #if defined(_OPENMP)
         int tid = omp_get_thread_num();
-        nthreads = omp_get_num_threads();  // reduce to actual number of threads, will be the same in almost all cases
+        if(tid == 0){
+            nthreads = omp_get_num_threads();  // reduce to actual number of threads, will be the same in almost all cases
+        }
         #else
         int tid = 0;
         #endif

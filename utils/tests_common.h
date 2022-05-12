@@ -22,9 +22,11 @@
 #include "defs.h"
 #include "utils.h"
 
-#ifdef INTEGRATION_TESTS
+#ifdef __linux__
+#include "sched.h"
+#endif
 
-#pragma message("Running (SLOW) integration tests")
+int get_nthreads_from_affinity(void);
 
 /* Define the instruction sets that are supported by the compiler */
 const isa valid_instruction_sets[] = {FALLBACK
@@ -62,6 +64,42 @@ const char isa_name[][20] = {"FALLBACK"
    required to store the array. As in the typeof valid_instruction_sets is int[5] when
    all 5 instructions sets are supported */
 const int num_instructions = sizeof(valid_instruction_sets)/sizeof(valid_instruction_sets[0]);
+
+const double maxdiff = 1e-9;
+const double maxreldiff = 1e-6;
+
+char binfile[]="../tests/bins";
+char angular_binfile[]="../tests/angular_bins";
+double pimax=40.0;
+double theory_mu_max=0.5;
+double mocks_mu_max=1.0;
+int nmu_bins=10;
+double boxsize=420.0;
+int nthreads = 1;  // a safe default, but each tests should fill this with get_nthreads_from_affinity()
+
+int get_nthreads_from_affinity(void){
+#ifdef _OPENMP
+#ifdef __linux__ 
+    // Look at the processor affinity mask to determine the number of available CPUs
+    cpu_set_t cs;
+    CPU_ZERO(&cs);
+    sched_getaffinity(0, sizeof(cs), &cs);
+    return CPU_COUNT(&cs);
+#else
+    // non-linux, revert to the old behavior, which was just a constant
+    // we'll use 3 because that's the number of GitHub CI cores for Mac
+    return 3;  
+#endif  // __linux__
+#else
+    return 1;
+#endif // _OPENMP
+}
+
+
+#ifdef INTEGRATION_TESTS
+
+#pragma message("Running (SLOW) integration tests")
+
 
 /* The max. value of bin refine factor to probe. Each of bin refinements factors is set from [1, max_binref]
  (inclusive) */
@@ -242,20 +280,3 @@ const int min_bin_ref = 1, max_bin_ref = 3;
 
 #endif/*INTEGRATION_TESTS*/
 
-
-#ifdef _OPENMP
-const int nthreads=4;
-#else
-const int nthreads=1;
-#endif
-
-const double maxdiff = 1e-9;
-const double maxreldiff = 1e-6;
-
-char binfile[]="../tests/bins";
-char angular_binfile[]="../tests/angular_bins";
-double pimax=40.0;
-double theory_mu_max=0.5;
-double mocks_mu_max=1.0;
-int nmu_bins=10;
-double boxsize=420.0;

@@ -312,6 +312,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
     const int32_t need_weightavg = src_weightavg != NULL;
     const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+    const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_inv_rpstep = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_rpmin_invstep = AVX_SETZERO_FLOAT();
     if (bin_type == BIN_LIN) {
@@ -522,6 +523,7 @@ static inline int countpairs_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
             }
             if (bin_type == BIN_LIN) {
                 m_rpbin = AVX_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
+                m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_zero, m_rpbin, m_mask_left);
                 union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
             }
             else {
@@ -659,6 +661,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
   const int32_t need_weightavg = src_weightavg != NULL;
   const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
   DOUBLE inv_rpstep=0., rpmin_invstep=0.;
+  SSE_FLOATS m_zero = SSE_SETZERO_FLOAT();
   SSE_FLOATS m_inv_rpstep = SSE_SETZERO_FLOAT();
   SSE_FLOATS m_rpmin_invstep = SSE_SETZERO_FLOAT();
   if (bin_type == BIN_LIN) {
@@ -834,6 +837,7 @@ static inline int countpairs_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0,
 
           if (bin_type == BIN_LIN) {
               m_rpbin = SSE_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
+              m_rpbin = SSE_BLEND_FLOATS_WITH_MASK(m_zero, m_rpbin, m_mask_left);
               union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
           }
           else {
