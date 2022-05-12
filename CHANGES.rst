@@ -23,6 +23,7 @@ Changes
 Fixes
 -----
 - Add additional check to tell if it's safe to redirect stdout/err [#270]
+- Perform z vs cz check and fixing only if comoving distance flag is not set [#275]
 
 
 2.4.0 (2021-09-30)
