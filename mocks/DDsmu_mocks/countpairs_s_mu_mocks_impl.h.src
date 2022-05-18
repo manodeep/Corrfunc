@@ -46,7 +46,7 @@ extern "C" {
                                             results_countpairs_mocks_s_mu *results,
                                             struct config_options *options, struct extra_options *extra);
 
-    extern int check_ra_dec_cz_s_mu_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz);
+    extern int check_ra_dec_cz_s_mu_DOUBLE(const int64_t N, DOUBLE *phi, DOUBLE *theta, DOUBLE *cz, const uint8_t is_comoving_dist);
 
 #ifdef __cplusplus
 }
