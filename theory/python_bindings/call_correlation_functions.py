@@ -212,7 +212,7 @@ def main():
                        X1=x, Y1=y, Z1=z, weights1=w,
                        weight_type='pair_product',
                        periodic=periodic,
-                       boxsize=boxsize,
+                       boxsize=(boxsize,boxsize,boxsize),
                        verbose=True,
                        output_ravg=True,
                        isa=-1)
@@ -234,7 +234,7 @@ def main():
                        binfile=binfile,
                        X1=x, Y1=y, Z1=z,
                        periodic=periodic,
-                       boxsize=boxsize,
+                       boxsize=(boxsize,boxsize,boxsize),
                        verbose=True,
                        output_ravg=True,
                        xbin_refine_factor=3,
