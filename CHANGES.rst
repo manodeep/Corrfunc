@@ -14,6 +14,10 @@ New features
 2.5.0 (upcoming)
 ================
 
+Enhancements
+------------
+- Allow user to specify box size per dimension [#276]
+
 Changes
 -------
 - Add Corrfunc/tests.py to CI testing [#260]
