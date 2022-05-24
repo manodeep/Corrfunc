@@ -9,7 +9,7 @@ from Corrfunc.tests.common import gals_Mr19
 from Corrfunc.tests.common import (check_against_reference,
                                    check_vpf_against_reference)
 from Corrfunc.tests.common import (generate_isa_and_nthreads_combos,
-                                    maxthreads)
+                                   maxthreads)
 
 
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
@@ -40,18 +40,18 @@ def test_DD_boxsize(gals_Mr19, isa='fastest', nthreads=maxthreads()):
 
     boxsize = 420.
     binfile = pjoin(dirname(abspath(__file__)),
-                     "../../theory/tests/", "bins")
+                    "../../theory/tests/", "bins")
     file_ref = pjoin(dirname(abspath(__file__)),
-                    "../../theory/tests/", "Mr19_DD_periodic")
+                     "../../theory/tests/", "Mr19_DD_periodic")
     autocorr = 1
     periodic = 1
 
-    x,y,z,w = gals_Mr19
+    x, y, z, w = gals_Mr19
     args = (autocorr, nthreads, binfile, x, y, z)
     kwargs = dict(weights1=w, weight_type='pair_product',
-                    periodic=periodic,
-                    output_ravg=True, verbose=True,
-                    isa=isa)
+                  periodic=periodic,
+                  output_ravg=True, verbose=True,
+                  isa=isa)
 
     # scalar
     results_DD = DD(*args, boxsize=boxsize, **kwargs)
