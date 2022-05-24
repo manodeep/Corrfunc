@@ -59,7 +59,10 @@ struct config_options
      */
 
     /* Theory option for periodic boundaries */
-    double boxsize;
+    union {
+        double boxsize;
+        double boxsize_x;
+    };
 
     /* Options for mocks */
     //cosmology struct. Intentionally left anoynoymous, so I can
@@ -142,11 +145,15 @@ struct config_options
         uint8_t bin_masks[4];
     };
 
+    uint8_t _pad[4];
+    double boxsize_y;
+    double boxsize_z;
+
     /* Reserving to maintain ABI compatibility for the future */
-    /* Note that the math here assumes no padding bytes, that's because of the
-       order in which the fields are declared (largest to smallest alignments)  */
-    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - 3*sizeof(int)
-                     - sizeof(uint16_t) - 16*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
+    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 11*sizeof(double) - 3*sizeof(int)
+                     - sizeof(uint16_t) - 16*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t)
+                     - 4*sizeof(uint8_t) /* 4 bytes padding */
+                     ];
 };
 
 static inline void set_bin_refine_scheme(struct config_options *options, const int8_t flag)
@@ -246,7 +253,9 @@ static inline struct config_options get_config_options(void)
 
     // If periodic, set to -1 to require the user to set a boxsize.
     // A value of 0 will use automatic detection of the particle extent
-    options.boxsize = -1.;
+    options.boxsize_x = -1.;
+    options.boxsize_y = -1.;
+    options.boxsize_z = -1.;
 
 #ifdef DOUBLE_PREC
     options.float_type = sizeof(double);

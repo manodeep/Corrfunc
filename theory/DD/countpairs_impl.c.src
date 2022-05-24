@@ -228,9 +228,26 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
             options->boxsize);
         return EXIT_FAILURE;
     }
-    const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
-    const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
-    const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+    
+    if(options->boxsize_y == -1.) {
+        options->boxsize_y = options->boxsize;
+    }
+    if(options->boxsize_z == -1.) {
+        options->boxsize_z = options->boxsize;
+    }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+    const DOUBLE xdiff = options->boxsize_x > 0 ? options->boxsize_x : (xmax-xmin);
+    const DOUBLE ydiff = options->boxsize_y > 0 ? options->boxsize_y : (ymax-ymin);
+    const DOUBLE zdiff = options->boxsize_z > 0 ? options->boxsize_z : (zmax-zmin);
     const DOUBLE pimax = (DOUBLE) rpmax;
     if(options->verbose && options->periodic) {
         fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);

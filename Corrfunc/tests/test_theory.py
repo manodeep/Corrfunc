@@ -8,7 +8,8 @@ import numpy as np
 from Corrfunc.tests.common import gals_Mr19
 from Corrfunc.tests.common import (check_against_reference,
                                    check_vpf_against_reference)
-from Corrfunc.tests.common import generate_isa_and_nthreads_combos
+from Corrfunc.tests.common import (generate_isa_and_nthreads_combos,
+                                    maxthreads)
 
 
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
@@ -32,7 +33,41 @@ def test_DD(gals_Mr19, isa, nthreads):
                     "../../theory/tests/", "Mr19_DD_periodic")
     check_against_reference(results_DD, file_ref,
                             ravg_name='ravg', ref_cols=(0, 4, 1))
-    
+
+
+def test_DD_boxsize(gals_Mr19, isa='fastest', nthreads=maxthreads()):
+    from Corrfunc.theory import DD
+
+    boxsize = 420.
+    binfile = pjoin(dirname(abspath(__file__)),
+                     "../../theory/tests/", "bins")
+    file_ref = pjoin(dirname(abspath(__file__)),
+                    "../../theory/tests/", "Mr19_DD_periodic")
+    autocorr = 1
+    periodic = 1
+
+    x,y,z,w = gals_Mr19
+    args = (autocorr, nthreads, binfile, x, y, z)
+    kwargs = dict(weights1=w, weight_type='pair_product',
+                    periodic=periodic,
+                    output_ravg=True, verbose=True,
+                    isa=isa)
+
+    # scalar
+    results_DD = DD(*args, boxsize=boxsize, **kwargs)
+    check_against_reference(results_DD, file_ref,
+                            ravg_name='ravg', ref_cols=(0, 4, 1))
+
+    # 3-tuple cube
+    results_DD = DD(*args, boxsize=(boxsize,boxsize,boxsize), **kwargs)
+    check_against_reference(results_DD, file_ref,
+                            ravg_name='ravg', ref_cols=(0, 4, 1))
+
+    # 3-tuple, copy X
+    results_DD = DD(*args, boxsize=(boxsize,-1.,-1.), **kwargs)
+    check_against_reference(results_DD, file_ref,
+                            ravg_name='ravg', ref_cols=(0, 4, 1))
+
 
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDrppi(gals_Mr19, isa, nthreads):

@@ -143,11 +143,11 @@ static PyMethodDef module_methods[] = {
      "verbose : boolean (default false)\n"
      "    Boolean flag to control output of informational messages\n\n"
 
-     "boxsize : double\n"
-     "    The side-length of the cube in the cosmological simulation.\n"
+     "boxsize : 3-tuple of double\n"
+     "    The (X,Y,Z) side lengths of the spatial domain.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If boxsize is 0., then the wrapping is done based on\n"
-     "    the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
+     "    If a length is 0., then the wrapping is done based on\n"
+     "    the extent of the particle distribution in that dimension.\n\n"
 
      "output_ravg : boolean (default false)\n"
      "    Boolean flag to output the average ``r`` for each bin. Code will\n"
@@ -1169,7 +1169,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
         "weights2",
         "periodic",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
-        "boxsize",
+        "boxsize",  // 3-tuple
         "output_ravg",
         "xbin_refine_factor",
         "ybin_refine_factor",
@@ -1184,7 +1184,7 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
     };
 
     // Note: type 'O!' doesn't allow for None to be passed, which we might want to do.
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|O!O!O!O!O!bbdbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisO!O!O!|O!O!O!O!O!bb(ddd)bbbbhbbbis", kwlist,
                                        &autocorr,&nthreads,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1196,7 +1196,9 @@ static PyObject *countpairs_countpairs(PyObject *self, PyObject *args, PyObject 
                                        &PyArray_Type,&weights2_obj,
                                        &(options.periodic),
                                        &(options.verbose),
-                                       &(options.boxsize),
+                                       &(options.boxsize_x),
+                                       &(options.boxsize_y),
+                                       &(options.boxsize_z),
                                        &(options.need_avg_sep),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
