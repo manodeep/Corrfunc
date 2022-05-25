@@ -22,9 +22,9 @@ extern "C" {
 
     extern cellarray_DOUBLE * gridlink_DOUBLE(const int64_t np,
                                               DOUBLE *x, DOUBLE *y, DOUBLE *z, weight_struct *weights,
-                                              const DOUBLE xmin, const DOUBLE xmax,
-                                              const DOUBLE ymin, const DOUBLE ymax,
-                                              const DOUBLE zmin, const DOUBLE zmax,
+                                              const DOUBLE xmin, const DOUBLE xdiff,
+                                              const DOUBLE ymin, const DOUBLE ydiff,
+                                              const DOUBLE zmin, const DOUBLE zdiff,
                                               const DOUBLE max_x_size,
                                               const DOUBLE max_y_size,
                                               const DOUBLE max_z_size,

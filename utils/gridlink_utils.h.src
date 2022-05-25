@@ -19,7 +19,7 @@ extern "C" {
 #include "defs.h" //for definition of config_options
 #include "weight_defs_DOUBLE.h" //for definition of weight_struct
 
-    extern int get_binsize_DOUBLE(const DOUBLE xmin,const DOUBLE xmax,
+    extern int get_binsize_DOUBLE(const DOUBLE xdiff,
                                   const DOUBLE rmax,
                                   const int refine_factor, const int max_ncells, DOUBLE *xbinsize, int *nlattice,
                                   const struct config_options *options) __attribute__((warn_unused_result));

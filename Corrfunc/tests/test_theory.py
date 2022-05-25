@@ -59,12 +59,12 @@ def test_DD_boxsize(gals_Mr19, isa='fastest', nthreads=maxthreads()):
                             ravg_name='ravg', ref_cols=(0, 4, 1))
 
     # 3-tuple cube
-    results_DD = DD(*args, boxsize=(boxsize,boxsize,boxsize), **kwargs)
+    results_DD = DD(*args, boxsize=(boxsize, boxsize, boxsize), **kwargs)
     check_against_reference(results_DD, file_ref,
                             ravg_name='ravg', ref_cols=(0, 4, 1))
 
     # 3-tuple, copy X
-    results_DD = DD(*args, boxsize=(boxsize,-1.,-1.), **kwargs)
+    results_DD = DD(*args, boxsize=(boxsize, -1., -1.), **kwargs)
     check_against_reference(results_DD, file_ref,
                             ravg_name='ravg', ref_cols=(0, 4, 1))
 

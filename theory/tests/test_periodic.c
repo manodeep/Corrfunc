@@ -707,7 +707,7 @@ int main(int argc, char **argv)
                 total_tests++;
                 read_data_and_set_globals(firstfilename[this_test_num],firstfiletype[this_test_num],secondfilename[this_test_num],secondfiletype[this_test_num]);
                 pimax=allpimax[this_test_num];
-                options.boxsize = allboxsize[i];
+                options.boxsize = allboxsize[this_test_num];
                 gettimeofday(&t0,NULL);
                 status = (*allfunctions[function_index])(correct_outputfiles[this_test_num]);
                 gettimeofday(&t1,NULL);

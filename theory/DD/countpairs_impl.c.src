@@ -234,20 +234,16 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
     
-    if(options->boxsize_y == -1.) {
-        options->boxsize_y = options->boxsize;
-    }
-    if(options->boxsize_z == -1.) {
-        options->boxsize_z = options->boxsize;
-    }
+    double boxsize_y = options->boxsize_y == -1. ? options->boxsize : options->boxsize_y;
+    double boxsize_z = options->boxsize_z == -1. ? options->boxsize : options->boxsize_z;
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
-    const DOUBLE xdiff = options->boxsize_x > 0 ? options->boxsize_x : (xmax-xmin);
-    const DOUBLE ydiff = options->boxsize_y > 0 ? options->boxsize_y : (ymax-ymin);
-    const DOUBLE zdiff = options->boxsize_z > 0 ? options->boxsize_z : (zmax-zmin);
+    const DOUBLE xdiff = (options->periodic && options->boxsize_x > 0) ? options->boxsize_x : (xmax-xmin);
+    const DOUBLE ydiff = (options->periodic && boxsize_y > 0) ? boxsize_y : (ymax-ymin);
+    const DOUBLE zdiff = (options->periodic && boxsize_z > 0) ? boxsize_z : (zmax-zmin);
     const DOUBLE pimax = (DOUBLE) rpmax;
     if(options->verbose && options->periodic) {
         fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
@@ -269,7 +265,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
     /*---Create 3-D lattice--------------------------------------*/
     int nmesh_x=0,nmesh_y=0,nmesh_z=0;
     cellarray_DOUBLE *lattice1 = gridlink_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
-                                                 xmin, xmax, ymin, ymax, zmin, zmax,
+                                                 xmin, xdiff, ymin, ydiff, zmin, zdiff,
                                                  rpmax, rpmax, rpmax,
                                                  options->bin_refine_factors[0],
                                                  options->bin_refine_factors[1],
@@ -298,7 +294,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                 options->bin_refine_factors[i] += BOOST_BIN_REF;
             }
             lattice1 = gridlink_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
-                                       xmin, xmax, ymin, ymax, zmin, zmax,
+                                       xmin, xdiff, ymin, ydiff, zmin, zdiff,
                                        rpmax, rpmax, rpmax,
                                        options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                        &nmesh_x, &nmesh_y, &nmesh_z, options);
@@ -318,7 +314,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
     if(autocorr==0) {
         int ngrid2_x=0,ngrid2_y=0,ngrid2_z=0;
         lattice2 = gridlink_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
-                                   xmin, xmax, ymin, ymax, zmin, zmax,
+                                   xmin, xdiff, ymin, ydiff, zmin, zdiff,
                                    rpmax, rpmax, rpmax,
                                    options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                    &ngrid2_x, &ngrid2_y, &ngrid2_z, options);

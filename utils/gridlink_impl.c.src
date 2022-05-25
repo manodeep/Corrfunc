@@ -55,9 +55,9 @@ void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
 
 cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                                    DOUBLE *X, DOUBLE *Y, DOUBLE *Z, weight_struct *WEIGHTS,
-                                   const DOUBLE xmin, const DOUBLE xmax,
-                                   const DOUBLE ymin, const DOUBLE ymax,
-                                   const DOUBLE zmin, const DOUBLE zmax,
+                                   const DOUBLE xmin, const DOUBLE xdiff,
+                                   const DOUBLE ymin, const DOUBLE ydiff,
+                                   const DOUBLE zmin, const DOUBLE zdiff,
                                    const DOUBLE max_x_size,
                                    const DOUBLE max_y_size,
                                    const DOUBLE max_z_size,
@@ -78,9 +78,10 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     }
 
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
+
+    const int xstatus = get_binsize_DOUBLE(xdiff,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
+    const int ystatus = get_binsize_DOUBLE(ydiff,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
+    const int zstatus = get_binsize_DOUBLE(zdiff,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
     if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
       fprintf(stderr,"Received xstatus = %d ystatus = %d zstatus = %d. Error\n", xstatus, ystatus, zstatus);
       return NULL;
