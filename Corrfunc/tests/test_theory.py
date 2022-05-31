@@ -41,8 +41,10 @@ def test_DD_boxsize(gals_Mr19, isa='fastest', nthreads=maxthreads()):
     boxsize = 420.
     binfile = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "bins")
-    file_ref = pjoin(dirname(abspath(__file__)),
-                     "../../theory/tests/", "Mr19_DD_periodic")
+    periodic_ref = pjoin(dirname(abspath(__file__)),
+                         "../../theory/tests/", "Mr19_DD_periodic")
+    nonperiodic_ref = pjoin(dirname(abspath(__file__)),
+                            "../../theory/tests/", "Mr19_DD_nonperiodic")
     autocorr = 1
     periodic = 1
 
@@ -53,19 +55,24 @@ def test_DD_boxsize(gals_Mr19, isa='fastest', nthreads=maxthreads()):
                   output_ravg=True, verbose=True,
                   isa=isa)
 
-    # scalar
+    # scalar periodic
     results_DD = DD(*args, boxsize=boxsize, **kwargs)
-    check_against_reference(results_DD, file_ref,
+    check_against_reference(results_DD, periodic_ref,
                             ravg_name='ravg', ref_cols=(0, 4, 1))
 
-    # 3-tuple cube
+    # 3-tuple periodic cube
     results_DD = DD(*args, boxsize=(boxsize, boxsize, boxsize), **kwargs)
-    check_against_reference(results_DD, file_ref,
+    check_against_reference(results_DD, periodic_ref,
                             ravg_name='ravg', ref_cols=(0, 4, 1))
 
-    # 3-tuple, copy X
-    results_DD = DD(*args, boxsize=(boxsize, -1., -1.), **kwargs)
-    check_against_reference(results_DD, file_ref,
+    # scalar non-periodic
+    results_DD = DD(*args, boxsize=(-1., -1., -1.), **kwargs)
+    check_against_reference(results_DD, nonperiodic_ref,
+                            ravg_name='ravg', ref_cols=(0, 4, 1))
+
+    # non-periodic via oversized box
+    results_DD = DD(*args, boxsize=(2000., 2000., 2000.), **kwargs)
+    check_against_reference(results_DD, nonperiodic_ref,
                             ravg_name='ravg', ref_cols=(0, 4, 1))
 
 

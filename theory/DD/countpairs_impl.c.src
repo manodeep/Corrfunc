@@ -223,33 +223,44 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
         }
     }
 
-    if(options->boxsize < 0 && options->periodic){
-        fprintf(stderr, "boxsize = %g must be >= 0 with periodic wrap. Please specify a non-zero boxsize or zero to detect the particle extent.\n",
-            options->boxsize);
-        return EXIT_FAILURE;
-    }
-
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
+
+    if(options->boxsize == BOXSIZE_NOTGIVEN && options->periodic){
+        fprintf(stderr, "boxsize = %g must be specified with periodic wrap. Please specify a non-zero boxsize, or zero to detect the particle extent, or -1 to make a dimension non-periodic.\n",
+            options->boxsize);
+        return EXIT_FAILURE;
+    }
     
-    double boxsize_y = options->boxsize_y == -1. ? options->boxsize : options->boxsize_y;
-    double boxsize_z = options->boxsize_z == -1. ? options->boxsize : options->boxsize_z;
+    const double boxsize_y = options->boxsize_y == BOXSIZE_NOTGIVEN ? options->boxsize : options->boxsize_y;
+    const double boxsize_z = options->boxsize_z == BOXSIZE_NOTGIVEN ? options->boxsize : options->boxsize_z;
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
+    const int periodic_x = options->periodic && options->boxsize_x >= 0;
+    const int periodic_y = options->periodic && boxsize_y >= 0;
+    const int periodic_z = options->periodic && boxsize_z >= 0;
+
     const DOUBLE xdiff = (options->periodic && options->boxsize_x > 0) ? options->boxsize_x : (xmax-xmin);
     const DOUBLE ydiff = (options->periodic && boxsize_y > 0) ? boxsize_y : (ymax-ymin);
     const DOUBLE zdiff = (options->periodic && boxsize_z > 0) ? boxsize_z : (zmax-zmin);
     const DOUBLE pimax = (DOUBLE) rpmax;
-    if(options->verbose && options->periodic) {
-        fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
-        fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
-        fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+    
+    if(options->verbose) {
+        if(periodic_x) fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
+        else fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf (non-periodic)\n",xmin,xmax);
+        
+        if(periodic_y) fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
+        else fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf (non-periodic)\n",ymin,ymax);
+        
+        if(periodic_z) fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+        else fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf (non-periodic)\n",zmin,zmax);
     }
+    
     if(get_bin_refine_scheme(options) == BINNING_DFL) {
         if(rpmax < 0.05*xdiff) {
             options->bin_refine_factors[0] = 1;
@@ -342,7 +353,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
                                                                          rpmax, -1.0, -1.0, /*max_3D_sep, max_2D_sep, max_1D_sep*/
                                                                          options->enable_min_sep_opt,
                                                                          autocorr,
-                                                                         options->periodic);
+                                                                         periodic_x, periodic_y, periodic_z);
     if(all_cell_pairs == NULL) {
         free_cellarray_DOUBLE(lattice1, totncells);
         if(autocorr == 0) {

@@ -280,7 +280,7 @@ int countpairs_xi_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                                                                          rmax, -1.0, -1.0, /*max_3D_sep, max_2D_sep, max_1D_sep*/
                                                                          options->enable_min_sep_opt,
                                                                          options->autocorr,
-                                                                         options->periodic);
+                                                                         options->periodic, options->periodic, options->periodic);
     if(all_cell_pairs == NULL) {
         free_cellarray_DOUBLE(lattice, totncells);
         free(rupp);

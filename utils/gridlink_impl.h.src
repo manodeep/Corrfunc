@@ -46,7 +46,8 @@ extern "C" {
                                                          const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
                                                          const int enable_min_sep_opt,
                                                          const int autocorr,
-                                                         const int periodic) __attribute__((warn_unused_result));
+                                                         const int periodic_x, const int periodic_y, const int periodic_z)
+                                                         __attribute__((warn_unused_result));
 
     extern void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells);
 

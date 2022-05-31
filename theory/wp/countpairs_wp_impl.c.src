@@ -307,7 +307,9 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
                                                                          boxsize, boxsize, boxsize,
                                                                          -1.0, rpmax, pimax,/*max_3D_sep, max_2D_sep, max_1D_sep*/
                                                                          options->enable_min_sep_opt,
-                                                                         options->autocorr, options->periodic);//options->autocorr == 1 and options->periodic == 1
+                                                                         options->autocorr,
+                                                                         options->periodic, options->periodic, options->periodic);
+                                                                         //options->autocorr == 1 and options->periodic == 1
 
     if(all_cell_pairs == NULL) {
         free_cellarray_DOUBLE(lattice, totncells);

@@ -352,7 +352,7 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
                                                                          smax, -1.0, pimax, /*max_3D_sep, max_2D_sep, max_1D_sep*/
                                                                          options->enable_min_sep_opt,
                                                                          autocorr,
-                                                                         options->periodic);
+                                                                         options->periodic, options->periodic, options->periodic);
     if(all_cell_pairs == NULL) {
         free_cellarray_DOUBLE(lattice1, totncells);
         if(autocorr == 0) {

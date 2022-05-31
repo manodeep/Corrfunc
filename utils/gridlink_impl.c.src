@@ -419,7 +419,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                                                      const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
                                                      const int enable_min_sep_opt,
                                                      const int autocorr,
-                                                     const int periodic)
+                                                     const int periodic_x, const int periodic_y, const int periodic_z)
 {
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
     const int64_t ny_ngb = 2*ybin_refine_factor + 1;
@@ -453,9 +453,10 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
 
        MS: 23/8/2019
      */
-    const int check_for_duplicate_ngb_cells = (periodic == 1 && (nmesh_x < (2*xbin_refine_factor + 1) ||
-                                                                 nmesh_y < (2*ybin_refine_factor + 1) ||
-                                                                 nmesh_z < (2*zbin_refine_factor + 1))) ? 1:0;
+    const int check_for_duplicate_ngb_cells = ( (periodic_x || periodic_y || periodic_z) &&
+                                                    (nmesh_x < (2*xbin_refine_factor + 1) ||
+                                                     nmesh_y < (2*ybin_refine_factor + 1) ||
+                                                     nmesh_z < (2*zbin_refine_factor + 1))  ) ? 1:0;
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_DOUBLE *first = &(lattice1[icell]);
         if(first->nelements == 0) continue;
@@ -470,20 +471,20 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
         for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
             const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;
             const int non_periodic_ix = ix + iix;
-            const int iiix = (periodic == 1) ? periodic_ix:non_periodic_ix;
+            const int iiix = (periodic_x == 1) ? periodic_ix:non_periodic_ix;
             if(iiix < 0 || iiix >= nmesh_x) continue;
             const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
 
             for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
                 const int periodic_iy = (iy + iiy + nmesh_y) % nmesh_y;
                 const int non_periodic_iy = iy + iiy;
-                const int iiiy = (periodic == 1) ? periodic_iy:non_periodic_iy;
+                const int iiiy = (periodic_y == 1) ? periodic_iy:non_periodic_iy;
                 if(iiiy < 0 || iiiy >= nmesh_y) continue;
                 const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
                 for(int64_t iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++){
                     const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
                     const int non_periodic_iz = iz + iiz;
-                    const int iiiz = (periodic == 1) ? periodic_iz:non_periodic_iz;
+                    const int iiiz = (periodic_z == 1) ? periodic_iz:non_periodic_iz;
                     if(iiiz < 0 || iiiz >= nmesh_z) continue;
 
                     const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
