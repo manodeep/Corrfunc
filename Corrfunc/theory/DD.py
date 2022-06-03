@@ -70,13 +70,14 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
-        
+
     boxsize: double or 3-tuple of double, required if ``periodic=True``
         The (X,Y,Z) side lengths of the spatial domain. Present to facilitate
         exact calculations for periodic wrapping. A scalar ``boxsize`` will
-        be broadcast to a 3-tuple. If the boxsize in any dimension is 0., then
-        then the wrapping is done based on the extent of the particle
-        distribution in that dimension.
+        be broadcast to a 3-tuple. If the boxsize in a dimension is 0., then
+        then that dimension's wrap is done based on the extent of the particle
+        distribution. If the boxsize in a dimension is -1., then periodicity
+        is disabled for that dimension.
 
         .. versionchanged:: 2.4.0
            Required if ``periodic=True``.

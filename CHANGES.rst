@@ -16,7 +16,7 @@ New features
 
 Enhancements
 ------------
-- Allow user to specify box size per dimension [#276]
+- Allow user to specify periodicity and box size per dimension [#276]
 
 Changes
 -------

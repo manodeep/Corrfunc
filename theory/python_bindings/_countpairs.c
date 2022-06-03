@@ -146,8 +146,10 @@ static PyMethodDef module_methods[] = {
      "boxsize : 3-tuple of double\n"
      "    The (X,Y,Z) side lengths of the spatial domain.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If a length is 0., then the wrapping is done based on\n"
-     "    the extent of the particle distribution in that dimension.\n\n"
+     "    If the boxsize in a dimension is 0., then\n"
+     "    then that dimension's wrap is done based on the extent of the particle\n"
+     "    distribution. If the boxsize in a dimension is -1., then periodicity\n"
+     "    is disabled for that dimension.\n\n"
 
      "output_ravg : boolean (default false)\n"
      "    Boolean flag to output the average ``r`` for each bin. Code will\n"
