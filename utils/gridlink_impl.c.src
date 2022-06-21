@@ -415,7 +415,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                                                      int64_t *ncell_pairs,
                                                      const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                                      const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                                     const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                                     const DOUBLE xwrap, const DOUBLE ywrap, const DOUBLE zwrap,
                                                      const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
                                                      const int enable_min_sep_opt,
                                                      const int autocorr,
@@ -474,21 +474,21 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
             const int non_periodic_ix = ix + iix;
             const int iiix = (periodic_x == 1) ? periodic_ix:non_periodic_ix;
             if(iiix < 0 || iiix >= nmesh_x) continue;
-            const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
+            const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xwrap:-xwrap);
 
             for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
                 const int periodic_iy = (iy + iiy + nmesh_y) % nmesh_y;
                 const int non_periodic_iy = iy + iiy;
                 const int iiiy = (periodic_y == 1) ? periodic_iy:non_periodic_iy;
                 if(iiiy < 0 || iiiy >= nmesh_y) continue;
-                const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
+                const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ywrap:-ywrap);
                 for(int64_t iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++){
                     const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
                     const int non_periodic_iz = iz + iiz;
                     const int iiiz = (periodic_z == 1) ? periodic_iz:non_periodic_iz;
                     if(iiiz < 0 || iiiz >= nmesh_z) continue;
 
-                    const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
+                    const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zwrap:-zwrap);
                     const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
 
                     //Since we are creating a giant array with all possible cell-pairs, we need

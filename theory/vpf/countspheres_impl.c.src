@@ -217,24 +217,53 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
 
     int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
-    if(options->boxsize < 0 && options->periodic){
-        fprintf(stderr, "boxsize = %g must be >= 0 with periodic wrap. Please specify a non-zero boxsize or zero to detect the particle extent.\n",
+    #ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
+    if(options->periodic && options->boxsize == BOXSIZE_NOTGIVEN){
+        fprintf(stderr, "boxsize = %g must be specified with periodic wrap. Please specify a non-zero boxsize, or zero to detect the particle extent, or -1 to make a dimension non-periodic.\n",
             options->boxsize);
         return EXIT_FAILURE;
     }
-    const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
-    const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
-    const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
-    if(options->verbose && options->periodic) {
-        fprintf(stderr,"Running with [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
-        fprintf(stderr,"Running with [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
-        fprintf(stderr,"Running with [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+    
+    const double boxsize_y = options->boxsize_y == BOXSIZE_NOTGIVEN ? options->boxsize : options->boxsize_y;
+    const double boxsize_z = options->boxsize_z == BOXSIZE_NOTGIVEN ? options->boxsize : options->boxsize_z;
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+    const int periodic_x = options->periodic && options->boxsize_x >= 0;
+    const int periodic_y = options->periodic && boxsize_y >= 0;
+    const int periodic_z = options->periodic && boxsize_z >= 0;
+
+    const DOUBLE xwrap = (options->periodic && options->boxsize_x > 0) ? options->boxsize_x : (xmax-xmin);
+    const DOUBLE ywrap = (options->periodic && boxsize_y > 0) ? boxsize_y : (ymax-ymin);
+    const DOUBLE zwrap = (options->periodic && boxsize_z > 0) ? boxsize_z : (zmax-zmin);
+    
+    if(options->verbose) {
+        if(periodic_x) {
+            fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xwrap);
+        } else {
+            fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf (non-periodic)\n",xmin,xmax);
+        }
+        if(periodic_y) {
+            fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ywrap);
+        } else {
+            fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf (non-periodic)\n",ymin,ymax);
+        }
+        if(periodic_z) {
+            fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zwrap);
+        } else {
+            fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf (non-periodic)\n",zmin,zmax);
+        }
     }
 
-
-    const DOUBLE inv_xdiff = ((DOUBLE) 1.0)/xdiff;
-    const DOUBLE inv_ydiff = ((DOUBLE) 1.0)/ydiff;
-    const DOUBLE inv_zdiff = ((DOUBLE) 1.0)/zdiff;
+    const DOUBLE inv_xwrap = ((DOUBLE) 1.0)/xwrap;
+    const DOUBLE inv_ywrap = ((DOUBLE) 1.0)/ywrap;
+    const DOUBLE inv_zwrap = ((DOUBLE) 1.0)/zwrap;
 
     vpf_func_ptr_DOUBLE vpf_function_DOUBLE = vpf_driver_DOUBLE(options);
     if(vpf_function_DOUBLE == NULL) {
@@ -254,9 +283,9 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
             my_progressbar(ic,&interrupted);
         }
 
-        const DOUBLE xc = xdiff*gsl_rng_uniform (rng) + xmin;
-        const DOUBLE yc = ydiff*gsl_rng_uniform (rng) + ymin;
-        const DOUBLE zc = zdiff*gsl_rng_uniform (rng) + zmin;
+        const DOUBLE xc = xwrap*gsl_rng_uniform (rng) + xmin;
+        const DOUBLE yc = ywrap*gsl_rng_uniform (rng) + ymin;
+        const DOUBLE zc = zwrap*gsl_rng_uniform (rng) + zmin;
 
         if( ! options->periodic) {
             //Check that the biggest sphere will not intersect
@@ -270,9 +299,9 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
 
         ic++;
 
-        int ix = (int)(nmesh_x*(xc-xmin)*inv_xdiff);
-        int iy = (int)(nmesh_y*(yc-ymin)*inv_ydiff);
-        int iz = (int)(nmesh_z*(zc-zmin)*inv_zdiff);
+        int ix = (int)(nmesh_x*(xc-xmin)*inv_xwrap);
+        int iy = (int)(nmesh_y*(yc-ymin)*inv_ywrap);
+        int iz = (int)(nmesh_z*(zc-zmin)*inv_zwrap);
         if(ix > nmesh_x-1) ix--;
         if(iy > nmesh_y-1) iy--;
         if(iz > nmesh_z-1) iz--;
@@ -301,9 +330,9 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
             DOUBLE off_xwrap=0.0;
             if(options->periodic) {
                 if(ix + iix >= nmesh_x) {
-                    off_xwrap = -xdiff;
+                    off_xwrap = -xwrap;
                 } else if (ix + iix < 0) {
-                    off_xwrap = xdiff;
+                    off_xwrap = xwrap;
                 }
                 iiix=(ix+iix+nmesh_x)%nmesh_x;
             } else {
@@ -319,9 +348,9 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                 DOUBLE off_ywrap = 0.0;
                 if(options->periodic) {
                     if(iy + iiy >= nmesh_y) {
-                        off_ywrap = -ydiff;
+                        off_ywrap = -ywrap;
                     } else if (iy + iiy < 0) {
-                        off_ywrap = ydiff;
+                        off_ywrap = ywrap;
                     }
                     iiiy=(iy+iiy+nmesh_y)%nmesh_y;
                 } else {
@@ -337,9 +366,9 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
                     DOUBLE off_zwrap = 0.0;
                     if(options->periodic) {
                         if(iz + iiz >= nmesh_z) {
-                            off_zwrap = -zdiff;
+                            off_zwrap = -zwrap;
                         } else if (iz + iiz < 0) {
-                            off_zwrap = zdiff;
+                            off_zwrap = zwrap;
                         }
                         iiiz=(iz+iiz+nmesh_z)%nmesh_z;
                     } else {

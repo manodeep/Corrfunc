@@ -89,7 +89,21 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
 
     periodic : boolean
         Boolean flag to indicate periodic boundary conditions.
-        
+
+    boxsize: double or 3-tuple of double, required if ``periodic=True``
+        The (X,Y,Z) side lengths of the spatial domain. Present to facilitate
+        exact calculations for periodic wrapping. A scalar ``boxsize`` will
+        be broadcast to a 3-tuple. If the boxsize in a dimension is 0., then
+        then that dimension's wrap is done based on the extent of the particle
+        distribution. If the boxsize in a dimension is -1., then periodicity
+        is disabled for that dimension.
+
+        .. versionchanged:: 2.4.0
+           Required if ``periodic=True``.
+
+        .. versionchanged:: 2.5.0
+           Accepts a 3-tuple of side lengths.
+
     boxsize : double, required if ``periodic=True``
         The side-length of the cube in the cosmological simulation.
         Present to facilitate exact calculations for periodic wrapping.
@@ -276,6 +290,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         msg = "The parameter `mu_max` = {0}, is the max. of cosine of an "\
         "angle and should be within (0.0, 1.0]".format(mu_max)
         raise ValueError(msg)
+
+    if np.isscalar(boxsize):
+        boxsize = (boxsize, boxsize, boxsize)
 
     if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:

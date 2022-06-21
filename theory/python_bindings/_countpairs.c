@@ -289,11 +289,13 @@ static PyMethodDef module_methods[] = {
      "verbose : boolean (default false)\n"
      "    Boolean flag to control output of informational messages\n\n"
 
-     "boxsize : double\n"
-     "    The side-length of the cube in the cosmological simulation.\n"
+     "boxsize : 3-tuple of double\n"
+     "    The (X,Y,Z) side lengths of the spatial domain.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If boxsize is 0., then the wrapping is done based on\n"
-     "    the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
+     "    If the boxsize in a dimension is 0., then\n"
+     "    then that dimension's wrap is done based on the extent of the particle\n"
+     "    distribution. If the boxsize in a dimension is -1., then periodicity\n"
+     "    is disabled for that dimension.\n\n"
 
      "output_rpavg : boolean (default false)\n"
      "    Boolean flag to output the average ``"RP_CHAR"`` for each bin. Code will\n"
@@ -714,11 +716,13 @@ static PyMethodDef module_methods[] = {
      "verbose : boolean (default false)\n"
      "    Boolean flag to control output of informational messages\n\n"
 
-     "boxsize : double\n"
-     "    The side-length of the cube in the cosmological simulation.\n"
+     "boxsize : 3-tuple of double\n"
+     "    The (X,Y,Z) side lengths of the spatial domain.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If boxsize is 0., then the wrapping is done based on\n"
-     "    the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
+     "    If the boxsize in a dimension is 0., then\n"
+     "    then that dimension's wrap is done based on the extent of the particle\n"
+     "    distribution. If the boxsize in a dimension is -1., then periodicity\n"
+     "    is disabled for that dimension.\n\n"
 
      "output_savg : boolean (default false)\n"
      "    Boolean flag to output the average ``s`` for each bin. Code will\n"
@@ -854,11 +858,13 @@ static PyMethodDef module_methods[] = {
      "periodic: boolean\n"
      "    Boolean flag to indicate periodic boundary conditions.\n\n"
 
-     "boxsize: double\n"
-     "    The side-length of the cube in the cosmological simulation.\n"
+     "boxsize : 3-tuple of double\n"
+     "    The (X,Y,Z) side lengths of the spatial domain.\n"
      "    Present to facilitate exact calculations for periodic wrapping.\n"
-     "    If boxsize is 0., then the wrapping is done based on\n"
-     "    the maximum difference within each dimension of the X/Y/Z arrays.\n\n"
+     "    If the boxsize in a dimension is 0., then\n"
+     "    then that dimension's wrap is done based on the extent of the particle\n"
+     "    distribution. If the boxsize in a dimension is -1., then periodicity\n"
+     "    is disabled for that dimension.\n\n"
 
      "(xyz)bin_refine_factor: integer (default (1,1,1) typical values in [1-3]) \n"
      "    Controls the refinement on the cell sizes. Can have up to a 20% impact \n"
@@ -1477,7 +1483,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         "weights2",
         "periodic",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
-        "boxsize",
+        "boxsize",  // 3-tuple
         "output_rpavg",
         "xbin_refine_factor",
         "ybin_refine_factor",
@@ -1491,7 +1497,7 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iidsO!O!O!|O!O!O!O!O!bbdbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iidsO!O!O!|O!O!O!O!O!bb(ddd)bbbbhbbbis", kwlist,
                                        &autocorr,&nthreads,&pimax,&binfile,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -1503,7 +1509,9 @@ static PyObject *countpairs_countpairs_rp_pi(PyObject *self, PyObject *args, PyO
                                        &PyArray_Type,&weights2_obj,
                                        &(options.periodic),
                                        &(options.verbose),
-                                       &(options.boxsize),
+                                       &(options.boxsize_x),
+                                       &(options.boxsize_y),
+                                       &(options.boxsize_z),
                                        &(options.need_avg_sep),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
                                        &(options.max_cells_per_dim),
@@ -2248,7 +2256,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         "weights2",
         "periodic",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
-        "boxsize",
+        "boxsize",  // 3-tuple
         "output_savg",
         "fast_divide_and_NR_steps",
         "xbin_refine_factor",
@@ -2263,7 +2271,7 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
         NULL
     };
 
-    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisdiO!O!O!|O!O!O!O!O!bbdbbbbbhbbbis", kwlist,
+    if ( ! PyArg_ParseTupleAndKeywords(args, kwargs, "iisdiO!O!O!|O!O!O!O!O!bb(ddd)bbbbbhbbbis", kwlist,
                                        &autocorr,&nthreads,&binfile, &mu_max, &nmu_bins,
                                        &PyArray_Type,&x1_obj,
                                        &PyArray_Type,&y1_obj,
@@ -2275,7 +2283,9 @@ static PyObject *countpairs_countpairs_s_mu(PyObject *self, PyObject *args, PyOb
                                        &PyArray_Type,&weights2_obj,
                                        &(options.periodic),
                                        &(options.verbose),
-                                       &(options.boxsize),
+                                       &(options.boxsize_x),
+                                       &(options.boxsize_y),
+                                       &(options.boxsize_z),
                                        &(options.need_avg_sep),
                                        &(options.fast_divide_and_NR_steps),
                                        &xbin_ref, &ybin_ref, &zbin_ref,
@@ -2550,7 +2560,7 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
         "Z",
         "periodic",
         "verbose", /* keyword verbose -> print extra info at runtime + progressbar */
-        "boxsize",
+        "boxsize",  // 3-tuple
         "xbin_refine_factor",
         "ybin_refine_factor",
         "zbin_refine_factor",
@@ -2562,14 +2572,16 @@ static PyObject *countpairs_countspheres_vpf(PyObject *self, PyObject *args, PyO
     };
 
     if( ! PyArg_ParseTupleAndKeywords(args, kwargs,
-                                      "diiikO!O!O!|bbdbbbhbbi", kwlist,
+                                      "diiikO!O!O!|bb(ddd)bbbhbbi", kwlist,
                                       &rmax,&nbin,&nc,&num_pN,&seed,
                                       &PyArray_Type,&x1_obj,
                                       &PyArray_Type,&y1_obj,
                                       &PyArray_Type,&z1_obj,
                                       &(options.periodic),
                                       &(options.verbose),
-                                      &(options.boxsize),
+                                      &(options.boxsize_x),
+                                      &(options.boxsize_y),
+                                      &(options.boxsize_z),
                                       &xbin_ref, &ybin_ref, &zbin_ref,
                                       &(options.max_cells_per_dim),
                                       &(options.copy_particles),
