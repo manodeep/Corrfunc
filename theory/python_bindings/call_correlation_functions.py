@@ -260,7 +260,7 @@ def main():
                                X1=x, Y1=y, Z1=z, weights1=w,
                                X2=x, Y2=y, Z2=z, weights2=w,
                                periodic=periodic,
-                               boxsize=boxsize,
+                               boxsize=(boxsize, boxsize, boxsize),
                                verbose=True,
                                output_rpavg=True,
                                weight_type='pair_product')
@@ -291,7 +291,7 @@ def main():
                              weight_type='pair_product',
                              verbose=True,
                              periodic=periodic,
-                             boxsize=boxsize,
+                             boxsize=(boxsize, boxsize, boxsize),
                              output_savg=True)
     print("\n#            ****** DD(s,mu): first {0} bins  *******      "
           .format(numbins_to_print))
@@ -346,7 +346,7 @@ def main():
     seed = -1
     results_vpf, _ = vpf(rmax=rmax, nbins=nbin, nspheres=nspheres,
                          num_pN=num_pN, seed=seed, X=x, Y=y, Z=z, verbose=True,
-                         periodic=periodic, boxsize=boxsize)
+                         periodic=periodic, boxsize=(boxsize, boxsize, boxsize))
 
     print("\n#            ******    pN: first {0} bins  *******         "
           .format(numbins_to_print))
