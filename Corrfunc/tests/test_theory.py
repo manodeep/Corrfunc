@@ -35,45 +35,64 @@ def test_DD(gals_Mr19, isa, nthreads):
                             ravg_name='ravg', ref_cols=(0, 4, 1))
 
 
-def test_DD_boxsize(gals_Mr19, isa='fastest', nthreads=maxthreads()):
-    from Corrfunc.theory import DD
+@pytest.mark.parametrize('funcname', ['DD','DDrppi','DDsmu'])
+def test_boxsize(gals_Mr19, funcname, isa='fastest', nthreads=maxthreads()):
+    '''Test the non-cubic and periodic boxsize features
+    '''
+    import Corrfunc.theory
+    func = getattr(Corrfunc.theory, funcname)
 
     boxsize = 420.
     binfile = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "bins")
     periodic_ref = pjoin(dirname(abspath(__file__)),
-                         "../../theory/tests/", "Mr19_DD_periodic")
+                         "../../theory/tests/", "Mr19_{}_periodic".format(funcname))
     nonperiodic_ref = pjoin(dirname(abspath(__file__)),
-                            "../../theory/tests/", "Mr19_DD_nonperiodic")
+                            "../../theory/tests/", "Mr19_{}_nonperiodic".format(funcname))
     autocorr = 1
     periodic = 1
+    pimax = 40.0
+    mu_max = 0.5
+    nmu_bins = 10
 
     x, y, z, w = gals_Mr19
-    args = (autocorr, nthreads, binfile, x, y, z)
+    args = [autocorr, nthreads, binfile, x, y, z]
     kwargs = dict(weights1=w, weight_type='pair_product',
                   periodic=periodic,
-                  output_ravg=True, verbose=True,
-                  isa=isa)
+                  verbose=True, isa=isa)
+
+    if funcname == 'DDrppi':
+        args.insert(2, pimax)
+        kwargs['output_rpavg'] = True
+        ravg_name = 'rpavg'
+    elif funcname == 'DDsmu':
+        kwargs['output_savg'] = True
+        args[3:3] = (mu_max, nmu_bins)
+        ravg_name = 'savg'
+    else:
+        kwargs['output_ravg'] = True
+        ravg_name = 'ravg'
+    
 
     # scalar periodic
-    results_DD = DD(*args, boxsize=boxsize, **kwargs)
+    results_DD = func(*args, boxsize=boxsize, **kwargs)
     check_against_reference(results_DD, periodic_ref,
-                            ravg_name='ravg', ref_cols=(0, 4, 1))
+                            ravg_name=ravg_name, ref_cols=(0, 4, 1))
 
     # 3-tuple periodic cube
-    results_DD = DD(*args, boxsize=(boxsize, boxsize, boxsize), **kwargs)
+    results_DD = func(*args, boxsize=(boxsize, boxsize, boxsize), **kwargs)
     check_against_reference(results_DD, periodic_ref,
-                            ravg_name='ravg', ref_cols=(0, 4, 1))
+                            ravg_name=ravg_name, ref_cols=(0, 4, 1))
 
     # scalar non-periodic
-    results_DD = DD(*args, boxsize=(-1., -1., -1.), **kwargs)
+    results_DD = func(*args, boxsize=(-1., -1., -1.), **kwargs)
     check_against_reference(results_DD, nonperiodic_ref,
-                            ravg_name='ravg', ref_cols=(0, 4, 1))
+                            ravg_name=ravg_name, ref_cols=(0, 4, 1))
 
     # non-periodic via oversized box
-    results_DD = DD(*args, boxsize=(2000., 2000., 2000.), **kwargs)
+    results_DD = func(*args, boxsize=(2000., 2000., 2000.), **kwargs)
     check_against_reference(results_DD, nonperiodic_ref,
-                            ravg_name='ravg', ref_cols=(0, 4, 1))
+                            ravg_name=ravg_name, ref_cols=(0, 4, 1))
 
 
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
