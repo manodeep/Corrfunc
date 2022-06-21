@@ -35,7 +35,7 @@ def test_DD(gals_Mr19, isa, nthreads):
                             ravg_name='ravg', ref_cols=(0, 4, 1))
 
 
-@pytest.mark.parametrize('funcname', ['DD','DDrppi','DDsmu'])
+@pytest.mark.parametrize('funcname', ['DD', 'DDrppi', 'DDsmu'])
 def test_boxsize(gals_Mr19, funcname, isa='fastest', nthreads=maxthreads()):
     '''Test the non-cubic and periodic boxsize features
     '''
@@ -46,9 +46,11 @@ def test_boxsize(gals_Mr19, funcname, isa='fastest', nthreads=maxthreads()):
     binfile = pjoin(dirname(abspath(__file__)),
                     "../../theory/tests/", "bins")
     periodic_ref = pjoin(dirname(abspath(__file__)),
-                         "../../theory/tests/", "Mr19_{}_periodic".format(funcname))
+                         "../../theory/tests/",
+                         "Mr19_{}_periodic".format(funcname))
     nonperiodic_ref = pjoin(dirname(abspath(__file__)),
-                            "../../theory/tests/", "Mr19_{}_nonperiodic".format(funcname))
+                            "../../theory/tests/",
+                            "Mr19_{}_nonperiodic".format(funcname))
     autocorr = 1
     periodic = 1
     pimax = 40.0
@@ -72,7 +74,6 @@ def test_boxsize(gals_Mr19, funcname, isa='fastest', nthreads=maxthreads()):
     else:
         kwargs['output_ravg'] = True
         ravg_name = 'ravg'
-    
 
     # scalar periodic
     results_DD = func(*args, boxsize=boxsize, **kwargs)
