@@ -96,7 +96,8 @@ def test_boxsize(gals_Mr19, funcname, isa='fastest', nthreads=maxthreads()):
                             ravg_name=ravg_name, ref_cols=(0, 4, 1))
 
 
-def test_narrow_extent(isa='fastest', nthreads=maxthreads()):
+@pytest.mark.parametrize('N', [1,2])
+def test_narrow_extent(N, isa='fastest', nthreads=maxthreads()):
     '''Test that a narrow particle distribution in a large box
     does not throw an error.
     Regression test for
@@ -106,7 +107,6 @@ def test_narrow_extent(isa='fastest', nthreads=maxthreads()):
     boxsize = (3., 3., 3.)
     seed = 42
     np.random.seed(seed)
-    N = 2
     autocorr = 1
     r_bins = [0.2, 0.6, 1.0]
     pos = np.random.uniform(0, 1., 3*N).reshape(3, N)
@@ -115,7 +115,12 @@ def test_narrow_extent(isa='fastest', nthreads=maxthreads()):
                  boxsize=boxsize, periodic=True,
                  verbose=True)
 
-    assert np.all(results['npairs'] == [2, 0])
+    if N == 2:
+        assert np.all(results['npairs'] == [2, 0])
+    elif N == 1:
+        assert np.all(results['npairs'] == [0, 0])
+    else:
+        raise NotImplemented(N)
 
 
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
