@@ -202,21 +202,6 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
     xmax = ymax = zmax = -MAX_POSITIVE_FLOAT;
     get_max_min_DOUBLE(np, X, Y, Z, &xmin, &ymin, &zmin, &xmax, &ymax, &zmax);
 
-    //First create the 3-d cellstruct
-    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
-    cellarray_DOUBLE *lattice = gridlink_DOUBLE(np, X, Y, Z, &(extra->weights0),
-                                                xmin, xmax, ymin, ymax, zmin, zmax,
-                                                rmax, rmax, rmax,
-                                                options->bin_refine_factors[0],
-                                                options->bin_refine_factors[1],
-                                                options->bin_refine_factors[2],
-                                                &nmesh_x, &nmesh_y, &nmesh_z, options);
-    if(lattice == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
-
     #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
@@ -260,6 +245,22 @@ int countspheres_DOUBLE(const int64_t np, DOUBLE * restrict X, DOUBLE * restrict
             fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf (non-periodic)\n",zmin,zmax);
         }
     }
+
+    //First create the 3-d cellstruct
+    int nmesh_x=0,nmesh_y=0,nmesh_z=0;
+    cellarray_DOUBLE *lattice = gridlink_DOUBLE(np, X, Y, Z, &(extra->weights0),
+                                                xmin, xmax, ymin, ymax, zmin, zmax,
+                                                rmax, rmax, rmax,
+                                                xwrap, ywrap, zwrap,
+                                                options->bin_refine_factors[0],
+                                                options->bin_refine_factors[1],
+                                                options->bin_refine_factors[2],
+                                                &nmesh_x, &nmesh_y, &nmesh_z, options);
+    if(lattice == NULL) {
+        return EXIT_FAILURE;
+    }
+
+    int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
     const DOUBLE inv_xwrap = ((DOUBLE) 1.0)/xwrap;
     const DOUBLE inv_ywrap = ((DOUBLE) 1.0)/ywrap;

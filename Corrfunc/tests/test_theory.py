@@ -96,6 +96,28 @@ def test_boxsize(gals_Mr19, funcname, isa='fastest', nthreads=maxthreads()):
                             ravg_name=ravg_name, ref_cols=(0, 4, 1))
 
 
+def test_narrow_extent(isa='fastest', nthreads=maxthreads()):
+    '''Test that a narrow particle distribution in a large box
+    does not throw an error.
+    Regression test for
+    https://github.com/manodeep/Corrfunc/pull/276#issuecomment-1164872508
+    '''
+    from Corrfunc.theory import DD
+    boxsize = (3., 3., 3.)
+    seed = 42
+    np.random.seed(seed)
+    N = 2
+    autocorr = 1
+    r_bins = [0.2, 0.6, 1.0]
+    pos = np.random.uniform(0, 1., 3*N).reshape(3, N)
+
+    results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
+                 boxsize=boxsize, periodic=True,
+                 verbose=True)
+
+    assert np.all(results['npairs'] == [2, 0])
+
+
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDrppi(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DDrppi

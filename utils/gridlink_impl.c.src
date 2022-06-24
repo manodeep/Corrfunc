@@ -61,6 +61,9 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                                    const DOUBLE max_x_size,
                                    const DOUBLE max_y_size,
                                    const DOUBLE max_z_size,
+                                   const DOUBLE xwrap,
+                                   const DOUBLE ywrap,
+                                   const DOUBLE zwrap,
                                    const int xbin_refine_factor,
                                    const int ybin_refine_factor,
                                    const int zbin_refine_factor,
@@ -79,9 +82,9 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
 
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
 
-    const int xstatus = get_binsize_DOUBLE(xmax-xmin,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymax-ymin,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmax-zmin,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
+    const int xstatus = get_binsize_DOUBLE(xmax-xmin, xwrap, max_x_size, xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x);
+    const int ystatus = get_binsize_DOUBLE(ymax-ymin, ywrap, max_y_size, ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y);
+    const int zstatus = get_binsize_DOUBLE(zmax-zmin, zwrap, max_z_size, zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z);
     if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
       fprintf(stderr,"Received xstatus = %d ystatus = %d zstatus = %d. Error\n", xstatus, ystatus, zstatus);
       return NULL;

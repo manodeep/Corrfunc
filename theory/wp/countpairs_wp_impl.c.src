@@ -253,6 +253,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     cellarray_DOUBLE *lattice = gridlink_DOUBLE(ND, X, Y, Z, &(extra->weights0),
                                                 xmin, xmax, ymin, ymax, zmin, zmax,
                                                 rpmax, rpmax, pimax,
+                                                boxsize, boxsize, boxsize,
                                                 options->bin_refine_factors[0],
                                                 options->bin_refine_factors[1],
                                                 options->bin_refine_factors[2],
@@ -282,6 +283,7 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
               lattice = gridlink_DOUBLE(ND, X, Y, Z, &(extra->weights0),
                                         xmin, xmax, ymin, ymax, zmin, zmax,
                                         rpmax, rpmax, pimax,
+                                        boxsize, boxsize, boxsize,
                                         options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                         &nmesh_x, &nmesh_y, &nmesh_z, options);
               if(lattice == NULL) {

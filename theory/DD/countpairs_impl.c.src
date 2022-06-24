@@ -285,6 +285,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
     cellarray_DOUBLE *lattice1 = gridlink_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                  xmin, xmax, ymin, ymax, zmin, zmax,
                                                  rpmax, rpmax, rpmax,
+                                                 xwrap, ywrap, zwrap,
                                                  options->bin_refine_factors[0],
                                                  options->bin_refine_factors[1],
                                                  options->bin_refine_factors[2],
@@ -314,6 +315,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
             lattice1 = gridlink_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                        xmin, xmax, ymin, ymax, zmin, zmax,
                                        rpmax, rpmax, rpmax,
+                                       xwrap, ywrap, zwrap,
                                        options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                        &nmesh_x, &nmesh_y, &nmesh_z, options);
             if(lattice1 == NULL) {
@@ -334,6 +336,7 @@ int countpairs_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1,
         lattice2 = gridlink_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
                                    xmin, xmax, ymin, ymax, zmin, zmax,
                                    rpmax, rpmax, rpmax,
+                                   xwrap, ywrap, zwrap,
                                    options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                    &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
         if(lattice2 == NULL) {
