@@ -30,6 +30,9 @@
 #endif
 
 
+void warn_flat_dim_DOUBLE(const char *dim);
+
+
 void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
 {
     // `totncells` is currently unused, but no need to break the C API.
@@ -51,6 +54,12 @@ void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
     }
 
     free(lattice);
+}
+
+void warn_flat_dim_DOUBLE(const char *dim){
+    fprintf(stderr, "Warning: all particles appear to have the same %s coordinate.\n"
+                    "         Corrfunc will operate correctly, but make sure this is what you expected.",
+                    dim);
 }
 
 cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
@@ -89,6 +98,19 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
       fprintf(stderr,"Received xstatus = %d ystatus = %d zstatus = %d. Error\n", xstatus, ystatus, zstatus);
       return NULL;
     }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
+    if(xbinsize == ZERO && NPART > 2) warn_flat_dim_DOUBLE("X");
+    if(ybinsize == ZERO && NPART > 2) warn_flat_dim_DOUBLE("Y");
+    if(zbinsize == ZERO && NPART > 2) warn_flat_dim_DOUBLE("Z");
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
