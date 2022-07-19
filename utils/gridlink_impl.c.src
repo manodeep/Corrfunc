@@ -151,6 +151,8 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         return NULL;
     }
 
+    // "binsize > 0" guards against all particles falling in a plane (or worse),
+    // in which case we set the inv to 0 to assign all particles to the first cell
     const DOUBLE xinv = xbinsize > 0 ? 1.0/xbinsize : 0.;
     const DOUBLE yinv = ybinsize > 0 ? 1.0/ybinsize : 0.;
     const DOUBLE zinv = zbinsize > 0 ? 1.0/zbinsize : 0.;

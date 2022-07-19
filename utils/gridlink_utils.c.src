@@ -31,9 +31,9 @@
 int get_binsize_DOUBLE(const DOUBLE xdiff, const DOUBLE xwrap, const DOUBLE rmax, const int refine_factor, const int max_ncells,
                        DOUBLE *xbinsize, int *nlattice)
 {
-    int nmesh=(int)(refine_factor*xdiff/rmax) ;
+    int nmesh=(int)(refine_factor*xdiff/rmax);
     nmesh = nmesh < 1 ? 1:nmesh;
-    if( xwrap > 0 && (xdiff + rmax >= xwrap) ) {
+    if( xwrap > 0 && ((xdiff + rmax) >= xwrap) ) {
         if (nmesh<(2*refine_factor+1))  {
             fprintf(stderr,"%s> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",__FILE__,nmesh) ;
             fprintf(stderr,"%s> Please reduce Rmax = %"REAL_FORMAT" to be a smaller fraction of the particle distribution region = %"REAL_FORMAT"\n",

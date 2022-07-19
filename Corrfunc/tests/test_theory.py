@@ -96,7 +96,7 @@ def test_boxsize(gals_Mr19, funcname, isa='fastest', nthreads=maxthreads()):
                             ravg_name=ravg_name, ref_cols=(0, 4, 1))
 
 
-@pytest.mark.parametrize('N', [1,2])
+@pytest.mark.parametrize('N', [1, 2])
 def test_narrow_extent(N, isa='fastest', nthreads=maxthreads()):
     '''Test that a narrow particle distribution in a large box
     does not throw an error.
@@ -106,10 +106,20 @@ def test_narrow_extent(N, isa='fastest', nthreads=maxthreads()):
     from Corrfunc.theory import DD
     boxsize = (3., 3., 3.)
     seed = 42
-    np.random.seed(seed)
     autocorr = 1
     r_bins = [0.2, 0.6, 1.0]
-    pos = np.random.uniform(0, 1., 3*N).reshape(3, N)
+    if N == 2:
+        pos = np.array([[0., 0.],
+                        [0., 0.],
+                        [0., 0.5],
+                        ])
+    elif N == 1:
+        pos = np.array([[0.1],
+                        [0.2],
+                        [0.3],
+                        ])
+    else:
+        raise NotImplemented(N)
 
     results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
                  boxsize=boxsize, periodic=True,
@@ -119,8 +129,6 @@ def test_narrow_extent(N, isa='fastest', nthreads=maxthreads()):
         assert np.all(results['npairs'] == [2, 0])
     elif N == 1:
         assert np.all(results['npairs'] == [0, 0])
-    else:
-        raise NotImplemented(N)
 
 
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
