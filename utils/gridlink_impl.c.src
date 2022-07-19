@@ -481,10 +481,10 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
 
        MS: 23/8/2019
      */
-    const int check_for_duplicate_ngb_cells = ( any_periodic &&
+    const int check_for_duplicate_ngb_cells = 0; /* ( any_periodic &&
                                                 (nmesh_x < (2*xbin_refine_factor + 1) ||
                                                  nmesh_y < (2*ybin_refine_factor + 1) ||
-                                                 nmesh_z < (2*zbin_refine_factor + 1))  ) ? 1:0;
+                                                 nmesh_z < (2*zbin_refine_factor + 1))  ) ? 1:0;*/
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_DOUBLE *first = &(lattice1[icell]);
         if(first->nelements == 0) continue;
