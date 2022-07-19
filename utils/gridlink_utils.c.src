@@ -33,6 +33,13 @@ int get_binsize_DOUBLE(const DOUBLE xdiff, const DOUBLE xwrap, const DOUBLE rmax
 {
     int nmesh=(int)(refine_factor*xdiff/rmax);
     nmesh = nmesh < 1 ? 1:nmesh;
+    
+    if(xwrap > 0 && rmax >= xwrap/2){
+        fprintf(stderr,"%s> ERROR: rmax=%f must be less than half of periodic boxize=%f to avoid double-counting particles\n",
+            __FILE__,rmax,xwrap);
+        return EXIT_FAILURE;
+    }
+
     /*if( xwrap > 0 && ((xdiff + rmax) >= xwrap) ) {
         if (nmesh<(2*refine_factor+1))  {
             fprintf(stderr,"%s> ERROR:  nlattice = %d is so small that with periodic wrapping the same cells will be counted twice ....exiting\n",__FILE__,nmesh) ;

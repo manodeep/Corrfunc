@@ -453,7 +453,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb - 1; // -1 for self
     
-    const int any_periodic = periodic_x || periodic_y || periodic_z;
+    //const int any_periodic = periodic_x || periodic_y || periodic_z;
 
     if( ! (autocorr == 0 || autocorr == 1) ) {
         fprintf(stderr,"Error: Strange value of autocorr = %d. Expected to receive either 1 (auto-correlations) or 0 (cross-correlations)\n", autocorr);

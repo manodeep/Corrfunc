@@ -131,6 +131,31 @@ def test_narrow_extent(N, isa='fastest', nthreads=maxthreads()):
         assert np.all(results['npairs'] == [0, 0])
 
 
+@pytest.mark.parametrize('N', [2])
+def test_large_Rmax(N, isa='fastest', nthreads=maxthreads()):
+    '''Test that an Rmax comparable to the boxsize gives the right answer
+    '''
+    from Corrfunc.theory import DD
+    boxsize = 1.
+    autocorr = 1
+    r_bins = [0.2, 0.3, 0.4]
+    if N == 2:
+        pos = np.array([[0., 0.],
+                        [0., 0.],
+                        [0., 0.35],
+                        ])
+    else:
+        raise NotImplemented(N)
+
+    results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
+                 boxsize=boxsize, periodic=True,
+                 verbose=True)
+
+    if N == 2:
+        assert np.all(results['npairs'] == [0, 2])
+
+
+
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDrppi(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DDrppi
