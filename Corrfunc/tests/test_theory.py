@@ -155,6 +155,34 @@ def test_large_Rmax(N, isa='fastest', nthreads=maxthreads()):
         assert np.all(results['npairs'] == [0, 2])
 
 
+def test_duplicate_cellpairs(isa='fastest', nthreads=maxthreads()):
+    '''A test to implement Manodeep's example from
+    https://github.com/manodeep/Corrfunc/pull/277#issuecomment-1190921894
+    '''
+    from Corrfunc.theory import DD
+    boxsize = 1.
+    autocorr = 1
+    r_bins = [0.01, 0.1]
+    pos = np.array([[0.02, 0.98],
+                    [0., 0.],
+                    [0., 0.0],
+                    ])
+
+    results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
+                 boxsize=boxsize, periodic=True,
+                 verbose=True)
+
+    assert np.all(results['npairs'] == [2])
+
+    autocorr = 0
+    results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
+                 X2=pos[0], Y2=pos[1], Z2=pos[2],
+                 boxsize=boxsize, periodic=True,
+                 verbose=True)
+
+    assert np.all(results['npairs'] == [2])
+
+
 
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDrppi(gals_Mr19, isa, nthreads):
