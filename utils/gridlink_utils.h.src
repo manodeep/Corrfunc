@@ -43,7 +43,7 @@ extern "C" {
                                                                    DOUBLE *sqr_sep_min, DOUBLE *sqr_sep_max);
 
 
-#define CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, num_cell_pairs, num_ngb_this_cell, all_cell_pairs) { \
+#define CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, off_xwrap, off_ywrap, off_zwrap, num_cell_pairs, num_ngb_this_cell, all_cell_pairs) { \
         int duplicate_flag = 0;                                         \
         XRETURN(num_cell_pairs - num_ngb_this_cell >= 0, NULL,          \
                 "Error: While working on detecting (potential) duplicate cell-pairs on primary cell = %"PRId64"\n" \
@@ -57,7 +57,10 @@ extern "C" {
                     "For cell-pair # %"PRId64", the primary cellindex (within cell-pair) = %"PRId64" should be *exactly* " \
                     "equal to current primary cellindex = %"PRId64". Num_cell_pairs = %"PRId64" num_ngb_this_cell = %"PRId64"\n", \
                     icell, num_cell_pairs - jj, this_cell_pair->cellindex1, icell, num_cell_pairs, num_ngb_this_cell); \
-            if (this_cell_pair->cellindex2 == icell2) {                 \
+            if (this_cell_pair->cellindex2 == icell2 &&                 \
+                this_cell_pair->xwrap == off_xwrap   &&                 \
+                this_cell_pair->ywrap == off_ywrap   &&                 \
+                this_cell_pair->zwrap == off_zwrap) {                   \
                 duplicate_flag = 1;                                     \
                 break;                                                  \
             }                                                           \

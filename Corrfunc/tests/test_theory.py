@@ -131,56 +131,51 @@ def test_narrow_extent(N, isa='fastest', nthreads=maxthreads()):
         assert np.all(results['npairs'] == [0, 0])
 
 
-@pytest.mark.parametrize('N', [2])
-def test_large_Rmax(N, isa='fastest', nthreads=maxthreads()):
-    '''Test that an Rmax comparable to the boxsize gives the right answer
-    '''
-    from Corrfunc.theory import DD
-    boxsize = 1.
-    autocorr = 1
-    r_bins = [0.2, 0.3, 0.4]
-    if N == 2:
-        pos = np.array([[0., 0.],
-                        [0., 0.],
-                        [0., 0.35],
-                        ])
-    else:
-        raise NotImplemented(N)
-
-    results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
-                 boxsize=boxsize, periodic=True,
-                 verbose=True)
-
-    if N == 2:
-        assert np.all(results['npairs'] == [0, 2])
-
-
-def test_duplicate_cellpairs(isa='fastest', nthreads=maxthreads()):
+@pytest.mark.parametrize('autocorr', [0, 1])
+@pytest.mark.parametrize('binref', [1, 2, 3])
+@pytest.mark.parametrize('min_sep_opt', [False, True])
+@pytest.mark.parametrize('maxcells', [1, 2, 3])
+def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
+                             isa='fastest', nthreads=maxthreads()):
     '''A test to implement Manodeep's example from
     https://github.com/manodeep/Corrfunc/pull/277#issuecomment-1190921894
+    where a particle pair straddles the wrap.
+
+    Also tests the large Rmax case, where Rmax is almost as large as L/2.
     '''
     from Corrfunc.theory import DD
     boxsize = 1.
-    autocorr = 1
-    r_bins = [0.01, 0.1]
+    r_bins = [0.01, 0.4]
     pos = np.array([[0.02, 0.98],
                     [0., 0.],
                     [0., 0.0],
                     ])
 
     results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
+                 X2=pos[0], Y2=pos[1], Z2=pos[2],
                  boxsize=boxsize, periodic=True,
-                 verbose=True)
+                 verbose=True, max_cells_per_dim=maxcells,
+                 xbin_refine_factor=binref, ybin_refine_factor=binref,
+                 zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
+                 )
 
     assert np.all(results['npairs'] == [2])
 
-    autocorr = 0
+    r_bins = [0.2, 0.3, 0.49]
+    pos = np.array([[0., 0.],
+                    [0., 0.],
+                    [0., 0.48],
+                    ])
+
     results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
                  X2=pos[0], Y2=pos[1], Z2=pos[2],
                  boxsize=boxsize, periodic=True,
-                 verbose=True)
+                 verbose=True, max_cells_per_dim=maxcells,
+                 xbin_refine_factor=binref, ybin_refine_factor=binref,
+                 zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
+                 )
 
-    assert np.all(results['npairs'] == [2])
+    assert np.all(results['npairs'] == [0, 2])
 
 
 

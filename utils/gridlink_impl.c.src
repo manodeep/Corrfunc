@@ -453,14 +453,14 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb - 1; // -1 for self
     
-    //const int any_periodic = periodic_x || periodic_y || periodic_z;
+    const int any_periodic = periodic_x || periodic_y || periodic_z;
 
     if( ! (autocorr == 0 || autocorr == 1) ) {
         fprintf(stderr,"Error: Strange value of autocorr = %d. Expected to receive either 1 (auto-correlations) or 0 (cross-correlations)\n", autocorr);
         return NULL;
     }
     const int64_t num_self_pairs = totncells;
-    const int64_t num_nonself_pairs = totncells * max_ngb_cells / (1 + autocorr);
+    const int64_t num_nonself_pairs = totncells * max_ngb_cells;
 
     const int64_t max_num_cell_pairs = num_self_pairs + num_nonself_pairs;
     int64_t num_cell_pairs = 0;
@@ -481,10 +481,10 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
 
        MS: 23/8/2019
      */
-    const int check_for_duplicate_ngb_cells = 0; /* ( any_periodic &&
+    const int check_for_duplicate_ngb_cells = ( any_periodic &&
                                                 (nmesh_x < (2*xbin_refine_factor + 1) ||
                                                  nmesh_y < (2*ybin_refine_factor + 1) ||
-                                                 nmesh_z < (2*zbin_refine_factor + 1))  ) ? 1:0;*/
+                                                 nmesh_z < (2*zbin_refine_factor + 1))  ) ? 1:0;
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_DOUBLE *first = &(lattice1[icell]);
         if(first->nelements == 0) continue;
@@ -529,7 +529,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                     //Check if the ngb-cell has already been added - can happen under periodic boundary
                     //conditions, with small value of nmesh_x/y/z (ie large Rmax relative to BoxSize)
                     if(check_for_duplicate_ngb_cells) {
-                        CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
+                        CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, off_xwrap, off_ywrap, off_zwrap, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
                     }
 
                     struct cellarray_DOUBLE *second = &(lattice2[icell2]);
