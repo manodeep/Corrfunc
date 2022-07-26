@@ -57,6 +57,8 @@ extern "C" {
                     "For cell-pair # %"PRId64", the primary cellindex (within cell-pair) = %"PRId64" should be *exactly* " \
                     "equal to current primary cellindex = %"PRId64". Num_cell_pairs = %"PRId64" num_ngb_this_cell = %"PRId64"\n", \
                     icell, num_cell_pairs - jj, this_cell_pair->cellindex1, icell, num_cell_pairs, num_ngb_this_cell); \
+            _Pragma("GCC diagnostic push")                              \
+            _Pragma("GCC diagnostic ignored \"-Wfloat-equal\"")         \
             if (this_cell_pair->cellindex2 == icell2 &&                 \
                 this_cell_pair->xwrap == off_xwrap   &&                 \
                 this_cell_pair->ywrap == off_ywrap   &&                 \
@@ -64,6 +66,7 @@ extern "C" {
                 duplicate_flag = 1;                                     \
                 break;                                                  \
             }                                                           \
+            _Pragma("GCC diagnostic pop")                               \
         }                                                               \
         if(duplicate_flag == 1) continue;                               \
     }
