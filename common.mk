@@ -350,7 +350,7 @@ ifeq ($(DO_CHECKS), 1)
   # The GNU Assembler (GAS) has an AVX-512 bug in some versions (originally 2.30 to 2.31.1)
   # So we compile a test program and check the assembly for the correct output.
   # See: https://github.com/manodeep/Corrfunc/issues/193
-  GAS_BUG_DISABLE_AVX512 := $(shell echo 'vmovaps 64(,%rax), %zmm0' | $(CC) $(CFLAGS) -xassembler -c - -oa.out && objdump -dw a.out | \grep -v 'vmovaps 0x40(,%rax,1),%zmm0'; rm a.out)
+  GAS_BUG_DISABLE_AVX512 := $(shell echo 'vmovaps 64(,%rax), %zmm0' | $(CC) $(CFLAGS) -xassembler -c - -oa.out 2>/dev/null && objdump -dw a.out | \grep -v 'vmovaps 0x40(,%rax,1),%zmm0'; rm a.out)
 
   ifeq ($(GAS_BUG_DISABLE_AVX512),1)
     # Did the compiler support AVX-512 in the first place? Otherwise no need to disable it!
