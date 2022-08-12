@@ -347,12 +347,10 @@ ifeq ($(DO_CHECKS), 1)
     CLINK += -lm
   endif #not icc
 
-  # The GNU Assembler (GAS) has an AVX-512 bug in versions 2.30 to 2.31.1
-  # So we turn off AVX-512 if the compiler reports it is using one of these versions.
-  # This works for gcc and icc.
-  # clang typically uses its own assembler, but if it is using the system assembler, this will also detect that.
+  # The GNU Assembler (GAS) has an AVX-512 bug in some versions (originally 2.30 to 2.31.1)
+  # So we compile a test program and check the assembly for the correct output.
   # See: https://github.com/manodeep/Corrfunc/issues/193
-  GAS_BUG_DISABLE_AVX512 := $(shell $(CC) $(CFLAGS) -xc -Wa,-v -c /dev/null -o /dev/null 2>&1 | \grep -Ecm1 'GNU assembler version (2\.30|2\.31|2\.31\.1)')
+  GAS_BUG_DISABLE_AVX512 := $(shell echo 'vmovaps 64(,%rax), %zmm0' | $(CC) $(CFLAGS) -xassembler -c - -oa.out && objdump -dw a.out | \grep -v 'vmovaps 0x40(,%rax,1),%zmm0'; rm a.out)
 
   ifeq ($(GAS_BUG_DISABLE_AVX512),1)
     # Did the compiler support AVX-512 in the first place? Otherwise no need to disable it!
