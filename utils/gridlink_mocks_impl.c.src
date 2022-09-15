@@ -1586,9 +1586,9 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_ra_dec_DOUBLE(cellarra
                     }
 
                     // No periodicity with mocks; wrap value is always zero.
-                    DOUBLE xwrap = ZERO;
-                    DOUBLE ywrap = ZERO;
-                    DOUBLE zwrap = ZERO;
+                    const DOUBLE xwrap = ZERO;
+                    const DOUBLE ywrap = ZERO;
+                    const DOUBLE zwrap = ZERO;
 
                     CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, xwrap, ywrap, zwrap, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
 
