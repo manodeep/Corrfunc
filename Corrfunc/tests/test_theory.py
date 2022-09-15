@@ -153,7 +153,7 @@ def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
 
     results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
                  X2=pos[0], Y2=pos[1], Z2=pos[2],
-                 boxsize=boxsize, periodic=True,
+                 boxsize=boxsize, periodic=True, isa=isa,
                  verbose=True, max_cells_per_dim=maxcells,
                  xbin_refine_factor=binref, ybin_refine_factor=binref,
                  zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
@@ -169,13 +169,54 @@ def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
 
     results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
                  X2=pos[0], Y2=pos[1], Z2=pos[2],
-                 boxsize=boxsize, periodic=True,
+                 boxsize=boxsize, periodic=True, isa=isa,
                  verbose=True, max_cells_per_dim=maxcells,
                  xbin_refine_factor=binref, ybin_refine_factor=binref,
                  zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
                  )
 
     assert np.all(results['npairs'] == [0, 2])
+
+
+@pytest.mark.parametrize('autocorr', [0, 1])
+@pytest.mark.parametrize('binref', [1, 2, 3])
+@pytest.mark.parametrize('min_sep_opt', [False, True])
+@pytest.mark.parametrize('maxcells', [1, 2, 3])
+def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells,
+                            isa='fastest', nthreads=maxthreads()):
+    '''Generate 50 particles near (0,0,0) and 50 near (0,0,L/2)
+    and compare against the brute-force answer.
+
+    Use close to the max allowable Rmax, 0.49*Lbox.
+    '''
+    np.random.seed(1234)
+    pos = np.empty((3, 100), dtype='f8')
+    eps = 0.2
+    boxsize = 123.
+    bins = np.linspace(0.01, 0.49*boxsize, 20)
+
+    pos[:, :50] = np.random.uniform(low=-eps, high=eps, size=(3, 50))*boxsize
+    pos[:, 50:] = np.random.uniform(low=-eps, high=eps,
+                                    size=(3, 50))*boxsize + boxsize/2.
+
+    pdiff = np.abs(pos[:, None] - pos[:, :, None])
+    pdiff[pdiff >= boxsize/2] -= boxsize
+    pdiff = (pdiff**2).sum(axis=0).reshape(-1)
+    brutecounts, _ = np.histogram(pdiff, bins=bins**2)
+    assert brutecounts[0] == 2
+    assert brutecounts[-1] == 172
+
+    from Corrfunc.theory import DD
+
+    results = DD(autocorr, nthreads, bins, pos[0], pos[1], pos[2],
+                 X2=pos[0], Y2=pos[1], Z2=pos[2],
+                 boxsize=boxsize, periodic=True, isa=isa,
+                 verbose=True, max_cells_per_dim=maxcells,
+                 xbin_refine_factor=binref, ybin_refine_factor=binref,
+                 zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
+                 )
+
+    assert np.all(results['npairs'] == brutecounts)
 
 
 
