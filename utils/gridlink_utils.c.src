@@ -50,6 +50,7 @@ int get_binsize_DOUBLE(const DOUBLE xdiff, const DOUBLE xwrap, const DOUBLE rmax
     }*/
 
     if (nmesh>max_ncells)  nmesh=max_ncells;
+    if (nmesh<2)  nmesh=2;  // to avoid forming duplicate cell pairs
     *xbinsize = xdiff/nmesh;
     *nlattice = nmesh;
 

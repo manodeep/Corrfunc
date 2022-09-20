@@ -131,7 +131,7 @@ def test_narrow_extent(N, isa='fastest', nthreads=maxthreads()):
         assert np.all(results['npairs'] == [0, 0])
 
 
-@pytest.mark.parametrize('autocorr', [0, 1])
+@pytest.mark.parametrize('autocorr', [0, 1], ids=['cross', 'auto'])
 @pytest.mark.parametrize('binref', [1, 2, 3])
 @pytest.mark.parametrize('min_sep_opt', [False, True])
 @pytest.mark.parametrize('maxcells', [1, 2, 3])
@@ -178,33 +178,37 @@ def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
     assert np.all(results['npairs'] == [0, 2])
 
 
-@pytest.mark.parametrize('autocorr', [0, 1])
+@pytest.mark.parametrize('autocorr', [0, 1], ids=['cross', 'auto'])
 @pytest.mark.parametrize('binref', [1, 2, 3])
 @pytest.mark.parametrize('min_sep_opt', [False, True])
 @pytest.mark.parametrize('maxcells', [1, 2, 3])
 def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells,
                             isa='fastest', nthreads=maxthreads()):
-    '''Generate 50 particles near (0,0,0) and 50 near (0,0,L/2)
-    and compare against the brute-force answer.
+    '''Generate two small point clouds near particles near (0,0,0)
+    and (L/2,L/2,L/2) and compare against the brute-force answer.
 
     Use close to the max allowable Rmax, 0.49*Lbox.
     '''
     np.random.seed(1234)
-    pos = np.empty((3, 100), dtype='f8')
-    eps = 0.2
+    npts = 100
+    eps = 0.2  # as a fraction of boxsize
     boxsize = 123.
     bins = np.linspace(0.01, 0.49*boxsize, 20)
 
-    pos[:, :50] = np.random.uniform(low=-eps, high=eps, size=(3, 50))*boxsize
-    pos[:, 50:] = np.random.uniform(low=-eps, high=eps,
-                                    size=(3, 50))*boxsize + boxsize/2.
+    # two clouds of width eps*boxsize
+    pos = np.random.uniform(low=-eps, high=eps,
+                            size=(3, npts))*boxsize
+    pos[:, npts//2:] += boxsize/2.  # second cloud is in center of box
+    pos %= boxsize
 
     pdiff = np.abs(pos[:, None] - pos[:, :, None])
     pdiff[pdiff >= boxsize/2] -= boxsize
     pdiff = (pdiff**2).sum(axis=0).reshape(-1)
     brutecounts, _ = np.histogram(pdiff, bins=bins**2)
-    assert brutecounts[0] == 2
-    assert brutecounts[-1] == 172
+    print(brutecounts)
+
+    # spot-check that we have non-zero counts
+    assert np.any(brutecounts > 0)
 
     from Corrfunc.theory import DD
 
