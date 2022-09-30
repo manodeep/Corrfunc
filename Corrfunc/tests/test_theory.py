@@ -144,12 +144,12 @@ def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
     Also tests the large Rmax case, where Rmax is almost as large as L/2.
     '''
     from Corrfunc.theory import DD
-    boxsize = 1.
-    r_bins = [0.01, 0.4]
+    boxsize = 432.
+    r_bins = np.array([0.01, 0.4]) * boxsize
     pos = np.array([[0.02, 0.98],
                     [0., 0.],
                     [0., 0.0],
-                    ])
+                    ]) * boxsize
 
     results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
                  X2=pos[0], Y2=pos[1], Z2=pos[2],
@@ -161,11 +161,11 @@ def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
 
     assert np.all(results['npairs'] == [2])
 
-    r_bins = [0.2, 0.3, 0.49]
+    r_bins = np.array([0.2, 0.3, 0.49]) * boxsize
     pos = np.array([[0., 0.],
                     [0., 0.],
                     [0., 0.48],
-                    ])
+                    ]) * boxsize
 
     results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
                  X2=pos[0], Y2=pos[1], Z2=pos[2],
@@ -205,7 +205,6 @@ def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells,
     pdiff[pdiff >= boxsize/2] -= boxsize
     pdiff = (pdiff**2).sum(axis=0).reshape(-1)
     brutecounts, _ = np.histogram(pdiff, bins=bins**2)
-    print(brutecounts)
 
     # spot-check that we have non-zero counts
     assert np.any(brutecounts > 0)
