@@ -201,8 +201,14 @@ def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells,
     pos[:, npts//2:] += boxsize/2.  # second cloud is in center of box
     pos %= boxsize
 
-    pdiff = np.abs(pos[:, None] - pos[:, :, None])
+    # Compute the pairwise distance between particles with broadcasting.
+    # Broadcasting (3,1,npts) against (3,npts,1) yields (3,npts,npts),
+    # which is the array of all npts^2 (x,y,z) differences.
+    pdiff = np.abs(pos[:, np.newaxis] - pos[:, :, np.newaxis])
     pdiff[pdiff >= boxsize/2] -= boxsize
+
+    # Compute dist^2 = x^2 + y^2 + z^2, flattening because we don't
+    # care which dist came from which particle pair
     pdiff = (pdiff**2).sum(axis=0).reshape(-1)
     brutecounts, _ = np.histogram(pdiff, bins=bins**2)
 
