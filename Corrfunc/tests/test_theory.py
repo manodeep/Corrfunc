@@ -209,8 +209,8 @@ def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells,
 
     # Compute dist^2 = x^2 + y^2 + z^2, flattening because we don't
     # care which dist came from which particle pair
-    pdiff = (pdiff**2).sum(axis=0).reshape(-1)
-    brutecounts, _ = np.histogram(pdiff, bins=bins**2)
+    sqr_pdiff = (pdiff**2).sum(axis=0).reshape(-1)
+    brutecounts, _ = np.histogram(sqr_pdiff, bins=bins**2)
 
     # spot-check that we have non-zero counts
     assert np.any(brutecounts > 0)
