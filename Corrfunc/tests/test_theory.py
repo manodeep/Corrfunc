@@ -131,6 +131,104 @@ def test_narrow_extent(N, isa='fastest', nthreads=maxthreads()):
         assert np.all(results['npairs'] == [0, 0])
 
 
+@pytest.mark.parametrize('autocorr', [0, 1], ids=['cross', 'auto'])
+@pytest.mark.parametrize('binref', [1, 2, 3])
+@pytest.mark.parametrize('min_sep_opt', [False, True])
+@pytest.mark.parametrize('maxcells', [1, 2, 3])
+def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
+                             isa='fastest', nthreads=maxthreads()):
+    '''A test to implement Manodeep's example from
+    https://github.com/manodeep/Corrfunc/pull/277#issuecomment-1190921894
+    where a particle pair straddles the wrap.
+
+    Also tests the large Rmax case, where Rmax is almost as large as L/2.
+    '''
+    from Corrfunc.theory import DD
+    boxsize = 432.
+    r_bins = np.array([0.01, 0.4]) * boxsize
+    pos = np.array([[0.02, 0.98],
+                    [0., 0.],
+                    [0., 0.0],
+                    ]) * boxsize
+
+    results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
+                 X2=pos[0], Y2=pos[1], Z2=pos[2],
+                 boxsize=boxsize, periodic=True, isa=isa,
+                 verbose=True, max_cells_per_dim=maxcells,
+                 xbin_refine_factor=binref, ybin_refine_factor=binref,
+                 zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
+                 )
+
+    assert np.all(results['npairs'] == [2])
+
+    r_bins = np.array([0.2, 0.3, 0.49]) * boxsize
+    pos = np.array([[0., 0.],
+                    [0., 0.],
+                    [0., 0.48],
+                    ]) * boxsize
+
+    results = DD(autocorr, nthreads, r_bins, pos[0], pos[1], pos[2],
+                 X2=pos[0], Y2=pos[1], Z2=pos[2],
+                 boxsize=boxsize, periodic=True, isa=isa,
+                 verbose=True, max_cells_per_dim=maxcells,
+                 xbin_refine_factor=binref, ybin_refine_factor=binref,
+                 zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
+                 )
+
+    assert np.all(results['npairs'] == [0, 2])
+
+
+@pytest.mark.parametrize('autocorr', [0, 1], ids=['cross', 'auto'])
+@pytest.mark.parametrize('binref', [1, 2, 3])
+@pytest.mark.parametrize('min_sep_opt', [False, True])
+@pytest.mark.parametrize('maxcells', [1, 2, 3])
+def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells,
+                            isa='fastest', nthreads=maxthreads()):
+    '''Generate two small point clouds near particles near (0,0,0)
+    and (L/2,L/2,L/2) and compare against the brute-force answer.
+
+    Use close to the max allowable Rmax, 0.49*Lbox.
+    '''
+    np.random.seed(1234)
+    npts = 100
+    eps = 0.2  # as a fraction of boxsize
+    boxsize = 123.
+    bins = np.linspace(0.01, 0.49*boxsize, 20)
+
+    # two clouds of width eps*boxsize
+    pos = np.random.uniform(low=-eps, high=eps,
+                            size=(3, npts))*boxsize
+    pos[:, npts//2:] += boxsize/2.  # second cloud is in center of box
+    pos %= boxsize
+
+    # Compute the pairwise distance between particles with broadcasting.
+    # Broadcasting (3,1,npts) against (3,npts,1) yields (3,npts,npts),
+    # which is the array of all npts^2 (x,y,z) differences.
+    pdiff = np.abs(pos[:, np.newaxis] - pos[:, :, np.newaxis])
+    pdiff[pdiff >= boxsize/2] -= boxsize
+
+    # Compute dist^2 = x^2 + y^2 + z^2, flattening because we don't
+    # care which dist came from which particle pair
+    sqr_pdiff = (pdiff**2).sum(axis=0).reshape(-1)
+    brutecounts, _ = np.histogram(sqr_pdiff, bins=bins**2)
+
+    # spot-check that we have non-zero counts
+    assert np.any(brutecounts > 0)
+
+    from Corrfunc.theory import DD
+
+    results = DD(autocorr, nthreads, bins, pos[0], pos[1], pos[2],
+                 X2=pos[0], Y2=pos[1], Z2=pos[2],
+                 boxsize=boxsize, periodic=True, isa=isa,
+                 verbose=True, max_cells_per_dim=maxcells,
+                 xbin_refine_factor=binref, ybin_refine_factor=binref,
+                 zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
+                 )
+
+    assert np.all(results['npairs'] == brutecounts)
+
+
+
 @pytest.mark.parametrize('isa,nthreads', generate_isa_and_nthreads_combos())
 def test_DDrppi(gals_Mr19, isa, nthreads):
     from Corrfunc.theory import DDrppi

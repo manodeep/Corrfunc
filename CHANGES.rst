@@ -17,6 +17,7 @@ New features
 Enhancements
 ------------
 - Allow user to specify periodicity and box size per dimension [#276]
+- Allow larger Rmax (up to half the boxsize) [#277]
 
 Changes
 -------
@@ -28,6 +29,7 @@ Fixes
 -----
 - Add additional check to tell if it's safe to redirect stdout/err [#270]
 - Check and fix ``z`` vs ``cz`` in ``DDrppi_mocks`` and ``DDsmu_mocks`` only if comoving distance flag is not set [#275]
+- Update GNU assembler bug detection [#278]
 
 
 2.4.0 (2021-09-30)

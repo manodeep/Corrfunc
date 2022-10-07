@@ -460,7 +460,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
         return NULL;
     }
     const int64_t num_self_pairs = totncells;
-    const int64_t num_nonself_pairs = totncells * max_ngb_cells / (1 + autocorr);
+    const int64_t num_nonself_pairs = totncells * max_ngb_cells;
 
     const int64_t max_num_cell_pairs = num_self_pairs + num_nonself_pairs;
     int64_t num_cell_pairs = 0;
@@ -529,7 +529,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                     //Check if the ngb-cell has already been added - can happen under periodic boundary
                     //conditions, with small value of nmesh_x/y/z (ie large Rmax relative to BoxSize)
                     if(check_for_duplicate_ngb_cells) {
-                        CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
+                        CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, off_xwrap, off_ywrap, off_zwrap, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
                     }
 
                     struct cellarray_DOUBLE *second = &(lattice2[icell2]);
