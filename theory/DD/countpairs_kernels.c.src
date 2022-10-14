@@ -19,6 +19,281 @@
 #include "weight_functions_DOUBLE.h"
 
 
+#ifdef __ARM_NEON
+#include "neon_calls.h"
+static inline int countpairs_neon_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const weight_struct_DOUBLE *weights0,
+                                                   const int64_t N1, DOUBLE *x1, DOUBLE *y1, DOUBLE *z1, const weight_struct_DOUBLE *weights1,
+                                                   const int same_cell,
+                                                   const DOUBLE sqr_rpmax, const DOUBLE sqr_rpmin, const int nbin, const DOUBLE *rupp_sqr, const DOUBLE rpmax,
+                                                   const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
+                                                   const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
+                                                   const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
+                                                   DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                                   DOUBLE *src_weightavg, const weight_method_t weight_method)
+{
+  uint64_t npairs[nbin];
+  for(int i=0;i<nbin;i++) {
+    npairs[i] = 0;
+  }
+
+  NEON_FLOATS m_rupp_sqr[nbin];
+  for(int i=0;i<nbin;i++) {
+    m_rupp_sqr[i] = NEON_SET_FLOAT(rupp_sqr[i]);
+  }
+
+  const int32_t need_rpavg = src_rpavg != NULL;
+  const int32_t need_weightavg = src_weightavg != NULL;
+  DOUBLE rpavg[nbin], weightavg[nbin];
+  if(need_rpavg || need_weightavg){
+    for(int i=0;i<nbin;i++) {
+        if(need_rpavg) {
+            rpavg[i] = ZERO;
+        }
+        if(need_weightavg){
+            weightavg[i] = ZERO;
+        }
+    }
+  }
+
+  // A copy whose pointers we can advance
+  weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
+  pair_struct_DOUBLE pair = {.num_weights=0};
+  neon_weight_func_t_DOUBLE neon_weight_func = NULL;
+  weight_func_t_DOUBLE fallback_weight_func = NULL;
+  if(need_weightavg){
+      // Same particle list, new copy of num_weights pointers into that list
+      local_w0 = *weights0;
+      local_w1 = *weights1;
+
+      pair.num_weights = local_w0.num_weights;
+
+      neon_weight_func = get_neon_weight_func_by_method_DOUBLE(weight_method);
+      fallback_weight_func = get_weight_func_by_method_DOUBLE(weight_method);
+  }
+
+  const DOUBLE *zstart = z1, *zend = z1 + N1;
+  const DOUBLE max_all_dz = SQRT(rpmax*rpmax - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+  for(int64_t i=0;i<N0;i++) {
+      const DOUBLE xpos = *x0++ + off_xwrap;
+      const DOUBLE ypos = *y0++ + off_ywrap;
+      const DOUBLE zpos = *z0++ + off_zwrap;
+      for(int w = 0; w < pair.num_weights; w++){
+          // local_w0.weights[w] is a pointer to a float in the particle list of weights,
+          // just as x0 is a pointer into the list of x-positions.
+          // The advancement of the local_w0.weights[w] pointer should always mirror x0.
+          pair.weights0[w].n = NEON_SET_FLOAT(*local_w0.weights[w]++);
+      }
+      DOUBLE max_dz = max_all_dz;
+
+      /* Now consider if this i'th particle can be a valid pair with ANY of the remaining
+         j' particles. The min. difference in the z-positions between this i'th particle and ANY
+         of the remaining j'th particles, is the difference between the current j'th particle and
+         the current i'th particle (since all remaining j'th particles will have a larger value for
+         the z-ordinate and therefore a larger difference to zpos). if this `dz` does not satisfy
+         the distance criteria, then NO remaining j'th particles will. Continue on to the next i'th
+         particle
+      */
+      const DOUBLE this_dz = *z1 - zpos;
+      if(this_dz >= max_all_dz) {
+          continue;
+      }
+
+      /* Okay so there MAY be a pair */
+      if(same_cell == 1) {
+          z1++;
+      } else {
+          // Now add the x,y information to further limit the range of secondaries for this particle
+          // But note this constraint may increase or decrease for the next particle, since x,y aren't sorted!
+          const DOUBLE min_dx = min_xdiff > 0 ? min_xdiff + FABS(xpos - closest_icell_xpos):min_xdiff;
+          const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
+          const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
+          const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
+          if(sqr_min_sep_this_point >= sqr_rpmax) {
+              continue;
+          }
+          max_dz = SQRT(sqr_rpmax - min_dx*min_dx - min_dy*min_dy);
+
+          // Now "fast forward" in the list of secondary particles to find the first one that satisfies the max_all_dz constraint
+          // We don't consider the i particle's x,y information yet, because those aren't sorted
+          const DOUBLE target_z = zpos - max_all_dz;
+          while(z1 < zend && *z1 <= target_z) {
+              z1++;
+          }
+      }
+      // If no j particle satisfies the constraint for this i particle,
+      // then the same holds true for all future i particles because they are sorted in increasing z order
+      if(z1 == zend) {
+          i = N0;
+          break;
+      }
+
+      DOUBLE *localz1 = z1;
+      const DOUBLE target_z = zpos - max_dz;
+      while(localz1 != zend && *localz1 <= target_z) {
+          localz1++;
+      }
+
+      int64_t j = localz1 - zstart;
+      DOUBLE *localx1 = x1 + j;
+      DOUBLE *localy1 = y1 + j;
+      for(int w = 0; w < local_w1.num_weights; w++){
+          local_w1.weights[w] = weights1->weights[w] + j;
+      }
+
+      for(;j<=(N1 - NEON_NVEC);j+=NEON_NVEC){
+          union int4 union_rpbin;
+          union float4 union_mDperp;
+          union float4_weights union_mweight;
+
+          const NEON_FLOATS m_xpos = NEON_SET_FLOAT(xpos);
+          const NEON_FLOATS m_ypos = NEON_SET_FLOAT(ypos);
+          const NEON_FLOATS m_zpos = NEON_SET_FLOAT(zpos);
+
+          const NEON_FLOATS m_x1 = NEON_LOAD_FLOATS(localx1);
+          const NEON_FLOATS m_y1 = NEON_LOAD_FLOATS(localy1);
+          const NEON_FLOATS m_z1 = NEON_LOAD_FLOATS(localz1);
+
+          localx1 += NEON_NVEC;
+          localy1 += NEON_NVEC;
+          localz1 += NEON_NVEC;
+
+          for(int w = 0; w < pair.num_weights; w++){
+              pair.weights1[w].n = NEON_LOAD_FLOATS(local_w1.weights[w]);
+              local_w1.weights[w] += NEON_NVEC;
+          }
+
+          const NEON_FLOATS m_max_dz = NEON_SET_FLOAT(max_dz);
+          const NEON_FLOATS m_sqr_rpmax = NEON_SET_FLOAT(sqr_rpmax);
+          const NEON_FLOATS m_sqr_rpmin = NEON_SET_FLOAT(sqr_rpmin);
+
+          const NEON_FLOATS m_xdiff = NEON_SUBTRACT_FLOATS(m_x1, m_xpos);  //(x[j] - x0)
+          const NEON_FLOATS m_ydiff = NEON_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
+          const NEON_FLOATS m_zdiff = NEON_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
+
+          const NEON_UINTS m_mask_geq_pimax = NEON_COMPARE_FLOATS_GE(m_zdiff,m_max_dz);
+          if(NEON_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
+              j = N1;//but do not break yet, there might be pairs in this chunk
+          }
+
+        //   if(need_weightavg){
+              pair.dx.n = m_xdiff;
+              pair.dy.n = m_ydiff;
+              pair.dz.n = m_zdiff;
+        //   }
+#ifdef __ARM_FEATURE_FMA
+          NEON_FLOATS r2 = NEON_SQUARE_FLOAT(m_xdiff);
+          r2 = NEON_FMA_FLOATS(r2, m_ydiff, m_ydiff);
+          r2 = NEON_FMA_FLOATS(r2, m_zdiff, m_zdiff);
+#else
+          NEON_FLOATS r2 = NEON_ADD_FLOATS(NEON_ADD_FLOATS(NEON_SQUARE_FLOAT(m_xdiff), NEON_SQUARE_FLOAT(m_ydiff)), 
+                                           NEON_SQUARE_FLOAT(m_zdiff));
+#endif
+
+          NEON_UINTS m_mask_left;
+          const NEON_UINTS m_rpmin_mask = NEON_COMPARE_FLOATS_GE(r2, m_sqr_rpmin);
+          const NEON_UINTS m_rpmax_mask = NEON_COMPARE_FLOATS_LT(r2, m_sqr_rpmax);
+          m_mask_left = NEON_BITWISE_AND(m_rpmin_mask, m_rpmax_mask);
+          if(NEON_TEST_COMPARISON(m_mask_left) == 0) {
+              continue;
+          }
+          r2 = NEON_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
+
+        //   if(need_rpavg) {
+              union_mDperp.m_Dperp = NEON_SQRT_FLOAT(r2);
+        //   }
+          if(need_weightavg){
+              union_mweight.m_weights = neon_weight_func(&pair);
+          }
+
+          NEON_INTS m_rpbin = NEON_SET_INT(0);
+          for(int kbin=nbin-1;kbin>=1;kbin--) {
+              const NEON_UINTS m1 = NEON_COMPARE_FLOATS_GE(r2,m_rupp_sqr[kbin-1]);
+              const NEON_UINTS m_bin_mask = NEON_BITWISE_AND(m1,m_mask_left);
+              m_mask_left = NEON_COMPARE_FLOATS_LT(r2,m_rupp_sqr[kbin-1]);
+              const int test2  = NEON_TEST_COMPARISON(m_bin_mask);
+              npairs[kbin] += NEON_BIT_COUNT_INT(test2);
+              if(need_rpavg || need_weightavg){
+                  m_rpbin = NEON_BLEND_INTS_WITH_MASK(m_rpbin, NEON_SET_INT(kbin), m_bin_mask);
+              }
+
+              int test3 = NEON_TEST_COMPARISON(m_mask_left);
+              if(test3 == 0) {
+                  break;
+              }
+          }
+
+          if(need_rpavg || need_weightavg) {
+              union_rpbin.m_ibin = m_rpbin;
+              for(int jj=0;jj<NEON_NVEC;jj++) {
+                  const int kbin = union_rpbin.ibin[jj];
+                  if(need_rpavg){
+                      const DOUBLE r = union_mDperp.Dperp[jj];
+                      rpavg[kbin] += r;
+                  }
+                  if(need_weightavg){
+                      const DOUBLE weight = union_mweight.weights[jj];
+                      weightavg[kbin] += weight;
+                  }
+              }
+          } //rpavg
+      }
+
+      for(;j<N1;j++) {
+          const DOUBLE dx = *localx1++ - xpos;
+          const DOUBLE dy = *localy1++ - ypos;
+          const DOUBLE dz = *localz1++ - zpos;
+          for(int w = 0; w < pair.num_weights; w++){
+              pair.weights1[w].d = *local_w1.weights[w]++;
+          }
+
+          if(dz >= max_dz) break;
+
+          const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
+          if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
+
+          if(need_weightavg){
+              pair.dx.d = dx;
+              pair.dy.d = dy;
+              pair.dz.d = dz;
+          }
+
+          DOUBLE r = ZERO, pairweight = ZERO;
+          if(need_rpavg) {
+              r = SQRT(r2);
+          }
+          if(need_weightavg){
+              pairweight = fallback_weight_func(&pair);
+          }
+
+          for(int kbin=nbin-1;kbin>=1;kbin--){
+              if(r2 >= rupp_sqr[kbin-1]) {
+                  npairs[kbin]++;
+                  if(need_rpavg){
+                      rpavg[kbin] += r;
+                  }
+                  if(need_weightavg){
+                      weightavg[kbin] += pairweight;
+                  }
+                  break;
+              }
+          }//searching for kbin loop
+      }//loop over remnant second set of particles
+  }//loop over first set of particles
+
+  for(int i=0;i<nbin;i++) {
+      src_npairs[i] += npairs[i];
+      if(need_rpavg) {
+          src_rpavg[i] += rpavg[i];
+      }
+      if(need_weightavg) {
+          src_weightavg[i] += weightavg[i];
+      }
+  }
+
+  return EXIT_SUCCESS;
+}
+#endif
+
 #ifdef __AVX512F__
 #include "avx512_calls.h"
 

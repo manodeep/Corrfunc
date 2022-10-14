@@ -328,8 +328,8 @@ ifeq ($(DO_CHECKS), 1)
       endif # USE_OMP
     endif # CC is clang
 
-    CFLAGS += -funroll-loops
-    CFLAGS += -march=native -fno-strict-aliasing
+    CFLAGS += -funroll-loops -fno-strict-aliasing
+    CFLAGS += -march=native 
     CFLAGS += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
     CFLAGS +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
     CFLAGS += -Wno-unused-local-typedefs ## to suppress the unused typedef warning for the compile time assert for sizeof(struct config_options)
@@ -351,10 +351,9 @@ ifeq ($(DO_CHECKS), 1)
   # So we compile a test program and check the assembly for the correct output.
   # See: https://github.com/manodeep/Corrfunc/issues/193
   GAS_BUG_DISABLE_AVX512 := $(shell echo 'vmovaps 64(,%rax), %zmm0' | $(CC) $(CFLAGS) -xassembler -c - -oa.out 2>/dev/null && objdump -dw a.out | \grep -q 'vmovaps 0x40(,%rax,1),%zmm0'; RET=$$?; rm -f a.out; echo $$RET)
-
   ifeq ($(GAS_BUG_DISABLE_AVX512),1)
     # Did the compiler support AVX-512 in the first place? Otherwise no need to disable it!
-    CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null | \grep -Ecm1 __AVX512F__)
+    CC_SUPPORTS_AVX512 := $(shell $(CC) $(CFLAGS) -dM -E - < /dev/null  2>/dev/null | \grep -Ecm1 __AVX512F__)
     ifeq ($(CC_SUPPORTS_AVX512),1)
       ifeq ($(shell test 0$(ICC_MAJOR_VER) -ge 019 -o -z "$(ICC_MAJOR_VER)"; echo $$?),0)
         # If gcc, clang, or new icc, we can use this
@@ -369,6 +368,19 @@ ifeq ($(DO_CHECKS), 1)
         $(warning $(ccred)DISABLING AVX-512 SUPPORT DUE TO GNU ASSEMBLER BUG.  UPGRADE TO BINUTILS >=2.32 TO FIX THIS.$(ccreset))
       endif
       export GAS_BUG_WARNING_PRINTED := 1
+    endif
+  endif
+
+  # Check if using clang on Apple with M1/M1 Max/M2 etc
+  # if so, remove -march=native from CFLAGS and 
+  # then add -mcpu=apple-m1 -mtune=apple-m1
+  ARCH := $(shell uname -m)
+  ifeq ($(ARCH), arm64)
+    ifeq ($(UNAME), Darwin)
+      ifeq (clang,$(findstring clang,$(CC)))
+        CFLAGS := $(filter-out -march=native, $(CFLAGS))
+        CFLAGS += -mtune=apple-m1 -mcpu=apple-m1
+      endif
     endif
   endif
 

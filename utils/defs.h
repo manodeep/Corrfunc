@@ -272,6 +272,8 @@ static inline struct config_options get_config_options(void)
     options.instruction_set = AVX;
 #elif defined(__SSE4_2__)
     options.instruction_set = SSE42;
+#elif defined(__ARM_NEON)
+    options.instruction_set = NEON;
 #else
     options.instruction_set = FALLBACK;
 #endif

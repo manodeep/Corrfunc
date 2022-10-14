@@ -29,36 +29,12 @@ extern "C" {
 #define SIND(X)            sinf(X*PI_OVER_180)
 #endif
 
-#ifdef __AVX__
-    
-#define REGISTER_WIDTH 256  //cpu supports avx instructions
-#define NVECF  8  //8 floats per ymm register
-#define NVECD  4  //4 doubles per ymm register
-
-#else
-
-#ifdef __SSE4_2__
-    
-#define REGISTER_WIDTH 128  //cpu supports sse instructions
-#define NVECF  4  //8 floats per xmm register
-#define NVECD  2  //4 doubles per xmm register
-
-#else
-
-#define REGISTER_WIDTH 64
-#define NVECF 2
-#define NVECD 1
-
-#endif//SSE
-#endif//AVX
-
 
 #include <float.h>
     
 #ifdef DOUBLE_PREC
 #define DOUBLE double
 #define REAL_FORMAT "lf"
-#define NVEC   NVECD
 #define ZERO   0.0
 #define SQRT   sqrt
 #define LOG    log
@@ -75,7 +51,6 @@ extern "C" {
 #else
 #define DOUBLE float
 #define REAL_FORMAT "f"
-#define NVEC   NVECF
 #define ZERO   0.0f
 #define SQRT   sqrtf
 #define LOG    logf

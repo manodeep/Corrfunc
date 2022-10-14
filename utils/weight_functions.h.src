@@ -16,7 +16,10 @@
 #include "sse_calls.h"
 #endif
 
-#include <stdint.h>
+#ifdef __ARM_NEON
+#include "neon_calls.h"
+#endif
+
 
 typedef union {
 #ifdef __AVX512F__
@@ -32,6 +35,12 @@ typedef union {
     union {
       SSE_FLOATS s;
       SSE_FLOATS s128;
+    };
+#endif
+#ifdef __ARM_NEON
+    union {
+      NEON_FLOATS n;
+      NEON_FLOATS n128;
     };
 #endif
     DOUBLE d;
@@ -61,6 +70,11 @@ typedef AVX_FLOATS (*avx_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
 typedef SSE_FLOATS (*sse_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
 #endif
 
+#ifdef __ARM_NEON
+typedef NEON_FLOATS (*neon_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
+#endif
+
+
 //////////////////////////////////
 // Weighting functions
 //////////////////////////////////
@@ -89,6 +103,13 @@ static inline SSE_FLOATS sse_pair_product_DOUBLE(const pair_struct_DOUBLE *pair)
     return SSE_MULTIPLY_FLOATS(pair->weights0[0].s, pair->weights1[0].s);
 }
 #endif
+
+#ifdef __ARM_NEON
+static inline NEON_FLOATS neon_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+    return NEON_MULTIPLY_FLOATS(pair->weights0[0].n, pair->weights1[0].n);
+}
+#endif
+
 
 //////////////////////////////////
 // Utility functions
@@ -138,6 +159,18 @@ static inline sse_weight_func_t_DOUBLE get_sse_weight_func_by_method_DOUBLE(cons
     switch(method){
         case PAIR_PRODUCT:
             return &sse_pair_product_DOUBLE;
+        default:
+        case NONE:
+            return NULL;
+    }
+}
+#endif
+
+#ifdef __ARM_NEON
+static inline neon_weight_func_t_DOUBLE get_neon_weight_func_by_method_DOUBLE(const weight_method_t method){
+    switch(method){
+        case PAIR_PRODUCT:
+            return &neon_pair_product_DOUBLE;
         default:
         case NONE:
             return NULL;

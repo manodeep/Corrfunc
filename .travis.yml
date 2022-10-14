@@ -10,7 +10,7 @@ notifications:
 
 env:
   global:
-    - NUMPY_VERSION=1.12
+    - NUMPY_VERSION=1.16
     - DOCTEST=true
     - CORRFUNC_CI=true
 
@@ -56,6 +56,14 @@ matrix:
       env: COMPILER=clang FAMILY=clang V='Apple LLVM 7.0.0' PYTHON_VERSION=3.5 DOCTEST=false
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+
+    - os: osx
+      arch: arm64
+      osx_image: xcode13.4
+      compiler: clang
+      env: COMPILER=clang PYTHON_VERSION=3.9 DOCTEST=false
+      before_install:
+        - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh -O miniconda.sh
 
     - os: osx
       osx_image: xcode8
@@ -111,6 +119,15 @@ matrix:
       env: COMPILER=gcc-7 PYTHON_VERSION=3.7 NUMPY_VERSION=1.16
       before_install:
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+
+    - os: linux
+      arch: arm64
+      dist: jammy
+      sudo: required
+      compiler: gcc
+      env: COMPILER=gcc-11 PYTHON_VERSION=3.10 NUMPY_VERSION=1.21
+      before_install:
+        - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O miniconda.sh
 
 install:
   - bash miniconda.sh -b -p $HOME/miniconda

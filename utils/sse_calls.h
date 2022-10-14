@@ -119,7 +119,7 @@ extern "C" {
 
 #ifndef  __INTEL_COMPILER
 #include "fast_acos.h"
-    static inline SSE_FLOATS inv_cosine_sse(const SSE_FLOATS X, const int order)
+static inline SSE_FLOATS inv_cosine_sse(const SSE_FLOATS X, const int order)
 {
     union cos{
         SSE_FLOATS m;

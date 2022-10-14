@@ -181,21 +181,15 @@ int count_neighbors_DOUBLE(const DOUBLE xcen,const DOUBLE ycen,const DOUBLE zcen
                 DOUBLE *y2 = cellstruct->y;
                 DOUBLE *z2 = cellstruct->z;
 
-                for(int i=0;i<cellstruct->nelements;i+=NVEC) {
-                    int block_size = cellstruct->nelements - i ;
-                    if(block_size > NVEC) block_size = NVEC;
-                    for(int ii=0;ii<block_size;ii++) {
-                        const DOUBLE dx=x2[ii]-newxpos;
-                        const DOUBLE dy=y2[ii]-newypos;
-                        const DOUBLE dz=z2[ii]-newzpos;
-                        const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
-                        if (r2 < rmax_sqr) numngb++;
-                    }
+                for(int i=0;i<cellstruct->nelements;i++) {
+                    const DOUBLE dx = *x2 - newxpos;
+                    const DOUBLE dy = *y2 - newypos;
+                    const DOUBLE dz = *z2 - newzpos;
+                    const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
+                    if (r2 < rmax_sqr) numngb++;
                     if(numngb > nthreshold) return numngb;
 
-                    x2 += NVEC;
-                    y2 += NVEC;
-                    z2 += NVEC;
+                    x2++; y2++; z2++;
 
                 }
             }

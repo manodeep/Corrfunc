@@ -22,6 +22,10 @@ int runtime_instrset_detect(void)
     if (iset >= 0) {
         return iset;                                       // called before
     }
+#ifdef __ARM_NEON
+    return NEON;
+#endif
+
     iset = FALLBACK;                                       // default value
     int abcd[4] = {0,0,0,0};                               // cpuid results
     cpuid(abcd, 0);                                        // call cpuid function 0
@@ -148,6 +152,15 @@ int get_max_usable_isa(void)
 #else
             fprintf(stderr, "[Warning] The CPU supports SSE but the compiler does not.  Can you try another compiler?\n");
 #endif
+           // fall through
+        case NEON:
+#ifdef __ARM_NEON
+            iset = NEON;
+            break;
+#else
+            fprintf(stderr, "[Warning] The CPU supports NEON but the compiler does not.  Can you try another compiler?\n");
+#endif
+
             // fall through
         case FALLBACK:
         default:

@@ -58,11 +58,14 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
 #ifdef __AVX512F__
         countpairs_avx512_intrinsics_DOUBLE,
 #endif
+#ifdef __ARM_NEON
+        countpairs_neon_intrinsics_DOUBLE,
+#endif
     };
 
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_index = 0;
-#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
+#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__) || defined(__ARM_NEON)
     const int highest_isa = get_max_usable_isa();
 #endif
     int curr_index = 0;
@@ -88,6 +91,12 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
     if(highest_isa >= AVX512F) avx512_index = curr_index;
 #endif
 
+    int neon_index = curr_index;
+ #ifdef __ARM_NEON
+    curr_index++;
+    if(highest_isa >= NEON) neon_index = curr_index;
+ #endif   
+
     if( curr_index != num_functions-1) {
       fprintf(stderr,"ERROR: Bug in code (current index = %d *should equal* num_functions-1 = %d-1)\n",
               curr_index, num_functions);
@@ -102,6 +111,7 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
         case(AVX2):
         case(AVX):function_dispatch=avx_index;break;
         case(SSE42):function_dispatch=sse_index;break;
+        case(NEON):function_dispatch=neon_index;break;
         default:function_dispatch=fallback_index;break;
         }
     }
@@ -123,6 +133,8 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
             fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == avx512_index){
             fprintf(stderr,"Using AVX512 kernel\n");
+        } else if(function_dispatch == neon_index){
+            fprintf(stderr,"Using NEON kernel\n");
         } else {
             fprintf(stderr,"Unknown kernel!\n");
             return NULL;

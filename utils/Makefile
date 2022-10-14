@@ -4,7 +4,7 @@ TARGETSRC   := cosmology_params.c gridlink_impl_double.c gridlink_impl_float.c g
                gridlink_mocks_impl_double.c gridink_utils_double.c gridlink_utils_float.c \
                progressbar.c set_cosmo_dist.c utils.c cpu_features.c avx512_calls.c
 TARGETOBJS  := $(TARGETSRC:.c=.o)
-INCL  := avx512_calls.h avx2_calls.h avx_calls.h sse_calls.h defs.h defs.h function_precision.h cosmology_params.h \
+INCL  := neon_calls.h avx512_calls.h avx2_calls.h avx_calls.h sse_calls.h defs.h defs.h function_precision.h cosmology_params.h \
          cellarray_float.h cellarray_double.h cellarray.h.src \
          cellarray_mocks_float.h cellarray_mocks_double.h cellarray_mocks.h.src \
          gridlink_utils_float.h gridlink_utils_double.h gridlink_utils_impl.h.src \
