@@ -40,6 +40,9 @@ const isa valid_instruction_sets[] = {FALLBACK
 #ifdef __AVX512F__
                                       ,AVX512F
 #endif
+#ifdef __ARM_NEON
+                                      ,NEON
+#endif
 };
 
 /* Strings corresponding to the instruction sets in the array `valid_instruction_sets` */
@@ -55,6 +58,9 @@ const char isa_name[][20] = {"FALLBACK"
 #endif
 #ifdef __AVX512F__
                              , "AVX512F"
+#endif
+#ifdef __ARM_NEON
+                             , "NEON"
 #endif
 };
 

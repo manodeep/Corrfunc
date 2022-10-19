@@ -170,16 +170,27 @@ static inline int countpairs_neon_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0
           const NEON_FLOATS m_ydiff = NEON_SUBTRACT_FLOATS(m_y1, m_ypos);  //(y[j] - y0)
           const NEON_FLOATS m_zdiff = NEON_SUBTRACT_FLOATS(m_z1, m_zpos);  //z2[j:j+NVEC-1] - z1
 
-          const NEON_UINTS m_mask_geq_pimax = NEON_COMPARE_FLOATS_GE(m_zdiff,m_max_dz);
-          if(NEON_TEST_COMPARISON(m_mask_geq_pimax) > 0) {
+          const NEON_UINTS m_mask_geq_pimax = NEON_COMPARE_FLOATS_GE(m_zdiff, m_max_dz);
+
+#if 1
+          if(NEON_COUNT_MATCHES(m_mask_geq_pimax) > 0) {
               j = N1;//but do not break yet, there might be pairs in this chunk
           }
+#else
+          //We only need to check the last position -> if that's > 0, then we
+          //can avoid future iterations of the loop (because all following loads 
+          // will satisfy dz >= pimax, ie will not contribute a pair)
+          if(NEON_GET_LANE_FROM_UINTS(m_mask_geq_pimax, NEON_LAST_LANE_IMM) > 0) {
+              j = N1;
+          }
+#endif
 
-        //   if(need_weightavg){
+          if(need_weightavg){
               pair.dx.n = m_xdiff;
               pair.dy.n = m_ydiff;
               pair.dz.n = m_zdiff;
-        //   }
+              union_mweight.m_weights = neon_weight_func(&pair);
+          }
 #ifdef __ARM_FEATURE_FMA
           NEON_FLOATS r2 = NEON_SQUARE_FLOAT(m_xdiff);
           r2 = NEON_FMA_FLOATS(r2, m_ydiff, m_ydiff);
@@ -193,33 +204,29 @@ static inline int countpairs_neon_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0
           const NEON_UINTS m_rpmin_mask = NEON_COMPARE_FLOATS_GE(r2, m_sqr_rpmin);
           const NEON_UINTS m_rpmax_mask = NEON_COMPARE_FLOATS_LT(r2, m_sqr_rpmax);
           m_mask_left = NEON_BITWISE_AND(m_rpmin_mask, m_rpmax_mask);
-          if(NEON_TEST_COMPARISON(m_mask_left) == 0) {
-              continue;
-          }
+          int nmatches = NEON_COUNT_MATCHES(m_mask_left);
           r2 = NEON_BLEND_FLOATS_WITH_MASK(m_sqr_rpmax, r2, m_mask_left);
 
-        //   if(need_rpavg) {
-              union_mDperp.m_Dperp = NEON_SQRT_FLOAT(r2);
-        //   }
-          if(need_weightavg){
-              union_mweight.m_weights = neon_weight_func(&pair);
+          if(need_rpavg) {
+              union_mDperp.m_Dperp = NEON_BLEND_FLOATS_WITH_MASK(NEON_SET_FLOAT(0), NEON_SQRT_FLOAT(r2), m_mask_left);//removing the branching
           }
 
           NEON_INTS m_rpbin = NEON_SET_INT(0);
           for(int kbin=nbin-1;kbin>=1;kbin--) {
-              const NEON_UINTS m1 = NEON_COMPARE_FLOATS_GE(r2,m_rupp_sqr[kbin-1]);
-              const NEON_UINTS m_bin_mask = NEON_BITWISE_AND(m1,m_mask_left);
-              m_mask_left = NEON_COMPARE_FLOATS_LT(r2,m_rupp_sqr[kbin-1]);
-              const int test2  = NEON_TEST_COMPARISON(m_bin_mask);
-              npairs[kbin] += NEON_BIT_COUNT_INT(test2);
-              if(need_rpavg || need_weightavg){
-                  m_rpbin = NEON_BLEND_INTS_WITH_MASK(m_rpbin, NEON_SET_INT(kbin), m_bin_mask);
-              }
+              const NEON_UINTS m1 = NEON_COMPARE_FLOATS_GE(r2, m_rupp_sqr[kbin-1]);
+              const NEON_UINTS m_bin_mask = NEON_BITWISE_AND(m1, m_mask_left);
+              m_mask_left = NEON_COMPARE_FLOATS_LT(r2, m_rupp_sqr[kbin-1]);
+              m_rpbin = NEON_BLEND_INTS_WITH_MASK(m_rpbin, NEON_SET_INT(kbin), m_bin_mask);
 
-              int test3 = NEON_TEST_COMPARISON(m_mask_left);
-              if(test3 == 0) {
-                  break;
-              }
+#if 1
+              const int counts  = NEON_COUNT_MATCHES(m_bin_mask);
+#else
+              const int test2  = NEON_TEST_COMPARISON(m_bin_mask);
+              const int counts = NEON_BIT_COUNT_INT(test2);
+#endif
+              npairs[kbin] += counts;
+              nmatches -= counts;
+              if(nmatches == 0) break;
           }
 
           if(need_rpavg || need_weightavg) {
@@ -251,17 +258,11 @@ static inline int countpairs_neon_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0
           const DOUBLE r2 = dx*dx + dy*dy + dz*dz;
           if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
 
+          DOUBLE pairweight = ZERO;
           if(need_weightavg){
               pair.dx.d = dx;
               pair.dy.d = dy;
               pair.dz.d = dz;
-          }
-
-          DOUBLE r = ZERO, pairweight = ZERO;
-          if(need_rpavg) {
-              r = SQRT(r2);
-          }
-          if(need_weightavg){
               pairweight = fallback_weight_func(&pair);
           }
 
@@ -269,7 +270,7 @@ static inline int countpairs_neon_intrinsics_DOUBLE(const int64_t N0, DOUBLE *x0
               if(r2 >= rupp_sqr[kbin-1]) {
                   npairs[kbin]++;
                   if(need_rpavg){
-                      rpavg[kbin] += r;
+                      rpavg[kbin] += SQRT(r2);
                   }
                   if(need_weightavg){
                       weightavg[kbin] += pairweight;
