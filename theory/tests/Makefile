@@ -20,6 +20,7 @@ WP_LIB := countpairs_wp
 XI_LIB := countpairs_xi
 VPF_LIB := countspheres
 
+GSL_REQUIRED := true
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 TARGETS := test_periodic test_nonperiodic

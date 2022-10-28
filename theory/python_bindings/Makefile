@@ -20,7 +20,7 @@ XI_LIB := countpairs_xi
 DDSMU_LIB := countpairs_s_mu
 VPF_LIB := countspheres
 
-
+GSL_REQUIRED := true
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 PROJECT := _countpairs

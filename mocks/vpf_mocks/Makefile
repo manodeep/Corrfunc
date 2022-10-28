@@ -5,6 +5,7 @@ INSTALL_BIN_DIR := $(ROOT_DIR)/bin
 UTILS_DIR:=$(ROOT_DIR)/utils
 IO_DIR:=$(ROOT_DIR)/io
 
+GSL_REQUIRED := true
 include $(ROOT_DIR)/theory.options $(ROOT_DIR)/common.mk
 
 LIBNAME:=countspheres_mocks
