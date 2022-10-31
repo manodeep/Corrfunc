@@ -80,6 +80,22 @@ def test_boxsize(gals_Mr19, funcname, isa='fastest', nthreads=maxthreads()):
     check_against_reference(results_DD, periodic_ref,
                             ravg_name=ravg_name, ref_cols=(0, 4, 1))
 
+    # 0-d array, periodic
+    results_DD = func(*args, boxsize=np.array(boxsize), **kwargs)
+    check_against_reference(results_DD, periodic_ref,
+                            ravg_name=ravg_name, ref_cols=(0, 4, 1))
+
+    # 1-d array, len 1, periodic
+    results_DD = func(*args, boxsize=np.array([boxsize]), **kwargs)
+    check_against_reference(results_DD, periodic_ref,
+                            ravg_name=ravg_name, ref_cols=(0, 4, 1))
+
+    # 1-d array, len 3, periodic
+    results_DD = func(*args, boxsize=np.array([boxsize, boxsize, boxsize]),
+                      **kwargs)
+    check_against_reference(results_DD, periodic_ref,
+                            ravg_name=ravg_name, ref_cols=(0, 4, 1))
+
     # 3-tuple periodic cube
     results_DD = func(*args, boxsize=(boxsize, boxsize, boxsize), **kwargs)
     check_against_reference(results_DD, periodic_ref,
@@ -182,34 +198,39 @@ def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
 @pytest.mark.parametrize('binref', [1, 2, 3])
 @pytest.mark.parametrize('min_sep_opt', [False, True])
 @pytest.mark.parametrize('maxcells', [1, 2, 3])
-def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells,
+@pytest.mark.parametrize('boxsize', [123., (51., 75., 123.)],
+                         ids=['iso', 'aniso'])
+def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells, boxsize,
                             isa='fastest', nthreads=maxthreads()):
     '''Generate two small point clouds near particles near (0,0,0)
     and (L/2,L/2,L/2) and compare against the brute-force answer.
 
     Use close to the max allowable Rmax, 0.49*Lbox.
+
+    Tests both isotropic and anisotropic boxes.
     '''
     np.random.seed(1234)
     npts = 100
     eps = 0.2  # as a fraction of boxsize
-    boxsize = 123.
-    bins = np.linspace(0.01, 0.49*boxsize, 20)
+    boxsize = np.array(boxsize)
+    bins = np.linspace(0.01, 0.49*boxsize.min(), 20)
 
     # two clouds of width eps*boxsize
     pos = np.random.uniform(low=-eps, high=eps,
-                            size=(3, npts))*boxsize
-    pos[:, npts//2:] += boxsize/2.  # second cloud is in center of box
+                            size=(npts, 3))*boxsize
+    pos[npts//2:] += boxsize/2.  # second cloud is in center of box
     pos %= boxsize
 
     # Compute the pairwise distance between particles with broadcasting.
-    # Broadcasting (3,1,npts) against (3,npts,1) yields (3,npts,npts),
+    # Broadcasting (npts,1,3) against (npts,3) yields (npts,npts,3),
     # which is the array of all npts^2 (x,y,z) differences.
-    pdiff = np.abs(pos[:, np.newaxis] - pos[:, :, np.newaxis])
-    pdiff[pdiff >= boxsize/2] -= boxsize
+    pdiff = np.abs(pos[:, np.newaxis] - pos)
+    mask = pdiff >= boxsize/2
+    pdiff -= mask*boxsize
 
     # Compute dist^2 = x^2 + y^2 + z^2, flattening because we don't
     # care which dist came from which particle pair
-    sqr_pdiff = (pdiff**2).sum(axis=0).reshape(-1)
+    sqr_pdiff = (pdiff**2).sum(axis=-1).reshape(-1)
     brutecounts, _ = np.histogram(sqr_pdiff, bins=bins**2)
 
     # spot-check that we have non-zero counts
@@ -217,6 +238,7 @@ def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells,
 
     from Corrfunc.theory import DD
 
+    pos = pos.T  # for indexing convenience
     results = DD(autocorr, nthreads, bins, pos[0], pos[1], pos[2],
                  X2=pos[0], Y2=pos[1], Z2=pos[2],
                  boxsize=boxsize, periodic=True, isa=isa,

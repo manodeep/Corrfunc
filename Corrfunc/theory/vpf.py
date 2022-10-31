@@ -208,8 +208,10 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     if periodic and boxsize is None:
         raise ValueError("Must specify a boxsize if periodic=True")
 
-    if np.isscalar(boxsize):
-        boxsize = (boxsize, boxsize, boxsize)
+    boxsize = np.atleast_1d(boxsize)
+    if len(boxsize) == 1:
+        boxsize = (boxsize[0], boxsize[0], boxsize[0])
+    boxsize = tuple(boxsize)
 
     kwargs = {}
     if boxsize is not None:

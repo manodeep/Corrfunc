@@ -224,8 +224,10 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
     if periodic and boxsize is None:
         raise ValueError("Must specify a boxsize if periodic=True")
 
-    if np.isscalar(boxsize):
-        boxsize = (boxsize, boxsize, boxsize)
+    boxsize = np.atleast_1d(boxsize)
+    if len(boxsize) == 1:
+        boxsize = (boxsize[0], boxsize[0], boxsize[0])
+    boxsize = tuple(boxsize)
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 
