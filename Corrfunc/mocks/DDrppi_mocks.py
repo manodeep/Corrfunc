@@ -26,7 +26,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                  c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
-    function, :math:`\\xi(r_p, \pi)`. Pairs which are separated by less
+    function, :math:`\\xi(r_p, \\pi)`. Pairs which are separated by less
     than the ``rp`` bins (specified in ``binfile``) in the
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted. The input positions are expected to be on-sky co-ordinates.
@@ -41,10 +41,10 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
 
 
     .. note:: that this module only returns pair counts and not the actual
-       correlation function :math:`\\xi(r_p, \pi)` or :math:`wp(r_p)`. See the
+       correlation function :math:`\\xi(r_p, \\pi)` or :math:`wp(r_p)`. See the
        utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` and
        :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp` for computing
-       :math:`\\xi(r_p, \pi)` and :math:`wp(r_p)` respectively from the
+       :math:`\\xi(r_p, \\pi)` and :math:`wp(r_p)` respectively from the
        pair counts.
 
 
@@ -63,8 +63,8 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         indicate that the co-moving distance conversion has already been done.
 
         Choices:
-                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\Lambda=0.75`
-                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\Lambda=0.698`
+                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\\Lambda=0.75`
+                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\\Lambda=0.698`
 
         To setup a new cosmology, add an entry to the function,
         ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
@@ -229,7 +229,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
         If ``output_ravg`` is not set, then ``rpavg`` will be set to 0.0 for
         all bins; similarly for ``weightavg``. ``npairs`` contains the number
         of pairs in that bin and can be used to compute the actual
-        :math:`\\xi(r_p, \pi)` or :math:`wp(rp)` by combining with
+        :math:`\\xi(r_p, \\pi)` or :math:`wp(rp)` by combining with
         (DR, RR) counts.
 
     api_time : float, optional

@@ -23,7 +23,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
            c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
-    function, :math:`\\xi(r_p, \pi)` or :math:`\\wp(r_p)`. Pairs which are
+    function, :math:`\\xi(r_p, \\pi)` or :math:`\\wp(r_p)`. Pairs which are
     separated by less than the ``rp`` bins (specified in ``binfile``) in the
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted.
@@ -34,10 +34,10 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     ``weight_type``.
 
     .. note:: that this module only returns pair counts and not the actual
-        correlation function :math:`\\xi(r_p, \pi)` or :math:`wp(r_p)`. See the
+        correlation function :math:`\\xi(r_p, \\pi)` or :math:`wp(r_p)`. See the
         utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` and
         :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp` for computing
-        :math:`\\xi(r_p, \pi)` and :math:`wp(r_p)` respectively from the
+        :math:`\\xi(r_p, \\pi)` and :math:`wp(r_p)` respectively from the
         pair counts.
 
 
@@ -170,7 +170,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         npairs, weightavg] for each radial bin specified in the ``binfile``.
         If ``output_rpavg`` is not set, then ``rpavg`` will be set to 0.0 for
         all bins; similarly for ``weightavg``. ``npairs`` contains the number
-        of pairs in that bin and can be used to compute :math:`\\xi(r_p, \pi)`
+        of pairs in that bin and can be used to compute :math:`\\xi(r_p, \\pi)`
         by combining with (DR, RR) counts.
 
     api_time: float, optional
@@ -275,8 +275,10 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     if periodic and boxsize is None:
         raise ValueError("Must specify a boxsize if periodic=True")
 
-    if np.isscalar(boxsize):
-        boxsize = (boxsize, boxsize, boxsize)
+    boxsize = np.atleast_1d(boxsize)
+    if len(boxsize) == 1:
+        boxsize = (boxsize[0], boxsize[0], boxsize[0])
+    boxsize = tuple(boxsize)
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 

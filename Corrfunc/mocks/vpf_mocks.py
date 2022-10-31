@@ -91,8 +91,8 @@ def vpf_mocks(rmax, nbins, nspheres, numpN,
         indicate that the co-moving distance conversion has already been done.
 
         Choices:
-                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\Lambda=0.75`
-                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\Lambda=0.698`
+                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\\Lambda=0.75`
+                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\\Lambda=0.698`
 
         To setup a new cosmology, add an entry to the function,
         ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install

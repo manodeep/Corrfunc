@@ -24,7 +24,7 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
           c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the redshift-space
-    correlation function, :math:`\\xi(s, \mu)` Pairs which are separated
+    correlation function, :math:`\\xi(s, \\mu)` Pairs which are separated
     by less than the ``s`` bins (specified in ``binfile``) in 3-D, and
     less than ``s*mu_max`` in the Z-dimension are counted.
 
@@ -34,9 +34,9 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
     ``weight_type``.
 
     .. note:: This module only returns pair counts and not the actual
-        correlation function :math:`\\xi(s, \mu)`. See the
+        correlation function :math:`\\xi(s, \\mu)`. See the
         utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf`
-        for computing :math:`\\xi(s, \mu)` from the pair counts.
+        for computing :math:`\\xi(s, \\mu)` from the pair counts.
 
     .. versionadded:: 2.1.0
 
@@ -69,12 +69,12 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         separation from the line of sight (LOS). Here, LOS is taken to be
         along the Z direction.
 
-        Note: Only pairs with :math:`0 <= \cos(\\theta_{LOS}) < \mu_{max}`
+        Note: Only pairs with :math:`0 <= \\cos(\\theta_{LOS}) < \\mu_{max}`
         are counted (no equality).
 
     nmu_bins: int
         The number of linear ``mu`` bins, with the bins ranging from
-        from (0, :math:`\mu_{max}`)
+        from (0, :math:`\\mu_{max}`)
 
     X1/Y1/Z1 : array-like, real (float/double)
         The array of X/Y/Z positions for the first set of points.
@@ -291,8 +291,10 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         "angle and should be within (0.0, 1.0]".format(mu_max)
         raise ValueError(msg)
 
-    if np.isscalar(boxsize):
-        boxsize = (boxsize, boxsize, boxsize)
+    boxsize = np.atleast_1d(boxsize)
+    if len(boxsize) == 1:
+        boxsize = (boxsize[0], boxsize[0], boxsize[0])
+    boxsize = tuple(boxsize)
 
     if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:
