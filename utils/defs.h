@@ -49,8 +49,14 @@ struct api_cell_timings
 #define OPTIONS_HEADER_SIZE     1024
 
 
-typedef enum {BIN_AUTO, BIN_LIN, BIN_CUSTOM} bin_type_t; // type of weighting to apply
-
+// The various kinds of r/rp/theta bins supported
+typedef enum {
+    AUTODETECT_BIN=0, /* auto-detect bin-type */
+    LINEAR_BIN, /* linearly-spaced bins */
+    LOG2_BIN, /* log2-spaced bins (not fully implemented) */
+    CUSTOM_BIN, /* bins with arbitrary width (but have to be contiguous) -> works for all supported bin types */
+    num_bin_types,
+} bin_type_t;
 
 struct config_options
 {
@@ -252,8 +258,9 @@ static inline struct config_options get_config_options(void)
     // If periodic, set to -1 to require the user to set a boxsize.
     // A value of 0 will use automatic detection of the particle extent
     options.boxsize = -1.;
-    // Default: custom binning
-    options.bin_type = BIN_CUSTOM;
+
+    // Default: Auto-detect binning
+    options.bin_type = AUTODETECT_BIN;
 
 #ifdef DOUBLE_PREC
     options.float_type = sizeof(double);

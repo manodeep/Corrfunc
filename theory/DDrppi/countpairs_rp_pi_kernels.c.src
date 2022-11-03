@@ -46,7 +46,7 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
     const DOUBLE sqr_rpmax=rpmax*rpmax;
     AVX512_FLOATS m_inv_rpstep = AVX512_SETZERO_FLOAT();
     AVX512_FLOATS m_rpmin_invstep = AVX512_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         const DOUBLE inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         const DOUBLE rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = AVX512_SET_FLOAT(inv_rpstep);
@@ -233,7 +233,7 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
                 continue;
             }
 
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
             }
             if(need_weightavg){
@@ -246,7 +246,7 @@ static inline int countpairs_rp_pi_avx512_intrinsics_DOUBLE(const int64_t N0, DO
 
             const AVX512_MASK m_mask = m_mask_left;
             AVX512_FLOATS m_rpbin = AVX512_SETZERO_FLOAT();
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = AVX512_MASKZ_FMA_ADD_TRUNCATE_FLOATS(m_mask_left, union_mDperp.m_Dperp, m_inv_rpstep, m_rpmin_invstep);
                 // This rounding is only necessary because the rounding is supposed to happen during the FMA, but doesn't for some reason
                 // https://github.com/manodeep/Corrfunc/pull/258#issuecomment-942479146
@@ -333,7 +333,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
     const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_inv_rpstep = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_rpmin_invstep = AVX_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = AVX_SET_FLOAT(inv_rpstep);
@@ -543,7 +543,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 m_zdiff = AVX_BLEND_FLOATS_WITH_MASK(m_pimax, m_zdiff, m_mask_left);
             }
 
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
@@ -557,7 +557,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             const AVX_FLOATS m_pibin = AVX_MULTIPLY_FLOATS(m_zdiff,m_inv_dpi);
             AVX_FLOATS m_rpbin = AVX_SETZERO_FLOAT();
             //AVX_FLOATS m_all_ones  = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = AVX_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
                 m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_zero, m_rpbin, m_mask_left);
             }
@@ -614,7 +614,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             }
 
             DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
@@ -629,7 +629,7 @@ static inline int countpairs_rp_pi_avx_intrinsics_DOUBLE(const int64_t N0, DOUBL
             pibin = pibin > npibin ? npibin:pibin;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -694,7 +694,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
     SSE_FLOATS m_inv_rpstep = SSE_SETZERO_FLOAT();
     SSE_FLOATS m_rpmin_invstep = SSE_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = SSE_SET_FLOAT(inv_rpstep);
@@ -909,7 +909,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
                 m_zdiff = SSE_BLEND_FLOATS_WITH_MASK(m_pimax, m_zdiff, m_mask_left);
             }
 
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
@@ -923,7 +923,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
             const SSE_FLOATS m_pibin = SSE_MULTIPLY_FLOATS(m_zdiff,m_inv_dpi);
             SSE_FLOATS m_rpbin = SSE_SETZERO_FLOAT();
             //SSE_FLOATS m_all_ones  = SSE_CAST_INT_TO_FLOAT(SSE_SET_INT(-1));
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = SSE_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
             }
             else {
@@ -978,7 +978,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
 
             DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
@@ -993,7 +993,7 @@ static inline int countpairs_rp_pi_sse_intrinsics_DOUBLE(const int64_t N0, DOUBL
             pibin = pibin > npibin ? npibin:pibin;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -1054,7 +1054,7 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
     const int32_t need_weightavg = src_weightavg != NULL;
     const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
     }
@@ -1191,7 +1191,7 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
             }
 
             DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 r = SQRT(r2);
             }
             if(need_weightavg){
@@ -1202,7 +1202,7 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
             pibin = pibin > npibin ? npibin:pibin;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {

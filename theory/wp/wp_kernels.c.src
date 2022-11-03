@@ -51,7 +51,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
     const DOUBLE sqr_rpmax=rpmax*rpmax;
     AVX512_FLOATS m_inv_rpstep = AVX512_SETZERO_FLOAT();
     AVX512_FLOATS m_rpmin_invstep = AVX512_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         const DOUBLE inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         const DOUBLE rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = AVX512_SET_FLOAT(inv_rpstep);
@@ -241,7 +241,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 
             }
 
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
             }
             if(need_weightavg){
@@ -249,7 +249,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
             }
 
             AVX512_INTS m_rpbin = AVX512_SETZERO_INT();
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(
                           AVX512_MASKZ_FMA_ADD_FLOATS(union_mDperp.m_Dperp, m_mask_left, m_inv_rpstep, m_rpmin_invstep));
             }
@@ -268,7 +268,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
                     }
                 }//backwards loop over the bins
             }
-            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
+            if(need_rpavg || need_weightavg || bin_type == LINEAR_BIN) {
                 //Do I need this step of going via the union? accessing int[] -> AVX* vector might
                 //cause alignment problems but accessing the ints from an AVX*
                 //register should always be fine
@@ -279,7 +279,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
 #endif
                 for(int jj=0;jj<AVX512_NVEC;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(bin_type == BIN_LIN){
+                    if(bin_type == LINEAR_BIN){
                         npairs[kbin]++;
                     }
                     if(need_rpavg){
@@ -351,7 +351,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
     const AVX2_FLOATS m_zero = AVX2_SETZERO_FLOAT();
     AVX2_FLOATS m_inv_rpstep = AVX2_SETZERO_FLOAT();
     AVX2_FLOATS m_rpmin_invstep = AVX2_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = AVX2_SET_FLOAT(inv_rpstep);
@@ -556,13 +556,13 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
             }
 
             AVX2_FLOATS m_rpbin = AVX2_SETZERO_FLOAT();
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX2_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
                 union_mweight.m_weights = avx_weight_func(&pair);
             }
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = AVX2_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
                 m_rpbin = AVX2_BLEND_FLOATS_WITH_MASK(m_zero, m_rpbin, m_mask_left);
                 union_rpbin.m_ibin = AVX2_TRUNCATE_FLOAT_TO_INT(m_rpbin);
@@ -585,7 +585,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                     }
                 }
             }
-            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
+            if(need_rpavg || need_weightavg || bin_type == LINEAR_BIN) {
                 union_rpbin.m_ibin = AVX2_TRUNCATE_FLOAT_TO_INT(m_rpbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
@@ -593,7 +593,7 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
 #endif
                 for(int jj=0;jj<AVX2_NVEC;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(bin_type == BIN_LIN){
+                    if(bin_type == LINEAR_BIN){
                         npairs[kbin]++;
                     }
                     if(need_rpavg){
@@ -635,11 +635,11 @@ static inline int wp_avx2_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, 
                 pair.dz.d = dz;
             }
 
-            DOUBLE r = (need_rpavg || bin_type == BIN_LIN) ? SQRT(r2):ZERO;
+            DOUBLE r = (need_rpavg || bin_type == LINEAR_BIN) ? SQRT(r2):ZERO;
             const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -716,7 +716,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
     AVX_FLOATS m_inv_rpstep = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_rpmin_invstep = AVX_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = AVX_SET_FLOAT(inv_rpstep);
@@ -935,13 +935,13 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             }
 
             AVX_FLOATS m_rpbin = AVX_SETZERO_FLOAT();
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
                 union_mweight.m_weights = avx_weight_func(&pair);
             }
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = AVX_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
                 union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
             }
@@ -962,7 +962,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                     }
                 }
             }
-            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
+            if(need_rpavg || need_weightavg || bin_type == LINEAR_BIN) {
                 union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_rpbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMPILER
@@ -970,7 +970,7 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 #endif
                 for(int jj=0;jj<AVX_NVEC;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(bin_type == BIN_LIN){
+                    if(bin_type == LINEAR_BIN){
                         npairs[kbin]++;
                     }
                     if(need_rpavg){
@@ -1012,11 +1012,11 @@ static inline int wp_avx_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 pair.dz.d = dz;
             }
 
-            DOUBLE r = (need_rpavg || bin_type == BIN_LIN) ? SQRT(r2):ZERO;
+            DOUBLE r = (need_rpavg || bin_type == LINEAR_BIN) ? SQRT(r2):ZERO;
             const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -1085,7 +1085,7 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
     SSE_FLOATS m_inv_rpstep = SSE_SETZERO_FLOAT();
     SSE_FLOATS m_rpmin_invstep = SSE_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = SSE_SET_FLOAT(inv_rpstep);
@@ -1301,13 +1301,13 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
             }
 
             SSE_FLOATS m_rpbin = SSE_SETZERO_FLOAT();
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(r2);
             }
             if(need_weightavg){
                 union_mweight.m_weights = sse_weight_func(&pair);
             }
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = SSE_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep); // r2, then union_mDperp.m_Dperp aready clipped
                 union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
             }
@@ -1324,7 +1324,7 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                     if(SSE_TEST_COMPARISON(m_mask_left) == 0) break;
                 }
             }
-            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
+            if(need_rpavg || need_weightavg || bin_type == LINEAR_BIN) {
                 union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_rpbin);
                 //protect the unroll pragma in case compiler is not icc.
 #if  __INTEL_COMqPILER
@@ -1332,7 +1332,7 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
 #endif
                 for(int jj=0;jj<SSE_NVEC;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(bin_type == BIN_LIN){
+                    if(bin_type == LINEAR_BIN){
                         npairs[kbin]++;
                     }
                     if(need_rpavg){
@@ -1371,11 +1371,11 @@ static inline int wp_sse_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, c
                 pair.dz.d = dz;
             }
 
-            DOUBLE r = (need_rpavg || bin_type == BIN_LIN) ? SQRT(r2):ZERO;
+            DOUBLE r = (need_rpavg || bin_type == LINEAR_BIN) ? SQRT(r2):ZERO;
             const DOUBLE pairweight = need_weightavg ? fallback_weight_func(&pair) : ZERO;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -1444,7 +1444,7 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
     const int32_t need_weightavg = src_weightavg != NULL;
     const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
     }
@@ -1577,11 +1577,11 @@ static inline int wp_fallback_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0, const w
                 pair.dz.d = dz;
             }
 
-            DOUBLE r = (need_rpavg || bin_type == BIN_LIN) ? SQRT(r2):ZERO;
+            DOUBLE r = (need_rpavg || bin_type == LINEAR_BIN) ? SQRT(r2):ZERO;
             const DOUBLE pairweight = need_weightavg ? weight_func(&pair) : ZERO;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (r*inv_rpstep + rpmin_invstep);
             }
             else {

@@ -195,7 +195,7 @@ int test_custom_and_linear_bins(void)
                 extra.weights0.weights[0] = weights1;
                 options.instruction_set = valid_instruction_sets[iset];
 
-                options.bin_type = BIN_CUSTOM;
+                options.bin_type = CUSTOM_BIN;
                 //Do the straight-up DD counts
                 status = countpairs(ND1,X1,Y1,Z1,
                                     ND1,X1,Y1,Z1,
@@ -209,7 +209,7 @@ int test_custom_and_linear_bins(void)
                     return status;
                 }
 
-                options.bin_type = BIN_LIN;
+                options.bin_type = LINEAR_BIN;
                 status = countpairs(ND1,X1,Y1,Z1,
                                     ND1,X1,Y1,Z1,
                                     nthreads,
@@ -252,7 +252,7 @@ int main(int argc, char **argv)
     options.copy_particles=1;
     options.float_type=sizeof(double);
     options.boxsize = boxsize;
-    options.bin_type = BIN_LIN;
+    options.bin_type = LINEAR_BIN;
 
     char file[]="../tests/data/gals_Mr19.ff";
     char fileformat[]="f";
@@ -270,7 +270,7 @@ int main(int argc, char **argv)
     int status;
 
     //Test the linear bins by comparing the results obtained
-    // with bin_type=BIN_CUSTOM and bin_type=BIN_LIN. This is
+    // with bin_type=CUSTOM_BIN and bin_type=LINEAR_BIN. This is
     // a comprehensive test running over a large set of
     // (rmax, nbins) for each instruction set.
 #ifdef INTEGRATION_TESTS

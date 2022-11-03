@@ -46,7 +46,7 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
     const DOUBLE sqr_smax=smax*smax;
     AVX512_FLOATS m_inv_sstep = AVX512_SETZERO_FLOAT();
     AVX512_FLOATS m_smin_invstep = AVX512_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         const DOUBLE inv_sstep = (nsbin - 1)/(smax - smin);
         const DOUBLE smin_invstep = 1 - smin*inv_sstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_sstep = AVX512_SET_FLOAT(inv_sstep);
@@ -253,7 +253,7 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
             CHECK_AND_FAST_DIVIDE_AVX512(m_sqr_mu, m_sqr_zdiff, s2, m_mask_left, fast_divide_and_NR_steps);
 
             const AVX512_FLOATS m_mu = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_mu);
-            if(need_savg || bin_type == BIN_LIN) {
+            if(need_savg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, s2);
             }
             if(need_weightavg){
@@ -267,7 +267,7 @@ static inline int countpairs_s_mu_avx512_intrinsics_DOUBLE(const int64_t N0, DOU
             const AVX512_MASK m_mask = m_mask_left;
             AVX512_FLOATS m_sbin = AVX512_SETZERO_FLOAT();
 
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_sbin = AVX512_MASKZ_FMA_ADD_TRUNCATE_FLOATS(m_mask_left, union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep);
                 // This rounding is only necessary because the rounding is supposed to happen during the FMA, but doesn't for some reason
                 // https://github.com/manodeep/Corrfunc/pull/258#issuecomment-942479146
@@ -357,7 +357,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
     const AVX_FLOATS m_zero = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_inv_sstep = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_smin_invstep = AVX_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_sstep = (nsbin - 1)/(smax - smin);
         smin_invstep = 1 - smin*inv_sstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_sstep = AVX_SET_FLOAT(inv_sstep);
@@ -585,7 +585,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
 
             const AVX_FLOATS m_mu = AVX_SQRT_FLOAT(AVX_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, m_sqr_mu, m_mask_left));
 
-            if(need_savg || bin_type == BIN_LIN) {
+            if(need_savg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(s2);
             }
             if(need_weightavg){
@@ -599,7 +599,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const AVX_FLOATS m_mubin = AVX_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
             AVX_FLOATS m_sbin     = AVX_SETZERO_FLOAT();
             //AVX_FLOATS m_all_ones = AVX_CAST_INT_TO_FLOAT(AVX_SET_INT(-1));
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_sbin = AVX_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep); // s2, then union_mDperp.m_Dperp aready clipped
                 m_sbin = AVX_BLEND_FLOATS_WITH_MASK(m_zero, m_sbin, m_mask_left);
             }
@@ -658,7 +658,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const DOUBLE mu = SQRT(sqr_dz/s2);
 
             DOUBLE s = ZERO, pairweight = ZERO;
-            if(need_savg || bin_type == BIN_LIN) {
+            if(need_savg || bin_type == LINEAR_BIN) {
                 s = SQRT(s2);
             }
             if(need_weightavg){
@@ -672,7 +672,7 @@ static inline int countpairs_s_mu_avx_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             mu_bin = mu_bin > nmu_bins ? nmu_bins:mu_bin;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {
@@ -740,7 +740,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
     DOUBLE inv_sstep=0., smin_invstep=0.;
     SSE_FLOATS m_inv_sstep = SSE_SETZERO_FLOAT();
     SSE_FLOATS m_smin_invstep = SSE_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_sstep = (nsbin - 1)/(smax - smin);
         smin_invstep = 1 - smin*inv_sstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_sstep = SSE_SET_FLOAT(inv_sstep);
@@ -959,7 +959,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             s2 = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_smax, s2, m_mask_left);
             const SSE_FLOATS m_mu = SSE_SQRT_FLOAT(SSE_BLEND_FLOATS_WITH_MASK(m_sqr_mumax, SSE_DIVIDE_FLOATS(m_sqr_zdiff, s2), m_mask_left));
 
-            if(need_savg || bin_type == BIN_LIN) {
+            if(need_savg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(s2);
             }
             if(need_weightavg){
@@ -973,7 +973,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             const SSE_FLOATS m_mubin = SSE_MULTIPLY_FLOATS(m_mu,m_inv_dmu);
             SSE_FLOATS m_sbin = SSE_SETZERO_FLOAT();
             //SSE_FLOATS m_all_ones  = SSE_CAST_INT_TO_FLOAT(SSE_SET_INT(-1));
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_sbin = SSE_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp, m_inv_sstep, m_smin_invstep); // s2, then union_mDperp.m_Dperp aready clipped
             }
             else {
@@ -1036,7 +1036,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
                 pairweight = fallback_weight_func(&pair);
             }
 
-            if(need_savg || bin_type == BIN_LIN) {
+            if(need_savg || bin_type == LINEAR_BIN) {
                 s = SQRT(s2);
             }
 
@@ -1044,7 +1044,7 @@ static inline int countpairs_s_mu_sse_intrinsics_DOUBLE(const int64_t N0, DOUBLE
             mu_bin = mu_bin > nmu_bins ? nmu_bins:mu_bin;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {
@@ -1108,7 +1108,7 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
     const int32_t need_weightavg = src_weightavg != NULL;
     const DOUBLE sqr_smin=smin*smin, sqr_smax=smax*smax;
     DOUBLE inv_sstep=0., smin_invstep=0.;
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_sstep = (nsbin - 1)/(smax - smin);
         smin_invstep = 1 - smin*inv_sstep; //trick to avoid adding one to (r - rmin)/rstep
     }
@@ -1254,7 +1254,7 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
 
             const DOUBLE mu = SQRT(sqr_dz/s2);
             DOUBLE s = ZERO, pairweight = ZERO;
-            if(need_savg || bin_type == BIN_LIN) {
+            if(need_savg || bin_type == LINEAR_BIN) {
                 s = SQRT(s2);
             }
 
@@ -1269,7 +1269,7 @@ static inline int countpairs_s_mu_fallback_DOUBLE(const int64_t N0, DOUBLE *x0, 
             mu_bin = mu_bin > nmu_bins ? nmu_bins:mu_bin;
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (s*inv_sstep + smin_invstep);
             }
             else {

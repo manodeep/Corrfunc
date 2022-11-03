@@ -47,7 +47,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
     const DOUBLE costhetamin = costheta_upp[0];
     const DOUBLE costhetamax = costheta_upp[nthetabin-1];
     DOUBLE inv_thetastep=0., thetamin_invstep=0.;
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_thetastep = (nthetabin - 1)/(thetamax - thetamin);
         thetamin_invstep = 1 - thetamin*inv_thetastep; //trick to avoid adding one to (r - rmin)/rstep
     }
@@ -197,7 +197,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 
             if(costheta > costhetamin || costheta <= costhetamax) continue;
 
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 if(order) {
                     theta = INV_PI_OVER_180*FAST_ACOS(costheta);
                 } else {
@@ -222,7 +222,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             }
 
             int ibin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 ibin = (int) (theta*inv_thetastep + thetamin_invstep);
             }
             else {
@@ -301,7 +301,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
     DOUBLE inv_thetastep=0., thetamin_invstep=0.;
     SSE_FLOATS m_inv_thetastep = SSE_SETZERO_FLOAT();
     SSE_FLOATS m_thetamin_invstep = SSE_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_thetastep = (nthetabin - 1)/(thetamax - thetamin);
         thetamin_invstep = 1 - thetamin*inv_thetastep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_thetastep = SSE_SET_FLOAT(inv_thetastep);
@@ -480,7 +480,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             }
 
             SSE_FLOATS m_thetabin = SSE_SETZERO_FLOAT();
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 //first do the acos to get the actual angles
                 const SSE_FLOATS m_inv_pi_over_180 = SSE_SET_FLOAT(INV_PI_OVER_180);
                 const SSE_FLOATS m_theta = SSE_ARC_COSINE(m_costheta, order);
@@ -503,7 +503,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 union_mweight.m_weights = sse_weight_func(&pair);
             }
 
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_thetabin = SSE_BLEND_FLOATS_WITH_MASK(m_thetabin,
                              SSE_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_thetastep,m_thetamin_invstep),
                              m_mask_left);
@@ -524,14 +524,14 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                     }
                 }
             }
-            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
+            if(need_rpavg || need_weightavg || bin_type == LINEAR_BIN) {
                 union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_thetabin);
 #if  __INTEL_COMPILER
 #pragma unroll(SSE_NVEC)
 #endif
                 for(int jj=0;jj<SSE_NVEC;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(bin_type == BIN_LIN){
+                    if(bin_type == LINEAR_BIN){
                         npairs[kbin]++;
                     }
                     if(need_rpavg){
@@ -564,7 +564,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 continue;
             }
             DOUBLE theta = ZERO, pairweight = ZERO;
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 if(order) {
                     theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
                 } else {
@@ -584,7 +584,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             }
 
             int ibin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 ibin = (int) (theta*inv_thetastep + thetamin_invstep);
             }
             else {
@@ -664,7 +664,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
     DOUBLE inv_thetastep=0., thetamin_invstep=0.;
     AVX_FLOATS m_inv_thetastep = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_thetamin_invstep = AVX_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_thetastep = (nthetabin - 1)/(thetamax - thetamin);
         thetamin_invstep = 1 - thetamin*inv_thetastep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_thetastep = AVX_SET_FLOAT(inv_thetastep);
@@ -836,7 +836,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             if(need_rpavg || need_weightavg) {
                 m_thetabin = AVX_SETZERO_FLOAT();
             }
-            if(need_rpavg|| bin_type == BIN_LIN){
+            if(need_rpavg|| bin_type == LINEAR_BIN){
                 //first do the acos to get the actual angles
                 const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
                 const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta, order);
@@ -860,7 +860,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
               union_mweight.m_weights = avx_weight_func(&pair);
           }
 
-          if (bin_type == BIN_LIN) {
+          if (bin_type == LINEAR_BIN) {
               m_thetabin = AVX_BLEND_FLOATS_WITH_MASK(m_thetabin,
                            AVX_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_thetastep,m_thetamin_invstep),
                            m_mask_left);
@@ -881,14 +881,14 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                   }
               }
           }
-          if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
+          if(need_rpavg || need_weightavg || bin_type == LINEAR_BIN) {
               union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_thetabin);
 #if  __INTEL_COMPILER
 #pragma unroll(AVX_NVEC)
 #endif
               for(int jj=0;jj<AVX_NVEC;jj++) {
                   const int kbin = union_rpbin.ibin[jj];
-                  if(bin_type == BIN_LIN){
+                  if(bin_type == LINEAR_BIN){
                       npairs[kbin]++;
                   }
                   if(need_rpavg){
@@ -921,7 +921,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
               continue;
           }
           DOUBLE theta = ZERO, pairweight = ZERO;
-          if(need_rpavg || bin_type == BIN_LIN) {
+          if(need_rpavg || bin_type == LINEAR_BIN) {
               if(order) {
                   theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
               } else {
@@ -941,7 +941,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
           }
 
           int ibin = 0;
-          if (bin_type == BIN_LIN) {
+          if (bin_type == LINEAR_BIN) {
               ibin = (int) (theta*inv_thetastep + thetamin_invstep);
           }
           else {
@@ -1020,7 +1020,7 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
     const DOUBLE costhetamax = costheta_upp[nthetabin-1];
     AVX512_FLOATS m_inv_thetastep = AVX512_SETZERO_FLOAT();
     AVX512_FLOATS m_thetamin_invstep = AVX512_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         DOUBLE inv_thetastep = (nthetabin - 1)/(thetamax - thetamin);
         DOUBLE thetamin_invstep = 1 - thetamin*inv_thetastep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_thetastep = AVX512_SET_FLOAT(inv_thetastep);
@@ -1189,7 +1189,7 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                 continue;
             }
 
-            if(need_rpavg || bin_type == BIN_LIN){
+            if(need_rpavg || bin_type == LINEAR_BIN){
                 //first do the acos to get the actual angles
                 const AVX512_FLOATS m_inv_pi_over_180 = AVX512_SET_FLOAT(INV_PI_OVER_180);
                 const AVX512_FLOATS m_theta = AVX512_ARC_COSINE(m_costheta, order);
@@ -1214,7 +1214,7 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
             }
 
             AVX512_INTS m_thetabin = AVX512_SETZERO_INT();
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_thetabin = AVX512_TRUNCATE_FLOAT_TO_INT(
                              AVX512_MASKZ_FMA_ADD_FLOATS(union_mDperp.m_Dperp,m_mask_left,m_inv_thetastep,m_thetamin_invstep));
             }
@@ -1233,14 +1233,14 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                     }
                 }//backwards loop over the bins
             }
-            if(need_rpavg || need_weightavg || bin_type == BIN_LIN) {
+            if(need_rpavg || need_weightavg || bin_type == LINEAR_BIN) {
                 union_rpbin.m_ibin = m_thetabin;
 #if  __INTEL_COMPILER
 #pragma unroll(AVX512_NVEC)
 #endif
                 for(int jj=0;jj<AVX512_NVEC;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(bin_type == BIN_LIN){
+                    if(bin_type == LINEAR_BIN){
                         npairs[kbin]++;
                     }
                     if(need_rpavg) {

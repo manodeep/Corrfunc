@@ -55,7 +55,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
     const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
     AVX512_FLOATS m_inv_rpstep = AVX512_SETZERO_FLOAT();
     AVX512_FLOATS m_rpmin_invstep = AVX512_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         const DOUBLE inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         const DOUBLE rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = AVX512_SET_FLOAT(inv_rpstep);
@@ -291,7 +291,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
             }
 
             const AVX512_FLOATS m_Dpar = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_Dpar);
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, m_sqr_Dperp);
             }
 
@@ -309,7 +309,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
 
             const AVX512_MASK m_mask = m_mask_left;
             AVX512_FLOATS m_rpbin = AVX512_SETZERO_FLOAT();
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = AVX512_MASKZ_FMA_ADD_TRUNCATE_FLOATS(m_mask_left, union_mDperp.m_Dperp, m_inv_rpstep, m_rpmin_invstep);
                 // This rounding is only necessary because the rounding is supposed to happen during the FMA, but doesn't for some reason
                 // https://github.com/manodeep/Corrfunc/pull/258#issuecomment-942479146
@@ -397,7 +397,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
     AVX_FLOATS m_inv_rpstep = AVX_SETZERO_FLOAT();
     AVX_FLOATS m_rpmin_invstep = AVX_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = AVX_SET_FLOAT(inv_rpstep);
@@ -646,7 +646,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             }
             const AVX_FLOATS m_Dpar = AVX_SQRT_FLOAT(m_sqr_Dpar);
 
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = AVX_SQRT_FLOAT(m_sqr_Dperp);
             }
             if(need_weightavg){
@@ -663,7 +663,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
 
             const AVX_FLOATS m_mask = m_mask_left;
             AVX_FLOATS m_rpbin = AVX_SETZERO_FLOAT();
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = AVX_BLEND_FLOATS_WITH_MASK(m_rpbin,
                           AVX_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep),
                           m_mask_left);
@@ -732,7 +732,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             const DOUBLE sqr_Dperp  = sqr_s - sqr_Dpar;
             if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
             DOUBLE rp = ZERO, pairweight = ZERO;
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 rp = SQRT(sqr_Dperp);
             }
             if(need_weightavg){
@@ -748,7 +748,7 @@ static inline int countpairs_rp_pi_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             }
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (rp*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -816,7 +816,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
     SSE_FLOATS m_inv_rpstep = SSE_SETZERO_FLOAT();
     SSE_FLOATS m_rpmin_invstep = SSE_SETZERO_FLOAT();
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
         m_inv_rpstep = SSE_SET_FLOAT(inv_rpstep);
@@ -1044,7 +1044,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 m_sqr_Dpar  = SSE_BLEND_FLOATS_WITH_MASK(m_sqr_pimax,m_sqr_Dpar,m_mask_left);
             }
             union float4 union_mDperp;
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 union_mDperp.m_Dperp = SSE_SQRT_FLOAT(m_sqr_Dperp);
             }
             if(need_weightavg){
@@ -1061,7 +1061,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
 
             const SSE_FLOATS m_mask = m_mask_left;
             SSE_FLOATS m_rpbin = SSE_SETZERO_FLOAT();
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 m_rpbin = SSE_BLEND_FLOATS_WITH_MASK(m_rpbin,
                           SSE_FMA_ADD_TRUNCATE_FLOATS(union_mDperp.m_Dperp,m_inv_rpstep,m_rpmin_invstep),
                           m_mask_left);
@@ -1132,7 +1132,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             const DOUBLE sqr_Dperp  = sqr_s - sqr_Dpar;
             if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
             DOUBLE rp = ZERO, pairweight = ZERO;
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 rp = SQRT(sqr_Dperp);
             }
             if(need_weightavg){
@@ -1147,7 +1147,7 @@ static inline int countpairs_rp_pi_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 pairweight = fallback_weight_func(&pair);
             }
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (rp*inv_rpstep + rpmin_invstep);
             }
             else {
@@ -1207,7 +1207,7 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
     const int32_t need_weightavg = src_weightavg != NULL;
     const DOUBLE sqr_rpmin=rpmin*rpmin, sqr_rpmax=rpmax*rpmax;
     DOUBLE inv_rpstep=0., rpmin_invstep=0.;
-    if (bin_type == BIN_LIN) {
+    if (bin_type == LINEAR_BIN) {
         inv_rpstep = (nbin - 1)/(rpmax - rpmin);
         rpmin_invstep = 1 - rpmin*inv_rpstep; //trick to avoid adding one to (r - rmin)/rstep
     }
@@ -1356,7 +1356,7 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             if(sqr_Dperp >= sqr_rpmax || sqr_Dperp < sqr_rpmin) continue;
 
             DOUBLE rp = ZERO, pairweight = ZERO;
-            if(need_rpavg || bin_type == BIN_LIN) {
+            if(need_rpavg || bin_type == LINEAR_BIN) {
                 rp = SQRT(sqr_Dperp);
             }
             if(need_weightavg){
@@ -1372,7 +1372,7 @@ static inline int countpairs_rp_pi_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             }
 
             int kbin = 0;
-            if (bin_type == BIN_LIN) {
+            if (bin_type == LINEAR_BIN) {
                 kbin = (int) (rp*inv_rpstep + rpmin_invstep);
             }
             else {
