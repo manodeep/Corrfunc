@@ -54,6 +54,7 @@ typedef enum {
     AUTODETECT_BIN=0, /* auto-detect bin-type */
     LINEAR_BIN, /* linearly-spaced bins */
     LOG2_BIN, /* log2-spaced bins (not fully implemented) */
+    LOG_BIN, /* generic log-spaced bins (*NOT* implemented) */
     CUSTOM_BIN, /* bins with arbitrary width (but have to be contiguous) -> works for all supported bin types */
     num_bin_types,
 } bin_type_t;
