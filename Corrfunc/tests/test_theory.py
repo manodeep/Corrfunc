@@ -195,25 +195,38 @@ def test_duplicate_cellpairs(autocorr, binref, min_sep_opt, maxcells,
 
 
 @pytest.mark.parametrize('autocorr', [0, 1], ids=['cross', 'auto'])
-@pytest.mark.parametrize('binref', [1, 2, 3])
-@pytest.mark.parametrize('min_sep_opt', [False, True])
-@pytest.mark.parametrize('maxcells', [1, 2, 3])
+@pytest.mark.parametrize('binref', [1, 2, 3], ids=['ref1', 'ref2', 'ref3'])
+@pytest.mark.parametrize('min_sep_opt', [False, True], ids=['noMSO', 'MSO'])
+@pytest.mark.parametrize('maxcells', [1, 2, 3], ids=['max1', 'max2', 'max3'])
 @pytest.mark.parametrize('boxsize', [123., (51., 75., 123.)],
                          ids=['iso', 'aniso'])
-def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells, boxsize,
-                            isa='fastest', nthreads=maxthreads()):
+@pytest.mark.parametrize('funcname', ['DD', 'DDrppi', 'DDsmu'])
+@pytest.mark.parametrize('periodic', [False, True], ids=['nowrap', 'wrap'])
+def test_brute(autocorr, binref, min_sep_opt, maxcells, boxsize, funcname,
+               periodic, isa='fastest', nthreads=maxthreads()):
     '''Generate two small point clouds near particles near (0,0,0)
     and (L/2,L/2,L/2) and compare against the brute-force answer.
 
-    Use close to the max allowable Rmax, 0.49*Lbox.
+    In the periodic case, use close to the max allowable Rmax,
+    0.49*min(boxsize).
 
     Tests both isotropic and anisotropic boxes.
     '''
+    import Corrfunc.theory
+
     np.random.seed(1234)
     npts = 100
     eps = 0.2  # as a fraction of boxsize
     boxsize = np.array(boxsize)
-    bins = np.linspace(0.01, 0.49*boxsize.min(), 20)
+    if periodic:
+        bins = np.linspace(0.01, 0.49*boxsize.min(), 20)
+    else:
+        # non-periodic has no upper limit on Rmax
+        bins = np.linspace(0.01, 2*boxsize.max(), 20)
+    pimax = np.floor(0.49*boxsize.min())
+    mu_max = 0.5
+    nmu_bins = 10
+    func = getattr(Corrfunc.theory, funcname)
 
     # two clouds of width eps*boxsize
     pos = np.random.uniform(low=-eps, high=eps,
@@ -225,27 +238,50 @@ def test_rmax_against_brute(autocorr, binref, min_sep_opt, maxcells, boxsize,
     # Broadcasting (npts,1,3) against (npts,3) yields (npts,npts,3),
     # which is the array of all npts^2 (x,y,z) differences.
     pdiff = np.abs(pos[:, np.newaxis] - pos)
-    mask = pdiff >= boxsize/2
-    pdiff -= mask*boxsize
+    if periodic:
+        mask = pdiff >= boxsize/2
+        pdiff -= mask*boxsize
 
-    # Compute dist^2 = x^2 + y^2 + z^2, flattening because we don't
-    # care which dist came from which particle pair
-    sqr_pdiff = (pdiff**2).sum(axis=-1).reshape(-1)
-    brutecounts, _ = np.histogram(sqr_pdiff, bins=bins**2)
+    args = [autocorr, nthreads, bins, pos[:, 0], pos[:, 1], pos[:, 2]]
+    kwargs = dict(periodic=periodic, isa=isa, boxsize=boxsize,
+                  X2=pos[:, 0], Y2=pos[:, 1], Z2=pos[:, 2],
+                  max_cells_per_dim=maxcells,
+                  xbin_refine_factor=binref, ybin_refine_factor=binref,
+                  zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
+                  )
+
+    if funcname == 'DDrppi':
+        # Compute rp^2 = dx^2 + dy^2, and pi = abs(dz)
+        args.insert(2, pimax)
+        sqr_rpdiff = (pdiff[:, :, :2]**2).sum(axis=-1).reshape(-1)
+        pidiff = np.abs(pdiff[:, :, 2]).reshape(-1)
+        pibins = np.linspace(0., pimax, int(pimax)+1)
+        brutecounts, _, _ = np.histogram2d(sqr_rpdiff, pidiff,
+                                           bins=(bins**2, pibins))
+        brutecounts = brutecounts.reshape(-1)  # corrfunc flattened convention
+    elif funcname == 'DDsmu':
+        # Compute s^2 = dx^2 + dy^2 + dz^2, mu = |dz| / s
+        args[3:3] = (mu_max, nmu_bins)
+        sdiff = np.sqrt((pdiff**2).sum(axis=-1).reshape(-1))
+        sdiff[sdiff == 0.] = np.inf  # don't divide by 0
+        mu = np.abs(pdiff[:, :, 2]).reshape(-1) / sdiff
+        mubins = np.linspace(0, mu_max, nmu_bins+1)
+        brutecounts, _, _ = np.histogram2d(sdiff, mu,
+                                           bins=(bins, mubins))
+        brutecounts = brutecounts.reshape(-1)  # corrfunc flattened convention
+    elif funcname == 'DD':
+        # Compute dist^2 = x^2 + y^2 + z^2, flattening because we don't
+        # care which dist came from which particle pair
+        sqr_pdiff = (pdiff**2).sum(axis=-1).reshape(-1)
+        brutecounts, _ = np.histogram(sqr_pdiff, bins=bins**2)
+    else:
+        raise NotImplementedError(funcname)
 
     # spot-check that we have non-zero counts
     assert np.any(brutecounts > 0)
 
-    from Corrfunc.theory import DD
-
     pos = pos.T  # for indexing convenience
-    results = DD(autocorr, nthreads, bins, pos[0], pos[1], pos[2],
-                 X2=pos[0], Y2=pos[1], Z2=pos[2],
-                 boxsize=boxsize, periodic=True, isa=isa,
-                 verbose=True, max_cells_per_dim=maxcells,
-                 xbin_refine_factor=binref, ybin_refine_factor=binref,
-                 zbin_refine_factor=binref, enable_min_sep_opt=min_sep_opt,
-                 )
+    results = func(*args, **kwargs)
 
     assert np.all(results['npairs'] == brutecounts)
 

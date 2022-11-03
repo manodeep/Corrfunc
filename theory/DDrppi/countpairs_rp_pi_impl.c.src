@@ -251,9 +251,10 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
     const int periodic_y = options->periodic && boxsize_y >= 0;
     const int periodic_z = options->periodic && boxsize_z >= 0;
 
-    const DOUBLE xwrap = (options->periodic && options->boxsize_x > 0) ? options->boxsize_x : (xmax-xmin);
-    const DOUBLE ywrap = (options->periodic && boxsize_y > 0) ? boxsize_y : (ymax-ymin);
-    const DOUBLE zwrap = (options->periodic && boxsize_z > 0) ? boxsize_z : (zmax-zmin);
+    // If periodic (L!=-1), use given boxsize (L>0) or auto-detect (L==0). If not, set wrap value to 0.
+    const DOUBLE xwrap = periodic_x ? (options->boxsize_x > 0 ? options->boxsize_x : (xmax-xmin)) : 0.;
+    const DOUBLE ywrap = periodic_y ? (boxsize_y > 0 ? boxsize_y : (ymax-ymin)) : 0.;
+    const DOUBLE zwrap = periodic_z ? (boxsize_z > 0 ? boxsize_z : (zmax-zmin)) : 0.;
     
     if(options->verbose) {
         if(periodic_x) {

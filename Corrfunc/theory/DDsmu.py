@@ -291,10 +291,11 @@ def DDsmu(autocorr, nthreads, binfile, mu_max, nmu_bins,
         "angle and should be within (0.0, 1.0]".format(mu_max)
         raise ValueError(msg)
 
-    boxsize = np.atleast_1d(boxsize)
-    if len(boxsize) == 1:
-        boxsize = (boxsize[0], boxsize[0], boxsize[0])
-    boxsize = tuple(boxsize)
+    if boxsize is not None:
+        boxsize = np.atleast_1d(boxsize)
+        if len(boxsize) == 1:
+            boxsize = (boxsize[0], boxsize[0], boxsize[0])
+        boxsize = tuple(boxsize)
 
     if not autocorr:
         if X2 is None or Y2 is None or Z2 is None:
