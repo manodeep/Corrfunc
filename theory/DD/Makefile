@@ -13,6 +13,7 @@ LIBRARY := lib$(LIBNAME).a
 LIBSRC  := countpairs.c countpairs_impl_double.c countpairs_impl_float.c \
          $(UTILS_DIR)/gridlink_impl_double.c $(UTILS_DIR)/gridlink_impl_float.c \
          $(UTILS_DIR)/gridlink_utils_double.c $(UTILS_DIR)/gridlink_utils_float.c \
+         $(UTILS_DIR)/utilities_float.c $(UTILS_DIR)/utilities_double.c \
          $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c $(UTILS_DIR)/avx512_calls.c
 LIBRARY_HEADERS := $(LIBNAME).h
 
@@ -27,6 +28,7 @@ INCL   := countpairs_kernels_float.c countpairs_kernels_double.c countpairs_kern
           $(UTILS_DIR)/function_precision.h $(UTILS_DIR)/avx512_calls.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
           $(UTILS_DIR)/defs.h $(UTILS_DIR)/cpu_features.h \
           $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/progressbar.h \
+          $(UTILS_DIR)/utilities_float.h $(UTILS_DIR)/utilities_double.h $(UTILS_DIR)/utilities.h.src \
           $(UTILS_DIR)/weight_functions_double.h $(UTILS_DIR)/weight_functions_float.h $(UTILS_DIR)/weight_functions.h.src \
           $(UTILS_DIR)/weight_defs_double.h $(UTILS_DIR)/weight_defs_float.h $(UTILS_DIR)/weight_defs.h.src
 

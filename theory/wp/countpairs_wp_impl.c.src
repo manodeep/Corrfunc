@@ -21,6 +21,7 @@
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
 #include "cpu_features.h" //prototype get_max_usable_isa required for runtime dispatch
+#include "utilities_DOUBLE.h" //for helper routines in the correct precision
 
 #include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
 #include "gridlink_utils_DOUBLE.h" //for associated helper routines
@@ -215,16 +216,16 @@ int countpairs_wp_DOUBLE(const int64_t ND, DOUBLE * restrict X, DOUBLE * restric
     /***********************
      *initializing the  bins
      ************************/
-    double *rupp;
-    double rpmin,rpmax;
+    DOUBLE *rupp;
+    DOUBLE rpmin,rpmax;
     int nrpbins;
-    setup_bins(binfile,&rpmin,&rpmax,&nrpbins,&rupp);
+    setup_bins_DOUBLE(binfile,&rpmin,&rpmax,&nrpbins,&rupp);
     if( ! (rpmin >=0 && rpmax > 0.0 && rpmin < rpmax && nrpbins > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rpmin, rpmax, nrpbins);
         return EXIT_FAILURE;
     }
-    detect_bin_type(rupp, nrpbins, &(options->bin_type), options->verbose);
+    detect_bin_type_DOUBLE(rupp, nrpbins, &(options->bin_type), options->verbose);
 
     const DOUBLE xmin = 0.0, xmax=boxsize;
     const DOUBLE ymin = 0.0, ymax=boxsize;

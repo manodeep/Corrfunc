@@ -933,11 +933,11 @@ void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
         return;  // nothing to do
     }
 
-    #ifdef _OPENMP
+#ifdef _OPENMP
     int nthreads = omp_get_max_threads();
-    #else
+#else
     int nthreads = 1;
-    #endif
+#endif
 
     // We will heuristically limit the number of threads
     // if there isn't enough work for multithreading to be efficient.
@@ -951,15 +951,15 @@ void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
         nthreads = 1;
     }
 
-    #ifdef _OPENMP
+#ifdef _OPENMP
     #pragma omp parallel num_threads(nthreads)
-    #endif
+#endif
     {
-        #ifdef _OPENMP
+#ifdef _OPENMP
         int tid = omp_get_thread_num();
-        #else
+#else
         int tid = 0;
-        #endif
+#endif
 
         int64_t cstart = N*tid/nthreads;
         int64_t cend = N*(tid+1)/nthreads;
@@ -968,19 +968,17 @@ void parallel_cumsum(const int64_t *a, const int64_t N, int64_t *cumsum){
             cumsum[c] = a[c-1] + cumsum[c-1];
         }
 
-        #ifdef _OPENMP
+#ifdef _OPENMP
         #pragma omp barrier
-        #endif
-
+#endif
         int64_t offset = 0;
         for(int t = 0; t < tid; t++){
             offset += cumsum[N*(t+1)/nthreads-1];
         }
 
-        #ifdef _OPENMP
+#ifdef _OPENMP
         #pragma omp barrier
-        #endif
-
+#endif
         if(offset != 0){
             for(int64_t c = cstart; c < cend; c++){
                 cumsum[c] += offset;

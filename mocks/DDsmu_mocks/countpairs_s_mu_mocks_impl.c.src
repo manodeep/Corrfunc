@@ -20,6 +20,7 @@
 #include "set_cosmo_dist.h"
 #include "cpu_features.h"
 #include "progressbar.h"
+#include "utilities_DOUBLE.h" //for helper routines in the correct precision
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -294,16 +295,16 @@ int countpairs_mocks_s_mu_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, D
     /***********************
      *initializing the  bins
      ************************/
-    double *supp;
+    DOUBLE *supp;
     int nsbin;
-    double smin,smax;
-    setup_bins(sbinfile,&smin,&smax,&nsbin,&supp);
+    DOUBLE smin,smax;
+    setup_bins_DOUBLE(sbinfile,&smin,&smax,&nsbin,&supp);
     if( ! (smin > 0.0 && smax > 0.0 && smin < smax && nsbin > 0)) {
         fprintf(stderr,"Error: Could not setup with S bins correctly. (smin = %lf, smax = %lf, with nbins = %d). Expected non-zero smin/smax with smax > smin and nbins >=1 \n",
                 smin, smax, nsbin);
         return EXIT_FAILURE;
     }
-    detect_bin_type(supp, nsbin, &(options->bin_type), options->verbose);
+    detect_bin_type_DOUBLE(supp, nsbin, &(options->bin_type), options->verbose);
 
     if(max_mu <= 0.0 || max_mu > 1.0) {
         fprintf(stderr,"Error: max_mu (max. value for the cosine of the angle with line of sight) must be greater than 0 and at most 1).\n"

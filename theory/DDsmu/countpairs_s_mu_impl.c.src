@@ -21,6 +21,7 @@
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
 #include "cpu_features.h" //prototype get_max_usable_isa required for runtime dispatch
+#include "utilities_DOUBLE.h" //for helper routines in the correct precision
 
 #include "gridlink_impl_DOUBLE.h"//function proto-type for gridlink
 #include "gridlink_utils_DOUBLE.h" //for associated helper routines
@@ -201,16 +202,16 @@ int countpairs_s_mu_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z1
     /***********************
      *initializing the  bins
      ************************/
-    double *supp;
+    DOUBLE *supp;
     int nsbin;
-    double smin,smax;
-    setup_bins(sbinfile,&smin,&smax,&nsbin,&supp);
+    DOUBLE smin,smax;
+    setup_bins_DOUBLE(sbinfile,&smin,&smax,&nsbin,&supp);
     if( ! (smin >= 0.0 && smax > 0.0 && smin < smax && nsbin > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 smin, smax, nsbin);
         return EXIT_FAILURE;
     }
-    detect_bin_type(supp, nsbin, &(options->bin_type), options->verbose);
+    detect_bin_type_DOUBLE(supp, nsbin, &(options->bin_type), options->verbose);
 
     if(max_mu <= 0.0 || max_mu > 1.0) {
         fprintf(stderr,"Error: max_mu (max. value for the cosine of the angle with line of sight) must be greater than 0 and at most 1).\n"

@@ -30,8 +30,6 @@ extern size_t my_fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 extern int my_fseek(FILE *stream, long offset, int whence);
 
 //general utilities
-extern void get_max_float(const int64_t ND1, const float *cz1, float *czmax);
-extern void get_max_double(const int64_t ND1, const double *cz1, double *czmax);
 extern char *int2bin(int a, char *buffer, int buf_size) ;
 extern int my_snprintf(char *buffer,int len,const char *format, ...) __attribute__((format(printf,3,4)));
 extern char * get_time_string(struct timeval t0,struct timeval t1);
@@ -57,13 +55,6 @@ void *** volume_calloc(size_t size,int64_t nrow,int64_t ncol,int64_t nframe);
 void volume_free(void ***v,int64_t nrow,int64_t ncol);
 
 extern int run_system_call(const char *execstring);
-
-extern int detect_bin_type(const double *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose);
-extern int detect_bin_type_double(const double *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose);
-extern int detect_bin_type_float(const float *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose);
-extern int setup_bins(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp);
-extern int setup_bins_double(const char *fname, double *rmin, double *rmax, int *nbin, double **rupp);
-extern int setup_bins_float(const char *fname, float *rmin, float *rmax, int *nbin, float **rupp);
 
 extern int test_all_files_present(const int nfiles, ...);
 

@@ -20,6 +20,7 @@
 #include "set_cosmo_dist.h"
 #include "cpu_features.h"
 #include "progressbar.h"
+#include "utilities_DOUBLE.h" //for helper routines in the correct precision
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -294,16 +295,16 @@ int countpairs_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1, DOUBLE
     /***********************
      *initializing the  bins
      ************************/
-    double *rupp;
+    DOUBLE *rupp;
     int nrpbin;
-    double rpmin,rpmax;
-    setup_bins(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
+    DOUBLE rpmin,rpmax;
+    setup_bins_DOUBLE(binfile,&rpmin,&rpmax,&nrpbin,&rupp);
     if( ! (rpmin > 0.0 && rpmax > 0.0 && rpmin < rpmax && nrpbin > 0)) {
         fprintf(stderr,"Error: Could not setup with R bins correctly. (rmin = %lf, rmax = %lf, with nbins = %d). Expected non-zero rmin/rmax with rmax > rmin and nbins >=1 \n",
                 rpmin, rpmax, nrpbin);
         return EXIT_FAILURE;
     }
-    detect_bin_type(rupp, nrpbin, &(options->bin_type), options->verbose);
+    detect_bin_type_DOUBLE(rupp, nrpbin, &(options->bin_type), options->verbose);
 
     const DOUBLE sqr_max_sep = rpmax*rpmax + pimax*pimax;
     const DOUBLE max_sep = SQRT(sqr_max_sep);

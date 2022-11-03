@@ -18,6 +18,7 @@
 #include "cpu_features.h"
 #include "utils.h" //all of the utilities
 #include "progressbar.h" //for the progressbar
+#include "utilities_DOUBLE.h" //for helper routines in the correct precision
 
 #include "set_cosmo_dist.h"//cosmological distance calculations
 #include "cosmology_params.h"//init_cosmology

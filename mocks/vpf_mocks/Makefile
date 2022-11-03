@@ -13,6 +13,7 @@ LIBSRC:=countspheres_mocks.c countspheres_mocks_impl_float.c countspheres_mocks_
         $(UTILS_DIR)/gridlink_impl_float.c $(UTILS_DIR)/gridlink_impl_double.c \
         $(UTILS_DIR)/gridlink_utils_float.c $(UTILS_DIR)/gridlink_utils_double.c \
         $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c $(UTILS_DIR)/avx512_calls.c \
+        $(UTILS_DIR)/utilities_float.c $(UTILS_DIR)/utilities_double.c \
 	$(UTILS_DIR)/set_cosmo_dist.c $(UTILS_DIR)/cosmology_params.c
 LIBRARY_HEADERS := $(LIBNAME).h
 
@@ -25,6 +26,7 @@ INCL   := $(LIBNAME).h vpf_mocks_kernels.c.src countspheres_mocks_impl.c.src cou
         $(UTILS_DIR)/cellarray_float.h $(UTILS_DIR)/cellarray_double.h $(UTILS_DIR)/cellarray.h.src \
         $(IO_DIR)/ftread.h $(IO_DIR)/io.h $(UTILS_DIR)/utils.h $(UTILS_DIR)/function_precision.h \
         $(UTILS_DIR)/avx512_calls.h $(UTILS_DIR)/avx_calls.h $(UTILS_DIR)/sse_calls.h \
+        $(UTILS_DIR)/utilities_float.h $(UTILS_DIR)/utilities_double.h \
 	$(UTILS_DIR)/defs.h $(UTILS_DIR)/set_cosmo_dist.h $(UTILS_DIR)/cosmology_params.h $(UTILS_DIR)/progressbar.h $(UTILS_DIR)/cpu_features.h
 
 TARGETOBJS  := $(TARGETSRC:.c=.o)

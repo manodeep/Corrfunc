@@ -1,0 +1,25 @@
+// # -*- mode: c -*-
+/* File: utilities.h.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+#pragma once
+
+#include "defs.h" // for bin_type
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern void get_max_DOUBLE(const int64_t ND1, const DOUBLE *cz1, DOUBLE *czmax);
+extern int detect_bin_type_DOUBLE(const DOUBLE *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose);
+extern int setup_bins_DOUBLE(const char *fname, DOUBLE *rmin, DOUBLE *rmax, int *nbin, DOUBLE **rupp);
+
+
+#ifdef __cplusplus
+}
+#endif

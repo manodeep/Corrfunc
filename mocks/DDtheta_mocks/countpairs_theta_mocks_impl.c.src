@@ -16,6 +16,7 @@
 #include "utils.h"
 #include "cpu_features.h"
 #include "progressbar.h"
+#include "utilities_DOUBLE.h" //for helper routines in the correct precision
 
 #if defined(_OPENMP)
 #include <omp.h>

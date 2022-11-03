@@ -1,0 +1,128 @@
+/* File: utilities.c.src */
+/*
+  This file is a part of the Corrfunc package
+  Copyright (C) 2015-- Manodeep Sinha (manodeep@gmail.com)
+  License: MIT LICENSE. See LICENSE file under the top-level
+  directory at https://github.com/manodeep/Corrfunc/
+*/
+
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+
+#include "function_precision.h"
+#include "utils.h"
+
+#include "utilities_DOUBLE.h"
+
+
+void get_max_DOUBLE(const int64_t ND1, const DOUBLE *cz1, DOUBLE *czmax)
+{
+    DOUBLE max=*czmax;
+    for(int64_t i=0;i<ND1;i++) {
+        if(cz1[i] > max) max = cz1[i];
+    }
+    *czmax = max;
+}
+
+int detect_bin_type_DOUBLE(const DOUBLE *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose)
+{
+    if (nbin > 1 && *bin_type == AUTODETECT_BIN) {
+        // if linear spacing, return LINEAR_BIN, else CUSTOM_BIN
+#ifdef DOUBLE_PRECISION
+        const double atol = 1e-9; // same tol as numpy.allclose
+        const double rtol = 1e-5;
+#else
+        const float atol = 1e-5;
+        const float rtol = 1e-4;
+#endif
+        DOUBLE rmin = rupp[0];
+        DOUBLE rstep = (rupp[nbin-1] - rupp[0])/(nbin - 1);
+        *bin_type = LINEAR_BIN;
+        for (int ii=1; ii<nbin; ii++) {
+            DOUBLE pred = rmin + rstep*ii;
+            if ((FABS(rupp[ii] - pred) > atol)||(FABS((rupp[ii] - pred)/pred) > rtol)) {
+                *bin_type = CUSTOM_BIN;
+                break;
+            }
+        }
+        //Check for log-binning
+        *bin_type = LOG_BIN;
+        if (rmin > 0 && *bin_type != LINEAR_BIN) {
+            DOUBLE base = rupp[1]/rmin;
+            DOUBLE two = (DOUBLE) 2.0;
+            for (int ii=2; ii<nbin; ii++) {
+                DOUBLE pred = rupp[ii]/rupp[ii-1];
+                if ((FABS(base - pred) > atol) || (FABS((base - pred)/pred) > rtol)) {
+                    *bin_type = CUSTOM_BIN;
+                    // fprintf(stderr,"here: base = %g pred = %g rmin = %g rupp[ii-1]=%g rupp[ii] = %g\n",
+                    //        base, pred, rmin, rupp[ii-1], rupp[ii]);
+                    break;
+                }
+            }
+            if((FABS(base - two) < atol) && (*bin_type == LOG_BIN)) {
+                *bin_type = LOG2_BIN;
+                fprintf(stderr,"detected log2 bin\n");
+                return EXIT_FAILURE;
+            }
+        }
+    }
+    if (verbose) {
+        if (*bin_type == LINEAR_BIN) {
+            fprintf(stderr,"Linear binning\n");
+        } else if (*bin_type == LOG2_BIN) {
+            fprintf(stderr,"Log2 binning\n");
+        } else if (*bin_type == LOG_BIN) {
+            fprintf(stderr,"Log binning\n");
+        } else {
+            fprintf(stderr,"Custom binning\n");
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+
+int setup_bins_DOUBLE(const char *fname, DOUBLE *rmin, DOUBLE *rmax, int *nbin, DOUBLE **rupp)
+{
+    //set up the bins according to the binned data file
+    //the form of the data file should be <rlow  rhigh ....>
+    const int MAXBUFSIZE=1000;
+    char buf[MAXBUFSIZE];
+    DOUBLE low,hi;
+    const char comment='#';
+    const int nitems=2;
+    int nread=0;
+    *nbin = ((int) getnumlines(fname,comment))+1;
+    *rupp = my_calloc(sizeof(DOUBLE),*nbin+1);
+
+    FILE *fp = fopen(fname,"r");
+    if(fp == NULL) {
+        free(*rupp);
+        return EXIT_FAILURE;
+    }
+    int index=1;
+    while(1) {
+        if(fgets(buf,MAXBUFSIZE,fp)!=NULL) {
+            nread=sscanf(buf,"%"REAL_FORMAT" %"REAL_FORMAT,&low,&hi);
+            if(nread==nitems) {
+                if(index==1) {
+                    *rmin=low;
+                    (*rupp)[0]=low;
+                }
+
+                (*rupp)[index] = hi;
+                index++;
+            }
+        } else {
+            break;
+        }
+    }
+    *rmax = (*rupp)[index-1];
+    fclose(fp);
+
+    (*rupp)[*nbin] = *rmax;
+    (*rupp)[*nbin-1] = *rmax;
+
+    return EXIT_SUCCESS;
+}
