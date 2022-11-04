@@ -548,22 +548,29 @@ def translate_bin_type_string_to_enum(bin_type):
     except NameError:
         if not isinstance(bin_type, str):
             raise TypeError(msg)
-    valid_bin_types = ['AUTO', 'CUSTOM', 'LIN']
-    bin_type_upper = bin_type.upper()
-    if bin_type_upper not in valid_bin_types:
-        msg = "Desired bin type = {0} is not in the list of valid "\
-              "bin types = {1}".format(bin_type, valid_bin_types)
-        raise ValueError(msg)
 
+    bin_type_upper = bin_type.upper()
+    if bin_type_upper == 'LINEAR':
+        bin_type_upper = 'LIN'
+
+    # must be kept in sync with bin_type_t in defs.h
     enums = {'AUTO': 0,
              'LIN': 1,
-             'CUSTOM': 2,
+             'LOG2': 2,
+             'LOG': 3,
+             'CUSTOM': 4,
              }
+
+    if bin_type_upper not in enums:
+        msg = "Desired bin type = {0} is not in the list of valid "\
+              "bin types = {1}".format(bin_type, list(enums))
+        raise ValueError(msg)
+
     try:
         return enums[bin_type_upper]
     except KeyError:
         print("Do not know bin type = {0}".format(bin_type))
-        print("Valid bin types are {0}".format(enums.keys()))
+        print("Valid bin types are {0}".format(list(enums)))
         raise
 
 
