@@ -56,6 +56,9 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
 #ifdef __AVX__
         countpairs_avx_intrinsics_DOUBLE,
 #endif
+#ifdef __AVX2__
+        countpairs_avx2_intrinsics_DOUBLE,
+#endif
 #ifdef __AVX512F__
         countpairs_avx512_intrinsics_DOUBLE,
 #endif
@@ -63,7 +66,7 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
 
     const int num_functions = sizeof(allfunctions)/sizeof(void *);
     const int fallback_index = 0;
-#if defined(__AVX512F__) || defined(__AVX__) || defined(__SSE4_2__)
+#if defined(__AVX512F__) || defined(__AVX2__) || defined(__AVX__) || defined(__SSE4_2__)
     const int highest_isa = get_max_usable_isa();
 #endif
     int curr_index = 0;
@@ -80,6 +83,13 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
 #ifdef __AVX__
     curr_index++;
     if(highest_isa >= AVX) avx_index = curr_index;
+#endif
+
+    /* Now check if AVX2 is supported by the CPU */
+    int avx2_index = curr_index;
+#ifdef __AVX2__
+    curr_index++;
+    if(highest_isa >= AVX2) avx2_index = curr_index;
 #endif
 
     /* Check for AVX512F support */
@@ -100,7 +110,7 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
     if(options->instruction_set >= 0) {
         switch(options->instruction_set) {
         case(AVX512F):function_dispatch=avx512_index;break;
-        case(AVX2):
+        case(AVX2):function_dispatch=avx2_index;break;
         case(AVX):function_dispatch=avx_index;break;
         case(SSE42):function_dispatch=sse_index;break;
         default:function_dispatch=fallback_index;break;
@@ -122,6 +132,8 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
             fprintf(stderr,"Using SSE kernel\n");
         } else if(function_dispatch == avx_index){
             fprintf(stderr,"Using AVX kernel\n");
+        } else if(function_dispatch == avx2_index){
+            fprintf(stderr,"Using AVX2 kernel\n");
         } else if(function_dispatch == avx512_index){
             fprintf(stderr,"Using AVX512 kernel\n");
         } else {

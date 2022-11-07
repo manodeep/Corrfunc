@@ -259,6 +259,21 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
             result = AVX_MULTIPLY_FLOATS(numerator, rc_iter);           \
         } /* end of FAST_DIVIDE */                                      \
     }
+static inline __m128i AVX_GETEXP_DOUBLE(__m256d v)
+{
+    //Taken from https://stackoverflow.com/q/45770089
+
+    const __m256i exponentMask = _mm256_set1_epi64x(0x7ffULL << MANTISSA_BITS);
+    // const __m256i mantissaMask = _mm256_set1_epi64x(1023ULL << MANTISSA_BITS);
+    const __m256i gTo32bitExp = _mm256_set_epi32(0, 0, 0, 0, 6, 4, 2, 0);
+    const __m128i exponentBias = _mm_set1_epi32(EXPONENT_BIAS);
+
+    const __m256i exps64 = _mm256_srli_epi64(_mm256_and_si256(exponentMask, _mm256_castpd_si256(v)), MANTISSA_BITS);
+    const __m256i exps32_avx = _mm256_permutevar8x32_epi32(exps64, gTo32bitExp);
+    const __m128i exps32_sse = _mm256_castsi256_si128(exps32_avx);
+    const __m128i normExps = _mm_sub_epi32(exps32_sse, exponentBias);
+    return normExps;
+}
 #else
 #define CHECK_AND_FAST_DIVIDE_AVX(result, numerator, denominator, fast_divide_and_NR_steps)                      { \
         /* single precision floats */                                   \
@@ -284,6 +299,25 @@ static inline AVX_FLOATS inv_cosine_avx(const AVX_FLOATS X, const int order)
             result = AVX_MULTIPLY_FLOATS(numerator, rc_iter);           \
         } /* end of FAST_DIVIDE */                                      \
     }
+
+static inline __m256i AVX_GETEXP_DOUBLE(__m256 v)
+{
+    const __m256 exponentMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
+    // const __m256 mantissaMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x807FFFFF));
+    const __m128i exponentBias = _mm_set1_epi32(EXPONENT_BIAS); // add 1 to make our definition identical to frexp()
+
+    __m256i iExponent     = _mm256_castps_si256(_mm256_and_ps(v, exponentMask));
+    __m128i iExponentHigh = _mm256_extractf128_si256(iExponent, 0x1);
+    __m128i iExponentLow  = _mm256_castsi256_si128(iExponent);
+    iExponentLow          = _mm_srli_epi32(iExponentLow, MANTISSA_BITS);
+    iExponentHigh         = _mm_srli_epi32(iExponentHigh, MANTISSA_BITS);
+    iExponentLow          = _mm_sub_epi32(iExponentLow, exponentBias);
+    iExponentHigh         = _mm_sub_epi32(iExponentHigh, exponentBias);
+    iExponent             = _mm256_castsi128_si256(iExponentLow);
+    iExponent             = _mm256_insertf128_si256(iExponent, iExponentHigh, 0x1);
+    return iExponent;
+}
+
 #endif /* end of DOUBLE_PREC for defining check_and_fast_divide macro */
 
 

@@ -28,7 +28,9 @@ void get_max_DOUBLE(const int64_t ND1, const DOUBLE *cz1, DOUBLE *czmax)
 
 int detect_bin_type_DOUBLE(const DOUBLE *rupp, int nbin, bin_type_t *bin_type, uint8_t verbose)
 {
-    if (nbin > 1 && *bin_type == AUTODETECT_BIN) {
+    if(nbin == 1 && *bin_type == AUTODETECT_BIN) {
+        *bin_type = CUSTOM_BIN;
+    } else if (nbin > 1 && *bin_type == AUTODETECT_BIN) {
         // if linear spacing, return LINEAR_BIN, else CUSTOM_BIN
 #ifdef DOUBLE_PRECISION
         const double atol = 1e-9; // same tol as numpy.allclose
@@ -63,8 +65,15 @@ int detect_bin_type_DOUBLE(const DOUBLE *rupp, int nbin, bin_type_t *bin_type, u
             }
             if((FABS(base - two) < atol) && (*bin_type == LOG_BIN)) {
                 *bin_type = LOG2_BIN;
-                fprintf(stderr,"detected log2 bin\n");
-                return EXIT_FAILURE;
+            }
+
+            //Only log2-bins are implemented - change generic log-bins to custom-bins
+            if(*bin_type == LOG_BIN) {
+                if(verbose) {
+                    fprintf(stderr,"Detected log-bin with base = %g. However, only base-2 (i.e., log2) is implemented"
+                                   " - reverting to custom bins.\n", base);
+                }
+                *bin_type = CUSTOM_BIN;
             }
         }
     }

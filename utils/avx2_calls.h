@@ -31,14 +31,37 @@ extern "C" {
 #define AVX2_BIT_COUNT_UNSIGNED_INT(X)       _mm_popcnt_u32(X)
 #define AVX2_BIT_COUNT_UNSIGNED_LONG(X)      _mm_popcnt_u64(X)
 
+#define AVX2_ADD_INTS(X, Y)                  _mm256_add_epi32(X, Y)
+#define AVX2_ADD_LONGS(X, Y)                 _mm256_add_epi64(X, Y)
+#define AVX2_RSHIFT_INT(X, imm8)
+#define AVX2_RSHIFT_LONG(X, imm8)            _mm256_srli_epi64(X, imm8)
+
 #ifndef DOUBLE_PREC
 
-#define DOUBLE                           float
-#define AVX2_NVEC                         8
-#define AVX2_INTS                         __m256i
-#define AVX2_FLOATS                       __m256
+#define DOUBLE                                      float
+#define AVX2_NVEC                                   8
+#define AVX2_INTS                                   __m256i
+#define AVX2_FLOATS                                 __m256
+#define AVX2_SAMEWIDTH_INTS                         __m256i
+#define AVX2_TEST_MASK_ALL_ON                       0xFF
+#define AVX2_SAMEWIDTH_INT                          int32_t
+
+#define AVX2_SET_SAMEWIDTH_INT(X)                   _mm256_set1_epi32(X)
+#define AVX2_RSHIFT_SAMEWIDTH_INTS(X, imm8)         _mm256_srli_epi32(X, imm8)
+#define AVX2_SUBTRACT_SAMEWIDTH_INTS(X, Y)          _mm256_sub_epi32(X, Y)
+#define AVX2_ADD_SAMEWIDTH_INTS(X, Y)               _mm256_add_epi32(X, Y)
+#define AVX2_CONVERT_SAMEWIDTH_INT_TO_FLOAT(X)      _mm256_cvtepi32_ps(X)
+
+//Casting (does not actual convert between types)
+#define AVX2_CAST_FLOAT_TO_INT(X)          _mm256_castps_si256(X)
+#define AVX2_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_ps(X)
 
 #define AVX2_SETZERO_FLOAT()              _mm256_setzero_ps()
+#define AVX2_SET_FLOAT(X)                 _mm256_set1_ps(X)
+#define AVX2_SET_INT(X)                   _mm256_set1_epi32(X)
+#define AVX2_SETZERO_INT()                AVX2_SET_INT(0)
+#define AVX2_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X)
+
 #define AVX2_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_ps(X)
 #define AVX2_LOAD_FLOATS_ALIGNED(X)       _mm256_load_ps(X)
 #define AVX2_MULTIPLY_FLOATS(X,Y)         _mm256_mul_ps(X,Y)
@@ -60,13 +83,10 @@ extern "C" {
 #define AVX2_STORE_FLOATS_TO_MEMORY(X,Y)  _mm256_storeu_ps(X,Y)
 #define AVX2_SQUARE_FLOAT(X)              _mm256_mul_ps(X,X)
 #define AVX2_LOG_FLOAT(X)                 _mm256_log_ps(X)
-#define AVX2_LOG10_FLOAT(X)                 _mm256_log10_ps(X)
+#define AVX2_LOG10_FLOAT(X)               _mm256_log10_ps(X)
 #define AVX2_LOG2_FLOAT(X)                _mm256_log2_ps(X)
 #define AVX2_RECIPROCAL_FLOATS(X)         _mm256_rcp_ps(X)
 
-#define AVX2_BROADCAST_FLOAT(X)           _mm256_broadcast_ss(X)
-#define AVX2_SET_FLOAT(X)                 _mm256_set1_ps(X)
-#define AVX2_SET_INT(X)                   _mm256_set1_epi32(X)
 
 // X OP Y
 #define AVX2_COMPARE_FLOATS(X,Y,OP)        _mm256_cmp_ps(X,Y,OP)
@@ -79,7 +99,7 @@ extern "C" {
 #define AVX2_TEST_COMPARISON(X)            _mm256_movemask_ps(X)
 
 #define AVX2_BLEND_FLOATS_WITH_MASK(FALSEVALUE,TRUEVALUE,MASK) _mm256_blendv_ps(FALSEVALUE,TRUEVALUE,MASK)
-#define AVX2_BLEND_INTS_WITH_MASK(FALSEVALUE, TRUEVALUE, MASK) _mm256_blend_epi32(FALSEVALUE,TRUEVALUE,MASK)
+#define AVX2_BLEND_INTS_WITH_MASK(FALSEVALUE, TRUEVALUE, MASK) _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(FALSEVALUE), _mm256_castsi256_ps(TRUEVAlUE),MASK))
 
 #define AVX2_MASKSTORE_FLOATS(dest, mask, source)   _mm256_maskstore_ps(dest, mask, source)
 
@@ -98,16 +118,13 @@ extern "C" {
   //Absolute value
 #define AVX2_ABS_FLOAT(X)                  _mm256_max_ps(_mm256_sub_ps(_mm256_setzero_ps(), X), X)
 
-    //Casting (does not actual convert between types)
-#define AVX2_CAST_FLOAT_TO_INT(X)          _mm256_castps_si256(X)
-#define AVX2_CAST_INT_TO_FLOAT(X)          _mm256_castsi256_ps(X)
 
     //Streaming store
 #define AVX2_STREAMING_STORE_FLOATS(X,Y)   _mm256_stream_ps(X,Y)
 #define AVX2_STREAMING_STORE_INTS(X,Y)     _mm256_stream_si256(X,Y)
 
 /* returns Z + XY*/
-#define AVX2_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_ps(X,Y,Z)
+//#define AVX2_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_ps(X,Y,Z)
 
 #else //DOUBLE PRECISION CALCULATIONS
 
@@ -115,8 +132,23 @@ extern "C" {
 #define AVX2_NVEC                         4
 #define AVX2_INTS                         __m128i
 #define AVX2_FLOATS                       __m256d
+#define AVX2_SAMEWIDTH_INTS               __m256i
+#define AVX2_TEST_MASK_ALL_ON             0xF
+#define AVX2_SAMEWIDTH_INT                int64_t
 
-#define AVX2_SETZERO_FLOAT()              _mm256_setzero_pd()
+#define AVX2_SET_INT(X)                     _mm_set1_epi32(X)
+#define AVX2_SET_FLOAT(X)                   _mm256_set1_pd(X)
+#define AVX2_SETZERO_FLOAT()                _mm256_setzero_pd()
+#define AVX2_SETZERO_INT()                  AVX2_SET_INT(0)
+#define AVX2_BROADCAST_FLOAT(X)             _mm256_broadcast_sd(X)
+
+
+#define AVX2_SET_SAMEWIDTH_INT(X)                   _mm256_set1_epi64x(X)
+#define AVX2_RSHIFT_SAMEWIDTH_INTS(X, imm8)         _mm256_srli_epi64(X, imm8)
+#define AVX2_SUBTRACT_SAMEWIDTH_INTS(X, Y)          _mm256_sub_epi64(X, Y)
+#define AVX2_ADD_SAMEWIDTH_INTS(X, Y)               _mm256_add_epi64(X, Y)
+#define AVX2_CONVERT_SAMEWIDTH_INT_TO_FLOAT(X)      int64_to_double256(X)
+
 #define AVX2_LOAD_FLOATS_UNALIGNED(X)     _mm256_loadu_pd(X)
 #define AVX2_LOAD_FLOATS_ALIGNED(X)       _mm256_load_pd(X)
 #define AVX2_MULTIPLY_FLOATS(X,Y)         _mm256_mul_pd(X,Y)
@@ -125,7 +157,7 @@ extern "C" {
 #define AVX2_ADD_FLOATS(X,Y)              _mm256_add_pd(X,Y)
 
 #if defined(__FMA__)
-#define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_fmadd_pd(X,Y,Z)
+#define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_fmadd_pd(X,Y,Z) //Z + X*Y
 #elif defined(__FMA4__)
 #define AVX2_FMA_ADD_FLOATS(X,Y,Z)        _mm256_macc_pd(X,Y,Z)
 #else
@@ -139,7 +171,7 @@ extern "C" {
 #define AVX2_SQUARE_FLOAT(X)              _mm256_mul_pd(X,X)
 #define AVX2_LOG_FLOAT(X)                 _mm256_log_pd(X)
 #define AVX2_LOG2_FLOAT(X)                _mm256_log2_pd(X)
-#define AVX2_LOG10_FLOAT(X)                _mm256_log10_pd(X)
+#define AVX2_LOG10_FLOAT(X)               _mm256_log10_pd(X)
 #define AVX2_RECIPROCAL_FLOATS(X)         _mm256_rcp_pd(X)
 
     // X OP Y
@@ -149,9 +181,6 @@ extern "C" {
 #define AVX2_XOR_FLOATS(X,Y)               _mm256_xor_pd(X,Y)
 #define AVX2_AND_NOT(X,Y)                  _mm256_andnot_pd((X),(Y))  //~X & Y
 
-#define AVX2_BROADCAST_FLOAT(X)            _mm256_broadcast_sd(X)
-#define AVX2_SET_FLOAT(X)                  _mm256_set1_pd(X)
-#define AVX2_SET_INT(X)                    _mm_set1_epi32(X)
 
 //MoveMask
 #define AVX2_TEST_COMPARISON(X)            _mm256_movemask_pd(X)
@@ -183,10 +212,33 @@ extern "C" {
 #define AVX2_STREAMING_STORE_INTS(X,Y)     _mm_stream_si128(X,Y)
 
 /* returns Z + XY*/
-#define AVX2_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_pd(X,Y,Z)
-#define AVX2_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_pd(_mm256_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
+// #define AVX2_FMA_ADD_FLOATS(X,Y,Z)          _mm256_fmadd_pd(X,Y,Z) //X*Y + Z
+// #define AVX2_FMA_ADD_TRUNCATE_FLOATS(X,Y,Z) _mm256_round_pd(_mm256_fmadd_pd(X,Y,Z),_MM_FROUND_TO_ZERO|_MM_FROUND_NO_EXC)
 
+//Taken from https://stackoverflow.com/a/41223013
+static inline __m256d int64_to_double256(__m256i x)
+{   /*  Mysticial's fast int64_to_double. Works for inputs in the range: (-2^51, 2^51)  */
+    x = _mm256_add_epi64(x, _mm256_castpd_si256(_mm256_set1_pd(0x0018000000000000)));
+    return _mm256_sub_pd(_mm256_castsi256_pd(x), _mm256_set1_pd(0x0018000000000000));
+}
 #endif //DOUBLE_PREC
+
+#define AVX2_GET_EXP(X)  AVX2_SUBTRACT_SAMEWIDTH_INTS(AVX2_RSHIFT_SAMEWIDTH_INTS(AVX2_CAST_FLOAT_TO_INT(X),\
+                                                      MANTISSA_BITS), \
+                                                      AVX2_SET_SAMEWIDTH_INT(EXPONENT_BIAS))
+//     __m256 two_power_100 = _mm256_castsi256_ps(_mm256_set1_epi32(0x71800000));
+//     __m256 denormal_mask = _mm256_cmp_ps(x, _mm256_set1_ps(FLT_MIN), _CMP_LT_OQ);
+//     __m256 temp = _mm256_mul_ps(x, two_power_100);
+//     x = _mm256_blendv_ps(x, temp, denormal_mask);
+
+//     __m256 exp = _mm256_cvtepi32_ps(
+//                     _mm256_sub_epi32(
+//                         _mm256_srli_epi32(
+//                             _mm256_castps_si256(x), 23),_mm256_set1_epi32(0x7E)));
+
+//     __m256 denorm_exp = _mm256_sub_ps(exp, _mm256_set1_ps(100.0f));
+//     return _mm256_blendv_ps(exp, denorm_exp, denormal_mask);
+
 
   //include all the avx matters including the declarations of union_int8 etc
 #include "avx_calls.h"

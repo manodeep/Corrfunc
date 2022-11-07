@@ -58,6 +58,7 @@ extern "C" {
 
 #ifdef DOUBLE_PREC
 #define DOUBLE double
+#define SAME_BIT_WIDTH_INT int64_t
 #define REAL_FORMAT "lf"
 #define NVEC   NVECD
 #define ZERO   0.0
@@ -73,8 +74,11 @@ extern "C" {
 #define POW    pow
 #define ABS    fabs
 #define MAX_POSITIVE_FLOAT DBL_MAX
+#define MANTISSA_BITS 52
+#define EXPONENT_BIAS 1023
 #else
 #define DOUBLE float
+#define SAME_BIT_WIDTH_INT int32_t
 #define REAL_FORMAT "f"
 #define NVEC   NVECF
 #define ZERO   0.0f
@@ -90,6 +94,8 @@ extern "C" {
 #define POW    powf
 #define ABS    fabsf
 #define MAX_POSITIVE_FLOAT FLT_MAX
+#define MANTISSA_BITS 23
+#define EXPONENT_BIAS 127
 #endif
 
 #ifdef __cplusplus
