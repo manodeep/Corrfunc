@@ -226,19 +226,6 @@ static inline __m256d int64_to_double256(__m256i x)
 #define AVX2_GET_EXP(X)  AVX2_SUBTRACT_SAMEWIDTH_INTS(AVX2_RSHIFT_SAMEWIDTH_INTS(AVX2_CAST_FLOAT_TO_INT(X),\
                                                       MANTISSA_BITS), \
                                                       AVX2_SET_SAMEWIDTH_INT(EXPONENT_BIAS))
-//     __m256 two_power_100 = _mm256_castsi256_ps(_mm256_set1_epi32(0x71800000));
-//     __m256 denormal_mask = _mm256_cmp_ps(x, _mm256_set1_ps(FLT_MIN), _CMP_LT_OQ);
-//     __m256 temp = _mm256_mul_ps(x, two_power_100);
-//     x = _mm256_blendv_ps(x, temp, denormal_mask);
-
-//     __m256 exp = _mm256_cvtepi32_ps(
-//                     _mm256_sub_epi32(
-//                         _mm256_srli_epi32(
-//                             _mm256_castps_si256(x), 23),_mm256_set1_epi32(0x7E)));
-
-//     __m256 denorm_exp = _mm256_sub_ps(exp, _mm256_set1_ps(100.0f));
-//     return _mm256_blendv_ps(exp, denorm_exp, denormal_mask);
-
 
   //include all the avx matters including the declarations of union_int8 etc
 #include "avx_calls.h"

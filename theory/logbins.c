@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     double left_edge=logxmin;
     for(int i=0;i<nbin;i++){
         double right_edge=left_edge+dlogx;
-        fprintf(stdout,"%20.12lf %20.12lf\n",pow(10.0,left_edge),pow(10.0,right_edge)) ;
+        fprintf(stdout,"%20.12g %20.12g\n",pow(10.0,left_edge),pow(10.0,right_edge)) ;
         left_edge=right_edge;
     }
 

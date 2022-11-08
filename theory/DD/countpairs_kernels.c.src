@@ -171,6 +171,7 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
 
             union_rpbin.m_ibin = AVX512_SETZERO_INT();
             union_mDperp.m_Dperp = AVX512_SETZERO_FLOAT();
+            union_mweight.m_weights = AVX512_SETZERO_FLOAT();
 
 #ifdef COUNT_VECTORIZED
             vectorized_npairs += (N1 - j) >= AVX512_NVEC ? AVX512_NVEC:N1-j;
@@ -196,6 +197,7 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
                 pair.dx.a512 = m_xdiff;
                 pair.dy.a512 = m_ydiff;
                 pair.dz.a512 = m_zdiff;
+                union_mweight.m_weights = avx512_weight_func(&pair);
             }
 
             const AVX512_FLOATS m_sqr_xdiff = AVX512_SQUARE_FLOAT(m_xdiff);  //(x0 - x[j])^2
@@ -222,59 +224,45 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
             if(m_mask_left == 0) {
                 continue;
             }
+            int nmatches = AVX512_BIT_COUNT_INT(m_mask_left);
 
             if(need_rpavg || bin_type != CUSTOM_BIN) {
                 union_mDperp.m_Dperp = AVX512_MASKZ_SQRT_FLOAT(m_mask_left, r2);
             }
-            if(need_weightavg){
-                union_mweight.m_weights = avx512_weight_func(&pair);
-            }
 
             AVX512_INTS m_rpbin = AVX512_SETZERO_INT();
+            const AVX512_MASK m_mask_matches = m_mask_left;
             if (bin_type == LINEAR_BIN) {
                 m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(
                           AVX512_MASKZ_FMA_ADD_FLOATS(union_mDperp.m_Dperp, m_mask_left, m_inv_rpstep, m_rpmin_invstep));
             } else if (bin_type == LOG2_BIN) {
-                const AVX512_FLOATS tmp = AVX512_MASK_MULTIPLY_FLOATS(union_mDperp.m_Dperp, inv_rpmin, m_sqr_rpmin, m_mask_left);
-                m_rpbin = AVX512_MASKZ_GETEXP(tmp, m_mask_left);
+                const AVX512_FLOATS tmp = AVX512_MULTIPLY_FLOATS(union_mDperp.m_Dperp, inv_rpmin);
+                m_rpbin = AVX512_TRUNCATE_FLOAT_TO_INT(AVX512_ADD_FLOATS(AVX512_MASKZ_GETEXP(m_mask_left, tmp), AVX512_SET_FLOAT((DOUBLE) 1.0)));
             }
             else {
                 //Loop backwards through nbins. m_mask_left contains all the points that are less than rpmax
                 // at the beginning of the loop.
                 for(int kbin=nbin-1;kbin>=1;kbin--) {
                     const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-                    npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
+                    // npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
+                    npairs[kbin] += AVX512_BIT_COUNT_INT(m_bin_mask);
                     if(need_rpavg || need_weightavg) {
                         m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_INT(kbin));
                     }
                     m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
-                    if(m_mask_left == 0) {
-                        break;
-                    }
+                    if(m_mask_left == 0) break;
                 }//backwards loop over the bins
             }
             if(need_rpavg || need_weightavg || bin_type != CUSTOM_BIN) {
                 //Do I need this step of going via the union? accessing int[] -> AVX* vector might
                 //cause alignment problems but accessing the ints from an AVX*
                 //register should always be fine
-                union_rpbin.m_ibin = m_rpbin;
-                //protect the unroll pragma in case compiler is not icc.
-#if  __INTEL_COMPILER
-#pragma unroll(AVX512_NVEC)
-#endif
-                for(int jj=0;jj<AVX512_NVEC;jj++) {
+                union_rpbin.m_ibin = AVX512_MASKZ_COMPRESS_INTS(m_mask_matches, m_rpbin);
+                for(int jj=0;jj<nmatches;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(bin_type == LINEAR_BIN){
-                        npairs[kbin]++;
-                    }
-                    if(need_rpavg){
-                        const DOUBLE r = union_mDperp.Dperp[jj];
-                        rpavg[kbin] += r;
-                    }
-                    if(need_weightavg){
-                        const DOUBLE weight = union_mweight.weights[jj];
-                        weightavg[kbin] += weight;
-                    }
+                    if(bin_type != CUSTOM_BIN) npairs[kbin]++;
+                    if(need_rpavg) rpavg[kbin] += union_mDperp.Dperp[jj];
+                    if(need_weightavg) weightavg[kbin] += union_mweight.weights[jj];
                 }
             } //OUTPUT_RPAVG
         }//end of j-loop
