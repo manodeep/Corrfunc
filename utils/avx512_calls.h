@@ -67,8 +67,8 @@ extern "C" {
 #define AVX512_SET_INT(X)                                         _mm512_set1_epi32(X)
 #define AVX512_SETZERO_INT()                                      _mm512_setzero_epi32()
 #define AVX512_COMPARE_INTS(X, Y, OP)                             _mm512_cmp_epi32_mask(X, Y, OP)
-#define AVX512_MASKZ_COMPRESS_INTS(mask, X)                        _mm512_maskz_compress_epi32(mask, X)
-        
+#define AVX512_MASKZ_COMPRESS_INTS(mask, X)                       _mm512_maskz_compress_epi32(mask, X)
+#define AVX512_MASKZ_COMPRESS_FLOATS(mask, X)                     _mm512_maskz_compress_ps(mask, X)
 
 #define AVX512_SETZERO_FLOAT()                                    _mm512_setzero_ps()
     
@@ -190,9 +190,10 @@ extern "C" {
 #define AVX512_SET_INT(X)                                         _mm256_set1_epi32(X)
 #define AVX512_SETZERO_INT()                                      _mm256_setzero_si256()
 #define AVX512_COMPARE_INTS(X, Y, OP)                             _mm256_cmp_epi32_mask(X, Y, OP)
-#define AVX512_MASKZ_COMPRESS_INTS(mask, X)                        _mm256_maskz_compress_epi32(mask, X)
+#define AVX512_MASKZ_COMPRESS_INTS(mask, X)                       _mm256_maskz_compress_epi32(mask, X)
+#define AVX512_MASKZ_COMPRESS_FLOATS(mask, X)                     _mm512_maskz_compress_pd(mask, X)
 #define AVX512_SETZERO_FLOAT()                                    _mm512_setzero_pd()
-    
+   
 #define AVX512_LOAD_FLOATS_UNALIGNED(X)                           _mm512_loadu_pd(X)
 #define AVX512_MASK_LOAD_FLOATS_UNALIGNED(FALSEVALS, MASK, X)     _mm512_mask_loadu_pd(FALSEVALS, MASK, X)
 #define AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(MASK, X)               _mm512_maskz_loadu_pd(MASK, X)

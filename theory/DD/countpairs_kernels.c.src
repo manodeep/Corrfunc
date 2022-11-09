@@ -258,6 +258,8 @@ static inline int countpairs_avx512_intrinsics_DOUBLE(const int64_t N0, DOUBLE *
                 //cause alignment problems but accessing the ints from an AVX*
                 //register should always be fine
                 union_rpbin.m_ibin = AVX512_MASKZ_COMPRESS_INTS(m_mask_matches, m_rpbin);
+                union_mDperp.m_Dperp = AVX512_MASKZ_COMPRESS_FLOATS(m_mask_matches, union_mDperp.m_Dperp);
+                union_mweight.m_weights = AVX512_MASKZ_COMPRESS_FLOATS(m_mask_matches, union_mweight.m_weights);
                 for(int jj=0;jj<nmatches;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
                     if(bin_type != CUSTOM_BIN) npairs[kbin]++;
