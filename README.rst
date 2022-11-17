@@ -20,7 +20,7 @@ Why Should You Use it
 
 1. **Fast** Theory pair-counting is **7x** faster than ``SciPy cKDTree``, and at least **2x** faster than all existing public codes.
 2. **OpenMP Parallel** All pair-counting codes can be done in parallel (with strong scaling efficiency >~ 95% up to 10 cores)
-3. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of python.
+3. **Python Extensions** Python extensions allow you to do the compute-heavy bits using C while retaining all of the user-friendliness of Python.
 4. **Weights** All correlation functions now support *arbitrary, user-specified* weights for individual points
 5. **Modular** The code is written in a modular fashion and is easily extensible to compute arbitrary clustering statistics.
 6. **Future-proof** As we get access to newer instruction-sets, the codes will get updated to use the latest and greatest CPU features.
@@ -43,52 +43,94 @@ Pre-requisites
 1. ``make >= 3.80``
 2. OpenMP capable compiler like ``icc``, ``gcc>=4.6`` or ``clang >= 3.7``. If
    not available, please disable ``USE_OMP`` option option in
-   ``theory.options`` and ``mocks.options``. You might need to ask your
-   sys-admin for system-wide installs of the compiler; if you prefer to
-   install your own then ``conda install gcc`` (MAC/linux) or
-   ``(sudo) port install gcc5`` (on MAC) should work.
-3. ``gsl >= 2.4``. Use either
-   ``conda install -c conda-forge gsl``
-   (MAC/linux) or ``(sudo) port install gsl`` (MAC) to install ``gsl``
-   if necessary.
-4. ``python >= 2.7`` or ``python>=3.4`` for compiling the C extensions.
-5. ``numpy>=1.7`` for compiling the C extensions.
+   ``theory.options`` and ``mocks.options``. On a HPC cluster, consult the cluster
+   documentation for how to load a compiler (often ``module load gcc`` or similar).
+   If you are using Corrfunc with Anaconda Python, then ``conda install gcc`` (MAC/linux)
+   should work.  On MAC, ``(sudo) port install gcc5`` is also an option.
+3. ``gsl >= 2.4``.  On an HPC cluster, consult the cluster documentation
+   (often ``module load gsl`` will work).  With Anaconda Python, use
+   ``conda install -c conda-forge gsl`` (MAC/linux).  On MAC, you can use
+   ``(sudo) port install gsl`` (MAC) if necessary.
+4. ``python >= 2.7`` or ``python>=3.4`` for compiling the CPython extensions.
+5. ``numpy>=1.7`` for compiling the CPython extensions.
 
-Preferred Install Method
--------------------------
+Method 1: Source Installation (Recommended)
+-------------------------------------------
 
 ::
 
     $ git clone https://github.com/manodeep/Corrfunc/
     $ make
     $ make install
-    $ python -m pip install . (--user)
+    $ python -m pip install . [--user]
     $ make tests
+    
+    # optional:
+    $ pip install pytest
+    $ pytest
 
 Assuming you have ``gcc`` in your ``PATH``, ``make`` and
-``make install`` should compile and install the C libraries + python
+``make install`` should compile and install the C libraries + Python
 extensions within the source directory. If you would like to install the
-python C extensions in your environment, then
-``python -m pip install . (--user)`` should be sufficient. If you are primarily
+CPython extensions in your environment, then
+``python -m pip install . [--user]`` should be sufficient. If you are primarily
 interested in the ``python`` interface, you can condense all of the steps
-by using ``python -m pip install . CC=yourcompiler (--user)`` after ``git clone``.
+by using ``python -m pip install . [--user] --install-option="CC=yourcompiler"`` after ``git clone``.
 
 Compilation Notes
-------------------
+~~~~~~~~~~~~~~~~~
 
-- If python and/or numpy are not available, then the C extensions will not be compiled.
+- If Python and/or numpy are not available, then the CPython extensions will not be compiled.
 
 - ``make install`` simply copies files into the ``lib/bin/include`` sub-directories. You do not need ``root`` permissions
 
 - Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``,  ``make install CC=yourcompiler``, ``make tests CC=yourcompiler`` etc. If you want to permanently change the default compiler, then please edit the `common.mk <common.mk>`__ file in the base directory.
 
-- If you are directly using ``python -m pip install . CC=yourcompiler (--user)``, please run a ``make distclean`` beforehand (especially if switching compilers)
+- If you are directly using ``python -m pip install . [--user] --install-option="CC=yourcompiler"``, please run a ``make distclean`` beforehand (especially if switching compilers)
+
+Installation notes
+~~~~~~~~~~~~~~~~~~
+
+If compilation went smoothly, please run ``make tests`` to ensure the
+code is working correctly. Depending on the hardware and compilation
+options, the tests might take more than a few minutes. *Note that the
+tests are exhaustive and not traditional unit tests*.
+
+For Python tests, please run ``pip install pytest`` and ``pytest``
+from the Corrfunc root dir.
+
+While we have tried to ensure that the package compiles and runs out of
+the box, cross-platform compatibility turns out to be incredibly hard.
+If you run into any issues during compilation and you have all of the
+pre-requisites, please see the `FAQ <FAQ>`__ or `email
+the Corrfunc mailing list <mailto:corrfunc@googlegroups.com>`__. Also, feel free to create a new issue
+with the ``Installation`` label.
+
+Please note that Corrfunc is compiling with optimizations for the architecture
+it is compiled on.  That is, it uses ``gcc -march=native`` or similar.
+For this reason, please try to compile Corrfunc on the architecture it will
+be run on (usually this is only a concern in heterogeneous compute environments,
+like an HPC cluster with multiple node types).  In many cases, you can
+compile on a more capable architecture (e.g. with AVX-512 support) then
+run on a less capable architecture (e.g. with only AVX2), because the
+runtime dispatch will select the appropriate kernel.  But the non-kernel
+elements of Corrfunc may emit AVX-512 instructions due to ``-march=native``.
+If an ``Illegal instruction`` error occurs, then you'll need to recompile
+on the target architecture.
 
 
-Alternate Install Method
--------------------------
+Method 2: pip installation
+--------------------------
 
-The python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs. Installing via ``pip`` is **not** recommended, please open an install issue on this repo first; doing so helps improve the code-base and saves future users from running into similar install issues.
+The Python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs.  This usually fine for a single-machine installation, like a laptop, where you are only using the Python interface.  For usage on a cluster or other environment with multiple CPU architectures, you may find it more useful to use the source installation method above in case you need to compile for a different architecture later.
+
+You can test a pip-installed Corrfunc with:
+
+::
+   $ pip install pytest
+   $ pytest --pyargs Corrfunc
+
+The tests may take a few minutes to run.
 
 OpenMP on OSX
 --------------
@@ -98,26 +140,11 @@ bit tricky. If you run into any issues compiling (or running) with OpenMP,
 please refer to the `FAQ <FAQ>`__ for potential solutions.
 
 
-Installation notes
-------------------
-
-If compilation went smoothly, please run ``make tests`` to ensure the
-code is working correctly. Depending on the hardware and compilation
-options, the tests might take more than a few minutes. *Note that the
-tests are exhaustive and not traditional unit tests*.
-
-While I have tried to ensure that the package compiles and runs out of
-the box, cross-platform compatibility turns out to be incredibly hard.
-If you run into any issues during compilation and you have all of the
-pre-requisites, please see the `FAQ <FAQ>`__ or `email
-the Corrfunc mailing list <mailto:corrfunc@googlegroups.com>`__. Also, feel free to create a new issue
-with the ``Installation`` label.
-
 Clustering Measures on simulated galaxies
-------------------------------------------
+=========================================
 
 Input data
-+++++++++++
+----------
 
 The input galaxies (or any discrete distribution of points) are derived from a
 simulation. For instance, the galaxies could be a result of an Halo Occupation
@@ -128,7 +155,7 @@ a cosmological simulation. The input set of points are expected to have
 positions specified in Cartesian XYZ.
 
 Types of available clustering statistics
-+++++++++++++++++++++++++++++++++++++++++
+----------------------------------------
 
 All codes that work on cosmological boxes with co-moving positions are
 located in the ``theory`` directory. The various clustering measures
@@ -152,10 +179,10 @@ are:
 6. ``vpf`` -- Measures the void probability function + counts-in-cells.
 
 Clustering measures on observed galaxies
-----------------------------------------
+========================================
 
 Input data
-+++++++++++
+----------
 
 The input galaxies are typically observed galaxies coming from a large-scale
 galaxy survey. In addition, simulated galaxies that have been projected onto the sky
@@ -171,7 +198,7 @@ For spatial correlation functions, an approximate "co-moving" distance
 
 
 Types of available clustering statistics
-+++++++++++++++++++++++++++++++++++++++++
+----------------------------------------
 
 All codes that work on mock catalogs (RA, DEC, CZ) are located in the
 ``mocks`` directory. The various clustering measures are:
@@ -181,7 +208,7 @@ All codes that work on mock catalogs (RA, DEC, CZ) are located in the
    produce the Landy-Szalay estimator for `wp(rp)`.
 
 2. ``DDsmu_mocks`` -- The standard auto/cross correlation between two data
-   sets. The outputs, DD, DR and RR can be combined using the python utility
+   sets. The outputs, DD, DR and RR can be combined using the Python utility
    ``convert_3d_counts_to_cf`` to produce the Landy-Szalay estimator for `xi(s, mu)`.
 
 3. ``DDtheta_mocks`` -- Computes angular correlation function between two data
@@ -199,7 +226,7 @@ are in the file `theory.options <theory.options>`__ while for the mocks, these o
 in file `mocks.options <mocks.options>`__.
 
 **Note** All options can be specified at
-runtime if you use the python interface or the static libraries. Each one of
+runtime if you use the Python interface or the static libraries. Each one of
 the following ``Makefile`` option has a corresponding entry for the runtime
 libraries.
 
@@ -284,7 +311,7 @@ Common Code options for both Mocks and Theory
 
 1. The values of ``bin_refine_factor`` and/or ``zbin_refine_factor`` in
    the ``countpairs\_\*.c`` files control the cache-misses, and
-   consequently, the runtime. In my trial-and-error methods, I have seen
+   consequently, the runtime. In trial-and-error methods, Manodeep has seen
    any values larger than 3 are generally slower for theory routines but
    can be faster for mocks. But some different
    combination of 1/2 for ``(z)bin_refine_factor`` might be faster on
@@ -330,7 +357,7 @@ Calling from Python
 If all went well, the codes can be directly called from ``python``.
 Please see `call_correlation_functions.py <Corrfunc/call_correlation_functions.py>`__ and
 `call_correlation_functions_mocks.py <Corrfunc/call_correlation_functions_mocks.py>`__ for examples on how to
-use the C extensions directly. Here are a few examples:
+use the CPython extensions directly. Here are a few examples:
 
 .. code:: python
 
@@ -375,8 +402,10 @@ use the C extensions directly. Here are a few examples:
 Author & Maintainers
 =====================
 
-Corrfunc was designed by Manodeep Sinha and is currently maintained by
-`Lehman Garrison <https://github.com/lgarrison>`_ and `Manodeep Sinha <https://github.com/manodeep>`_
+Corrfunc was designed and implemented by `Manodeep Sinha <https://github.com/manodeep>`_,
+with contributions from `Lehman Garrison <https://github.com/lgarrison>`_,
+`Nick Hand <https://github.com/nickhand>`_, and `Arnaud de Mattia <https://github.com/adematti>`_.
+Corrfunc is currently maintained by Manodeep Sinha and Lehman Garrison.
 
 Citing
 ======
