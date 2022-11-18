@@ -63,11 +63,10 @@ Method 1: Source Installation (Recommended)
     $ make
     $ make install
     $ python -m pip install . [--user]
-    $ make tests
     
-    # optional:
-    $ pip install pytest
-    $ pytest
+    $ make tests  # run the C tests
+    $ python -m pip install pytest
+    $ python -m pytest  # run the Python tests
 
 Assuming you have ``gcc`` in your ``PATH``, ``make`` and
 ``make install`` should compile and install the C libraries + Python
@@ -96,7 +95,7 @@ code is working correctly. Depending on the hardware and compilation
 options, the tests might take more than a few minutes. *Note that the
 tests are exhaustive and not traditional unit tests*.
 
-For Python tests, please run ``pip install pytest`` and ``pytest``
+For Python tests, please run ``python -m pip install pytest`` and ``python -m pytest``
 from the Corrfunc root dir.
 
 While we have tried to ensure that the package compiles and runs out of
@@ -122,15 +121,12 @@ on the target architecture.
 Method 2: pip installation
 --------------------------
 
-The Python package is directly installable via ``pip install Corrfunc``. However, in that case you will lose the ability to recompile the code according to your needs.  This usually fine for a single-machine installation, like a laptop, where you are only using the Python interface.  For usage on a cluster or other environment with multiple CPU architectures, you may find it more useful to use the source installation method above in case you need to compile for a different architecture later.
+The Python package is directly installable via ``python -m pip install Corrfunc``. However, in that case you will lose the ability to recompile the code.  This usually fine if you are only using the Python interface and are on a single machine, like a laptop.  For usage on a cluster or other environment with multiple CPU architectures, you may find it more useful to use the source installation method above in case you need to compile for a different architecture later.
 
-You can test a pip-installed Corrfunc with:
+You can check that a pip-installed Corrfunc is working with:
 
 ::
-   $ pip install pytest
-   $ pytest --pyargs Corrfunc
-
-The tests may take a few minutes to run.
+   $ python -m Corrfunc.tests
 
 OpenMP on OSX
 --------------
