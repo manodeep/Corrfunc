@@ -59,7 +59,8 @@ Method 1: Source Installation (Recommended)
 
 ::
 
-    $ git clone https://github.com/manodeep/Corrfunc/
+    $ git clone https://github.com/manodeep/Corrfunc.git
+    $ cd Corrfunc
     $ make
     $ make install
     $ python -m pip install . [--user]
@@ -73,8 +74,9 @@ Assuming you have ``gcc`` in your ``PATH``, ``make`` and
 extensions within the source directory. If you would like to install the
 CPython extensions in your environment, then
 ``python -m pip install . [--user]`` should be sufficient. If you are primarily
-interested in the ``python`` interface, you can condense all of the steps
-by using ``python -m pip install . [--user] --install-option="CC=yourcompiler"`` after ``git clone``.
+interested in the Python interface, you can condense all of the steps
+by using ``python -m pip install . [--user] --install-option="CC=yourcompiler"``
+after ``git clone [...]`` and ``cd Corrfunc``.
 
 Compilation Notes
 ~~~~~~~~~~~~~~~~~
@@ -86,6 +88,18 @@ Compilation Notes
 - Default compiler on MAC is set to ``clang``, if you want to specify a different compiler, you will have to call ``make CC=yourcompiler``,  ``make install CC=yourcompiler``, ``make tests CC=yourcompiler`` etc. If you want to permanently change the default compiler, then please edit the `common.mk <common.mk>`__ file in the base directory.
 
 - If you are directly using ``python -m pip install . [--user] --install-option="CC=yourcompiler"``, please run a ``make distclean`` beforehand (especially if switching compilers)
+
+- Please note that Corrfunc is compiling with optimizations for the architecture
+it is compiled on.  That is, it uses ``gcc -march=native`` or similar.
+For this reason, please try to compile Corrfunc on the architecture it will
+be run on (usually this is only a concern in heterogeneous compute environments,
+like an HPC cluster with multiple node types).  In many cases, you can
+compile on a more capable architecture (e.g. with AVX-512 support) then
+run on a less capable architecture (e.g. with only AVX2), because the
+runtime dispatch will select the appropriate kernel.  But the non-kernel
+elements of Corrfunc may emit AVX-512 instructions due to ``-march=native``.
+If an ``Illegal instruction`` error occurs, then you'll need to recompile
+on the target architecture.
 
 Installation notes
 ~~~~~~~~~~~~~~~~~~
@@ -105,18 +119,6 @@ pre-requisites, please see the `FAQ <FAQ>`__ or `email
 the Corrfunc mailing list <mailto:corrfunc@googlegroups.com>`__. Also, feel free to create a new issue
 with the ``Installation`` label.
 
-Please note that Corrfunc is compiling with optimizations for the architecture
-it is compiled on.  That is, it uses ``gcc -march=native`` or similar.
-For this reason, please try to compile Corrfunc on the architecture it will
-be run on (usually this is only a concern in heterogeneous compute environments,
-like an HPC cluster with multiple node types).  In many cases, you can
-compile on a more capable architecture (e.g. with AVX-512 support) then
-run on a less capable architecture (e.g. with only AVX2), because the
-runtime dispatch will select the appropriate kernel.  But the non-kernel
-elements of Corrfunc may emit AVX-512 instructions due to ``-march=native``.
-If an ``Illegal instruction`` error occurs, then you'll need to recompile
-on the target architecture.
-
 
 Method 2: pip installation
 --------------------------
@@ -126,6 +128,7 @@ The Python package is directly installable via ``python -m pip install Corrfunc`
 You can check that a pip-installed Corrfunc is working with:
 
 ::
+
    $ python -m Corrfunc.tests
 
 OpenMP on OSX
