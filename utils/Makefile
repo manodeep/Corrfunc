@@ -1,4 +1,10 @@
 ROOT_DIR := ..
+
+## While GSL is required in one object file, GSL_REQUIRED is intentionally 
+## *NOT* set because that flag will be set/unset by the actual pair-counting. 
+## If we set the GSL_REQUIRED flag in this Makefile, then *ALL* directories
+## effectively inherit GSL_REQUIRED.
+
 include $(ROOT_DIR)/common.mk
 TARGETSRC   := cosmology_params.c gridlink_impl_double.c gridlink_impl_float.c gridlink_mocks_impl_float.c \
                gridlink_mocks_impl_double.c gridink_utils_double.c gridlink_utils_float.c \

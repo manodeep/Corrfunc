@@ -185,13 +185,15 @@ ifeq ($(DO_CHECKS), 1)
    -CFLAGS += -Wimplicit-fallthrough=1
   endif
 
-  GSL_FOUND := $(shell gsl-config --version 2>/dev/null)
-  ifndef GSL_FOUND
-    $(error $(ccred)Error:$(ccreset) GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION) $(ccreset))
+  ifeq ($(GSL_REQUIRED), true)
+    GSL_FOUND := $(shell gsl-config --version 2>/dev/null)
+    ifndef GSL_FOUND
+      $(error $(ccred)Error:$(ccreset) GSL not found in path - please install GSL before installing $(DISTNAME).$(VERSION) $(ccreset))
+    endif
+    GSL_CFLAGS := $(shell gsl-config --cflags)
+    GSL_LIBDIR := $(shell gsl-config --prefix)/lib
+    GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR)
   endif
-  GSL_CFLAGS := $(shell gsl-config --cflags)
-  GSL_LIBDIR := $(shell gsl-config --prefix)/lib
-  GSL_LINK   := $(shell gsl-config --libs) -Xlinker -rpath -Xlinker $(GSL_LIBDIR)
 
   # Check if all progressbar output is to be suppressed
   OUTPUT_PGBAR := 1

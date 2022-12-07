@@ -16,6 +16,7 @@ DDsmu_mocks_LIB := countpairs_s_mu_mocks
 DDTHETA_mocks_LIB := countpairs_theta_mocks
 VPF_mocks_LIB := countspheres_mocks
 
+GSL_REQUIRED := true
 include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
 TARGET := run_correlations_mocks

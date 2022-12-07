@@ -5,10 +5,11 @@
 *.so
 *.so.*
 *.bak
-xx*
-yy*
-zz*
-*.txt.*
+*.dat*
+*xx*
+*yy*
+*zz*
+*.txt*
 *dSYM*
 .DS_Store
 *.pyc

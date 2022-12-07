@@ -5,6 +5,7 @@ INSTALL_BIN_DIR := $(ROOT_DIR)/bin
 UTILS_DIR := $(ROOT_DIR)/utils
 IO_DIR := $(ROOT_DIR)/io
 
+GSL_REQUIRED := true
 include $(ROOT_DIR)/mocks.options $(ROOT_DIR)/common.mk
 
 LIBNAME := countpairs_rp_pi_mocks
