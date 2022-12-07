@@ -147,4 +147,4 @@ jobs:
         shell: bash -l {0}
         run: |
           python -m pip install pytest
-          pytest -v
+          python -m pytest -v
