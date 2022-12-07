@@ -70,15 +70,20 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
-        
-    boxsize: double, required if ``periodic=True``
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is 0., then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
+
+    boxsize: double or 3-tuple of double, required if ``periodic=True``
+        The (X,Y,Z) side lengths of the spatial domain. Present to facilitate
+        exact calculations for periodic wrapping. A scalar ``boxsize`` will
+        be broadcast to a 3-tuple. If the boxsize in a dimension is 0., then
+        then that dimension's wrap is done based on the extent of the particle
+        distribution. If the boxsize in a dimension is -1., then periodicity
+        is disabled for that dimension.
 
         .. versionchanged:: 2.4.0
            Required if ``periodic=True``.
+
+        .. versionchanged:: 2.5.0
+           Accepts a 3-tuple of side lengths.
 
     X2/Y2/Z2: array-like, real (float/double)
         Array of XYZ positions for the second set of points. *Must* be the same
@@ -218,6 +223,12 @@ def DD(autocorr, nthreads, binfile, X1, Y1, Z1, weights1=None, periodic=True,
 
     if periodic and boxsize is None:
         raise ValueError("Must specify a boxsize if periodic=True")
+
+    if boxsize is not None:
+        boxsize = np.atleast_1d(boxsize)
+        if len(boxsize) == 1:
+            boxsize = (boxsize[0], boxsize[0], boxsize[0])
+        boxsize = tuple(boxsize)
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 

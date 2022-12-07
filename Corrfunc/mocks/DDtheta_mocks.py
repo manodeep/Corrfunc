@@ -36,9 +36,9 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
 
 
     .. note:: This module only returns pair counts and not the actual
-       correlation function :math:`\\omega(\theta)`. See
+       correlation function :math:`\\omega(\\theta)`. See
        :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` for computing
-       :math:`\\omega(\theta)` from the pair counts returned.
+       :math:`\\omega(\\theta)` from the pair counts returned.
 
 
     Parameters
@@ -122,7 +122,7 @@ def DDtheta_mocks(autocorr, nthreads, binfile,
         Boolean flag to control output of informational messages
 
     output_thetaavg : boolean (default false)
-        Boolean flag to output the average ``\theta`` for each bin. Code will
+        Boolean flag to output the average ``\\theta`` for each bin. Code will
         run slower if you set this flag.
 
         If you are calculating in single-precision, ``thetaavg`` will
@@ -415,7 +415,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
         Boolean flag to control output of informational messages
 
     output_thetaavg : boolean (default false)
-        Boolean flag to output the average ``\theta`` for each bin. Code will
+        Boolean flag to output the average ``\\theta`` for each bin. Code will
         run slower if you set this flag.
 
         If you are calculating in single-precision, ``thetaavg`` will

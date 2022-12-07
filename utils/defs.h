@@ -48,6 +48,8 @@ struct api_cell_timings
 #define MAX_FAST_DIVIDE_NR_STEPS  3
 #define OPTIONS_HEADER_SIZE     1024
 
+#define BOXSIZE_NOTGIVEN (-2.)
+
 struct config_options
 {
     /* The fields should appear here in decreasing order of
@@ -59,7 +61,12 @@ struct config_options
      */
 
     /* Theory option for periodic boundaries */
-    double boxsize;
+    union {
+        double boxsize;
+        double boxsize_x;
+    };
+    double boxsize_y;
+    double boxsize_z;
 
     /* Options for mocks */
     //cosmology struct. Intentionally left anoynoymous, so I can
@@ -143,10 +150,9 @@ struct config_options
     };
 
     /* Reserving to maintain ABI compatibility for the future */
-    /* Note that the math here assumes no padding bytes, that's because of the
-       order in which the fields are declared (largest to smallest alignments)  */
-    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 9*sizeof(double) - 3*sizeof(int)
-                     - sizeof(uint16_t) - 16*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t) ];
+    uint8_t reserved[OPTIONS_HEADER_SIZE - 33*sizeof(char) - sizeof(size_t) - 11*sizeof(double) - 3*sizeof(int)
+                     - sizeof(uint16_t) - 16*sizeof(uint8_t) - sizeof(struct api_cell_timings *) - sizeof(int64_t)
+                     ];
 };
 
 static inline void set_bin_refine_scheme(struct config_options *options, const int8_t flag)
@@ -244,9 +250,12 @@ static inline struct config_options get_config_options(void)
     memset(&options, 0, OPTIONS_HEADER_SIZE);
     snprintf(options.version, sizeof(options.version)/sizeof(char)-1, "%s", API_VERSION);
 
-    // If periodic, set to -1 to require the user to set a boxsize.
-    // A value of 0 will use automatic detection of the particle extent
-    options.boxsize = -1.;
+    // If periodic, BOXSIZE_NOTGIVEN requires the user to set a boxsize.
+    // A value of 0 will use automatic detection of the particle extent.
+    // -1 makes that dimension non-periodic.
+    options.boxsize_x = BOXSIZE_NOTGIVEN;
+    options.boxsize_y = BOXSIZE_NOTGIVEN;
+    options.boxsize_z = BOXSIZE_NOTGIVEN;
 
 #ifdef DOUBLE_PREC
     options.float_type = sizeof(double);

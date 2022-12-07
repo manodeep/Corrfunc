@@ -77,9 +77,10 @@ cellarray_mocks_DOUBLE * gridlink_mocks_DOUBLE(const int64_t NPART,
     }
 
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
+    DOUBLE wrap=ZERO;
+    const int xstatus = get_binsize_DOUBLE(xmax - xmin, wrap, max_x_size, xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x);
+    const int ystatus = get_binsize_DOUBLE(ymax - ymin, wrap, max_y_size, ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y);
+    const int zstatus = get_binsize_DOUBLE(zmax - zmin, wrap, max_z_size, zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z);
     if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
       fprintf(stderr,"Received xstatus = %d ystatus = %d zstatus = %d. Error\n", xstatus, ystatus, zstatus);
       return NULL;
@@ -1584,7 +1585,12 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_ra_dec_DOUBLE(cellarra
                         continue;
                     }
 
-                    CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
+                    // No periodicity with mocks; wrap value is always zero.
+                    const DOUBLE xwrap = ZERO;
+                    const DOUBLE ywrap = ZERO;
+                    const DOUBLE zwrap = ZERO;
+
+                    CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, xwrap, ywrap, zwrap, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
 
                     XRETURN(num_cell_pairs < max_num_cell_pairs, NULL,
                             "Error: Assigning this existing cell-pair would require accessing invalid memory.\n"
@@ -1624,6 +1630,10 @@ struct cell_pair_DOUBLE * generate_cell_pairs_mocks_theta_ra_dec_DOUBLE(cellarra
                     this_cell_pair->closest_x1 = closest_x1;
                     this_cell_pair->closest_y1 = closest_y1;
                     this_cell_pair->closest_z1 = closest_z1;
+
+                    this_cell_pair->xwrap = xwrap;
+                    this_cell_pair->ywrap = ywrap;
+                    this_cell_pair->zwrap = zwrap;
 
                     this_cell_pair->same_cell = (autocorr == 1 && icell2 == icell) ? 1:0;
 

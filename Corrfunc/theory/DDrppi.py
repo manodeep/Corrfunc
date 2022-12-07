@@ -23,7 +23,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
            c_api_timer=False, isa=r'fastest', weight_type=None):
     """
     Calculate the 3-D pair-counts corresponding to the real-space correlation
-    function, :math:`\\xi(r_p, \pi)` or :math:`\\wp(r_p)`. Pairs which are
+    function, :math:`\\xi(r_p, \\pi)` or :math:`\\wp(r_p)`. Pairs which are
     separated by less than the ``rp`` bins (specified in ``binfile``) in the
     X-Y plane, and less than ``pimax`` in the Z-dimension are
     counted.
@@ -34,10 +34,10 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
     ``weight_type``.
 
     .. note:: that this module only returns pair counts and not the actual
-        correlation function :math:`\\xi(r_p, \pi)` or :math:`wp(r_p)`. See the
+        correlation function :math:`\\xi(r_p, \\pi)` or :math:`wp(r_p)`. See the
         utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf` and
         :py:mod:`Corrfunc.utils.convert_rp_pi_counts_to_wp` for computing
-        :math:`\\xi(r_p, \pi)` and :math:`wp(r_p)` respectively from the
+        :math:`\\xi(r_p, \\pi)` and :math:`wp(r_p)` respectively from the
         pair counts.
 
 
@@ -84,18 +84,23 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         results are returned in the ``weightavg`` field.  If only one of
         weights1 and weights2 is specified, the other will be set to uniform
         weights.
-        
+
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
-        
-    boxsize: double, required if ``periodic=True``
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is 0., then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
+
+    boxsize: double or 3-tuple of double, required if ``periodic=True``
+        The (X,Y,Z) side lengths of the spatial domain. Present to facilitate
+        exact calculations for periodic wrapping. A scalar ``boxsize`` will
+        be broadcast to a 3-tuple. If the boxsize in a dimension is 0., then
+        then that dimension's wrap is done based on the extent of the particle
+        distribution. If the boxsize in a dimension is -1., then periodicity
+        is disabled for that dimension.
 
         .. versionchanged:: 2.4.0
            Required if ``periodic=True``.
+
+        .. versionchanged:: 2.5.0
+           Accepts a 3-tuple of side lengths.
 
     X2/Y2/Z2: array-like, real (float/double)
         Array of XYZ positions for the second set of points. *Must* be the same
@@ -165,7 +170,7 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
         npairs, weightavg] for each radial bin specified in the ``binfile``.
         If ``output_rpavg`` is not set, then ``rpavg`` will be set to 0.0 for
         all bins; similarly for ``weightavg``. ``npairs`` contains the number
-        of pairs in that bin and can be used to compute :math:`\\xi(r_p, \pi)`
+        of pairs in that bin and can be used to compute :math:`\\xi(r_p, \\pi)`
         by combining with (DR, RR) counts.
 
     api_time: float, optional
@@ -269,6 +274,12 @@ def DDrppi(autocorr, nthreads, pimax, binfile, X1, Y1, Z1, weights1=None,
 
     if periodic and boxsize is None:
         raise ValueError("Must specify a boxsize if periodic=True")
+
+    if boxsize is not None:
+        boxsize = np.atleast_1d(boxsize)
+        if len(boxsize) == 1:
+            boxsize = (boxsize[0], boxsize[0], boxsize[0])
+        boxsize = tuple(boxsize)
 
     weights1, weights2 = process_weights(weights1, weights2, X1, X2, weight_type, autocorr)
 

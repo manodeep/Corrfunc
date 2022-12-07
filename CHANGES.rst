@@ -14,6 +14,11 @@ New features
 2.5.0 (upcoming)
 ================
 
+Enhancements
+------------
+- Allow user to specify periodicity and box size per dimension [#276]
+- Allow larger Rmax (up to half the boxsize) [#277]
+
 Changes
 -------
 - Add Corrfunc/tests.py to CI testing [#260]

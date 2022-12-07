@@ -81,14 +81,19 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
     periodic: boolean
         Boolean flag to indicate periodic boundary conditions.
 
-    boxsize: double, required if ``periodic=True``
-        The side-length of the cube in the cosmological simulation.
-        Present to facilitate exact calculations for periodic wrapping.
-        If boxsize is 0., then the wrapping is done based on
-        the maximum difference within each dimension of the X/Y/Z arrays.
+    boxsize: double or 3-tuple of double, required if ``periodic=True``
+        The (X,Y,Z) side lengths of the spatial domain. Present to facilitate
+        exact calculations for periodic wrapping. A scalar ``boxsize`` will
+        be broadcast to a 3-tuple. If the boxsize in a dimension is 0., then
+        then that dimension's wrap is done based on the extent of the particle
+        distribution. If the boxsize in a dimension is -1., then periodicity
+        is disabled for that dimension.
 
         .. versionchanged:: 2.4.0
            Required if ``periodic=True``.
+
+        .. versionchanged:: 2.5.0
+           Accepts a 3-tuple of side lengths.
 
     (xyz)bin_refine_factor: integer, default is (1,1,1); typically within [1-3]
         Controls the refinement on the cell sizes. Can have up to a 20% impact
@@ -202,6 +207,11 @@ def vpf(rmax, nbins, nspheres, numpN, seed,
 
     if periodic and boxsize is None:
         raise ValueError("Must specify a boxsize if periodic=True")
+
+    boxsize = np.atleast_1d(boxsize)
+    if len(boxsize) == 1:
+        boxsize = (boxsize[0], boxsize[0], boxsize[0])
+    boxsize = tuple(boxsize)
 
     kwargs = {}
     if boxsize is not None:

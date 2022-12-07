@@ -229,28 +229,59 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
         }
     }
 
-    if(options->boxsize < 0 && options->periodic){
-        fprintf(stderr, "boxsize = %g must be >= 0 with periodic wrap. Please specify a non-zero boxsize or zero to detect the particle extent.\n",
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
+    if(options->periodic && options->boxsize == BOXSIZE_NOTGIVEN){
+        fprintf(stderr, "boxsize = %g must be specified with periodic wrap. Please specify a non-zero boxsize, or zero to detect the particle extent, or -1 to make a dimension non-periodic.\n",
             options->boxsize);
         return EXIT_FAILURE;
     }
-    const DOUBLE xdiff = options->boxsize > 0 ? options->boxsize:(xmax-xmin);
-    const DOUBLE ydiff = options->boxsize > 0 ? options->boxsize:(ymax-ymin);
-    const DOUBLE zdiff = options->boxsize > 0 ? options->boxsize:(zmax-zmin);
-    if(options->verbose && options->periodic) {
-        fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xdiff);
-        fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ydiff);
-        fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zdiff);
+    
+    const double boxsize_y = options->boxsize_y == BOXSIZE_NOTGIVEN ? options->boxsize : options->boxsize_y;
+    const double boxsize_z = options->boxsize_z == BOXSIZE_NOTGIVEN ? options->boxsize : options->boxsize_z;
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+    const int periodic_x = options->periodic && options->boxsize_x >= 0;
+    const int periodic_y = options->periodic && boxsize_y >= 0;
+    const int periodic_z = options->periodic && boxsize_z >= 0;
+
+    // If periodic (L!=-1), use given boxsize (L>0) or auto-detect (L==0). If not, set wrap value to 0.
+    const DOUBLE xwrap = periodic_x ? (options->boxsize_x > 0 ? options->boxsize_x : (xmax-xmin)) : 0.;
+    const DOUBLE ywrap = periodic_y ? (boxsize_y > 0 ? boxsize_y : (ymax-ymin)) : 0.;
+    const DOUBLE zwrap = periodic_z ? (boxsize_z > 0 ? boxsize_z : (zmax-zmin)) : 0.;
+    
+    if(options->verbose) {
+        if(periodic_x) {
+            fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf with periodic wrapping = %lf\n",xmin,xmax,xwrap);
+        } else {
+            fprintf(stderr,"Running with points in [xmin,xmax] = %lf,%lf (non-periodic)\n",xmin,xmax);
+        }
+        if(periodic_y) {
+            fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf with periodic wrapping = %lf\n",ymin,ymax,ywrap);
+        } else {
+            fprintf(stderr,"Running with points in [ymin,ymax] = %lf,%lf (non-periodic)\n",ymin,ymax);
+        }
+        if(periodic_z) {
+            fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf with periodic wrapping = %lf\n",zmin,zmax,zwrap);
+        } else {
+            fprintf(stderr,"Running with points in [zmin,zmax] = %lf,%lf (non-periodic)\n",zmin,zmax);
+        }
     }
 
     if(get_bin_refine_scheme(options) == BINNING_DFL) {
-        if(rpmax < 0.05*xdiff) {
+        if(rpmax < 0.05*xwrap) {
             options->bin_refine_factors[0] = 1;
         }
-        if(rpmax < 0.05*ydiff) {
+        if(rpmax < 0.05*ywrap) {
             options->bin_refine_factors[1] = 1;
         }
-        if(pimax < 0.05*zdiff) {
+        if(pimax < 0.05*zwrap) {
             options->bin_refine_factors[2] = 1;
         }
     }
@@ -261,6 +292,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
     cellarray_DOUBLE *lattice1 = gridlink_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                                  xmin, xmax, ymin, ymax, zmin, zmax,
                                                  rpmax, rpmax,pimax,
+                                                 xwrap, ywrap, zwrap,
                                                  options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                                  &nmesh_x, &nmesh_y, &nmesh_z, options);
     if(lattice1 == NULL) {
@@ -288,6 +320,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
           lattice1 = gridlink_DOUBLE(ND1, X1, Y1, Z1, &(extra->weights0),
                                      xmin, xmax, ymin, ymax, zmin, zmax,
                                      rpmax, rpmax, pimax,
+                                     xwrap, ywrap, zwrap,
                                      options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                      &nmesh_x, &nmesh_y, &nmesh_z, options);
           if(lattice1 == NULL) {
@@ -309,6 +342,7 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
         lattice2 = gridlink_DOUBLE(ND2, X2, Y2, Z2, &(extra->weights1),
                                    xmin, xmax, ymin, ymax, zmin, zmax,
                                    rpmax, rpmax, pimax,
+                                   xwrap, ywrap, zwrap,
                                    options->bin_refine_factors[0], options->bin_refine_factors[1], options->bin_refine_factors[2],
                                    &ngrid2_x, &ngrid2_y, &ngrid2_z, options);
         if(lattice2 == NULL) {
@@ -331,10 +365,11 @@ int countpairs_rp_pi_DOUBLE(const int64_t ND1, DOUBLE *X1, DOUBLE *Y1, DOUBLE *Z
                                                                          options->bin_refine_factors[1],
                                                                          options->bin_refine_factors[2],
                                                                          nmesh_x, nmesh_y, nmesh_z,
-                                                                         xdiff, ydiff, zdiff,
+                                                                         xwrap, ywrap, zwrap,
                                                                          -1.0, rpmax, pimax,/*max_3D_sep, max_2D_sep, max_1D_sep*/
                                                                          options->enable_min_sep_opt,
-                                                                         autocorr, options->periodic);
+                                                                         autocorr,
+                                                                         periodic_x, periodic_y, periodic_z);
     if(all_cell_pairs == NULL) {
         free_cellarray_DOUBLE(lattice1, totncells);
         if(autocorr == 0) {

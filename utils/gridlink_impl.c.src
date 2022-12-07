@@ -30,6 +30,9 @@
 #endif
 
 
+void warn_flat_dim_DOUBLE(const char *dim);
+
+
 void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
 {
     // `totncells` is currently unused, but no need to break the C API.
@@ -53,6 +56,12 @@ void free_cellarray_DOUBLE(cellarray_DOUBLE *lattice, const int64_t totncells)
     free(lattice);
 }
 
+void warn_flat_dim_DOUBLE(const char *dim){
+    fprintf(stderr, "Warning: all particles appear to have the same %s coordinate.\n"
+                    "         Corrfunc will operate correctly, but make sure this is what you expected.",
+                    dim);
+}
+
 cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                                    DOUBLE *X, DOUBLE *Y, DOUBLE *Z, weight_struct *WEIGHTS,
                                    const DOUBLE xmin, const DOUBLE xmax,
@@ -61,6 +70,9 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
                                    const DOUBLE max_x_size,
                                    const DOUBLE max_y_size,
                                    const DOUBLE max_z_size,
+                                   const DOUBLE xwrap,
+                                   const DOUBLE ywrap,
+                                   const DOUBLE zwrap,
                                    const int xbin_refine_factor,
                                    const int ybin_refine_factor,
                                    const int zbin_refine_factor,
@@ -78,13 +90,27 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
     }
 
     DOUBLE xbinsize=ZERO, ybinsize=ZERO, zbinsize=ZERO;
-    const int xstatus = get_binsize_DOUBLE(xmin,xmax,max_x_size,xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x, options);
-    const int ystatus = get_binsize_DOUBLE(ymin,ymax,max_y_size,ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y, options);
-    const int zstatus = get_binsize_DOUBLE(zmin,zmax,max_z_size,zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z, options);
+
+    const int xstatus = get_binsize_DOUBLE(xmax-xmin, xwrap, max_x_size, xbin_refine_factor, options->max_cells_per_dim, &xbinsize, &nmesh_x);
+    const int ystatus = get_binsize_DOUBLE(ymax-ymin, ywrap, max_y_size, ybin_refine_factor, options->max_cells_per_dim, &ybinsize, &nmesh_y);
+    const int zstatus = get_binsize_DOUBLE(zmax-zmin, zwrap, max_z_size, zbin_refine_factor, options->max_cells_per_dim, &zbinsize, &nmesh_z);
     if(xstatus != EXIT_SUCCESS || ystatus != EXIT_SUCCESS || zstatus != EXIT_SUCCESS) {
       fprintf(stderr,"Received xstatus = %d ystatus = %d zstatus = %d. Error\n", xstatus, ystatus, zstatus);
       return NULL;
     }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
+    if(xbinsize == ZERO && NPART > 2) warn_flat_dim_DOUBLE("X");
+    if(ybinsize == ZERO && NPART > 2) warn_flat_dim_DOUBLE("Y");
+    if(zbinsize == ZERO && NPART > 2) warn_flat_dim_DOUBLE("Z");
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
     const int64_t totncells = (int64_t) nmesh_x * (int64_t) nmesh_y * (int64_t) nmesh_z;
 
@@ -125,9 +151,11 @@ cellarray_DOUBLE * gridlink_DOUBLE(const int64_t NPART,
         return NULL;
     }
 
-    const DOUBLE xinv=1.0/xbinsize;
-    const DOUBLE yinv=1.0/ybinsize;
-    const DOUBLE zinv=1.0/zbinsize;
+    // "binsize > 0" guards against all particles falling in a plane (or worse),
+    // in which case we set the inv to 0 to assign all particles to the first cell
+    const DOUBLE xinv = xbinsize > 0 ? 1.0/xbinsize : 0.;
+    const DOUBLE yinv = ybinsize > 0 ? 1.0/ybinsize : 0.;
+    const DOUBLE zinv = zbinsize > 0 ? 1.0/zbinsize : 0.;
 
     // First pass over the particles: compute cell indices
     int64_t out_of_bounds = 0;
@@ -414,24 +442,25 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                                                      int64_t *ncell_pairs,
                                                      const int xbin_refine_factor, const int ybin_refine_factor, const int zbin_refine_factor,
                                                      const int nmesh_x, const int nmesh_y, const int nmesh_z,
-                                                     const DOUBLE xdiff, const DOUBLE ydiff, const DOUBLE zdiff,
+                                                     const DOUBLE xwrap, const DOUBLE ywrap, const DOUBLE zwrap,
                                                      const DOUBLE max_3D_sep, const DOUBLE max_2D_sep, const DOUBLE max_1D_sep,
                                                      const int enable_min_sep_opt,
                                                      const int autocorr,
-                                                     const int periodic)
+                                                     const int periodic_x, const int periodic_y, const int periodic_z)
 {
     const int64_t nx_ngb = 2*xbin_refine_factor + 1;
     const int64_t ny_ngb = 2*ybin_refine_factor + 1;
     const int64_t nz_ngb = 2*zbin_refine_factor + 1;
     const int64_t max_ngb_cells = nx_ngb * ny_ngb * nz_ngb - 1; // -1 for self
-
+    
+    const int any_periodic = periodic_x || periodic_y || periodic_z;
 
     if( ! (autocorr == 0 || autocorr == 1) ) {
         fprintf(stderr,"Error: Strange value of autocorr = %d. Expected to receive either 1 (auto-correlations) or 0 (cross-correlations)\n", autocorr);
         return NULL;
     }
     const int64_t num_self_pairs = totncells;
-    const int64_t num_nonself_pairs = totncells * max_ngb_cells / (1 + autocorr);
+    const int64_t num_nonself_pairs = totncells * max_ngb_cells;
 
     const int64_t max_num_cell_pairs = num_self_pairs + num_nonself_pairs;
     int64_t num_cell_pairs = 0;
@@ -452,9 +481,10 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
 
        MS: 23/8/2019
      */
-    const int check_for_duplicate_ngb_cells = (periodic == 1 && (nmesh_x < (2*xbin_refine_factor + 1) ||
-                                                                 nmesh_y < (2*ybin_refine_factor + 1) ||
-                                                                 nmesh_z < (2*zbin_refine_factor + 1))) ? 1:0;
+    const int check_for_duplicate_ngb_cells = ( any_periodic &&
+                                                (nmesh_x < (2*xbin_refine_factor + 1) ||
+                                                 nmesh_y < (2*ybin_refine_factor + 1) ||
+                                                 nmesh_z < (2*zbin_refine_factor + 1))  ) ? 1:0;
     for(int64_t icell=0;icell<totncells;icell++) {
         struct cellarray_DOUBLE *first = &(lattice1[icell]);
         if(first->nelements == 0) continue;
@@ -469,23 +499,23 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
         for(int iix=-xbin_refine_factor;iix<=xbin_refine_factor;iix++){
             const int periodic_ix = (ix + iix + nmesh_x) % nmesh_x;
             const int non_periodic_ix = ix + iix;
-            const int iiix = (periodic == 1) ? periodic_ix:non_periodic_ix;
+            const int iiix = (periodic_x == 1) ? periodic_ix:non_periodic_ix;
             if(iiix < 0 || iiix >= nmesh_x) continue;
-            const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xdiff:-xdiff);
+            const DOUBLE off_xwrap = ((ix + iix) >= 0) && ((ix + iix) < nmesh_x) ? 0.0: ((ix+iix) < 0 ? xwrap:-xwrap);
 
             for(int iiy=-ybin_refine_factor;iiy<=ybin_refine_factor;iiy++) {
                 const int periodic_iy = (iy + iiy + nmesh_y) % nmesh_y;
                 const int non_periodic_iy = iy + iiy;
-                const int iiiy = (periodic == 1) ? periodic_iy:non_periodic_iy;
+                const int iiiy = (periodic_y == 1) ? periodic_iy:non_periodic_iy;
                 if(iiiy < 0 || iiiy >= nmesh_y) continue;
-                const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ydiff:-ydiff);
+                const DOUBLE off_ywrap = ((iy + iiy) >= 0) && ((iy + iiy) < nmesh_y) ? 0.0: ((iy+iiy) < 0 ? ywrap:-ywrap);
                 for(int64_t iiz=-zbin_refine_factor;iiz<=zbin_refine_factor;iiz++){
                     const int periodic_iz = (iz + iiz + nmesh_z) % nmesh_z;
                     const int non_periodic_iz = iz + iiz;
-                    const int iiiz = (periodic == 1) ? periodic_iz:non_periodic_iz;
+                    const int iiiz = (periodic_z == 1) ? periodic_iz:non_periodic_iz;
                     if(iiiz < 0 || iiiz >= nmesh_z) continue;
 
-                    const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zdiff:-zdiff);
+                    const DOUBLE off_zwrap = ((iz + iiz) >= 0) && ((iz + iiz) < nmesh_z) ? 0.0: ((iz+iiz) < 0 ? zwrap:-zwrap);
                     const int64_t icell2 = iiiz + (int64_t) nmesh_z*iiiy + nmesh_z*nmesh_y*iiix;
 
                     //Since we are creating a giant array with all possible cell-pairs, we need
@@ -499,7 +529,7 @@ struct cell_pair_DOUBLE * generate_cell_pairs_DOUBLE(struct cellarray_DOUBLE *la
                     //Check if the ngb-cell has already been added - can happen under periodic boundary
                     //conditions, with small value of nmesh_x/y/z (ie large Rmax relative to BoxSize)
                     if(check_for_duplicate_ngb_cells) {
-                        CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
+                        CHECK_AND_CONTINUE_FOR_DUPLICATE_NGB_CELLS_DOUBLE(icell, icell2, off_xwrap, off_ywrap, off_zwrap, num_cell_pairs, num_ngb_this_cell, all_cell_pairs);
                     }
 
                     struct cellarray_DOUBLE *second = &(lattice2[icell2]);

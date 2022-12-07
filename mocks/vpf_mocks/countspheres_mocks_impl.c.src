@@ -414,12 +414,14 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
     const DOUBLE ymin=0.0,ymax=rcube;
     const DOUBLE zmin=0.0,zmax=rcube;
     const DOUBLE smin=0.0;
+    const DOUBLE wrap=0.0;
     int nmesh_x,nmesh_y,nmesh_z;
     cellarray_DOUBLE *lattice = gridlink_DOUBLE(Ngal, xgal, ygal, zgal, &(extra->weights0),
                                                 xmin, xmax,
                                                 ymin, ymax,
                                                 zmin, zmax,
                                                 rmax, rmax, rmax,
+                                                wrap, wrap, wrap,
                                                 options->bin_refine_factors[0],
                                                 options->bin_refine_factors[1],
                                                 options->bin_refine_factors[2],
@@ -436,6 +438,7 @@ int countspheres_mocks_DOUBLE(const int64_t Ngal, DOUBLE *RA, DOUBLE *DEC, DOUBL
                                           ymin, ymax,
                                           zmin, zmax,
                                           rmax, rmax, rmax,
+                                          wrap, wrap, wrap,
                                           options->bin_refine_factors[0],
                                           options->bin_refine_factors[1],
                                           options->bin_refine_factors[2],

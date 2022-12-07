@@ -25,7 +25,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
                 c_api_timer=False, isa='fastest', weight_type=None):
     """
     Calculate the 2-D pair-counts corresponding to the projected correlation
-    function, :math:`\\xi(s, \mu)`. The pairs are counted in bins of
+    function, :math:`\\xi(s, \\mu)`. The pairs are counted in bins of
     radial separation and cosine of angle to the line-of-sight (LOS). The
     input positions are expected to be on-sky co-ordinates. This module is
     suitable for calculating correlation functions for mock catalogs.
@@ -38,9 +38,9 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 
 
     .. note:: This module only returns pair counts and not the actual
-       correlation function :math:`\\xi(s, \mu)`. See the
+       correlation function :math:`\\xi(s, \\mu)`. See the
        utilities :py:mod:`Corrfunc.utils.convert_3d_counts_to_cf`
-       for computing :math:`\\xi(s, \mu)` from the pair counts.
+       for computing :math:`\\xi(s, \\mu)` from the pair counts.
 
     .. versionadded:: 2.1.0
 
@@ -59,8 +59,8 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         indicate that the co-moving distance conversion has already been done.
 
         Choices:
-                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\Lambda=0.75`
-                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\Lambda=0.698`
+                 1. LasDamas cosmology. :math:`\\Omega_m=0.25`, :math:`\\Omega_\\Lambda=0.75`
+                 2. Planck   cosmology. :math:`\\Omega_m=0.302`, :math:`\\Omega_\\Lambda=0.698`
 
         To setup a new cosmology, add an entry to the function,
         ``init_cosmology`` in ``ROOT/utils/cosmology_params.c`` and re-install
@@ -77,12 +77,12 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         represent the vectors to each point constituting the pair, then
         :math:`s := v_1 - v_2` and :math:`l := 1/2 (v_1 + v_2)`.
 
-        Note: Only pairs with :math:`0 <= \cos(\\theta_{LOS}) < \mu_{max}`
+        Note: Only pairs with :math:`0 <= \\cos(\\theta_{LOS}) < \\mu_{max}`
         are counted (no equality).
 
     nmu_bins: int
         The number of linear ``mu`` bins, with the bins ranging from
-        from (0, :math:`\mu_{max}`)
+        from (0, :math:`\\mu_{max}`)
 
     binfile: string or an list/array of floats
         For string input: filename specifying the ``s`` bins for
@@ -231,7 +231,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         being the upper limit of the ``mu`` bin. If ``output_savg`` is  not
         set, then ``savg`` will be set to 0.0 for all bins; similarly for
         ``weightavg``. ``npairs`` contains the number of pairs in that bin
-        and can be used to compute the actual :math:`\\xi(s, \mu)` by
+        and can be used to compute the actual :math:`\\xi(s, \\mu)` by
         combining with (DR, RR) counts.
 
     api_time: float, optional
