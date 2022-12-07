@@ -90,16 +90,16 @@ Compilation Notes
 - If you are directly using ``python -m pip install . [--user] --install-option="CC=yourcompiler"``, please run a ``make distclean`` beforehand (especially if switching compilers)
 
 - Please note that Corrfunc is compiling with optimizations for the architecture
-it is compiled on.  That is, it uses ``gcc -march=native`` or similar.
-For this reason, please try to compile Corrfunc on the architecture it will
-be run on (usually this is only a concern in heterogeneous compute environments,
-like an HPC cluster with multiple node types).  In many cases, you can
-compile on a more capable architecture (e.g. with AVX-512 support) then
-run on a less capable architecture (e.g. with only AVX2), because the
-runtime dispatch will select the appropriate kernel.  But the non-kernel
-elements of Corrfunc may emit AVX-512 instructions due to ``-march=native``.
-If an ``Illegal instruction`` error occurs, then you'll need to recompile
-on the target architecture.
+  it is compiled on.  That is, it uses ``gcc -march=native`` or similar.
+  For this reason, please try to compile Corrfunc on the architecture it will
+  be run on (usually this is only a concern in heterogeneous compute environments,
+  like an HPC cluster with multiple node types).  In many cases, you can
+  compile on a more capable architecture (e.g. with AVX-512 support) then
+  run on a less capable architecture (e.g. with only AVX2), because the
+  runtime dispatch will select the appropriate kernel.  But the non-kernel
+  elements of Corrfunc may emit AVX-512 instructions due to ``-march=native``.
+  If an ``Illegal instruction`` error occurs, then you'll need to recompile
+  on the target architecture.
 
 Installation notes
 ~~~~~~~~~~~~~~~~~~
