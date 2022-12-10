@@ -12,7 +12,7 @@ import os
 import sys
 import warnings
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 __author__ = "Manodeep Sinha <manodeep@gmail.com>"
 
 
