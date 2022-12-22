@@ -123,13 +123,23 @@ with the ``Installation`` label.
 Method 2: pip installation
 --------------------------
 
-The Python package is directly installable via ``python -m pip install Corrfunc``. However, in that case you will lose the ability to recompile the code.  This usually fine if you are only using the Python interface and are on a single machine, like a laptop.  For usage on a cluster or other environment with multiple CPU architectures, you may find it more useful to use the source installation method above in case you need to compile for a different architecture later.
+The Python package is directly installable via ``python -m pip install Corrfunc``. However, in that case you will lose the ability to recompile the code.  This usually fine if you are only using the Python interface and are on a single machine, like a laptop.  For usage on a cluster or other environment with multiple CPU architectures, you may find it more useful to use the Source Installation method above in case you need to compile for a different architecture later.
+
+Testing a pip-installed Corrfunc
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can check that a pip-installed Corrfunc is working with:
 
 ::
 
-   $ python -m Corrfunc.tests
+   $ python -m pytest --pyargs Corrfunc
+
+
+The pip installation does not include all of the test data contained in the main repo,
+since it would total over 100 MB and the tests that generate on-the-fly data are similarly
+exhaustive.  pytest will mark tests where the data files are not availabe as "skipped".
+If you would like to run the data-based tests, please use the Source Installation method.
+
 
 OpenMP on OSX
 --------------
