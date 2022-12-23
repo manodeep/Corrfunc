@@ -6,31 +6,43 @@ import pytest
 
 from Corrfunc.io import read_fastfood_catalog
 
+NO_DATA_SKIP_MESSAGE = "Data files for data-based tests not found. " \
+    "Install from source to enable these tests."
+
+
 @pytest.fixture(scope='module')
 def gals_Mr19():
-    
     filename = pjoin(dirname(abspath(__file__)),
-                    "../../theory/tests/data", "gals_Mr19.ff")
-    x, y, z, w = read_fastfood_catalog(filename, need_weights=True)
-    
+                     "../../theory/tests/data", "gals_Mr19.ff")
+    try:
+        x, y, z, w = read_fastfood_catalog(filename, need_weights=True)
+    except OSError:
+        pytest.skip(NO_DATA_SKIP_MESSAGE)
+
     return x, y, z, w
 
 
 @pytest.fixture(scope='module')
 def Mr19_mock_northonly():
     filename = pjoin(dirname(abspath(__file__)),
-                "../../mocks/tests/data", "Mr19_mock_northonly.rdcz.ff")
-    ra,dec,cz,w = read_fastfood_catalog(filename, need_weights=True)
-    
+                     "../../mocks/tests/data", "Mr19_mock_northonly.rdcz.ff")
+    try:
+        ra, dec, cz, w = read_fastfood_catalog(filename, need_weights=True)
+    except OSError:
+        pytest.skip(NO_DATA_SKIP_MESSAGE)
+
     return ra, dec, cz, w
 
 
 @pytest.fixture(scope='module')
 def Mr19_randoms_northonly():
     filename = pjoin(dirname(abspath(__file__)),
-                "../../mocks/tests/data", "Mr19_randoms_northonly.rdcz.ff")
-    ra,dec,cz,w = read_fastfood_catalog(filename, need_weights=True)
-    
+                     "../../mocks/tests/data", "Mr19_randoms_northonly.rdcz.ff")
+    try:
+        ra, dec, cz, w = read_fastfood_catalog(filename, need_weights=True)
+    except OSError:
+        pytest.skip(NO_DATA_SKIP_MESSAGE)
+
     return ra, dec, cz, w
 
 
