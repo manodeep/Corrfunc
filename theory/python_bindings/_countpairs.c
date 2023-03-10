@@ -526,7 +526,7 @@ static PyMethodDef module_methods[] = {
      "              zbin_refine_factor=1, max_cells_per_dim=100, copy_particles=True,\n"
      "              enable_min_sep_opt=True, c_api_timer=False, isa=-1)\n\n"
 
-     "Function to compute the projected correlation function in a periodic\n"
+     "Function to compute the correlation function in a periodic\n"
      "cosmological box. Pairs which are separated by less than the ``r``\n"
      "bins (specified in ``binfile``). *Always* uses ``PERIODIC`` boundary conditions.\n\n"
 
@@ -625,7 +625,7 @@ static PyMethodDef module_methods[] = {
      "results : A python list\n"
      "    A python list containing [rmin, rmax, ravg, weightavg, xi, npairs] for each radial\n"
      "    bin specified in the ``binfile``. If ``output_ravg`` is not set then\n"
-     "    ``ravg`` will be set to 0.0 for all bins; similarly for ``weightavg``. ``xi`` contains the projected\n"
+     "    ``ravg`` will be set to 0.0 for all bins; similarly for ``weightavg``. ``xi`` contains the\n"
      "    correlation function while ``npairs`` contains the number of unique pairs\n"
      "    in that bin.  If weights are used, then ``xi`` is weighted, while ``npairs`` is not.\n\n"
 
