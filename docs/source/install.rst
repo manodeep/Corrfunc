@@ -14,7 +14,7 @@ The simplest way to install the latest release of the code is with pip. Before i
 
 .. code:: python
 
-    pip install Corrfunc
+    python -m pip install Corrfunc
 
 This will install the latest official release of the code.
 If you want the latest master branch,
