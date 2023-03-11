@@ -22,7 +22,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
        copy_particles=True, enable_min_sep_opt=True,
        c_api_timer=False, isa=r'fastest'):
     """
-    Function to compute the projected correlation function in a
+    Function to compute the correlation function in a
     periodic cosmological box. Pairs which are separated by less
     than the ``r`` bins (specified in ``binfile``) in 3-D real space.
 
@@ -186,7 +186,7 @@ def xi(boxsize, nthreads, binfile, X, Y, Z,
     try:
         from Corrfunc._countpairs import countpairs_xi as xi_extn
     except ImportError:
-        msg = "Could not import the C extension for the projected "\
+        msg = "Could not import the C extension for the "\
               "correlation function."
         raise ImportError(msg)
 

@@ -14,7 +14,7 @@ The simplest way to install the latest release of the code is with pip. Before i
 
 .. code:: python
 
-          pip install Corrfunc
+    python -m pip install Corrfunc
 
 This will install the latest official release of the code.
 If you want the latest master branch,
@@ -31,10 +31,10 @@ The first step is to clone the Corrfunc repository
 
 .. code::
 
-	  git clone https://github.com/manodeep/Corrfunc.git
-	  cd Corrfunc
-          make install
-          python -m pip install . (--user)
+      git clone https://github.com/manodeep/Corrfunc.git
+      cd Corrfunc
+      make install
+      python -m pip install . (--user)
 
 
 .. _corrfunc_dependencies:
@@ -64,17 +64,20 @@ Verifying your installation
 
 After installing Corrfunc, you should run the integrated test suite to make
 sure that the package was installed correctly. If you installed from source,
-then type the following in the root package directory,
+then run the following sequence from the repository root directory:
 
-.. code::
+.. code:: console
 
-	  make tests
+    make tests  # run the C tests
+    python -m pip install pytest
+    python -m pytest  # run the Python tests
 
 If you installed using pip/conda, then use the following to run the tests
+from your shell:
 
-.. code:: python
+.. code:: console
 
-          from Corrfunc.tests import tests
-          tests()
+    python -m pytest --pyargs Corrfunc
+          
 
 Once you have installed the package, see :ref:`quickstart` for instructions on how to get up and running.

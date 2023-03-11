@@ -25,7 +25,7 @@ def DDrppi_mocks(autocorr, cosmology, nthreads, pimax, binfile,
                  copy_particles=True, enable_min_sep_opt=True,
                  c_api_timer=False, isa=r'fastest', weight_type=None):
     """
-    Calculate the 2-D pair-counts corresponding to the projected correlation
+    Calculate the pair-counts corresponding to the 2-D correlation
     function, :math:`\\xi(r_p, \\pi)`. Pairs which are separated by less
     than the ``rp`` bins (specified in ``binfile``) in the
     X-Y plane, and less than ``pimax`` in the Z-dimension are

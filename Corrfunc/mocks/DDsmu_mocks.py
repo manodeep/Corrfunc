@@ -24,7 +24,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
                 copy_particles=True, enable_min_sep_opt=True,
                 c_api_timer=False, isa='fastest', weight_type=None):
     """
-    Calculate the 2-D pair-counts corresponding to the projected correlation
+    Calculate the 2-D pair-counts corresponding to the correlation
     function, :math:`\\xi(s, \\mu)`. The pairs are counted in bins of
     radial separation and cosine of angle to the line-of-sight (LOS). The
     input positions are expected to be on-sky co-ordinates. This module is

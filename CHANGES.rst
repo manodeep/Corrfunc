@@ -31,6 +31,7 @@ Fixes
 - Check and fix ``z`` vs ``cz`` in ``DDrppi_mocks`` and ``DDsmu_mocks`` only if comoving distance flag is not set [#275]
 - Update GNU assembler bug detection [#278]
 - Fix installation instructions and update README.rst [#285]
+- Remove mistaken references to "projected" correlation function in docs [#289]
 
 
 2.4.0 (2021-09-30)
