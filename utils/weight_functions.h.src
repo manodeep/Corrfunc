@@ -17,7 +17,7 @@
 #endif
 
 #ifdef __ARM_NEON
-#include "neon_calls.h"
+#include "arm64_calls.h"
 #endif
 
 
@@ -39,8 +39,8 @@ typedef union {
 #endif
 #ifdef __ARM_NEON
     union {
-      NEON_FLOATS n;
-      NEON_FLOATS n128;
+      ARM64_FLOATS n;
+      ARM64_FLOATS n128;
     };
 #endif
     DOUBLE d;
@@ -71,7 +71,7 @@ typedef SSE_FLOATS (*sse_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
 #endif
 
 #ifdef __ARM_NEON
-typedef NEON_FLOATS (*neon_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
+typedef ARM64_FLOATS (*arm64_weight_func_t_DOUBLE)(const pair_struct_DOUBLE*);
 #endif
 
 
@@ -105,8 +105,8 @@ static inline SSE_FLOATS sse_pair_product_DOUBLE(const pair_struct_DOUBLE *pair)
 #endif
 
 #ifdef __ARM_NEON
-static inline NEON_FLOATS neon_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
-    return NEON_MULTIPLY_FLOATS(pair->weights0[0].n, pair->weights1[0].n);
+static inline ARM64_FLOATS arm64_pair_product_DOUBLE(const pair_struct_DOUBLE *pair){
+    return ARM64_MULTIPLY_FLOATS(pair->weights0[0].n, pair->weights1[0].n);
 }
 #endif
 
@@ -167,10 +167,10 @@ static inline sse_weight_func_t_DOUBLE get_sse_weight_func_by_method_DOUBLE(cons
 #endif
 
 #ifdef __ARM_NEON
-static inline neon_weight_func_t_DOUBLE get_neon_weight_func_by_method_DOUBLE(const weight_method_t method){
+static inline arm64_weight_func_t_DOUBLE get_arm64_weight_func_by_method_DOUBLE(const weight_method_t method){
     switch(method){
         case PAIR_PRODUCT:
-            return &neon_pair_product_DOUBLE;
+            return &arm64_pair_product_DOUBLE;
         default:
         case NONE:
             return NULL;

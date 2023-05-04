@@ -23,7 +23,7 @@ int runtime_instrset_detect(void)
         return iset;                                       // called before
     }
 #ifdef __ARM_NEON
-    return NEON;
+    return ARM64;
 #endif
 
     iset = FALLBACK;                                       // default value
@@ -153,12 +153,12 @@ int get_max_usable_isa(void)
             fprintf(stderr, "[Warning] The CPU supports SSE but the compiler does not.  Can you try another compiler?\n");
 #endif
            // fall through
-        case NEON:
+        case ARM64:
 #ifdef __ARM_NEON
-            iset = NEON;
+            iset = ARM64;
             break;
 #else
-            fprintf(stderr, "[Warning] The CPU supports NEON but the compiler does not.  Can you try another compiler?\n");
+            fprintf(stderr, "[Warning] The CPU supports ARM64 but the compiler does not.  Can you try another compiler?\n");
 #endif
 
             // fall through

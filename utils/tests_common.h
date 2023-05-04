@@ -41,7 +41,7 @@ const isa valid_instruction_sets[] = {FALLBACK
                                       ,AVX512F
 #endif
 #ifdef __ARM_NEON
-                                      ,NEON
+                                      ,ARM64
 #endif
 };
 
@@ -60,7 +60,7 @@ const char isa_name[][20] = {"FALLBACK"
                              , "AVX512F"
 #endif
 #ifdef __ARM_NEON
-                             , "NEON"
+                             , "ARM64"
 #endif
 };
 

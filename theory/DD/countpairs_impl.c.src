@@ -59,7 +59,7 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
         countpairs_avx512_intrinsics_DOUBLE,
 #endif
 #ifdef __ARM_NEON
-        countpairs_neon_intrinsics_DOUBLE,
+        countpairs_arm64_intrinsics_DOUBLE,
 #endif
     };
 
@@ -91,10 +91,10 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
     if(highest_isa >= AVX512F) avx512_index = curr_index;
 #endif
 
-    int neon_index = curr_index;
+    int arm64_index = curr_index;
  #ifdef __ARM_NEON
     curr_index++;
-    if(highest_isa >= NEON) neon_index = curr_index;
+    if(highest_isa >= ARM64) arm64_index = curr_index;
  #endif   
 
     if( curr_index != num_functions-1) {
@@ -111,7 +111,7 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
         case(AVX2):
         case(AVX):function_dispatch=avx_index;break;
         case(SSE42):function_dispatch=sse_index;break;
-        case(NEON):function_dispatch=neon_index;break;
+        case(ARM64):function_dispatch=arm64_index;break;
         default:function_dispatch=fallback_index;break;
         }
     }
@@ -133,8 +133,8 @@ countpairs_func_ptr_DOUBLE countpairs_driver_DOUBLE(const struct config_options 
             fprintf(stderr,"Using AVX kernel\n");
         } else if(function_dispatch == avx512_index){
             fprintf(stderr,"Using AVX512 kernel\n");
-        } else if(function_dispatch == neon_index){
-            fprintf(stderr,"Using NEON kernel\n");
+        } else if(function_dispatch == arm64_index){
+            fprintf(stderr,"Using ARM64 kernel\n");
         } else {
             fprintf(stderr,"Unknown kernel!\n");
             return NULL;

@@ -29,7 +29,7 @@ typedef enum {
   AVX=7, /* 256bit vector width */
   AVX2=8,  /* AVX2 (integer operations)*/
   AVX512F=9,/* AVX 512 Foundation */
-  NEON=10,
+  ARM64=10,
   NUM_ISA  /*NUM_ISA will be the next integer after
             the last declared enum. AVX512F:=9 (so, NUM_ISA==10)*/
 } isa;  //name for instruction sets -> corresponds to the return values for functions in cpu_features.c

@@ -273,7 +273,7 @@ static inline struct config_options get_config_options(void)
 #elif defined(__SSE4_2__)
     options.instruction_set = SSE42;
 #elif defined(__ARM_NEON)
-    options.instruction_set = NEON;
+    options.instruction_set = ARM64;
 #else
     options.instruction_set = FALLBACK;
 #endif
