@@ -434,15 +434,15 @@ ifeq ($(DO_CHECKS), 1)
 	  CFLAGS := $(filter-out $(copt), $(CFLAGS))
     endif
 
-    copt := -flto
-    COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
-    ifndef COMPILE_OPT_SUPPORTED
-      CFLAGS += $(copt)
-      CLINK += $(copt)
-	else
-	  CFLAGS := $(filter-out $(copt), $(CFLAGS))
-	  CLINK := $(filter-out $(copt), $(CLINK))
-    endif
+    # copt := -flto
+    # COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+    # ifndef COMPILE_OPT_SUPPORTED
+    #   CFLAGS += $(copt)
+    #   CLINK += $(copt)
+    # else
+    #   CFLAGS := $(filter-out $(copt), $(CFLAGS))
+    #   CLINK := $(filter-out $(copt), $(CLINK))
+    # endif
   endif
 
   # All of the python/numpy checks follow
