@@ -105,8 +105,8 @@ static inline int NEON_COUNT_MATCHES(NEON_UINTS input)
 {
     //There are only 16 possibilities -> 0x0000, 0x000F, 0x000F0, 0x
     const uint32x4_t mask = { 1, 2, 4, 8 };
-    const uint8x16_t val = vandq_u32(input, mask);//extract bits and cast to u8
-    return vaddvq_u32(val);
+    // const uint8x16_t val = vandq_u32(input, mask);//extract bits and cast to u8
+    return vaddvq_u32(vandq_u32(input, mask));
 
 //   const uint32x4_t mask = { 1, 2, 4, 8 };
 //   return vaddvq_u32(vandq_u32((uint32x4_t)val, mask));    
