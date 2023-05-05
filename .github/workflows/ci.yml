@@ -9,9 +9,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-18.04", "ubuntu-20.04", "macos-latest"]
+        os: ["ubuntu-20.04", "ubuntu-latest", "macos-latest"]
         compiler: [gcc-7, gcc-9, gcc-10, clang]
-        python-version: ["2.7", "3.5", "3.6", "3.7", "3.8"]
+        python-version: ["2.7", "3.7", "3.8", "3.9", "3.10"]
         numpy-version: ["1.14", "1.18", "1.20"]
         exclude:
 
@@ -24,38 +24,40 @@ jobs:
             compiler: gcc-10
 
           # Don't use 'clang' on linux
-          - os: "ubuntu-18.04"
-            compiler: clang
           - os: "ubuntu-20.04"
+            compiler: clang
+          - os: "ubuntu-latest"
             compiler: clang
 
-          # only gcc-10 on 20.04
-          - os: "ubuntu-20.04"
+          # only gcc-10 on latest
+          - os: "ubuntu-latest"
             compiler: gcc-9
-          - os: "ubuntu-20.04"
+          - os: "ubuntu-latest"
             compiler: gcc-7
 
-          # python3.8 only on 20.04
-          - os: "ubuntu-18.04"
-            python-version: "3.8"
+          # python3.10 only on ubuntu-latest
+          - os: "ubuntu-20.04"
+            python-version: "3.10"
           - os: "macos-latest"
-            python-version: "3.8"
+            python-version: "3.10"
 
-          # numpy1.18 and 1.20 only on python3.8 
-          # (which, in turn, is only on '20.04')
+          # numpy1.18 and 1.20 only on python3.10 
+          # (which, in turn, is only on 'latest')
           - python-version: "2.7"
             numpy-version: "1.18"
-          - python-version: "3.5"
+          - python-version: "3.9"
             numpy-version: "1.18"
-          - python-version: "3.6"
+          - python-version: "3.8"
             numpy-version: "1.18"
           - python-version: "3.7"
             numpy-version: "1.18"
+
+          # excludes for numpy 1.20
           - python-version: "2.7"
             numpy-version: "1.20"
-          - python-version: "3.5"
+          - python-version: "3.9"
             numpy-version: "1.20"
-          - python-version: "3.6"
+          - python-version: "3.8"
             numpy-version: "1.20"
           - python-version: "3.7"
             numpy-version: "1.20"
@@ -76,12 +78,13 @@ jobs:
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
 
-      - name: Install binutils on linux
-        shell: bash -l {0}
-        if: matrix.os == 'ubuntu-18.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install binutils
+      # This was needed on 18.04 but not on 20.04
+      # - name: Install binutils on linux
+      #   shell: bash -l {0}
+      #   if: matrix.os == 'ubuntu-18.04'
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install binutils
 
       - name: Install dependencies
         shell: bash -l {0}
@@ -138,7 +141,7 @@ jobs:
 
       - name: doctests
         shell: bash -l {0}
-        if: matrix.os == 'ubuntu-20.04' && matrix.python-version == '3.8' && matrix.numpy-version == '1.14'
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10' && matrix.numpy-version == '1.14'
         run: |
           python -m pip install 'sphinx>=1.8'
           make -C docs doctest
