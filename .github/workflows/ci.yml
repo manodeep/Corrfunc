@@ -28,7 +28,7 @@ jobs:
             compiler: clang
           - os: "ubuntu-latest"
             compiler: clang
-
+          
           # only gcc-10 on latest
           - os: "ubuntu-latest"
             compiler: gcc-9
@@ -86,11 +86,10 @@ jobs:
       #     sudo apt-get update
       #     sudo apt-get install binutils
 
-      - name: Install gcc-7 on linux
+      - name: Install gcc-7 on ubuntu-20.04
         shell: bash -l {0}
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'ubuntu-20.04'
         run: |
-          sudo apt-get install -y software-properties-common
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           sudo apt-get update
           sudo apt-get install gcc-7
