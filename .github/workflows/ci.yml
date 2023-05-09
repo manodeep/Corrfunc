@@ -15,56 +15,56 @@ jobs:
         numpy-version: ["1.16", "1.18"]
 
         include:
-          - numpy-version: 1.22
+          - numpy-version: "1.22"
             compiler: gcc-10
-            python-version: 3.10
+            python-version: "3.10"
             os: ubuntu-latest
 
-          - numpy-version: 1.22
+          - numpy-version: "1.22"
             compiler: gcc-11
-            python-version: 3.10
+            python-version: "3.10"
             os: ubuntu-latest
 
-          - numpy-version: 1.23
+          - numpy-version: "1.23"
             compiler: gcc-10
-            python-version: 3.10
+            python-version: "3.10"
             os: ubuntu-latest
 
-          - numpy-version: 1.23
+          - numpy-version: "1.23"
             compiler: gcc-11
-            python-version: 3.10
+            python-version: "3.10"
             os: ubuntu-latest
 
-          - numpy-version: 1.22
+          - numpy-version: "1.22"
             compiler: gcc-10
-            python-version: 3.11
+            python-version: "3.11"
             os: ubuntu-latest
 
-          - numpy-version: 1.22
+          - numpy-version: "1.22"
             compiler: gcc-11
-            python-version: 3.11
+            python-version: "3.11"
             os: ubuntu-latest
 
-          - numpy-version: 1.22
+          - numpy-version: "1.22"
             compiler: gcc-12
-            python-version: 3.11
+            python-version: "3.11"
             os: ubuntu-latest
 
-          - numpy-version: 1.23
+          - numpy-version: "1.23"
             compiler: gcc-10
-            python-version: 3.11
+            python-version: "3.11"
             os: ubuntu-latest
 
-          - numpy-version: 1.23
+          - numpy-version: "1.23"
             compiler: gcc-11
-            python-version: 3.11
+            python-version: "3.11"
             os: ubuntu-latest
 
-          - numpy-version: 1.23
+          - numpy-version: "1.23"
             compiler: gcc-12
-            python-version: 3.11
+            python-version: "3.11"
             os: ubuntu-latest
-            
+
         exclude:
           # Only run with 'clang' on OSX
           - os: "macos-latest"
