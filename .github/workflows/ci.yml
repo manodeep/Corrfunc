@@ -2,6 +2,10 @@ name: GitHub CI
 
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: On ${{ matrix.os }} with (${{ matrix.compiler }}, python-${{ matrix.python-version }}, numpy-${{ matrix.numpy-version }})
