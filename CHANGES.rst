@@ -11,6 +11,13 @@ New features
 - GPU version
 
 
+2.5.1 (upcoming)
+================
+
+Changes
+-------
+- Python >= 3.7 and numpy >= 1.16 are required for python extensions [#291]
+
 2.5.0 (2022-12-23)
 ================
 

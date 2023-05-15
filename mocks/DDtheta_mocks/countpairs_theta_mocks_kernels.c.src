@@ -454,10 +454,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 continue;
             }
 
-            SSE_FLOATS m_thetabin;
-            if(need_rpavg || need_weightavg){
-                m_thetabin = SSE_SETZERO_FLOAT();
-            }
+            SSE_FLOATS m_thetabin = SSE_SETZERO_FLOAT();
             if(need_rpavg) {
                 //first do the acos to get the actual angles
                 const SSE_FLOATS m_inv_pi_over_180 = SSE_SET_FLOAT(INV_PI_OVER_180);
