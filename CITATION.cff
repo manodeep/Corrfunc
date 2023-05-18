@@ -1,0 +1,46 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Corrfunc
+message: Blazing Fast Correlation Functions on the CPU
+type: software
+authors:
+  - given-names: Manodeep
+    family-names: Sinha
+    email: manodeep@gmail.com
+    affiliation: Swinburne University of Technology
+    orcid: 'https://orcid.org/0000-0002-4845-1228'
+  - given-names: Lehman
+    family-names: Garrison
+    email: lgarrison@flatironinstitute.org
+    affiliation: FlatIron Institute
+    orcid: 'https://orcid.org/0000-0002-9853-5673'
+identifiers:
+  - type: doi
+    value: 10.1093/mnras/stz3157
+    description: Refereed MNRAS paper introducing Corrfunc
+  - type: doi
+    value: 10.1007/978-981-13-7729-7_1
+    description: >-
+      Refereed conference proceedings paper for first
+      Corrfunc release with AVX512 kernels
+  - type: doi
+    value: 10.5281/zenodo.594351
+    description: Zenodo DOI (all versions)
+repository-code: 'https://github.com/manodeep/Corrfunc'
+keywords:
+  - correlation function
+  - pairwise distances
+  - simd
+  - avx512
+  - avx
+  - sse4
+  - C extensions
+  - OpenMP
+  - intrinsics
+  - cosmology
+  - astrophysics
+  - large-scale structure
+  - galaxies
+license: MIT
