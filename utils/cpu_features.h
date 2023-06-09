@@ -29,12 +29,17 @@ typedef enum {
   AVX=7, /* 256bit vector width */
   AVX2=8,  /* AVX2 (integer operations)*/
   AVX512F=9,/* AVX 512 Foundation */
+  ARM64=10, /* ARM64 on Apple M1/M2 */
   NUM_ISA  /*NUM_ISA will be the next integer after
             the last declared enum. AVX512F:=9 (so, NUM_ISA==10)*/
 } isa;  //name for instruction sets -> corresponds to the return values for functions in cpu_features.c
 
 
 static inline void cpuid (int output[4], int functionnumber) {	
+#if defined (__ARM_NEON)
+    (void) output;
+    (void) functionnumber;
+#else
 #if defined(__GNUC__) || defined(__clang__)              // use inline assembly, Gnu/AT&T syntax
 
    int a, b, c, d;
@@ -58,10 +63,15 @@ static inline void cpuid (int output[4], int functionnumber) {
     }
 
 #endif
+#endif
 }
 
 // Define interface to xgetbv instruction
 static inline int64_t xgetbv (int ctr) {	
+#if defined(__ARM_NEON)
+    (void) ctr;
+    return (int64_t) FALLBACK; /* use FALLBACK kernels until the ARM64 kernels are added to the pair-counters */
+#else
 #if (defined (__INTEL_COMPILER) && __INTEL_COMPILER >= 1200) //Intel compiler supporting _xgetbv intrinsic
     return _xgetbv(ctr);                                   // intrinsic function for XGETBV
 #elif defined(__GNUC__)                                    // use inline assembly, Gnu/AT&T syntax
@@ -80,6 +90,7 @@ static inline int64_t xgetbv (int ctr) {
     }
     return a | (((uint64_t) d) << 32);
 
+#endif
 #endif
 }
 
