@@ -411,8 +411,7 @@ def generate_extensions(python_dirs):
 
 # Only python >= 3.5 supports the recursive glob, hence
 # defining the function that works on all reasonable pythons
-# http://stackoverflow.com/questions/2186525/use-a-glob-to-
-# find-files-recursively-in-python
+# http://stackoverflow.com/questions/2186525/use-a-glob-to-find-files-recursively-in-python
 def recursive_glob(rootdir='.', patterns=None):
     import fnmatch
     if not patterns:
@@ -526,9 +525,10 @@ def setup_packages():
                    'Programming Language :: Python :: 2',
                    'Programming Language :: Python :: 2.7',
                    'Programming Language :: Python :: 3',
-                   'Programming Language :: Python :: 3.4',
-                   'Programming Language :: Python :: 3.5',
-                   'Programming Language :: Python :: 3.6']
+                   'Programming Language :: Python :: 3.7',
+                   'Programming Language :: Python :: 3.8',
+                   'Programming Language :: Python :: 3.9',
+                   'Programming Language :: Python :: 3.10']
     metadata = dict(
             name=projectname,
             version=version,
@@ -560,7 +560,7 @@ def setup_packages():
                                                       min_np_minor),
                               'future',
                               'wurlitzer'],
-            python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4',
+            python_requires='>=2.7,!=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*,, <4',
             zip_safe=False,
             cmdclass={'build_ext': BuildExtSubclass})
 
