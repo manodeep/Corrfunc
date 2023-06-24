@@ -28,6 +28,12 @@
 #include "countpairs_theta_mocks_kernels_DOUBLE.c"
 
 
+DOUBLE chord2_DOUBLE(DOUBLE theta){
+    // Squared chord length for a given angle on the unit sphere
+    DOUBLE sinval = SIND(theta/2);
+    return 4*sinval*sinval;
+}
+
 
 int interrupt_status_wtheta_mocks_DOUBLE=EXIT_SUCCESS;
 
@@ -566,12 +572,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
     }
 
 
-    DOUBLE costheta_upp[nthetabin];
+    DOUBLE sep2_upp[nthetabin];
     for(int i=0;i<nthetabin;i++) {
-        costheta_upp[i] = COSD(theta_upp[i]);
+        // costheta_upp[i] = COSD(theta_upp[i]);
+        sep2_upp[i] = chord2_DOUBLE(theta_upp[i]);
     }
-    const DOUBLE costhetamin=costheta_upp[0];
-    const DOUBLE costhetamax=costheta_upp[nthetabin-1];
+    const DOUBLE sep2min=sep2_upp[0];
+    const DOUBLE sep2max=sep2_upp[nthetabin-1];
 
     DOUBLE *X1 = my_malloc(sizeof(*X1),ND1);
     DOUBLE *Y1 = my_malloc(sizeof(*Y1),ND1);
@@ -644,12 +651,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
 
         //this is equivalent to brute force calculating on the entire dataset
+        assert(1);  // TODO
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
                                                                numthreads,
-                                                               costhetamax, costhetamin, nthetabin,
+                                                               sep2max, sep2min, nthetabin,
                                                                theta_upp,
-                                                               costheta_upp,
+                                                               sep2_upp,
                                                                results,
                                                                options,
                                                                extra);
@@ -878,12 +886,13 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
         }
 
         //this is equivalent to brute force calculating on the entire dataset
+        assert(1);  // TODO
         int status = countpairs_theta_mocks_brute_force_DOUBLE(ND1, X1, Y1, Z1,
                                                                ND2, X2, Y2, Z2,
                                                                numthreads,
-                                                               costhetamax, costhetamin, nthetabin,
+                                                               sep2max, sep2min, nthetabin,
                                                                theta_upp,
-                                                               costheta_upp,
+                                                               sep2_upp,
                                                                results,
                                                                options,
                                                                extra);
@@ -1019,8 +1028,8 @@ int countpairs_theta_mocks_DOUBLE(const int64_t ND1, DOUBLE *ra1, DOUBLE *dec1,
                                                                           second->nelements, second->x, second->y, second->z, &(second->weights),
                                                                           this_cell_pair->same_cell,
                                                                           options->fast_acos,
-                                                                          costhetamax, costhetamin, nthetabin,
-                                                                          costheta_upp,
+                                                                          sep2max, sep2min, nthetabin,
+                                                                          sep2_upp,
                                                                           this_cell_pair->min_dx, this_cell_pair->min_dy, this_cell_pair->min_dz,
                                                                           this_cell_pair->closest_x1, this_cell_pair->closest_y1, this_cell_pair->closest_z1,
                                                                           this_thetaavg, npairs,
