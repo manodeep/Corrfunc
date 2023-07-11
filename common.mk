@@ -398,55 +398,51 @@ ifeq ($(DO_CHECKS), 1)
   #### Specifically, this would be for -march=native, -mcpu=apple-m1 -mtune=apple-m1
   #### and -flto (though -flto needs to be specified to both compile and link lines)
   #### MS: 3rd May 2023
-  export CHECKING_COMPILE_OPTS ?= 0
-  ifeq ($(CHECKING_COMPILE_OPTS), 0)
-    export CHECKING_COMPILE_OPTS := 1
-    ### For reasons unknown to me, the addition to CFLAGS does not work correctly if I
-    ### change this variable name "opt" to match the remaining names of "copt". Works fine
-    ### for 'clang' on OSX but not for 'gcc'. Adds the -march=native but somehow that 
-    ### extra flag is removed when testing the -mcpu/-mtune compiler options. For the sake
-    ### of my sanity, I have accepted that this is how it shall work! Hopefully, in the future,
-    ### someone will figure out/explain *why* this behaviour is expected. It 
-    ###	seems more like a gcc bug to me where gcc is updating CFLAGS based on 
-    ### the options on the last compile call (since cland does not show 
-    ### this behaviour) - MS: 3rd May, 2023
+  ### For reasons unknown to me, the addition to CFLAGS does not work correctly if I
+  ### change this variable name "opt" to match the remaining names of "copt". Works fine
+  ### for 'clang' on OSX but not for 'gcc'. Adds the -march=native but somehow that 
+  ### extra flag is removed when testing the -mcpu/-mtune compiler options. For the sake
+  ### of my sanity, I have accepted that this is how it shall work! Hopefully, in the future,
+  ### someone will figure out/explain *why* this behaviour is expected. It 
+  ###	seems more like a gcc bug to me where gcc is updating CFLAGS based on 
+  ### the options on the last compile call (since cland does not show 
+  ### this behaviour) - MS: 3rd May, 2023
 
-    ## TLDR: Leave this variable as "opt" while the remaining are set to "copt". Otherwise,
-    ## the correct flags may not be picked up when using gcc on a ARM64 OSX machine
-    opt := -march=native
-    COMPILE_OPT_SUPPORTED := $(shell $(CC) $(opt) -dM -E - < /dev/null 2>&1 1>/dev/null)
-    ifndef COMPILE_OPT_SUPPORTED
-      CFLAGS += $(opt)
-	else
-	  CFLAGS := $(filter-out $(opt), $(CFLAGS))
-    endif
-
-    copt := -mcpu=apple-m1
-    COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
-    ifndef COMPILE_OPT_SUPPORTED
-      CFLAGS += $(copt)
-    else
-      CFLAGS := $(filter-out $(copt), $(CFLAGS))
-    endif 
-
-    copt := -mtune=apple-m1
-    COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
-    ifndef COMPILE_OPT_SUPPORTED
-      CFLAGS += $(copt)
-    else
-	  CFLAGS := $(filter-out $(copt), $(CFLAGS))
-    endif
-
-    # copt := -flto
-    # COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
-    # ifndef COMPILE_OPT_SUPPORTED
-    #   CFLAGS += $(copt)
-    #   CLINK += $(copt)
-    # else
-    #   CFLAGS := $(filter-out $(copt), $(CFLAGS))
-    #   CLINK := $(filter-out $(copt), $(CLINK))
-    # endif
+  ## TLDR: Leave this variable as "opt" while the remaining are set to "copt". Otherwise,
+  ## the correct flags may not be picked up when using gcc on a ARM64 OSX machine
+  opt := -march=native
+  COMPILE_OPT_SUPPORTED := $(shell $(CC) $(opt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+  ifndef COMPILE_OPT_SUPPORTED
+    CFLAGS += $(opt)
+  else
+    CFLAGS := $(filter-out $(opt), $(CFLAGS))
   endif
+
+  copt := -mcpu=apple-m1
+  COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+  ifndef COMPILE_OPT_SUPPORTED
+    CFLAGS += $(copt)
+  else
+    CFLAGS := $(filter-out $(copt), $(CFLAGS))
+  endif 
+
+  copt := -mtune=apple-m1
+  COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+  ifndef COMPILE_OPT_SUPPORTED
+    CFLAGS += $(copt)
+  else
+    CFLAGS := $(filter-out $(copt), $(CFLAGS))
+  endif
+
+  # copt := -flto
+  # COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+  # ifndef COMPILE_OPT_SUPPORTED
+  #   CFLAGS += $(copt)
+  #   CLINK += $(copt)
+  # else
+  #   CFLAGS := $(filter-out $(copt), $(CFLAGS))
+  #   CLINK := $(filter-out $(copt), $(CLINK))
+  # endif
 
   # All of the python/numpy checks follow
   export PYTHON_CHECKED ?= 0
