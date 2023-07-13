@@ -8,6 +8,7 @@ Python wrapper around the C extension for the pair counter in
 
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
+import warnings
 
 __author__ = ('Manodeep Sinha', 'Nick Hand')
 __all__ = ('DDsmu_mocks', )
@@ -296,6 +297,12 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 
     integer_isa = translate_isa_string_to_enum(isa)
     sbinfile, delete_after_use = return_file_with_rbins(binfile)
+
+    warn_large_mu(mu_max,
+                  # RA and DEC are checked to be the same dtype
+                  dtype=RA1.dtype,
+                  )
+
     with sys_pipes():
         extn_results = DDsmu_extn(autocorr, cosmology, nthreads,
                                   mu_max, nmu_bins, sbinfile,
@@ -343,6 +350,26 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
         return results
     else:
         return results, api_time
+
+
+def warn_large_mu(mu_max, dtype):
+    '''
+    Small theta values (large mu) underfloat float32. Warn the user.
+    Context: https://github.com/manodeep/Corrfunc/pull/297
+    '''
+    if dtype.itemsize > 4:
+        return
+
+    if mu_max >= 0.9800666:  # cos(0.2)
+        warnings.warn("""
+Be aware that small angular pair separations (mu near 1) will suffer from loss
+of floating-point precision, as the input data is in float32 precision or
+lower. In float32, the loss of precision is 1% in mu at separations of 0.2
+degrees, and larger at smaller separations.
+For more information, see: https://github.com/manodeep/Corrfunc/pull/297
+"""
+                      )
+
 
 if __name__ == '__main__':
     import doctest
