@@ -653,7 +653,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
 def warn_small_theta(thetabinfile, dtype):
     '''
     Small theta values underfloat float32. Warn the user.
-    Context: https://github.com/manodeep/Corrfunc/pull/297
+    Context: https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
     '''
     if dtype.itemsize > 4:
         return
@@ -667,7 +667,8 @@ Could not load binfile "{}". Be aware that small angular pair separations
 will suffer from loss of floating-point precision, as the input data is in
 float32 precision or lower. The loss of precision is 0.5% in theta at
 separations of 0.2 degrees, and larger at smaller separations.
-For more information, see: https://github.com/manodeep/Corrfunc/pull/297
+For more information, see:
+https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
 """.format(thetabinfile)
                       )
         return
@@ -679,7 +680,8 @@ requested, and the input data is in float32 precision or lower. Be aware that
 small angular pair separations will suffer from loss of floating-point
 precision. In float32, the loss of precision is 0.5% in theta at separations of
 0.2 degrees, and larger at smaller separations.
-For more information, see: https://github.com/manodeep/Corrfunc/pull/297
+For more information, see:
+https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
 """
                       )
 

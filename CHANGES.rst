@@ -18,6 +18,10 @@ Changes
 -------
 - Python >= 3.7 and numpy >= 1.16 are required for python extensions [#291]
 
+Enhancements
+------------
+- mocks: warn about small theta and large mu in float32 precision [#299]
+
 2.5.0 (2022-12-23)
 ================
 

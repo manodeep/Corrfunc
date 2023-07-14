@@ -355,7 +355,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 def warn_large_mu(mu_max, dtype):
     '''
     Small theta values (large mu) underfloat float32. Warn the user.
-    Context: https://github.com/manodeep/Corrfunc/pull/297
+    Context: https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
     '''
     if dtype.itemsize > 4:
         return
@@ -366,7 +366,8 @@ Be aware that small angular pair separations (mu near 1) will suffer from loss
 of floating-point precision, as the input data is in float32 precision or
 lower. In float32, the loss of precision is 1% in mu at separations of 0.2
 degrees, and larger at smaller separations.
-For more information, see: https://github.com/manodeep/Corrfunc/pull/297
+For more information, see:
+https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
 """
                       )
 
