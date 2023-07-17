@@ -653,7 +653,7 @@ def find_fastest_DDtheta_mocks_bin_refs(autocorr, nthreads, binfile,
 def warn_small_theta(thetabinfile, dtype):
     '''
     Small theta values underfloat float32. Warn the user.
-    Context: https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
+    Context: https://github.com/manodeep/Corrfunc/issues/296 (see also #297)
     '''
     if dtype.itemsize > 4:
         return
