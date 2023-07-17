@@ -226,7 +226,7 @@ ifeq ($(DO_CHECKS), 1)
     # Normally, one would use -xHost with icc instead of -march=native
     # But -xHost does not allow you to later turn off just AVX-512,
     # which we may decide is necessary if the GAS bug is present
-    CFLAGS += -march=native
+    ### Now we check and add -march=native separately at the end of common.mk (MS: 4th May 2023)
     ifeq (USE_OMP,$(findstring USE_OMP,$(OPT)))
       CFLAGS += -qopenmp
       CLINK  += -qopenmp
@@ -330,8 +330,8 @@ ifeq ($(DO_CHECKS), 1)
       endif # USE_OMP
     endif # CC is clang
 
-    CFLAGS += -funroll-loops
-    CFLAGS += -march=native -fno-strict-aliasing
+    CFLAGS += -funroll-loops -fno-strict-aliasing
+    # CFLAGS += -march=native ### Now we check and add -march=native separately at the end of common.mk (MS: 4th May 2023)
     CFLAGS += -Wformat=2  -Wpacked  -Wnested-externs -Wpointer-arith  -Wredundant-decls  -Wfloat-equal -Wcast-qual
     CFLAGS +=  -Wcast-align -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs -Wstrict-prototypes  #-D_POSIX_C_SOURCE=2 -Wpadded -Wconversion
     CFLAGS += -Wno-unused-local-typedefs ## to suppress the unused typedef warning for the compile time assert for sizeof(struct config_options)
@@ -373,6 +373,76 @@ ifeq ($(DO_CHECKS), 1)
       export GAS_BUG_WARNING_PRINTED := 1
     endif
   endif
+
+  # Check if using clang on Apple with M1/M1 Max/M2 etc
+  # if so, remove -march=native from CFLAGS and 
+  # then add -mcpu=apple-m1 -mtune=apple-m1
+#   ARCH := $(shell uname -m)
+#   $(info ARCH is $(ARCH))
+#   ifeq ($(ARCH), arm64)
+#     ifeq ($(UNAME), Darwin)
+#       ifeq (clang,$(findstring clang,$(CC)))
+#         CFLAGS := $(filter-out -march=native, $(CFLAGS))
+#         CFLAGS += -mtune=apple-m1 -mcpu=apple-m1
+#       endif
+#     endif
+#   endif
+  #### UPDATE: This doesn't work in some cases because the parent
+  #### process might be running under ROSETTA emulation and in that
+  #### case arch would be reported as x86_64 (rather than arm64). For example,
+  #### the following lines work fine when invoked as "make" on Apple M2
+  #### Macbook Air, but when I try to install through python ("python -m pip install -e .")
+  #### then I get an error that "-march=native" is not supported. This happens because
+  #### anaconda python is installed as "x86_64" (as seen with file `which python`). Therefore,
+  #### a better strategy is to test for the relevant compiler flags and then add them
+  #### Specifically, this would be for -march=native, -mcpu=apple-m1 -mtune=apple-m1
+  #### and -flto (though -flto needs to be specified to both compile and link lines)
+  #### MS: 3rd May 2023
+  ### For reasons unknown to me, the addition to CFLAGS does not work correctly if I
+  ### change this variable name "opt" to match the remaining names of "copt". Works fine
+  ### for 'clang' on OSX but not for 'gcc'. Adds the -march=native but somehow that 
+  ### extra flag is removed when testing the -mcpu/-mtune compiler options. For the sake
+  ### of my sanity, I have accepted that this is how it shall work! Hopefully, in the future,
+  ### someone will figure out/explain *why* this behaviour is expected. It 
+  ###	seems more like a gcc bug to me where gcc is updating CFLAGS based on 
+  ### the options on the last compile call (since cland does not show 
+  ### this behaviour) - MS: 3rd May, 2023
+
+  ## TLDR: Leave this variable as "opt" while the remaining are set to "copt". Otherwise,
+  ## the correct flags may not be picked up when using gcc on a ARM64 OSX machine
+  opt := -march=native
+  COMPILE_OPT_SUPPORTED := $(shell $(CC) $(opt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+  ifndef COMPILE_OPT_SUPPORTED
+    CFLAGS += $(opt)
+  else
+    CFLAGS := $(filter-out $(opt), $(CFLAGS))
+  endif
+
+  copt := -mcpu=apple-m1
+  COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+  ifndef COMPILE_OPT_SUPPORTED
+    CFLAGS += $(copt)
+  else
+    CFLAGS := $(filter-out $(copt), $(CFLAGS))
+  endif 
+
+  copt := -mtune=apple-m1
+  COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+  ifndef COMPILE_OPT_SUPPORTED
+    CFLAGS += $(copt)
+  else
+    CFLAGS := $(filter-out $(copt), $(CFLAGS))
+  endif
+
+  # copt := -flto
+  # COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
+  # ifndef COMPILE_OPT_SUPPORTED
+  #   CFLAGS += $(copt)
+  #   CLINK += $(copt)
+  # else
+  #   CFLAGS := $(filter-out $(copt), $(CFLAGS))
+  #   CLINK := $(filter-out $(copt), $(CLINK))
+  # endif
 
   # All of the python/numpy checks follow
   export PYTHON_CHECKED ?= 0
@@ -430,7 +500,7 @@ ifeq ($(DO_CHECKS), 1)
       endif
 
       ifneq ($(COMPILE_PYTHON_EXT), 0)
-	PYTHON_INCL := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; flags = set(['-I' + sysconfig.get_path('include'),'-I' + sysconfig.get_path('platinclude')]); print(' '.join(flags));")
+	    PYTHON_INCL := $(shell $(PYTHON) -c "from __future__ import print_function; import sysconfig; flags = set(['-I' + sysconfig.get_path('include'),'-I' + sysconfig.get_path('platinclude')]); print(' '.join(flags));")
         PYTHON_INCL:=$(patsubst -I%,-isystem%, $(PYTHON_INCL))
 
         # NUMPY is available -> next step should not fail

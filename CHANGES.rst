@@ -14,6 +14,10 @@ New features
 2.5.1 (upcoming)
 ================
 
+Enhancements
+------------
+- Corrfunc now compiles  and runs on Apple M1/M2 cpus (using the `FALLBACK` kernels) [#295]
+
 Changes
 -------
 - Python >= 3.7 and numpy >= 1.16 are required for python extensions [#291]

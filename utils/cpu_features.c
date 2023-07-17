@@ -21,8 +21,13 @@ int runtime_instrset_detect(void)
     static int iset = -1;                                  // remember value for next call
     if (iset >= 0) {
         return iset;                                       // called before
-    }
+    }  
     iset = FALLBACK;                                       // default value
+
+#ifdef __ARM_NEON
+    return iset; /* return FALLBACK as the ISA on ARM64 */
+#endif
+
     int abcd[4] = {0,0,0,0};                               // cpuid results
     cpuid(abcd, 0);                                        // call cpuid function 0
     if (abcd[0] == 0) return iset;                         // no further cpuid function supported
@@ -149,6 +154,15 @@ int get_max_usable_isa(void)
             fprintf(stderr, "[Warning] The CPU supports SSE but the compiler does not.  Can you try another compiler?\n");
 #endif
             // fall through
+// This will need to be uncommented when the ARM64 kernels are added in
+//         case ARM64:
+// #ifdef __ARM_NEON
+//             iset = ARM64;
+//             break;
+// #else
+//             fprintf(stderr, "[Warning] The CPU supports NEON but the compiler does not.  Can you try another compiler?\n");
+// #endif
+        // fall through
         case FALLBACK:
         default:
             iset = FALLBACK;
