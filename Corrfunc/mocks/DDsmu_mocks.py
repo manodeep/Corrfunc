@@ -367,7 +367,7 @@ of floating-point precision, as the input data is in float32 precision or
 lower. In float32, the loss of precision is 1% in mu at separations of 0.2
 degrees, and larger at smaller separations.
 For more information, see:
-https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
+https://github.com/manodeep/Corrfunc/issues/296 (see also #297)
 """
                       )
 
