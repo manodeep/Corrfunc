@@ -668,7 +668,7 @@ will suffer from loss of floating-point precision, as the input data is in
 float32 precision or lower. The loss of precision is 0.5% in theta at
 separations of 0.2 degrees, and larger at smaller separations.
 For more information, see:
-https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
+https://github.com/manodeep/Corrfunc/issues/296 (see also #297)
 """.format(thetabinfile)
                       )
         return
@@ -681,7 +681,7 @@ small angular pair separations will suffer from loss of floating-point
 precision. In float32, the loss of precision is 0.5% in theta at separations of
 0.2 degrees, and larger at smaller separations.
 For more information, see:
-https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
+https://github.com/manodeep/Corrfunc/issues/296 (see also #297)
 """
                       )
 
