@@ -355,7 +355,7 @@ def DDsmu_mocks(autocorr, cosmology, nthreads, mu_max, nmu_bins, binfile,
 def warn_large_mu(mu_max, dtype):
     '''
     Small theta values (large mu) underfloat float32. Warn the user.
-    Context: https://github.com/manodeep/Corrfunc/pull/296 (see also #297)
+    Context: https://github.com/manodeep/Corrfunc/issues/296 (see also #297)
     '''
     if dtype.itemsize > 4:
         return
