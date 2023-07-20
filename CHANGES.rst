@@ -22,6 +22,10 @@ Changes
 -------
 - Python >= 3.7 and numpy >= 1.16 are required for python extensions [#291]
 
+Enhancements
+------------
+- Warn about loss of precision for float32 calculations involving small ``theta`` in ``DDtheta_mocks`` and large ``mu`` in ``DDsmu_mocks`` [#299]
+
 2.5.0 (2022-12-23)
 ================
 
