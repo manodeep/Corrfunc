@@ -24,6 +24,7 @@ dist*
 *egg*
 *_mocks
 *.pro
+*.patch
 logbins
 vpf
 wp
@@ -49,3 +50,6 @@ cov-int
 *.blg
 *.spl
 *.toc
+*.html
+*.old
+*.vscode
