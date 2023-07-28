@@ -11,8 +11,8 @@ New features
 - GPU version
 
 
-2.5.1 (upcoming)
-================
+2.5.1 (28/07/2023)
+==================
 
 Enhancements
 ------------
