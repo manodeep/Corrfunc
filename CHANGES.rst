@@ -10,6 +10,9 @@ New features
 - conda installable package
 - GPU version
 
+2.5.2 (upcoming)
+================
+- Fix python_requires in setup.py [#302]
 
 2.5.1 (28/07/2023)
 ==================
