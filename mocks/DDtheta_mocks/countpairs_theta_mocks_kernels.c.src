@@ -26,8 +26,8 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                                                          const int64_t N1, DOUBLE *x1, DOUBLE *y1,
                                                          DOUBLE *z1, const weight_struct_DOUBLE *weights1,
                                                          const int same_cell, const int order,
-                                                         const DOUBLE costhetamax, const DOUBLE costhetamin,
-                                                         const int nthetabin, const DOUBLE *costheta_upp,
+                                                         const DOUBLE sep2max, const DOUBLE sep2min,
+                                                         const int nthetabin, const DOUBLE *sep2_upp,
                                                          const DOUBLE min_xdiff, const DOUBLE min_ydiff,
                                                          const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
                                                          const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
@@ -41,16 +41,6 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
     if(src_npairs == NULL) {
         return EXIT_FAILURE;
     }
-
-    /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
-    /*    C = 2.0 * SIN(thetamax/2)
-       -> C^2 = 4.0 * SIN^2 (thetamax/2.0)
-       -> C^2 = 2.0 * (2 * SIN^2(thetamax/2.0))
-       -> C^2 = 2.0 * (1 - COS(thetamax))
-
-       -> COS(theta) = (1 - 0.5*C^2)
-     */
-    const DOUBLE sqr_max_chord_sep = ((DOUBLE) 2.0) * (((DOUBLE) 1.0) - costhetamax);
 
     const int32_t need_rpavg = src_rpavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
@@ -81,7 +71,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
     }
 
     const DOUBLE *zstart = z1, *zend = z1 + N1;
-    const DOUBLE max_all_dz = SQRT(sqr_max_chord_sep - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
+    const DOUBLE max_all_dz = SQRT(sep2max - min_xdiff*min_xdiff - min_ydiff*min_ydiff);
     for(int64_t i=0;i<N0;i++) {
         const DOUBLE xpos = *x0++;
         const DOUBLE ypos = *y0++;
@@ -112,10 +102,10 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             const DOUBLE min_dy = min_ydiff > 0 ? min_ydiff + FABS(ypos - closest_icell_ypos):min_ydiff;
             const DOUBLE min_dz = min_zdiff > 0 ? (this_dz > 0 ? this_dz:min_zdiff + FABS(zpos - closest_icell_zpos)):min_zdiff;
             const DOUBLE sqr_min_sep_this_point = min_dx*min_dx + min_dy*min_dy + min_dz*min_dz;
-            if(sqr_min_sep_this_point >= sqr_max_chord_sep) {
+            if(sqr_min_sep_this_point >= sep2max) {
                 continue;
             }
-            max_dz = SQRT(sqr_max_chord_sep - min_dx*min_dx - min_dy*min_dy);
+            max_dz = SQRT(sep2max - min_dx*min_dx - min_dy*min_dy);
 
             const DOUBLE target_z = zpos - max_all_dz;
             while(z1 != zend && *z1 <= target_z) {
@@ -175,27 +165,23 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             if(dz >= max_dz) break;
 
             const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
-            if(sqr_chord_sep >= sqr_max_chord_sep) {
+            if(sqr_chord_sep >= sep2max) {
                 continue;
             }
 
             DOUBLE theta = ZERO, pairweight = ZERO;
             const DOUBLE one = (DOUBLE) 1.0, half = (DOUBLE) 0.5;
 
-            DOUBLE costheta = (one - half*sqr_chord_sep);
-            /* DOUBLE costheta = x2*xpos + y2*ypos + z2*zpos; */
-            if (costheta < -one) costheta = -one;
-            if (costheta > one) costheta = one;
+            if(sqr_chord_sep >= sep2max || sqr_chord_sep < sep2min) continue;
 
-            if(costheta > costhetamin || costheta <= costhetamax) continue;
-
-            if(need_rpavg) {
-                if(order) {
-                    theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
-                } else {
-                    theta =  INV_PI_OVER_180*ACOS(costheta);
-                }
-            }
+            // if(need_rpavg) {
+            //     // TODO
+            //     if(order) {
+            //         theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
+            //     } else {
+            //         theta =  INV_PI_OVER_180*ACOS(costheta);
+            //     }
+            // }
             if(need_weightavg){
                 // These are only used for passing to weights
                 // Too expensive?
@@ -214,7 +200,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
             }
 
             for(int ibin=nthetabin-1;ibin>=1;ibin--) {
-              if(costheta <= costheta_upp[ibin-1]) {
+              if(sqr_chord_sep > sep2_upp[ibin-1]) {
                   npairs[ibin]++;
                   if(need_rpavg) {
                       thetaavg[ibin] += theta;
