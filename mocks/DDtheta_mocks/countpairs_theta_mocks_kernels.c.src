@@ -31,8 +31,8 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                                                          const DOUBLE min_xdiff, const DOUBLE min_ydiff,
                                                          const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
                                                          const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
-                                                         DOUBLE *src_rpavg, uint64_t *src_npairs,
-                                                         DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                         DOUBLE *restrict src_thetaavg, uint64_t *restrict src_npairs,
+                                                         DOUBLE *restrict src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -52,31 +52,10 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
      */
     const DOUBLE sqr_max_chord_sep = ((DOUBLE) 2.0) * (((DOUBLE) 1.0) - costhetamax);
 
-    const int32_t need_rpavg = src_rpavg != NULL;
-    const int32_t need_weightavg = src_weightavg != NULL;
-    uint64_t npairs[nthetabin];
-    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
-    for(int i=0;i<nthetabin;i++) {
-        npairs[i] = 0;
-        if(need_rpavg) {
-            thetaavg[i] = ZERO;
-        }
-        if(need_weightavg){
-            weightavg[i]=ZERO;
-        }
-    }
-
-    // A copy whose pointers we can advance
-    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
     pair_struct_DOUBLE pair = {.num_weights=0};
     weight_func_t_DOUBLE weight_func = NULL;
-    if(need_weightavg){
-        // Same particle list, new copy of num_weights pointers into that list
-        local_w0 = *weights0;
-        local_w1 = *weights1;
-
-        pair.num_weights = local_w0.num_weights;
-
+    if(src_weightavg != NULL){
+        pair.num_weights = weights0->num_weights;
         weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
@@ -87,7 +66,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
         for(int w = 0; w < pair.num_weights; w++){
-            pair.weights0[w].d = *local_w0.weights[w]++;
+            pair.weights0[w].d = *(weights0->weights[w] + i);
         }
 
         DOUBLE max_dz = max_all_dz;
@@ -152,57 +131,42 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
-        for(int w = 0; w < pair.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + n_off;
-        }
 
         for(int64_t j=0;j<Nleft;j++) {
             const DOUBLE x2 = *localx1++;
             const DOUBLE y2 = *localy1++;
             const DOUBLE z2 = *localz1++;
 
-            const DOUBLE dx = x2 - xpos;
-            const DOUBLE dy = y2 - ypos;
             const DOUBLE dz = z2 - zpos;
-
-            for(int w = 0; w < pair.num_weights; w++){
-                pair.weights1[w].d = *local_w1.weights[w]++;
-            }
 
             /* particles are sorted on z, all future j particles will have larger value in localz1 -> perpz will be
                larger. therefore, if current perpz >= max_dz, all future iterations will also be larger. we can
                terminate the loop */
             if(dz >= max_dz) break;
 
-            const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
-            if(sqr_chord_sep >= sqr_max_chord_sep) {
-                continue;
-            }
-
-            DOUBLE theta = ZERO, pairweight = ZERO;
-            const DOUBLE one = (DOUBLE) 1.0, half = (DOUBLE) 0.5;
-
-            DOUBLE costheta = (one - half*sqr_chord_sep);
-            /* DOUBLE costheta = x2*xpos + y2*ypos + z2*zpos; */
-            if (costheta < -one) costheta = -one;
-            if (costheta > one) costheta = one;
-
+            DOUBLE costheta = x2*xpos + y2*ypos + z2*zpos;
             if(costheta > costhetamin || costheta <= costhetamax) continue;
 
-            if(need_rpavg) {
+            DOUBLE theta = ZERO;
+            if(src_thetaavg != NULL) {
                 if(order) {
                     theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
                 } else {
                     theta =  INV_PI_OVER_180*ACOS(costheta);
                 }
             }
-            if(need_weightavg){
+
+            DOUBLE pairweight = ZERO;
+            if(src_weightavg != NULL){
                 // These are only used for passing to weights
                 // Too expensive?
+                for(int w = 0; w < pair.num_weights; w++){
+                    pair.weights1[w].d = *(weights1->weights[w] + n_off + j);
+                }
 
                 // perpx
-                pair.dx.d = dx;
-                pair.dy.d = dy;
+                pair.dx.d = x2 - xpos;
+                pair.dy.d = y2 - ypos;
                 pair.dz.d = dz;
 
                 // parx
@@ -215,12 +179,12 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 
             for(int ibin=nthetabin-1;ibin>=1;ibin--) {
               if(costheta <= costheta_upp[ibin-1]) {
-                  npairs[ibin]++;
-                  if(need_rpavg) {
-                      thetaavg[ibin] += theta;
+                  src_npairs[ibin]++;
+                  if(src_thetaavg != NULL) {
+                      src_thetaavg[ibin] += theta;
                   }
-                  if(need_weightavg){
-                      weightavg[ibin] += pairweight;
+                  if(src_weightavg != NULL){
+                      src_weightavg[ibin] += pairweight;
                   }
                   break;
               }
@@ -228,15 +192,6 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
         }//end of j-loop
     }//i loop
 
-    for(int i=0;i<nthetabin;i++) {
-        src_npairs[i] += npairs[i];
-        if(need_rpavg) {
-            src_rpavg[i] += thetaavg[i];
-        }
-        if(need_weightavg){
-            src_weightavg[i] += weightavg[i];
-        }
-    }
     return EXIT_SUCCESS;
 }
 
