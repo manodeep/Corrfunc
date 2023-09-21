@@ -31,8 +31,8 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
                                                          const DOUBLE min_xdiff, const DOUBLE min_ydiff,
                                                          const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
                                                          const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
-                                                         DOUBLE *src_rpavg, uint64_t *src_npairs,
-                                                         DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                         DOUBLE *restrict src_thetaavg, uint64_t *restrict src_npairs,
+                                                         DOUBLE *restrict src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
@@ -52,31 +52,10 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
      */
     const DOUBLE sqr_max_chord_sep = ((DOUBLE) 2.0) * (((DOUBLE) 1.0) - costhetamax);
 
-    const int32_t need_rpavg = src_rpavg != NULL;
-    const int32_t need_weightavg = src_weightavg != NULL;
-    uint64_t npairs[nthetabin];
-    DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
-    for(int i=0;i<nthetabin;i++) {
-        npairs[i] = 0;
-        if(need_rpavg) {
-            thetaavg[i] = ZERO;
-        }
-        if(need_weightavg){
-            weightavg[i]=ZERO;
-        }
-    }
-
-    // A copy whose pointers we can advance
-    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
     pair_struct_DOUBLE pair = {.num_weights=0};
     weight_func_t_DOUBLE weight_func = NULL;
-    if(need_weightavg){
-        // Same particle list, new copy of num_weights pointers into that list
-        local_w0 = *weights0;
-        local_w1 = *weights1;
-
-        pair.num_weights = local_w0.num_weights;
-
+    if(src_weightavg != NULL){
+        pair.num_weights = weights0->num_weights;
         weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
@@ -87,7 +66,7 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
         const DOUBLE ypos = *y0++;
         const DOUBLE zpos = *z0++;
         for(int w = 0; w < pair.num_weights; w++){
-            pair.weights0[w].d = *local_w0.weights[w]++;
+            pair.weights0[w].d = *(weights0->weights[w] + i);
         }
 
         DOUBLE max_dz = max_all_dz;
@@ -152,57 +131,42 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
-        for(int w = 0; w < pair.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + n_off;
-        }
 
         for(int64_t j=0;j<Nleft;j++) {
             const DOUBLE x2 = *localx1++;
             const DOUBLE y2 = *localy1++;
             const DOUBLE z2 = *localz1++;
 
-            const DOUBLE dx = x2 - xpos;
-            const DOUBLE dy = y2 - ypos;
             const DOUBLE dz = z2 - zpos;
-
-            for(int w = 0; w < pair.num_weights; w++){
-                pair.weights1[w].d = *local_w1.weights[w]++;
-            }
 
             /* particles are sorted on z, all future j particles will have larger value in localz1 -> perpz will be
                larger. therefore, if current perpz >= max_dz, all future iterations will also be larger. we can
                terminate the loop */
             if(dz >= max_dz) break;
 
-            const DOUBLE sqr_chord_sep = dx*dx + dy*dy + dz*dz;
-            if(sqr_chord_sep >= sqr_max_chord_sep) {
-                continue;
-            }
-
-            DOUBLE theta = ZERO, pairweight = ZERO;
-            const DOUBLE one = (DOUBLE) 1.0, half = (DOUBLE) 0.5;
-
-            DOUBLE costheta = (one - half*sqr_chord_sep);
-            /* DOUBLE costheta = x2*xpos + y2*ypos + z2*zpos; */
-            if (costheta < -one) costheta = -one;
-            if (costheta > one) costheta = one;
-
+            DOUBLE costheta = x2*xpos + y2*ypos + z2*zpos;
             if(costheta > costhetamin || costheta <= costhetamax) continue;
 
-            if(need_rpavg) {
+            DOUBLE theta = ZERO;
+            if(src_thetaavg != NULL) {
                 if(order) {
                     theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
                 } else {
                     theta =  INV_PI_OVER_180*ACOS(costheta);
                 }
             }
-            if(need_weightavg){
+
+            DOUBLE pairweight = ZERO;
+            if(src_weightavg != NULL){
                 // These are only used for passing to weights
                 // Too expensive?
+                for(int w = 0; w < pair.num_weights; w++){
+                    pair.weights1[w].d = *(weights1->weights[w] + n_off + j);
+                }
 
                 // perpx
-                pair.dx.d = dx;
-                pair.dy.d = dy;
+                pair.dx.d = x2 - xpos;
+                pair.dy.d = y2 - ypos;
                 pair.dz.d = dz;
 
                 // parx
@@ -215,12 +179,12 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
 
             for(int ibin=nthetabin-1;ibin>=1;ibin--) {
               if(costheta <= costheta_upp[ibin-1]) {
-                  npairs[ibin]++;
-                  if(need_rpavg) {
-                      thetaavg[ibin] += theta;
+                  src_npairs[ibin]++;
+                  if(src_thetaavg != NULL) {
+                      src_thetaavg[ibin] += theta;
                   }
-                  if(need_weightavg){
-                      weightavg[ibin] += pairweight;
+                  if(src_weightavg != NULL){
+                      src_weightavg[ibin] += pairweight;
                   }
                   break;
               }
@@ -228,15 +192,6 @@ static inline int countpairs_theta_mocks_fallback_DOUBLE(const int64_t N0, DOUBL
         }//end of j-loop
     }//i loop
 
-    for(int i=0;i<nthetabin;i++) {
-        src_npairs[i] += npairs[i];
-        if(need_rpavg) {
-            src_rpavg[i] += thetaavg[i];
-        }
-        if(need_weightavg){
-            src_weightavg[i] += weightavg[i];
-        }
-    }
     return EXIT_SUCCESS;
 }
 
@@ -256,7 +211,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                                                                 const DOUBLE min_xdiff, const DOUBLE min_ydiff,
                                                                 const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
                                                                 const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
-                                                                DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                                                DOUBLE *src_thetaavg, uint64_t *src_npairs,
                                                                 DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
@@ -277,10 +232,10 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                                                     min_xdiff, min_ydiff,
                                                     min_zdiff, closest_icell_xpos,
                                                     closest_icell_ypos, closest_icell_zpos,
-                                                    src_rpavg, src_npairs, src_weightavg, weight_method);
+                                                    src_thetaavg, src_npairs, src_weightavg, weight_method);
     }
 
-    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_thetaavg = src_thetaavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
 
     /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
@@ -300,10 +255,10 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
     }
 
     SSE_FLOATS m_kbin[nthetabin];
-    if(need_rpavg || need_weightavg) {
+    if(need_thetaavg || need_weightavg) {
         for(int i=0;i<nthetabin;i++) {
             m_kbin[i] = SSE_SET_FLOAT((DOUBLE) i);
-            if(need_rpavg){
+            if(need_thetaavg){
                 thetaavg[i] = ZERO;
             }
             if(need_weightavg){
@@ -455,7 +410,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             }
 
             SSE_FLOATS m_thetabin = SSE_SETZERO_FLOAT();
-            if(need_rpavg) {
+            if(need_thetaavg) {
                 //first do the acos to get the actual angles
                 const SSE_FLOATS m_inv_pi_over_180 = SSE_SET_FLOAT(INV_PI_OVER_180);
                 const SSE_FLOATS m_theta = SSE_ARC_COSINE(m_costheta, order);
@@ -482,7 +437,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 const SSE_FLOATS m1 = SSE_COMPARE_FLOATS_LE(m_costheta,m_costheta_upp[kbin-1]);
                 const SSE_FLOATS m_bin_mask = SSE_BITWISE_AND(m1,m_mask_left);
                 const int test = SSE_TEST_COMPARISON(m_bin_mask);
-                if(need_rpavg || need_weightavg) {
+                if(need_thetaavg || need_weightavg) {
                     m_thetabin = SSE_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
                 }
 
@@ -493,14 +448,14 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 }
             }
 
-            if(need_rpavg || need_weightavg) {
+            if(need_thetaavg || need_weightavg) {
                 union_rpbin.m_ibin = SSE_TRUNCATE_FLOAT_TO_INT(m_thetabin);
 #if  __INTEL_COMPILER
 #pragma unroll(SSE_NVEC)
 #endif
                 for(int jj=0;jj<SSE_NVEC;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(need_rpavg){
+                    if(need_thetaavg){
                         const DOUBLE theta = union_mDperp.Dperp[jj];
                         thetaavg[kbin] += theta;
                     }
@@ -530,7 +485,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
                 continue;
             }
             DOUBLE theta = ZERO, pairweight = ZERO;
-            if(need_rpavg) {
+            if(need_thetaavg) {
                 if(order) {
                     theta =  INV_PI_OVER_180*FAST_ACOS(costheta);
                 } else {
@@ -553,7 +508,7 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
             for(int ibin=nthetabin-1;ibin>=1;ibin--) {
                 if(costheta <= costheta_upp[ibin-1]) {
                   npairs[ibin]++;
-                  if(need_rpavg) {
+                  if(need_thetaavg) {
                       thetaavg[ibin] += theta;
                   }
                   if(need_weightavg){
@@ -567,8 +522,8 @@ static inline int countpairs_theta_mocks_sse_intrinsics_DOUBLE(const int64_t N0,
 
     for(int i=0;i<nthetabin;i++) {
         src_npairs[i] += npairs[i];
-        if(need_rpavg) {
-            src_rpavg[i] += thetaavg[i];
+        if(need_thetaavg) {
+            src_thetaavg[i] += thetaavg[i];
         }
         if(need_weightavg) {
             src_weightavg[i] += weightavg[i];
@@ -593,7 +548,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                                                                 const DOUBLE min_xdiff, const DOUBLE min_ydiff,
                                                                 const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
                                                                 const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
-                                                                DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                                                DOUBLE *src_thetaavg, uint64_t *src_npairs,
                                                                 DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
@@ -613,11 +568,11 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
                                                     min_xdiff, min_ydiff,
                                                     min_zdiff, closest_icell_xpos,
                                                     closest_icell_ypos, closest_icell_zpos,
-                                                    src_rpavg, src_npairs, src_weightavg, weight_method);
+                                                    src_thetaavg, src_npairs, src_weightavg, weight_method);
     }
 
 
-    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_thetaavg = src_thetaavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
 
     /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
@@ -636,7 +591,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
         npairs[i] = 0;
         m_costheta_upp[i] = AVX_SET_FLOAT(costheta_upp[i]);
         m_kbin[i] = AVX_SET_FLOAT((DOUBLE) i);
-        if(need_rpavg) {
+        if(need_thetaavg) {
             thetaavg[i] = ZERO;
         }
         if(need_weightavg){
@@ -782,10 +737,10 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
             }
 
             AVX_FLOATS m_thetabin;
-            if(need_rpavg || need_weightavg) {
+            if(need_thetaavg || need_weightavg) {
                 m_thetabin = AVX_SETZERO_FLOAT();
             }
-            if(need_rpavg){
+            if(need_thetaavg){
                 //first do the acos to get the actual angles
                 const AVX_FLOATS m_inv_pi_over_180 = AVX_SET_FLOAT(INV_PI_OVER_180);
                 const AVX_FLOATS m_theta = AVX_ARC_COSINE(m_costheta, order);
@@ -814,7 +769,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
               const AVX_FLOATS m1 = AVX_COMPARE_FLOATS(m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OS);
               const AVX_FLOATS m_bin_mask = AVX_BITWISE_AND(m1,m_mask_left);
               const int test = AVX_TEST_COMPARISON(m_bin_mask);
-              if(need_rpavg || need_weightavg) {
+              if(need_thetaavg || need_weightavg) {
                   m_thetabin = AVX_BLEND_FLOATS_WITH_MASK(m_thetabin,m_kbin[kbin], m_bin_mask);
               }
 
@@ -825,14 +780,14 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
               }
           }
 
-          if(need_rpavg || need_weightavg) {
+          if(need_thetaavg || need_weightavg) {
               union_rpbin.m_ibin = AVX_TRUNCATE_FLOAT_TO_INT(m_thetabin);
 #if  __INTEL_COMPILER
 #pragma unroll(AVX_NVEC)
 #endif
               for(int jj=0;jj<AVX_NVEC;jj++) {
                   const int kbin = union_rpbin.ibin[jj];
-                  if(need_rpavg){
+                  if(need_thetaavg){
                       const DOUBLE theta = union_mDperp.Dperp[jj];
                       thetaavg[kbin] += theta;
                   }
@@ -862,7 +817,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
               continue;
           }
           DOUBLE theta = ZERO, pairweight = ZERO;
-          if(need_rpavg) {
+          if(need_thetaavg) {
               if(order) {
                   theta =  INV_PI_OVER_180*FAST_ACOS(costheta) ;
               } else {
@@ -884,7 +839,7 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
           for(int ibin=nthetabin-1;ibin>=1;ibin--) {
               if(costheta <= costheta_upp[ibin-1]) {
                   npairs[ibin]++;
-                  if(need_rpavg) {
+                  if(need_thetaavg) {
                       thetaavg[ibin] += theta;
                   }
                   if(need_weightavg){
@@ -898,8 +853,8 @@ static inline int countpairs_theta_mocks_avx_intrinsics_DOUBLE(const int64_t N0,
 
     for(int i=0;i<nthetabin;i++) {
         src_npairs[i] += npairs[i];
-        if(need_rpavg) {
-            src_rpavg[i] += thetaavg[i];
+        if(need_thetaavg) {
+            src_thetaavg[i] += thetaavg[i];
         }
         if(need_weightavg) {
             src_weightavg[i] += weightavg[i];
@@ -924,7 +879,7 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                                                                    const DOUBLE min_xdiff, const DOUBLE min_ydiff,
                                                                    const DOUBLE min_zdiff, const DOUBLE closest_icell_xpos,
                                                                    const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
-                                                                   DOUBLE *src_rpavg, uint64_t *src_npairs,
+                                                                   DOUBLE *src_thetaavg, uint64_t *src_npairs,
                                                                    DOUBLE *src_weightavg, const weight_method_t weight_method)
 {
     if(N0 == 0 || N1 == 0) {
@@ -945,11 +900,11 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                                                     min_xdiff, min_ydiff,
                                                     min_zdiff, closest_icell_xpos,
                                                     closest_icell_ypos, closest_icell_zpos,
-                                                    src_rpavg, src_npairs, src_weightavg, weight_method);
+                                                    src_thetaavg, src_npairs, src_weightavg, weight_method);
     }
 #endif
 
-    const int32_t need_rpavg = src_rpavg != NULL;
+    const int32_t need_thetaavg = src_thetaavg != NULL;
     const int32_t need_weightavg = src_weightavg != NULL;
 
     /* const DOUBLE max_chord_sep = 2.0*SIND(0.5*thetamax); */
@@ -962,7 +917,7 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
 
     uint64_t npairs[nthetabin];
     DOUBLE thetaavg[nthetabin], weightavg[nthetabin];
-    if(need_rpavg || need_weightavg){
+    if(need_thetaavg || need_weightavg){
         for(int i=0;i<nthetabin;i++) {
             thetaavg[i] = ZERO;
             weightavg[i] = ZERO;
@@ -1115,7 +1070,7 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                 continue;
             }
 
-            if(need_rpavg){
+            if(need_thetaavg){
                 //first do the acos to get the actual angles
                 const AVX512_FLOATS m_inv_pi_over_180 = AVX512_SET_FLOAT(INV_PI_OVER_180);
                 const AVX512_FLOATS m_theta = AVX512_ARC_COSINE(m_costheta, order);
@@ -1145,7 +1100,7 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
             for(int kbin=nthetabin-1;kbin>=1;kbin--) {
                 const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_costheta,m_costheta_upp[kbin-1],_CMP_LE_OQ);
                 npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
-                if(need_rpavg || need_weightavg) {
+                if(need_thetaavg || need_weightavg) {
                     m_thetabin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_thetabin, AVX512_SET_INT(kbin));
                 }
                 m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
@@ -1154,14 +1109,14 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
                 }
             }//backwards loop over the bins
 
-            if(need_rpavg || need_weightavg) {
+            if(need_thetaavg || need_weightavg) {
                 union_rpbin.m_ibin = m_thetabin;
 #if  __INTEL_COMPILER
 #pragma unroll(AVX512_NVEC)
 #endif
                 for(int jj=0;jj<AVX512_NVEC;jj++) {
                     const int kbin = union_rpbin.ibin[jj];
-                    if(need_rpavg) {
+                    if(need_thetaavg) {
                         thetaavg[kbin] += union_mDperp.Dperp[jj];
                     }
                   if(need_weightavg) {
@@ -1174,8 +1129,8 @@ static inline int countpairs_theta_mocks_avx512_intrinsics_DOUBLE(const int64_t 
 
     for(int i=0;i<nthetabin;i++) {
         src_npairs[i] += npairs[i];
-        if(need_rpavg) {
-            src_rpavg[i] += thetaavg[i];
+        if(need_thetaavg) {
+            src_thetaavg[i] += thetaavg[i];
         }
         if(need_weightavg) {
             src_weightavg[i] += weightavg[i];

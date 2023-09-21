@@ -13,7 +13,8 @@ New features
 2.5.2 (upcoming)
 ================
 - Fix python_requires in setup.py [#302]
-
+- Faster `FALLBACK` kernels [#303]
+  
 2.5.1 (28/07/2023)
 ==================
 

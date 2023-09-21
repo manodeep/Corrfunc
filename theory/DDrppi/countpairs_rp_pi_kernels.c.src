@@ -973,10 +973,10 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
                                                    const DOUBLE off_xwrap, const DOUBLE off_ywrap, const DOUBLE off_zwrap,
                                                    const DOUBLE min_xdiff, const DOUBLE min_ydiff, const DOUBLE min_zdiff,
                                                    const DOUBLE closest_icell_xpos, const DOUBLE closest_icell_ypos, const DOUBLE closest_icell_zpos,
-                                                   DOUBLE *src_rpavg, uint64_t *src_npairs,
-                                                   DOUBLE *src_weightavg, const weight_method_t weight_method)
+                                                   DOUBLE *restrict src_rpavg, uint64_t * restrict src_npairs,
+                                                   DOUBLE *restrict src_weightavg, const weight_method_t weight_method)
 {
-
+    /*----------------- FALLBACK CODE --------------------*/
     if(N0 == 0 || N1 == 0) {
         return EXIT_SUCCESS;
     }
@@ -985,33 +985,10 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
         return EXIT_FAILURE;
     }
 
-    /*----------------- FALLBACK CODE --------------------*/
-    const int32_t need_rpavg = src_rpavg != NULL;
-    const int32_t need_weightavg = src_weightavg != NULL;
-    const int64_t totnbins = (npibin+1)*(nbin+1);
-    uint64_t npairs[totnbins];
-    DOUBLE rpavg[totnbins], weightavg[totnbins];
-    for(int i=0;i<totnbins;i++) {
-        npairs[i] = 0;
-        if(need_rpavg) {
-            rpavg[i]=ZERO;
-        }
-        if(need_weightavg){
-            weightavg[i]=ZERO;
-        }
-    }
-
-    // A copy whose pointers we can advance
-    weight_struct_DOUBLE local_w0 = {.weights={NULL}, .num_weights=0}, local_w1 = {.weights={NULL}, .num_weights=0};
     pair_struct_DOUBLE pair = {.num_weights=0};
     weight_func_t_DOUBLE weight_func = NULL;
-    if(need_weightavg){
-        // Same particle list, new copy of num_weights pointers into that list
-        local_w0 = *weights0;
-        local_w1 = *weights1;
-
-        pair.num_weights = local_w0.num_weights;
-
+    if(src_weightavg != NULL){
+        pair.num_weights = weights0->num_weights;
         weight_func = get_weight_func_by_method_DOUBLE(weight_method);
     }
 
@@ -1025,7 +1002,7 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
         const DOUBLE ypos = *y0++ + off_ywrap;
         const DOUBLE zpos = *z0++ + off_zwrap;
         for(int w = 0; w < pair.num_weights; w++){
-            pair.weights0[w].d = *local_w0.weights[w]++;
+            pair.weights0[w].d = *(weights0->weights[w] + i);
         }
 
 #if 0
@@ -1094,17 +1071,11 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
         DOUBLE *localz1 = z1;
         DOUBLE *localx1 = x1 + n_off;
         DOUBLE *localy1 = y1 + n_off;
-        for(int w = 0; w < pair.num_weights; w++){
-            local_w1.weights[w] = weights1->weights[w] + n_off;
-        }
 
         for(int64_t j=0;j<nleft;j++) {
             const DOUBLE dx = *localx1++ - xpos;
             const DOUBLE dy = *localy1++ - ypos;
             DOUBLE dz = *localz1++ - zpos;
-            for(int w = 0; w < pair.num_weights; w++){
-                pair.weights1[w].d = *local_w1.weights[w]++;
-            }
 
             if(dz <= -pimax) continue;
             if(dz >= pimax) break;
@@ -1113,18 +1084,21 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
             const DOUBLE r2 = dx*dx + dy*dy ;
             if(r2 >= sqr_rpmax || r2 < sqr_rpmin) continue;
 
-            if(need_weightavg){
+            DOUBLE pairweight = ZERO;
+            if(src_weightavg != NULL){
+                for(int w = 0; w < pair.num_weights; w++){
+                    pair.weights1[w].d = *(weights1->weights[w] + n_off + j);
+                }
+
                 pair.dx.d = dx;
                 pair.dy.d = dy;
                 pair.dz.d = dz;
+                pairweight = weight_func(&pair);
             }
 
-            DOUBLE r = ZERO, pairweight = ZERO;
-            if(need_rpavg) {
+            DOUBLE r = ZERO;
+            if(src_rpavg != NULL) {
                 r = SQRT(r2);
-            }
-            if(need_weightavg){
-                pairweight = weight_func(&pair);
             }
 
             int pibin = (int) (dz*inv_dpi);
@@ -1132,25 +1106,16 @@ static inline int countpairs_rp_pi_fallback_DOUBLE(const int64_t N0, DOUBLE *x0,
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 if(r2 >= rupp_sqr[kbin-1]) {
                     const int ibin = kbin*(npibin+1) + pibin;
-                    npairs[ibin]++;
-                    if(need_rpavg) {
-                        rpavg[ibin]+=r;
+                    src_npairs[ibin]++;
+                    if(src_rpavg != NULL) {
+                        src_rpavg[ibin] += r;
                     }
-                    if(need_weightavg){
-                        weightavg[ibin] += pairweight;
+                    if(src_weightavg != NULL){
+                        src_weightavg[ibin] += pairweight;
                     }
                     break;
                 }
             }
-        }
-    }
-    for(int i=0;i<totnbins;i++) {
-        src_npairs[i] += npairs[i];
-        if(need_rpavg) {
-            src_rpavg[i] += rpavg[i];
-        }
-        if(need_weightavg){
-            src_weightavg[i] += weightavg[i];
         }
     }
    /*----------------- FALLBACK CODE --------------------*/
