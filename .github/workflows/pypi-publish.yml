@@ -33,3 +33,12 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PyPI_Publish }}
+    - name: Install package from PyPI
+      run: python -m pip install Corrfunc==${{ github.event.release.tag_name }}
+    - name: Verify installed version
+      run: |
+        export corrfunc_version=`python -c "import Corrfunc; print(Corrfunc.__version__)"`
+        echo "Installed Corrfunc version = ${corrfunc_version}"
+        echo "GitHub Release name = ${{ github.event.release.tag_name }}"
+        if [[ "$corrfunc_version" != "${{ github.event.release.tag_name }}" ]]; exit 1; fi
+  
