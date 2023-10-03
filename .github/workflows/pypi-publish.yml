@@ -31,6 +31,7 @@ jobs:
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
       with:
+        skip-existing: true
         user: __token__
         password: ${{ secrets.PyPI_Publish }}
     - name: Install package from PyPI
