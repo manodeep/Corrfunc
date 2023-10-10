@@ -18,21 +18,6 @@ from os.path import abspath, dirname, join as pjoin
 from datetime import date
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if on_rtd:
-    try:
-        from unittest.mock import MagicMock
-    except ImportError:
-        from mock import Mock as MagicMock
-
-    class Mock(MagicMock):
-
-        @classmethod
-        def __getattr__(cls, name):
-            return Mock()
-
-    MOCK_MODULES = ['numpy', 'wurlitzer']
-    sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
