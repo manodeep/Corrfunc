@@ -474,11 +474,11 @@ ifeq ($(DO_CHECKS), 1)
 
       ### Check for minimum python + numpy versions. In theory, I should also check
       ### that *any* python and numpy are available but that seems too much effort
-      MIN_PYTHON_MAJOR := 2
-      MIN_PYTHON_MINOR := 7
+      MIN_PYTHON_MAJOR := 3
+      MIN_PYTHON_MINOR := 9
 
       MIN_NUMPY_MAJOR  := 1
-      MIN_NUMPY_MINOR  := 18
+      MIN_NUMPY_MINOR  := 20
 
       PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
       NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
