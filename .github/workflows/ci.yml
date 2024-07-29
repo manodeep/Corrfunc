@@ -101,6 +101,9 @@ jobs:
           - python-version: "3.9"
             numpy-version: "2.0.1"
 
+          - python-version: "3.12"
+            numpy-version: "1.20"
+
     env:
       CC: ${{ matrix.compiler }}
       CORRFUNC_CI: true
