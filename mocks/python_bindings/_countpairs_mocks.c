@@ -10,7 +10,7 @@
 #include <Python.h>
 
 /* Now, include the numpy header*/
-#include <arrayobject.h>
+#include <numpy/arrayobject.h>
 
 //for correlation functions
 #include "countpairs_rp_pi_mocks.h"
