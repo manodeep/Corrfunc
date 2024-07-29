@@ -101,7 +101,7 @@ jobs:
           # numpy1.18 only on python3.10 
           # (which, in turn, is only on 'latest')
           - python-version: "2.7"
-            numpy-version: "1.18"
+            numpy-version: "2.0.1"
           - python-version: "3.9"
             numpy-version: "1.18"
 
