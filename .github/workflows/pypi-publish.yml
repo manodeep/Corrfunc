@@ -26,6 +26,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.x'
+    - name: Install setuptools
+      run: python -m pip install setuptools
     - name: Create source distribution
       run: python setup.py sdist
     - name: Publish package
