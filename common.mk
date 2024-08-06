@@ -375,7 +375,7 @@ ifeq ($(DO_CHECKS), 1)
   endif
 
   # Check if using clang on Apple with M1/M1 Max/M2 etc
-  # if so, remove -march=native from CFLAGS and 
+  # if so, remove -march=native from CFLAGS and
   # then add -mcpu=apple-m1 -mtune=apple-m1
 #   ARCH := $(shell uname -m)
 #   $(info ARCH is $(ARCH))
@@ -400,12 +400,12 @@ ifeq ($(DO_CHECKS), 1)
   #### MS: 3rd May 2023
   ### For reasons unknown to me, the addition to CFLAGS does not work correctly if I
   ### change this variable name "opt" to match the remaining names of "copt". Works fine
-  ### for 'clang' on OSX but not for 'gcc'. Adds the -march=native but somehow that 
+  ### for 'clang' on OSX but not for 'gcc'. Adds the -march=native but somehow that
   ### extra flag is removed when testing the -mcpu/-mtune compiler options. For the sake
   ### of my sanity, I have accepted that this is how it shall work! Hopefully, in the future,
-  ### someone will figure out/explain *why* this behaviour is expected. It 
-  ###	seems more like a gcc bug to me where gcc is updating CFLAGS based on 
-  ### the options on the last compile call (since cland does not show 
+  ### someone will figure out/explain *why* this behaviour is expected. It
+  ###	seems more like a gcc bug to me where gcc is updating CFLAGS based on
+  ### the options on the last compile call (since cland does not show
   ### this behaviour) - MS: 3rd May, 2023
 
   ## TLDR: Leave this variable as "opt" while the remaining are set to "copt". Otherwise,
@@ -424,7 +424,7 @@ ifeq ($(DO_CHECKS), 1)
     CFLAGS += $(copt)
   else
     CFLAGS := $(filter-out $(copt), $(CFLAGS))
-  endif 
+  endif
 
   copt := -mtune=apple-m1
   COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
@@ -478,7 +478,7 @@ ifeq ($(DO_CHECKS), 1)
       MIN_PYTHON_MINOR := 7
 
       MIN_NUMPY_MAJOR  := 1
-      MIN_NUMPY_MINOR  := 16
+      MIN_NUMPY_MINOR  := 20
 
       PYTHON_AVAIL := $(shell [ $(PYTHON_VERSION_MAJOR) -gt $(MIN_PYTHON_MAJOR) -o \( $(PYTHON_VERSION_MAJOR) -eq $(MIN_PYTHON_MAJOR) -a $(PYTHON_VERSION_MINOR) -ge $(MIN_PYTHON_MINOR) \) ] && echo true)
       NUMPY_AVAIL  := $(shell [ $(NUMPY_VERSION_MAJOR) -gt $(MIN_NUMPY_MAJOR) -o \( $(NUMPY_VERSION_MAJOR) -eq $(MIN_NUMPY_MAJOR) -a $(NUMPY_VERSION_MINOR) -ge $(MIN_NUMPY_MINOR) \) ] && echo true)
@@ -506,14 +506,14 @@ ifeq ($(DO_CHECKS), 1)
         # NUMPY is available -> next step should not fail
         # That's why we are not checking if the NUMPY_INCL_FLAG is defined.
         ifeq ($(NUMPY_CHECKED), 0)
-          export NUMPY_INCL_FLAG := $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print('-isystem ' + numpy.__path__[0] + '/core/include/numpy/')")
+          export NUMPY_INCL_FLAG := $(shell $(PYTHON) -c "from __future__ import print_function; import numpy; print('-isystem ' + numpy.get_include())")
           # Take the second word -> the path (the first word is "isystem")
           NUMPY_INCL_PATH := $(word 2, ${NUMPY_INCL_FLAG})
           # Now check that the 'arrayobject.h' file is present in the
           # supposed numpy directory. Otherwise, compilation will fail.
           # The absence of the file likely indicates a missing numpy-devel
           # package (see issue #134 on github)
-          NUMPY_NEEDED_HEADER_FILE := ${NUMPY_INCL_PATH}arrayobject.h
+          NUMPY_NEEDED_HEADER_FILE := ${NUMPY_INCL_PATH}/numpy/arrayobject.h
           ifeq (,$(wildcard ${NUMPY_NEEDED_HEADER_FILE}))
             $(error Required $(ccred)numpy headers$(ccreset) are missing...stopping the compilation. You might be able to fix this by installing $(ccblue)numpy-devel$(ccreset))
           endif

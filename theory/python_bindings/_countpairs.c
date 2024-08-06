@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 /* Now, include the numpy header*/
-#include <arrayobject.h>
+#include <numpy/arrayobject.h>
 
 //for correlation functions
 #include "countpairs.h"

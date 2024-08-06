@@ -10,6 +10,15 @@ New features
 - conda installable package
 - GPU version
 
+2.5.3 (06/08/2024)
+==================
+Final release of the 2.5.x series and last Corrfunc version to support ``python2``
+
+Infrastructure
+--------------
+- Updated minimum numpy to ``1.20`` [#324]
+- No longer testing on ``python2`` [#324]
+
 2.5.2 (04/10/2023)
 ==================
 
@@ -23,7 +32,7 @@ Infrastructure
 - Automatic uploads of new releases to PyPI [#305]
 - Added @dependabot for automatic dependency updates in GitHub Actions [#306, #307, #308]
 
-  
+
 2.5.1 (28/07/2023)
 ==================
 

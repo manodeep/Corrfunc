@@ -15,16 +15,16 @@ jobs:
       matrix:
         os: ["ubuntu-20.04", "ubuntu-latest", "macos-latest"]
         compiler: [gcc-7, gcc-9, clang]
-        python-version: ["2.7", "3.7", "3.8", "3.9"]
-        numpy-version: ["1.16", "1.18"]
+        python-version: ["3.9", "3.12"]
+        numpy-version: ["1.20", "2.0.1"]
 
         include:
-          - numpy-version: "1.22"
+          - numpy-version: "1.23"
             compiler: gcc-10
             python-version: "3.10"
             os: ubuntu-latest
 
-          - numpy-version: "1.22"
+          - numpy-version: "1.23"
             compiler: gcc-11
             python-version: "3.10"
             os: ubuntu-latest
@@ -39,17 +39,17 @@ jobs:
             python-version: "3.10"
             os: ubuntu-latest
 
-          - numpy-version: "1.22"
+          - numpy-version: "1.23"
             compiler: gcc-10
             python-version: "3.11"
             os: ubuntu-latest
 
-          - numpy-version: "1.22"
+          - numpy-version: "1.23"
             compiler: gcc-11
             python-version: "3.11"
             os: ubuntu-latest
 
-          - numpy-version: "1.22"
+          - numpy-version: "1.23"
             compiler: gcc-12
             python-version: "3.11"
             os: ubuntu-latest
@@ -88,12 +88,9 @@ jobs:
           - os: "ubuntu-latest"
             compiler: gcc-7
 
-          # Don't run numpy 1.16 on ubuntu-latest  
+          # Only use latest numpy on ubuntu-latest  
           - os: "ubuntu-latest"
-            numpy-version: 1.16
-
-          - os: "ubuntu-latest"
-            numpy-version: 1.18
+            numpy-version: 1.20
             
           # python3.10 only on ubuntu-latest
           # - os: "ubuntu-20.04"
@@ -101,26 +98,11 @@ jobs:
           # - os: "macos-latest"
           #   python-version: "3.10"
 
-          # numpy1.18 only on python3.10 
-          # (which, in turn, is only on 'latest')
-          - python-version: "2.7"
-            numpy-version: "1.18"
           - python-version: "3.9"
-            numpy-version: "1.18"
-          - python-version: "3.8"
-            numpy-version: "1.18"
-          - python-version: "3.7"
-            numpy-version: "1.18"
+            numpy-version: "2.0.1"
 
-          # excludes for numpy 1.22
-          # - python-version: "2.7"
-          #   numpy-version: "1.22"
-          # - python-version: "3.9"
-          #   numpy-version: "1.22"
-          # - python-version: "3.8"
-          #   numpy-version: "1.22"
-          # - python-version: "3.7"
-          #   numpy-version: "1.22"
+          - python-version: "3.12"
+            numpy-version: "1.20"
 
     env:
       CC: ${{ matrix.compiler }}
