@@ -375,7 +375,7 @@ ifeq ($(DO_CHECKS), 1)
   endif
 
   # Check if using clang on Apple with M1/M1 Max/M2 etc
-  # if so, remove -march=native from CFLAGS and 
+  # if so, remove -march=native from CFLAGS and
   # then add -mcpu=apple-m1 -mtune=apple-m1
 #   ARCH := $(shell uname -m)
 #   $(info ARCH is $(ARCH))
@@ -400,12 +400,12 @@ ifeq ($(DO_CHECKS), 1)
   #### MS: 3rd May 2023
   ### For reasons unknown to me, the addition to CFLAGS does not work correctly if I
   ### change this variable name "opt" to match the remaining names of "copt". Works fine
-  ### for 'clang' on OSX but not for 'gcc'. Adds the -march=native but somehow that 
+  ### for 'clang' on OSX but not for 'gcc'. Adds the -march=native but somehow that
   ### extra flag is removed when testing the -mcpu/-mtune compiler options. For the sake
   ### of my sanity, I have accepted that this is how it shall work! Hopefully, in the future,
-  ### someone will figure out/explain *why* this behaviour is expected. It 
-  ###	seems more like a gcc bug to me where gcc is updating CFLAGS based on 
-  ### the options on the last compile call (since cland does not show 
+  ### someone will figure out/explain *why* this behaviour is expected. It
+  ###	seems more like a gcc bug to me where gcc is updating CFLAGS based on
+  ### the options on the last compile call (since cland does not show
   ### this behaviour) - MS: 3rd May, 2023
 
   ## TLDR: Leave this variable as "opt" while the remaining are set to "copt". Otherwise,
@@ -424,7 +424,7 @@ ifeq ($(DO_CHECKS), 1)
     CFLAGS += $(copt)
   else
     CFLAGS := $(filter-out $(copt), $(CFLAGS))
-  endif 
+  endif
 
   copt := -mtune=apple-m1
   COMPILE_OPT_SUPPORTED := $(shell $(CC) $(copt) -dM -E - < /dev/null 2>&1 1>/dev/null)
@@ -474,8 +474,8 @@ ifeq ($(DO_CHECKS), 1)
 
       ### Check for minimum python + numpy versions. In theory, I should also check
       ### that *any* python and numpy are available but that seems too much effort
-      MIN_PYTHON_MAJOR := 3
-      MIN_PYTHON_MINOR := 9
+      MIN_PYTHON_MAJOR := 2
+      MIN_PYTHON_MINOR := 7
 
       MIN_NUMPY_MAJOR  := 1
       MIN_NUMPY_MINOR  := 20
