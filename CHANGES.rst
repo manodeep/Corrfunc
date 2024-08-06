@@ -10,7 +10,7 @@ New features
 - conda installable package
 - GPU version
 
-2.5.3 (06/07/2024)
+2.5.3 (06/08/2024)
 ==================
 Final release of the 2.5.x series and last Corrfunc version to support ``python2``
 
