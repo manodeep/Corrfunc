@@ -29,21 +29,26 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
                             estimator='LS'):
     """
     Converts raw pair counts to a correlation function.
+    I rewrite the code so that it take weighting into account.
 
     Parameters
     ----------
 
-    ND1 : integer
-       Number of points in the first dataset
+    ND1 : integer | float
+        Number of points in the first dataset
+        Or sum of weights in the first dataset
 
-    ND2 : integer
+    ND2 : integer | float
         Number of points in the second dataset
+        Or sum of weights in the second dataset
 
-    NR1 : integer
+    NR1 : integer | float
         Number of points in the randoms for first dataset
+        Or sum of weights in the randoms for first dataset
 
-    NR2 : integer
+    NR2 : integer | float
         Number of points in the randoms for second dataset
+        Or sum of weights in the randoms for second dataset
 
     D1D2 : array-like, integer
         Pair-counts for the cross-correlation between D1 and D2
@@ -124,6 +129,7 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
 
     import numpy as np
     pair_counts = dict()
+    weights = dict()
     fields = ['D1D2', 'D1R2', 'D2R1', 'R1R2']
     arrays = [D1D2, D1R2, D2R1, R1R2]
     for (field, array) in zip(fields, arrays):
@@ -132,6 +138,21 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
             pair_counts[field] = npairs
         except IndexError:
             pair_counts[field] = array
+
+        try:
+            weight = array['weightavg']
+            if np.isclose(weight, 0.0).all():
+                # this happens if you call DD- function without providing the weighting.
+                weights[field] = np.ones_like(pair_counts[field])
+            else:
+                weights[field] = weight
+        except IndexError:
+            weights[field] = np.ones_like(pair_counts[field])
+
+    pair_weight_product = {
+        k: pair_counts[k]*weights[k]
+        for k in fields
+    }
 
     nbins = len(pair_counts['D1D2'])
     if (nbins != len(pair_counts['D1R2'])) or \
@@ -146,10 +167,10 @@ def convert_3d_counts_to_cf(ND1, ND2, NR1, NR2,
         fN2 = np.float64(NR2) / np.float64(ND2)
         cf = np.zeros(nbins)
         cf[:] = np.nan
-        cf[nonzero] = (fN1 * fN2 * pair_counts['D1D2'][nonzero] -
-                       fN1 * pair_counts['D1R2'][nonzero] -
-                       fN2 * pair_counts['D2R1'][nonzero] +
-                       pair_counts['R1R2'][nonzero]) / pair_counts['R1R2'][nonzero]
+        cf[nonzero] = (fN1 * fN2 * pair_weight_product['D1D2'][nonzero] -
+                       fN1 * pair_weight_product['D1R2'][nonzero] -
+                       fN2 * pair_weight_product['D2R1'][nonzero] +
+                       pair_weight_product['R1R2'][nonzero]) / pair_weight_product['R1R2'][nonzero]
         if len(cf) != nbins:
             msg = 'Bug in code. Calculated correlation function does not '\
                   'have the same number of bins as input arrays. Input bins '\
@@ -174,17 +195,21 @@ def convert_rp_pi_counts_to_wp(ND1, ND2, NR1, NR2,
     Parameters
     ----------
 
-    ND1 : integer
-       Number of points in the first dataset
+    ND1 : integer | float
+        Number of points in the first dataset
+        Or sum of weights in the first dataset
 
-    ND2 : integer
+    ND2 : integer | float
         Number of points in the second dataset
+        Or sum of weights in the second dataset
 
-    NR1 : integer
+    NR1 : integer | float
         Number of points in the randoms for first dataset
+        Or sum of weights in the randoms for first dataset
 
-    NR2 : integer
+    NR2 : integer | float
         Number of points in the randoms for second dataset
+        Or sum of weights in the randoms for second dataset
 
     D1D2 : array-like, integer
         Pair-counts for the cross-correlation between D1 and D2
@@ -1046,7 +1071,7 @@ def sys_pipes():
     see also https://github.com/manodeep/Corrfunc/issues/157,
     https://github.com/manodeep/Corrfunc/issues/269.
     '''
-    
+
     kwargs = {}
     if sys.stdout.isatty() or (sys.stdout is sys.__stdout__):
         kwargs['stdout'] = None
