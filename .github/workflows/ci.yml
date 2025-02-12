@@ -114,5 +114,9 @@ jobs:
         shell: bash -l {0}
         run: |
           conda activate test
+          if [ "${{ matrix.os }}" = "macos-14" ]; then
+            # We currently don't build with OpenMP on MacOS in CI
+            export CORRFUNC_PYTEST_MAX_THREADS=1
+          fi
           python -m pip install pytest
           python -m pytest -v
