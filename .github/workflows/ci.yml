@@ -43,14 +43,16 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
-          auto-activate-base: false
           miniforge-version: latest
-          python-version: ${{ matrix.python-version }}
+          python-version: "${{ matrix.python-version }}"
+          conda-remove-defaults: true
+          auto-activate-base: false
+          activate-environment: ""
 
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          conda create -q --yes -n test python=${{ matrix.python-version }} numpy=${{ matrix.numpy-version }} nomkl
+          conda create -n test python=${{ matrix.python-version }} numpy=${{ matrix.numpy-version }} nomkl
           conda activate test
 
       - name: Display PATH, compiler, python
