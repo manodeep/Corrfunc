@@ -456,7 +456,7 @@ def fix_ra_dec(ra, dec):
     if max(dec) > 90.0:
         print("Warning: found DEC values more than 90.0; wrapping into "
               "[-90.0, 90.0] range")
-        dec += 90.0
+        dec -= 90.0
 
     return ra.astype(input_dtype), dec.astype(input_dtype)
 
