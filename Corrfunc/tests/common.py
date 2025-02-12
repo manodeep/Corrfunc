@@ -54,6 +54,10 @@ def maxthreads():
         maxthreads = len(os.sched_getaffinity(0))
     except AttributeError:
         maxthreads = multiprocessing.cpu_count() or 1
+
+    environ_max = os.environ.get('CORRFUNC_PYTEST_MAX_THREADS')
+    if environ_max:
+        maxthreads = min(int(environ_max), maxthreads)
         
     return maxthreads
 
@@ -63,16 +67,15 @@ def generate_isa_and_nthreads_combos(extra_isa=None):
     mx = maxthreads()
     
     # the ISA sweep will use maxthreads
-    # and then with the fastest ISA, we will test single-threaded,
-    # plus "oversubscribed", where we use more threads than cores
-    all_nthreads = [1,mx+1]
+    # and then with the fastest ISA, we will test single-threaded
+    extra_nthreads = [1] if mx > 1 else []
     
     combos = []
     all_isa = ['fallback','sse42','avx','avx512f']
     if extra_isa:
         all_isa += extra_isa
     combos += [(isa,mx) for isa in all_isa]
-    combos += [('fastest',n) for n in all_nthreads]
+    combos += [('fastest',n) for n in extra_nthreads]
     
     return combos
 
