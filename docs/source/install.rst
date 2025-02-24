@@ -57,6 +57,16 @@ If you plan to use the C extensions, then the following are required:
 
 Any of the above can be installed with either pip or conda.
 
+Google Colab Dependency Installation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following command has been known to work to instal GSL in Google Colab.
+GSL is usually the missing dependency that causes Colab installations to fail.
+
+.. code:: console
+
+    !apt install libgsl-dev
+
 .. _verifying_your_installation:
 
 Verifying your installation
