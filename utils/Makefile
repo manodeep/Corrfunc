@@ -7,7 +7,7 @@ ROOT_DIR := ..
 
 include $(ROOT_DIR)/common.mk
 TARGETSRC   := cosmology_params.c gridlink_impl_double.c gridlink_impl_float.c gridlink_mocks_impl_float.c \
-               gridlink_mocks_impl_double.c gridink_utils_double.c gridlink_utils_float.c \
+               gridlink_mocks_impl_double.c gridlink_utils_double.c gridlink_utils_float.c \
                progressbar.c set_cosmo_dist.c utils.c cpu_features.c avx512_calls.c
 TARGETOBJS  := $(TARGETSRC:.c=.o)
 INCL  := avx512_calls.h avx2_calls.h avx_calls.h sse_calls.h defs.h defs.h function_precision.h cosmology_params.h \
