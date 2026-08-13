@@ -13,7 +13,7 @@ LIBRARY:=lib$(LIBNAME).a
 LIBSRC:=countspheres_mocks.c countspheres_mocks_impl_float.c countspheres_mocks_impl_double.c \
         $(UTILS_DIR)/gridlink_impl_float.c $(UTILS_DIR)/gridlink_impl_double.c \
         $(UTILS_DIR)/gridlink_utils_float.c $(UTILS_DIR)/gridlink_utils_double.c \
-        $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c $(UTILS_DIR)/avx512_calls.c \
+        $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c \
 	$(UTILS_DIR)/set_cosmo_dist.c $(UTILS_DIR)/cosmology_params.c
 LIBRARY_HEADERS := $(LIBNAME).h
 
