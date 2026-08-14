@@ -48,7 +48,7 @@ static inline int vpf_avx512_intrinsics_DOUBLE(const int64_t np,  DOUBLE * restr
     DOUBLE *localz2 = (DOUBLE *) Z;
 
     for(int64_t j=0;j<np;j+=AVX512_NVEC) {
-        AVX512_MASK m_mask_left = (np - j) >= AVX512_NVEC ? ~0U:masks_per_misalignment_value_DOUBLE[np-j];
+        AVX512_MASK m_mask_left = (np - j) >= AVX512_NVEC ? ~0U:((1U << (unsigned)(np - j)) - 1U);
 
         const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx2);
         const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy2);
