@@ -156,7 +156,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
         const AVX512_FLOATS m_zpos  = AVX512_SET_FLOAT(zpos);
         
         for(int64_t j=n_off;j<N1;j+=AVX512_NVEC) {
-            AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
+            AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0U:((1U << (unsigned)(N1 - j)) - 1U);
             const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
             const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
             const AVX512_FLOATS m_z1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
@@ -244,7 +244,7 @@ static inline int wp_avx512_intrinsics_DOUBLE(DOUBLE *x0, DOUBLE *y0, DOUBLE *z0
             // at the beginning of the loop. 
             for(int kbin=nbin-1;kbin>=1;kbin--) {
                 const AVX512_MASK m_bin_mask = AVX512_MASK_COMPARE_FLOATS(m_mask_left, r2,m_rupp_sqr[kbin-1],_CMP_GE_OS);
-                npairs[kbin] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
+                npairs[kbin] += AVX512_BIT_COUNT_UNSIGNED_INT(m_bin_mask);
                 if(need_rpavg || need_weightavg) {
                     m_rpbin = AVX512_BLEND_INTS_WITH_MASK(m_bin_mask, m_rpbin, AVX512_SET_INT(kbin));
                 }

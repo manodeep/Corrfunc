@@ -178,7 +178,7 @@ static inline int countpairs_rp_pi_mocks_avx512_intrinsics_DOUBLE(const int64_t 
         const AVX512_FLOATS m_sqr_rpmin  = AVX512_SET_FLOAT(sqr_rpmin);
 
         for(int64_t j=n_off;j<N1;j+=AVX512_NVEC){
-            AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[N1-j];
+            AVX512_MASK m_mask_left = (N1 - j) >= AVX512_NVEC ? ~0U:((1U << (unsigned)(N1 - j)) - 1U);
             const AVX512_FLOATS m_x2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx1);
             const AVX512_FLOATS m_y2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy1);
             const AVX512_FLOATS m_z2 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localz1);
