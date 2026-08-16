@@ -13,7 +13,7 @@ LIBRARY := lib$(LIBNAME).a
 LIBSRC  := countpairs_theta_mocks.c countpairs_theta_mocks_impl_float.c countpairs_theta_mocks_impl_double.c \
            $(UTILS_DIR)/gridlink_mocks_impl_float.c $(UTILS_DIR)/gridlink_mocks_impl_double.c \
            $(UTILS_DIR)/gridlink_utils_float.c $(UTILS_DIR)/gridlink_utils_double.c \
-           $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c $(UTILS_DIR)/avx512_calls.c
+           $(UTILS_DIR)/utils.c $(UTILS_DIR)/progressbar.c $(UTILS_DIR)/cpu_features.c
 LIBRARY_HEADERS := $(LIBNAME).h
 
 TARGET := DDtheta_mocks

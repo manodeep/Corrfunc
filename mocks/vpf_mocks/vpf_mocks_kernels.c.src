@@ -53,7 +53,7 @@ static inline int vpf_mocks_avx512_intrinsics_DOUBLE(const int64_t np, DOUBLE *X
     DOUBLE *localz2 = (DOUBLE *) Z;
 
     for(int64_t j=0;j<np;j+=AVX512_NVEC) {
-        AVX512_MASK m_mask_left = (np - j) >= AVX512_NVEC ? ~0:masks_per_misalignment_value_DOUBLE[np-j];
+        AVX512_MASK m_mask_left = (np - j) >= AVX512_NVEC ? ~0U:((1U << (unsigned)(np - j)) - 1U);
 
         const AVX512_FLOATS m_x1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localx2);
         const AVX512_FLOATS m_y1 = AVX512_MASKZ_LOAD_FLOATS_UNALIGNED(m_mask_left, localy2);
@@ -79,12 +79,12 @@ static inline int vpf_mocks_avx512_intrinsics_DOUBLE(const int64_t np, DOUBLE *X
             const AVX512_MASK m_mask1 = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_r2,m_rupp_sqr[k],_CMP_LT_OS);
             const AVX512_MASK m_mask2 = AVX512_MASK_COMPARE_FLOATS(m_mask_left, m_r2,m_rupp_sqr[k-1],_CMP_GE_OS);
             const AVX512_MASK m_bin_mask = AVX512_MASK_BITWISE_AND(m_mask1,m_mask2);
-            counts[k] += bits_set_in_avx512_mask_DOUBLE[m_bin_mask];
+            counts[k] += AVX512_BIT_COUNT_UNSIGNED_INT(m_bin_mask);
             m_mask_left = AVX512_MASK_BITWISE_AND_NOT(m_bin_mask, m_mask_left);//ANDNOT(X, Y) -> NOT X AND Y
             if(m_mask_left == 0) {
                 break;
             } else if(k==1){
-                counts[0] += bits_set_in_avx512_mask_DOUBLE[m_mask_left];
+                counts[0] += AVX512_BIT_COUNT_UNSIGNED_INT(m_mask_left);
             }
         }
     }
